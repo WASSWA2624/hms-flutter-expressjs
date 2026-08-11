@@ -1087,6 +1087,7 @@ const Map<String, HomeShortcutDefinition> homeShortcutLibrary =
         label: 'Accounts',
         icon: Icons.account_balance_outlined,
         route: AppRoutes.accounts,
+        // Entry ∪ is applied in homeShortcutRequirement (accounts.md §9).
         requiredPermissions: <AppPermission>[AppPermissions.accountsRead],
       ),
       'claims': HomeShortcutDefinition(

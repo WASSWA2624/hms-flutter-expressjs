@@ -12,8 +12,10 @@ import 'package:hosspi_hms/features/accounts/presentation/accounts_access.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
 import 'package:hosspi_hms/features/accounts/presentation/controllers/accounts_workspace_controller.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_journal_dialog.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_journal_similarity.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_journal_similarity_dialog.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
-import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_to_post_panel.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_work_actions.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_workspace_table_support.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -92,6 +94,13 @@ class _AccountsOpenWorkPanelState extends ConsumerState<AccountsOpenWorkPanel> {
     return AppListTable<AccountsWorkItem>(
       page: state.workItems,
       isLoading: state.isRefreshing,
+      error: () {
+        final Object? failure = state.lastFailure;
+        if (failure is! AppFailure) {
+          return null;
+        }
+        return context.l10n.failureMessage(failure);
+      }(),
       columnVisibilityController: _columnVisibilityController,
       columnVisibilityStorageKey: accountsTableSettingsKey(section),
       columnWidthStorageKey: '${accountsTableSettingsKey(section)}_cw',
@@ -304,6 +313,56 @@ Future<void> _createJournal(BuildContext context, WidgetRef ref) async {
   if (draft == null || !context.mounted) {
     return;
   }
+
+  final AccountsWorkspaceState? workspace = ref
+      .read(accountsWorkspaceControllerProvider)
+      .asData
+      ?.value
+      .when(
+        success: (AccountsWorkspaceState value) => value,
+        failure: (_) => null,
+      );
+  final List<AccountsWorkItem> candidates = <AccountsWorkItem>[
+    ...?workspace?.workItems.items,
+  ];
+  final AccountsJournalSimilarityResult check = checkAccountsJournalSimilarity(
+    draft: draft,
+    candidates: candidates,
+  );
+  if (check.hasMatches && context.mounted) {
+    final AccountsJournalSimilarityDialogResult review =
+        await showAccountsJournalSimilarityDialog(
+          context,
+          draft: draft,
+          check: check,
+        );
+    if (!context.mounted) {
+      return;
+    }
+    switch (review.action) {
+      case AccountsJournalSimilarityAction.cancel:
+        return;
+      case AccountsJournalSimilarityAction.useExisting:
+        final AccountsWorkItem? existing = review.selectedItem;
+        if (existing == null) {
+          return;
+        }
+        ref
+            .read(accountsWorkspaceControllerProvider.notifier)
+            .selectItem(existing);
+        await showAccountsWorkItemDetailDialog(
+          context,
+          ref,
+          existing,
+          canWrite: canWriteAccounts(ref.read(appAccessPolicyProvider)),
+          canApprove: canApproveAccounts(ref.read(appAccessPolicyProvider)),
+        );
+        return;
+      case AccountsJournalSimilarityAction.proceed:
+        break;
+    }
+  }
+
   final AppFailure? failure = await ref
       .read(accountsWorkspaceControllerProvider.notifier)
       .createJournal(draft);

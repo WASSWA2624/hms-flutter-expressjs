@@ -113,6 +113,12 @@ void _stubRepository(
       ),
     ),
   );
+  when(() => repository.approveRequest(any(), notes: any(named: 'notes')))
+      .thenAnswer(
+    (_) async => const Result<AccountsMutationResult>.success(
+      AccountsMutationResult(item: _approvalItem, message: 'Saved.'),
+    ),
+  );
   when(
     () => repository.listGlAccounts(
       any(),
@@ -305,19 +311,66 @@ void main() {
     expect(find.textContaining('no access'), findsNothing);
   });
 
-  testWidgets('aliases all/inbox select Open work', (WidgetTester tester) async {
+  testWidgets('aliases all/inbox/tab select Open work', (
+    WidgetTester tester,
+  ) async {
     final AppAccessPolicy reader = _policy(
       permissions: <AppPermission>{AppPermissions.accountsRead},
     );
-    for (final String alias in <String>['all', 'inbox']) {
+    for (final String location in <String>[
+      '/accounts?section=all',
+      '/accounts?section=inbox',
+      '/accounts?tab=work',
+    ]) {
       await _pumpOpenWork(
         tester,
         repository: repository,
         accessPolicy: reader,
-        initialLocation: '/accounts?section=$alias',
+        initialLocation: location,
       );
       expect(find.text(AccountsStrings.openWorkLabel), findsWidgets);
     }
+  });
+
+  testWidgets('Next Approve without opening Detail first', (
+    WidgetTester tester,
+  ) async {
+    final AppAccessPolicy approver = _policy(
+      permissions: <AppPermission>{
+        AppPermissions.accountsRead,
+        AppPermissions.accountsWrite,
+        AppPermissions.financialApprove,
+      },
+      modules: const <AppModuleEntitlement>[
+        AppModuleEntitlement(
+          code: 'facility-accounts',
+          licenseStatus: 'ACTIVE',
+        ),
+        AppModuleEntitlement(
+          code: 'billing-payments',
+          licenseStatus: 'ACTIVE',
+        ),
+      ],
+    );
+    await _pumpOpenWork(
+      tester,
+      repository: repository,
+      accessPolicy: approver,
+      items: const <AccountsWorkItem>[_approvalItem],
+    );
+
+    await tester.ensureVisible(
+      find.widgetWithText(TextButton, AccountsStrings.approveAction).first,
+    );
+    await tester.tap(
+      find.widgetWithText(TextButton, AccountsStrings.approveAction).first,
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 800));
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.byType(AccountsNotesForm), findsOneWidget);
+    expect(find.text(AccountsStrings.detailTitleApproval), findsNothing);
   });
 
   testWidgets('empty state shows No open work.', (WidgetTester tester) async {

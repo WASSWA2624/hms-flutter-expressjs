@@ -53,12 +53,17 @@ const Map<AccountsDeskSection, List<String>> accountsDefaultColumnIds =
     };
 
 /// Next priority: Approve → Post → Reverse → Void → Close → GL → Ledger.
+/// On To post (`journals`), Next is **Post** only (accounts.md §4.2).
 String? accountsNextActionLabel(
   AccountsWorkItem item, {
   required bool canWrite,
   required bool canApprove,
   required bool canEnter,
+  AccountsDeskSection? section,
 }) {
+  if (section == AccountsDeskSection.journals) {
+    return item.canPost && canWrite ? AccountsStrings.postAction : null;
+  }
   if (item.canApprove) {
     return canApprove ? AccountsStrings.approveAction : null;
   }
@@ -88,7 +93,13 @@ String? accountsNextActionTooltip(
   required bool canWrite,
   required bool canApprove,
   required bool canEnter,
+  AccountsDeskSection? section,
 }) {
+  if (section == AccountsDeskSection.journals) {
+    return item.canPost && canWrite
+        ? AccountsStrings.postActionTooltip
+        : null;
+  }
   if (item.canApprove) {
     return canApprove ? AccountsStrings.approveActionTooltip : null;
   }
@@ -128,6 +139,7 @@ List<AppListTableColumn<AccountsWorkItem>> accountsColumnsForSection(
         accessPolicy: accessPolicy,
         isSaving: isSaving,
         onNextAction: onNextAction,
+        section: section,
       );
   final List<String> ids =
       accountsDefaultColumnIds[section] ??
@@ -157,6 +169,7 @@ List<AppListTableColumn<AccountsWorkItem>> accountsColumnChoicesForSection(
         accessPolicy: accessPolicy,
         isSaving: isSaving,
         onNextAction: onNextAction,
+        section: section,
       );
   final Set<String> defaults =
       (accountsDefaultColumnIds[section] ??
@@ -177,6 +190,7 @@ Map<String, AppListTableColumn<AccountsWorkItem>> _accountsColumnBuilders(
   required AppAccessPolicy accessPolicy,
   required bool isSaving,
   required AccountsNextActionHandler onNextAction,
+  AccountsDeskSection? section,
 }) {
   final bool canWrite = canWriteAccounts(accessPolicy);
   final bool canApprove = canApproveAccounts(accessPolicy);
@@ -291,6 +305,7 @@ Map<String, AppListTableColumn<AccountsWorkItem>> _accountsColumnBuilders(
           canWrite: canWrite,
           canApprove: canApprove,
           canEnter: canEnter,
+          section: section,
         );
         if (label == null) {
           return const SizedBox.shrink();
@@ -301,14 +316,17 @@ Map<String, AppListTableColumn<AccountsWorkItem>> _accountsColumnBuilders(
               canWrite: canWrite,
               canApprove: canApprove,
               canEnter: canEnter,
+              section: section,
             ) ??
             label;
         return Tooltip(
           message: tooltip,
           child: TextButton(
-            onPressed: () {
-              unawaited(onNextAction(context, ref, item));
-            },
+            onPressed: isSaving
+                ? null
+                : () {
+                    unawaited(onNextAction(context, ref, item));
+                  },
             child: Text(label),
           ),
         );
@@ -325,6 +343,7 @@ class AccountsNextActionButton extends StatelessWidget {
     required this.canEnter,
     required this.isSaving,
     required this.onPressed,
+    this.section,
     super.key,
   });
 
@@ -334,6 +353,7 @@ class AccountsNextActionButton extends StatelessWidget {
   final bool canEnter;
   final bool isSaving;
   final Future<void> Function() onPressed;
+  final AccountsDeskSection? section;
 
   @override
   Widget build(BuildContext context) {
@@ -342,6 +362,7 @@ class AccountsNextActionButton extends StatelessWidget {
       canWrite: canWrite,
       canApprove: canApprove,
       canEnter: canEnter,
+      section: section,
     );
     if (label == null) {
       return const SizedBox.shrink();
@@ -351,6 +372,7 @@ class AccountsNextActionButton extends StatelessWidget {
       canWrite: canWrite,
       canApprove: canApprove,
       canEnter: canEnter,
+      section: section,
     );
     final ThemeData theme = Theme.of(context);
     final bool enabled = !isSaving;

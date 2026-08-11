@@ -17,6 +17,13 @@ const {
   accountLedgerQuerySchema,
 } = require('@validations/accounts-workspace/accounts-workspace.schema');
 
+/**
+ * Route / queue reads — (`accounts:read` ∪ `accounts:write`).
+ * When journal / period / approve mutations land (accounts.md §9):
+ * - Write: authorize(PERMISSIONS.ACCOUNTS_WRITE, 'permission')
+ * - Approve/Reject (AND): chain authorize(ACCOUNTS_WRITE) then
+ *   authorize(PERMISSIONS.FINANCIAL_APPROVE) — a single authorize([...]) is OR-only.
+ */
 const ACCOUNTS_READ_SCOPES = [
   PERMISSIONS.ACCOUNTS_READ,
   PERMISSIONS.ACCOUNTS_WRITE,

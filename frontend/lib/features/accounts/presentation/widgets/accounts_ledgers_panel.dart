@@ -163,16 +163,27 @@ class _AccountsLedgersPanelState extends ConsumerState<AccountsLedgersPanel> {
     if (patientId.isEmpty || _handledPatientDeepLink) {
       return;
     }
-    _handledPatientDeepLink = true;
     AccountsPatientBalance? match;
     for (final AccountsPatientBalance row in items) {
-      if (row.patientId == patientId || row.patientDisplayId == patientId) {
+      if (row.patientId == patientId ||
+          (row.patientDisplayId ?? '') == patientId ||
+          (row.patientDisplayName ?? '') == patientId ||
+          row.displayLabel == patientId) {
         match = row;
         break;
       }
     }
+    if (match == null && items.isEmpty) {
+      // Still loading / empty — allow a later reload to retry.
+      return;
+    }
+    _handledPatientDeepLink = true;
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted) {
+      return;
+    }
     await _openLedger(
-      patientId: patientId,
+      patientId: match?.patientId ?? patientId,
       displayName: match?.patientDisplayName,
       currency: match?.currency,
     );
@@ -209,21 +220,16 @@ class _AccountsLedgersPanelState extends ConsumerState<AccountsLedgersPanel> {
     final l10n = context.l10n;
     final accessPolicy = ref.watch(appAccessPolicyProvider);
 
-    if (_failure != null && _page.items.isEmpty && !_loading) {
-      return AppFailureStateView(
-        failure: _failure!,
-        onRetry: () => unawaited(_reload()),
-      );
-    }
-
     return AppListTable<AccountsPatientBalance>(
       page: _page,
       isLoading: _loading,
+      error: _failure == null ? null : l10n.failureMessage(_failure!),
       columnVisibilityController: _columnController,
       columnVisibilityStorageKey: accountsLedgersTableSettingsKey,
       columnWidthStorageKey: '${accountsLedgersTableSettingsKey}_cw',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      enableExport: true,
       columns: accountsLedgersColumns(
         context: context,
         policy: accessPolicy,
@@ -262,11 +268,18 @@ class _AccountsLedgersPanelState extends ConsumerState<AccountsLedgersPanel> {
           if (needle.isEmpty) {
             return true;
           }
-          return item.displayLabel.toLowerCase().contains(needle);
+          return item.displayLabel.toLowerCase().contains(needle) ||
+              (item.patientDisplayId ?? '')
+                  .toLowerCase()
+                  .contains(needle) ||
+              (item.patientDisplayName ?? '')
+                  .toLowerCase()
+                  .contains(needle);
         },
         onSubmitted: (_) => unawaited(_reload()),
         onClear: () {
           _searchController.clear();
+          setState(() => _filterValue = const AppSearchBarFilterValue());
           unawaited(_reload());
         },
         showAdvancedFilterButton: true,
@@ -274,10 +287,12 @@ class _AccountsLedgersPanelState extends ConsumerState<AccountsLedgersPanel> {
         advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: AccountsStrings.clearFilters,
+        allFieldsLabel: AccountsStrings.allFields,
         filterGroups: const <AppSearchBarFilterGroup>[
           AppSearchBarFilterGroup(
             key: _clearanceFilterKey,
             label: AccountsStrings.clearanceColumn,
+            allLabel: AccountsStrings.allFields,
             choices: <AppSearchBarFilterChoice>[
               AppSearchBarFilterChoice(
                 value: 'CLEARED',
@@ -310,7 +325,7 @@ class _AccountsLedgersPanelState extends ConsumerState<AccountsLedgersPanel> {
       ),
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: AccountsStrings.patientLedgersEmpty,
-        body: AccountsStrings.patientLedgersEmpty,
+        body: '',
       ),
       onRowSelected: (AccountsPatientBalance row) {
         unawaited(
@@ -322,18 +337,37 @@ class _AccountsLedgersPanelState extends ConsumerState<AccountsLedgersPanel> {
         );
       },
       mobileItemBuilder: (BuildContext context, AccountsPatientBalance row) {
-        return ListTile(
-          title: Text(row.displayLabel),
-          subtitle: Text(accountsMoney(context, row.balance, row.currency)),
-          onTap: () {
-            unawaited(
-              _openLedger(
-                patientId: row.patientId,
-                displayName: row.patientDisplayName,
-                currency: row.currency,
-              ),
-            );
-          },
+        final String? next = accountsPatientLedgerNextActionLabel(
+          policy: accessPolicy,
+          row: row,
+        );
+        return AppListTableMobileItem(
+          title: row.displayLabel,
+          caption: accountsClearanceLabel(row.clearance),
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: accountsMoney(context, row.balance, row.currency),
+              icon: Icons.account_balance_wallet_outlined,
+            ),
+          ],
+          trailing: next == null
+              ? null
+              : TextButton(
+                  onPressed: () {
+                    if (next == AccountsStrings.payAction) {
+                      _pay(row);
+                    } else {
+                      unawaited(
+                        _openLedger(
+                          patientId: row.patientId,
+                          displayName: row.patientDisplayName,
+                          currency: row.currency,
+                        ),
+                      );
+                    }
+                  },
+                  child: Text(next),
+                ),
         );
       },
     );

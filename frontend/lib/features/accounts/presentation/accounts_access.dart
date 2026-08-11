@@ -211,11 +211,14 @@ bool accountsSectionShowsNextActionColumn(
     AccountsDeskSection.approvals => canDecideAccountsApproval(policy),
     AccountsDeskSection.ledgers =>
       canPayFromAccounts(policy) || canReadAccountsPatientLedgers(policy),
+    // To post Next is Post-only — omit the column without accounts:write.
+    AccountsDeskSection.journals => canWriteAccounts(policy),
     AccountsDeskSection.work ||
-    AccountsDeskSection.journals ||
     AccountsDeskSection.books ||
     AccountsDeskSection.gl =>
-      canWriteAccounts(policy) || canDecideAccountsApproval(policy),
+      canWriteAccounts(policy) ||
+          canDecideAccountsApproval(policy) ||
+          canEnterAccounts(policy),
     // Account chart uses Actions for mutations — no work-queue Next column.
     AccountsDeskSection.chart => false,
   };

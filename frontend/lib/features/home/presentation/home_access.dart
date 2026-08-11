@@ -1,6 +1,7 @@
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/permissions/route_access_catalog.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_atom_permissions.dart';
 
 /// Tab-level and atom [AccessRequirement] helpers for the home dashboard.
@@ -76,6 +77,11 @@ AccessRequirement homeShortcutRequirement({
   required String id,
   List<AppPermission> declared = const <AppPermission>[],
 }) {
+  // Accounts desk entry is (`accounts:read` ∪ `accounts:write`) ∩
+  // `facility-accounts` — same as [RouteAccessCatalog.accountsEntry].
+  if (id == 'accounts') {
+    return RouteAccessCatalog.accountsEntry;
+  }
   if (declared.isNotEmpty) {
     return homeAtomRequirement(declared);
   }

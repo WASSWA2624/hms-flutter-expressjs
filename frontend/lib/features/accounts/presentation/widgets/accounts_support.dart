@@ -80,6 +80,39 @@ String accountsDetailTitle(BuildContext context, AccountsWorkItem item) {
   return accountsDetailTitleFor(item);
 }
 
+final RegExp _accountsUuidPattern = RegExp(
+  r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+);
+
+bool accountsLooksLikeUuid(String? value) {
+  final String normalized = value?.trim() ?? '';
+  return normalized.isNotEmpty && _accountsUuidPattern.hasMatch(normalized);
+}
+
+/// Presentation label that never surfaces raw UUIDs (accounts.md §19).
+String? accountsPublicLabel(String? value) {
+  final String normalized = value?.trim() ?? '';
+  if (normalized.isEmpty || accountsLooksLikeUuid(normalized)) {
+    return null;
+  }
+  return normalized;
+}
+
+String accountsJoinDisplay(Iterable<String?> values) {
+  return values
+      .map((String? value) => value?.trim() ?? '')
+      .where((String value) => value.isNotEmpty)
+      .join(' · ');
+}
+
+/// Journal / work-item friendly id for tables, dialogs, and print.
+String accountsWorkItemPublicId(AccountsWorkItem item) {
+  return accountsPublicLabel(item.journalDisplayId) ??
+      accountsPublicLabel(item.displayId) ??
+      accountsPublicLabel(item.accountDisplayId) ??
+      AccountsStrings.journalColumn;
+}
+
 bool accountsWorkItemMatchesSearch(
   BuildContext context,
   AccountsWorkItem item,
@@ -90,17 +123,17 @@ bool accountsWorkItemMatchesSearch(
     return true;
   }
   final List<String?> haystacks = <String?>[
-    item.effectiveDisplayId,
-    item.journalDisplayId,
-    item.accountDisplayId,
-    item.patientDisplayName,
+    accountsWorkItemPublicId(item),
+    accountsPublicLabel(item.journalDisplayId),
+    accountsPublicLabel(item.accountDisplayId),
+    accountsPublicLabel(item.patientDisplayName),
     item.status,
     item.approvalType,
-    item.requestReason,
-    item.requestedByDisplayId,
-    item.periodLabel,
-    item.source,
-    item.reference,
+    accountsPublicLabel(item.requestReason),
+    accountsPublicLabel(item.requestedByDisplayId),
+    accountsPublicLabel(item.periodLabel),
+    accountsPublicLabel(item.source),
+    accountsPublicLabel(item.reference),
   ];
   for (final String? value in haystacks) {
     if ((value ?? '').toLowerCase().contains(needle)) {

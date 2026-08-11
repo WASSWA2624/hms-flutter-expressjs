@@ -52,6 +52,9 @@ describe('assignable-access', () => {
       expect(names.has(PERMISSIONS.PLATFORM_ADMIN)).toBe(false);
       expect(names.has(PERMISSIONS.CLINICAL_READ)).toBe(true);
       expect(names.has(PERMISSIONS.HR_WRITE)).toBe(true);
+      // Custom roles can be granted Accounts keys (02-roles AC7).
+      expect(names.has(PERMISSIONS.ACCOUNTS_READ)).toBe(true);
+      expect(names.has(PERMISSIONS.ACCOUNTS_WRITE)).toBe(true);
     });
 
     it('gives HR every non-admin permission, not the JWT shell pack', () => {

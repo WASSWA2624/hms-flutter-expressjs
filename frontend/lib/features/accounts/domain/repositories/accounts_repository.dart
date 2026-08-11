@@ -15,6 +15,11 @@ abstract interface class AccountsRepository {
     AccountsJournalDraft draft,
   );
 
+  Future<Result<AccountsMutationResult>> updateJournal(
+    String journalId,
+    AccountsJournalDraft draft,
+  );
+
   Future<Result<AccountsMutationResult>> postJournal(
     String journalId, {
     String? notes,

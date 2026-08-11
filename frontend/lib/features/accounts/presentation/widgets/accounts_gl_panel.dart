@@ -160,7 +160,9 @@ class _AccountsGlPanelState extends ConsumerState<AccountsGlPanel> {
     for (final AccountsGlAccount item in items) {
       if (item.id == accountId ||
           item.effectiveId == accountId ||
-          item.code == accountId) {
+          item.code == accountId ||
+          item.name == accountId ||
+          item.accountLabel == accountId) {
         match = item;
         break;
       }
@@ -198,8 +200,9 @@ class _AccountsGlPanelState extends ConsumerState<AccountsGlPanel> {
       onRowSelected: (AccountsGlAccount item) => unawaited(_openLedger(item)),
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: AccountsStrings.glEmpty,
-        body: AccountsStrings.glEmpty,
+        body: '',
       ),
+      enableExport: true,
       search: AppListTableSearch<AccountsGlAccount>(
         controller: _searchController,
         semanticLabel: AccountsStrings.searchHint,
@@ -285,10 +288,23 @@ class _AccountsGlPanelState extends ConsumerState<AccountsGlPanel> {
       ),
       columnChoices: accountsGlOptionalColumns(context),
       mobileItemBuilder: (BuildContext context, AccountsGlAccount item) {
-        return ListTile(
-          title: Text(item.accountLabel),
-          subtitle: Text(accountsMoney(context, item.balance, item.currency)),
-          onTap: () => unawaited(_openLedger(item)),
+        final bool showNext = canOpenAccountsGlNext(accessPolicy, item);
+        return AppListTableMobileItem(
+          title: item.accountLabel,
+          caption: accountsPublicLabel(item.type) ??
+              AccountsStrings.unknownValue,
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: accountsMoney(context, item.balance, item.currency),
+              icon: Icons.account_balance_wallet_outlined,
+            ),
+          ],
+          trailing: showNext
+              ? TextButton(
+                  onPressed: () => unawaited(_openLedger(item)),
+                  child: const Text(AccountsStrings.nextGl),
+                )
+              : null,
         );
       },
     );

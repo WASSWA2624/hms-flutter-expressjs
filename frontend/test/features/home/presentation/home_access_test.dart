@@ -180,6 +180,56 @@ void main() {
       );
     });
 
+    test('accounts shortcut uses read ∪ write ∩ facility-accounts', () {
+      final AppAccessPolicy writeOnly = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'token'),
+          user: const AuthUserProfile(
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+            roles: <String>['CUSTOM'],
+          ),
+          permissions: <AppPermission>[AppPermissions.accountsWrite],
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'facility-accounts',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      );
+      final AppAccessPolicy writeNoModule = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'token'),
+          user: const AuthUserProfile(
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+            roles: <String>['CUSTOM'],
+          ),
+          permissions: <AppPermission>[AppPermissions.accountsWrite],
+          moduleEntitlements: const <AppModuleEntitlement>[],
+          isAuthorizationHydrated: true,
+        ),
+      );
+
+      expect(
+        homeShortcutRequirement(id: 'accounts').isAllowed(writeOnly),
+        isTrue,
+      );
+      expect(
+        homeShortcutRequirement(
+          id: 'accounts',
+          declared: <AppPermission>[AppPermissions.accountsRead],
+        ).isAllowed(writeOnly),
+        isTrue,
+      );
+      expect(
+        homeShortcutRequirement(id: 'accounts').isAllowed(writeNoModule),
+        isFalse,
+      );
+    });
+
     test('homeQueueItemRequirement / homeAlertRequirement map catalog keys', () {
       final AppAccessPolicy clinical = _policy(<AppPermission>[
         AppPermissions.clinicalRead,

@@ -20,18 +20,34 @@ const {
   listChartAccountsQuerySchema
 } = require('@validations/chart-account/chart-account.schema');
 
+/** Read — (`accounts:read` ∪ `accounts:write`) aligns with Accounts workspace GETs. */
+const ACCOUNTS_READ_SCOPES = [
+  PERMISSIONS.ACCOUNTS_READ,
+  PERMISSIONS.ACCOUNTS_WRITE,
+];
+
+/**
+ * Chart mutations — `accounts:write` or admin write equivalents
+ * (accounts.md §9 / frontend `accountsChartWriteRequirement`).
+ */
+const ACCOUNTS_CHART_WRITE_SCOPES = [
+  PERMISSIONS.ACCOUNTS_WRITE,
+  PERMISSIONS.TENANT_ADMIN,
+  PERMISSIONS.FACILITY_ADMIN,
+];
+
 /**
  * @description List chart accounts with pagination and filters
  * @method GET
  * @route /api/v1/chart-accounts/
  * @authentication Required (JWT)
- * @permissions ACCOUNTS_READ
+ * @permissions ACCOUNTS_READ ∪ ACCOUNTS_WRITE
  */
 router.get(
   '/',
   validateRequest({ query: listChartAccountsQuerySchema }),
   authenticate(),
-  authorize(PERMISSIONS.ACCOUNTS_READ, 'permission'),
+  authorize(ACCOUNTS_READ_SCOPES, 'permission'),
   chartAccountController.listChartAccounts
 );
 
@@ -40,13 +56,13 @@ router.get(
  * @method GET
  * @route /api/v1/chart-accounts/:id
  * @authentication Required (JWT)
- * @permissions ACCOUNTS_READ
+ * @permissions ACCOUNTS_READ ∪ ACCOUNTS_WRITE
  */
 router.get(
   '/:id',
   validateRequest({ params: chartAccountIdParamsSchema }),
   authenticate(),
-  authorize(PERMISSIONS.ACCOUNTS_READ, 'permission'),
+  authorize(ACCOUNTS_READ_SCOPES, 'permission'),
   chartAccountController.getChartAccountById
 );
 
@@ -55,13 +71,13 @@ router.get(
  * @method POST
  * @route /api/v1/chart-accounts/
  * @authentication Required (JWT)
- * @permissions ACCOUNTS_WRITE
+ * @permissions ACCOUNTS_WRITE ∪ TENANT_ADMIN ∪ FACILITY_ADMIN
  */
 router.post(
   '/',
   validateRequest({ body: createChartAccountSchema }),
   authenticate(),
-  authorize(PERMISSIONS.ACCOUNTS_WRITE, 'permission'),
+  authorize(ACCOUNTS_CHART_WRITE_SCOPES, 'permission'),
   chartAccountController.createChartAccount
 );
 
@@ -70,13 +86,13 @@ router.post(
  * @method PUT
  * @route /api/v1/chart-accounts/:id
  * @authentication Required (JWT)
- * @permissions ACCOUNTS_WRITE
+ * @permissions ACCOUNTS_WRITE ∪ TENANT_ADMIN ∪ FACILITY_ADMIN
  */
 router.put(
   '/:id',
   validateRequest({ params: chartAccountIdParamsSchema, body: updateChartAccountSchema }),
   authenticate(),
-  authorize(PERMISSIONS.ACCOUNTS_WRITE, 'permission'),
+  authorize(ACCOUNTS_CHART_WRITE_SCOPES, 'permission'),
   chartAccountController.updateChartAccount
 );
 

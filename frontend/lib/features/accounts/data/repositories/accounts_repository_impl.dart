@@ -55,6 +55,13 @@ final class AccountsRepositoryImpl implements AccountsRepository {
         'search': query.search.trim().isEmpty ? null : query.search.trim(),
         'source': query.source.trim().isEmpty ? null : query.source.trim(),
         'status': query.status.trim().isEmpty ? null : query.status.trim(),
+        'accountId':
+            query.accountId.trim().isEmpty ? null : query.accountId.trim(),
+        'periodId':
+            query.periodId.trim().isEmpty ? null : query.periodId.trim(),
+        'id': query.id.trim().isEmpty ? null : query.id.trim(),
+        'from': query.from?.toIso8601String(),
+        'to': query.to?.toIso8601String(),
       }),
       decoder: (Object? data) {
         return AccountsWorkItemPageDto.fromResponse(data, request).page;
@@ -68,6 +75,22 @@ final class AccountsRepositoryImpl implements AccountsRepository {
   ) {
     return _apiClient.post<AccountsMutationResult>(
       ApiEndpoints.nested(HmsApiResource.accounts, 'journals', const <String>[]),
+      data: accountsJournalDraftPayload(draft),
+      decoder: (Object? data) {
+        return AccountsMutationResultDto.fromResponse(data).toEntity();
+      },
+    );
+  }
+
+  @override
+  Future<Result<AccountsMutationResult>> updateJournal(
+    String journalId,
+    AccountsJournalDraft draft,
+  ) {
+    return _apiClient.put<AccountsMutationResult>(
+      ApiEndpoints.nested(HmsApiResource.accounts, 'journals', <String>[
+        journalId,
+      ]),
       data: accountsJournalDraftPayload(draft),
       decoder: (Object? data) {
         return AccountsMutationResultDto.fromResponse(data).toEntity();

@@ -207,6 +207,15 @@ final class AccountsWorkItemDto {
       periodId: _string(json['period_id']) ?? _string(json['periodId']),
       requestType: _string(json['request_type']) ?? _string(json['requestType']),
       reference: _string(json['reference']),
+      requestReason:
+          _string(json['request_reason']) ??
+          _string(json['requestReason']) ??
+          _string(json['reason']),
+      requestedByDisplayId:
+          _string(json['requested_by_display_id']) ??
+          _string(json['requestedByDisplayId']) ??
+          _string(json['requested_by']) ??
+          _string(json['requestedBy']),
       canApproveFlag: _boolOrNull(json['can_approve']) ??
           _boolOrNull(json['canApprove']),
       canPostFlag: _boolOrNull(json['can_post']) ?? _boolOrNull(json['canPost']),
@@ -219,6 +228,26 @@ final class AccountsWorkItemDto {
           _boolOrNull(json['can_open_gl']) ?? _boolOrNull(json['canOpenGl']),
       canOpenLedgerFlag: _boolOrNull(json['can_open_ledger']) ??
           _boolOrNull(json['canOpenLedger']),
+      lines: _list(json['lines'])
+          .map((AccountsJsonMap row) {
+            final String accountId =
+                _string(row['account_id']) ??
+                _string(row['accountId']) ??
+                _string(row['account_code']) ??
+                _string(row['accountCode']) ??
+                '';
+            if (accountId.isEmpty) {
+              return null;
+            }
+            return AccountsJournalLineDraft(
+              accountId: accountId,
+              debit: _num(row['debit']) ?? 0,
+              credit: _num(row['credit']) ?? 0,
+              memo: _string(row['memo']),
+            );
+          })
+          .whereType<AccountsJournalLineDraft>()
+          .toList(growable: false),
     );
   }
 }

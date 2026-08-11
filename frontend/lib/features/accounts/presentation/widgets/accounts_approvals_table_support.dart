@@ -156,11 +156,11 @@ Map<String, AppListTableColumn<AccountsWorkItem>> _accountsApprovalsColumnBuilde
       id: accountsApprovalsJournalColumnId,
       label: AccountsStrings.journalColumn,
       cellBuilder: (_, AccountsWorkItem item) => Text(
-        item.effectiveDisplayId,
+        accountsWorkItemPublicId(item),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
-      exportValue: (AccountsWorkItem item) => item.effectiveDisplayId,
+      exportValue: (AccountsWorkItem item) => accountsWorkItemPublicId(item),
     ),
     accountsApprovalsAmountColumnId: AppListTableColumn<AccountsWorkItem>(
       id: accountsApprovalsAmountColumnId,
@@ -210,31 +210,30 @@ Map<String, AppListTableColumn<AccountsWorkItem>> _accountsApprovalsColumnBuilde
       id: accountsApprovalsByColumnId,
       label: AccountsStrings.byColumn,
       cellBuilder: (_, AccountsWorkItem item) => Text(
-        (item.requestedByDisplayId ?? '').trim().isEmpty
-            ? AccountsStrings.unknownValue
-            : item.requestedByDisplayId!,
+        accountsPublicLabel(item.requestedByDisplayId) ??
+            AccountsStrings.unknownValue,
       ),
-      exportValue: (AccountsWorkItem item) => item.requestedByDisplayId ?? '',
+      exportValue: (AccountsWorkItem item) =>
+          accountsPublicLabel(item.requestedByDisplayId) ?? '',
     ),
     accountsApprovalsReasonColumnId: AppListTableColumn<AccountsWorkItem>(
       id: accountsApprovalsReasonColumnId,
       label: AccountsStrings.reasonColumn,
       cellBuilder: (_, AccountsWorkItem item) => Text(
-        (item.requestReason ?? '').trim().isEmpty
-            ? AccountsStrings.unknownValue
-            : item.requestReason!,
+        accountsPublicLabel(item.requestReason) ??
+            AccountsStrings.unknownValue,
       ),
-      exportValue: (AccountsWorkItem item) => item.requestReason ?? '',
+      exportValue: (AccountsWorkItem item) =>
+          accountsPublicLabel(item.requestReason) ?? '',
     ),
     accountsApprovalsPeriodColumnId: AppListTableColumn<AccountsWorkItem>(
       id: accountsApprovalsPeriodColumnId,
       label: AccountsStrings.periodColumn,
       cellBuilder: (_, AccountsWorkItem item) => Text(
-        (item.periodLabel ?? '').trim().isEmpty
-            ? AccountsStrings.unknownValue
-            : item.periodLabel!,
+        accountsPublicLabel(item.periodLabel) ?? AccountsStrings.unknownValue,
       ),
-      exportValue: (AccountsWorkItem item) => item.periodLabel ?? '',
+      exportValue: (AccountsWorkItem item) =>
+          accountsPublicLabel(item.periodLabel) ?? '',
     ),
   };
 }

@@ -97,6 +97,9 @@ abstract final class AccountsStrings {
   static const String postAllConfirmBody =
       'Post every draft journal on this page to the books.';
   static const String postDialogTitle = 'Post journal';
+  static const String editDraftAction = 'Edit';
+  static const String editDraftActionTooltip = 'Edit this draft journal';
+  static const String editJournalTitle = 'Edit journal';
   static const String posted = 'Posted.';
   static const String detailJournalTitle = detailTitleJournal;
   static const String booksOpenFilter = 'Open';
@@ -157,7 +160,7 @@ abstract final class AccountsStrings {
   static const String journalLineLabel = 'Line';
   static const String journalAddLineAction = 'Add line';
   static const String journalRemoveLineAction = 'Remove line';
-  static const String journalAccountIdLabel = 'Account ID';
+  static const String journalAccountIdLabel = 'Account';
   static const String journalMemoLabel = 'Memo';
   static const String journalBalanceValidation =
       'Total debits must equal total credits.';

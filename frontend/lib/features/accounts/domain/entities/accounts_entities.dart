@@ -295,6 +295,7 @@ final class AccountsWorkItem {
     this.canCloseFlag,
     this.canOpenGlFlag,
     this.canOpenLedgerFlag,
+    this.lines = const <AccountsJournalLineDraft>[],
   });
 
   final String id;
@@ -325,17 +326,24 @@ final class AccountsWorkItem {
   final bool? canCloseFlag;
   final bool? canOpenGlFlag;
   final bool? canOpenLedgerFlag;
+  final List<AccountsJournalLineDraft> lines;
 
   String get _normalizedStatus => (status ?? '').trim().toUpperCase();
 
   String get effectiveDisplayId =>
-      displayId ?? journalDisplayId ?? accountDisplayId ?? id;
+      _accountsPublicDisplayId(displayId) ??
+      _accountsPublicDisplayId(journalDisplayId) ??
+      _accountsPublicDisplayId(accountDisplayId) ??
+      '—';
 
-  String get journalNumber => journalDisplayId ?? displayId ?? id;
+  String get journalNumber =>
+      _accountsPublicDisplayId(journalDisplayId) ??
+      _accountsPublicDisplayId(displayId) ??
+      '—';
 
   String get source => sourceLabel ?? sourceModule ?? '';
 
-  String get accountLabel => accountDisplayId ?? accountId ?? '';
+  String get accountLabel => _accountsPublicDisplayId(accountDisplayId) ?? '—';
 
   /// Alias used by Need approval optional columns.
   String? get approvalType => requestType;
@@ -616,16 +624,20 @@ final class AccountsPatientBalance {
   bool get hasBalance => balance > 0;
 
   String get displayLabel {
-    final String name = (patientDisplayName ?? '').trim();
-    final String id = (patientDisplayId ?? patientId).trim();
-    if (name.isNotEmpty && id.isNotEmpty && name != id) {
-      return '$name ($id)';
-    }
-    if (name.isNotEmpty) {
-      return name;
-    }
-    return id;
+    return accountsPatientBalancePublicLabel(this);
   }
+}
+
+/// Friendly patient label — never raw UUID (accounts.md §19).
+String accountsPatientBalancePublicLabel(AccountsPatientBalance row) {
+  final String? name = _accountsPublicDisplayId(row.patientDisplayName);
+  final String? mrn =
+      _accountsPublicDisplayId(row.patientDisplayId) ??
+      _accountsPublicDisplayId(row.patientId);
+  if (name != null && mrn != null && name != mrn) {
+    return '$name ($mrn)';
+  }
+  return name ?? mrn ?? '—';
 }
 
 @immutable
@@ -731,24 +743,22 @@ final class AccountsGlAccount {
   final DateTime? updatedAt;
 
   String get effectiveId {
-    final String? display = displayId?.trim();
-    if (display != null && display.isNotEmpty) {
-      return display;
-    }
-    final String trimmedCode = code.trim();
-    if (trimmedCode.isNotEmpty) {
-      return trimmedCode;
-    }
-    return id;
+    return _accountsPublicDisplayId(displayId) ??
+        _accountsPublicDisplayId(code) ??
+        _accountsPublicDisplayId(name) ??
+        '—';
   }
 
   String get accountLabel {
-    final String codePart = code.trim();
-    final String namePart = name.trim();
-    if (codePart.isEmpty) {
-      return namePart.isEmpty ? effectiveId : namePart;
+    final String? codePart = _accountsPublicDisplayId(code);
+    final String? namePart = _accountsPublicDisplayId(name);
+    if (codePart == null && namePart == null) {
+      return _accountsPublicDisplayId(displayId) ?? '—';
     }
-    if (namePart.isEmpty) {
+    if (codePart == null) {
+      return namePart!;
+    }
+    if (namePart == null) {
       return codePart;
     }
     return '$codePart · $namePart';
@@ -956,4 +966,17 @@ final class AccountsFiscalPeriod {
       isPendingApproval && (pendingApprovalId ?? '').trim().isNotEmpty;
 
   String get byLabel => (closedBy ?? openedBy ?? '').trim();
+}
+
+final RegExp _accountsUuidPattern = RegExp(
+  r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+);
+
+/// Presentation helper — never returns raw UUIDs (accounts.md §19).
+String? _accountsPublicDisplayId(String? value) {
+  final String normalized = value?.trim() ?? '';
+  if (normalized.isEmpty || _accountsUuidPattern.hasMatch(normalized)) {
+    return null;
+  }
+  return normalized;
 }

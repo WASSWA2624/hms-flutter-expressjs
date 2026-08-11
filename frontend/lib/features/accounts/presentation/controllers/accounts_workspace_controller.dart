@@ -285,6 +285,15 @@ final class AccountsWorkspaceController
     return _submitMutation(() => _repository.createJournal(draft));
   }
 
+  Future<AppFailure?> updateJournal(
+    String journalId,
+    AccountsJournalDraft draft,
+  ) {
+    return _submitMutation(
+      () => _repository.updateJournal(journalId, draft),
+    );
+  }
+
   Future<AppFailure?> postSelectedJournal({String? notes}) {
     final AccountsWorkItem? selected = _currentState?.selectedItem;
     if (selected == null || !selected.canPost) {

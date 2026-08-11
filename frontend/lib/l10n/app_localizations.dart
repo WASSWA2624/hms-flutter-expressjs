@@ -42602,6 +42602,18 @@ abstract class AppLocalizations {
   /// Permission catalog label.
   ///
   /// In en, this message translates to:
+  /// **'Accounts — Read'**
+  String get permissionCatalogAccountsRead;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts — Write'**
+  String get permissionCatalogAccountsWrite;
+
+  /// Permission catalog label.
+  ///
+  /// In en, this message translates to:
   /// **'Operations — Read'**
   String get permissionCatalogOperationsRead;
 

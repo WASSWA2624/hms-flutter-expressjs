@@ -106,20 +106,20 @@ List<AppListTableColumn<AccountsGlAccount>> accountsGlOptionalColumns(
       label: AccountsStrings.typeColumn,
       preferredWidth: 120,
       cellBuilder: (_, AccountsGlAccount item) => Text(
-        item.type.trim().isEmpty ? AccountsStrings.unknownValue : item.type,
+        accountsPublicLabel(item.type) ?? AccountsStrings.unknownValue,
       ),
-      exportValue: (AccountsGlAccount item) => item.type,
+      exportValue: (AccountsGlAccount item) =>
+          accountsPublicLabel(item.type) ?? '',
     ),
     AppListTableColumn<AccountsGlAccount>(
       id: accountsGlPeriodColumnId,
       label: AccountsStrings.periodColumn,
       preferredWidth: 120,
       cellBuilder: (_, AccountsGlAccount item) => Text(
-        item.period.trim().isEmpty
-            ? AccountsStrings.unknownValue
-            : item.period,
+        accountsPublicLabel(item.period) ?? AccountsStrings.unknownValue,
       ),
-      exportValue: (AccountsGlAccount item) => item.period,
+      exportValue: (AccountsGlAccount item) =>
+          accountsPublicLabel(item.period) ?? '',
     ),
     AppListTableColumn<AccountsGlAccount>(
       id: accountsGlUpdatedColumnId,

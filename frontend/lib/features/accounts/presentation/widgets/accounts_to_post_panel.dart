@@ -9,16 +9,21 @@ import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.d
 import 'package:hosspi_hms/features/accounts/presentation/accounts_access.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
 import 'package:hosspi_hms/features/accounts/presentation/controllers/accounts_workspace_controller.dart';
-import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_detail_widgets.dart';
-import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_form_dialogs.dart';
-import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_patient_ledger_dialog.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_work_actions.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_workspace_table_support.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+
+export 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_work_actions.dart'
+    show
+        runAccountsNextAction,
+        showAccountsMutationSnackBar,
+        showAccountsPostDialog,
+        showAccountsWorkItemDetailDialog;
 
 /// To post desk (`?section=journals`) - draft journals ready to post.
 class AccountsToPostPanel extends ConsumerStatefulWidget {
@@ -67,6 +72,16 @@ class _AccountsToPostPanelState extends ConsumerState<AccountsToPostPanel> {
     if (oldWidget.initialAction != widget.initialAction ||
         oldWidget.initialId != widget.initialId) {
       _handledDeepLink = false;
+    }
+    final bool listChanged =
+        oldWidget.state.workItems.items.length !=
+            widget.state.workItems.items.length ||
+        oldWidget.state.isRefreshing != widget.state.isRefreshing ||
+        oldWidget.state.query.section != widget.state.query.section;
+    if (!_handledDeepLink &&
+        (listChanged ||
+            oldWidget.initialAction != widget.initialAction ||
+            oldWidget.initialId != widget.initialId)) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         unawaited(_maybeOpenDeepLink());
       });
@@ -108,11 +123,16 @@ class _AccountsToPostPanelState extends ConsumerState<AccountsToPostPanel> {
     if (action != 'post') {
       return;
     }
-    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
-    if (!canWriteAccounts(policy)) {
+    // Wait until the journals section query has settled (avoid work-section race).
+    if (widget.state.query.section != AccountsDeskSection.journals ||
+        widget.state.isRefreshing) {
       return;
     }
-    _handledDeepLink = true;
+    final AppAccessPolicy policy = ref.read(appAccessPolicyProvider);
+    if (!canWriteAccounts(policy)) {
+      _handledDeepLink = true;
+      return;
+    }
 
     final String targetId = widget.initialId.trim();
     AccountsWorkItem? target;
@@ -123,15 +143,24 @@ class _AccountsToPostPanelState extends ConsumerState<AccountsToPostPanel> {
       if (targetId.isEmpty ||
           item.id == targetId ||
           item.effectiveDisplayId == targetId ||
-          (item.journalDisplayId ?? '') == targetId) {
+          (item.journalDisplayId ?? '') == targetId ||
+          (item.displayId ?? '') == targetId) {
         target = item;
         break;
       }
     }
     if (target == null) {
+      // List loaded but no match — stop retrying so we do not loop forever.
+      if (!widget.state.isRefreshing) {
+        _handledDeepLink = true;
+      }
       return;
     }
+    _handledDeepLink = true;
     ref.read(accountsWorkspaceControllerProvider.notifier).selectItem(target);
+    if (!context.mounted) {
+      return;
+    }
     await showAccountsPostDialog(context, ref);
   }
 
@@ -146,10 +175,14 @@ class _AccountsToPostPanelState extends ConsumerState<AccountsToPostPanel> {
       accountsWorkspaceControllerProvider.notifier,
     );
     const AccountsDeskSection section = AccountsDeskSection.journals;
+    final Object? failure = state.lastFailure;
 
     return AppListTable<AccountsWorkItem>(
       page: state.workItems,
       isLoading: state.isRefreshing,
+      error: failure is AppFailure
+          ? context.l10n.failureMessage(failure)
+          : null,
       columnVisibilityController: _columnVisibilityController,
       columnVisibilityStorageKey: accountsTableSettingsKey(section),
       columnWidthStorageKey: '${accountsTableSettingsKey(section)}_cw',
@@ -170,7 +203,27 @@ class _AccountsToPostPanelState extends ConsumerState<AccountsToPostPanel> {
         advancedFilterTitle: context.l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: context.l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: AccountsStrings.clearFilters,
+        dateFilterLabel: 'Posted date',
+        dateFromLabel: context.l10n.opdDateFromLabel,
+        dateToLabel: context.l10n.opdDateToLabel,
         allFieldsLabel: AccountsStrings.allFields,
+        textFilters: const <AppSearchBarTextFilter>[
+          AppSearchBarTextFilter(
+            key: 'accountId',
+            label: AccountsStrings.accountColumn,
+            icon: Icons.account_balance_outlined,
+          ),
+          AppSearchBarTextFilter(
+            key: 'journal',
+            label: AccountsStrings.journalColumn,
+            icon: Icons.receipt_long_outlined,
+          ),
+          AppSearchBarTextFilter(
+            key: 'periodId',
+            label: AccountsStrings.periodFilterLabel,
+            icon: Icons.date_range_outlined,
+          ),
+        ],
         filterGroups: const <AppSearchBarFilterGroup>[
           AppSearchBarFilterGroup(
             key: 'source',
@@ -200,12 +253,22 @@ class _AccountsToPostPanelState extends ConsumerState<AccountsToPostPanel> {
           ),
         ],
         filterValue: AppSearchBarFilterValue(
+          texts: <String, String>{
+            if (state.query.accountId.trim().isNotEmpty)
+              'accountId': state.query.accountId.trim(),
+            if (state.query.periodId.trim().isNotEmpty)
+              'periodId': state.query.periodId.trim(),
+            if (state.query.id.trim().isNotEmpty)
+              'journal': state.query.id.trim(),
+          },
           options: <String, String>{
             if (state.query.status.trim().isNotEmpty)
               'status': state.query.status.trim(),
             if (state.query.source.trim().isNotEmpty)
               'source': state.query.source.trim(),
           },
+          dateFrom: state.query.from,
+          dateTo: state.query.to,
         ),
         hasActiveFilters: state.query.hasActiveFilters,
         onFilterChanged: (AppSearchBarFilterValue value) {
@@ -213,16 +276,24 @@ class _AccountsToPostPanelState extends ConsumerState<AccountsToPostPanel> {
             unawaited(controller.clearFilters());
             return;
           }
-          final String status = (value.options['status'] ?? '').trim();
-          final String source = (value.options['source'] ?? '').trim();
           unawaited(
             controller.applyQuery(
               state.query.copyWith(
                 section: section,
-                status: status,
-                source: source,
-                clearStatus: status.isEmpty,
-                clearSource: source.isEmpty,
+                accountId: value.text('accountId') ?? '',
+                periodId: value.text('periodId') ?? '',
+                id: value.text('journal') ?? '',
+                source: value.option('source') ?? '',
+                status: value.option('status') ?? '',
+                from: value.dateFrom,
+                to: value.dateTo,
+                clearFrom: value.dateFrom == null,
+                clearTo: value.dateTo == null,
+                clearAccountId: (value.text('accountId') ?? '').isEmpty,
+                clearPeriodId: (value.text('periodId') ?? '').isEmpty,
+                clearId: (value.text('journal') ?? '').isEmpty,
+                clearSource: (value.option('source') ?? '').isEmpty,
+                clearStatus: (value.option('status') ?? '').isEmpty,
                 pageRequest: state.query.pageRequest.first(),
               ),
             ),
@@ -305,6 +376,7 @@ class _AccountsToPostPanelState extends ConsumerState<AccountsToPostPanel> {
             canApprove: canApprove,
             canEnter: canEnter,
             isSaving: state.isSaving,
+            section: section,
             onPressed: () => runAccountsNextAction(context, ref, item),
           ),
         );
@@ -366,152 +438,5 @@ Future<void> showAccountsPostAllDialog(
     ref,
     failure,
     successMessage: AccountsStrings.posted,
-  );
-}
-
-Future<void> showAccountsPostDialog(BuildContext context, WidgetRef ref) async {
-  final AccountsOptionalNotesResult? result =
-      await showAppDialog<AccountsOptionalNotesResult>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AccountsNotesForm(
-          dialogTitle: const Text(AccountsStrings.postDialogTitle),
-          dialogIcon: const Icon(Icons.publish_outlined),
-          submitLabel: AccountsStrings.postAction,
-        ),
-      );
-  if (result == null || !context.mounted) {
-    return;
-  }
-  final AppFailure? failure = await ref
-      .read(accountsWorkspaceControllerProvider.notifier)
-      .postSelectedJournal(notes: result.notes);
-  if (!context.mounted) {
-    return;
-  }
-  showAccountsMutationSnackBar(
-    context,
-    ref,
-    failure,
-    successMessage: AccountsStrings.posted,
-  );
-}
-
-Future<void> runAccountsNextAction(
-  BuildContext context,
-  WidgetRef ref,
-  AccountsWorkItem item,
-) async {
-  if (!item.canPost) {
-    return;
-  }
-  if (!canWriteAccounts(ref.read(appAccessPolicyProvider))) {
-    return;
-  }
-  ref.read(accountsWorkspaceControllerProvider.notifier).selectItem(item);
-  if (!context.mounted) {
-    return;
-  }
-  await showAccountsPostDialog(context, ref);
-}
-
-Future<void> showAccountsWorkItemDetailDialog(
-  BuildContext context,
-  WidgetRef ref,
-  AccountsWorkItem item, {
-  required bool canWrite,
-  required bool canApprove,
-}) {
-  return showAppDialog<void>(
-    context: context,
-    builder: (BuildContext dialogContext) {
-      return Consumer(
-        builder: (BuildContext context, WidgetRef ref, _) {
-          final AppAccessPolicy accessPolicy = ref.watch(
-            appAccessPolicyProvider,
-          );
-          final AccountsWorkspaceState? workspace = ref
-              .watch(accountsWorkspaceControllerProvider)
-              .asData
-              ?.value
-              .when(
-                success: (AccountsWorkspaceState value) => value,
-                failure: (_) => null,
-              );
-          final AccountsWorkItem live = workspace?.selectedItem?.id == item.id
-              ? workspace!.selectedItem!
-              : item;
-          final bool isSaving = workspace?.isSaving ?? false;
-          return AppDialog(
-            title: Text(accountsDetailTitle(context, live)),
-            icon: const Icon(Icons.receipt_long_outlined),
-            scrollable: true,
-            maxWidth: 860,
-            content: AccountsDetailBody(
-              item: live,
-              canWrite: canWrite,
-              canApprove: canApprove,
-              isSaving: isSaving,
-              onPost: canWrite && live.canPost
-                  ? () => unawaited(showAccountsPostDialog(context, ref))
-                  : null,
-              onReverse: canWrite && live.canReverse ? () {} : null,
-              onVoid: canWrite && live.canVoid ? () {} : null,
-              onSend: canWrite && live.isJournal ? () {} : null,
-              onOpenGl: live.canOpenGl && canViewAccountsGl(accessPolicy)
-                  ? () {}
-                  : null,
-              onOpenLedger:
-                  live.canOpenLedger &&
-                      canReadAccountsPatientLedgers(accessPolicy)
-                  ? () => unawaited(
-                      showAccountsPatientLedgerDialog(
-                        context,
-                        ref,
-                        patientId: live.patientId ?? '',
-                        patientDisplayName: live.patientDisplayName,
-                        currency: live.currency,
-                      ),
-                    )
-                  : null,
-            ),
-          );
-        },
-      );
-    },
-  );
-}
-
-void showAccountsMutationSnackBar(
-  BuildContext context,
-  WidgetRef ref,
-  AppFailure? failure, {
-  String? successMessage,
-}) {
-  if (!context.mounted) {
-    return;
-  }
-  final bool pendingApproval =
-      ref
-          .read(accountsWorkspaceControllerProvider)
-          .asData
-          ?.value
-          .when(
-            success: (AccountsWorkspaceState state) =>
-                state.lastActionPendingApproval,
-            failure: (_) => false,
-          ) ??
-      false;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        failure == null
-            ? (successMessage ??
-                  (pendingApproval
-                      ? AccountsStrings.submittedForApproval
-                      : AccountsStrings.saved))
-            : context.l10n.failureMessage(failure),
-      ),
-    ),
   );
 }

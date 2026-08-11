@@ -1,4 +1,6 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:async';
+
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
@@ -14,6 +16,7 @@ import 'package:hosspi_hms/features/accounts/data/repositories/accounts_reposito
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_access.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_patient_ledger_print_helpers.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -75,11 +78,14 @@ class _AccountsPatientLedgerDialogState
         .getPatientLedger(widget.patientId, facilityId: facilityId);
   }
 
-  void _pay(AccountsPatientLedger ledger) {
+  Future<void> _pay(AccountsPatientLedger ledger) async {
     final String patientId = ledger.patientId.isNotEmpty
         ? ledger.patientId
         : widget.patientId;
-    Navigator.of(context).maybePop();
+    await Navigator.of(context).maybePop();
+    if (!mounted) {
+      return;
+    }
     context.go(
       AppRoutes.billing.location(
         queryParameters: <String, String>{
@@ -88,6 +94,28 @@ class _AccountsPatientLedgerDialogState
           'patientId': patientId,
         },
       ),
+    );
+  }
+
+  Future<void> _onPrintPressed() async {
+    final Result<AccountsPatientLedger> result = await _ledgerFuture;
+    if (!mounted) {
+      return;
+    }
+    await result.when(
+      success: (AccountsPatientLedger ledger) {
+        return printAccountsPatientLedgerPacket(
+          ref: ref,
+          context: context,
+          ledger: ledger,
+          currency: widget.currency,
+        );
+      },
+      failure: (AppFailure failure) async {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.failureMessage(failure))),
+        );
+      },
     );
   }
 
@@ -110,11 +138,17 @@ class _AccountsPatientLedgerDialogState
       }
     });
 
-    final String? name = widget.patientDisplayName?.trim();
+    final String titleName = accountsPatientPublicLabel(
+      patientDisplayName: widget.patientDisplayName,
+      patientId: widget.patientId,
+    );
+    final bool titleHasPatient =
+        titleName != AccountsStrings.patientColumn && titleName != '—';
+
     return AppDialog(
       title: Text(
-        name != null && name.isNotEmpty
-            ? '${AccountsStrings.patientLedgerTitle} · $name'
+        titleHasPatient
+            ? '${AccountsStrings.patientLedgerTitle} · $titleName'
             : AccountsStrings.patientLedgerTitle,
       ),
       icon: const Icon(Icons.account_balance_wallet_outlined),
@@ -151,6 +185,10 @@ class _AccountsPatientLedgerDialogState
             },
       ),
       actions: <Widget>[
+        AppButton.secondary(
+          label: AccountsStrings.printAction,
+          onPressed: () => unawaited(_onPrintPressed()),
+        ),
         FutureBuilder<Result<AccountsPatientLedger>>(
           future: _ledgerFuture,
           builder:
@@ -170,7 +208,7 @@ class _AccountsPatientLedgerDialogState
                 return AppButton.primary(
                   label: AccountsStrings.payAction,
                   tooltip: AccountsStrings.payActionTooltip,
-                  onPressed: () => _pay(ledger),
+                  onPressed: () => unawaited(_pay(ledger)),
                 );
               },
         ),
@@ -226,18 +264,8 @@ class _AccountsPatientLedgerBody extends StatelessWidget {
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Icons.receipt_outlined),
-                  title: Text(
-                    <String?>[entry.displayId, entry.action]
-                        .whereType<String>()
-                        .where((String v) => v.trim().isNotEmpty)
-                        .join(' · '),
-                  ),
-                  subtitle: Text(
-                    <String?>[entry.status, entry.timelineAt?.toLocal().toString()]
-                        .whereType<String>()
-                        .where((String v) => v.trim().isNotEmpty)
-                        .join(' · '),
-                  ),
+                  title: Text(_entryTitle(entry)),
+                  subtitle: Text(_entrySubtitle(context, entry)),
                   trailing: Text(
                     accountsMoney(context, entry.amount, entry.currency),
                   ),
@@ -246,5 +274,21 @@ class _AccountsPatientLedgerBody extends StatelessWidget {
           ),
       ],
     );
+  }
+
+  String _entryTitle(AccountsPatientLedgerEntry entry) {
+    final String joined = <String?>[
+      accountsPublicLabel(entry.displayId),
+      accountsPublicLabel(entry.action),
+    ].whereType<String>().join(' · ');
+    return joined.isEmpty ? AccountsStrings.unknownValue : joined;
+  }
+
+  String _entrySubtitle(BuildContext context, AccountsPatientLedgerEntry entry) {
+    return <String?>[
+      accountsPublicLabel(entry.status),
+      if (entry.timelineAt != null)
+        accountsDateTime(context, entry.timelineAt),
+    ].whereType<String>().where((String part) => part.isNotEmpty).join(' · ');
   }
 }

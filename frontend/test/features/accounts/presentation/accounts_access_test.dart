@@ -87,6 +87,19 @@ void main() {
             AppPermissions.financialApprove,
           },
         );
+        final AppAccessPolicy bothNoBillingModule = _policyFor(
+          permissions: <AppPermission>{
+            AppPermissions.accountsRead,
+            AppPermissions.accountsWrite,
+            AppPermissions.financialApprove,
+          },
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'facility-accounts',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        );
 
         expect(accountsApprovalDecisionRequirement.isAllowed(writer), isFalse);
         expect(
@@ -94,6 +107,10 @@ void main() {
           isFalse,
         );
         expect(accountsApprovalDecisionRequirement.isAllowed(both), isTrue);
+        expect(
+          accountsApprovalDecisionRequirement.isAllowed(bothNoBillingModule),
+          isFalse,
+        );
         expect(canApproveAccountsMutations(both), isTrue);
         expect(canApproveAccounts(both), isTrue);
       },
@@ -308,6 +325,95 @@ void main() {
         AccountsPatientLedgersAtomPermissions.ledger.isAllowed(reader),
         isTrue,
       );
+    });
+  });
+
+  group('role-derived Accounts access (02-roles)', () {
+    AppAccessPolicy rolePolicy({
+      required List<String> roles,
+      List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[
+        AppModuleEntitlement(code: 'facility-accounts', licenseStatus: 'ACTIVE'),
+        AppModuleEntitlement(code: 'billing-payments', licenseStatus: 'ACTIVE'),
+      ],
+    }) {
+      // JWT-only restore expands client role packs (not hydrated).
+      return AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'token'),
+          user: AuthUserProfile(
+            roles: roles,
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+          ),
+          moduleEntitlements: modules,
+        ),
+      );
+    }
+
+    test('ACCOUNTANT pack enters Accounts with write and approve', () {
+      final AppAccessPolicy accountant = rolePolicy(
+        roles: const <String>['ACCOUNTANT'],
+      );
+
+      expect(canEnterAccounts(accountant), isTrue);
+      expect(canWriteAccounts(accountant), isTrue);
+      expect(canApproveAccountsMutations(accountant), isTrue);
+      expect(canPayFromAccounts(accountant), isTrue);
+    });
+
+    test('FACILITY_ADMIN pack enters Accounts', () {
+      final AppAccessPolicy admin = rolePolicy(
+        roles: const <String>['FACILITY_ADMIN'],
+      );
+
+      expect(canEnterAccounts(admin), isTrue);
+      expect(canWriteAccounts(admin), isTrue);
+      expect(canWriteAccountsChart(admin), isTrue);
+    });
+
+    test('HR and HR_STAFF packs cannot enter Accounts', () {
+      expect(
+        canEnterAccounts(rolePolicy(roles: const <String>['HR'])),
+        isFalse,
+      );
+      expect(
+        canEnterAccounts(rolePolicy(roles: const <String>['HR_STAFF'])),
+        isFalse,
+      );
+    });
+
+    test('BILLING pack does not gain Accounts from cashier rights', () {
+      expect(
+        canEnterAccounts(rolePolicy(roles: const <String>['BILLING'])),
+        isFalse,
+      );
+    });
+
+    test('missing facility-accounts blocks ACCOUNTANT even with pack keys', () {
+      final AppAccessPolicy accountant = rolePolicy(
+        roles: const <String>['ACCOUNTANT'],
+        modules: const <AppModuleEntitlement>[
+          AppModuleEntitlement(
+            code: 'billing-payments',
+            licenseStatus: 'ACTIVE',
+          ),
+        ],
+      );
+
+      expect(canEnterAccounts(accountant), isFalse);
+      expect(canWriteAccounts(accountant), isFalse);
+    });
+
+    test('custom role with only accounts keys can enter when entitled', () {
+      final AppAccessPolicy custom = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.accountsRead,
+          AppPermissions.accountsWrite,
+        },
+      );
+
+      expect(canEnterAccounts(custom), isTrue);
+      expect(canWriteAccounts(custom), isTrue);
     });
   });
 }

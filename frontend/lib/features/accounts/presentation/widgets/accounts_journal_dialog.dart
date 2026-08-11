@@ -10,17 +10,31 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 
 Future<AccountsJournalDraft?> showAccountsJournalDialog(
-  BuildContext context,
-) {
+  BuildContext context, {
+  AccountsJournalDraft? initial,
+}) {
   return showAppDialog<AccountsJournalDraft>(
     context: context,
-    barrierDismissible: false,
-    builder: (_) => const AccountsJournalDialog(),
+    builder: (_) => AccountsJournalDialog(initial: initial),
+  );
+}
+
+/// Prefills the journal form from a work-queue draft (edit-before-post).
+AccountsJournalDraft accountsJournalDraftFromWorkItem(AccountsWorkItem item) {
+  return AccountsJournalDraft(
+    date: item.timelineAt ?? DateTime.now(),
+    periodId: item.periodId,
+    periodLabel: item.periodLabel,
+    source: item.source.trim().isEmpty ? null : item.source,
+    lines: item.lines,
+    notes: item.requestReason,
   );
 }
 
 class AccountsJournalDialog extends StatefulWidget {
-  const AccountsJournalDialog({super.key});
+  const AccountsJournalDialog({super.key, this.initial});
+
+  final AccountsJournalDraft? initial;
 
   @override
   State<AccountsJournalDialog> createState() => _AccountsJournalDialogState();
@@ -28,15 +42,42 @@ class AccountsJournalDialog extends StatefulWidget {
 
 class _AccountsJournalDialogState extends State<AccountsJournalDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _periodController = TextEditingController();
-  final TextEditingController _sourceController = TextEditingController();
-  final TextEditingController _notesController = TextEditingController();
+  late final TextEditingController _periodController;
+  late final TextEditingController _sourceController;
+  late final TextEditingController _notesController;
   DateTime? _date;
   String? _balanceError;
-  final List<_JournalLineControllers> _lines = <_JournalLineControllers>[
-    _JournalLineControllers(),
-    _JournalLineControllers(),
-  ];
+  late final List<_JournalLineControllers> _lines;
+
+  bool get _isEditing => widget.initial != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final AccountsJournalDraft? initial = widget.initial;
+    _periodController = TextEditingController(
+      text: initial?.periodLabel ?? initial?.periodId ?? '',
+    );
+    _sourceController = TextEditingController(text: initial?.source ?? '');
+    _notesController = TextEditingController(text: initial?.notes ?? '');
+    _date = initial?.date;
+    final List<AccountsJournalLineDraft> seedLines =
+        initial?.lines ?? const <AccountsJournalLineDraft>[];
+    if (seedLines.isEmpty) {
+      _lines = <_JournalLineControllers>[
+        _JournalLineControllers(),
+        _JournalLineControllers(),
+      ];
+    } else {
+      _lines = <_JournalLineControllers>[
+        for (final AccountsJournalLineDraft line in seedLines)
+          _JournalLineControllers.fromDraft(line),
+      ];
+      while (_lines.length < 2) {
+        _lines.add(_JournalLineControllers());
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -113,6 +154,7 @@ class _AccountsJournalDialogState extends State<AccountsJournalDialog> {
     Navigator.of(context).pop(
       AccountsJournalDraft(
         date: _date ?? DateTime.now(),
+        periodId: widget.initial?.periodId,
         periodLabel: accountsEmptyToNull(_periodController.text),
         source: accountsEmptyToNull(_sourceController.text),
         lines: lines,
@@ -130,7 +172,11 @@ class _AccountsJournalDialogState extends State<AccountsJournalDialog> {
     final DateTime lastDate = DateTime(now.year + 1);
 
     return AppDialog(
-      title: const Text(AccountsStrings.journalAction),
+      title: Text(
+        _isEditing
+            ? AccountsStrings.editJournalTitle
+            : AccountsStrings.journalAction,
+      ),
       icon: const Icon(Icons.receipt_long_outlined),
       scrollable: true,
       content: AppFormShell(
@@ -209,6 +255,16 @@ class _JournalLineControllers {
         debitController = TextEditingController(),
         creditController = TextEditingController(),
         memoController = TextEditingController();
+
+  _JournalLineControllers.fromDraft(AccountsJournalLineDraft line)
+      : accountController = TextEditingController(text: line.accountId),
+        debitController = TextEditingController(
+          text: line.debit == 0 ? '' : line.debit.toString(),
+        ),
+        creditController = TextEditingController(
+          text: line.credit == 0 ? '' : line.credit.toString(),
+        ),
+        memoController = TextEditingController(text: line.memo ?? '');
 
   final TextEditingController accountController;
   final TextEditingController debitController;

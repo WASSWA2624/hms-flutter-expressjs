@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hosspi_hms/app/printing/print_form_template_context.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
@@ -21,6 +22,7 @@ import 'package:hosspi_hms/features/accounts/presentation/pages/accounts_workspa
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/printing/printing.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -77,28 +79,38 @@ void _stubRepository(
   _MockAccountsRepository repository, {
   List<AccountsWorkItem> items = const <AccountsWorkItem>[_draftJournal],
   AccountsSummary summary = _summary,
+  bool removeDraftAfterPost = false,
 }) {
-  when(() => repository.getWorkspace(any())).thenAnswer(
-    (_) async => Result<AccountsWorkspaceOverview>.success(
-      AccountsWorkspaceOverview(summary: summary),
-    ),
-  );
+  var draftPosted = false;
+  when(() => repository.getWorkspace(any())).thenAnswer((_) async {
+    final AccountsSummary live = draftPosted && removeDraftAfterPost
+        ? const AccountsSummary()
+        : summary;
+    return Result<AccountsWorkspaceOverview>.success(
+      AccountsWorkspaceOverview(summary: live),
+    );
+  });
   when(() => repository.listWorkItems(any())).thenAnswer((_) async {
+    final List<AccountsWorkItem> live =
+        draftPosted && removeDraftAfterPost
+        ? const <AccountsWorkItem>[]
+        : items;
     return Result<AppPage<AccountsWorkItem>>.success(
       AppPage<AccountsWorkItem>(
-        items: items,
+        items: live,
         request: const AppPageRequest(pageSize: 20),
-        totalItemCount: items.length,
+        totalItemCount: live.length,
       ),
     );
   });
   when(
     () => repository.postJournal(any(), notes: any(named: 'notes')),
-  ).thenAnswer(
-    (_) async => const Result<AccountsMutationResult>.success(
+  ).thenAnswer((_) async {
+    draftPosted = true;
+    return const Result<AccountsMutationResult>.success(
       AccountsMutationResult(item: _postedJournal),
-    ),
-  );
+    );
+  });
 }
 
 Future<void> _pumpToPostTab(
@@ -108,10 +120,17 @@ Future<void> _pumpToPostTab(
   String location = '/accounts?section=journals',
   List<AccountsWorkItem> items = const <AccountsWorkItem>[_draftJournal],
   AccountsSummary summary = _summary,
+  bool removeDraftAfterPost = false,
+  List<dynamic> extraOverrides = const <dynamic>[],
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubRepository(repository, items: items, summary: summary);
+  _stubRepository(
+    repository,
+    items: items,
+    summary: summary,
+    removeDraftAfterPost: removeDraftAfterPost,
+  );
 
   tester.view.physicalSize = const Size(1440, 900);
   tester.view.devicePixelRatio = 1;
@@ -143,6 +162,7 @@ Future<void> _pumpToPostTab(
           const SessionState.ready(),
         ),
         appAccessPolicyProvider.overrideWithValue(accessPolicy),
+        ...extraOverrides,
       ],
       child: MaterialApp.router(
         theme: AppTheme.light,
@@ -296,6 +316,7 @@ void main() {
             AppPermissions.accountsWrite,
           },
         ),
+        removeDraftAfterPost: true,
       );
 
       final Finder postNext = find.byTooltip(AccountsStrings.postActionTooltip);
@@ -316,11 +337,149 @@ void main() {
       await tester.tap(find.text(AccountsStrings.postAction).last);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump(const Duration(seconds: 1));
 
       verify(
         () => repository.postJournal('je-draft', notes: any(named: 'notes')),
       ).called(1);
       expect(find.text(AccountsStrings.posted), findsOneWidget);
+      expect(find.text('JE-DRAFT'), findsNothing);
+      expect(find.text(AccountsStrings.toPostEmpty), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Post all confirms then bulk-posts page',
+    (WidgetTester tester) async {
+      await _pumpToPostTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.accountsRead,
+            AppPermissions.accountsWrite,
+          },
+        ),
+        removeDraftAfterPost: true,
+      );
+
+      await tester.tap(find.text(AccountsStrings.postAllAction));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(
+        find.text(AccountsStrings.postAllConfirmTitle.toUpperCase()),
+        findsOneWidget,
+      );
+      await tester.tap(find.text(AccountsStrings.postAllAction).last);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump(const Duration(seconds: 1));
+
+      verify(
+        () => repository.postJournal('je-draft', notes: any(named: 'notes')),
+      ).called(1);
+      expect(find.text(AccountsStrings.posted), findsOneWidget);
+      expect(find.text(AccountsStrings.toPostEmpty), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'action=post deep link opens Post modal',
+    (WidgetTester tester) async {
+      await _pumpToPostTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.accountsRead,
+            AppPermissions.accountsWrite,
+          },
+        ),
+        location: '/accounts?section=journals&action=post&id=JE-DRAFT',
+      );
+
+      final String dialogTitle =
+          AccountsStrings.postDialogTitle.toUpperCase();
+      for (var i = 0; i < 20; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+        if (find.text(dialogTitle).evaluate().isNotEmpty) {
+          break;
+        }
+      }
+      expect(find.text(dialogTitle), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'UUID-only journal id is scrubbed from To post list',
+    (WidgetTester tester) async {
+      const String uuid = '550e8400-e29b-41d4-a716-446655440000';
+      await _pumpToPostTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.accountsRead},
+        ),
+        items: const <AccountsWorkItem>[
+          AccountsWorkItem(
+            id: uuid,
+            kind: AccountsWorkItemKind.journal,
+            displayId: uuid,
+            journalDisplayId: uuid,
+            periodLabel: '2026-08',
+            status: 'DRAFT',
+            amount: 10,
+            canPostFlag: true,
+          ),
+        ],
+      );
+
+      expect(find.textContaining(uuid), findsNothing);
+      expect(find.text('—'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'Detail Print opens print preview with section options',
+    (WidgetTester tester) async {
+      const PrintFormTemplateContext templateContext = PrintFormTemplateContext(
+        appBranding: PrintFormBranding(
+          name: 'Test HMS',
+          kind: PrintFormBrandingKind.app,
+        ),
+      );
+      await _pumpToPostTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.accountsRead,
+            AppPermissions.accountsWrite,
+          },
+        ),
+        extraOverrides: [
+          printFormTemplateContextReadyProvider.overrideWith(
+            (ref) async => templateContext,
+          ),
+          printFormTemplateContextProvider.overrideWith(
+            (ref) => templateContext,
+          ),
+        ],
+      );
+
+      await tester.tap(find.text('JE-DRAFT'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text(AccountsStrings.printAction), findsOneWidget);
+      await tester.tap(find.text(AccountsStrings.printAction));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppPrintPreviewPanel), findsOneWidget);
+      expect(find.text('Print sections'), findsOneWidget);
+      expect(
+        find.text(AccountsStrings.detailTitleJournal.toUpperCase()),
+        findsWidgets,
+      );
     },
   );
 }

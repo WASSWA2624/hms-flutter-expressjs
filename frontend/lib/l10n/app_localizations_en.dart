@@ -23018,6 +23018,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get permissionCatalogBillingWrite => 'Billing — Write';
 
   @override
+  String get permissionCatalogAccountsRead => 'Accounts — Read';
+
+  @override
+  String get permissionCatalogAccountsWrite => 'Accounts — Write';
+
+  @override
   String get permissionCatalogOperationsRead => 'Operations — Read';
 
   @override

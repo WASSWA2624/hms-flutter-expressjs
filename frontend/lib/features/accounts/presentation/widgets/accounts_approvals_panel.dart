@@ -10,15 +10,14 @@ import 'package:hosspi_hms/features/accounts/presentation/accounts_access.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
 import 'package:hosspi_hms/features/accounts/presentation/controllers/accounts_workspace_controller.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_approvals_table_support.dart';
-import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_detail_widgets.dart';
-import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_form_dialogs.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_work_actions.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
-/// Need approval desk (`?section=approvals`) — self-contained work queue.
+/// Need approval desk (`?section=approvals`) — pending GL / period decisions.
 class AccountsApprovalsPanel extends ConsumerStatefulWidget {
   const AccountsApprovalsPanel({
     super.key,
@@ -91,13 +90,19 @@ class _AccountsApprovalsPanelState extends ConsumerState<AccountsApprovalsPanel>
       accountsWorkspaceControllerProvider.notifier,
     );
     final bool canApprove = canDecideAccountsApproval(accessPolicy);
+    final bool canWrite = canWriteAccounts(accessPolicy);
+    final Object? failure = state.lastFailure;
+    const AccountsDeskSection section = AccountsDeskSection.approvals;
 
     return AppListTable<AccountsWorkItem>(
       page: state.workItems,
       isLoading: state.isRefreshing,
+      error: failure is AppFailure
+          ? context.l10n.failureMessage(failure)
+          : null,
       columnVisibilityController: _columnVisibilityController,
-      columnVisibilityStorageKey: accountsApprovalsTableSettingsKey,
-      columnWidthStorageKey: '${accountsApprovalsTableSettingsKey}_cw',
+      columnVisibilityStorageKey: accountsTableSettingsKey(section),
+      columnWidthStorageKey: '${accountsTableSettingsKey(section)}_cw',
       columnVisibilityLabel: context.l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: context.l10n.commonTableSettingsTitle,
       enableExport: true,
@@ -116,6 +121,23 @@ class _AccountsApprovalsPanelState extends ConsumerState<AccountsApprovalsPanel>
         advancedFilterApplyLabel: context.l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: AccountsStrings.clearFilters,
         allFieldsLabel: AccountsStrings.allFields,
+        textFilters: const <AppSearchBarTextFilter>[
+          AppSearchBarTextFilter(
+            key: 'accountId',
+            label: AccountsStrings.accountColumn,
+            icon: Icons.account_balance_outlined,
+          ),
+          AppSearchBarTextFilter(
+            key: 'journal',
+            label: AccountsStrings.journalColumn,
+            icon: Icons.receipt_long_outlined,
+          ),
+          AppSearchBarTextFilter(
+            key: 'periodId',
+            label: AccountsStrings.periodFilterLabel,
+            icon: Icons.date_range_outlined,
+          ),
+        ],
         filterGroups: const <AppSearchBarFilterGroup>[
           AppSearchBarFilterGroup(
             key: 'approval_type',
@@ -153,6 +175,14 @@ class _AccountsApprovalsPanelState extends ConsumerState<AccountsApprovalsPanel>
           ),
         ],
         filterValue: AppSearchBarFilterValue(
+          texts: <String, String>{
+            if (state.query.accountId.trim().isNotEmpty)
+              'accountId': state.query.accountId.trim(),
+            if (state.query.periodId.trim().isNotEmpty)
+              'periodId': state.query.periodId.trim(),
+            if (state.query.id.trim().isNotEmpty)
+              'journal': state.query.id.trim(),
+          },
           options: <String, String>{
             if (state.query.status.trim().isNotEmpty)
               'status': state.query.status.trim(),
@@ -166,15 +196,20 @@ class _AccountsApprovalsPanelState extends ConsumerState<AccountsApprovalsPanel>
             unawaited(controller.clearFilters());
             return;
           }
-          final String status = (value.options['status'] ?? '').trim();
-          final String type = (value.options['approval_type'] ?? '').trim();
           unawaited(
             controller.applyQuery(
               state.query.copyWith(
-                status: status,
-                source: type,
-                clearStatus: status.isEmpty,
-                clearSource: type.isEmpty,
+                section: section,
+                accountId: value.text('accountId') ?? '',
+                periodId: value.text('periodId') ?? '',
+                id: value.text('journal') ?? '',
+                status: value.option('status') ?? '',
+                source: value.option('approval_type') ?? '',
+                clearAccountId: (value.text('accountId') ?? '').isEmpty,
+                clearPeriodId: (value.text('periodId') ?? '').isEmpty,
+                clearId: (value.text('journal') ?? '').isEmpty,
+                clearStatus: (value.option('status') ?? '').isEmpty,
+                clearSource: (value.option('approval_type') ?? '').isEmpty,
                 pageRequest: state.query.pageRequest.first(),
               ),
             ),
@@ -185,7 +220,15 @@ class _AccountsApprovalsPanelState extends ConsumerState<AccountsApprovalsPanel>
       itemKeyBuilder: (AccountsWorkItem item) => ValueKey<String>(item.id),
       onRowSelected: (AccountsWorkItem item) {
         controller.selectItem(item);
-        unawaited(_showDetail(context, ref, item, canApprove: canApprove));
+        unawaited(
+          showAccountsWorkItemDetailDialog(
+            context,
+            ref,
+            item,
+            canWrite: canWrite,
+            canApprove: canApprove,
+          ),
+        );
       },
       previousPageLabel: context.l10n.billingPreviousPageLabel,
       nextPageLabel: context.l10n.billingNextPageLabel,
@@ -214,7 +257,7 @@ class _AccountsApprovalsPanelState extends ConsumerState<AccountsApprovalsPanel>
       ),
       mobileItemBuilder: (BuildContext context, AccountsWorkItem item) {
         return AppListTableMobileItem(
-          title: item.effectiveDisplayId,
+          title: accountsWorkItemPublicId(item),
           caption: accountsApprovalsTypeLabel(item.approvalType),
           meta: <AppListTableMobileMeta>[
             AppListTableMobileMeta(
@@ -247,116 +290,6 @@ class _AccountsApprovalsPanelState extends ConsumerState<AccountsApprovalsPanel>
       return;
     }
     ref.read(accountsWorkspaceControllerProvider.notifier).selectItem(item);
-    await _showApprove(context, ref);
+    await showAccountsApproveDialog(context, ref);
   }
-}
-
-Future<void> _showDetail(
-  BuildContext context,
-  WidgetRef ref,
-  AccountsWorkItem item, {
-  required bool canApprove,
-}) async {
-  await showAppDialog<void>(
-    context: context,
-    builder: (BuildContext dialogContext) {
-      return AppDialog(
-        title: Text(accountsDetailTitleFor(item)),
-        icon: const Icon(Icons.rule_outlined),
-        scrollable: true,
-        content: AccountsDetailBody(
-          item: item,
-          canWrite: false,
-          canApprove: canApprove,
-          isSaving: false,
-          onApprove: canApprove && item.canApproveOrReject
-              ? () {
-                  Navigator.of(dialogContext).maybePop();
-                  unawaited(_showApprove(context, ref));
-                }
-              : null,
-          onReject: canApprove && item.canApproveOrReject
-              ? () {
-                  Navigator.of(dialogContext).maybePop();
-                  unawaited(_showReject(context, ref));
-                }
-              : null,
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).maybePop(),
-            child: const Text(AccountsStrings.closeAction),
-          ),
-        ],
-      );
-    },
-  );
-}
-
-Future<void> _showApprove(BuildContext context, WidgetRef ref) async {
-  final AccountsOptionalNotesResult? result =
-      await showAppDialog<AccountsOptionalNotesResult>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AccountsNotesForm(
-          dialogTitle: const Text(AccountsStrings.approveAction),
-          dialogIcon: const Icon(Icons.check_circle_outline),
-          submitLabel: AccountsStrings.approveAction,
-        ),
-      );
-  if (result == null || !context.mounted) {
-    return;
-  }
-  final AppFailure? failure = await ref
-      .read(accountsWorkspaceControllerProvider.notifier)
-      .approveSelectedApproval(
-        AccountsApprovalDecisionDraft(notes: result.notes),
-      );
-  if (!context.mounted) {
-    return;
-  }
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        failure == null
-            ? AccountsStrings.saved
-            : context.l10n.failureMessage(failure),
-      ),
-    ),
-  );
-}
-
-Future<void> _showReject(BuildContext context, WidgetRef ref) async {
-  final AccountsReasonDraft? draft = await showAppDialog<AccountsReasonDraft>(
-    context: context,
-    barrierDismissible: false,
-    builder: (_) => AccountsReasonForm(
-      dialogTitle: const Text(AccountsStrings.rejectAction),
-      dialogIcon: const Icon(Icons.cancel_outlined),
-      submitLabel: AccountsStrings.rejectAction,
-    ),
-  );
-  if (draft == null || !context.mounted) {
-    return;
-  }
-  final AppFailure? failure = await ref
-      .read(accountsWorkspaceControllerProvider.notifier)
-      .rejectSelectedApproval(
-        AccountsApprovalDecisionDraft(
-          reason: draft.reason,
-          notes: draft.notes,
-        ),
-      );
-  if (!context.mounted) {
-    return;
-  }
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        failure == null
-            ? AccountsStrings.saved
-            : context.l10n.failureMessage(failure),
-      ),
-    ),
-  );
 }

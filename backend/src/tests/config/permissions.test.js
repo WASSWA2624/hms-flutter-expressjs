@@ -156,58 +156,51 @@ describe('permissions config', () => {
     }
   });
 
-  it('includes accounts:read and accounts:write in the catalog and admin access', () => {
-    expect(PERMISSIONS.ACCOUNTS_READ).toBe('accounts:read');
-    expect(PERMISSIONS.ACCOUNTS_WRITE).toBe('accounts:write');
-    expect(ROLE_PERMISSIONS[ROLES.PLATFORM_OWNER]).toEqual(
-      expect.arrayContaining([
-        PERMISSIONS.ACCOUNTS_READ,
-        PERMISSIONS.ACCOUNTS_WRITE,
-      ])
-    );
-    expect(ROLE_PERMISSIONS[ROLES.PLATFORM_ADMIN]).toEqual(
-      expect.arrayContaining([
-        PERMISSIONS.ACCOUNTS_READ,
-        PERMISSIONS.ACCOUNTS_WRITE,
-      ])
-    );
-    expect(ROLE_PERMISSIONS[ROLES.TENANT_ADMIN]).toEqual(
-      expect.arrayContaining([
-        PERMISSIONS.ACCOUNTS_READ,
-        PERMISSIONS.ACCOUNTS_WRITE,
-      ])
-    );
-    expect(ROLE_PERMISSIONS[ROLES.FACILITY_ADMIN]).toEqual(
-      expect.arrayContaining([
-        PERMISSIONS.ACCOUNTS_READ,
-        PERMISSIONS.ACCOUNTS_WRITE,
-      ])
-    );
+  it('documents Accounts role-pack matrix (accounts.md §9 / 02-roles)', () => {
+    // | Role pack              | accounts:read | accounts:write | Notes              |
+    // | ACCOUNTANT             | yes           | yes            | Books desk primary |
+    // | PLATFORM_* / *_ADMIN   | yes           | yes            | Admin access       |
+    // | HR / HR_STAFF          | no            | no             | Explicit exclusion |
+    // | BILLING / other packs  | no (default)  | no (default)   | Unless assigned    |
+    const yes = [PERMISSIONS.ACCOUNTS_READ, PERMISSIONS.ACCOUNTS_WRITE];
+
+    for (const role of [
+      ROLES.ACCOUNTANT,
+      ROLES.PLATFORM_OWNER,
+      ROLES.PLATFORM_ADMIN,
+      ROLES.TENANT_ADMIN,
+      ROLES.FACILITY_ADMIN,
+    ]) {
+      expect(ROLE_PERMISSIONS[role]).toEqual(expect.arrayContaining(yes));
+    }
+
+    // Accountant keeps finance embeds; not last-office cashier.
     expect(ROLE_PERMISSIONS[ROLES.ACCOUNTANT]).toEqual(
       expect.arrayContaining([
-        PERMISSIONS.ACCOUNTS_READ,
-        PERMISSIONS.ACCOUNTS_WRITE,
+        PERMISSIONS.FINANCIAL_APPROVE,
+        PERMISSIONS.BILLING_READ,
+        PERMISSIONS.BILLING_WRITE,
       ])
     );
-    expect(ROLE_PERMISSIONS[ROLES.HR]).not.toContain(PERMISSIONS.ACCOUNTS_READ);
-    expect(ROLE_PERMISSIONS[ROLES.HR]).not.toContain(PERMISSIONS.ACCOUNTS_WRITE);
-    expect(ROLE_PERMISSIONS[ROLES.HR_STAFF]).not.toContain(
-      PERMISSIONS.ACCOUNTS_READ
+    expect(ROLE_PERMISSIONS[ROLES.ACCOUNTANT]).not.toContain(
+      PERMISSIONS.LAST_OFFICE_READ
     );
-    expect(ROLE_PERMISSIONS[ROLES.HR_STAFF]).not.toContain(
-      PERMISSIONS.ACCOUNTS_WRITE
-    );
-    expect(ROLE_PERMISSIONS[ROLES.BILLING]).not.toContain(
-      PERMISSIONS.ACCOUNTS_READ
-    );
-    expect(ROLE_PERMISSIONS[ROLES.BILLING]).not.toContain(
-      PERMISSIONS.ACCOUNTS_WRITE
-    );
-    expect(ROLE_PERMISSIONS[ROLES.PHARMACY_BILLING]).not.toContain(
-      PERMISSIONS.ACCOUNTS_READ
-    );
-    expect(ROLE_PERMISSIONS[ROLES.PHARMACY_BILLING]).not.toContain(
-      PERMISSIONS.ACCOUNTS_WRITE
-    );
+
+    for (const role of [
+      ROLES.HR,
+      ROLES.HR_STAFF,
+      ROLES.BILLING,
+      ROLES.PHARMACY_BILLING,
+      ROLES.DOCTOR,
+      ROLES.RECEPTIONIST,
+      ROLES.OPERATIONS,
+      ROLES.NURSE,
+    ]) {
+      expect(ROLE_PERMISSIONS[role]).not.toContain(PERMISSIONS.ACCOUNTS_READ);
+      expect(ROLE_PERMISSIONS[role]).not.toContain(PERMISSIONS.ACCOUNTS_WRITE);
+    }
+
+    expect(PERMISSIONS.ACCOUNTS_READ).toBe('accounts:read');
+    expect(PERMISSIONS.ACCOUNTS_WRITE).toBe('accounts:write');
   });
 });

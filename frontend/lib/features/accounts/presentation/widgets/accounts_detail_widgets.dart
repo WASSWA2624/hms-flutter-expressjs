@@ -7,8 +7,7 @@ import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.d
 import 'package:hosspi_hms/features/accounts/presentation/accounts_access.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
-import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_workspace_table_support.dart'
-    hide accountsMoney;
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_workspace_table_support.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -26,8 +25,10 @@ class AccountsDetailBody extends ConsumerWidget {
     this.onVoid,
     this.onClose,
     this.onSend,
+    this.onEdit,
     this.onOpenGl,
     this.onOpenLedger,
+    this.onPrint,
     super.key,
   });
 
@@ -42,8 +43,10 @@ class AccountsDetailBody extends ConsumerWidget {
   final VoidCallback? onVoid;
   final VoidCallback? onClose;
   final VoidCallback? onSend;
+  final VoidCallback? onEdit;
   final VoidCallback? onOpenGl;
   final VoidCallback? onOpenLedger;
+  final VoidCallback? onPrint;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -133,8 +136,10 @@ class AccountsDetailBody extends ConsumerWidget {
           onVoid: onVoid,
           onClose: onClose,
           onSend: onSend,
+          onEdit: onEdit,
           onOpenGl: onOpenGl,
           onOpenLedger: onOpenLedger,
+          onPrint: onPrint,
         ),
       ],
     );
@@ -155,8 +160,10 @@ class _AccountsDetailActionPanel extends StatelessWidget {
     this.onVoid,
     this.onClose,
     this.onSend,
+    this.onEdit,
     this.onOpenGl,
     this.onOpenLedger,
+    this.onPrint,
   });
 
   final AccountsWorkItem item;
@@ -171,8 +178,10 @@ class _AccountsDetailActionPanel extends StatelessWidget {
   final VoidCallback? onVoid;
   final VoidCallback? onClose;
   final VoidCallback? onSend;
+  final VoidCallback? onEdit;
   final VoidCallback? onOpenGl;
   final VoidCallback? onOpenLedger;
+  final VoidCallback? onPrint;
 
   @override
   Widget build(BuildContext context) {
@@ -224,6 +233,17 @@ class _AccountsDetailActionPanel extends StatelessWidget {
       );
     }
 
+    if (onEdit != null && item.canPost && canWrite) {
+      secondary.add(
+        AppActionItem(
+          label: AccountsStrings.editDraftAction,
+          tooltip: AccountsStrings.editDraftActionTooltip,
+          leadingIcon: Icons.edit_outlined,
+          enabled: !isSaving,
+          onPressed: onEdit,
+        ),
+      );
+    }
     if (onReverse != null && item.canReverse && canWrite) {
       secondary.add(
         AppActionItem(
@@ -283,6 +303,16 @@ class _AccountsDetailActionPanel extends StatelessWidget {
           leadingIcon: Icons.people_outline,
           enabled: !isSaving,
           onPressed: onOpenLedger,
+        ),
+      );
+    }
+    if (onPrint != null) {
+      secondary.add(
+        AppActionItem(
+          label: AccountsStrings.printAction,
+          leadingIcon: Icons.print_outlined,
+          enabled: !isSaving,
+          onPressed: onPrint,
         ),
       );
     }
