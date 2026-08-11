@@ -8,8 +8,9 @@ enum AppTabCountTone { info, warning, danger }
 
 /// Visual weight for [AppTabStrip].
 ///
-/// [standard] is the primary desk chrome (flared selected tab).
-/// [nested] is a lighter underline strip for sub-tabs under a desk section.
+/// Both variants use a flat underline strip (primary underline on the selected
+/// tab). [nested] is slightly denser (tighter padding / smaller type) for
+/// subordinate category tabs under a desk section.
 enum AppTabStripVariant { standard, nested }
 
 @immutable
@@ -70,50 +71,40 @@ class AppTabStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
     final Color hairline = theme.borders.faint;
-    final bool nested = variant == AppTabStripVariant.nested;
-    // Opaque merge color shared by the active tab and the toolbar so the two
-    // render as one continuous surface (translucent tints would not blend
-    // identically when stacked). Nested strips stay flat (no flared fill).
-    final Color activeFill = nested
-        ? colorScheme.surface
-        : Color.alphaBlend(
-            colorScheme.primary.withValues(alpha: 0.12),
-            colorScheme.surface,
-          );
 
     final Widget tabRow = _AppTabOverflowRow(
       tabs: tabs,
       selectedId: selectedId,
       onTabTapped: onTabTapped,
-      activeFill: activeFill,
       variant: variant,
     );
 
+    // Hairline sits behind the tab row so the selected primary underline paints
+    // on top of the baseline for that tab's width.
+    final Widget strip = Stack(
+      alignment: Alignment.bottomLeft,
+      children: <Widget>[
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: Container(height: 1, color: hairline),
+        ),
+        tabRow,
+      ],
+    );
+
     if (!_hasToolbar) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          tabRow,
-          Container(height: 1, color: hairline),
-        ],
-      );
+      return strip;
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
-      // No gap or divider between tabs and toolbar: the active tab flows
-      // straight into the toolbar surface.
       children: <Widget>[
-        tabRow,
-        Container(
-          decoration: BoxDecoration(
-            color: activeFill,
-            border: theme.borders.only(bottom: true, color: hairline),
-          ),
+        strip,
+        Padding(
           padding: EdgeInsets.symmetric(
             vertical: theme.spacing.xs,
             horizontal: theme.spacing.xs,
@@ -145,7 +136,6 @@ class _AppTabOverflowRow extends StatelessWidget {
     required this.tabs,
     required this.selectedId,
     required this.onTabTapped,
-    required this.activeFill,
     required this.variant,
   });
 
@@ -155,7 +145,6 @@ class _AppTabOverflowRow extends StatelessWidget {
   final List<AppTabItem> tabs;
   final String? selectedId;
   final ValueChanged<String> onTabTapped;
-  final Color activeFill;
   final AppTabStripVariant variant;
 
   @override
@@ -186,25 +175,25 @@ class _AppTabOverflowRow extends StatelessWidget {
                     int visiblePos = 0;
                     visiblePos < partition.visibleIndices.length;
                     visiblePos += 1
-                  )
+                  ) ...<Widget>[
+                    if (visiblePos > 0) _AppTabSeparator(index: visiblePos),
                     _AppTabChip(
                       label: tabs[partition.visibleIndices[visiblePos]].label,
                       icon: tabs[partition.visibleIndices[visiblePos]].icon,
                       count: tabs[partition.visibleIndices[visiblePos]].count,
-                      countTone:
-                          tabs[partition.visibleIndices[visiblePos]].countTone,
+                      countTone: tabs[partition.visibleIndices[visiblePos]]
+                          .countTone,
                       tooltip:
                           tabs[partition.visibleIndices[visiblePos]].tooltip,
                       isSelected:
                           selectedId ==
                           tabs[partition.visibleIndices[visiblePos]].id,
-                      isFirst: visiblePos == 0,
-                      activeFill: activeFill,
                       variant: variant,
                       onTap: () => onTabTapped(
                         tabs[partition.visibleIndices[visiblePos]].id,
                       ),
                     ),
+                  ],
                 ],
               ),
             ),
@@ -273,6 +262,36 @@ class _AppTabOverflowRow extends StatelessWidget {
   }
 }
 
+/// Faint vertical rule between adjacent visible tabs.
+class _AppTabSeparator extends StatelessWidget {
+  const _AppTabSeparator({required this.index});
+
+  /// Position of the tab to the right of this separator (1-based in the
+  /// visible row). Used only for a stable test key.
+  final int index;
+
+  /// Horizontal extent reserved in overflow width estimates (padding + line).
+  static double extent(ThemeData theme) => (theme.spacing.xs * 2) + 1;
+
+  static Key keyFor(int index) => ValueKey<String>('appTabSeparator-$index');
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    return KeyedSubtree(
+      key: keyFor(index),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
+        child: SizedBox(
+          width: 1,
+          height: 16,
+          child: ColoredBox(color: theme.borders.faint),
+        ),
+      ),
+    );
+  }
+}
+
 final class _TabPartition {
   const _TabPartition({
     required this.visibleIndices,
@@ -299,6 +318,7 @@ _TabPartition _partitionTabs({
     );
   }
 
+  final double separator = _AppTabSeparator.extent(theme);
   final List<double> widths = <double>[
     for (int i = 0; i < tabs.length; i += 1)
       _estimateTabWidth(
@@ -307,11 +327,11 @@ _TabPartition _partitionTabs({
         textDirection: textDirection,
         textScaler: textScaler,
         nested: nested,
-        isSelected: tabs[i].id == selectedId,
-        isFirst: i == 0,
       ),
   ];
-  final double totalWidth = widths.fold<double>(0, (double a, double b) => a + b);
+  final double totalWidth =
+      widths.fold<double>(0, (double a, double b) => a + b) +
+      (tabs.length > 1 ? (tabs.length - 1) * separator : 0);
   if (totalWidth <= maxWidth) {
     return _TabPartition(
       visibleIndices: List<int>.generate(tabs.length, (int i) => i),
@@ -326,9 +346,11 @@ _TabPartition _partitionTabs({
   final List<int> visible = <int>[];
   double used = 0;
   for (int i = 0; i < tabs.length; i += 1) {
-    if (used + widths[i] <= budget) {
+    final double next =
+        widths[i] + (visible.isEmpty ? 0 : separator);
+    if (used + next <= budget) {
       visible.add(i);
-      used += widths[i];
+      used += next;
     } else {
       break;
     }
@@ -338,10 +360,21 @@ _TabPartition _partitionTabs({
     (AppTabItem tab) => tab.id == selectedId,
   );
   if (selectedIndex >= 0 && !visible.contains(selectedIndex)) {
-    while (visible.isNotEmpty && used + widths[selectedIndex] > budget) {
-      used -= widths[visible.removeLast()];
+    while (visible.isNotEmpty) {
+      final double selectedCost =
+          widths[selectedIndex] + (visible.isEmpty ? 0 : separator);
+      if (used + selectedCost <= budget) {
+        break;
+      }
+      final int removed = visible.removeLast();
+      used -= widths[removed];
+      if (visible.isNotEmpty) {
+        used -= separator;
+      }
     }
-    if (used + widths[selectedIndex] <= budget || visible.isEmpty) {
+    final double selectedCost =
+        widths[selectedIndex] + (visible.isEmpty ? 0 : separator);
+    if (used + selectedCost <= budget || visible.isEmpty) {
       visible
         ..add(selectedIndex)
         ..sort();
@@ -364,19 +397,9 @@ double _estimateTabWidth({
   required TextDirection textDirection,
   required TextScaler textScaler,
   bool nested = false,
-  bool isSelected = false,
-  bool isFirst = false,
 }) {
-  // Match _AppTabChip horizontal padding, including selected flare insets.
-  const double flareRadius = 8;
   final double horizontalPad = nested ? theme.spacing.xs : theme.spacing.sm;
   double width = horizontalPad * 2;
-  if (!nested && isSelected) {
-    if (!isFirst) {
-      width += flareRadius;
-    }
-    width += flareRadius;
-  }
   if (tab.icon != null) {
     width += (nested ? 18.0 : 20.0) + theme.spacing.xs;
   }
@@ -661,86 +684,12 @@ class _TabCountBadge extends StatelessWidget {
   }
 }
 
-/// Chrome-style tab silhouette for the selected tab: rounded top corners and
-/// bottom corners flaring outward into the toolbar. Each flare can be
-/// disabled independently (e.g. the first tab keeps a straight left edge so it
-/// stays flush with the toolbar's left edge).
-class _FlaredTabPainter extends CustomPainter {
-  const _FlaredTabPainter({
-    required this.fill,
-    required this.topRadius,
-    required this.flareRadius,
-    required this.flareLeft,
-    required this.flareRight,
-  });
-
-  final Color fill;
-  final double topRadius;
-  final double flareRadius;
-  final bool flareLeft;
-  final bool flareRight;
-
-  Path _tabPath(Size size) {
-    final double w = size.width;
-    final double h = size.height;
-    final double r = flareRadius;
-    final double tr = topRadius;
-    final Path path = Path();
-
-    if (flareLeft) {
-      path
-        ..moveTo(0, h)
-        // Bottom-left corner curves outward.
-        ..quadraticBezierTo(r, h, r, h - r)
-        ..lineTo(r, tr)
-        ..quadraticBezierTo(r, 0, r + tr, 0);
-    } else {
-      path
-        ..moveTo(0, h)
-        ..lineTo(0, tr)
-        ..quadraticBezierTo(0, 0, tr, 0);
-    }
-
-    if (flareRight) {
-      path
-        ..lineTo(w - r - tr, 0)
-        ..quadraticBezierTo(w - r, 0, w - r, tr)
-        ..lineTo(w - r, h - r)
-        // Bottom-right corner curves outward.
-        ..quadraticBezierTo(w - r, h, w, h);
-    } else {
-      path
-        ..lineTo(w - tr, 0)
-        ..quadraticBezierTo(w, 0, w, tr)
-        ..lineTo(w, h);
-    }
-
-    path.close();
-    return path;
-  }
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawPath(_tabPath(size), Paint()..color = fill);
-  }
-
-  @override
-  bool shouldRepaint(_FlaredTabPainter oldDelegate) =>
-      oldDelegate.fill != fill ||
-      oldDelegate.topRadius != topRadius ||
-      oldDelegate.flareRadius != flareRadius ||
-      oldDelegate.flareLeft != flareLeft ||
-      oldDelegate.flareRight != flareRight;
-}
-
 class _AppTabChip extends StatefulWidget {
   const _AppTabChip({
     required this.label,
     required this.isSelected,
-    required this.isFirst,
     required this.onTap,
     required this.countTone,
-    required this.activeFill,
     required this.variant,
     this.icon,
     this.count,
@@ -752,18 +701,8 @@ class _AppTabChip extends StatefulWidget {
   final int? count;
   final AppTabCountTone countTone;
   final bool isSelected;
-
-  /// First tab in the strip: its left edge stays straight and flush with the
-  /// toolbar's left edge (no outward flare on that side).
-  final bool isFirst;
   final VoidCallback onTap;
-
-  /// Opaque fill shared with the toolbar so the selected tab and toolbar
-  /// merge into one continuous surface.
-  final Color activeFill;
-
   final AppTabStripVariant variant;
-
   final String? tooltip;
 
   @override
@@ -771,9 +710,6 @@ class _AppTabChip extends StatefulWidget {
 }
 
 class _AppTabChipState extends State<_AppTabChip> {
-  static const double _flareRadius = 8;
-  static const double _topRadius = 8;
-
   bool _isHovered = false;
 
   @override
@@ -785,40 +721,27 @@ class _AppTabChipState extends State<_AppTabChip> {
         ? fullLabel
         : '$fullLabel (${widget.count})';
     final bool nested = widget.variant == AppTabStripVariant.nested;
-
-    if (nested) {
-      final Widget nestedChip = _buildNestedChip(
-        context: context,
-        theme: theme,
-        colorScheme: colorScheme,
-        fullLabel: fullLabel,
-        semanticsLabel: semanticsLabel,
-      );
-      final String? tip = widget.tooltip?.trim();
-      if (tip == null || tip.isEmpty) {
-        return nestedChip;
-      }
-      return Tooltip(message: tip, child: nestedChip);
-    }
-
-    // Only the selected tab is filled (and flared), so it reads clearly as
-    // one continuous surface with the toolbar; inactive tabs stay flat and
-    // only tint on hover.
-    final Color backgroundColor = widget.isSelected
-        ? widget.activeFill
-        : _isHovered
-        ? colorScheme.onSurface.withValues(alpha: 0.06)
-        : Colors.transparent;
     final Color foregroundColor = widget.isSelected
         ? colorScheme.primary
         : colorScheme.onSurfaceVariant;
-    // Selected uses the heaviest available weight; inactive stays medium so
-    // tabs still read as controls rather than body copy.
     final FontWeight fontWeight = widget.isSelected
         ? AppFontWeight.strong
         : AppFontWeight.emphasis;
-    final bool flareLeft = widget.isSelected && !widget.isFirst;
-    final bool flareRight = widget.isSelected;
+    final Color hoverFill = _isHovered
+        ? colorScheme.onSurface.withValues(alpha: nested ? 0.04 : 0.06)
+        : Colors.transparent;
+    final double iconSize = nested ? 18 : 20;
+    final TextStyle? labelStyle =
+        (nested ? theme.textTheme.labelMedium : theme.textTheme.labelLarge)
+            ?.copyWith(
+              color: foregroundColor,
+              fontWeight: fontWeight,
+              letterSpacing: !nested && widget.isSelected ? 0.1 : null,
+            );
+    final EdgeInsetsGeometry padding = EdgeInsets.symmetric(
+      horizontal: nested ? theme.spacing.xs : theme.spacing.sm,
+      vertical: theme.spacing.xs,
+    );
 
     final Widget chip = Semantics(
       button: true,
@@ -832,100 +755,12 @@ class _AppTabChipState extends State<_AppTabChip> {
           color: Colors.transparent,
           child: InkWell(
             onTap: widget.onTap,
-            splashColor: colorScheme.primary.withValues(alpha: 0.10),
-            highlightColor: colorScheme.primary.withValues(alpha: 0.06),
-            child: CustomPaint(
-              painter: _FlaredTabPainter(
-                fill: backgroundColor,
-                topRadius: widget.isSelected ? _topRadius : 0,
-                flareRadius: _flareRadius,
-                flareLeft: flareLeft,
-                flareRight: flareRight,
-              ),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 40),
-                child: Padding(
-                  // Horizontal padding widens by the flare so the label never
-                  // overlaps the curved corners.
-                  padding: EdgeInsets.only(
-                    left: theme.spacing.sm + (flareLeft ? _flareRadius : 0),
-                    right: theme.spacing.sm + (flareRight ? _flareRadius : 0),
-                    top: theme.spacing.xs,
-                    bottom: theme.spacing.xs,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: <Widget>[
-                      if (widget.icon != null) ...<Widget>[
-                        Icon(
-                          widget.icon,
-                          size: 20,
-                          color: foregroundColor,
-                        ),
-                        SizedBox(width: theme.spacing.xs),
-                      ],
-                      Text(
-                        fullLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: foregroundColor,
-                          fontWeight: fontWeight,
-                          letterSpacing: widget.isSelected ? 0.1 : 0,
-                        ),
-                      ),
-                      if (widget.count != null)
-                        _TabCountBadge(
-                          count: widget.count!,
-                          tone: widget.countTone,
-                        ),
-                    ],
-                  ),
-                ),
-              ),
+            splashColor: colorScheme.primary.withValues(
+              alpha: nested ? 0.08 : 0.10,
             ),
-          ),
-        ),
-      ),
-    );
-    final String? tip = widget.tooltip?.trim();
-    if (tip == null || tip.isEmpty) {
-      return chip;
-    }
-    return Tooltip(message: tip, child: chip);
-  }
-
-  Widget _buildNestedChip({
-    required BuildContext context,
-    required ThemeData theme,
-    required ColorScheme colorScheme,
-    required String fullLabel,
-    required String semanticsLabel,
-  }) {
-    final Color foregroundColor = widget.isSelected
-        ? colorScheme.primary
-        : colorScheme.onSurfaceVariant;
-    final FontWeight fontWeight = widget.isSelected
-        ? AppFontWeight.strong
-        : AppFontWeight.emphasis;
-    final Color hoverFill = _isHovered
-        ? colorScheme.onSurface.withValues(alpha: 0.04)
-        : Colors.transparent;
-
-    return Semantics(
-      button: true,
-      selected: widget.isSelected,
-      label: semanticsLabel,
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _isHovered = true),
-        onExit: (_) => setState(() => _isHovered = false),
-        cursor: SystemMouseCursors.click,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: widget.onTap,
-            splashColor: colorScheme.primary.withValues(alpha: 0.08),
-            highlightColor: colorScheme.primary.withValues(alpha: 0.04),
+            highlightColor: colorScheme.primary.withValues(
+              alpha: nested ? 0.04 : 0.06,
+            ),
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: hoverFill,
@@ -933,32 +768,32 @@ class _AppTabChipState extends State<_AppTabChip> {
                   bottom: true,
                   color: widget.isSelected
                       ? colorScheme.primary
-                      : theme.borders.faint,
-                  width: widget.isSelected ? theme.borders.thick + 0.5 : theme.borders.thin,
+                      : Colors.transparent,
+                  width: widget.isSelected
+                      ? theme.borders.thick + 0.5
+                      : theme.borders.thin,
                 ),
               ),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(minHeight: 40),
                 child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: theme.spacing.xs,
-                    vertical: theme.spacing.xs,
-                  ),
+                  padding: padding,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       if (widget.icon != null) ...<Widget>[
-                        Icon(widget.icon, size: 18, color: foregroundColor),
+                        Icon(
+                          widget.icon,
+                          size: iconSize,
+                          color: foregroundColor,
+                        ),
                         SizedBox(width: theme.spacing.xs),
                       ],
                       Text(
                         fullLabel,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: foregroundColor,
-                          fontWeight: fontWeight,
-                        ),
+                        style: labelStyle,
                       ),
                       if (widget.count != null)
                         _TabCountBadge(
@@ -974,5 +809,11 @@ class _AppTabChipState extends State<_AppTabChip> {
         ),
       ),
     );
+
+    final String? tip = widget.tooltip?.trim();
+    if (tip == null || tip.isEmpty) {
+      return chip;
+    }
+    return Tooltip(message: tip, child: chip);
   }
 }

@@ -243,7 +243,7 @@ void main() {
     expect(find.byIcon(Icons.more_vert), findsNothing);
   });
 
-  testWidgets('selected flared tab with icons does not overflow', (
+  testWidgets('selected underline tab with icons does not overflow', (
     WidgetTester tester,
   ) async {
     tester.view.physicalSize = const Size(980, 800);
@@ -308,6 +308,104 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('Departments'), findsOneWidget);
+  });
+
+  testWidgets('renders faint separators between adjacent tabs only', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: AppTabStrip(
+            tabs: const <AppTabItem>[
+              AppTabItem(id: 'a', label: 'Reporting'),
+              AppTabItem(id: 'b', label: 'Analytics'),
+              AppTabItem(id: 'c', label: 'Exports'),
+            ],
+            selectedId: 'a',
+            onTabTapped: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey<String>('appTabSeparator-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('appTabSeparator-2')), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('appTabSeparator-0')), findsNothing);
+    expect(find.byKey(const ValueKey<String>('appTabSeparator-3')), findsNothing);
+  });
+
+  testWidgets('nested variant also renders separators between tabs', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: AppTabStrip(
+            variant: AppTabStripVariant.nested,
+            tabs: const <AppTabItem>[
+              AppTabItem(
+                id: 'reporting',
+                label: 'Reporting',
+                icon: Icons.description_outlined,
+              ),
+              AppTabItem(
+                id: 'analytics',
+                label: 'Analytics',
+                icon: Icons.insights_outlined,
+              ),
+            ],
+            selectedId: 'reporting',
+            onTabTapped: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey<String>('appTabSeparator-1')), findsOneWidget);
+    expect(find.byIcon(Icons.description_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.insights_outlined), findsOneWidget);
+  });
+
+  testWidgets('single tab has no separator', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: AppTabStrip(
+            tabs: const <AppTabItem>[
+              AppTabItem(id: 'only', label: 'Only'),
+            ],
+            selectedId: 'only',
+            onTabTapped: (_) {},
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byWidgetPredicate((Widget widget) {
+        final Key? key = widget.key;
+        return key is ValueKey<String> &&
+            key.value.startsWith('appTabSeparator');
+      }),
+      findsNothing,
+    );
   });
 
   testWidgets('shows attention badge on More when overflow tab has count', (
