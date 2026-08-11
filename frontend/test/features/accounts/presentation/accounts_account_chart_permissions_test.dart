@@ -31,26 +31,37 @@ class _MockAccountsRepository extends Mock implements AccountsRepository {}
 
 class _MockChartRepository extends Mock implements AccountsChartRepository {}
 
+const AccountsChartAccount _sampleAccount = AccountsChartAccount(
+  id: '550e8400-e29b-41d4-a716-446655440020',
+  code: '1000',
+  name: 'Cash',
+  accountType: 'ASSET',
+  currency: 'UGX',
+  isActive: true,
+);
+
 AppAccessPolicy _policyFor({
   required Set<AppPermission> permissions,
 }) {
-  return AppAccessPolicy.fromSession(
-    AuthSession(
-      tokens: SessionTokens(accessToken: 'token'),
-      user: const AuthUserProfile(
-        roles: <String>['ACCOUNTANT'],
-        tenantId: 'tenant-1',
-        facilityId: 'facility-1',
-      ),
-      permissions: permissions,
-      moduleEntitlements: const <AppModuleEntitlement>[
-        AppModuleEntitlement(
-          code: 'facility-accounts',
-          licenseStatus: 'ACTIVE',
-        ),
-      ],
-      isAuthorizationHydrated: true,
+  return AppAccessPolicy.fromSession(_sessionFor(permissions: permissions));
+}
+
+AuthSession _sessionFor({required Set<AppPermission> permissions}) {
+  return AuthSession(
+    tokens: SessionTokens(accessToken: 'token'),
+    user: const AuthUserProfile(
+      roles: <String>['ACCOUNTANT'],
+      tenantId: 'tenant-1',
+      facilityId: 'facility-1',
     ),
+    permissions: permissions,
+    moduleEntitlements: const <AppModuleEntitlement>[
+      AppModuleEntitlement(
+        code: 'facility-accounts',
+        licenseStatus: 'ACTIVE',
+      ),
+    ],
+    isAuthorizationHydrated: true,
   );
 }
 
@@ -71,7 +82,10 @@ void _stubAccounts(_MockAccountsRepository repository) {
   );
 }
 
-void _stubChart(_MockChartRepository repository) {
+void _stubChart(
+  _MockChartRepository repository, {
+  List<AccountsChartAccount> items = const <AccountsChartAccount>[],
+}) {
   when(
     () => repository.listAccounts(
       any(),
@@ -79,13 +93,22 @@ void _stubChart(_MockChartRepository repository) {
       facilityId: any(named: 'facilityId'),
     ),
   ).thenAnswer(
-    (_) async => const Result<AppPage<AccountsChartAccount>>.success(
+    (_) async => Result<AppPage<AccountsChartAccount>>.success(
       AppPage<AccountsChartAccount>(
-        items: <AccountsChartAccount>[],
-        request: AppPageRequest(pageSize: 100),
-        totalItemCount: 0,
+        items: items,
+        request: const AppPageRequest(pageSize: 100),
+        totalItemCount: items.length,
       ),
     ),
+  );
+  when(() => repository.deactivateAccount(any())).thenAnswer(
+    (_) async => const Result<void>.success(null),
+  );
+  when(() => repository.createAccount(any())).thenAnswer(
+    (_) async => const Result<AccountsChartAccount>.success(_sampleAccount),
+  );
+  when(() => repository.updateAccount(any(), any())).thenAnswer(
+    (_) async => const Result<AccountsChartAccount>.success(_sampleAccount),
   );
 }
 
@@ -93,13 +116,17 @@ Future<void> _pumpChart(
   WidgetTester tester, {
   required AppAccessPolicy accessPolicy,
   String location = '/accounts?section=chart',
+  List<AccountsChartAccount> chartItems = const <AccountsChartAccount>[],
+  _MockChartRepository? chartRepository,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
   final _MockAccountsRepository accounts = _MockAccountsRepository();
-  final _MockChartRepository chart = _MockChartRepository();
+  final _MockChartRepository chart = chartRepository ?? _MockChartRepository();
   _stubAccounts(accounts);
-  _stubChart(chart);
+  if (chartRepository == null) {
+    _stubChart(chart, items: chartItems);
+  }
 
   tester.view.physicalSize = const Size(1440, 900);
   tester.view.devicePixelRatio = 1;
@@ -152,56 +179,80 @@ void main() {
   setUpAll(() {
     registerFallbackValue(const AccountsWorkspaceQuery());
     registerFallbackValue(const AccountsChartQuery());
+    registerFallbackValue(<String, Object?>{});
   });
 
-  testWidgets('Account chart visible; Add absent without chart write', (
+  testWidgets('Account chart visible; Add / Actions absent without chart write', (
     WidgetTester tester,
   ) async {
+    final Set<AppPermission> permissions = <AppPermission>{
+      AppPermissions.accountsRead,
+    };
     await _pumpChart(
       tester,
-      accessPolicy: _policyFor(
-        permissions: <AppPermission>{AppPermissions.accountsRead},
-      ),
+      accessPolicy: _policyFor(permissions: permissions),
+      chartItems: <AccountsChartAccount>[_sampleAccount],
     );
 
     expect(find.byType(AccountsWorkspacePage), findsOneWidget);
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.byType(AccountsChartPanel), findsOneWidget);
-    expect(find.text(AccountsStrings.chartEmpty), findsOneWidget);
+    expect(find.text('Cash'), findsWidgets);
     expect(find.byTooltip('Add'), findsNothing);
     expect(find.text(AccountsStrings.chartActionsColumn), findsNothing);
+    expect(find.text(AccountsStrings.chartDeactivateAction), findsNothing);
     expect(find.text(AccountsStrings.nextColumn), findsNothing);
+    expect(find.text(_sampleAccount.id), findsNothing);
+    expect(find.byTooltip(AccountsStrings.chartPrintAction), findsOneWidget);
   });
 
   testWidgets('Account chart aliases select section=chart body', (
     WidgetTester tester,
   ) async {
+    final Set<AppPermission> permissions = <AppPermission>{
+      AppPermissions.accountsRead,
+      AppPermissions.accountsWrite,
+    };
     await _pumpChart(
       tester,
       location: '/accounts?section=coa',
-      accessPolicy: _policyFor(
-        permissions: <AppPermission>{
-          AppPermissions.accountsRead,
-          AppPermissions.accountsWrite,
-        },
-      ),
+      accessPolicy: _policyFor(permissions: permissions),
     );
 
     expect(find.byType(AccountsChartPanel), findsOneWidget);
     expect(find.byTooltip('Add'), findsOneWidget);
   });
 
+  testWidgets('Write access shows Add / Edit / Deactivate; no UUID', (
+    WidgetTester tester,
+  ) async {
+    final Set<AppPermission> permissions = <AppPermission>{
+      AppPermissions.accountsRead,
+      AppPermissions.accountsWrite,
+    };
+    await _pumpChart(
+      tester,
+      accessPolicy: _policyFor(permissions: permissions),
+      chartItems: <AccountsChartAccount>[_sampleAccount],
+    );
+
+    expect(find.byTooltip('Add'), findsOneWidget);
+    expect(find.text(AccountsStrings.chartActionsColumn), findsOneWidget);
+    expect(find.byTooltip(AccountsStrings.chartDeactivateAction), findsOneWidget);
+    expect(find.text(_sampleAccount.id), findsNothing);
+    expect(find.text('1000'), findsWidgets);
+  });
+
   testWidgets('Journal / Post all / period trailing absent on Account chart', (
     WidgetTester tester,
   ) async {
+    final Set<AppPermission> permissions = <AppPermission>{
+      AppPermissions.accountsRead,
+      AppPermissions.accountsWrite,
+    };
     await _pumpChart(
       tester,
-      accessPolicy: _policyFor(
-        permissions: <AppPermission>{
-          AppPermissions.accountsRead,
-          AppPermissions.accountsWrite,
-        },
-      ),
+      accessPolicy: _policyFor(permissions: permissions),
     );
 
     expect(find.byType(AccountsChartPanel), findsOneWidget);
@@ -209,5 +260,50 @@ void main() {
     expect(find.byTooltip(AccountsStrings.postAllAction), findsNothing);
     expect(find.byTooltip(AccountsStrings.openPeriodAction), findsNothing);
     expect(find.byTooltip(AccountsStrings.closePeriodAction), findsNothing);
+  });
+
+  testWidgets('Deactivate refreshes chart after confirm', (
+    WidgetTester tester,
+  ) async {
+    final Set<AppPermission> permissions = <AppPermission>{
+      AppPermissions.accountsRead,
+      AppPermissions.accountsWrite,
+    };
+    final _MockChartRepository chart = _MockChartRepository();
+    _stubChart(chart, items: <AccountsChartAccount>[_sampleAccount]);
+
+    await _pumpChart(
+      tester,
+      accessPolicy: _policyFor(permissions: permissions),
+      chartItems: <AccountsChartAccount>[_sampleAccount],
+      chartRepository: chart,
+    );
+
+    final Finder deactivate = find.byTooltip(
+      AccountsStrings.chartDeactivateAction,
+    );
+    expect(deactivate, findsOneWidget);
+    await tester.ensureVisible(deactivate);
+    await tester.tap(deactivate);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final Finder confirm = find.widgetWithText(
+      AppButton,
+      AccountsStrings.chartDeactivateAction,
+    );
+    expect(confirm, findsWidgets);
+    await tester.tap(confirm.last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    verify(() => chart.deactivateAccount(_sampleAccount.id)).called(1);
+    verify(
+      () => chart.listAccounts(
+        any(),
+        tenantId: any(named: 'tenantId'),
+        facilityId: any(named: 'facilityId'),
+      ),
+    ).called(greaterThan(1));
   });
 }

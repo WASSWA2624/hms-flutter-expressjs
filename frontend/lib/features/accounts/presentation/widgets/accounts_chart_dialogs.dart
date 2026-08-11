@@ -8,6 +8,9 @@ import 'package:hosspi_hms/features/accounts/data/repositories/accounts_chart_re
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_chart_account.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_access.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_chart_similarity.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_chart_similarity_dialog.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -34,53 +37,87 @@ String accountsChartTypeLabel(String accountType) {
   };
 }
 
-Future<bool> showAccountsChartAccountDialog({
+enum AccountsChartDialogOutcome { cancelled, saved, openExisting }
+
+final class AccountsChartDialogResult {
+  const AccountsChartDialogResult._({required this.outcome, this.existing});
+
+  const AccountsChartDialogResult.cancelled()
+    : this._(outcome: AccountsChartDialogOutcome.cancelled);
+
+  const AccountsChartDialogResult.saved()
+    : this._(outcome: AccountsChartDialogOutcome.saved);
+
+  const AccountsChartDialogResult.openExisting(this.existing)
+    : outcome = AccountsChartDialogOutcome.openExisting;
+
+  final AccountsChartDialogOutcome outcome;
+  final AccountsChartAccount? existing;
+
+  bool get saved => outcome == AccountsChartDialogOutcome.saved;
+}
+
+Future<AccountsChartDialogResult> showAccountsChartAccountDialog({
   required BuildContext context,
   required WidgetRef ref,
   AccountsChartAccount? editing,
   List<AccountsChartAccount> parentChoices = const <AccountsChartAccount>[],
 }) async {
   if (!canWriteAccountsChart(ref.read(appAccessPolicyProvider))) {
-    return false;
+    return const AccountsChartDialogResult.cancelled();
   }
-  final bool? saved = await showAppWorkspaceActionDialog<bool>(
-    context: context,
-    title: Text(
-      editing == null
-          ? AccountsStrings.chartAddTitle
-          : AccountsStrings.chartEditTitle,
-    ),
-    content: _AccountsChartAccountDialog(
-      editing: editing,
-      parentChoices: parentChoices,
-      onSubmit: (Map<String, Object?> payload) async {
-        final repo = ref.read(accountsChartRepositoryProvider);
-        if (editing == null) {
-          final result = await repo.createAccount(payload);
-          return result.when(
-            success: (_) async => null,
-            failure: (AppFailure failure) async => failure,
-          );
-        }
-        final result = await repo.updateAccount(editing.id, payload);
-        return result.when(
-          success: (_) async => null,
-          failure: (AppFailure failure) async => failure,
-        );
-      },
-    ),
-  );
-  if (saved == true) {
+  final AccountsChartDialogResult? result =
+      await showAppWorkspaceActionDialog<AccountsChartDialogResult>(
+        context: context,
+        title: Text(
+          editing == null
+              ? AccountsStrings.chartAddTitle
+              : AccountsStrings.chartEditTitle,
+        ),
+        content: _AccountsChartAccountDialog(
+          editing: editing,
+          parentChoices: parentChoices,
+          onSubmit: (Map<String, Object?> payload) async {
+            final repo = ref.read(accountsChartRepositoryProvider);
+            if (editing == null) {
+              final createResult = await repo.createAccount(payload);
+              return createResult.when(
+                success: (_) async => null,
+                failure: (AppFailure failure) async => failure,
+              );
+            }
+            final updateResult = await repo.updateAccount(editing.id, payload);
+            return updateResult.when(
+              success: (_) async => null,
+              failure: (AppFailure failure) async => failure,
+            );
+          },
+          onOverwrite:
+              (AccountsChartAccount target, Map<String, Object?> payload) async {
+                final repo = ref.read(accountsChartRepositoryProvider);
+                final updateResult = await repo.updateAccount(
+                  target.id,
+                  payload,
+                );
+                return updateResult.when(
+                  success: (_) async => null,
+                  failure: (AppFailure failure) async => failure,
+                );
+              },
+        ),
+      );
+  if (result?.saved == true) {
     ref
             .read<StateController<int>>(accountsChartRevisionProvider.notifier)
             .state++;
   }
-  return saved == true;
+  return result ?? const AccountsChartDialogResult.cancelled();
 }
 
 class _AccountsChartAccountDialog extends ConsumerStatefulWidget {
   const _AccountsChartAccountDialog({
     required this.onSubmit,
+    required this.onOverwrite,
     required this.parentChoices,
     this.editing,
   });
@@ -88,6 +125,11 @@ class _AccountsChartAccountDialog extends ConsumerStatefulWidget {
   final AccountsChartAccount? editing;
   final List<AccountsChartAccount> parentChoices;
   final Future<AppFailure?> Function(Map<String, Object?> payload) onSubmit;
+  final Future<AppFailure?> Function(
+    AccountsChartAccount target,
+    Map<String, Object?> payload,
+  )
+  onOverwrite;
 
   @override
   ConsumerState<_AccountsChartAccountDialog> createState() =>
@@ -106,6 +148,7 @@ class _AccountsChartAccountDialogState
   DateTime? _effectiveFrom;
   bool _isSubmitting = false;
   AppFailure? _failure;
+  AccountsChartAccount? _overwriteTarget;
 
   @override
   void initState() {
@@ -141,14 +184,27 @@ class _AccountsChartAccountDialogState
       if (editingId != null && account.id == editingId) {
         continue;
       }
+      final String code = accountsPublicLabel(account.code) ?? account.code;
       options.add(
         AppSelectOption<String>(
           value: account.id,
-          label: '${account.code} · ${account.accountLabel}',
+          label: '$code · ${account.accountLabel}',
         ),
       );
     }
     return options;
+  }
+
+  String _parentLabelFor(String? parentId) {
+    if (parentId == null || parentId.isEmpty) {
+      return '';
+    }
+    for (final AccountsChartAccount account in widget.parentChoices) {
+      if (account.id == parentId) {
+        return account.accountLabel;
+      }
+    }
+    return accountsPublicLabel(parentId) ?? '';
   }
 
   @override
@@ -243,7 +299,9 @@ class _AccountsChartAccountDialogState
           submitLabel: l10n.commonSaveActionLabel,
           submitIcon: Icons.save_outlined,
           isSubmitting: _isSubmitting,
-          onCancel: () => Navigator.of(context).pop(false),
+          onCancel: () => Navigator.of(
+            context,
+          ).pop(const AccountsChartDialogResult.cancelled()),
           onSubmit: _submit,
         ),
       ],
@@ -283,7 +341,26 @@ class _AccountsChartAccountDialogState
       'effective_from': _effectiveFrom?.toUtc().toIso8601String(),
       'is_active': _isActive,
     };
-    final AppFailure? failure = await widget.onSubmit(payload);
+
+    final AccountsChartSimilarityDraft draft = AccountsChartSimilarityDraft(
+      code: _codeController.text.trim(),
+      name: _nameController.text.trim(),
+      accountType: _accountType,
+      parentId: _parentId,
+      parentLabel: _parentLabelFor(_parentId),
+    );
+
+    final bool shouldSubmit = await _reviewSimilarity(draft);
+    if (!shouldSubmit || !mounted) {
+      setState(() => _isSubmitting = false);
+      return;
+    }
+
+    final AccountsChartAccount? overwriteTarget = _overwriteTarget;
+    _overwriteTarget = null;
+    final AppFailure? failure = overwriteTarget == null
+        ? await widget.onSubmit(payload)
+        : await widget.onOverwrite(overwriteTarget, payload);
     if (!mounted) {
       return;
     }
@@ -294,6 +371,47 @@ class _AccountsChartAccountDialogState
       });
       return;
     }
-    Navigator.of(context).pop(true);
+    Navigator.of(context).pop(const AccountsChartDialogResult.saved());
+  }
+
+  Future<bool> _reviewSimilarity(AccountsChartSimilarityDraft draft) async {
+    final AccountsChartSimilarityResult check = checkAccountsChartSimilarity(
+      draft: draft,
+      candidates: widget.parentChoices,
+      excludeAccountId: widget.editing?.id,
+    );
+    if (!check.hasMatches) {
+      return true;
+    }
+
+    final AccountsChartSimilarityDialogResult result =
+        await showAccountsChartSimilarityDialog(
+          context,
+          draft: draft,
+          check: check,
+          isCreate: widget.editing == null,
+        );
+    if (!mounted) {
+      return false;
+    }
+    switch (result.action) {
+      case AccountsChartSimilarityAction.cancel:
+        return false;
+      case AccountsChartSimilarityAction.proceed:
+        // Exact code / full match must never create or update via Continue.
+        return !check.hasExactCodeConflict && !check.hasExactConflict;
+      case AccountsChartSimilarityAction.selectExisting:
+        final AccountsChartAccount? existing = result.selected;
+        if (existing == null) {
+          return false;
+        }
+        Navigator.of(
+          context,
+        ).pop(AccountsChartDialogResult.openExisting(existing));
+        return false;
+      case AccountsChartSimilarityAction.overwrite:
+        _overwriteTarget = result.selected;
+        return _overwriteTarget != null;
+    }
   }
 }

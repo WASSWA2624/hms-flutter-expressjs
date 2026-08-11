@@ -14,6 +14,8 @@ import 'package:hosspi_hms/features/accounts/domain/entities/accounts_chart_acco
 import 'package:hosspi_hms/features/accounts/presentation/accounts_access.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_chart_dialogs.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_chart_print_helpers.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
@@ -58,9 +60,11 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
   Timer? _searchDebounce;
 
   String? get _tenantId =>
-      ref.read(sessionStateProvider).session?.user?.tenantId;
+      ref.read(sessionStateProvider).session?.user?.tenantId ??
+      ref.read(appAccessPolicyProvider).tenantId;
   String? get _facilityId =>
-      ref.read(sessionStateProvider).session?.user?.facilityId;
+      ref.read(sessionStateProvider).session?.user?.facilityId ??
+      ref.read(appAccessPolicyProvider).facilityId;
 
   @override
   void initState() {
@@ -182,9 +186,10 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
         (_filterValue.text(_parentFilterKey) ?? '').trim().toLowerCase();
     if (parentNeedle.isNotEmpty) {
       filtered = filtered.where((AccountsChartAccount item) {
+        final String parentCode =
+            accountsPublicLabel(item.parentCode) ?? '';
         return item.parentLabel.toLowerCase().contains(parentNeedle) ||
-            (item.parentCode ?? '').toLowerCase().contains(parentNeedle) ||
-            (item.parentId ?? '').toLowerCase().contains(parentNeedle);
+            parentCode.toLowerCase().contains(parentNeedle);
       });
     }
     final String? effective = _filterValue.option(_effectiveFilterKey);
@@ -200,18 +205,42 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
   }
 
   Future<void> _openCreateOrEdit({AccountsChartAccount? editing}) async {
-    final bool saved = await showAccountsChartAccountDialog(
-      context: context,
-      ref: ref,
-      editing: editing,
-      parentChoices: _allForParents,
-    );
-    if (saved && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(AccountsStrings.saved)),
-      );
-      await _reload();
+    AccountsChartAccount? current = editing;
+    while (mounted) {
+      final AccountsChartDialogResult result =
+          await showAccountsChartAccountDialog(
+            context: context,
+            ref: ref,
+            editing: current,
+            parentChoices: _allForParents,
+          );
+      if (!mounted) {
+        return;
+      }
+      switch (result.outcome) {
+        case AccountsChartDialogOutcome.cancelled:
+          return;
+        case AccountsChartDialogOutcome.saved:
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text(AccountsStrings.saved)),
+          );
+          await _reload();
+          return;
+        case AccountsChartDialogOutcome.openExisting:
+          current = result.existing;
+          if (current == null) {
+            return;
+          }
+      }
     }
+  }
+
+  Future<void> _printList() async {
+    await printAccountsChartList(
+      ref: ref,
+      context: context,
+      accounts: _page.items,
+    );
   }
 
   Future<void> _deactivate(AccountsChartAccount entry) async {
@@ -315,8 +344,9 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
           if (needle.isEmpty) {
             return true;
           }
+          final String code = accountsPublicLabel(item.code) ?? '';
           return item.accountLabel.toLowerCase().contains(needle) ||
-              item.code.toLowerCase().contains(needle) ||
+              code.toLowerCase().contains(needle) ||
               item.accountType.toLowerCase().contains(needle) ||
               item.parentLabel.toLowerCase().contains(needle);
         },
@@ -414,6 +444,11 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
           unawaited(_reload());
         },
         trailingActions: <AppSearchBarAction>[
+          AppSearchBarAction(
+            label: AccountsStrings.chartPrintAction,
+            icon: Icons.print_outlined,
+            onPressed: () => unawaited(_printList()),
+          ),
           if (canWrite)
             AppSearchBarAction(
               label: l10n.commonAddActionLabel,
@@ -452,10 +487,13 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
           id: 'code',
           label: AccountsStrings.chartCodeColumn,
           preferredWidth: 120,
-          cellBuilder: (_, AccountsChartAccount item) => Text(item.code),
+          cellBuilder: (_, AccountsChartAccount item) => Text(
+            accountsPublicLabel(item.code) ?? AccountsStrings.unknownValue,
+          ),
           sortComparator: (AccountsChartAccount a, AccountsChartAccount b) =>
               a.code.compareTo(b.code),
-          exportValue: (AccountsChartAccount item) => item.code,
+          exportValue: (AccountsChartAccount item) =>
+              accountsPublicLabel(item.code) ?? '',
         ),
         AppListTableColumn<AccountsChartAccount>(
           id: 'status',
@@ -515,8 +553,11 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
           id: 'code',
           label: AccountsStrings.chartCodeColumn,
           preferredWidth: 120,
-          cellBuilder: (_, AccountsChartAccount item) => Text(item.code),
-          exportValue: (AccountsChartAccount item) => item.code,
+          cellBuilder: (_, AccountsChartAccount item) => Text(
+            accountsPublicLabel(item.code) ?? AccountsStrings.unknownValue,
+          ),
+          exportValue: (AccountsChartAccount item) =>
+              accountsPublicLabel(item.code) ?? '',
         ),
         AppListTableColumn<AccountsChartAccount>(
           id: 'status',
@@ -561,8 +602,11 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
           id: 'currency',
           label: AccountsStrings.chartCurrencyColumn,
           preferredWidth: 100,
-          cellBuilder: (_, AccountsChartAccount item) => Text(item.currency),
-          exportValue: (AccountsChartAccount item) => item.currency,
+          cellBuilder: (_, AccountsChartAccount item) => Text(
+            accountsPublicLabel(item.currency) ?? AccountsStrings.unknownValue,
+          ),
+          exportValue: (AccountsChartAccount item) =>
+              accountsPublicLabel(item.currency) ?? '',
         ),
         AppListTableColumn<AccountsChartAccount>(
           id: 'effective',
@@ -586,7 +630,7 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
       mobileItemBuilder: (BuildContext context, AccountsChartAccount item) {
         return AppListTableMobileItem(
           title: item.accountLabel,
-          caption: item.code,
+          caption: accountsPublicLabel(item.code) ?? AccountsStrings.unknownValue,
           meta: <AppListTableMobileMeta>[
             AppListTableMobileMeta(
               label: accountsChartTypeLabel(item.accountType),

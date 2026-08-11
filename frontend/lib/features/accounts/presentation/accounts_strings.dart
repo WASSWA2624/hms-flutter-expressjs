@@ -216,6 +216,37 @@ abstract final class AccountsStrings {
   static const String chartTypeExpense = 'Expense';
   static const String chartEffectiveCurrent = 'Current';
   static const String chartEffectiveOther = 'Other';
+  static const String notRecorded = 'Not recorded';
+
+  static const String chartExactDialogTitle = 'Exact chart account found';
+  static const String chartSimilarDialogTitle = 'Similar chart accounts';
+  static const String chartNoSimilarDialogTitle = 'No similar accounts';
+  static const String chartExactBannerTitle = 'Exact match';
+  static const String chartSimilarBannerTitle = 'Near match';
+  static const String chartNoSimilarBannerTitle = 'No matches';
+  static const String chartExactCodeDialogBody =
+      'An account with this code already exists. Select the existing account or cancel.';
+  static const String chartExactDialogBody =
+      'An identical chart account already exists. Select it or cancel.';
+  static const String chartSimilarDialogBody =
+      'Review near-duplicate chart accounts before saving.';
+  static const String chartNoSimilarDialogBody =
+      'No similar accounts found. You can continue.';
+  static const String chartSelectExisting = 'Select existing';
+  static const String chartOverwriteExisting = 'Overwrite';
+  static const String chartContinueCreate = 'Continue create';
+  static const String chartContinueSave = 'Continue save';
+
+  static const String chartPrintAction = 'Print';
+  static const String chartPrintTitle = 'Account chart';
+  static const String chartPrintOptionsSection = 'Print sections';
+  static const String chartPrintSectionSummary = 'Summary';
+  static const String chartPrintSectionRows = 'Accounts';
+  static const String chartPrintSectionFooter = 'Footer / signature';
+  static const String chartPrintFooter = 'Accounts chart print';
+
+  static String chartPrintRowCount(int count) =>
+      count == 1 ? '1 account' : '$count accounts';
 
   static String chartDeactivateBody(String accountLabel) =>
       'Deactivate $accountLabel? It will no longer appear as an active chart account.';

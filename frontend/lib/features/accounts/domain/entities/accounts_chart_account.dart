@@ -37,32 +37,52 @@ final class AccountsChartAccount {
   final String? notes;
 
   String get effectiveId {
-    final String? display = displayId?.trim();
-    if (display != null && display.isNotEmpty) {
+    final String? display = _publicId(displayId);
+    if (display != null) {
       return display;
     }
-    return id;
+    final String? codePart = _publicId(code);
+    if (codePart != null) {
+      return codePart;
+    }
+    return '—';
   }
 
   String get accountLabel {
-    final String trimmedName = name.trim();
-    if (trimmedName.isEmpty) {
-      return code.trim();
+    final String? trimmedName = _publicId(name);
+    if (trimmedName != null) {
+      return trimmedName;
     }
-    return trimmedName;
+    final String? codePart = _publicId(code);
+    if (codePart != null) {
+      return codePart;
+    }
+    return '—';
   }
 
   String get parentLabel {
-    final String? parentNameValue = parentName?.trim();
-    if (parentNameValue != null && parentNameValue.isNotEmpty) {
+    final String? parentNameValue = _publicId(parentName);
+    if (parentNameValue != null) {
       return parentNameValue;
     }
-    final String? parentCodeValue = parentCode?.trim();
-    if (parentCodeValue != null && parentCodeValue.isNotEmpty) {
+    final String? parentCodeValue = _publicId(parentCode);
+    if (parentCodeValue != null) {
       return parentCodeValue;
     }
     return '';
   }
+}
+
+final RegExp _chartUuidPattern = RegExp(
+  r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+);
+
+String? _publicId(String? value) {
+  final String normalized = value?.trim() ?? '';
+  if (normalized.isEmpty || _chartUuidPattern.hasMatch(normalized)) {
+    return null;
+  }
+  return normalized;
 }
 
 @immutable
