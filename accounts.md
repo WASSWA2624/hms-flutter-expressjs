@@ -73,21 +73,6 @@ Rules:
 
 **Aliases (compat):** `all` / `inbox` → work · `journal-entries` / `unposted` / `ready-to-post` → journals · `approval-required` → approvals · `general-ledger` / `ledger` → gl · `patient-ledgers` → ledgers · `chart-of-accounts` / `coa` → chart · `periods` / `period-close` / `close` → books · `analytics` → deep-link Reporting & analytics.
 
-### What was deliberately removed / merged
-
-| Removed | Why | Where it lives now |
-|---|---|---|
-| **Inbox** label | Sounds like email; vague for a books desk | Renamed **Open work** (same cross-queue list) |
-| **Analytics** tab | Period totals belong with reporting | **Reporting & analytics** |
-| One-word **GL** / **Ledgers** / **Chart** / **Books** | Too terse on the strip | **General ledger** · **Patient ledgers** · **Account chart** · **Close books** |
-| **Postings** tab | Same rows as Open work / To post with source filter | **Open work** + Source filter (Billing handoff, Manual, Payroll, …) |
-| **Trial balance** tab | Snapshot of General ledger | **General ledger** export · **Close books** checklist · Reporting |
-| Patient / invoice cashier tabs | Cashier domain | **Billing** (`billing.md`) |
-| Close period on every tab | Duplicate chrome | **Close books** only |
-| New journal on many tabs | Duplicate entry points | **Open work** only (**Journal**) |
-| Post trailing on many tabs | Duplicate of row Post | Row **Post** / detail **Post** only |
-| Labels longer than 2 words | Slow scanning | Cap at 2 words; put the rest in the tooltip |
-
 ---
 
 ## 3. Shared work-queue contract

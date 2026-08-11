@@ -72,20 +72,6 @@ Rules:
 
 **Aliases (compat):** `all` / `inbox` → work · `needs-issue` / `ready-to-issue` → issue · `awaiting-payment` / `pending-payment` / `overdue` → collect · `claims-pending` → claims · `approval-required` → approvals · `price-book` → prices · `patient-ledgers` / `ledgers` → deep-link `/accounts?section=ledgers` · `analytics` → deep-link Reporting & analytics.
 
-### What was deliberately removed / merged
-
-| Removed | Why | Where it lives now |
-|---|---|---|
-| **Inbox** label | Sounds like email; vague for a cashier desk | Renamed **Open work** (same cross-queue list) |
-| **Ledgers** tab | Patient money browse is books domain | **Accounts** → **Patient ledgers** (`accounts.md`) |
-| **Analytics** tab | Period totals belong with reporting | **Reporting & analytics** |
-| **Payments** tab | Duplicated Collect due + invoice payment history | Payments list inside **invoice detail**; refund/reconcile from there or Collect due next action |
-| **Overdue** tab | Same rows as Collect due with age | **Collect due** + Overdue status/age filter (danger chip) |
-| Close shift/day on every tab | Duplicate chrome | **Collect due** only |
-| Quick charge on many tabs | Duplicate entry points | **Open work** only |
-| Receive payment trailing on many tabs | Duplicate of row Pay | Row **Pay** / detail **Pay** only |
-| Labels longer than 2 words | Slow scanning | Cap at 2 words; put the rest in the tooltip |
-
 ---
 
 ## 3. Shared work-queue contract
