@@ -152,7 +152,7 @@ Future<void> _pumpApprovalTab(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/billing?queue=approval-required',
+    initialLocation: '/billing?section=approvals',
     routes: <RouteBase>[
       GoRoute(
         path: '/billing',
@@ -216,7 +216,7 @@ void main() {
     repository = _MockBillingRepository();
   });
 
-  group('Approval required tab billing & sections scan', () {
+  group('Need approval tab billing & sections scan', () {
     test('AC1: every financial atom is inventoried and classified', () {
       expect(BillingApprovalRequiredFinancialInventory.all, isNotEmpty);
       expect(
@@ -228,12 +228,22 @@ void main() {
           'approve',
           'approve_refund_or_void',
           'reject',
-          'close_shift',
-          'close_day',
           'empty_state',
           'error_retry',
           'view_ledger',
         ]),
+      );
+      expect(
+        BillingApprovalRequiredFinancialInventory.all.map(
+          (BillingApprovalRequiredFinancialAtom atom) => atom.id,
+        ),
+        isNot(contains('close_shift')),
+      );
+      expect(
+        BillingApprovalRequiredFinancialInventory.all.map(
+          (BillingApprovalRequiredFinancialAtom atom) => atom.id,
+        ),
+        isNot(contains('close_day')),
       );
       expect(
         BillingApprovalRequiredFinancialInventory.billableMutations.every(
@@ -305,7 +315,7 @@ void main() {
     });
 
     testWidgets(
-      'AC3: approve posts via repository and syncs Approval required queue',
+      'AC3: approve posts via repository and syncs Need approval queue',
       (WidgetTester tester) async {
         await _pumpApprovalTab(
           tester,
@@ -313,7 +323,7 @@ void main() {
           accessPolicy: _approverPolicy(),
         );
 
-        await tester.tap(find.byTooltip('Approve').first);
+        await tester.tap(find.byTooltip('Approve this pending request').first);
         await tester.pumpAndSettle();
 
         expect(find.byType(AppDialog), findsWidgets);
@@ -361,14 +371,14 @@ void main() {
           accessPolicy: reader,
         );
 
-        expect(find.byTooltip('Approve'), findsNothing);
+        expect(find.byTooltip('Approve this pending request'), findsNothing);
         verifyNever(() => repository.approveApproval(any(), any()));
         verifyNever(() => repository.rejectApproval(any(), any()));
       },
     );
 
     testWidgets(
-      'AC5: Approval required list chrome uses flat sections (desktop light)',
+      'AC5: Need approval list chrome uses flat sections (desktop light)',
       (WidgetTester tester) async {
         await _pumpApprovalTab(
           tester,
@@ -384,7 +394,7 @@ void main() {
     );
 
     testWidgets(
-      'AC5: detail dialog from Approval required keeps flat sections (mobile dark)',
+      'AC5: detail dialog from Need approval keeps flat sections (mobile dark)',
       (WidgetTester tester) async {
         await _pumpApprovalTab(
           tester,
@@ -404,7 +414,7 @@ void main() {
     );
 
     testWidgets(
-      'AC5: approve dialog from Approval required stays flat',
+      'AC5: approve dialog from Need approval stays flat',
       (WidgetTester tester) async {
         await _pumpApprovalTab(
           tester,
@@ -412,7 +422,7 @@ void main() {
           accessPolicy: _approverPolicy(),
         );
 
-        await tester.tap(find.byTooltip('Approve').first);
+        await tester.tap(find.byTooltip('Approve this pending request').first);
         await tester.pumpAndSettle();
 
         expect(find.byType(AppDialog), findsWidgets);

@@ -161,6 +161,19 @@ const rejectApprovalSchema = z.object({
   decision_notes: z.string().trim().max(10000).optional().nullable(),
 });
 
+const createChargeSchema = z.object({
+  patient_id: uuidOrFriendlyIdentifierSchema,
+  description: z.string().trim().min(1).max(255),
+  quantity: z.coerce.number().int().min(1).max(10000),
+  unit_price: decimalStringSchema,
+  payment_mode: z.enum(['SELF_PAY', 'INSURANCE']).optional().default('SELF_PAY'),
+  catalog_type: z.string().trim().max(40).optional().nullable(),
+  catalog_item_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  price_book_entry_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  currency: z.string().trim().min(3).max(10).optional().nullable(),
+  notes: z.string().trim().max(10000).optional().nullable(),
+});
+
 module.exports = {
   queueTypeSchema,
   workspaceQuerySchema,
@@ -180,4 +193,5 @@ module.exports = {
   adjustmentRequestSchema,
   approveApprovalSchema,
   rejectApprovalSchema,
+  createChargeSchema,
 };

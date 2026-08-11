@@ -112,7 +112,11 @@ void _stubRepository(
     );
   });
   when(
-    () => repository.receivePayment(any(), any()),
+    () => repository.receivePayment(
+      any(),
+      any(),
+      idempotencyKey: any(named: 'idempotencyKey'),
+    ),
   ).thenAnswer(
     (_) async => const Result<BillingMutationResult>.success(
       BillingMutationResult(invoice: _partiallyPaid),
@@ -229,24 +233,25 @@ void main() {
       );
 
       expect(find.text('Omar Overdue'), findsOneWidget);
+      expect(find.text('Collect due'), findsWidgets);
       expect(find.text('Overdue'), findsWidgets);
       expect(find.text('Close shift'), findsNothing);
       expect(find.text('Close day'), findsNothing);
-      expect(find.byTooltip('Receive payment'), findsNothing);
+      expect(find.byTooltip('Receive payment toward the balance due'), findsNothing);
       expect(
         find.descendant(
           of: find.byType(AppListTableGrid),
-          matching: find.text('Next action'),
+          matching: find.text('Next'),
         ),
         findsNothing,
       );
-      expect(find.text('Claims pending'), findsNothing);
+      expect(find.text('Open claims'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
 
       await tester.tap(find.text('Omar Overdue'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Receive payment'), findsNothing);
+      expect(find.text('Pay'), findsNothing);
       expect(find.text('Adjust'), findsNothing);
       expect(find.text('Void'), findsNothing);
       expect(find.text('Send'), findsNothing);
@@ -291,12 +296,12 @@ void main() {
       expect(find.text('Omar Overdue'), findsOneWidget);
       expect(find.text('Close shift'), findsOneWidget);
       expect(find.text('Close day'), findsOneWidget);
-      expect(find.byTooltip('Receive payment'), findsWidgets);
+      expect(find.byTooltip('Receive payment toward the balance due'), findsWidgets);
 
       await tester.tap(find.text('Omar Overdue'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Receive payment'), findsWidgets);
+      expect(find.text('Pay'), findsWidgets);
       expect(find.text('Adjust'), findsWidgets);
       expect(find.text('Send'), findsWidgets);
       expect(find.text('Void'), findsWidgets);
@@ -326,9 +331,9 @@ void main() {
         accessPolicy: writeOnly,
       );
 
-      expect(find.text('Omar Overdue'), findsNothing);
-      expect(find.byType(AppTabStrip), findsNothing);
-      expect(find.byTooltip('Receive payment'), findsNothing);
+      expect(find.text('Omar Overdue'), findsOneWidget);
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.byTooltip('Receive payment toward the balance due'), findsWidgets);
     },
   );
 
@@ -379,8 +384,8 @@ void main() {
         ),
         isFalse,
       );
-      expect(find.text('Claims pending'), findsNothing);
-      expect(find.byTooltip('Receive payment'), findsWidgets);
+      expect(find.text('Open claims'), findsNothing);
+      expect(find.byTooltip('Receive payment toward the balance due'), findsWidgets);
     },
   );
 
@@ -407,14 +412,20 @@ void main() {
 
       final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
       expect(
-        strip.tabs.any((AppTabItem tab) => tab.label.contains('Claims')),
+        strip.tabs.any(
+          (AppTabItem tab) => tab.label.toLowerCase().contains('claims'),
+        ),
+        isTrue,
+      );
+      expect(
+        strip.tabs.any((AppTabItem tab) => tab.label.contains('Collect due')),
         isTrue,
       );
       expect(
         strip.tabs.any((AppTabItem tab) => tab.label.contains('Overdue')),
-        isTrue,
+        isFalse,
       );
-      expect(find.byTooltip('Receive payment'), findsNothing);
+      expect(find.byTooltip('Receive payment toward the balance due'), findsNothing);
     },
   );
 
@@ -463,7 +474,7 @@ void main() {
 
     expect(find.text('Omar Overdue'), findsOneWidget);
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.byTooltip('Receive payment'), findsWidgets);
+    expect(find.byTooltip('Receive payment toward the balance due'), findsWidgets);
     expect(find.byTooltip('Close shift'), findsOneWidget);
   });
 
@@ -484,7 +495,7 @@ void main() {
 
     expect(find.text('Omar Overdue'), findsOneWidget);
     expect(find.text('Close shift'), findsOneWidget);
-    expect(find.byTooltip('Receive payment'), findsWidgets);
+    expect(find.byTooltip('Receive payment toward the balance due'), findsWidgets);
   });
 
   testWidgets('light theme: authorized Overdue chrome remains', (
@@ -504,7 +515,7 @@ void main() {
 
     expect(find.text('Omar Overdue'), findsOneWidget);
     expect(find.text('Close shift'), findsOneWidget);
-    expect(find.byTooltip('Receive payment'), findsWidgets);
+    expect(find.byTooltip('Receive payment toward the balance due'), findsWidgets);
   });
 
   testWidgets(
@@ -521,21 +532,27 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byTooltip('Receive payment').first);
+      await tester.tap(find.byTooltip('Receive payment toward the balance due').first);
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsWidgets);
-      expect(find.text('Receive payment'), findsWidgets);
+      expect(find.text('Pay'), findsWidgets);
 
-      final Finder submit = find.widgetWithText(FilledButton, 'Receive payment');
+      final Finder submit = find.widgetWithText(FilledButton, 'Pay');
       if (submit.evaluate().isNotEmpty) {
         await tester.tap(submit.last);
       } else {
-        await tester.tap(find.text('Receive payment').last);
+        await tester.tap(find.text('Pay').last);
       }
       await tester.pumpAndSettle();
 
-      verify(() => repository.receivePayment(any(), any())).called(1);
+      verify(
+        () => repository.receivePayment(
+          any(),
+          any(),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      ).called(1);
     },
   );
 
@@ -553,7 +570,7 @@ void main() {
         ),
       );
 
-      expect(find.byTooltip('Receive payment'), findsWidgets);
+      expect(find.byTooltip('Receive payment toward the balance due'), findsWidgets);
       expect(find.byTooltip('Approve'), findsNothing);
       expect(
         BillingOverdueAtomPermissions.approve.isAllowed(
@@ -583,8 +600,8 @@ void main() {
       );
 
       expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(find.text('No billing items'), findsOneWidget);
-      expect(find.byTooltip('Receive payment'), findsNothing);
+      expect(find.text('No balances due.'), findsOneWidget);
+      expect(find.byTooltip('Receive payment toward the balance due'), findsNothing);
       expect(find.text('Close shift'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -640,8 +657,8 @@ void main() {
         accessPolicy: writerNoClaims,
       );
 
-      expect(find.text('Claims pending'), findsNothing);
-      expect(find.byTooltip('Receive payment'), findsWidgets);
+      expect(find.text('Open claims'), findsNothing);
+      expect(find.byTooltip('Receive payment toward the balance due'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -663,7 +680,7 @@ void main() {
       );
 
       expect(find.byType(AppDialog), findsWidgets);
-      expect(find.text('Receive payment'), findsWidgets);
+      expect(find.text('Pay'), findsWidgets);
     },
   );
 
@@ -681,7 +698,7 @@ void main() {
       );
 
       expect(find.text('Omar Overdue'), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, 'Receive payment'), findsNothing);
+      expect(find.widgetWithText(FilledButton, 'Pay'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

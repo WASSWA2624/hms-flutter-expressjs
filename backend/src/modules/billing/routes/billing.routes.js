@@ -24,6 +24,7 @@ const {
   adjustmentRequestSchema,
   approveApprovalSchema,
   rejectApprovalSchema,
+  createChargeSchema,
 } = require('@validations/billing/billing.schema');
 
 const BILLING_READ_SCOPES = [PERMISSIONS.BILLING_READ];
@@ -137,6 +138,13 @@ router.post(
   validateRequest({ params: approvalIdentifierParamsSchema, body: rejectApprovalSchema }),
   authorize(BILLING_APPROVER_SCOPES, 'permission'),
   billingController.rejectApproval
+);
+
+router.post(
+  '/charges',
+  validateRequest({ body: createChargeSchema }),
+  authorize(BILLING_WRITE_SCOPES, 'permission'),
+  billingController.createCharge
 );
 
 router.get(

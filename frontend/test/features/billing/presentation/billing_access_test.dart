@@ -198,28 +198,28 @@ void main() {
       expect(
         identical(
           BillingAllAtomPermissions.tab,
-          billingWorkspaceReadRequirement,
+          billingWorkspaceEntryRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
           BillingAllAtomPermissions.listChrome,
-          billingWorkspaceReadRequirement,
+          billingWorkspaceEntryRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
           BillingAllAtomPermissions.detail,
-          billingWorkspaceReadRequirement,
+          billingWorkspaceEntryRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
           BillingAllAtomPermissions.document,
-          billingWorkspaceReadRequirement,
+          billingWorkspaceEntryRequirement,
         ),
         isTrue,
       );
@@ -1113,28 +1113,28 @@ void main() {
       expect(
         identical(
           BillingNeedsIssueAtomPermissions.tab,
-          billingWorkspaceReadRequirement,
+          billingWorkspaceEntryRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
           BillingNeedsIssueAtomPermissions.listChrome,
-          billingWorkspaceReadRequirement,
+          billingWorkspaceEntryRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
           BillingNeedsIssueAtomPermissions.detail,
-          billingWorkspaceReadRequirement,
+          billingWorkspaceEntryRequirement,
         ),
         isTrue,
       );
       expect(
         identical(
           BillingNeedsIssueAtomPermissions.document,
-          billingWorkspaceReadRequirement,
+          billingWorkspaceEntryRequirement,
         ),
         isTrue,
       );
@@ -1492,5 +1492,86 @@ void main() {
         );
       },
     );
+  });
+
+  group('billing price book access', () {
+    test('tab readable with billing:read ∩ billing-payments', () {
+      final AppAccessPolicy reader = _policyFor(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+      );
+      final AppAccessPolicy noModule = _policyFor(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+        modules: const <AppModuleEntitlement>[],
+      );
+
+      expect(canViewBillingPriceBook(reader), isTrue);
+      expect(BillingPriceBookAtomPermissions.tab.isAllowed(reader), isTrue);
+      expect(canViewBillingPriceBook(noModule), isFalse);
+    });
+
+    test('write needs pricing or admin, not billing:write alone', () {
+      final AppAccessPolicy billingWriter = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+        },
+      );
+      final AppAccessPolicy pricingWriter = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.pricingFacilityWrite,
+        },
+      );
+      final AppAccessPolicy pharmacyWriter = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.pricingPharmacyWrite,
+        },
+      );
+      final AppAccessPolicy admin = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.facilityAdmin,
+        },
+      );
+
+      expect(canWriteBillingPriceBook(billingWriter), isFalse);
+      expect(canWriteBillingPriceBook(pricingWriter), isTrue);
+      expect(canWriteBillingPriceBook(pharmacyWriter), isTrue);
+      expect(canWriteBillingPriceBook(admin), isTrue);
+      expect(
+        BillingPriceBookAtomPermissions.create.isAllowed(pricingWriter),
+        isTrue,
+      );
+      expect(
+        BillingPriceBookAtomPermissions.update.isAllowed(billingWriter),
+        isFalse,
+      );
+    });
+
+    test('fromUri maps prices / price-book aliases', () {
+      expect(
+        BillingWorkspaceQuery.fromUri(Uri.parse('/billing?section=prices'))
+            .priceBook,
+        isTrue,
+      );
+      expect(
+        BillingWorkspaceQuery.fromUri(Uri.parse('/billing?section=price-book'))
+            .priceBook,
+        isTrue,
+      );
+      expect(
+        BillingWorkspaceQuery.fromUri(Uri.parse('/billing?tab=prices')).priceBook,
+        isTrue,
+      );
+      expect(
+        BillingWorkspaceQuery.fromUri(Uri.parse('/billing?section=work'))
+            .priceBook,
+        isFalse,
+      );
+      expect(BillingQueueType.isPriceBookSlug('prices'), isTrue);
+      expect(BillingQueueType.isPriceBookSlug('price-book'), isTrue);
+      expect(BillingQueueType.isPriceBookSlug('collect'), isFalse);
+    });
   });
 }

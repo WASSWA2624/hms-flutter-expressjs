@@ -214,6 +214,11 @@ const getInvoiceDocument = asyncHandler(async (req, res) => {
   return res.status(200).send(document.buffer);
 });
 
+const createCharge = asyncHandler(async (req, res) => {
+  const data = await billingService.createCharge(req.body, req.user, req.ip);
+  return sendSuccess(res, 201, 'messages.billing.charge.create.success', data);
+});
+
 module.exports = {
   getWorkspace,
   getFinancialAnalytics,
@@ -229,4 +234,5 @@ module.exports = {
   approveApproval,
   rejectApproval,
   getInvoiceDocument,
+  createCharge,
 };

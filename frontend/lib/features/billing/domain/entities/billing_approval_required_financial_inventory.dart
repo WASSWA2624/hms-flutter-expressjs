@@ -1,7 +1,7 @@
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 
-/// Financial action classification for the Billing **Approval required** tab scan.
+/// Financial action classification for the Billing **Need approval** tab scan.
 enum BillingApprovalRequiredActionClass {
   /// Executes held adjustment (write-off / discount / credit) through Billing.
   adjust,
@@ -9,14 +9,11 @@ enum BillingApprovalRequiredActionClass {
   /// Executes held refund or void through Billing on approve.
   reverse,
 
-  /// Shift/day close reconciles Billing ledger totals.
-  settle,
-
   /// Read chrome, navigation, ledger view, audited rejection (no balance change).
   notBillable,
 }
 
-/// One financially relevant atom on the Approval required tab (`?queue=approval-required`).
+/// One financially relevant atom on the Need approval tab (`?section=approvals`).
 final class BillingApprovalRequiredFinancialAtom {
   const BillingApprovalRequiredFinancialAtom({
     required this.id,
@@ -37,15 +34,16 @@ final class BillingApprovalRequiredFinancialAtom {
   final String? auditNote;
 }
 
-/// Canonical inventory of Approval required tab financially relevant atoms (AC1).
+/// Canonical inventory of Need approval tab financially relevant atoms (AC1).
 ///
 /// Approve executes the held mutation (ADJUSTMENT / REFUND / VOID) via Billing;
 /// reject records an audited decision without posting a ledger row.
+/// Close shift / Close day are Collect due–owned trailing actions — not mounted.
 abstract final class BillingApprovalRequiredFinancialInventory {
   static const BillingApprovalRequiredFinancialAtom tab =
       BillingApprovalRequiredFinancialAtom(
     id: 'tab',
-    label: 'Approval required tab',
+    label: 'Need approval tab',
     actionClass: BillingApprovalRequiredActionClass.notBillable,
     requirement: BillingApprovalRequiredAtomPermissions.tab,
   );
@@ -64,26 +62,6 @@ abstract final class BillingApprovalRequiredFinancialInventory {
     label: 'Row select → detail',
     actionClass: BillingApprovalRequiredActionClass.notBillable,
     requirement: BillingApprovalRequiredAtomPermissions.detail,
-  );
-
-  static const BillingApprovalRequiredFinancialAtom closeShift =
-      BillingApprovalRequiredFinancialAtom(
-    id: 'close_shift',
-    label: 'Close shift',
-    actionClass: BillingApprovalRequiredActionClass.settle,
-    requirement: BillingApprovalRequiredAtomPermissions.close,
-    repositoryMethod: 'closeShift',
-    auditNote: 'Reconciles Billing payments for shift',
-  );
-
-  static const BillingApprovalRequiredFinancialAtom closeDay =
-      BillingApprovalRequiredFinancialAtom(
-    id: 'close_day',
-    label: 'Close day',
-    actionClass: BillingApprovalRequiredActionClass.settle,
-    requirement: BillingApprovalRequiredAtomPermissions.close,
-    repositoryMethod: 'closeDay',
-    auditNote: 'Day close against Billing ledger',
   );
 
   static const BillingApprovalRequiredFinancialAtom approve =
@@ -105,7 +83,8 @@ abstract final class BillingApprovalRequiredFinancialInventory {
     actionClass: BillingApprovalRequiredActionClass.reverse,
     requirement: BillingApprovalRequiredAtomPermissions.approve,
     repositoryMethod: 'approveApproval',
-    auditNote: 'Same approveApproval path — REFUND creates refund row; VOID cancels invoice',
+    auditNote:
+        'Same approveApproval path — REFUND creates refund row; VOID cancels invoice',
   );
 
   static const BillingApprovalRequiredFinancialAtom reject =
@@ -150,7 +129,7 @@ abstract final class BillingApprovalRequiredFinancialInventory {
   static const BillingApprovalRequiredFinancialAtom claimsPendingTab =
       BillingApprovalRequiredFinancialAtom(
     id: 'claims_pending_tab',
-    label: 'Claims pending tab strip navigation',
+    label: 'Open claims tab strip navigation',
     actionClass: BillingApprovalRequiredActionClass.notBillable,
     requirement: BillingApprovalRequiredAtomPermissions.claimsPendingTab,
   );
@@ -171,14 +150,12 @@ abstract final class BillingApprovalRequiredFinancialInventory {
     requirement: BillingApprovalRequiredAtomPermissions.listChrome,
   );
 
-  /// Every atom inventoried for the Approval required tab scan.
+  /// Every atom inventoried for the Need approval tab scan.
   static const List<BillingApprovalRequiredFinancialAtom> all =
       <BillingApprovalRequiredFinancialAtom>[
     tab,
     listChrome,
     detail,
-    closeShift,
-    closeDay,
     approve,
     approveRefundOrVoid,
     reject,
@@ -203,7 +180,6 @@ abstract final class BillingApprovalRequiredFinancialInventory {
     BillingApprovalRequiredActionClass actionClass,
   ) {
     return switch (actionClass) {
-      BillingApprovalRequiredActionClass.settle ||
       BillingApprovalRequiredActionClass.adjust ||
       BillingApprovalRequiredActionClass.reverse => true,
       _ => false,

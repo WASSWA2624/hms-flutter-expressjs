@@ -130,10 +130,19 @@ void _stubRepository(
     ),
   );
   when(
-    () => repository.receivePayment(any(), any()),
+    () => repository.receivePayment(
+      any(),
+      any(),
+      idempotencyKey: any(named: 'idempotencyKey'),
+    ),
   ).thenAnswer(
     (_) async => const Result<BillingMutationResult>.success(
       BillingMutationResult(invoice: _issuedInvoice),
+    ),
+  );
+  when(() => repository.createCharge(any())).thenAnswer(
+    (_) async => const Result<BillingMutationResult>.success(
+      BillingMutationResult(invoice: _draftInvoice),
     ),
   );
 }
@@ -145,7 +154,7 @@ Future<void> _pumpAllTab(
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
   List<BillingWorkItem> items = const <BillingWorkItem>[_draftInvoice],
-  String initialLocation = '/billing?queue=all',
+  String initialLocation = '/billing?section=work',
   Result<BillingWorkspaceOverview>? workspaceOverride,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -213,6 +222,15 @@ void main() {
     registerFallbackValue(
       const BillingPaymentDraft(amount: '1.00', method: 'CASH'),
     );
+    registerFallbackValue(
+      const BillingChargeDraft(
+        patientId: 'patient-1',
+        itemDescription: 'Consult',
+        quantity: 1,
+        unitPrice: '10.00',
+        paymentMode: 'SELF_PAY',
+      ),
+    );
   });
 
   setUp(() {
@@ -242,18 +260,19 @@ void main() {
       );
 
       expect(find.text('All Queue Patient'), findsOneWidget);
-      expect(find.textContaining('All billing'), findsWidgets);
+      expect(find.textContaining('Open work'), findsWidgets);
+      expect(find.text('Charge'), findsNothing);
       expect(find.text('Close shift'), findsNothing);
       expect(find.text('Close day'), findsNothing);
-      expect(find.byTooltip('Issue'), findsNothing);
+      expect(find.text('Issue'), findsNothing);
       expect(
         find.descendant(
           of: find.byType(AppListTableGrid),
-          matching: find.text('Next action'),
+          matching: find.text('Next'),
         ),
         findsNothing,
       );
-      expect(find.text('Claims pending'), findsNothing);
+      expect(find.text('Open claims'), findsNothing);
       expect(find.byType(AppSearchBar), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
 
@@ -299,9 +318,10 @@ void main() {
       );
 
       expect(find.text('All Queue Patient'), findsOneWidget);
-      expect(find.text('Close shift'), findsOneWidget);
-      expect(find.text('Close day'), findsOneWidget);
-      expect(find.byTooltip('Issue'), findsWidgets);
+      expect(find.text('Charge'), findsOneWidget);
+      expect(find.text('Close shift'), findsNothing);
+      expect(find.text('Close day'), findsNothing);
+      expect(find.text('Issue'), findsWidgets);
 
       await tester.tap(find.text('All Queue Patient'));
       await tester.pumpAndSettle();
@@ -330,12 +350,12 @@ void main() {
         items: const <BillingWorkItem>[_issuedInvoice],
       );
 
-      expect(find.byTooltip('Receive payment'), findsWidgets);
+      expect(find.byTooltip('Receive payment toward the balance due'), findsWidgets);
 
       await tester.tap(find.text('All Pay Patient'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Receive payment'), findsWidgets);
+      expect(find.text('Pay'), findsWidgets);
       expect(find.text('Adjust'), findsWidgets);
       expect(find.text('Send'), findsWidgets);
       expect(find.text('Void'), findsWidgets);
@@ -347,14 +367,15 @@ void main() {
   );
 
   testWidgets(
-    'route entry ∪: billing:write alone without billing:read omits read chrome',
+    'route entry ∪: billing:write alone without billing:read still mounts Open work',
     (WidgetTester tester) async {
       final AppAccessPolicy writeOnly = _policy(
         permissions: <AppPermission>{AppPermissions.billingWrite},
       );
       expect(BillingAllAtomPermissions.routeEntry.isAllowed(writeOnly), isTrue);
       expect(BillingAllAtomPermissions.entry.isAllowed(writeOnly), isTrue);
-      expect(BillingAllAtomPermissions.tab.isAllowed(writeOnly), isFalse);
+      // Tab strip uses entry (read ∪ write); atom map "tab" stays read-centric.
+      expect(canViewBillingQueue(writeOnly, BillingQueueType.all), isTrue);
 
       await _pumpAllTab(
         tester,
@@ -362,9 +383,11 @@ void main() {
         accessPolicy: writeOnly,
       );
 
-      expect(find.text('All Queue Patient'), findsNothing);
-      expect(find.byType(AppTabStrip), findsNothing);
-      expect(find.byTooltip('Issue'), findsNothing);
+      expect(find.text('All Queue Patient'), findsOneWidget);
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.text('Charge'), findsOneWidget);
+      expect(find.text('Issue'), findsWidgets);
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 
@@ -413,14 +436,16 @@ void main() {
 
       final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
       expect(
-        strip.tabs.any((AppTabItem tab) => tab.label.contains('Claims')),
+        strip.tabs.any(
+          (AppTabItem tab) => tab.label.toLowerCase().contains('claims'),
+        ),
         isTrue,
       );
       expect(
-        strip.tabs.any((AppTabItem tab) => tab.label.contains('All billing')),
+        strip.tabs.any((AppTabItem tab) => tab.label.contains('Open work')),
         isTrue,
       );
-      expect(find.byTooltip('Issue'), findsNothing);
+      expect(find.text('Issue'), findsNothing);
     },
   );
 
@@ -447,8 +472,12 @@ void main() {
     );
 
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.byTooltip('Close shift'), findsOneWidget);
-    expect(find.byTooltip('Close day'), findsOneWidget);
+    expect(
+      find.byTooltip('Create a draft charge for a patient'),
+      findsOneWidget,
+    );
+    expect(find.text('Close shift'), findsNothing);
+    expect(find.text('Close day'), findsNothing);
     expect(find.textContaining('no access'), findsNothing);
   });
 
@@ -469,8 +498,8 @@ void main() {
 
     expect(find.text('All Queue Patient'), findsOneWidget);
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.byTooltip('Issue'), findsWidgets);
-    expect(find.byTooltip('Close shift'), findsOneWidget);
+    expect(find.text('Issue'), findsWidgets);
+    expect(find.text('Charge'), findsOneWidget);
   });
 
   testWidgets('dark theme: authorized All chrome remains', (
@@ -489,8 +518,8 @@ void main() {
     );
 
     expect(find.text('All Queue Patient'), findsOneWidget);
-    expect(find.text('Close shift'), findsOneWidget);
-    expect(find.byTooltip('Issue'), findsWidgets);
+    expect(find.text('Charge'), findsOneWidget);
+    expect(find.text('Issue'), findsWidgets);
   });
 
   testWidgets('light theme: authorized All chrome remains', (
@@ -509,8 +538,8 @@ void main() {
     );
 
     expect(find.text('All Queue Patient'), findsOneWidget);
-    expect(find.text('Close shift'), findsOneWidget);
-    expect(find.byTooltip('Issue'), findsWidgets);
+    expect(find.text('Charge'), findsOneWidget);
+    expect(find.text('Issue'), findsWidgets);
   });
 
   testWidgets(
@@ -527,7 +556,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byTooltip('Issue').first);
+      await tester.tap(find.text('Issue').first);
       await tester.pump();
       await tester.pumpAndSettle();
 
@@ -601,7 +630,7 @@ void main() {
       expect(find.text('All Approval Patient'), findsOneWidget);
       expect(find.text('Close shift'), findsNothing);
       expect(find.byTooltip('Approve'), findsNothing);
-      expect(find.byTooltip('Issue'), findsNothing);
+      expect(find.text('Issue'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -626,7 +655,7 @@ void main() {
       );
 
       expect(find.text('All Approval Patient'), findsOneWidget);
-      expect(find.byTooltip('Approve'), findsWidgets);
+      expect(find.byTooltip('Approve this pending request'), findsWidgets);
 
       await tester.tap(find.text('All Approval Patient'));
       await tester.pumpAndSettle();
@@ -656,21 +685,29 @@ void main() {
         items: const <BillingWorkItem>[_issuedInvoice],
       );
 
-      await tester.tap(find.byTooltip('Receive payment').first);
+      await tester.tap(
+        find.byTooltip('Receive payment toward the balance due').first,
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsWidgets);
-      expect(find.text('Receive payment'), findsWidgets);
+      expect(find.text('Pay'), findsWidgets);
 
-      final Finder submit = find.widgetWithText(FilledButton, 'Receive payment');
+      final Finder submit = find.widgetWithText(FilledButton, 'Pay');
       if (submit.evaluate().isNotEmpty) {
         await tester.tap(submit.last);
       } else {
-        await tester.tap(find.text('Receive payment').last);
+        await tester.tap(find.text('Pay').last);
       }
       await tester.pumpAndSettle();
 
-      verify(() => repository.receivePayment(any(), any())).called(1);
+      verify(
+        () => repository.receivePayment(
+          any(),
+          any(),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      ).called(1);
     },
   );
 
@@ -687,8 +724,8 @@ void main() {
       );
 
       expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(find.text('No billing items'), findsOneWidget);
-      expect(find.byTooltip('Issue'), findsNothing);
+      expect(find.text('No open work.'), findsOneWidget);
+      expect(find.text('Issue'), findsNothing);
       expect(find.text('Close shift'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -729,11 +766,11 @@ void main() {
           },
         ),
         items: const <BillingWorkItem>[_issuedInvoice],
-        initialLocation: '/billing?queue=all&invoice=INV-ALL-PAY&action=pay',
+        initialLocation: '/billing?section=work&invoice=INV-ALL-PAY&action=pay',
       );
 
       expect(find.byType(AppDialog), findsWidgets);
-      expect(find.text('Receive payment'), findsWidgets);
+      expect(find.text('Pay'), findsWidgets);
     },
   );
 
@@ -747,11 +784,11 @@ void main() {
           permissions: <AppPermission>{AppPermissions.billingRead},
         ),
         items: const <BillingWorkItem>[_issuedInvoice],
-        initialLocation: '/billing?queue=all&invoice=INV-ALL-PAY&action=pay',
+        initialLocation: '/billing?section=work&invoice=INV-ALL-PAY&action=pay',
       );
 
       expect(find.text('All Pay Patient'), findsOneWidget);
-      expect(find.widgetWithText(FilledButton, 'Receive payment'), findsNothing);
+      expect(find.widgetWithText(FilledButton, 'Pay'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -781,8 +818,8 @@ void main() {
         ),
         isFalse,
       );
-      expect(find.text('Claims pending'), findsNothing);
-      expect(find.text('Close shift'), findsOneWidget);
+      expect(find.text('Open claims'), findsNothing);
+      expect(find.text('Charge'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -808,8 +845,8 @@ void main() {
         accessPolicy: writerNoClaims,
       );
 
-      expect(find.text('Claims pending'), findsNothing);
-      expect(find.byTooltip('Issue'), findsWidgets);
+      expect(find.text('Open claims'), findsNothing);
+      expect(find.text('Issue'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

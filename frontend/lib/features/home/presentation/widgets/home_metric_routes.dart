@@ -27,16 +27,19 @@ Map<String, String> homeDefaultBillingMetricQuery(String cardId) {
   return switch (cardId.trim().toLowerCase()) {
     'overdue_balance_amount' ||
     'overdue_invoices' ||
-    'billing_exceptions' => <String, String>{'queue': 'overdue'},
+    'billing_exceptions' => <String, String>{
+      'section': 'collect',
+      'overdue': 'yes',
+    },
     'pending_balance_amount' ||
     'open_balances' ||
     'billing_pending' ||
     'pending_payments' ||
     'my_open_bills' ||
-    'open_invoices' => <String, String>{'queue': 'pendingPayment'},
-    'invoices_today' => <String, String>{'queue': 'needsIssue'},
-    'pending_approvals' => <String, String>{'queue': 'approvalRequired'},
-    'pending_insurance_claims' => <String, String>{'queue': 'claimsPending'},
+    'open_invoices' => <String, String>{'section': 'collect'},
+    'invoices_today' => <String, String>{'section': 'issue'},
+    'pending_approvals' => <String, String>{'section': 'approvals'},
+    'pending_insurance_claims' => <String, String>{'section': 'claims'},
     _ => const <String, String>{},
   };
 }

@@ -141,7 +141,7 @@ Future<void> _pumpApprovalTab(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/billing?queue=approval-required',
+    initialLocation: '/billing?section=approvals',
     routes: <RouteBase>[
       GoRoute(
         path: '/billing',
@@ -194,7 +194,7 @@ void main() {
   });
 
   testWidgets(
-    'read-only: Approval required list visible; close/approve atoms absent',
+    'read-only: Need approval list visible; close/approve atoms absent',
     (WidgetTester tester) async {
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.billingRead},
@@ -222,16 +222,16 @@ void main() {
       expect(find.text('Dana Approval'), findsOneWidget);
       expect(find.text('Close shift'), findsNothing);
       expect(find.text('Close day'), findsNothing);
-      expect(find.byTooltip('Approve'), findsNothing);
+      expect(find.byTooltip('Approve this pending request'), findsNothing);
       expect(
         find.descendant(
           of: find.byType(AppListTableGrid),
-          matching: find.text('Next action'),
+          matching: find.text('Next'),
         ),
         findsNothing,
       );
-      expect(find.text('Approval required'), findsWidgets);
-      expect(find.text('Claims pending'), findsNothing);
+      expect(find.text('Need approval'), findsWidgets);
+      expect(find.text('Open claims'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
 
       await tester.tap(find.text('Dana Approval'));
@@ -246,7 +246,7 @@ void main() {
   );
 
   testWidgets(
-    'write without financial:approve: close present, Approve absent (∩ denial)',
+    'write without financial:approve: trailing close absent, Approve absent (∩ denial)',
     (WidgetTester tester) async {
       final AppAccessPolicy writer = _policy(
         permissions: <AppPermission>{
@@ -273,13 +273,13 @@ void main() {
         accessPolicy: writer,
       );
 
-      expect(find.text('Close shift'), findsOneWidget);
-      expect(find.text('Close day'), findsOneWidget);
-      expect(find.byTooltip('Approve'), findsNothing);
+      expect(find.text('Close shift'), findsNothing);
+      expect(find.text('Close day'), findsNothing);
+      expect(find.byTooltip('Approve this pending request'), findsNothing);
       expect(
         find.descendant(
           of: find.byType(AppListTableGrid),
-          matching: find.text('Next action'),
+          matching: find.text('Next'),
         ),
         findsNothing,
       );
@@ -315,7 +315,7 @@ void main() {
 
       expect(find.text('Dana Approval'), findsOneWidget);
       expect(find.text('Close shift'), findsNothing);
-      expect(find.byTooltip('Approve'), findsNothing);
+      expect(find.byTooltip('Approve this pending request'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -349,11 +349,11 @@ void main() {
         accessPolicy: approver,
       );
 
-      expect(find.byTooltip('Approve'), findsWidgets);
+      expect(find.byTooltip('Approve this pending request'), findsWidgets);
       expect(
         find.descendant(
           of: find.byType(AppListTableGrid),
-          matching: find.text('Next action'),
+          matching: find.text('Next'),
         ),
         findsOneWidget,
       );
@@ -373,7 +373,7 @@ void main() {
   );
 
   testWidgets(
-    'route entry ∪: billing:write alone without billing:read omits read chrome',
+    'route entry ∪: billing:write alone without billing:read keeps Need approval readable',
     (WidgetTester tester) async {
       final AppAccessPolicy writeOnly = _policy(
         permissions: <AppPermission>{AppPermissions.billingWrite},
@@ -384,7 +384,7 @@ void main() {
       );
       expect(
         BillingApprovalRequiredAtomPermissions.tab.isAllowed(writeOnly),
-        isFalse,
+        isTrue,
       );
 
       await _pumpApprovalTab(
@@ -393,14 +393,17 @@ void main() {
         accessPolicy: writeOnly,
       );
 
-      expect(find.text('Dana Approval'), findsNothing);
-      expect(find.byType(AppTabStrip), findsNothing);
-      expect(find.byTooltip('Approve'), findsNothing);
+      expect(find.text('Dana Approval'), findsOneWidget);
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.text('Need approval'), findsWidgets);
+      // Approve still needs financial:approve ∩ billing:write.
+      expect(find.byTooltip('Approve this pending request'), findsNothing);
+      expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'subscription strip: billing-payments missing omits Approval required chrome',
+    'subscription strip: billing-payments missing omits Need approval chrome',
     (WidgetTester tester) async {
       await _pumpApprovalTab(
         tester,
@@ -433,7 +436,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Claims pending'), findsNothing);
+      expect(find.text('Open claims'), findsNothing);
       expect(
         BillingApprovalRequiredAtomPermissions.claimsPendingTab.isAllowed(
           _policy(permissions: <AppPermission>{AppPermissions.billingRead}),
@@ -461,18 +464,22 @@ void main() {
 
       final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
       expect(
-        strip.tabs.any((AppTabItem tab) => tab.label.contains('Claims')),
+        strip.tabs.any(
+          (AppTabItem tab) => tab.label.toLowerCase().contains('claims'),
+        ),
         isTrue,
       );
       expect(
-        strip.tabs.any((AppTabItem tab) => tab.label.contains('Approval')),
+        strip.tabs.any(
+          (AppTabItem tab) => tab.label.toLowerCase().contains('approval'),
+        ),
         isTrue,
       );
-      expect(find.byTooltip('Approve'), findsNothing);
+      expect(find.byTooltip('Approve this pending request'), findsNothing);
     },
   );
 
-  testWidgets('mobile viewport keeps authorized Approval required chrome', (
+  testWidgets('mobile viewport keeps authorized Need approval chrome', (
     WidgetTester tester,
   ) async {
     await _pumpApprovalTab(
@@ -496,12 +503,12 @@ void main() {
     );
 
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.byTooltip('Close shift'), findsOneWidget);
-    expect(find.byTooltip('Close day'), findsOneWidget);
+    expect(find.byTooltip('Close shift'), findsNothing);
+    expect(find.byTooltip('Close day'), findsNothing);
     expect(find.textContaining('no access'), findsNothing);
   });
 
-  testWidgets('desktop viewport keeps authorized Approval required row readable', (
+  testWidgets('desktop viewport keeps authorized Need approval row readable', (
     WidgetTester tester,
   ) async {
     await _pumpApprovalTab(
@@ -519,11 +526,11 @@ void main() {
 
     expect(find.text('Dana Approval'), findsOneWidget);
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.byTooltip('Approve'), findsWidgets);
-    expect(find.byTooltip('Close shift'), findsOneWidget);
+    expect(find.byTooltip('Approve this pending request'), findsWidgets);
+    expect(find.byTooltip('Close shift'), findsNothing);
   });
 
-  testWidgets('light theme: authorized Approval required chrome remains', (
+  testWidgets('light theme: authorized Need approval chrome remains', (
     WidgetTester tester,
   ) async {
     await _pumpApprovalTab(
@@ -539,11 +546,11 @@ void main() {
     );
 
     expect(find.text('Dana Approval'), findsOneWidget);
-    expect(find.text('Close shift'), findsOneWidget);
-    expect(find.byTooltip('Approve'), findsWidgets);
+    expect(find.text('Close shift'), findsNothing);
+    expect(find.byTooltip('Approve this pending request'), findsWidgets);
   });
 
-  testWidgets('dark theme: authorized Approval required chrome remains', (
+  testWidgets('dark theme: authorized Need approval chrome remains', (
     WidgetTester tester,
   ) async {
     await _pumpApprovalTab(
@@ -560,12 +567,12 @@ void main() {
     );
 
     expect(find.text('Dana Approval'), findsOneWidget);
-    expect(find.text('Close shift'), findsOneWidget);
-    expect(find.byTooltip('Approve'), findsWidgets);
+    expect(find.text('Close shift'), findsNothing);
+    expect(find.byTooltip('Approve this pending request'), findsWidgets);
   });
 
   testWidgets(
-    'authorized empty Approval required queue remains observable',
+    'authorized empty Need approval queue remains observable',
     (WidgetTester tester) async {
       await _pumpApprovalTab(
         tester,
@@ -577,14 +584,14 @@ void main() {
         summary: _emptySummary,
       );
 
-      expect(find.text('No billing items'), findsOneWidget);
-      expect(find.byTooltip('Approve'), findsNothing);
+      expect(find.text('No pending approvals.'), findsOneWidget);
+      expect(find.byTooltip('Approve this pending request'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'authorized error/retry surface remains observable on Approval required',
+    'authorized error/retry surface remains observable on Need approval',
     (WidgetTester tester) async {
       await _pumpApprovalTab(
         tester,
@@ -621,7 +628,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byTooltip('Approve').first);
+      await tester.tap(find.byTooltip('Approve this pending request').first);
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsWidgets);
@@ -672,7 +679,7 @@ void main() {
   );
 
   testWidgets(
-    'nestedWrite without insurance-claims stays denied on Approval required',
+    'nestedWrite without insurance-claims stays denied on Need approval',
     (WidgetTester tester) async {
       final AppAccessPolicy writerNoClaims = _policy(
         permissions: <AppPermission>{
@@ -698,8 +705,8 @@ void main() {
         accessPolicy: writerNoClaims,
       );
 
-      expect(find.text('Claims pending'), findsNothing);
-      expect(find.byTooltip('Approve'), findsWidgets);
+      expect(find.text('Open claims'), findsNothing);
+      expect(find.byTooltip('Approve this pending request'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

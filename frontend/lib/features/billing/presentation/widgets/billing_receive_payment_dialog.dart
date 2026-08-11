@@ -112,7 +112,7 @@ class _BillingReceivePaymentDialogState
   @override
   Widget build(BuildContext context) {
     return AppDialog(
-      title: Text(context.l10n.billingReceivePayment),
+      title: Text(context.l10n.billingPayAction),
       icon: const Icon(Icons.point_of_sale),
       scrollable: true,
       content: AppFormShell(
@@ -207,7 +207,7 @@ class _BillingReceivePaymentDialogState
       ),
       actions: buildAppDialogFormActions(
         cancelLabel: context.l10n.commonCancelActionLabel,
-        submitLabel: context.l10n.billingReceivePayment,
+        submitLabel: context.l10n.billingPayAction,
         submitIcon: Icons.point_of_sale,
         onCancel: () => Navigator.of(context).maybePop(),
         onSubmit: _submit,

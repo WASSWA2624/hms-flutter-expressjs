@@ -13,6 +13,19 @@ enum BillingQueueType {
 
   final String serverValue;
 
+  /// Canonical `?section=` slug written for this desk tab.
+  String get sectionQueryValue {
+    return switch (this) {
+      BillingQueueType.all => 'work',
+      BillingQueueType.needsIssue => 'issue',
+      BillingQueueType.pendingPayment => 'collect',
+      BillingQueueType.claimsPending => 'claims',
+      BillingQueueType.approvalRequired => 'approvals',
+      // Overdue is a Collect due filter, not a desk section; keep legacy slug.
+      BillingQueueType.overdue => 'overdue',
+    };
+  }
+
   static BillingQueueType fromServer(String? value) {
     final String normalized = (value ?? '').trim().toUpperCase();
     if (normalized.isEmpty || normalized == 'ALL') {
@@ -24,6 +37,43 @@ enum BillingQueueType {
       }
     }
     return BillingQueueType.pendingPayment;
+  }
+
+  /// Resolves `section` / `tab` / legacy `queue` slugs to a desk queue.
+  static BillingQueueType? resolveDeskSlug(String? raw) {
+    final String normalized = (raw ?? '').trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return null;
+    }
+    const Map<String, BillingQueueType> slugMap = <String, BillingQueueType>{
+      'work': BillingQueueType.all,
+      'all': BillingQueueType.all,
+      'inbox': BillingQueueType.all,
+      'issue': BillingQueueType.needsIssue,
+      'needs-issue': BillingQueueType.needsIssue,
+      'ready-to-issue': BillingQueueType.needsIssue,
+      'collect': BillingQueueType.pendingPayment,
+      'pending-payment': BillingQueueType.pendingPayment,
+      'awaiting-payment': BillingQueueType.pendingPayment,
+      'claims': BillingQueueType.claimsPending,
+      'claims-pending': BillingQueueType.claimsPending,
+      'approvals': BillingQueueType.approvalRequired,
+      'approval-required': BillingQueueType.approvalRequired,
+      // Overdue is a Collect due filter (billing.md §2), not a desk tab.
+      'overdue': BillingQueueType.pendingPayment,
+    };
+    return slugMap[normalized];
+  }
+
+  /// True when [raw] selects the Price book desk section (not a work queue).
+  static bool isPriceBookSlug(String? raw) {
+    final String normalized = (raw ?? '').trim().toLowerCase();
+    return normalized == 'prices' || normalized == 'price-book';
+  }
+
+  /// Whether this queue appears as a Billing desk tab.
+  bool get isDeskSection {
+    return this != BillingQueueType.overdue;
   }
 }
 
@@ -54,12 +104,16 @@ final class BillingWorkspaceQuery {
   const BillingWorkspaceQuery({
     this.search = '',
     this.queue = BillingQueueType.all,
+    this.priceBook = false,
     this.pageRequest = const AppPageRequest(pageSize: 12),
     this.patientId = '',
     this.invoiceNumber = '',
     this.encounterId = '',
     this.sourceModule = '',
     this.billingStatus = '',
+    this.approvalType = '',
+    this.overdueOnly = false,
+    this.ageBucket = '',
     this.action = '',
     this.from,
     this.to,
@@ -77,58 +131,93 @@ final class BillingWorkspaceQuery {
       return '';
     }
 
-    final String queueRaw = pick(<String>['queue', 'filter']);
+    // Canonical desk slug is `section=`; accept `tab=` / legacy `queue=` /
+    // `filter=` aliases (billing.md §2).
+    final String queueRaw = pick(<String>['section', 'tab', 'queue', 'filter']);
+    final bool priceBook = BillingQueueType.isPriceBookSlug(queueRaw);
     BillingQueueType queue = BillingQueueType.all;
-    if (queueRaw.isNotEmpty) {
-      for (final BillingQueueType candidate in BillingQueueType.values) {
-        if (candidate.name.toLowerCase() == queueRaw.toLowerCase() ||
-            candidate.serverValue.toLowerCase() == queueRaw.toLowerCase()) {
-          queue = candidate;
-          break;
+    if (!priceBook) {
+      queue =
+          BillingQueueType.resolveDeskSlug(queueRaw) ?? BillingQueueType.all;
+      if (queue == BillingQueueType.all && queueRaw.isNotEmpty) {
+        for (final BillingQueueType candidate in BillingQueueType.values) {
+          if (candidate.name.toLowerCase() == queueRaw.toLowerCase() ||
+              candidate.serverValue.toLowerCase() == queueRaw.toLowerCase()) {
+            queue = candidate;
+            break;
+          }
         }
       }
-      if (queue == BillingQueueType.all) {
-        const Map<String, BillingQueueType> slugMap =
-            <String, BillingQueueType>{
-              'needs-issue': BillingQueueType.needsIssue,
-              'pending-payment': BillingQueueType.pendingPayment,
-              'awaiting-payment': BillingQueueType.pendingPayment,
-              'claims-pending': BillingQueueType.claimsPending,
-              'approval-required': BillingQueueType.approvalRequired,
-              'overdue': BillingQueueType.overdue,
-            };
-        queue = slugMap[queueRaw.toLowerCase()] ?? BillingQueueType.all;
-      }
+    }
+
+    var overdueOnly = false;
+    final String overdueParam = pick(<String>['overdue']);
+    if (<String>{'yes', 'true', '1'}.contains(overdueParam.toLowerCase())) {
+      overdueOnly = true;
+    }
+    if (queueRaw.toLowerCase() == 'overdue') {
+      queue = BillingQueueType.pendingPayment;
+      overdueOnly = true;
+    }
+    if (queue == BillingQueueType.overdue) {
+      queue = BillingQueueType.pendingPayment;
+      overdueOnly = true;
+    }
+
+    final String statusRaw = pick(<String>[
+      'billingStatus',
+      'billing_status',
+      'status',
+    ]);
+    var billingStatus = statusRaw;
+    if (statusRaw.trim().toUpperCase() == 'OVERDUE') {
+      overdueOnly = true;
+      billingStatus = '';
     }
 
     return BillingWorkspaceQuery(
       search: pick(<String>['search', 'q']),
       queue: queue,
+      priceBook: priceBook,
       patientId: pick(<String>['patientId', 'patient_id', 'patient']),
       invoiceNumber: pick(<String>[
         'invoiceNumber',
         'invoice_number',
         'invoice',
+        'id',
       ]),
       encounterId: pick(<String>['encounterId', 'encounter_id', 'encounter']),
       sourceModule: pick(<String>['sourceModule', 'source_module', 'source']),
-      billingStatus: pick(<String>[
-        'billingStatus',
-        'billing_status',
-        'status',
+      billingStatus: billingStatus,
+      approvalType: pick(<String>[
+        'approvalType',
+        'approval_type',
+        'type',
       ]),
+      overdueOnly: overdueOnly,
+      ageBucket: pick(<String>['age', 'age_bucket', 'ageBucket']),
       action: pick(<String>['action']),
     );
   }
 
   final String search;
   final BillingQueueType queue;
+
+  /// When true, the desk body is Price book (`?section=prices`), not a queue.
+  final bool priceBook;
   final AppPageRequest pageRequest;
   final String patientId;
   final String invoiceNumber;
   final String encounterId;
   final String sourceModule;
   final String billingStatus;
+  final String approvalType;
+
+  /// Collect due: overdue subset filter (not a desk tab).
+  final bool overdueOnly;
+
+  /// Collect due: invoice age bucket (`0-7`, `8-30`, `31+`).
+  final String ageBucket;
 
   /// Deep-link action to auto-trigger (e.g. `pay` to open the payment dialog).
   final String action;
@@ -136,18 +225,22 @@ final class BillingWorkspaceQuery {
   final DateTime? to;
 
   bool get hasRouteTargeting {
-    return queue != BillingQueueType.all ||
+    return priceBook ||
+        queue != BillingQueueType.all ||
         search.trim().isNotEmpty ||
         patientId.trim().isNotEmpty ||
         invoiceNumber.trim().isNotEmpty ||
         encounterId.trim().isNotEmpty ||
         sourceModule.trim().isNotEmpty ||
         billingStatus.trim().isNotEmpty ||
+        approvalType.trim().isNotEmpty ||
+        overdueOnly ||
+        ageBucket.trim().isNotEmpty ||
         action.trim().isNotEmpty;
   }
 
   String get signature =>
-      '$search|${queue.name}|$patientId|$invoiceNumber|$encounterId|$sourceModule|$billingStatus|$action';
+      '$search|${queue.name}|$priceBook|$patientId|$invoiceNumber|$encounterId|$sourceModule|$billingStatus|$approvalType|$overdueOnly|$ageBucket|$action';
 
   /// Advanced list filters only (queue is owned by the tab strip).
   bool get hasActiveFilters {
@@ -156,6 +249,9 @@ final class BillingWorkspaceQuery {
         encounterId.trim().isNotEmpty ||
         sourceModule.trim().isNotEmpty ||
         billingStatus.trim().isNotEmpty ||
+        approvalType.trim().isNotEmpty ||
+        overdueOnly ||
+        ageBucket.trim().isNotEmpty ||
         from != null ||
         to != null;
   }
@@ -163,12 +259,16 @@ final class BillingWorkspaceQuery {
   BillingWorkspaceQuery copyWith({
     String? search,
     BillingQueueType? queue,
+    bool? priceBook,
     AppPageRequest? pageRequest,
     String? patientId,
     String? invoiceNumber,
     String? encounterId,
     String? sourceModule,
     String? billingStatus,
+    String? approvalType,
+    bool? overdueOnly,
+    String? ageBucket,
     String? action,
     DateTime? from,
     DateTime? to,
@@ -178,12 +278,16 @@ final class BillingWorkspaceQuery {
     return BillingWorkspaceQuery(
       search: search ?? this.search,
       queue: queue ?? this.queue,
+      priceBook: priceBook ?? this.priceBook,
       pageRequest: pageRequest ?? this.pageRequest,
       patientId: patientId ?? this.patientId,
       invoiceNumber: invoiceNumber ?? this.invoiceNumber,
       encounterId: encounterId ?? this.encounterId,
       sourceModule: sourceModule ?? this.sourceModule,
       billingStatus: billingStatus ?? this.billingStatus,
+      approvalType: approvalType ?? this.approvalType,
+      overdueOnly: overdueOnly ?? this.overdueOnly,
+      ageBucket: ageBucket ?? this.ageBucket,
       action: action ?? this.action,
       from: clearFrom ? null : from ?? this.from,
       to: clearTo ? null : to ?? this.to,
@@ -480,6 +584,48 @@ final class BillingWorkItem {
       return financials.balanceDue;
     }
     return effectiveTotal;
+  }
+
+  /// First non-empty insurer name from line items (Open claims optional col).
+  String? get insurerDisplayName {
+    for (final BillingInvoiceItem line in items) {
+      final String? name = line.insuranceCompanyName?.trim();
+      if (name != null && name.isNotEmpty) {
+        return name;
+      }
+    }
+    return null;
+  }
+
+  /// Coverage scheme: work-item plan id, else first line coverage plan name.
+  String? get schemeDisplayName {
+    final String? plan = coveragePlanDisplayId?.trim();
+    if (plan != null && plan.isNotEmpty) {
+      return plan;
+    }
+    for (final BillingInvoiceItem line in items) {
+      final String? name = line.coveragePlanName?.trim();
+      if (name != null && name.isNotEmpty) {
+        return name;
+      }
+    }
+    return null;
+  }
+
+  num get totalPatientShare {
+    num total = 0;
+    for (final BillingInvoiceItem line in items) {
+      total += line.patientShare ?? 0;
+    }
+    return total;
+  }
+
+  num get totalInsurerShare {
+    num total = 0;
+    for (final BillingInvoiceItem line in items) {
+      total += line.insurerShare ?? 0;
+    }
+    return total;
   }
 
   String? get invoiceSourceSummary {
@@ -849,6 +995,34 @@ final class BillingPaymentDraft {
   final String? reference;
   final String? payer;
   final bool issueReceipt;
+}
+
+/// Walk-in / cashier Charge draft (Open work → To issue).
+@immutable
+final class BillingChargeDraft {
+  const BillingChargeDraft({
+    required this.patientId,
+    required this.itemDescription,
+    required this.quantity,
+    required this.unitPrice,
+    required this.paymentMode,
+    this.catalogType,
+    this.catalogItemId,
+    this.priceBookEntryId,
+    this.currency,
+    this.notes,
+  });
+
+  final String patientId;
+  final String itemDescription;
+  final int quantity;
+  final String unitPrice;
+  final String paymentMode;
+  final String? catalogType;
+  final String? catalogItemId;
+  final String? priceBookEntryId;
+  final String? currency;
+  final String? notes;
 }
 
 @immutable

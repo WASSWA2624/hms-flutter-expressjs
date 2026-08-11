@@ -1,14 +1,11 @@
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 
-/// Financial action classification for the Billing **Needs issue** tab scan.
+/// Financial action classification for the Billing **To issue** tab scan.
 enum BillingNeedsIssueActionClass {
   /// Draft invoice issuance (DRAFT → ISSUED) with line provenance preserved.
   /// Includes Send, which issues first via Billing then delivers the PDF.
   createCharge,
-
-  /// Shift/day close reconciles Billing ledger totals.
-  settle,
 
   /// Discount, waive, write-off request on draft invoice detail.
   adjust,
@@ -20,7 +17,7 @@ enum BillingNeedsIssueActionClass {
   notBillable,
 }
 
-/// One financially relevant atom on the Needs issue tab (`?queue=needs-issue`).
+/// One financially relevant atom on the To issue tab (`?section=issue`).
 final class BillingNeedsIssueFinancialAtom {
   const BillingNeedsIssueFinancialAtom({
     required this.id,
@@ -41,15 +38,16 @@ final class BillingNeedsIssueFinancialAtom {
   final String? auditNote;
 }
 
-/// Canonical inventory of Needs issue tab financially relevant atoms (AC1).
+/// Canonical inventory of To issue tab financially relevant atoms (AC1).
 ///
 /// Primary mutation is invoice issue from DRAFT clinical charges; all postings
 /// go through [BillingRepository] / backend billing module only.
+/// Close shift / Close day are owned by Collect due — not inventoried here.
 abstract final class BillingNeedsIssueFinancialInventory {
   static const BillingNeedsIssueFinancialAtom tab =
       BillingNeedsIssueFinancialAtom(
     id: 'tab',
-    label: 'Needs issue tab',
+    label: 'To issue tab',
     actionClass: BillingNeedsIssueActionClass.notBillable,
     requirement: BillingNeedsIssueAtomPermissions.tab,
   );
@@ -70,26 +68,6 @@ abstract final class BillingNeedsIssueFinancialInventory {
     requirement: BillingNeedsIssueAtomPermissions.detail,
   );
 
-  static const BillingNeedsIssueFinancialAtom closeShift =
-      BillingNeedsIssueFinancialAtom(
-    id: 'close_shift',
-    label: 'Close shift',
-    actionClass: BillingNeedsIssueActionClass.settle,
-    requirement: BillingNeedsIssueAtomPermissions.close,
-    repositoryMethod: 'closeShift',
-    auditNote: 'Reconciles Billing payments for shift',
-  );
-
-  static const BillingNeedsIssueFinancialAtom closeDay =
-      BillingNeedsIssueFinancialAtom(
-    id: 'close_day',
-    label: 'Close day',
-    actionClass: BillingNeedsIssueActionClass.settle,
-    requirement: BillingNeedsIssueAtomPermissions.close,
-    repositoryMethod: 'closeDay',
-    auditNote: 'Day close against Billing ledger',
-  );
-
   static const BillingNeedsIssueFinancialAtom issue =
       BillingNeedsIssueFinancialAtom(
     id: 'issue',
@@ -98,6 +76,16 @@ abstract final class BillingNeedsIssueFinancialInventory {
     requirement: BillingNeedsIssueAtomPermissions.issue,
     repositoryMethod: 'issueInvoice',
     auditNote: 'DRAFT → ISSUED; preserves clinical line provenance',
+  );
+
+  static const BillingNeedsIssueFinancialAtom issueAll =
+      BillingNeedsIssueFinancialAtom(
+    id: 'issue_all',
+    label: 'Issue all',
+    actionClass: BillingNeedsIssueActionClass.createCharge,
+    requirement: BillingNeedsIssueAtomPermissions.issue,
+    repositoryMethod: 'issueInvoice',
+    auditNote: 'Bulk issue drafts on current page via issueInvoice',
   );
 
   static const BillingNeedsIssueFinancialAtom adjust =
@@ -134,7 +122,7 @@ abstract final class BillingNeedsIssueFinancialInventory {
   static const BillingNeedsIssueFinancialAtom viewLedger =
       BillingNeedsIssueFinancialAtom(
     id: 'view_ledger',
-    label: 'View ledger',
+    label: 'Ledger → Accounts',
     actionClass: BillingNeedsIssueActionClass.notBillable,
     requirement: BillingNeedsIssueAtomPermissions.detail,
     repositoryMethod: 'getPatientLedger',
@@ -160,7 +148,7 @@ abstract final class BillingNeedsIssueFinancialInventory {
   static const BillingNeedsIssueFinancialAtom claimsPendingTab =
       BillingNeedsIssueFinancialAtom(
     id: 'claims_pending_tab',
-    label: 'Claims pending tab strip navigation',
+    label: 'Open claims tab strip navigation',
     actionClass: BillingNeedsIssueActionClass.notBillable,
     requirement: BillingNeedsIssueAtomPermissions.claimsPendingTab,
   );
@@ -181,15 +169,14 @@ abstract final class BillingNeedsIssueFinancialInventory {
     requirement: BillingNeedsIssueAtomPermissions.listChrome,
   );
 
-  /// Every atom inventoried for the Needs issue tab scan.
+  /// Every atom inventoried for the To issue tab scan.
   static const List<BillingNeedsIssueFinancialAtom> all =
       <BillingNeedsIssueFinancialAtom>[
     tab,
     listChrome,
     detail,
-    closeShift,
-    closeDay,
     issue,
+    issueAll,
     adjust,
     voidInvoice,
     send,
@@ -212,7 +199,6 @@ abstract final class BillingNeedsIssueFinancialInventory {
   /// True when the atom must never mutate balances outside Billing APIs.
   static bool forbidsInlineCollection(BillingNeedsIssueActionClass actionClass) {
     return switch (actionClass) {
-      BillingNeedsIssueActionClass.settle ||
       BillingNeedsIssueActionClass.adjust ||
       BillingNeedsIssueActionClass.reverse ||
       BillingNeedsIssueActionClass.createCharge => true,

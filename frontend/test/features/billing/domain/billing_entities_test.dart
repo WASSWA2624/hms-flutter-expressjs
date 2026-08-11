@@ -19,6 +19,18 @@ void main() {
       );
       expect(
         BillingWorkspaceQuery.fromUri(
+          Uri.parse('/billing?section=issue'),
+        ).queue,
+        BillingQueueType.needsIssue,
+      );
+      expect(
+        BillingWorkspaceQuery.fromUri(
+          Uri.parse('/billing?tab=ready-to-issue'),
+        ).queue,
+        BillingQueueType.needsIssue,
+      );
+      expect(
+        BillingWorkspaceQuery.fromUri(
           Uri.parse('/billing?queue=pending-payment'),
         ).queue,
         BillingQueueType.pendingPayment,
@@ -39,7 +51,13 @@ void main() {
         BillingWorkspaceQuery.fromUri(
           Uri.parse('/billing?queue=overdue'),
         ).queue,
-        BillingQueueType.overdue,
+        BillingQueueType.pendingPayment,
+      );
+      expect(
+        BillingWorkspaceQuery.fromUri(
+          Uri.parse('/billing?queue=overdue'),
+        ).overdueOnly,
+        isTrue,
       );
     });
 

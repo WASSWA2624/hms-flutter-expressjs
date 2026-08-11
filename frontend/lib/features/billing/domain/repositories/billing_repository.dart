@@ -79,4 +79,7 @@ abstract interface class BillingRepository {
     String preAuthorizationId,
     Map<String, Object?> payload,
   );
+
+  /// Create a draft invoice charge (Open work Charge → To issue).
+  Future<Result<BillingMutationResult>> createCharge(BillingChargeDraft draft);
 }

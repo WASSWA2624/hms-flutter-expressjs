@@ -19,7 +19,10 @@ const {
   resolveInvoiceIdsForEncounterToken,
   resolveInvoiceIdsForSourceModule,
   syncClinicalOrderBillingSnapshotsFromInvoiceTx,
+  BILLABLE_SOURCE_MODULES,
+  upsertBillableChargeEvent,
 } = require('@lib/billing/clinical-request-billing');
+const { randomUUID } = require('crypto');
 const { notifyLabOrdersBillingUpdated } = require('@services/lab-order/lab-order.service');
 const {
   notifyRadiologyOrdersBillingUpdated,
@@ -1608,6 +1611,102 @@ const getFinancialAnalytics = async (filters = {}, user = {}) => {
   };
 };
 
+/**
+ * Cashier Charge: create a DRAFT invoice for Open work → To issue.
+ */
+const createCharge = async (payload = {}, user = {}, ip = null) => {
+  assertEnabled();
+  assertBillingWrite(user);
+  const scope = await resolveScope({ patient_id: payload.patient_id }, user);
+  if (!scope.patient_id) {
+    throw new HttpError('errors.patient.not_found', 404);
+  }
+
+  const quantity = Math.max(1, Number(payload.quantity) || 1);
+  const unitPrice = toDecimalNumber(payload.unit_price);
+  if (unitPrice <= 0) {
+    throw new HttpError('errors.validation.failed', 400, [{ field: 'unit_price' }]);
+  }
+  const lineTotal = unitPrice * quantity;
+  const currency = clean(payload.currency).toUpperCase() || 'UGX';
+  const description = clean(payload.description) || 'Charge';
+  const paymentMode = clean(payload.payment_mode).toUpperCase() === 'INSURANCE'
+    ? 'INSURANCE'
+    : 'SELF_PAY';
+  const sourceId = randomUUID();
+
+  const invoice = await billingRepository.withTransaction(async (tx) => {
+    const created = await tx.invoice.create({
+      data: {
+        tenant_id: scope.tenant_id,
+        facility_id: scope.facility_id || null,
+        patient_id: scope.patient_id,
+        status: 'DRAFT',
+        billing_status: 'DRAFT',
+        billing_entity: 'FACILITY',
+        total_amount: toMoneyString(lineTotal),
+        currency,
+        items: {
+          create: [
+            {
+              description,
+              quantity,
+              unit_price: toMoneyString(unitPrice),
+              total_price: toMoneyString(lineTotal),
+              catalog_type: clean(payload.catalog_type) || 'SERVICE',
+              catalog_item_id: clean(payload.catalog_item_id) || null,
+              price_book_entry_id: clean(payload.price_book_entry_id) || null,
+              payment_mode: paymentMode,
+              billing_entity: 'FACILITY',
+              patient_share: paymentMode === 'SELF_PAY' ? toMoneyString(lineTotal) : null,
+              insurer_share: paymentMode === 'INSURANCE' ? toMoneyString(lineTotal) : null,
+            },
+          ],
+        },
+      },
+      include: INVOICE_INCLUDE,
+    });
+
+    await upsertBillableChargeEvent(tx, {
+      tenantId: scope.tenant_id,
+      facilityId: scope.facility_id || null,
+      patientId: scope.patient_id,
+      sourceModule: BILLABLE_SOURCE_MODULES.SERVICE,
+      sourceId,
+      chargeKey: 'CASHIER_CHARGE',
+      invoiceId: created.id,
+      catalogType: clean(payload.catalog_type) || 'SERVICE',
+      catalogItemId: clean(payload.catalog_item_id) || null,
+      actorUserId: user?.id || null,
+      unitPriceSnapshot: toMoneyString(unitPrice),
+      totalAmountSnapshot: toMoneyString(lineTotal),
+      currency,
+    });
+
+    return created;
+  });
+
+  auditCreate(user, ip, 'invoice', invoice.id, {
+    transition: 'CHARGE_DRAFT',
+    notes: clean(payload.notes) || null,
+    source_id: sourceId,
+  });
+  await publishBillingRealtimeUpdate({
+    event: BILLING_EVENTS.INVOICE_UPDATED,
+    action: 'CREATED',
+    invoice,
+    actorUserId: user?.id || null,
+  });
+  await publishBillingRealtimeUpdate({
+    event: BILLING_EVENTS.BILLING_BALANCE_UPDATED,
+    action: 'BALANCE_UPDATED',
+    invoice,
+    actorUserId: user?.id || null,
+  });
+
+  return { invoice: mapInvoice(invoice, true) };
+};
+
 module.exports = {
   getWorkspace,
   getWorkItems,
@@ -1623,4 +1722,5 @@ module.exports = {
   approveApproval,
   rejectApproval,
   getInvoiceDocument,
+  createCharge,
 };

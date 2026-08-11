@@ -1,7 +1,7 @@
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 
-/// Financial action classification for the Billing **Overdue** tab scan.
+/// Financial action classification for the Billing **Collect due** overdue filter scan.
 enum BillingOverdueActionClass {
   /// Receive payment / apply collection against overdue balance.
   settle,
@@ -16,7 +16,7 @@ enum BillingOverdueActionClass {
   notBillable,
 }
 
-/// One financially relevant atom on the Overdue tab (`?queue=overdue`).
+/// One financially relevant atom on the Collect due overdue filter (`?section=collect&overdue=yes`).
 final class BillingOverdueFinancialAtom {
   const BillingOverdueFinancialAtom({
     required this.id,
@@ -37,14 +37,15 @@ final class BillingOverdueFinancialAtom {
   final String? auditNote;
 }
 
-/// Canonical inventory of Overdue tab financially relevant atoms (AC1).
+/// Canonical inventory of Collect due overdue-filter financially relevant atoms (AC1).
 ///
-/// Collections follow-up: receive payment, dunning send, adjust / waive, void.
+/// Overdue is a filter on Collect due, not a separate desk tab.
+/// Collections follow-up: Pay, dunning send, adjust / waive, void.
 /// All postings go through [BillingRepository] / backend billing module only.
 abstract final class BillingOverdueFinancialInventory {
   static const BillingOverdueFinancialAtom tab = BillingOverdueFinancialAtom(
     id: 'tab',
-    label: 'Overdue tab',
+    label: 'Collect due overdue filter',
     actionClass: BillingOverdueActionClass.notBillable,
     requirement: BillingOverdueAtomPermissions.tab,
   );
@@ -87,7 +88,7 @@ abstract final class BillingOverdueFinancialInventory {
   static const BillingOverdueFinancialAtom receivePayment =
       BillingOverdueFinancialAtom(
     id: 'receive_payment',
-    label: 'Receive payment',
+    label: 'Pay',
     actionClass: BillingOverdueActionClass.settle,
     requirement: BillingOverdueAtomPermissions.receivePayment,
     repositoryMethod: 'receivePayment',

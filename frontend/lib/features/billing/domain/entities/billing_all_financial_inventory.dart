@@ -50,7 +50,7 @@ final class BillingAllFinancialAtom {
 abstract final class BillingAllFinancialInventory {
   static const BillingAllFinancialAtom tab = BillingAllFinancialAtom(
     id: 'tab',
-    label: 'All billing work items tab',
+    label: 'Open work tab',
     actionClass: BillingAllActionClass.notBillable,
     requirement: BillingAllAtomPermissions.tab,
   );
@@ -69,22 +69,13 @@ abstract final class BillingAllFinancialInventory {
     requirement: BillingAllAtomPermissions.detail,
   );
 
-  static const BillingAllFinancialAtom closeShift = BillingAllFinancialAtom(
-    id: 'close_shift',
-    label: 'Close shift',
-    actionClass: BillingAllActionClass.settle,
-    requirement: BillingAllAtomPermissions.close,
-    repositoryMethod: 'closeShift',
-    auditNote: 'Reconciles Billing payments for shift',
-  );
-
-  static const BillingAllFinancialAtom closeDay = BillingAllFinancialAtom(
-    id: 'close_day',
-    label: 'Close day',
-    actionClass: BillingAllActionClass.settle,
-    requirement: BillingAllAtomPermissions.close,
-    repositoryMethod: 'closeDay',
-    auditNote: 'Day close against Billing ledger',
+  static const BillingAllFinancialAtom charge = BillingAllFinancialAtom(
+    id: 'charge',
+    label: 'Charge (create draft)',
+    actionClass: BillingAllActionClass.createCharge,
+    requirement: BillingAllAtomPermissions.create,
+    repositoryMethod: 'createCharge',
+    auditNote: 'Open work trailing only — lands on To issue',
   );
 
   static const BillingAllFinancialAtom issue = BillingAllFinancialAtom(
@@ -274,13 +265,12 @@ abstract final class BillingAllFinancialInventory {
     auditNote: 'Snackbars / live detail patch — balance from Billing only',
   );
 
-  /// Every atom inventoried for the All tab scan.
+  /// Every atom inventoried for the Open work tab scan.
   static const List<BillingAllFinancialAtom> all = <BillingAllFinancialAtom>[
     tab,
     listChrome,
     detail,
-    closeShift,
-    closeDay,
+    charge,
     issue,
     receivePayment,
     refund,

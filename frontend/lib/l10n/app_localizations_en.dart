@@ -1711,7 +1711,47 @@ class AppLocalizationsEn extends AppLocalizations {
   String get billingAnalyticsOpenReportsAction => 'Open reports';
 
   @override
-  String get billingAllWorkItems => 'All billing work items';
+  String get billingAllWorkItems => 'Open work';
+
+  @override
+  String get billingOpenWork => 'Open work';
+
+  @override
+  String get billingOpenWorkTooltip =>
+      'All billing items that still need action across issue, collect, claims, and approvals';
+
+  @override
+  String get billingChargeAction => 'Charge';
+
+  @override
+  String get billingChargeTooltip => 'Create a draft charge for a patient';
+
+  @override
+  String get billingPayAction => 'Pay';
+
+  @override
+  String get billingChargePatientLabel => 'Patient';
+
+  @override
+  String get billingChargeItemLabel => 'Item';
+
+  @override
+  String get billingChargeQtyLabel => 'Qty';
+
+  @override
+  String get billingChargeModeLabel => 'Mode';
+
+  @override
+  String get billingChargeModeSelfPay => 'Self pay';
+
+  @override
+  String get billingChargeModeInsurance => 'Insurance';
+
+  @override
+  String get billingChargeSelectPatient => 'Select patient';
+
+  @override
+  String get billingChargeItemHint => 'Service or item description';
 
   @override
   String get billingAwaitingPayment => 'Awaiting payment';
@@ -1720,7 +1760,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get billingIssueQueue => 'Issue queue';
 
   @override
-  String get billingClaimsPending => 'Claims pending';
+  String get billingClaimsPending => 'Open claims';
+
+  @override
+  String get billingClaimsPendingTooltip =>
+      'Insurance claims and pre-authorizations awaiting action';
+
+  @override
+  String get billingSubmitAction => 'Submit';
+
+  @override
+  String get billingSubmitActionTooltip => 'Submit this claim to the insurer';
+
+  @override
+  String get billingSettleAction => 'Settle';
+
+  @override
+  String get billingSettleActionTooltip => 'Record the insurer response';
+
+  @override
+  String get billingAuthAction => 'Auth';
+
+  @override
+  String get billingAuthActionTooltip => 'Approve this pre-authorization';
+
+  @override
+  String get billingInsurerColumn => 'Insurer';
 
   @override
   String get billingApprovals => 'Approvals';
@@ -1729,7 +1794,62 @@ class AppLocalizationsEn extends AppLocalizations {
   String get billingOverdue => 'Overdue';
 
   @override
-  String get billingNeedsIssue => 'Ready to issue';
+  String get billingNeedsIssue => 'To issue';
+
+  @override
+  String get billingNeedsIssueTooltip =>
+      'Draft invoices ready to issue to the patient or payer';
+
+  @override
+  String get billingCollectDue => 'Collect due';
+
+  @override
+  String get billingCollectDueTooltip =>
+      'Open balances due for payment, including overdue';
+
+  @override
+  String get billingEmptyCollectDueBody => 'No balances due.';
+
+  @override
+  String get billingPayActionTooltip =>
+      'Receive payment toward the balance due';
+
+  @override
+  String get billingOverdueFilterLabel => 'Overdue';
+
+  @override
+  String get billingOverdueYesOption => 'Yes';
+
+  @override
+  String get billingOverdueNoOption => 'No';
+
+  @override
+  String get billingAgeFilterLabel => 'Age';
+
+  @override
+  String get billingAge0to7Option => '0–7 days';
+
+  @override
+  String get billingAge8to30Option => '8–30 days';
+
+  @override
+  String get billingAge31PlusOption => '31+ days';
+
+  @override
+  String get billingInvoiceAgeColumn => 'Age';
+
+  @override
+  String get billingIssueActionTooltip => 'Issue this draft invoice';
+
+  @override
+  String get billingIssueAllAction => 'Issue all';
+
+  @override
+  String get billingIssueAllConfirmTitle => 'Issue all drafts?';
+
+  @override
+  String get billingIssueAllConfirmBody =>
+      'Issue every draft invoice on this page to the patient or payer.';
 
   @override
   String get billingStatusCancelledOption => 'Cancelled';
@@ -1771,14 +1891,179 @@ class AppLocalizationsEn extends AppLocalizations {
   String get billingSourceClinical => 'Clinical';
 
   @override
-  String get billingApprovalRequired => 'Approval required';
+  String get billingApprovalRequired => 'Need approval';
+
+  @override
+  String get billingApprovalRequiredTooltip =>
+      'Refunds, voids, and adjustments awaiting approval';
+
+  @override
+  String get billingPriceBookTab => 'Price book';
+
+  @override
+  String get billingPriceBookTooltip =>
+      'Service and item prices used when charging';
+
+  @override
+  String get billingPriceBookEmptyTitle => 'No prices match.';
+
+  @override
+  String get billingPriceBookEmptyBody => 'Try another search or add a price.';
+
+  @override
+  String get billingPriceBookSearchHint => 'Item, scheme, mode…';
+
+  @override
+  String get billingPriceBookAddTitle => 'Add price';
+
+  @override
+  String get billingPriceBookEditTitle => 'Edit price';
+
+  @override
+  String get billingPriceBookItemLabel => 'Item';
+
+  @override
+  String get billingPriceBookItemRequired => 'Item is required.';
+
+  @override
+  String get billingPriceBookItemColumn => 'Item';
+
+  @override
+  String get billingPriceBookModeLabel => 'Mode';
+
+  @override
+  String get billingPriceBookModeColumn => 'Mode';
+
+  @override
+  String get billingPriceBookModeSelfPay => 'Self-pay';
+
+  @override
+  String get billingPriceBookModeInsurance => 'Insurance';
+
+  @override
+  String get billingPriceBookPriceLabel => 'Price';
+
+  @override
+  String get billingPriceBookPriceColumn => 'Price';
+
+  @override
+  String get billingPriceBookPriceRequired => 'Price is required.';
+
+  @override
+  String get billingPriceBookCurrencyLabel => 'Currency';
+
+  @override
+  String get billingPriceBookCurrencyRequired => 'Currency is required.';
+
+  @override
+  String get billingPriceBookSchemeLabel => 'Scheme';
+
+  @override
+  String get billingPriceBookSchemeColumn => 'Scheme';
+
+  @override
+  String get billingPriceBookEffectiveLabel => 'Effective';
+
+  @override
+  String get billingPriceBookEffectiveColumn => 'Effective';
+
+  @override
+  String get billingPriceBookEffectiveCurrent => 'Current';
+
+  @override
+  String get billingPriceBookEffectiveOther => 'Not current';
+
+  @override
+  String get billingPriceBookActiveLabel => 'Active';
+
+  @override
+  String get billingPriceBookStatusLabel => 'Status';
+
+  @override
+  String get billingPriceBookStatusColumn => 'Status';
+
+  @override
+  String get billingPriceBookStatusActive => 'Active';
+
+  @override
+  String get billingPriceBookStatusInactive => 'Inactive';
+
+  @override
+  String get billingPriceBookActionsColumn => 'Actions';
+
+  @override
+  String get billingPriceBookCatalogLabel => 'Catalog';
+
+  @override
+  String get billingPriceBookCatalogColumn => 'Catalog';
+
+  @override
+  String get billingPriceBookCatalogService => 'Service';
+
+  @override
+  String get billingPriceBookCatalogConsultation => 'Consultation';
+
+  @override
+  String get billingPriceBookCatalogLabTest => 'Lab test';
+
+  @override
+  String get billingPriceBookCatalogLabPanel => 'Lab panel';
+
+  @override
+  String get billingPriceBookCatalogRadiology => 'Radiology test';
+
+  @override
+  String get billingPriceBookCatalogDrug => 'Drug';
+
+  @override
+  String get billingPriceBookBillingEntityLabel => 'Billing entity';
+
+  @override
+  String get billingPriceBookFacilityEntity => 'Facility';
+
+  @override
+  String get billingPriceBookPharmacyEntity => 'Pharmacy';
+
+  @override
+  String get billingPriceBookDeactivateAction => 'Deactivate';
+
+  @override
+  String get billingPriceBookDeactivateTitle => 'Deactivate price';
+
+  @override
+  String billingPriceBookDeactivateBody(String item) {
+    return 'Deactivate $item? Charge will stop resolving this tariff.';
+  }
+
+  @override
+  String get billingApproveActionTooltip => 'Approve this pending request';
+
+  @override
+  String get billingTypeColumn => 'Type';
+
+  @override
+  String get billingByColumn => 'By';
+
+  @override
+  String get billingApprovalTypeFilterLabel => 'Type';
+
+  @override
+  String get billingAnyApprovalTypeOption => 'Any type';
+
+  @override
+  String get billingApprovalTypeRefundOption => 'Refund';
+
+  @override
+  String get billingApprovalTypeVoidOption => 'Void';
+
+  @override
+  String get billingApprovalTypeAdjustmentOption => 'Adjustment';
 
   @override
   String get billingQueueLabel => 'Queue';
 
   @override
-  String get billingSearchHint =>
-      'Patient, ID, invoice, encounter, email, or phone';
+  String get billingSearchHint => 'Patient, invoice, encounter…';
 
   @override
   String get billingPatientNameColumn => 'Patient name';
@@ -1793,7 +2078,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get billingSourceColumn => 'Source';
 
   @override
-  String get billingAmountDueColumn => 'Amount due';
+  String get billingAmountDueColumn => 'Due';
 
   @override
   String get billingSourceFilterLabel => 'Source';
@@ -1850,24 +2135,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get billingEmptyTitle => 'No billing items';
 
   @override
-  String get billingEmptyBody =>
-      'No invoices or billing actions in this queue.';
+  String get billingEmptyBody => 'No open work.';
 
   @override
-  String get billingEmptyReadyToIssueBody =>
-      'No draft invoices waiting to be issued.';
+  String get billingEmptyReadyToIssueBody => 'No drafts to issue.';
 
   @override
   String get billingEmptyAwaitingPaymentBody =>
       'No issued or partially paid invoices awaiting payment.';
 
   @override
-  String get billingEmptyClaimsPendingBody =>
-      'No insurance claims or authorizations waiting on a payer response.';
+  String get billingEmptyClaimsPendingBody => 'No open claims.';
 
   @override
-  String get billingEmptyApprovalRequiredBody =>
-      'No refunds, voids, or adjustments waiting for approval.';
+  String get billingEmptyApprovalRequiredBody => 'No pending approvals.';
 
   @override
   String get billingEmptyOverdueBody =>
@@ -1880,7 +2161,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get billingStatusColumn => 'Status';
 
   @override
-  String get billingNextActionColumnLabel => 'Next action';
+  String get billingNextActionColumnLabel => 'Next';
 
   @override
   String get billingAmountColumn => 'Amount';
@@ -1961,10 +2242,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get billingVoidInvoice => 'Void invoice';
 
   @override
-  String get billingRequestAdjustment => 'Request adjustment';
+  String get billingRequestAdjustment => 'Adjust';
 
   @override
-  String get billingRequestRefund => 'Request refund';
+  String get billingRequestRefund => 'Refund';
 
   @override
   String get billingDueLabel => 'Due';
@@ -2218,7 +2499,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get billingSubmitForApprovalLabel => 'Submit for approval';
 
   @override
-  String get billingRequestVoidAction => 'Request void';
+  String get billingRequestVoidAction => 'Void';
 
   @override
   String get billingVoidReasonLabel => 'Void reason';

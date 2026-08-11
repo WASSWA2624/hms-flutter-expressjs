@@ -2210,9 +2210,61 @@
   "@billingAnalyticsOpenReportsAction": {
     "description": "Action that opens Reports filtered to billing financial datasets."
   },
-  "billingAllWorkItems": "All billing work items",
+  "billingAllWorkItems": "Open work",
   "@billingAllWorkItems": {
-    "description": "Label for all billing work items queue."
+    "description": "Legacy key; prefer billingOpenWork for the Open work desk tab."
+  },
+  "billingOpenWork": "Open work",
+  "@billingOpenWork": {
+    "description": "Billing desk tab: cross-queue items that still need action."
+  },
+  "billingOpenWorkTooltip": "All billing items that still need action across issue, collect, claims, and approvals",
+  "@billingOpenWorkTooltip": {
+    "description": "Tooltip for the Open work Billing desk tab."
+  },
+  "billingChargeAction": "Charge",
+  "@billingChargeAction": {
+    "description": "Trailing action on Open work that creates a draft invoice charge."
+  },
+  "billingChargeTooltip": "Create a draft charge for a patient",
+  "@billingChargeTooltip": {
+    "description": "Tooltip for the Open work Charge trailing action."
+  },
+  "billingPayAction": "Pay",
+  "@billingPayAction": {
+    "description": "Short Next-action label to receive payment on a balance."
+  },
+  "billingChargePatientLabel": "Patient",
+  "@billingChargePatientLabel": {
+    "description": "Patient field on the Charge dialog."
+  },
+  "billingChargeItemLabel": "Item",
+  "@billingChargeItemLabel": {
+    "description": "Catalog / service item field on the Charge dialog."
+  },
+  "billingChargeQtyLabel": "Qty",
+  "@billingChargeQtyLabel": {
+    "description": "Quantity field on the Charge dialog."
+  },
+  "billingChargeModeLabel": "Mode",
+  "@billingChargeModeLabel": {
+    "description": "Payment mode field on the Charge dialog."
+  },
+  "billingChargeModeSelfPay": "Self pay",
+  "@billingChargeModeSelfPay": {
+    "description": "Self-pay payment mode on the Charge dialog."
+  },
+  "billingChargeModeInsurance": "Insurance",
+  "@billingChargeModeInsurance": {
+    "description": "Insurance payment mode on the Charge dialog."
+  },
+  "billingChargeSelectPatient": "Select patient",
+  "@billingChargeSelectPatient": {
+    "description": "Action to pick a patient on the Charge dialog."
+  },
+  "billingChargeItemHint": "Service or item description",
+  "@billingChargeItemHint": {
+    "description": "Hint for the Charge dialog item field."
   },
   "billingAwaitingPayment": "Awaiting payment",
   "@billingAwaitingPayment": {
@@ -2222,9 +2274,41 @@
   "@billingIssueQueue": {
     "description": "Label for draft invoices needing issue."
   },
-  "billingClaimsPending": "Claims pending",
+  "billingClaimsPending": "Open claims",
   "@billingClaimsPending": {
-    "description": "Label for pending insurance claims queue."
+    "description": "Label for the Open claims billing desk tab."
+  },
+  "billingClaimsPendingTooltip": "Insurance claims and pre-authorizations awaiting action",
+  "@billingClaimsPendingTooltip": {
+    "description": "Tooltip for the Open claims billing desk tab."
+  },
+  "billingSubmitAction": "Submit",
+  "@billingSubmitAction": {
+    "description": "Short Next action label to submit an insurance claim."
+  },
+  "billingSubmitActionTooltip": "Submit this claim to the insurer",
+  "@billingSubmitActionTooltip": {
+    "description": "Tooltip for the Submit claim next action."
+  },
+  "billingSettleAction": "Settle",
+  "@billingSettleAction": {
+    "description": "Short Next action label to settle an insurance claim."
+  },
+  "billingSettleActionTooltip": "Record the insurer response",
+  "@billingSettleActionTooltip": {
+    "description": "Tooltip for the Settle claim next action."
+  },
+  "billingAuthAction": "Auth",
+  "@billingAuthAction": {
+    "description": "Short Next action label to approve a pre-authorization."
+  },
+  "billingAuthActionTooltip": "Approve this pre-authorization",
+  "@billingAuthActionTooltip": {
+    "description": "Tooltip for the Auth pre-authorization next action."
+  },
+  "billingInsurerColumn": "Insurer",
+  "@billingInsurerColumn": {
+    "description": "Optional Insurer column on Open claims."
   },
   "billingApprovals": "Approvals",
   "@billingApprovals": {
@@ -2234,9 +2318,77 @@
   "@billingOverdue": {
     "description": "Label for overdue invoices queue."
   },
-  "billingNeedsIssue": "Ready to issue",
+  "billingNeedsIssue": "To issue",
   "@billingNeedsIssue": {
-    "description": "Label for draft invoices waiting to be issued."
+    "description": "Label for the To issue billing desk tab (draft invoices)."
+  },
+  "billingNeedsIssueTooltip": "Draft invoices ready to issue to the patient or payer",
+  "@billingNeedsIssueTooltip": {
+    "description": "Tooltip for the To issue billing desk tab."
+  },
+  "billingCollectDue": "Collect due",
+  "@billingCollectDue": {
+    "description": "Label for the Collect due billing desk tab."
+  },
+  "billingCollectDueTooltip": "Open balances due for payment, including overdue",
+  "@billingCollectDueTooltip": {
+    "description": "Tooltip for the Collect due billing desk tab."
+  },
+  "billingEmptyCollectDueBody": "No balances due.",
+  "@billingEmptyCollectDueBody": {
+    "description": "Empty state for the Collect due billing desk tab."
+  },
+  "billingPayActionTooltip": "Receive payment toward the balance due",
+  "@billingPayActionTooltip": {
+    "description": "Tooltip for the Pay next action on Collect due rows."
+  },
+  "billingOverdueFilterLabel": "Overdue",
+  "@billingOverdueFilterLabel": {
+    "description": "Overdue Yes/No filter label on Collect due."
+  },
+  "billingOverdueYesOption": "Yes",
+  "@billingOverdueYesOption": {
+    "description": "Overdue filter Yes option on Collect due."
+  },
+  "billingOverdueNoOption": "No",
+  "@billingOverdueNoOption": {
+    "description": "Overdue filter No option on Collect due."
+  },
+  "billingAgeFilterLabel": "Age",
+  "@billingAgeFilterLabel": {
+    "description": "Invoice age filter label on Collect due."
+  },
+  "billingAge0to7Option": "0–7 days",
+  "@billingAge0to7Option": {
+    "description": "Invoice age 0–7 days filter option."
+  },
+  "billingAge8to30Option": "8–30 days",
+  "@billingAge8to30Option": {
+    "description": "Invoice age 8–30 days filter option."
+  },
+  "billingAge31PlusOption": "31+ days",
+  "@billingAge31PlusOption": {
+    "description": "Invoice age 31+ days filter option."
+  },
+  "billingInvoiceAgeColumn": "Age",
+  "@billingInvoiceAgeColumn": {
+    "description": "Optional invoice age column on Collect due."
+  },
+  "billingIssueActionTooltip": "Issue this draft invoice",
+  "@billingIssueActionTooltip": {
+    "description": "Tooltip for the Issue next action on draft invoice rows."
+  },
+  "billingIssueAllAction": "Issue all",
+  "@billingIssueAllAction": {
+    "description": "Trailing action to bulk-issue drafts on To issue."
+  },
+  "billingIssueAllConfirmTitle": "Issue all drafts?",
+  "@billingIssueAllConfirmTitle": {
+    "description": "Confirm dialog title for Issue all on To issue."
+  },
+  "billingIssueAllConfirmBody": "Issue every draft invoice on this page to the patient or payer.",
+  "@billingIssueAllConfirmBody": {
+    "description": "Confirm dialog body for Issue all on To issue."
   },
   "billingStatusCancelledOption": "Cancelled",
   "@billingStatusCancelledOption": {
@@ -2290,15 +2442,236 @@
   "@billingSourceClinical": {
     "description": "Clinical charge source filter option."
   },
-  "billingApprovalRequired": "Approval required",
+  "billingApprovalRequired": "Need approval",
   "@billingApprovalRequired": {
-    "description": "Label for approval-required queue filter."
+    "description": "Label for the Need approval billing desk tab."
+  },
+  "billingApprovalRequiredTooltip": "Refunds, voids, and adjustments awaiting approval",
+  "@billingApprovalRequiredTooltip": {
+    "description": "Tooltip for the Need approval billing desk tab."
+  },
+  "billingPriceBookTab": "Price book",
+  "@billingPriceBookTab": {
+    "description": "Label for the Price book billing desk tab."
+  },
+  "billingPriceBookTooltip": "Service and item prices used when charging",
+  "@billingPriceBookTooltip": {
+    "description": "Tooltip for the Price book billing desk tab."
+  },
+  "billingPriceBookEmptyTitle": "No prices match.",
+  "@billingPriceBookEmptyTitle": {
+    "description": "Empty state title for the Price book table."
+  },
+  "billingPriceBookEmptyBody": "Try another search or add a price.",
+  "@billingPriceBookEmptyBody": {
+    "description": "Empty state body for the Price book table."
+  },
+  "billingPriceBookSearchHint": "Item, scheme, mode…",
+  "@billingPriceBookSearchHint": {
+    "description": "Search hint for Price book."
+  },
+  "billingPriceBookAddTitle": "Add price",
+  "@billingPriceBookAddTitle": {
+    "description": "Dialog title for creating a price-book entry."
+  },
+  "billingPriceBookEditTitle": "Edit price",
+  "@billingPriceBookEditTitle": {
+    "description": "Dialog title for editing a price-book entry."
+  },
+  "billingPriceBookItemLabel": "Item",
+  "@billingPriceBookItemLabel": {
+    "description": "Catalog item id field on Price book dialog."
+  },
+  "billingPriceBookItemRequired": "Item is required.",
+  "@billingPriceBookItemRequired": {
+    "description": "Validation for Price book item."
+  },
+  "billingPriceBookItemColumn": "Item",
+  "@billingPriceBookItemColumn": {
+    "description": "Price book table Item column."
+  },
+  "billingPriceBookModeLabel": "Mode",
+  "@billingPriceBookModeLabel": {
+    "description": "Payment mode field on Price book."
+  },
+  "billingPriceBookModeColumn": "Mode",
+  "@billingPriceBookModeColumn": {
+    "description": "Price book table Mode column."
+  },
+  "billingPriceBookModeSelfPay": "Self-pay",
+  "@billingPriceBookModeSelfPay": {
+    "description": "Self-pay payment mode."
+  },
+  "billingPriceBookModeInsurance": "Insurance",
+  "@billingPriceBookModeInsurance": {
+    "description": "Insurance payment mode."
+  },
+  "billingPriceBookPriceLabel": "Price",
+  "@billingPriceBookPriceLabel": {
+    "description": "Unit price field on Price book."
+  },
+  "billingPriceBookPriceColumn": "Price",
+  "@billingPriceBookPriceColumn": {
+    "description": "Price book table Price column."
+  },
+  "billingPriceBookPriceRequired": "Price is required.",
+  "@billingPriceBookPriceRequired": {
+    "description": "Validation for Price book unit price."
+  },
+  "billingPriceBookCurrencyLabel": "Currency",
+  "@billingPriceBookCurrencyLabel": {
+    "description": "Currency field on Price book."
+  },
+  "billingPriceBookCurrencyRequired": "Currency is required.",
+  "@billingPriceBookCurrencyRequired": {
+    "description": "Validation for Price book currency."
+  },
+  "billingPriceBookSchemeLabel": "Scheme",
+  "@billingPriceBookSchemeLabel": {
+    "description": "Coverage scheme field on Price book."
+  },
+  "billingPriceBookSchemeColumn": "Scheme",
+  "@billingPriceBookSchemeColumn": {
+    "description": "Price book optional Scheme column."
+  },
+  "billingPriceBookEffectiveLabel": "Effective",
+  "@billingPriceBookEffectiveLabel": {
+    "description": "Effective-from field on Price book."
+  },
+  "billingPriceBookEffectiveColumn": "Effective",
+  "@billingPriceBookEffectiveColumn": {
+    "description": "Price book optional Effective column."
+  },
+  "billingPriceBookEffectiveCurrent": "Current",
+  "@billingPriceBookEffectiveCurrent": {
+    "description": "Filter for currently effective prices."
+  },
+  "billingPriceBookEffectiveOther": "Not current",
+  "@billingPriceBookEffectiveOther": {
+    "description": "Filter for non-current prices."
+  },
+  "billingPriceBookActiveLabel": "Active",
+  "@billingPriceBookActiveLabel": {
+    "description": "Active switch on Price book dialog."
+  },
+  "billingPriceBookStatusLabel": "Status",
+  "@billingPriceBookStatusLabel": {
+    "description": "Status filter on Price book."
+  },
+  "billingPriceBookStatusColumn": "Status",
+  "@billingPriceBookStatusColumn": {
+    "description": "Price book table Status column."
+  },
+  "billingPriceBookStatusActive": "Active",
+  "@billingPriceBookStatusActive": {
+    "description": "Active status badge on Price book."
+  },
+  "billingPriceBookStatusInactive": "Inactive",
+  "@billingPriceBookStatusInactive": {
+    "description": "Inactive status badge on Price book."
+  },
+  "billingPriceBookActionsColumn": "Actions",
+  "@billingPriceBookActionsColumn": {
+    "description": "Price book Actions column."
+  },
+  "billingPriceBookCatalogLabel": "Catalog",
+  "@billingPriceBookCatalogLabel": {
+    "description": "Catalog type field on Price book."
+  },
+  "billingPriceBookCatalogColumn": "Catalog",
+  "@billingPriceBookCatalogColumn": {
+    "description": "Price book optional Catalog column."
+  },
+  "billingPriceBookCatalogService": "Service",
+  "@billingPriceBookCatalogService": {
+    "description": "SERVICE catalog type."
+  },
+  "billingPriceBookCatalogConsultation": "Consultation",
+  "@billingPriceBookCatalogConsultation": {
+    "description": "CONSULTATION catalog type."
+  },
+  "billingPriceBookCatalogLabTest": "Lab test",
+  "@billingPriceBookCatalogLabTest": {
+    "description": "LAB_TEST catalog type."
+  },
+  "billingPriceBookCatalogLabPanel": "Lab panel",
+  "@billingPriceBookCatalogLabPanel": {
+    "description": "LAB_PANEL catalog type."
+  },
+  "billingPriceBookCatalogRadiology": "Radiology test",
+  "@billingPriceBookCatalogRadiology": {
+    "description": "RADIOLOGY_TEST catalog type."
+  },
+  "billingPriceBookCatalogDrug": "Drug",
+  "@billingPriceBookCatalogDrug": {
+    "description": "DRUG catalog type."
+  },
+  "billingPriceBookBillingEntityLabel": "Billing entity",
+  "@billingPriceBookBillingEntityLabel": {
+    "description": "Billing entity field on Price book."
+  },
+  "billingPriceBookFacilityEntity": "Facility",
+  "@billingPriceBookFacilityEntity": {
+    "description": "Facility billing entity."
+  },
+  "billingPriceBookPharmacyEntity": "Pharmacy",
+  "@billingPriceBookPharmacyEntity": {
+    "description": "Pharmacy billing entity."
+  },
+  "billingPriceBookDeactivateAction": "Deactivate",
+  "@billingPriceBookDeactivateAction": {
+    "description": "Deactivate action on Price book rows."
+  },
+  "billingPriceBookDeactivateTitle": "Deactivate price",
+  "@billingPriceBookDeactivateTitle": {
+    "description": "Confirm dialog title for deactivating a price."
+  },
+  "billingPriceBookDeactivateBody": "Deactivate {item}? Charge will stop resolving this tariff.",
+  "@billingPriceBookDeactivateBody": {
+    "description": "Confirm dialog body for deactivating a price.",
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "billingApproveActionTooltip": "Approve this pending request",
+  "@billingApproveActionTooltip": {
+    "description": "Tooltip for the Approve next action on Need approval rows."
+  },
+  "billingTypeColumn": "Type",
+  "@billingTypeColumn": {
+    "description": "Optional Type column on Need approval (request type)."
+  },
+  "billingByColumn": "By",
+  "@billingByColumn": {
+    "description": "Optional By column on Need approval (requester)."
+  },
+  "billingApprovalTypeFilterLabel": "Type",
+  "@billingApprovalTypeFilterLabel": {
+    "description": "Approval request type filter group on Need approval."
+  },
+  "billingAnyApprovalTypeOption": "Any type",
+  "@billingAnyApprovalTypeOption": {
+    "description": "All approval types filter option."
+  },
+  "billingApprovalTypeRefundOption": "Refund",
+  "@billingApprovalTypeRefundOption": {
+    "description": "Refund approval type filter option."
+  },
+  "billingApprovalTypeVoidOption": "Void",
+  "@billingApprovalTypeVoidOption": {
+    "description": "Void approval type filter option."
+  },
+  "billingApprovalTypeAdjustmentOption": "Adjustment",
+  "@billingApprovalTypeAdjustmentOption": {
+    "description": "Adjustment approval type filter option."
   },
   "billingQueueLabel": "Queue",
   "@billingQueueLabel": {
     "description": "Label for billing queue filter group."
   },
-  "billingSearchHint": "Patient, ID, invoice, encounter, email, or phone",
+  "billingSearchHint": "Patient, invoice, encounter…",
   "@billingSearchHint": {
     "description": "Search hint for billing worklist."
   },
@@ -2318,9 +2691,9 @@
   "@billingSourceColumn": {
     "description": "Charge source column label for billing worklist."
   },
-  "billingAmountDueColumn": "Amount due",
+  "billingAmountDueColumn": "Due",
   "@billingAmountDueColumn": {
-    "description": "Outstanding amount column label for billing worklist."
+    "description": "Outstanding amount (Due) column label for billing worklist."
   },
   "billingSourceFilterLabel": "Source",
   "@billingSourceFilterLabel": {
@@ -2394,25 +2767,25 @@
   "@billingEmptyTitle": {
     "description": "Empty state title for billing worklist."
   },
-  "billingEmptyBody": "No invoices or billing actions in this queue.",
+  "billingEmptyBody": "No open work.",
   "@billingEmptyBody": {
-    "description": "Empty state body for billing worklist."
+    "description": "Empty state body for the Open work Billing desk tab."
   },
-  "billingEmptyReadyToIssueBody": "No draft invoices waiting to be issued.",
+  "billingEmptyReadyToIssueBody": "No drafts to issue.",
   "@billingEmptyReadyToIssueBody": {
-    "description": "Empty state for the Ready to issue billing tab."
+    "description": "Empty state for the To issue billing desk tab."
   },
   "billingEmptyAwaitingPaymentBody": "No issued or partially paid invoices awaiting payment.",
   "@billingEmptyAwaitingPaymentBody": {
     "description": "Empty state for the Awaiting payment billing tab."
   },
-  "billingEmptyClaimsPendingBody": "No insurance claims or authorizations waiting on a payer response.",
+  "billingEmptyClaimsPendingBody": "No open claims.",
   "@billingEmptyClaimsPendingBody": {
-    "description": "Empty state for the Claims pending billing tab."
+    "description": "Empty state for the Open claims billing desk tab."
   },
-  "billingEmptyApprovalRequiredBody": "No refunds, voids, or adjustments waiting for approval.",
+  "billingEmptyApprovalRequiredBody": "No pending approvals.",
   "@billingEmptyApprovalRequiredBody": {
-    "description": "Empty state for the Approval required billing tab."
+    "description": "Empty state for the Need approval billing tab."
   },
   "billingEmptyOverdueBody": "No overdue patient invoices in this queue.",
   "@billingEmptyOverdueBody": {
@@ -2426,9 +2799,9 @@
   "@billingStatusColumn": {
     "description": "Status column label in billing table."
   },
-  "billingNextActionColumnLabel": "Next action",
+  "billingNextActionColumnLabel": "Next",
   "@billingNextActionColumnLabel": {
-    "description": "Next action column label on billing workspace tables."
+    "description": "Next column label on billing workspace tables."
   },
   "billingAmountColumn": "Amount",
   "@billingAmountColumn": {
@@ -2534,11 +2907,11 @@
   "@billingVoidInvoice": {
     "description": "Void invoice dialog title."
   },
-  "billingRequestAdjustment": "Request adjustment",
+  "billingRequestAdjustment": "Adjust",
   "@billingRequestAdjustment": {
     "description": "Request adjustment dialog title."
   },
-  "billingRequestRefund": "Request refund",
+  "billingRequestRefund": "Refund",
   "@billingRequestRefund": {
     "description": "Request refund dialog title."
   },
@@ -2866,7 +3239,7 @@
   "@billingSubmitForApprovalLabel": {
     "description": "Checkbox label to submit a shift or day close for approval."
   },
-  "billingRequestVoidAction": "Request void",
+  "billingRequestVoidAction": "Void",
   "@billingRequestVoidAction": {
     "description": "Submit label for the void invoice request form."
   },

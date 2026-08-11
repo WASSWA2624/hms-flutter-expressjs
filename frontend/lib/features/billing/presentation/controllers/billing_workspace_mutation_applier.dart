@@ -356,7 +356,7 @@ abstract final class BillingWorkspaceMutationApplier {
       return <BillingQueueSummary>[
         BillingQueueSummary(
           queue: BillingQueueType.needsIssue,
-          label: 'Needs issue',
+          label: 'To issue',
           count: summary.needsIssue,
         ),
         BillingQueueSummary(
@@ -371,7 +371,7 @@ abstract final class BillingWorkspaceMutationApplier {
         ),
         BillingQueueSummary(
           queue: BillingQueueType.approvalRequired,
-          label: 'Approval required',
+          label: 'Need approval',
           count: summary.approvalRequired,
         ),
         BillingQueueSummary(

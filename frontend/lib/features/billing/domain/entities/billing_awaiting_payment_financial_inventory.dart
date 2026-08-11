@@ -1,7 +1,7 @@
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/features/billing/presentation/billing_access.dart';
 
-/// Financial action classification for the Billing **Awaiting payment** tab scan.
+/// Financial action classification for the Billing **Collect due** tab scan.
 enum BillingAwaitingPaymentActionClass {
   /// Receive payment, shift/day close, claim settlement applying balance.
   settle,
@@ -16,7 +16,7 @@ enum BillingAwaitingPaymentActionClass {
   notBillable,
 }
 
-/// One financially relevant atom on the Awaiting payment tab (`?queue=awaiting-payment`).
+/// One financially relevant atom on the Collect due tab (`?section=collect`).
 final class BillingAwaitingPaymentFinancialAtom {
   const BillingAwaitingPaymentFinancialAtom({
     required this.id,
@@ -37,16 +37,16 @@ final class BillingAwaitingPaymentFinancialAtom {
   final String? auditNote;
 }
 
-/// Canonical inventory of Awaiting payment tab financially relevant atoms (AC1).
+/// Canonical inventory of Collect due tab financially relevant atoms (AC1).
 ///
-/// Primary mutation is receive payment (partial + full) via Billing create
-/// payment + reconcile; all postings go through [BillingRepository] /
+/// Primary mutation is Pay (partial + full) via Billing receive-payment;
+/// all postings go through [BillingRepository] /
 /// backend billing + payment modules only.
 abstract final class BillingAwaitingPaymentFinancialInventory {
   static const BillingAwaitingPaymentFinancialAtom tab =
       BillingAwaitingPaymentFinancialAtom(
     id: 'tab',
-    label: 'Awaiting payment tab',
+    label: 'Collect due tab',
     actionClass: BillingAwaitingPaymentActionClass.notBillable,
     requirement: BillingAwaitingPaymentAtomPermissions.tab,
   );
@@ -90,7 +90,7 @@ abstract final class BillingAwaitingPaymentFinancialInventory {
   static const BillingAwaitingPaymentFinancialAtom receivePayment =
       BillingAwaitingPaymentFinancialAtom(
     id: 'receive_payment',
-    label: 'Receive payment',
+    label: 'Pay',
     actionClass: BillingAwaitingPaymentActionClass.settle,
     requirement: BillingAwaitingPaymentAtomPermissions.receivePayment,
     repositoryMethod: 'receivePayment',

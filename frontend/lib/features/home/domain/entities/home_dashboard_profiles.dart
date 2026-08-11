@@ -289,7 +289,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       ),
       'collections_today': HomeMetricRouteTarget(),
       'billing_exceptions': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'queue': 'overdue'},
+        queryParameters: <String, String>{'section': 'collect', 'overdue': 'yes'},
       ),
       'low_stock': HomeMetricRouteTarget(
         queryParameters: <String, String>{'section': 'low-stock'},
@@ -746,7 +746,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         queryParameters: <String, String>{'section': 'low-stock'},
       ),
       'billing_pending': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'queue': 'pendingPayment'},
+        queryParameters: <String, String>{'section': 'collect'},
       ),
     },
   ),
@@ -909,19 +909,19 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       // Collections KPI opens Billing workspace (live payments) — not pending queue.
       'collections_today': HomeMetricRouteTarget(),
       'overdue_balance_amount': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'queue': 'overdue'},
+        queryParameters: <String, String>{'section': 'collect', 'overdue': 'yes'},
       ),
       'pending_balance_amount': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'queue': 'pendingPayment'},
+        queryParameters: <String, String>{'section': 'collect'},
       ),
       'invoices_today': HomeMetricRouteTarget(
         queryParameters: <String, String>{'queue': 'needsIssue'},
       ),
       'overdue_invoices': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'queue': 'overdue'},
+        queryParameters: <String, String>{'section': 'collect', 'overdue': 'yes'},
       ),
       'open_balances': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'queue': 'pendingPayment'},
+        queryParameters: <String, String>{'section': 'collect'},
       ),
       'refunds_today': HomeMetricRouteTarget(),
       'pending_approvals': HomeMetricRouteTarget(
@@ -1723,7 +1723,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
     emptyActionIds: const <String>[],
     metricRouteTargets: <String, HomeMetricRouteTarget>{
       'my_open_bills': HomeMetricRouteTarget(
-        queryParameters: <String, String>{'queue': 'pendingPayment'},
+        queryParameters: <String, String>{'section': 'collect'},
       ),
       'my_upcoming_appointments': HomeMetricRouteTarget(
         queryParameters: <String, String>{'section': 'appointments'},

@@ -93,12 +93,37 @@ String billingInvoiceSourceLabel(BuildContext context, BillingWorkItem item) {
 String billingQueueLabel(BuildContext context, BillingQueueType queue) {
   final AppLocalizations l10n = context.l10n;
   return switch (queue) {
-    BillingQueueType.all => l10n.billingAllWorkItems,
+    BillingQueueType.all => l10n.billingOpenWork,
     BillingQueueType.needsIssue => l10n.billingNeedsIssue,
-    BillingQueueType.pendingPayment => l10n.billingAwaitingPayment,
+    BillingQueueType.pendingPayment => l10n.billingCollectDue,
     BillingQueueType.claimsPending => l10n.billingClaimsPending,
     BillingQueueType.approvalRequired => l10n.billingApprovalRequired,
     BillingQueueType.overdue => l10n.billingOverdue,
+  };
+}
+
+/// Full sentence for tab strip hover/focus (billing.md §2).
+String? billingQueueTooltip(BuildContext context, BillingQueueType queue) {
+  final AppLocalizations l10n = context.l10n;
+  return switch (queue) {
+    BillingQueueType.all => l10n.billingOpenWorkTooltip,
+    BillingQueueType.needsIssue => l10n.billingNeedsIssueTooltip,
+    BillingQueueType.pendingPayment => l10n.billingCollectDueTooltip,
+    BillingQueueType.claimsPending => l10n.billingClaimsPendingTooltip,
+    BillingQueueType.approvalRequired => l10n.billingApprovalRequiredTooltip,
+    _ => null,
+  };
+}
+
+/// Persisted table-settings key (`billing_<section>_v1`).
+String billingTableSettingsKey(BillingQueueType queue) {
+  return switch (queue) {
+    BillingQueueType.all => 'billing_work_v1',
+    BillingQueueType.needsIssue => 'billing_issue_v1',
+    BillingQueueType.pendingPayment => 'billing_collect_v1',
+    BillingQueueType.claimsPending => 'billing_claims_v1',
+    BillingQueueType.approvalRequired => 'billing_approvals_v1',
+    BillingQueueType.overdue => 'billing_collect_v1',
   };
 }
 

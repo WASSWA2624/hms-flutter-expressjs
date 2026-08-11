@@ -27,7 +27,15 @@ const String billingAmountDueColumnId = 'amount_due';
 const String billingAmountPaidColumnId = 'amount_paid';
 const String billingUpdatedColumnId = 'updated';
 const String billingStatusColumnId = 'status';
+const String billingAgeColumnId = 'age';
 const String billingNextActionColumnId = 'next_action';
+const String billingInsurerColumnId = 'insurer';
+const String billingSchemeColumnId = 'scheme';
+const String billingPatientShareColumnId = 'patient_share';
+const String billingInsurerShareColumnId = 'insurer_share';
+const String billingTypeColumnId = 'type';
+const String billingByColumnId = 'by';
+const String billingReasonColumnId = 'reason';
 
 const Map<BillingQueueType, List<String>> billingDefaultColumnIds =
     <BillingQueueType, List<String>>{
@@ -88,26 +96,28 @@ String? billingNextActionLabel(
   bool canMutateClaims = false,
 }) {
   final AppLocalizations l10n = context.l10n;
+  // Priority (billing.md §4.1): Approve → Issue → Pay → Submit → Settle →
+  // Auth → Refund → Adjust → Void → Send.
   if (item.canApproveOrReject) {
     return canApprove ? l10n.billingApproveAction : null;
   }
+  if (item.canIssue) {
+    return canWrite ? l10n.billingIssueAction : null;
+  }
+  if (item.canReceivePayment) {
+    return canWrite ? l10n.billingPayAction : null;
+  }
   if (item.canSubmitClaim) {
-    return canMutateClaims ? l10n.billingSubmitClaimAction : null;
+    return canMutateClaims ? l10n.billingSubmitAction : null;
   }
   if (item.canReconcileClaim) {
-    return canMutateClaims ? l10n.billingReconcileClaimAction : null;
+    return canMutateClaims ? l10n.billingSettleAction : null;
   }
   if (item.canApprovePreAuthorization) {
-    return canMutateClaims ? l10n.billingPreAuthApproveAction : null;
+    return canMutateClaims ? l10n.billingAuthAction : null;
   }
   if (!canWrite) {
     return null;
-  }
-  if (item.canIssue) {
-    return l10n.billingIssueAction;
-  }
-  if (item.canReceivePayment) {
-    return l10n.billingReceivePayment;
   }
   if (item.canRequestRefund) {
     return l10n.billingRequestRefund;
@@ -122,6 +132,35 @@ String? billingNextActionLabel(
     return l10n.billingSendAction;
   }
   return null;
+}
+
+String? billingNextActionTooltip(
+  BuildContext context,
+  BillingWorkItem item, {
+  required bool canWrite,
+  bool canApprove = false,
+  bool canMutateClaims = false,
+}) {
+  final AppLocalizations l10n = context.l10n;
+  if (item.canApproveOrReject) {
+    return canApprove ? l10n.billingApproveActionTooltip : null;
+  }
+  if (item.canSubmitClaim) {
+    return canMutateClaims ? l10n.billingSubmitActionTooltip : null;
+  }
+  if (item.canReconcileClaim) {
+    return canMutateClaims ? l10n.billingSettleActionTooltip : null;
+  }
+  if (item.canApprovePreAuthorization) {
+    return canMutateClaims ? l10n.billingAuthActionTooltip : null;
+  }
+  return billingNextActionLabel(
+    context,
+    item,
+    canWrite: canWrite,
+    canApprove: canApprove,
+    canMutateClaims: canMutateClaims,
+  );
 }
 
 bool billingWorkItemMatchesSearch(
@@ -173,6 +212,7 @@ List<AppListTableColumn<BillingWorkItem>> billingColumnsForQueue(
       _billingColumnBuilders(
         context,
         l10n,
+        queue: queue,
         ref: ref,
         accessPolicy: accessPolicy,
         canWrite: canWrite,
@@ -205,20 +245,49 @@ List<AppListTableColumn<BillingWorkItem>> billingColumnChoicesForQueue(
       _billingColumnBuilders(
         context,
         l10n,
+        queue: queue,
         ref: ref,
         accessPolicy: accessPolicy,
         canWrite: canWrite,
         isSaving: isSaving,
         onNextAction: onNextAction,
       );
+  if (queue == BillingQueueType.approvalRequired) {
+    return <AppListTableColumn<BillingWorkItem>>[
+      columns[billingTypeColumnId]!,
+      columns[billingByColumnId]!,
+      columns[billingReasonColumnId]!,
+    ];
+  }
+  if (queue == BillingQueueType.claimsPending) {
+    return <AppListTableColumn<BillingWorkItem>>[
+      columns[billingInsurerColumnId]!,
+      columns[billingSchemeColumnId]!,
+      columns[billingPatientShareColumnId]!,
+      columns[billingInsurerShareColumnId]!,
+    ];
+  }
   final Set<String> defaultIds =
       (billingDefaultColumnIds[queue] ?? billingDefaultColumnIds.values.first)
           .toSet();
+  final Set<String> claimsOnlyIds = <String>{
+    billingInsurerColumnId,
+    billingSchemeColumnId,
+    billingPatientShareColumnId,
+    billingInsurerShareColumnId,
+  };
   return <AppListTableColumn<BillingWorkItem>>[
     for (final MapEntry<String, AppListTableColumn<BillingWorkItem>> entry
         in columns.entries)
       if (!defaultIds.contains(entry.key) &&
-          entry.key != billingNextActionColumnId)
+          entry.key != billingNextActionColumnId &&
+          entry.key != billingTypeColumnId &&
+          entry.key != billingByColumnId &&
+          entry.key != billingReasonColumnId &&
+          !claimsOnlyIds.contains(entry.key) &&
+          (entry.key != billingAgeColumnId ||
+              queue == BillingQueueType.pendingPayment ||
+              queue == BillingQueueType.overdue))
         entry.value,
   ];
 }
@@ -226,6 +295,7 @@ List<AppListTableColumn<BillingWorkItem>> billingColumnChoicesForQueue(
 Map<String, AppListTableColumn<BillingWorkItem>> _billingColumnBuilders(
   BuildContext context,
   AppLocalizations l10n, {
+  required BillingQueueType queue,
   required WidgetRef ref,
   required AppAccessPolicy accessPolicy,
   required bool canWrite,
@@ -242,7 +312,15 @@ Map<String, AppListTableColumn<BillingWorkItem>> _billingColumnBuilders(
     billingAmountDueColumnId: billingAmountDueColumn(l10n),
     billingAmountPaidColumnId: billingAmountPaidColumn(l10n),
     billingUpdatedColumnId: billingUpdatedColumn(l10n),
+    billingAgeColumnId: billingAgeColumn(l10n),
     billingStatusColumnId: billingStatusColumn(l10n),
+    billingTypeColumnId: billingApprovalTypeColumn(l10n),
+    billingByColumnId: billingApprovalByColumn(l10n),
+    billingReasonColumnId: billingApprovalReasonColumn(l10n),
+    billingInsurerColumnId: billingInsurerColumn(l10n),
+    billingSchemeColumnId: billingSchemeColumn(l10n),
+    billingPatientShareColumnId: billingPatientShareColumn(l10n),
+    billingInsurerShareColumnId: billingInsurerShareColumn(l10n),
     billingNextActionColumnId: billingNextActionColumn(
       l10n: l10n,
       canWrite: canWrite,
@@ -261,7 +339,7 @@ AppListTableColumn<BillingWorkItem> billingPatientColumn(
 ) {
   return AppListTableColumn<BillingWorkItem>(
     id: billingPatientColumnId,
-    label: l10n.billingPatientNameColumn,
+    label: l10n.billingPatientColumn,
     sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
         appListTableCompareText(
           left.effectivePatientName,
@@ -340,7 +418,7 @@ AppListTableColumn<BillingWorkItem> billingAmountDueColumn(
 ) {
   return AppListTableColumn<BillingWorkItem>(
     id: billingAmountDueColumnId,
-    label: l10n.billingAmountDueColumn,
+    label: l10n.billingDueLabel,
     numeric: true,
     sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
         appListTableCompareNumber(left.balanceDue, right.balanceDue),
@@ -379,6 +457,41 @@ AppListTableColumn<BillingWorkItem> billingUpdatedColumn(
   );
 }
 
+int? billingInvoiceAgeDays(BillingWorkItem item) {
+  final DateTime? issuedAt = item.timelineAt;
+  if (issuedAt == null) {
+    return null;
+  }
+  final DateTime now = DateTime.now();
+  final DateTime issuedLocal = DateTime(
+    issuedAt.year,
+    issuedAt.month,
+    issuedAt.day,
+  );
+  final DateTime today = DateTime(now.year, now.month, now.day);
+  return today.difference(issuedLocal).inDays;
+}
+
+AppListTableColumn<BillingWorkItem> billingAgeColumn(AppLocalizations l10n) {
+  return AppListTableColumn<BillingWorkItem>(
+    id: billingAgeColumnId,
+    label: l10n.billingInvoiceAgeColumn,
+    numeric: true,
+    sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+        appListTableCompareNumber(
+          billingInvoiceAgeDays(left) ?? -1,
+          billingInvoiceAgeDays(right) ?? -1,
+        ),
+    cellBuilder: (BuildContext context, BillingWorkItem item) {
+      final int? days = billingInvoiceAgeDays(item);
+      if (days == null) {
+        return Text(l10n.billingNotRecorded);
+      }
+      return Text('$days');
+    },
+  );
+}
+
 AppListTableColumn<BillingWorkItem> billingStatusColumn(AppLocalizations l10n) {
   return AppListTableColumn<BillingWorkItem>(
     id: billingStatusColumnId,
@@ -395,6 +508,149 @@ AppListTableColumn<BillingWorkItem> billingStatusColumn(AppLocalizations l10n) {
           tone: billingWorkItemStatusTone(item),
           icon: billingWorkItemStatusIcon(item),
         ),
+      );
+    },
+  );
+}
+
+AppListTableColumn<BillingWorkItem> billingApprovalTypeColumn(
+  AppLocalizations l10n,
+) {
+  return AppListTableColumn<BillingWorkItem>(
+    id: billingTypeColumnId,
+    label: l10n.billingTypeColumn,
+    sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+        appListTableCompareText(left.approvalType, right.approvalType),
+    cellBuilder: (BuildContext context, BillingWorkItem item) {
+      return Text(
+        billingApiLabel(context, item.approvalType),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    },
+  );
+}
+
+AppListTableColumn<BillingWorkItem> billingApprovalByColumn(
+  AppLocalizations l10n,
+) {
+  return AppListTableColumn<BillingWorkItem>(
+    id: billingByColumnId,
+    label: l10n.billingByColumn,
+    sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+        appListTableCompareText(
+          left.requestedByDisplayId,
+          right.requestedByDisplayId,
+        ),
+    cellBuilder: (BuildContext context, BillingWorkItem item) {
+      return Text(
+        item.requestedByDisplayId?.trim().isNotEmpty == true
+            ? item.requestedByDisplayId!
+            : l10n.billingNotRecorded,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    },
+  );
+}
+
+AppListTableColumn<BillingWorkItem> billingApprovalReasonColumn(
+  AppLocalizations l10n,
+) {
+  return AppListTableColumn<BillingWorkItem>(
+    id: billingReasonColumnId,
+    label: l10n.billingReasonLabel,
+    sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+        appListTableCompareText(left.requestReason, right.requestReason),
+    cellBuilder: (BuildContext context, BillingWorkItem item) {
+      return Text(
+        item.requestReason?.trim().isNotEmpty == true
+            ? item.requestReason!
+            : l10n.billingNotRecorded,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      );
+    },
+  );
+}
+
+AppListTableColumn<BillingWorkItem> billingInsurerColumn(
+  AppLocalizations l10n,
+) {
+  return AppListTableColumn<BillingWorkItem>(
+    id: billingInsurerColumnId,
+    label: l10n.billingInsurerColumn,
+    sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+        appListTableCompareText(
+          left.insurerDisplayName,
+          right.insurerDisplayName,
+        ),
+    cellBuilder: (BuildContext context, BillingWorkItem item) {
+      return Text(
+        item.insurerDisplayName ?? l10n.billingNotRecorded,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    },
+  );
+}
+
+AppListTableColumn<BillingWorkItem> billingSchemeColumn(
+  AppLocalizations l10n,
+) {
+  return AppListTableColumn<BillingWorkItem>(
+    id: billingSchemeColumnId,
+    label: l10n.billingInvoiceSchemeColumn,
+    sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+        appListTableCompareText(
+          left.schemeDisplayName,
+          right.schemeDisplayName,
+        ),
+    cellBuilder: (BuildContext context, BillingWorkItem item) {
+      return Text(
+        item.schemeDisplayName ?? l10n.billingNotRecorded,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    },
+  );
+}
+
+AppListTableColumn<BillingWorkItem> billingPatientShareColumn(
+  AppLocalizations l10n,
+) {
+  return AppListTableColumn<BillingWorkItem>(
+    id: billingPatientShareColumnId,
+    label: l10n.billingInvoicePatientShareColumn,
+    numeric: true,
+    sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+        appListTableCompareNumber(
+          left.totalPatientShare,
+          right.totalPatientShare,
+        ),
+    cellBuilder: (BuildContext context, BillingWorkItem item) {
+      return Text(
+        billingMoney(context, item.totalPatientShare, item.currency),
+      );
+    },
+  );
+}
+
+AppListTableColumn<BillingWorkItem> billingInsurerShareColumn(
+  AppLocalizations l10n,
+) {
+  return AppListTableColumn<BillingWorkItem>(
+    id: billingInsurerShareColumnId,
+    label: l10n.billingInvoiceInsurerShareColumn,
+    numeric: true,
+    sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
+        appListTableCompareNumber(
+          left.totalInsurerShare,
+          right.totalInsurerShare,
+        ),
+    cellBuilder: (BuildContext context, BillingWorkItem item) {
+      return Text(
+        billingMoney(context, item.totalInsurerShare, item.currency),
       );
     },
   );
@@ -496,6 +752,21 @@ class BillingNextActionButton extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
+    final AppLocalizations l10n = context.l10n;
+    final String tooltip = item.canApproveOrReject
+        ? l10n.billingApproveActionTooltip
+        : item.canReceivePayment
+        ? l10n.billingPayActionTooltip
+        : item.canIssue
+        ? l10n.billingIssueActionTooltip
+        : item.canSubmitClaim
+        ? l10n.billingSubmitActionTooltip
+        : item.canReconcileClaim
+        ? l10n.billingSettleActionTooltip
+        : item.canApprovePreAuthorization
+        ? l10n.billingAuthActionTooltip
+        : label;
+
     final ThemeData theme = Theme.of(context);
     final bool actionAllowed = item.canApproveOrReject
         ? canApprove
@@ -515,7 +786,7 @@ class BillingNextActionButton extends StatelessWidget {
       enabled: enabled,
       label: label,
       child: Tooltip(
-        message: label,
+        message: tooltip,
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: enabled

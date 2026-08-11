@@ -143,7 +143,7 @@ Future<void> _pumpNeedsIssueTab(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/billing?queue=needs-issue',
+    initialLocation: '/billing?section=issue',
     routes: <RouteBase>[
       GoRoute(
         path: '/billing',
@@ -215,18 +215,18 @@ void main() {
       );
 
       expect(find.text('Ada Draft'), findsOneWidget);
-      expect(find.text('Ready to issue'), findsWidgets);
+      expect(find.text('To issue'), findsWidgets);
       expect(find.text('Close shift'), findsNothing);
       expect(find.text('Close day'), findsNothing);
-      expect(find.byTooltip('Issue'), findsNothing);
+      expect(find.byTooltip('Issue this draft invoice'), findsNothing);
       expect(
         find.descendant(
           of: find.byType(AppListTableGrid),
-          matching: find.text('Next action'),
+          matching: find.text('Next'),
         ),
         findsNothing,
       );
-      expect(find.text('Claims pending'), findsNothing);
+      expect(find.text('Open claims'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
 
       await tester.tap(find.text('Ada Draft'));
@@ -253,7 +253,7 @@ void main() {
 
       expect(find.byType(AppSearchBar), findsOneWidget);
       expect(find.text('Ada Draft'), findsOneWidget);
-      expect(find.byTooltip('Issue'), findsNothing);
+      expect(find.byTooltip('Issue this draft invoice'), findsNothing);
       expect(find.text('Close shift'), findsNothing);
     },
   );
@@ -280,9 +280,10 @@ void main() {
       );
 
       expect(find.text('Ada Draft'), findsOneWidget);
-      expect(find.text('Close shift'), findsOneWidget);
-      expect(find.text('Close day'), findsOneWidget);
-      expect(find.byTooltip('Issue'), findsWidgets);
+      expect(find.text('Issue all'), findsOneWidget);
+      expect(find.text('Close shift'), findsNothing);
+      expect(find.text('Close day'), findsNothing);
+      expect(find.byTooltip('Issue this draft invoice'), findsWidgets);
 
       await tester.tap(find.text('Ada Draft'));
       await tester.pumpAndSettle();
@@ -295,7 +296,7 @@ void main() {
   );
 
   testWidgets(
-    'route entry ∪: billing:write alone without billing:read omits read chrome',
+    'route entry ∪: billing:write alone without billing:read keeps write chrome',
     (WidgetTester tester) async {
       final AppAccessPolicy writeOnly = _policy(
         permissions: <AppPermission>{AppPermissions.billingWrite},
@@ -306,7 +307,11 @@ void main() {
       );
       expect(
         BillingNeedsIssueAtomPermissions.tab.isAllowed(writeOnly),
-        isFalse,
+        isTrue,
+      );
+      expect(
+        BillingNeedsIssueAtomPermissions.issue.isAllowed(writeOnly),
+        isTrue,
       );
 
       await _pumpNeedsIssueTab(
@@ -315,9 +320,10 @@ void main() {
         accessPolicy: writeOnly,
       );
 
-      expect(find.text('Ada Draft'), findsNothing);
-      expect(find.byType(AppTabStrip), findsNothing);
-      expect(find.byTooltip('Issue'), findsNothing);
+      expect(find.text('Ada Draft'), findsOneWidget);
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.text('Issue all'), findsOneWidget);
+      expect(find.byTooltip('Issue this draft invoice'), findsWidgets);
     },
   );
 
@@ -368,8 +374,8 @@ void main() {
         ),
         isFalse,
       );
-      expect(find.text('Claims pending'), findsNothing);
-      expect(find.byTooltip('Issue'), findsWidgets);
+      expect(find.text('Open claims'), findsNothing);
+      expect(find.byTooltip('Issue this draft invoice'), findsWidgets);
     },
   );
 
@@ -396,14 +402,16 @@ void main() {
 
       final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
       expect(
-        strip.tabs.any((AppTabItem tab) => tab.label.contains('Claims')),
+        strip.tabs.any(
+          (AppTabItem tab) => tab.label.toLowerCase().contains('claims'),
+        ),
         isTrue,
       );
       expect(
-        strip.tabs.any((AppTabItem tab) => tab.label.contains('Ready to issue')),
+        strip.tabs.any((AppTabItem tab) => tab.label.contains('To issue')),
         isTrue,
       );
-      expect(find.byTooltip('Issue'), findsNothing);
+      expect(find.byTooltip('Issue this draft invoice'), findsNothing);
     },
   );
 
@@ -430,8 +438,9 @@ void main() {
     );
 
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.byTooltip('Close shift'), findsOneWidget);
-    expect(find.byTooltip('Close day'), findsOneWidget);
+    expect(find.byTooltip('Issue all'), findsOneWidget);
+    expect(find.byTooltip('Close shift'), findsNothing);
+    expect(find.byTooltip('Close day'), findsNothing);
     expect(find.textContaining('no access'), findsNothing);
   });
 
@@ -452,7 +461,7 @@ void main() {
 
     expect(find.text('Ada Draft'), findsOneWidget);
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.byTooltip('Issue'), findsWidgets);
+    expect(find.byTooltip('Issue this draft invoice'), findsWidgets);
   });
 
   testWidgets('dark theme: authorized Needs issue chrome remains', (
@@ -471,8 +480,9 @@ void main() {
     );
 
     expect(find.text('Ada Draft'), findsOneWidget);
-    expect(find.text('Close shift'), findsOneWidget);
-    expect(find.byTooltip('Issue'), findsWidgets);
+    expect(find.text('Issue all'), findsOneWidget);
+    expect(find.text('Close shift'), findsNothing);
+    expect(find.byTooltip('Issue this draft invoice'), findsWidgets);
   });
 
   testWidgets(
@@ -489,7 +499,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byTooltip('Issue').first);
+      await tester.tap(find.byTooltip('Issue this draft invoice').first);
       await tester.pump();
       await tester.pumpAndSettle();
 
@@ -511,7 +521,7 @@ void main() {
   );
 
   testWidgets(
-    'authorized Close shift opens form chrome (validation surface)',
+    'authorized Issue all confirms then bulk-issues current page',
     (WidgetTester tester) async {
       await _pumpNeedsIssueTab(
         tester,
@@ -524,18 +534,22 @@ void main() {
         ),
       );
 
-      final int dialogsBefore = find.byType(AppDialog).evaluate().length;
-      await tester.ensureVisible(find.byTooltip('Close shift'));
-      await tester.tap(find.byTooltip('Close shift'));
+      expect(find.text('Issue all'), findsOneWidget);
+      await tester.ensureVisible(find.text('Issue all'));
+      await tester.tap(find.text('Issue all'));
+      await tester.pump();
       await tester.pumpAndSettle();
 
       expect(
-        find.byType(AppDialog).evaluate().length,
-        greaterThan(dialogsBefore),
+        find.textContaining('Issue every draft invoice'),
+        findsOneWidget,
       );
-      expect(find.byType(AppCurrencyAmountField), findsWidgets);
-      expect(find.byType(AppTextField), findsWidgets);
-      expect(find.textContaining('no access'), findsNothing);
+      await tester.tap(find.text('Issue all').last);
+      await tester.pumpAndSettle();
+
+      verify(
+        () => repository.issueInvoice(any(), notes: any(named: 'notes')),
+      ).called(1);
     },
   );
 
@@ -553,7 +567,7 @@ void main() {
         ),
       );
 
-      expect(find.byTooltip('Issue'), findsWidgets);
+      expect(find.byTooltip('Issue this draft invoice'), findsWidgets);
       expect(find.byTooltip('Approve'), findsNothing);
       expect(
         BillingNeedsIssueAtomPermissions.approve.isAllowed(
@@ -583,8 +597,9 @@ void main() {
       );
 
       expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(find.text('No billing items'), findsOneWidget);
-      expect(find.byTooltip('Issue'), findsNothing);
+      expect(find.text('No drafts to issue.'), findsOneWidget);
+      expect(find.byTooltip('Issue this draft invoice'), findsNothing);
+      expect(find.text('Issue all'), findsNothing);
       expect(find.text('Close shift'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -636,8 +651,8 @@ void main() {
         accessPolicy: writerNoClaims,
       );
 
-      expect(find.text('Claims pending'), findsNothing);
-      expect(find.byTooltip('Issue'), findsWidgets);
+      expect(find.text('Open claims'), findsNothing);
+      expect(find.byTooltip('Issue this draft invoice'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -658,7 +673,8 @@ void main() {
     );
 
     expect(find.text('Ada Draft'), findsOneWidget);
-    expect(find.text('Close shift'), findsOneWidget);
-    expect(find.byTooltip('Issue'), findsWidgets);
+    expect(find.text('Issue all'), findsOneWidget);
+    expect(find.text('Close shift'), findsNothing);
+    expect(find.byTooltip('Issue this draft invoice'), findsWidgets);
   });
 }

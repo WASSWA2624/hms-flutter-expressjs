@@ -378,6 +378,30 @@ final class BillingRepositoryImpl implements BillingRepository {
           BillingMutationResultDto.fromResponse(data).toEntity(),
     );
   }
+
+  @override
+  Future<Result<BillingMutationResult>> createCharge(BillingChargeDraft draft) {
+    return _apiClient.post<BillingMutationResult>(
+      ApiEndpoints.apiV1(<String>['billing', 'charges']),
+      data: _withoutEmpty(<String, Object?>{
+        'patient_id': draft.patientId,
+        'description': draft.itemDescription,
+        'quantity': draft.quantity,
+        'unit_price': _decimalString(draft.unitPrice),
+        'payment_mode': draft.paymentMode,
+        'catalog_type': draft.catalogType,
+        'catalog_item_id': draft.catalogItemId,
+        'price_book_entry_id': draft.priceBookEntryId,
+        'currency': draft.currency,
+        'notes': draft.notes,
+      }),
+      options: Options(headers: _initialConditionalMutationHeaders),
+      decoder: (Object? data) => BillingMutationResultDto.fromResponse(
+        data,
+        fallbackQueue: BillingQueueType.needsIssue,
+      ).toEntity(),
+    );
+  }
 }
 
 Map<String, Object?> _workspaceQueryParameters(
@@ -398,16 +422,40 @@ Map<String, Object?> _workItemsQueryParameters(
   return _withoutEmpty(<String, Object?>{
     'page': request.pageIndex + 1,
     'limit': request.pageSize,
-    'queue': query.queue == BillingQueueType.all
-        ? null
-        : query.queue.serverValue,
+    'queue': _workItemsServerQueue(query),
     ..._billingFilterQueryParameters(query),
   });
+}
+
+String? _workItemsServerQueue(BillingWorkspaceQuery query) {
+  if (query.queue == BillingQueueType.all) {
+    return null;
+  }
+  if (query.overdueOnly &&
+      (query.queue == BillingQueueType.pendingPayment ||
+          query.queue == BillingQueueType.overdue)) {
+    return BillingQueueType.overdue.serverValue;
+  }
+  return query.queue.serverValue;
 }
 
 Map<String, Object?> _billingFilterQueryParameters(
   BillingWorkspaceQuery query,
 ) {
+  final DateTime now = DateTime.now().toUtc();
+  DateTime? from = query.from;
+  DateTime? to = query.to;
+  if (from == null && to == null && query.ageBucket.trim().isNotEmpty) {
+    switch (query.ageBucket.trim()) {
+      case '0-7':
+        from = now.subtract(const Duration(days: 7));
+      case '8-30':
+        from = now.subtract(const Duration(days: 30));
+        to = now.subtract(const Duration(days: 8));
+      case '31+':
+        to = now.subtract(const Duration(days: 31));
+    }
+  }
   return <String, Object?>{
     'search': query.search,
     'patient_id': query.patientId,
@@ -415,8 +463,9 @@ Map<String, Object?> _billingFilterQueryParameters(
     'encounter_id': query.encounterId,
     'source_module': query.sourceModule,
     'billing_status': query.billingStatus,
-    'from': query.from?.toUtc().toIso8601String(),
-    'to': query.to?.toUtc().toIso8601String(),
+    'approval_type': query.approvalType,
+    'from': from?.toUtc().toIso8601String(),
+    'to': to?.toUtc().toIso8601String(),
   };
 }
 

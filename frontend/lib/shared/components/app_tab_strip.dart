@@ -20,6 +20,7 @@ final class AppTabItem {
     this.count,
     this.countTone = AppTabCountTone.info,
     this.icon,
+    this.tooltip,
   });
 
   final String id;
@@ -31,6 +32,9 @@ final class AppTabItem {
 
   /// Optional leading icon shown beside the tab label.
   final IconData? icon;
+
+  /// Full descriptive sentence shown on hover/focus (short labels stay on the tab).
+  final String? tooltip;
 }
 
 /// Section tabs with an optional dense action toolbar directly underneath.
@@ -189,6 +193,8 @@ class _AppTabOverflowRow extends StatelessWidget {
                       count: tabs[partition.visibleIndices[visiblePos]].count,
                       countTone:
                           tabs[partition.visibleIndices[visiblePos]].countTone,
+                      tooltip:
+                          tabs[partition.visibleIndices[visiblePos]].tooltip,
                       isSelected:
                           selectedId ==
                           tabs[partition.visibleIndices[visiblePos]].id,
@@ -738,6 +744,7 @@ class _AppTabChip extends StatefulWidget {
     required this.variant,
     this.icon,
     this.count,
+    this.tooltip,
   });
 
   final String label;
@@ -756,6 +763,8 @@ class _AppTabChip extends StatefulWidget {
   final Color activeFill;
 
   final AppTabStripVariant variant;
+
+  final String? tooltip;
 
   @override
   State<_AppTabChip> createState() => _AppTabChipState();
@@ -778,13 +787,18 @@ class _AppTabChipState extends State<_AppTabChip> {
     final bool nested = widget.variant == AppTabStripVariant.nested;
 
     if (nested) {
-      return _buildNestedChip(
+      final Widget nestedChip = _buildNestedChip(
         context: context,
         theme: theme,
         colorScheme: colorScheme,
         fullLabel: fullLabel,
         semanticsLabel: semanticsLabel,
       );
+      final String? tip = widget.tooltip?.trim();
+      if (tip == null || tip.isEmpty) {
+        return nestedChip;
+      }
+      return Tooltip(message: tip, child: nestedChip);
     }
 
     // Only the selected tab is filled (and flared), so it reads clearly as
@@ -806,7 +820,7 @@ class _AppTabChipState extends State<_AppTabChip> {
     final bool flareLeft = widget.isSelected && !widget.isFirst;
     final bool flareRight = widget.isSelected;
 
-    return Semantics(
+    final Widget chip = Semantics(
       button: true,
       selected: widget.isSelected,
       label: semanticsLabel,
@@ -874,6 +888,11 @@ class _AppTabChipState extends State<_AppTabChip> {
         ),
       ),
     );
+    final String? tip = widget.tooltip?.trim();
+    if (tip == null || tip.isEmpty) {
+      return chip;
+    }
+    return Tooltip(message: tip, child: chip);
   }
 
   Widget _buildNestedChip({

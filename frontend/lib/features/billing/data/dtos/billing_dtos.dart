@@ -634,10 +634,10 @@ String decodeBillingRecordId(Object? responseData) {
 String _queueDefaultLabel(BillingQueueType queue) {
   return switch (queue) {
     BillingQueueType.all => 'All billing work items',
-    BillingQueueType.needsIssue => 'Ready to issue',
+    BillingQueueType.needsIssue => 'To issue',
     BillingQueueType.pendingPayment => 'Awaiting payment',
     BillingQueueType.claimsPending => 'Claims pending',
-    BillingQueueType.approvalRequired => 'Approval required',
+    BillingQueueType.approvalRequired => 'Need approval',
     BillingQueueType.overdue => 'Overdue',
   };
 }

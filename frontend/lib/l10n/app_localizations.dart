@@ -3280,11 +3280,89 @@ abstract class AppLocalizations {
   /// **'Open reports'**
   String get billingAnalyticsOpenReportsAction;
 
-  /// Label for all billing work items queue.
+  /// Legacy key; prefer billingOpenWork for the Open work desk tab.
   ///
   /// In en, this message translates to:
-  /// **'All billing work items'**
+  /// **'Open work'**
   String get billingAllWorkItems;
+
+  /// Billing desk tab: cross-queue items that still need action.
+  ///
+  /// In en, this message translates to:
+  /// **'Open work'**
+  String get billingOpenWork;
+
+  /// Tooltip for the Open work Billing desk tab.
+  ///
+  /// In en, this message translates to:
+  /// **'All billing items that still need action across issue, collect, claims, and approvals'**
+  String get billingOpenWorkTooltip;
+
+  /// Trailing action on Open work that creates a draft invoice charge.
+  ///
+  /// In en, this message translates to:
+  /// **'Charge'**
+  String get billingChargeAction;
+
+  /// Tooltip for the Open work Charge trailing action.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a draft charge for a patient'**
+  String get billingChargeTooltip;
+
+  /// Short Next-action label to receive payment on a balance.
+  ///
+  /// In en, this message translates to:
+  /// **'Pay'**
+  String get billingPayAction;
+
+  /// Patient field on the Charge dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient'**
+  String get billingChargePatientLabel;
+
+  /// Catalog / service item field on the Charge dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Item'**
+  String get billingChargeItemLabel;
+
+  /// Quantity field on the Charge dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Qty'**
+  String get billingChargeQtyLabel;
+
+  /// Payment mode field on the Charge dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Mode'**
+  String get billingChargeModeLabel;
+
+  /// Self-pay payment mode on the Charge dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Self pay'**
+  String get billingChargeModeSelfPay;
+
+  /// Insurance payment mode on the Charge dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance'**
+  String get billingChargeModeInsurance;
+
+  /// Action to pick a patient on the Charge dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Select patient'**
+  String get billingChargeSelectPatient;
+
+  /// Hint for the Charge dialog item field.
+  ///
+  /// In en, this message translates to:
+  /// **'Service or item description'**
+  String get billingChargeItemHint;
 
   /// Label for invoices awaiting payment.
   ///
@@ -3298,11 +3376,59 @@ abstract class AppLocalizations {
   /// **'Issue queue'**
   String get billingIssueQueue;
 
-  /// Label for pending insurance claims queue.
+  /// Label for the Open claims billing desk tab.
   ///
   /// In en, this message translates to:
-  /// **'Claims pending'**
+  /// **'Open claims'**
   String get billingClaimsPending;
+
+  /// Tooltip for the Open claims billing desk tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance claims and pre-authorizations awaiting action'**
+  String get billingClaimsPendingTooltip;
+
+  /// Short Next action label to submit an insurance claim.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit'**
+  String get billingSubmitAction;
+
+  /// Tooltip for the Submit claim next action.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit this claim to the insurer'**
+  String get billingSubmitActionTooltip;
+
+  /// Short Next action label to settle an insurance claim.
+  ///
+  /// In en, this message translates to:
+  /// **'Settle'**
+  String get billingSettleAction;
+
+  /// Tooltip for the Settle claim next action.
+  ///
+  /// In en, this message translates to:
+  /// **'Record the insurer response'**
+  String get billingSettleActionTooltip;
+
+  /// Short Next action label to approve a pre-authorization.
+  ///
+  /// In en, this message translates to:
+  /// **'Auth'**
+  String get billingAuthAction;
+
+  /// Tooltip for the Auth pre-authorization next action.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve this pre-authorization'**
+  String get billingAuthActionTooltip;
+
+  /// Optional Insurer column on Open claims.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurer'**
+  String get billingInsurerColumn;
 
   /// Label for approval-required queue.
   ///
@@ -3316,11 +3442,113 @@ abstract class AppLocalizations {
   /// **'Overdue'**
   String get billingOverdue;
 
-  /// Label for draft invoices waiting to be issued.
+  /// Label for the To issue billing desk tab (draft invoices).
   ///
   /// In en, this message translates to:
-  /// **'Ready to issue'**
+  /// **'To issue'**
   String get billingNeedsIssue;
+
+  /// Tooltip for the To issue billing desk tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft invoices ready to issue to the patient or payer'**
+  String get billingNeedsIssueTooltip;
+
+  /// Label for the Collect due billing desk tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Collect due'**
+  String get billingCollectDue;
+
+  /// Tooltip for the Collect due billing desk tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Open balances due for payment, including overdue'**
+  String get billingCollectDueTooltip;
+
+  /// Empty state for the Collect due billing desk tab.
+  ///
+  /// In en, this message translates to:
+  /// **'No balances due.'**
+  String get billingEmptyCollectDueBody;
+
+  /// Tooltip for the Pay next action on Collect due rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Receive payment toward the balance due'**
+  String get billingPayActionTooltip;
+
+  /// Overdue Yes/No filter label on Collect due.
+  ///
+  /// In en, this message translates to:
+  /// **'Overdue'**
+  String get billingOverdueFilterLabel;
+
+  /// Overdue filter Yes option on Collect due.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get billingOverdueYesOption;
+
+  /// Overdue filter No option on Collect due.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get billingOverdueNoOption;
+
+  /// Invoice age filter label on Collect due.
+  ///
+  /// In en, this message translates to:
+  /// **'Age'**
+  String get billingAgeFilterLabel;
+
+  /// Invoice age 0–7 days filter option.
+  ///
+  /// In en, this message translates to:
+  /// **'0–7 days'**
+  String get billingAge0to7Option;
+
+  /// Invoice age 8–30 days filter option.
+  ///
+  /// In en, this message translates to:
+  /// **'8–30 days'**
+  String get billingAge8to30Option;
+
+  /// Invoice age 31+ days filter option.
+  ///
+  /// In en, this message translates to:
+  /// **'31+ days'**
+  String get billingAge31PlusOption;
+
+  /// Optional invoice age column on Collect due.
+  ///
+  /// In en, this message translates to:
+  /// **'Age'**
+  String get billingInvoiceAgeColumn;
+
+  /// Tooltip for the Issue next action on draft invoice rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue this draft invoice'**
+  String get billingIssueActionTooltip;
+
+  /// Trailing action to bulk-issue drafts on To issue.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue all'**
+  String get billingIssueAllAction;
+
+  /// Confirm dialog title for Issue all on To issue.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue all drafts?'**
+  String get billingIssueAllConfirmTitle;
+
+  /// Confirm dialog body for Issue all on To issue.
+  ///
+  /// In en, this message translates to:
+  /// **'Issue every draft invoice on this page to the patient or payer.'**
+  String get billingIssueAllConfirmBody;
 
   /// Cancelled invoice status filter option.
   ///
@@ -3400,11 +3628,335 @@ abstract class AppLocalizations {
   /// **'Clinical'**
   String get billingSourceClinical;
 
-  /// Label for approval-required queue filter.
+  /// Label for the Need approval billing desk tab.
   ///
   /// In en, this message translates to:
-  /// **'Approval required'**
+  /// **'Need approval'**
   String get billingApprovalRequired;
+
+  /// Tooltip for the Need approval billing desk tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Refunds, voids, and adjustments awaiting approval'**
+  String get billingApprovalRequiredTooltip;
+
+  /// Label for the Price book billing desk tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Price book'**
+  String get billingPriceBookTab;
+
+  /// Tooltip for the Price book billing desk tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Service and item prices used when charging'**
+  String get billingPriceBookTooltip;
+
+  /// Empty state title for the Price book table.
+  ///
+  /// In en, this message translates to:
+  /// **'No prices match.'**
+  String get billingPriceBookEmptyTitle;
+
+  /// Empty state body for the Price book table.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another search or add a price.'**
+  String get billingPriceBookEmptyBody;
+
+  /// Search hint for Price book.
+  ///
+  /// In en, this message translates to:
+  /// **'Item, scheme, mode…'**
+  String get billingPriceBookSearchHint;
+
+  /// Dialog title for creating a price-book entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Add price'**
+  String get billingPriceBookAddTitle;
+
+  /// Dialog title for editing a price-book entry.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit price'**
+  String get billingPriceBookEditTitle;
+
+  /// Catalog item id field on Price book dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Item'**
+  String get billingPriceBookItemLabel;
+
+  /// Validation for Price book item.
+  ///
+  /// In en, this message translates to:
+  /// **'Item is required.'**
+  String get billingPriceBookItemRequired;
+
+  /// Price book table Item column.
+  ///
+  /// In en, this message translates to:
+  /// **'Item'**
+  String get billingPriceBookItemColumn;
+
+  /// Payment mode field on Price book.
+  ///
+  /// In en, this message translates to:
+  /// **'Mode'**
+  String get billingPriceBookModeLabel;
+
+  /// Price book table Mode column.
+  ///
+  /// In en, this message translates to:
+  /// **'Mode'**
+  String get billingPriceBookModeColumn;
+
+  /// Self-pay payment mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Self-pay'**
+  String get billingPriceBookModeSelfPay;
+
+  /// Insurance payment mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance'**
+  String get billingPriceBookModeInsurance;
+
+  /// Unit price field on Price book.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get billingPriceBookPriceLabel;
+
+  /// Price book table Price column.
+  ///
+  /// In en, this message translates to:
+  /// **'Price'**
+  String get billingPriceBookPriceColumn;
+
+  /// Validation for Price book unit price.
+  ///
+  /// In en, this message translates to:
+  /// **'Price is required.'**
+  String get billingPriceBookPriceRequired;
+
+  /// Currency field on Price book.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get billingPriceBookCurrencyLabel;
+
+  /// Validation for Price book currency.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency is required.'**
+  String get billingPriceBookCurrencyRequired;
+
+  /// Coverage scheme field on Price book.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheme'**
+  String get billingPriceBookSchemeLabel;
+
+  /// Price book optional Scheme column.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheme'**
+  String get billingPriceBookSchemeColumn;
+
+  /// Effective-from field on Price book.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective'**
+  String get billingPriceBookEffectiveLabel;
+
+  /// Price book optional Effective column.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective'**
+  String get billingPriceBookEffectiveColumn;
+
+  /// Filter for currently effective prices.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get billingPriceBookEffectiveCurrent;
+
+  /// Filter for non-current prices.
+  ///
+  /// In en, this message translates to:
+  /// **'Not current'**
+  String get billingPriceBookEffectiveOther;
+
+  /// Active switch on Price book dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get billingPriceBookActiveLabel;
+
+  /// Status filter on Price book.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get billingPriceBookStatusLabel;
+
+  /// Price book table Status column.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get billingPriceBookStatusColumn;
+
+  /// Active status badge on Price book.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get billingPriceBookStatusActive;
+
+  /// Inactive status badge on Price book.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get billingPriceBookStatusInactive;
+
+  /// Price book Actions column.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get billingPriceBookActionsColumn;
+
+  /// Catalog type field on Price book.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog'**
+  String get billingPriceBookCatalogLabel;
+
+  /// Price book optional Catalog column.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog'**
+  String get billingPriceBookCatalogColumn;
+
+  /// SERVICE catalog type.
+  ///
+  /// In en, this message translates to:
+  /// **'Service'**
+  String get billingPriceBookCatalogService;
+
+  /// CONSULTATION catalog type.
+  ///
+  /// In en, this message translates to:
+  /// **'Consultation'**
+  String get billingPriceBookCatalogConsultation;
+
+  /// LAB_TEST catalog type.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab test'**
+  String get billingPriceBookCatalogLabTest;
+
+  /// LAB_PANEL catalog type.
+  ///
+  /// In en, this message translates to:
+  /// **'Lab panel'**
+  String get billingPriceBookCatalogLabPanel;
+
+  /// RADIOLOGY_TEST catalog type.
+  ///
+  /// In en, this message translates to:
+  /// **'Radiology test'**
+  String get billingPriceBookCatalogRadiology;
+
+  /// DRUG catalog type.
+  ///
+  /// In en, this message translates to:
+  /// **'Drug'**
+  String get billingPriceBookCatalogDrug;
+
+  /// Billing entity field on Price book.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing entity'**
+  String get billingPriceBookBillingEntityLabel;
+
+  /// Facility billing entity.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get billingPriceBookFacilityEntity;
+
+  /// Pharmacy billing entity.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy'**
+  String get billingPriceBookPharmacyEntity;
+
+  /// Deactivate action on Price book rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate'**
+  String get billingPriceBookDeactivateAction;
+
+  /// Confirm dialog title for deactivating a price.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate price'**
+  String get billingPriceBookDeactivateTitle;
+
+  /// Confirm dialog body for deactivating a price.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate {item}? Charge will stop resolving this tariff.'**
+  String billingPriceBookDeactivateBody(String item);
+
+  /// Tooltip for the Approve next action on Need approval rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve this pending request'**
+  String get billingApproveActionTooltip;
+
+  /// Optional Type column on Need approval (request type).
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get billingTypeColumn;
+
+  /// Optional By column on Need approval (requester).
+  ///
+  /// In en, this message translates to:
+  /// **'By'**
+  String get billingByColumn;
+
+  /// Approval request type filter group on Need approval.
+  ///
+  /// In en, this message translates to:
+  /// **'Type'**
+  String get billingApprovalTypeFilterLabel;
+
+  /// All approval types filter option.
+  ///
+  /// In en, this message translates to:
+  /// **'Any type'**
+  String get billingAnyApprovalTypeOption;
+
+  /// Refund approval type filter option.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund'**
+  String get billingApprovalTypeRefundOption;
+
+  /// Void approval type filter option.
+  ///
+  /// In en, this message translates to:
+  /// **'Void'**
+  String get billingApprovalTypeVoidOption;
+
+  /// Adjustment approval type filter option.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjustment'**
+  String get billingApprovalTypeAdjustmentOption;
 
   /// Label for billing queue filter group.
   ///
@@ -3415,7 +3967,7 @@ abstract class AppLocalizations {
   /// Search hint for billing worklist.
   ///
   /// In en, this message translates to:
-  /// **'Patient, ID, invoice, encounter, email, or phone'**
+  /// **'Patient, invoice, encounter…'**
   String get billingSearchHint;
 
   /// Patient name column label for billing worklist.
@@ -3442,10 +3994,10 @@ abstract class AppLocalizations {
   /// **'Source'**
   String get billingSourceColumn;
 
-  /// Outstanding amount column label for billing worklist.
+  /// Outstanding amount (Due) column label for billing worklist.
   ///
   /// In en, this message translates to:
-  /// **'Amount due'**
+  /// **'Due'**
   String get billingAmountDueColumn;
 
   /// Source filter label for billing worklist.
@@ -3556,16 +4108,16 @@ abstract class AppLocalizations {
   /// **'No billing items'**
   String get billingEmptyTitle;
 
-  /// Empty state body for billing worklist.
+  /// Empty state body for the Open work Billing desk tab.
   ///
   /// In en, this message translates to:
-  /// **'No invoices or billing actions in this queue.'**
+  /// **'No open work.'**
   String get billingEmptyBody;
 
-  /// Empty state for the Ready to issue billing tab.
+  /// Empty state for the To issue billing desk tab.
   ///
   /// In en, this message translates to:
-  /// **'No draft invoices waiting to be issued.'**
+  /// **'No drafts to issue.'**
   String get billingEmptyReadyToIssueBody;
 
   /// Empty state for the Awaiting payment billing tab.
@@ -3574,16 +4126,16 @@ abstract class AppLocalizations {
   /// **'No issued or partially paid invoices awaiting payment.'**
   String get billingEmptyAwaitingPaymentBody;
 
-  /// Empty state for the Claims pending billing tab.
+  /// Empty state for the Open claims billing desk tab.
   ///
   /// In en, this message translates to:
-  /// **'No insurance claims or authorizations waiting on a payer response.'**
+  /// **'No open claims.'**
   String get billingEmptyClaimsPendingBody;
 
-  /// Empty state for the Approval required billing tab.
+  /// Empty state for the Need approval billing tab.
   ///
   /// In en, this message translates to:
-  /// **'No refunds, voids, or adjustments waiting for approval.'**
+  /// **'No pending approvals.'**
   String get billingEmptyApprovalRequiredBody;
 
   /// Empty state for the Overdue billing tab.
@@ -3604,10 +4156,10 @@ abstract class AppLocalizations {
   /// **'Status'**
   String get billingStatusColumn;
 
-  /// Next action column label on billing workspace tables.
+  /// Next column label on billing workspace tables.
   ///
   /// In en, this message translates to:
-  /// **'Next action'**
+  /// **'Next'**
   String get billingNextActionColumnLabel;
 
   /// Amount column label in billing table.
@@ -3769,13 +4321,13 @@ abstract class AppLocalizations {
   /// Request adjustment dialog title.
   ///
   /// In en, this message translates to:
-  /// **'Request adjustment'**
+  /// **'Adjust'**
   String get billingRequestAdjustment;
 
   /// Request refund dialog title.
   ///
   /// In en, this message translates to:
-  /// **'Request refund'**
+  /// **'Refund'**
   String get billingRequestRefund;
 
   /// Due amount label.
@@ -4267,7 +4819,7 @@ abstract class AppLocalizations {
   /// Submit label for the void invoice request form.
   ///
   /// In en, this message translates to:
-  /// **'Request void'**
+  /// **'Void'**
   String get billingRequestVoidAction;
 
   /// Label for the void reason field in the void invoice form.

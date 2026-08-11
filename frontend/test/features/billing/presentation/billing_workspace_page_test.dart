@@ -324,16 +324,19 @@ Future<_Harness> _pumpBillingWorkspace(
 
 String billingQueueTabLabel(BillingQueueType queue) {
   return switch (queue) {
-    BillingQueueType.all => 'All billing work items',
-    BillingQueueType.needsIssue => 'Ready to issue',
-    BillingQueueType.pendingPayment => 'Awaiting payment',
-    BillingQueueType.claimsPending => 'Claims pending',
-    BillingQueueType.approvalRequired => 'Approval required',
-    BillingQueueType.overdue => 'Overdue',
+    BillingQueueType.all => 'Open work',
+    BillingQueueType.needsIssue => 'To issue',
+    BillingQueueType.pendingPayment => 'Collect due',
+    BillingQueueType.claimsPending => 'Open claims',
+    BillingQueueType.approvalRequired => 'Need approval',
+    BillingQueueType.overdue => 'Collect due',
   };
 }
 
-void _expectStableCloseSearchActions(WidgetTester tester) {
+List<BillingQueueType> get billingDeskSections =>
+    BillingQueueType.values.where((BillingQueueType q) => q.isDeskSection).toList();
+
+void _expectCollectDueCloseSearchActions(WidgetTester tester) {
   expect(_searchBarAction('Close day'), findsOneWidget);
   expect(_searchBarAction('Close shift'), findsOneWidget);
   expect(find.text('Refresh'), findsNothing);
@@ -345,6 +348,25 @@ void _expectStableCloseSearchActions(WidgetTester tester) {
     'Close day',
     'Close shift',
   ]);
+}
+
+void _expectToIssueTrailingActions(WidgetTester tester) {
+  expect(_searchBarAction('Issue all'), findsOneWidget);
+  expect(_searchBarAction('Close day'), findsNothing);
+  expect(_searchBarAction('Close shift'), findsNothing);
+  expect(find.text('Refresh'), findsNothing);
+  final List<AppSearchBarAction> trailing =
+      _table(tester).search?.trailingActions ?? const <AppSearchBarAction>[];
+  expect(trailing.map((AppSearchBarAction a) => a.label).toList(), <String>[
+    'Issue all',
+  ]);
+}
+
+void _expectNoOwnedTrailingActions(WidgetTester tester) {
+  expect(_searchBarAction('Close day'), findsNothing);
+  expect(_searchBarAction('Close shift'), findsNothing);
+  expect(_searchBarAction('Issue all'), findsNothing);
+  expect(find.text('Refresh'), findsNothing);
 }
 
 Future<void> _selectQueueTab(WidgetTester tester, String label) async {
@@ -383,17 +405,19 @@ void main() {
     expect(find.byType(AppWorkspaceToolbar), findsNothing);
     expect(find.byType(AppWorkspace), findsNothing);
     final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
-    expect(strip.tabs.length, BillingQueueType.values.length);
+    expect(strip.tabs.length, billingDeskSections.length + 1);
     expect(
       strip.tabs.map((AppTabItem tab) => tab.label),
       <String>[
-        for (final BillingQueueType queue in BillingQueueType.values)
+        for (final BillingQueueType queue in billingDeskSections)
           billingQueueTabLabel(queue),
+        AppLocalizations.of(tester.element(find.byType(AppTabStrip)))
+            .billingPriceBookTab,
       ],
     );
     expect(find.text('Ada Draft'), findsOneWidget);
     expect(find.text('Ben Payment'), findsOneWidget);
-    _expectStableCloseSearchActions(tester);
+    _expectNoOwnedTrailingActions(tester);
     expect(_table(tester).columnVisibilityLabel, 'Settings');
     expect(_table(tester).columnVisibilityTitle, 'Table Settings');
     expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
@@ -420,34 +444,43 @@ void main() {
       repository: repository,
     );
 
-    await _selectQueueTab(tester, 'Awaiting payment');
+    await _selectQueueTab(tester, 'Collect due');
 
     expect(
-      harness.router.state.uri.queryParameters['queue'],
-      'pending-payment',
+      harness.router.state.uri.queryParameters['section'],
+      'collect',
     );
     expect(find.text('Ben Payment'), findsOneWidget);
     expect(find.text('Ada Draft'), findsNothing);
-    _expectStableCloseSearchActions(tester);
+    _expectCollectDueCloseSearchActions(tester);
 
-    await _selectQueueTab(tester, 'Ready to issue');
+    await _selectQueueTab(tester, 'To issue');
 
-    expect(harness.router.state.uri.queryParameters['queue'], 'needs-issue');
+    expect(harness.router.state.uri.queryParameters['section'], 'issue');
     expect(find.text('Ada Draft'), findsOneWidget);
     expect(find.text('Ben Payment'), findsNothing);
-    _expectStableCloseSearchActions(tester);
+    _expectToIssueTrailingActions(tester);
   });
 
-  testWidgets('search bar keeps Close day / Close shift across tabs without Refresh', (
+  testWidgets('search bar trailing matches tab ownership without Refresh', (
     WidgetTester tester,
   ) async {
     await _pumpBillingWorkspace(tester, repository: repository);
 
-    for (final BillingQueueType queue in BillingQueueType.values) {
+    for (final BillingQueueType queue in billingDeskSections) {
       if (queue != BillingQueueType.all) {
         await _selectQueueTab(tester, billingQueueTabLabel(queue));
       }
-      _expectStableCloseSearchActions(tester);
+      if (queue == BillingQueueType.needsIssue) {
+        _expectToIssueTrailingActions(tester);
+      } else if (queue == BillingQueueType.pendingPayment) {
+        _expectCollectDueCloseSearchActions(tester);
+      } else if (queue == BillingQueueType.approvalRequired ||
+          queue == BillingQueueType.claimsPending) {
+        _expectNoOwnedTrailingActions(tester);
+      } else {
+        _expectNoOwnedTrailingActions(tester);
+      }
     }
   });
 
@@ -463,13 +496,13 @@ void main() {
     expect(find.text('Close shift'), findsNothing);
     expect(find.text('Close day'), findsNothing);
     expect(find.text('Refresh'), findsNothing);
-    expect(find.byTooltip('Issue'), findsNothing);
-    expect(find.byTooltip('Receive payment'), findsNothing);
-    expect(find.byTooltip('Approve'), findsNothing);
+    expect(find.byTooltip('Issue this draft invoice'), findsNothing);
+    expect(find.byTooltip('Receive payment toward the balance due'), findsNothing);
+    expect(find.byTooltip('Approve this pending request'), findsNothing);
     expect(
       find.descendant(
         of: find.byType(AppListTableGrid),
-        matching: find.text('Next action'),
+        matching: find.text('Next'),
       ),
       findsNothing,
     );
@@ -480,10 +513,10 @@ void main() {
     (WidgetTester tester) async {
       await _pumpBillingWorkspace(tester, repository: repository);
 
-      await _selectQueueTab(tester, 'Approval required');
+      await _selectQueueTab(tester, 'Need approval');
 
       expect(find.text('Dana Approval'), findsOneWidget);
-      expect(find.byTooltip('Approve'), findsNothing);
+      expect(find.byTooltip('Approve this pending request'), findsNothing);
 
       await tester.tap(find.text('Dana Approval'));
       await tester.pumpAndSettle();
@@ -502,9 +535,9 @@ void main() {
         accessPolicy: _billingApproverPolicy(),
       );
 
-      await _selectQueueTab(tester, 'Approval required');
+      await _selectQueueTab(tester, 'Need approval');
 
-      expect(find.byTooltip('Approve'), findsWidgets);
+      expect(find.byTooltip('Approve this pending request'), findsWidgets);
 
       await tester.tap(find.text('Dana Approval'));
       await tester.pumpAndSettle();
@@ -514,7 +547,7 @@ void main() {
     },
   );
 
-  testWidgets('Claims pending tab absent without insurance-claims module', (
+  testWidgets('Open claims tab absent without insurance-claims module', (
     WidgetTester tester,
   ) async {
     await _pumpBillingWorkspace(
@@ -526,10 +559,9 @@ void main() {
     final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
     expect(
       strip.tabs.map((AppTabItem tab) => tab.label),
-      isNot(contains('Claims pending')),
+      isNot(contains('Open claims')),
     );
-    expect(strip.tabs.length, BillingQueueType.values.length - 1);
-    _expectStableCloseSearchActions(tester);
+    expect(strip.tabs.length, billingDeskSections.length);
   });
 
   testWidgets('missing billing-payments module omits billing chrome', (
@@ -560,12 +592,12 @@ void main() {
       );
 
       expect(find.text('Ben Payment'), findsOneWidget);
-      expect(find.byTooltip('Receive payment'), findsWidgets);
-      _expectStableCloseSearchActions(tester);
+      expect(find.byTooltip('Receive payment toward the balance due'), findsWidgets);
+      _expectCollectDueCloseSearchActions(tester);
 
       await tester.tap(find.text('Ben Payment'));
       await tester.pumpAndSettle();
-      expect(find.text('Receive payment'), findsWidgets);
+      expect(find.text('Pay'), findsWidgets);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pumpAndSettle();
@@ -581,19 +613,19 @@ void main() {
       );
 
       expect(find.text('Ben Payment'), findsOneWidget);
-      expect(find.byTooltip('Receive payment'), findsNothing);
+      expect(find.byTooltip('Receive payment toward the balance due'), findsNothing);
       expect(find.text('Close shift'), findsNothing);
       expect(
         find.descendant(
           of: find.byType(AppListTableGrid),
-          matching: find.text('Next action'),
+          matching: find.text('Next'),
         ),
         findsNothing,
       );
 
       await tester.tap(find.text('Ben Payment'));
       await tester.pumpAndSettle();
-      expect(find.text('Receive payment'), findsNothing);
+      expect(find.text('Pay'), findsNothing);
     },
   );
 
@@ -653,8 +685,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Ben Payment'), findsOneWidget);
-      expect(find.byTooltip('Receive payment'), findsWidgets);
-      _expectStableCloseSearchActions(tester);
+      expect(find.byTooltip('Receive payment toward the balance due'), findsWidgets);
+      _expectCollectDueCloseSearchActions(tester);
     },
   );
 
@@ -711,8 +743,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Ada Draft'), findsOneWidget);
-      expect(find.byTooltip('Issue'), findsWidgets);
-      _expectStableCloseSearchActions(tester);
+      expect(find.byTooltip('Issue this draft invoice'), findsWidgets);
+      _expectNoOwnedTrailingActions(tester);
     }
   });
 
@@ -735,6 +767,7 @@ void main() {
     expect(find.byType(AppTabStrip), findsOneWidget);
     expect(find.byType(AppTabToolbarPrimary), findsNothing);
     expect(find.byType(AppTabToolbarAction), findsNothing);
+    await _selectQueueTab(tester, 'Collect due');
     expect(find.byTooltip('Close shift'), findsOneWidget);
     expect(find.byTooltip('Close day'), findsOneWidget);
     expect(find.text('Refresh'), findsNothing);
@@ -746,7 +779,7 @@ void main() {
   ) async {
     await _pumpBillingWorkspace(tester, repository: repository);
 
-    expect(find.byTooltip('Issue'), findsWidgets);
+    expect(find.byTooltip('Issue this draft invoice'), findsWidgets);
 
     await tester.tap(find.text('Ada Draft'));
     await tester.pumpAndSettle();
@@ -755,7 +788,7 @@ void main() {
     expect(find.text('Finalize financial clearance'), findsNothing);
   });
 
-  testWidgets('deep link queue=pending-payment selects Awaiting Payment tab', (
+  testWidgets('deep link pending-payment alias selects Collect due tab', (
     WidgetTester tester,
   ) async {
     final _Harness harness = await _pumpBillingWorkspace(
@@ -768,30 +801,30 @@ void main() {
     );
 
     expect(
-      harness.router.state.uri.queryParameters['queue'],
-      'pending-payment',
+      harness.router.state.uri.queryParameters['section'],
+      'collect',
     );
     expect(find.text('Ben Payment'), findsOneWidget);
     expect(find.text('Ada Draft'), findsNothing);
     expect(find.text('Cara Claim'), findsNothing);
-    _expectStableCloseSearchActions(tester);
+    _expectCollectDueCloseSearchActions(tester);
   });
 
-  testWidgets('deep link queue=needs-issue selects Needs Issue tab', (
+  testWidgets('deep link section=issue selects To issue tab', (
     WidgetTester tester,
   ) async {
     await _pumpBillingWorkspace(
       tester,
       repository: repository,
-      initialLocation: '/billing?queue=needs-issue',
+      initialLocation: '/billing?section=issue',
       initialQuery: BillingWorkspaceQuery.fromUri(
-        Uri.parse('/billing?queue=needs-issue'),
+        Uri.parse('/billing?section=issue'),
       ),
     );
 
     expect(find.text('Ada Draft'), findsOneWidget);
     expect(find.text('Ben Payment'), findsNothing);
-    _expectStableCloseSearchActions(tester);
+    _expectToIssueTrailingActions(tester);
   });
 
   testWidgets('each tab exposes five default columns when mutations allowed', (
@@ -805,7 +838,7 @@ void main() {
       accessPolicy: _billingApproverPolicy(),
     );
 
-    for (final BillingQueueType queue in BillingQueueType.values) {
+    for (final BillingQueueType queue in billingDeskSections) {
       if (queue != BillingQueueType.all) {
         await _selectQueueTab(tester, billingQueueTabLabel(queue));
       }
@@ -821,12 +854,12 @@ void main() {
         repository: repository,
         accessPolicy: _billingWritePolicy(),
       );
-      await _selectQueueTab(tester, 'Approval required');
+      await _selectQueueTab(tester, 'Need approval');
       expect(_table(tester).columns.length, 4);
       expect(
         find.descendant(
           of: find.byType(AppListTableGrid),
-          matching: find.text('Next action'),
+          matching: find.text('Next'),
         ),
         findsNothing,
       );
@@ -855,7 +888,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byType(AppListTableGrid),
-        matching: find.text('Next action'),
+        matching: find.text('Next'),
       ),
       findsOneWidget,
     );
@@ -867,7 +900,7 @@ void main() {
       findsNothing,
     );
 
-    await _selectQueueTab(tester, 'Ready to issue');
+    await _selectQueueTab(tester, 'To issue');
 
     expect(
       find.descendant(
@@ -890,7 +923,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.byTooltip('Issue'), findsWidgets);
+    expect(find.byTooltip('Issue this draft invoice'), findsWidgets);
   });
 
   testWidgets('search filters visible work items', (WidgetTester tester) async {
@@ -929,7 +962,7 @@ void main() {
   ) async {
     await _pumpBillingWorkspace(tester, repository: repository);
 
-    expect(find.byTooltip('Issue'), findsWidgets);
+    expect(find.byTooltip('Issue this draft invoice'), findsWidgets);
 
     await tester.tap(find.text('Ada Draft'));
     await tester.pumpAndSettle();
@@ -949,9 +982,9 @@ void main() {
 
     expect(find.text('Ada Draft'), findsOneWidget);
     expect(find.byType(AppTabStrip), findsOneWidget);
-    _expectStableCloseSearchActions(tester);
+    _expectNoOwnedTrailingActions(tester);
     expect(find.byType(AppWorkspaceStatusBadge), findsWidgets);
-    expect(find.byTooltip('Issue'), findsWidgets);
+    expect(find.byTooltip('Issue this draft invoice'), findsWidgets);
     expect(find.text('Refresh'), findsNothing);
   });
 
@@ -960,7 +993,7 @@ void main() {
   ) async {
     await _pumpBillingWorkspace(tester, repository: repository);
 
-    await _selectQueueTab(tester, 'Claims pending');
+    await _selectQueueTab(tester, 'Open claims');
 
     final VerificationResult verification = verify(
       () => repository.listWorkItems(captureAny()),
@@ -976,6 +1009,6 @@ void main() {
     );
     expect(find.text('Cara Claim'), findsOneWidget);
     expect(find.text('Dana Approval'), findsNothing);
-    _expectStableCloseSearchActions(tester);
+    _expectNoOwnedTrailingActions(tester);
   });
 }

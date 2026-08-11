@@ -168,7 +168,7 @@ Future<void> _pumpClaimsPendingTab(
   required AppAccessPolicy accessPolicy,
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
-  String initialLocation = '/billing?queue=claims-pending',
+  String initialLocation = '/billing?section=claims',
   List<BillingWorkItem> claimItems = const <BillingWorkItem>[_claimItem],
   BillingSummary summary = _summary,
   Result<BillingWorkspaceOverview>? workspaceOverride,
@@ -288,10 +288,10 @@ void main() {
       );
 
       expect(find.text('Cara Claim'), findsOneWidget);
-      expect(find.text('Claims pending'), findsWidgets);
+      expect(find.text('Open claims'), findsWidgets);
       expect(find.text('Close shift'), findsNothing);
       expect(find.text('Close day'), findsNothing);
-      expect(find.byTooltip('Submit claim'), findsNothing);
+      expect(find.byTooltip('Submit this claim to the insurer'), findsNothing);
       expect(
         find.descendant(
           of: find.byType(AppListTableGrid),
@@ -332,11 +332,11 @@ void main() {
         ),
       );
 
-      expect(find.text('Claims pending'), findsNothing);
+      expect(find.text('Open claims'), findsNothing);
       expect(find.text('Cara Claim'), findsNothing);
       // Deep link falls back to an authorized queue.
       expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(find.text('Close shift'), findsOneWidget);
+      expect(find.text('Close shift'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -370,9 +370,9 @@ void main() {
       );
 
       expect(find.text('Cara Claim'), findsOneWidget);
-      expect(find.byTooltip('Submit claim'), findsWidgets);
-      expect(find.text('Close shift'), findsOneWidget);
-      expect(find.text('Close day'), findsOneWidget);
+      expect(find.byTooltip('Submit this claim to the insurer'), findsWidgets);
+      expect(find.text('Close shift'), findsNothing);
+      expect(find.text('Close day'), findsNothing);
 
       await tester.tap(find.text('Cara Claim'));
       await tester.pumpAndSettle();
@@ -386,7 +386,7 @@ void main() {
   );
 
   testWidgets(
-    'route entry ∪: billing:write alone without billing:read omits read chrome',
+    'route entry ∪: billing:write alone without billing:read keeps Open claims when insurance entitled',
     (WidgetTester tester) async {
       final AppAccessPolicy writeOnly = _policy(
         permissions: <AppPermission>{AppPermissions.billingWrite},
@@ -397,7 +397,7 @@ void main() {
       );
       expect(
         BillingClaimsPendingAtomPermissions.tab.isAllowed(writeOnly),
-        isFalse,
+        isTrue,
       );
 
       await _pumpClaimsPendingTab(
@@ -406,14 +406,15 @@ void main() {
         accessPolicy: writeOnly,
       );
 
-      expect(find.text('Cara Claim'), findsNothing);
-      expect(find.byType(AppTabStrip), findsNothing);
-      expect(find.byTooltip('Submit claim'), findsNothing);
+      expect(find.text('Open claims'), findsWidgets);
+      expect(find.text('Cara Claim'), findsOneWidget);
+      // Mutations still require write ∩ insurance (present here) — Next mounts.
+      expect(find.byTooltip('Submit this claim to the insurer'), findsWidgets);
     },
   );
 
   testWidgets(
-    'route entry ∪: billing:read alone with insurance keeps Claims pending',
+    'route entry ∪: billing:read alone with insurance keeps Open claims',
     (WidgetTester tester) async {
       final AppAccessPolicy readOnly = _policy(
         permissions: <AppPermission>{AppPermissions.billingRead},
@@ -436,11 +437,11 @@ void main() {
 
       final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
       expect(
-        strip.tabs.any((AppTabItem tab) => tab.label.contains('Claims')),
+        strip.tabs.any((AppTabItem tab) => tab.label == 'Open claims'),
         isTrue,
       );
       expect(find.text('Cara Claim'), findsOneWidget);
-      expect(find.byTooltip('Submit claim'), findsNothing);
+      expect(find.byTooltip('Submit this claim to the insurer'), findsNothing);
     },
   );
 
@@ -506,7 +507,7 @@ void main() {
         ),
         isFalse,
       );
-      expect(find.text('Claims pending'), findsNothing);
+      expect(find.text('Open claims'), findsNothing);
     },
   );
 
@@ -526,8 +527,8 @@ void main() {
       );
 
       expect(find.text('Sam Submitted'), findsOneWidget);
-      expect(find.byTooltip('Record insurer response'), findsWidgets);
-      expect(find.byTooltip('Submit claim'), findsNothing);
+      expect(find.byTooltip('Record the insurer response'), findsWidgets);
+      expect(find.byTooltip('Submit this claim to the insurer'), findsNothing);
 
       await tester.tap(find.text('Sam Submitted'));
       await tester.pumpAndSettle();
@@ -550,7 +551,7 @@ void main() {
       );
 
       expect(find.text('Pat Preauth'), findsOneWidget);
-      expect(find.byTooltip('Approve authorization'), findsNothing);
+      expect(find.byTooltip('Approve this pre-authorization'), findsNothing);
       expect(find.byTooltip('Deny authorization'), findsNothing);
 
       await _pumpClaimsPendingTab(
@@ -566,7 +567,7 @@ void main() {
       );
 
       expect(find.text('Pat Preauth'), findsOneWidget);
-      expect(find.byTooltip('Approve authorization'), findsWidgets);
+      expect(find.byTooltip('Approve this pre-authorization'), findsWidgets);
 
       await tester.tap(find.text('Pat Preauth'));
       await tester.pumpAndSettle();
@@ -595,7 +596,7 @@ void main() {
 
     expect(find.text('Cara Claim'), findsOneWidget);
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.byTooltip('Submit claim'), findsWidgets);
+    expect(find.byTooltip('Submit this claim to the insurer'), findsWidgets);
   });
 
   testWidgets('desktop viewport shows Submit claim next-action', (
@@ -615,8 +616,8 @@ void main() {
 
     expect(find.text('Cara Claim'), findsOneWidget);
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.byTooltip('Submit claim'), findsWidgets);
-    expect(find.byTooltip('Close shift'), findsOneWidget);
+    expect(find.byTooltip('Submit this claim to the insurer'), findsWidgets);
+    expect(find.byTooltip('Close shift'), findsNothing);
   });
 
   testWidgets('light theme: authorized Claims pending chrome remains', (
@@ -634,8 +635,8 @@ void main() {
     );
 
     expect(find.text('Cara Claim'), findsOneWidget);
-    expect(find.text('Close shift'), findsOneWidget);
-    expect(find.byTooltip('Submit claim'), findsWidgets);
+    expect(find.text('Close shift'), findsNothing);
+    expect(find.byTooltip('Submit this claim to the insurer'), findsWidgets);
   });
 
   testWidgets('dark theme: authorized Claims pending chrome remains', (
@@ -654,8 +655,8 @@ void main() {
     );
 
     expect(find.text('Cara Claim'), findsOneWidget);
-    expect(find.text('Close shift'), findsOneWidget);
-    expect(find.byTooltip('Submit claim'), findsWidgets);
+    expect(find.text('Close shift'), findsNothing);
+    expect(find.byTooltip('Submit this claim to the insurer'), findsWidgets);
   });
 
   testWidgets(
@@ -671,8 +672,8 @@ void main() {
         summary: _emptySummary,
       );
 
-      expect(find.text('No billing items'), findsOneWidget);
-      expect(find.byTooltip('Submit claim'), findsNothing);
+      expect(find.text('No open claims.'), findsOneWidget);
+      expect(find.byTooltip('Submit this claim to the insurer'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -713,7 +714,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byTooltip('Submit claim').first);
+      await tester.tap(find.byTooltip('Submit this claim to the insurer').first);
       await tester.pump();
       await tester.pumpAndSettle();
 
@@ -748,7 +749,7 @@ void main() {
         claimItems: const <BillingWorkItem>[_submittedClaim],
       );
 
-      await tester.tap(find.byTooltip('Record insurer response').first);
+      await tester.tap(find.byTooltip('Record the insurer response').first);
       await tester.pump();
       await tester.pumpAndSettle();
 
@@ -807,8 +808,8 @@ void main() {
         accessPolicy: writerNoClaims,
       );
 
-      expect(find.text('Claims pending'), findsNothing);
-      expect(find.byTooltip('Submit claim'), findsNothing);
+      expect(find.text('Open claims'), findsNothing);
+      expect(find.byTooltip('Submit this claim to the insurer'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -826,7 +827,7 @@ void main() {
 
       expect(find.byType(AppSearchBar), findsOneWidget);
       expect(find.text('Cara Claim'), findsOneWidget);
-      expect(find.byTooltip('Submit claim'), findsNothing);
+      expect(find.byTooltip('Submit this claim to the insurer'), findsNothing);
     },
   );
 
@@ -844,7 +845,7 @@ void main() {
         ),
       );
 
-      expect(find.byTooltip('Submit claim'), findsWidgets);
+      expect(find.byTooltip('Submit this claim to the insurer'), findsWidgets);
       expect(find.byTooltip('Approve'), findsNothing);
       expect(
         BillingClaimsPendingAtomPermissions.approve.isAllowed(
@@ -861,7 +862,7 @@ void main() {
   );
 
   testWidgets(
-    'claims-pending queue slug keeps authorized Submit claim (integration)',
+    'section=claims and claims-pending alias keep authorized Submit (integration)',
     (WidgetTester tester) async {
       await _pumpClaimsPendingTab(
         tester,
@@ -876,8 +877,8 @@ void main() {
       );
 
       expect(find.text('Cara Claim'), findsOneWidget);
-      expect(find.byTooltip('Submit claim'), findsWidgets);
-      expect(find.text('Close shift'), findsOneWidget);
+      expect(find.byTooltip('Submit this claim to the insurer'), findsWidgets);
+      expect(find.text('Close shift'), findsNothing);
     },
   );
 
@@ -929,7 +930,7 @@ void main() {
         claimItems: const <BillingWorkItem>[_preAuthItem],
       );
 
-      await tester.tap(find.byTooltip('Approve authorization').first);
+      await tester.tap(find.byTooltip('Approve this pre-authorization').first);
       await tester.pump();
       await tester.pumpAndSettle();
 

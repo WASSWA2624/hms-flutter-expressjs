@@ -205,7 +205,7 @@ Future<void> _pumpNeedsIssueTab(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/billing?queue=needs-issue',
+    initialLocation: '/billing?section=issue',
     routes: <RouteBase>[
       GoRoute(
         path: '/billing',
@@ -289,11 +289,10 @@ void main() {
           'list_chrome',
           'detail',
           'issue',
+          'issue_all',
           'send',
           'adjust',
           'void_invoice',
-          'close_shift',
-          'close_day',
           'view_ledger',
           'print_invoice',
           'download_invoice',
@@ -335,11 +334,10 @@ void main() {
         ),
         containsAll(<String>[
           'issue',
+          'issue_all',
           'send',
           'adjust',
           'void_invoice',
-          'close_shift',
-          'close_day',
         ]),
       );
     });
@@ -376,9 +374,9 @@ void main() {
         );
 
         expect(find.text('Scan Draft Patient'), findsOneWidget);
-        expect(find.byTooltip('Issue'), findsWidgets);
+        expect(find.byTooltip('Issue this draft invoice'), findsWidgets);
 
-        await tester.tap(find.byTooltip('Issue').first);
+        await tester.tap(find.byTooltip('Issue this draft invoice').first);
         await tester.pumpAndSettle();
 
         final Finder submit = find.widgetWithText(FilledButton, 'Issue');
@@ -423,15 +421,9 @@ void main() {
         await tester.enterText(reasonField, 'Needs issue waive');
         await tester.pump();
 
-        final Finder adjustSubmit = find.widgetWithText(
-          FilledButton,
-          'Request adjustment',
-        );
-        if (adjustSubmit.evaluate().isNotEmpty) {
-          await tester.tap(adjustSubmit.last);
-        } else {
-          await tester.tap(find.text('Request adjustment').last);
-        }
+        final Finder adjustSubmit = find.text('Adjust');
+        expect(adjustSubmit, findsWidgets);
+        await tester.tap(adjustSubmit.last);
         await tester.pumpAndSettle();
 
         verify(() => repository.requestAdjustment(any(), any())).called(1);
@@ -460,15 +452,9 @@ void main() {
         await tester.enterText(reasonField, 'Duplicate draft charge');
         await tester.pump();
 
-        final Finder voidSubmit = find.widgetWithText(
-          FilledButton,
-          'Request void',
-        );
-        if (voidSubmit.evaluate().isNotEmpty) {
-          await tester.tap(voidSubmit.last);
-        } else {
-          await tester.tap(find.text('Request void').last);
-        }
+        final Finder voidSubmit = find.text('Void');
+        expect(voidSubmit, findsWidgets);
+        await tester.tap(voidSubmit.last);
         await tester.pumpAndSettle();
 
         verify(
@@ -514,7 +500,7 @@ void main() {
         );
 
         expect(find.text('Scan Draft Patient'), findsOneWidget);
-        expect(find.byTooltip('Issue'), findsNothing);
+        expect(find.byTooltip('Issue this draft invoice'), findsNothing);
         verifyNever(
           () => repository.issueInvoice(any(), notes: any(named: 'notes')),
         );
@@ -622,7 +608,7 @@ void main() {
           accessPolicy: _writerPolicy(),
         );
 
-        await tester.tap(find.byTooltip('Issue').first);
+        await tester.tap(find.byTooltip('Issue this draft invoice').first);
         await tester.pumpAndSettle();
 
         expect(find.byType(AppDialog), findsWidgets);

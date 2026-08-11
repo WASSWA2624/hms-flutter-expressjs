@@ -6,6 +6,7 @@ import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
 import 'package:hosspi_hms/core/realtime/realtime_refresh.dart';
 import 'package:hosspi_hms/core/security/session_isolation.dart';
+import 'package:hosspi_hms/core/workspace/workspace_adaptive_polling.dart';
 import 'package:hosspi_hms/core/workspace/workspace_event_refresh_plan.dart';
 import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
 import 'package:hosspi_hms/core/network/idempotency.dart';
@@ -27,14 +28,18 @@ final billingWorkspaceControllerProvider =
 
 final class BillingWorkspaceController
     extends AsyncNotifier<Result<BillingWorkspaceState>> {
+  static const Duration _syncInterval = Duration(seconds: 20);
+
   BillingRepository get _repository => ref.read(billingRepositoryProvider);
 
   bool _isSyncing = false;
+  final WorkspaceAdaptivePolling _adaptivePolling = WorkspaceAdaptivePolling();
   final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
 
   @override
   Future<Result<BillingWorkspaceState>> build() async {
     watchSessionEpoch(ref);
+    ref.onDispose(_adaptivePolling.dispose);
     listenForRealtimeRefresh(
       ref: ref,
       events: RealtimeEventGroups.billingWorkspace,
@@ -42,36 +47,56 @@ final class BillingWorkspaceController
       shouldDefer: () => _isSyncing || (_currentState?.isSaving ?? false),
       onRefresh: _syncFromRealtime,
     );
-    return runWorkspaceInitialLoad(ref, () async {
-      const BillingWorkspaceQuery query = BillingWorkspaceQuery();
-      final Result<BillingWorkspaceOverview> overviewResult = await _repository
-          .getWorkspace(query);
+    final Result<BillingWorkspaceState> result = await runWorkspaceInitialLoad(
+      ref,
+      () async {
+        const BillingWorkspaceQuery query = BillingWorkspaceQuery();
+        final Result<BillingWorkspaceOverview> overviewResult =
+            await _repository.getWorkspace(query);
 
-      return overviewResult.when(
-        success: (BillingWorkspaceOverview overview) async {
-          final Result<AppPage<BillingWorkItem>> itemsResult = await _repository
-              .listWorkItems(query);
-          return itemsResult.when(
-            success: (AppPage<BillingWorkItem> workItems) {
-              return Result<BillingWorkspaceState>.success(
-                BillingWorkspaceState(
-                  query: query,
-                  overview: overview,
-                  workItems: workItems,
-                  selectedItem: workItems.items.firstOrNull,
-                ),
-              );
-            },
-            failure: (AppFailure failure) {
-              return Result<BillingWorkspaceState>.failure(failure);
-            },
-          );
-        },
-        failure: (AppFailure failure) async {
-          return Result<BillingWorkspaceState>.failure(failure);
-        },
-      );
-    });
+        return overviewResult.when(
+          success: (BillingWorkspaceOverview overview) async {
+            final Result<AppPage<BillingWorkItem>> itemsResult =
+                await _repository.listWorkItems(query);
+            return itemsResult.when(
+              success: (AppPage<BillingWorkItem> workItems) {
+                return Result<BillingWorkspaceState>.success(
+                  BillingWorkspaceState(
+                    query: query,
+                    overview: overview,
+                    workItems: workItems,
+                    selectedItem: workItems.items.firstOrNull,
+                  ),
+                );
+              },
+              failure: (AppFailure failure) {
+                return Result<BillingWorkspaceState>.failure(failure);
+              },
+            );
+          },
+          failure: (AppFailure failure) async {
+            return Result<BillingWorkspaceState>.failure(failure);
+          },
+        );
+      },
+    );
+    _startAdaptivePolling();
+    return result;
+  }
+
+  void _startAdaptivePolling() {
+    installWorkspaceAdaptivePolling(
+      ref: ref,
+      polling: _adaptivePolling,
+      intervalWhenDisconnected: _syncInterval,
+      disconnectProfile: WorkspaceRefreshProfile.fullOnMatch,
+      syncOnDisconnect: (WorkspaceRefreshPlan plan) async {
+        if (plan.isEmpty) {
+          return;
+        }
+        await refresh();
+      },
+    );
   }
 
   Future<void> _syncFromRealtime(RealtimeMessage message) async {
@@ -152,6 +177,7 @@ final class BillingWorkspaceController
           encounterId: filters.encounterId,
           sourceModule: filters.sourceModule,
           billingStatus: filters.billingStatus,
+          approvalType: filters.approvalType,
           from: filters.from,
           to: filters.to,
           clearFrom: filters.from == null,
@@ -219,6 +245,68 @@ final class BillingWorkspaceController
     );
   }
 
+  /// Bulk-issue draft invoices (To issue → Issue all). Issues sequentially,
+  /// stops on first failure, then refreshes the active queue.
+  Future<AppFailure?> issueInvoices(
+    List<String> invoiceIds, {
+    String? notes,
+  }) async {
+    final List<String> ids = invoiceIds
+        .map((String id) => id.trim())
+        .where((String id) => id.isNotEmpty)
+        .toList(growable: false);
+    if (ids.isEmpty) {
+      return _missingSelectionFailure();
+    }
+
+    final BillingWorkspaceState? current = _currentState;
+    if (current == null) {
+      return _missingSelectionFailure();
+    }
+
+    _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    AppFailure? failure;
+    bool anyApprovalPending = false;
+    for (final String invoiceId in ids) {
+      final Result<BillingMutationResult> result = await _repository
+          .issueInvoice(invoiceId, notes: notes);
+      final bool stop = result.when(
+        success: (BillingMutationResult mutation) {
+          _applyMutationResult(mutation);
+          if (mutation.approvalRequired) {
+            anyApprovalPending = true;
+          }
+          return false;
+        },
+        failure: (AppFailure error) {
+          failure = error;
+          return true;
+        },
+      );
+      if (stop) {
+        break;
+      }
+    }
+
+    final BillingWorkspaceState? after = _currentState;
+    if (after != null) {
+      _emit(
+        after.copyWith(
+          isSaving: false,
+          isRefreshing: failure == null,
+          lastFailure: failure,
+          clearLastFailure: failure == null,
+          lastActionPendingApproval: anyApprovalPending,
+        ),
+      );
+    }
+    if (failure == null) {
+      await _refreshWorkspace();
+      await _flushPendingRefresh();
+    }
+    return failure;
+  }
+
   Future<AppFailure?> sendSelectedInvoice({String? recipientEmail}) {
     final BillingWorkItem? selected = _selectedInvoice;
     if (selected == null) {
@@ -243,6 +331,10 @@ final class BillingWorkspaceController
         idempotencyKey: idempotencyKey,
       ),
     );
+  }
+
+  Future<AppFailure?> createCharge(BillingChargeDraft draft) {
+    return _submitAction(() => _repository.createCharge(draft));
   }
 
   Future<AppFailure?> requestRefund(BillingRefundDraft draft) {

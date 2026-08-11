@@ -154,7 +154,7 @@ Future<void> _pumpAllTab(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/billing?queue=all',
+    initialLocation: '/billing?section=work',
     routes: <RouteBase>[
       GoRoute(
         path: '/billing',
@@ -215,12 +215,11 @@ Future<void> _waitForWorkItem(WidgetTester tester) async {
 }
 
 Future<void> _submitReceivePayment(WidgetTester tester) async {
-  final Finder filledSubmit =
-      find.widgetWithText(FilledButton, 'Receive payment');
+  final Finder filledSubmit = find.widgetWithText(FilledButton, 'Pay');
   if (filledSubmit.evaluate().isNotEmpty) {
     await tester.tap(filledSubmit.last);
   } else {
-    await tester.tap(find.text('Receive payment').last);
+    await tester.tap(find.text('Pay').last);
   }
   await tester.pumpAndSettle();
 }
@@ -255,6 +254,7 @@ void main() {
         BillingAllFinancialInventory.all.map((BillingAllFinancialAtom a) => a.id),
         containsAll(<String>[
           'tab',
+          'charge',
           'receive_payment',
           'issue',
           'adjust',
@@ -330,10 +330,12 @@ void main() {
         );
         await _waitForWorkItem(tester);
 
-        await tester.tap(find.byTooltip('Receive payment').first);
+        await tester.tap(
+          find.byTooltip('Receive payment toward the balance due').first,
+        );
         await tester.pumpAndSettle();
 
-        expect(find.text('Receive payment'), findsWidgets);
+        expect(find.text('Pay'), findsWidgets);
         expectFlatSections(tester);
         await _submitReceivePayment(tester);
 
@@ -346,7 +348,10 @@ void main() {
         ).called(1);
 
         // Mutation applier syncs paid balance without manual refresh.
-        expect(find.byTooltip('Receive payment'), findsNothing);
+        expect(
+          find.byTooltip('Receive payment toward the balance due'),
+          findsNothing,
+        );
       },
     );
 
@@ -361,7 +366,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('No billing items'), findsOneWidget);
+        expect(find.text('No open work.'), findsOneWidget);
         expectFlatSections(tester);
       },
     );
@@ -403,7 +408,10 @@ void main() {
         );
         await _waitForWorkItem(tester);
 
-        expect(find.byTooltip('Receive payment'), findsNothing);
+        expect(
+          find.byTooltip('Receive payment toward the balance due'),
+          findsNothing,
+        );
         expect(find.byTooltip('Request adjustment'), findsNothing);
         verifyNever(
           () => repository.receivePayment(

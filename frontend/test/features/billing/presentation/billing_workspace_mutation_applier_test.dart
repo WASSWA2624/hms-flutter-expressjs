@@ -192,7 +192,7 @@ void main() {
         queues: <BillingQueueSummary>[
           BillingQueueSummary(
             queue: BillingQueueType.needsIssue,
-            label: 'Ready to issue',
+            label: 'To issue',
             count: 1,
           ),
         ],
@@ -240,7 +240,7 @@ void main() {
         queues: <BillingQueueSummary>[
           BillingQueueSummary(
             queue: BillingQueueType.needsIssue,
-            label: 'Ready to issue',
+            label: 'To issue',
             count: 0,
           ),
         ],

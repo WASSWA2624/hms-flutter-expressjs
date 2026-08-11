@@ -327,7 +327,7 @@ class _BillingActionPanel extends StatelessWidget {
       if (onReceivePayment != null && item.canReceivePayment) {
         actions.add(
           AppActionItem(
-            label: l10n.billingReceivePayment,
+            label: l10n.billingPayAction,
             leadingIcon: Icons.point_of_sale,
             enabled: !isSaving,
             variant: AppActionVariant.primary,
