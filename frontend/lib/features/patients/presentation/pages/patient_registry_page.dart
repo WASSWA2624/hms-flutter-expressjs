@@ -29,6 +29,7 @@ import 'package:hosspi_hms/features/patients/presentation/controllers/patient_re
 import 'package:hosspi_hms/features/patients/presentation/patient_registry_access.dart';
 import 'package:hosspi_hms/features/patients/presentation/widgets/patient_billing_context_panel.dart';
 import 'package:hosspi_hms/features/patients/presentation/widgets/patient_pharmacy_context_panel.dart';
+import 'package:hosspi_hms/features/patients/presentation/widgets/patient_registry_print_helpers.dart';
 import 'package:hosspi_hms/features/patients/presentation/widgets/patient_widgets.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -190,7 +191,11 @@ class _PatientRegistryContentState
                     id: section.name,
                     icon: _sectionIcon(section),
                     label: _sectionLabel(l10n, section),
-                    count: _sectionCount(widget.state, section),
+                    count: _sectionCount(
+                      widget.state,
+                      section,
+                      activeSection: _section,
+                    ),
                     countTone: _sectionCountTone(section),
                   ),
               ],
@@ -347,6 +352,22 @@ class _PatientRegistryContentState
   }
 
   static int _sectionCount(
+    PatientRegistryState state,
+    PatientRegistrySection section, {
+    required PatientRegistrySection activeSection,
+  }) {
+    final int scopeTotal = _sectionScopeTotal(state, section);
+    if (section != activeSection) {
+      return scopeTotal;
+    }
+    if (!_hasPatientListNarrowing(state.query, section)) {
+      return scopeTotal;
+    }
+    // Active tab only — filtered membership from the current list query.
+    return state.page.totalItemCount ?? state.page.items.length;
+  }
+
+  static int _sectionScopeTotal(
     PatientRegistryState state,
     PatientRegistrySection section,
   ) {
@@ -553,7 +574,7 @@ class _PatientAdvancedFiltersDialogState
     final l10n = context.l10n;
 
     return AppDialog(
-      title: Text(l10n.patientsAdvancedFiltersTitle),
+      title: Text(l10n.commonAdvancedFiltersTitle),
       icon: const Icon(Icons.tune),
       scrollable: true,
       maxWidth: 760,
@@ -746,7 +767,7 @@ class _PatientAdvancedFiltersDialogState
       ),
       actions: <Widget>[
         AppButton.tertiary(
-          label: l10n.patientsClearFiltersAction,
+          label: l10n.opdClearFiltersAction,
           leadingIcon: Icons.filter_alt_off_outlined,
           onPressed: () {
             Navigator.of(context).pop(
@@ -772,7 +793,7 @@ class _PatientAdvancedFiltersDialogState
           },
         ),
         AppButton.primary(
-          label: l10n.patientsApplyFiltersAction,
+          label: l10n.opdApplyFiltersAction,
           leadingIcon: Icons.filter_alt_outlined,
           onPressed: () {
             Navigator.of(context).pop(
@@ -797,17 +818,35 @@ class _PatientAdvancedFiltersDialogState
             );
           },
         ),
+        AppButton.close(
+          label: l10n.commonCloseActionLabel,
+          leadingIcon: Icons.close,
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ],
     );
   }
 }
 
-bool _hasPatientAdvancedFilters(PatientListQuery query) {
+/// User-chosen advanced filters, ignoring section-imposed scope flags.
+bool _hasPatientUserAdvancedFilters(
+  PatientListQuery query,
+  PatientRegistrySection section,
+) {
+  final bool ignoresActiveScope =
+      section == PatientRegistrySection.active && query.isActive == true;
+  final bool ignoresAdmissionScope =
+      section == PatientRegistrySection.admitted &&
+      query.hasActiveAdmission == true;
+  final bool ignoresBalanceScope =
+      section == PatientRegistrySection.balanceDue &&
+      query.hasOutstandingBalance == true;
+
   return query.patientId.trim().isNotEmpty ||
       query.contact.trim().isNotEmpty ||
       query.facilityId != null ||
       query.gender != null ||
-      query.isActive != null ||
+      (query.isActive != null && !ignoresActiveScope) ||
       query.consentState != null ||
       query.appointmentStatus != null ||
       query.visitDate != null ||
@@ -817,8 +856,16 @@ bool _hasPatientAdvancedFilters(PatientListQuery query) {
       query.createdTo != null ||
       query.dateOfBirthFrom != null ||
       query.dateOfBirthTo != null ||
-      query.hasActiveAdmission != null ||
-      query.hasOutstandingBalance != null;
+      (query.hasActiveAdmission != null && !ignoresAdmissionScope) ||
+      (query.hasOutstandingBalance != null && !ignoresBalanceScope);
+}
+
+bool _hasPatientListNarrowing(
+  PatientListQuery query,
+  PatientRegistrySection section,
+) {
+  return query.search.trim().isNotEmpty ||
+      _hasPatientUserAdvancedFilters(query, section);
 }
 
 _PatientFilterDraft _patientFilterDraftFromQuery(PatientListQuery query) {
@@ -974,6 +1021,7 @@ class _PatientList extends ConsumerWidget {
       columnWidthStorageKey: 'patients_cw_${section.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
       exportLabel: l10n.commonTableExportActionLabel,
       exportDialogTitle: l10n.commonTableExportDialogTitle,
       exportCancelLabel: l10n.commonCancelActionLabel,
@@ -983,6 +1031,12 @@ class _PatientList extends ConsumerWidget {
       exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
       exportSuccessMessage: l10n.commonTableExportSuccessMessage,
       exportFailureMessage: l10n.commonTableExportFailureMessage,
+      canExport: canExportPatientRegistry(policy),
+      enablePrint: true,
+      canPrint: canPrintPatientRegistry(policy),
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () =>
+          _printPatientRegistryList(context, ref, state, section, l10n),
       exportConfig: AppListTableExportConfig<Patient>(
         fileNameStem: 'patients_${section.name}',
         enableDateFilter: false,
@@ -994,7 +1048,7 @@ class _PatientList extends ConsumerWidget {
         controller: searchController,
         semanticLabel: l10n.patientsSearchLabel,
         hintText: l10n.patientsSearchHint,
-        clearLabel: l10n.patientsClearFiltersAction,
+        clearLabel: l10n.opdClearFiltersAction,
         matcher: (Patient patient, String query) {
           return _matchesPatientTableSearch(
             context,
@@ -1015,9 +1069,9 @@ class _PatientList extends ConsumerWidget {
           );
         },
         showAdvancedFilterButton: true,
-        advancedFilterButtonLabel: l10n.patientsAdvancedFiltersAction,
-        advancedFilterTitle: l10n.patientsAdvancedFiltersTitle,
-        hasActiveFilters: _hasPatientAdvancedFilters(state.query),
+        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+        hasActiveFilters: _hasPatientUserAdvancedFilters(state.query, section),
         onAdvancedFilterPressed: () {
           unawaited(
             _openPatientAdvancedFilters(
@@ -1029,7 +1083,7 @@ class _PatientList extends ConsumerWidget {
             ),
           );
         },
-        // Filters → Settings → Export → Register patient.
+        // Filters → Settings → Export → Print → Register patient.
         trailingActions: <AppSearchBarAction>[
           if (patientRegistryRegisterAtom(section).isAllowed(policy))
             AppSearchBarAction(
@@ -1102,6 +1156,84 @@ class _PatientList extends ConsumerWidget {
       },
     );
   }
+}
+
+Future<void> _printPatientRegistryList(
+  BuildContext context,
+  WidgetRef ref,
+  PatientRegistryState state,
+  PatientRegistrySection section,
+  AppLocalizations l10n,
+) async {
+  final List<PatientRegistryPrintColumn> printColumns =
+      _patientRegistryPrintColumns(context, ref, section, l10n);
+  final List<Map<String, String>> printRows = <Map<String, String>>[
+    for (final Patient patient in state.page.items)
+      <String, String>{
+        for (final PatientRegistryPrintColumn column in printColumns)
+          column.id: _patientRegistryPrintCellValue(
+            context,
+            ref,
+            patient,
+            column.id,
+            section,
+            l10n,
+          ),
+      },
+  ];
+  await printPatientRegistryList(
+    ref: ref,
+    context: context,
+    title: _PatientRegistryContentState._sectionLabel(l10n, section),
+    columns: printColumns,
+    rows: printRows,
+    emptyText: l10n.patientsEmptyTitle,
+  );
+}
+
+List<PatientRegistryPrintColumn> _patientRegistryPrintColumns(
+  BuildContext context,
+  WidgetRef ref,
+  PatientRegistrySection section,
+  AppLocalizations l10n,
+) {
+  final List<AppListTableColumn<Patient>> available =
+      <AppListTableColumn<Patient>>[
+        ..._defaultPatientColumns(context, ref, section, l10n),
+        ..._optionalPatientColumns(context, ref, section, l10n),
+      ];
+  final Set<String> seen = <String>{};
+  final List<PatientRegistryPrintColumn> columns =
+      <PatientRegistryPrintColumn>[];
+  for (final AppListTableColumn<Patient> column in available) {
+    if (!column.includesInExport) {
+      continue;
+    }
+    final String id = column.key;
+    if (!seen.add(id)) {
+      continue;
+    }
+    columns.add(PatientRegistryPrintColumn(id: id, label: column.label));
+  }
+  return columns;
+}
+
+String _patientRegistryPrintCellValue(
+  BuildContext context,
+  WidgetRef ref,
+  Patient patient,
+  String columnId,
+  PatientRegistrySection section,
+  AppLocalizations l10n,
+) {
+  final Map<String, AppListTableColumn<Patient>> columns =
+      _patientColumnDefinitions(context, ref, section, l10n);
+  final AppListTableColumn<Patient>? column = columns[columnId];
+  final AppListTableExportValue<Patient>? exportValue = column?.exportValue;
+  if (exportValue != null) {
+    return exportValue(patient).toString();
+  }
+  return '';
 }
 
 List<AppListTableColumn<Patient>> _defaultPatientColumns(
@@ -2697,7 +2829,7 @@ class _PatientReportPrintPreviewDialogState
               : () => Navigator.of(context).maybePop(false),
         ),
         AppReportActionButton.print(
-          label: l10n.patientsReportPrintNowAction,
+          label: l10n.commonPrintActionLabel,
           enabled: canPrint && !_isPrinting,
           isLoading: _isPrinting,
           onPressed: canPrint && !_isPrinting

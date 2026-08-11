@@ -21,27 +21,28 @@
 
 - Component: `AppTabStrip` / `AppTabItem` (standard variant)
 - Tabs omitted when unauthorized (`patientRegistrySectionTabRequirement`) — not disabled
-- Counts from overview (sibling model — dedicated unfiltered scope totals):
+- Counts (sibling model — dedicated unfiltered overview scope totals):
   - All → `overview.totalPatients`
   - Active → `overview.activePatients`
   - Admitted → `overview.activeAdmissions`
   - Balance due → `overview.unpaidInvoices`
+  - **Active tab** with search or user advanced filters: filtered membership via `page.totalItemCount` (section-imposed scope flags ignored for “narrowing”)
 - Count tones: `warning` for Balance due; `info` for All / Active / Admitted
 - Icons: people / how_to_reg / local_hospital / payments
 - Strip secondary: Duplicate review (`patientsDuplicateSummaryLabel`) when `overview.duplicates` non-empty — **omitted when unauthorized** (`patientRegistryDuplicateReviewAtom` ∩ `patient:write`)
 
 ## Table toolbar (shared pattern)
 
-Order on search bar: **Filters → Settings → Export → Register patient** (no table Print)
+Order on search bar: **Filters → Settings → Export → Print → Register patient**
 
 | Control | Label / key | Notes |
 | --- | --- | --- |
 | Search | `patientsSearchHint` / `patientsSearchLabel` | mic via `AppSearchBar` default |
-| Clear | `patientsClearFiltersAction` | |
-| Filters | `patientsAdvancedFiltersAction` → title `patientsAdvancedFiltersTitle` | Patients-owned `_PatientAdvancedFiltersDialog` |
-| Settings | `commonTableSettingsActionLabel` → `commonTableSettingsTitle` | |
-| Export | `commonTableExportActionLabel` | Excel via `AppListTable` export; `enableDateFilter: false` in export config |
-| Print (table) | **absent** | |
+| Clear | `opdClearFiltersAction` (`Clear filters`) | |
+| Filters | `commonFiltersActionLabel` → title `commonAdvancedFiltersTitle` | Patients-owned `_PatientAdvancedFiltersDialog` |
+| Settings | `commonTableSettingsActionLabel` → `commonTableSettingsTitle` | Close `commonCloseActionLabel` |
+| Export | `commonTableExportActionLabel` | Excel via `AppListTable`; gated by `patientRegistryExportRequirement` (∩ `evidence:export`); omitted when denied; `enableDateFilter: false` in export config |
+| Print (table) | `commonPrintActionLabel` → `Print` | `enablePrint` + `canPrint`; opens `printPatientRegistryList` → `PrintDocumentTemplates.registry` preview-first |
 | Register | `patientsRegisterPatientAction` | omitted without ∩ `patient:write` |
 
 Column visibility storage: `patients_${section.name}` / widths `patients_cw_${section.name}`.  
@@ -72,7 +73,7 @@ Default visible columns prefer **5** data columns (Patient alwaysVisible; Status
 | Discharge planning | Patients-owned (+ discharge shared) | `openPatientDischargePlanningDialog` / `patient_discharge_planning_dialog.dart` |
 | Lab / Radiology / Theater / Physio orders | **reused** clinical | `openPatientLabOrderDialog` etc. |
 | Enroll insurance | **reused** claims | claims insurance config dialogs |
-| Patient report Print | Patients-owned preview | `_PatientReportPrintPreviewDialog` → `PrintDocumentTemplates.patientChart` |
+| Patient report Print | Patients-owned preview | `_PatientReportPrintPreviewDialog` → `PrintDocumentTemplates.patientChart` (trigger `commonPrintActionLabel`) |
 | Billing context panel | Patients-owned | `patient_billing_context_panel.dart` |
 | Pharmacy context panel | Patients-owned | `patient_pharmacy_context_panel.dart` |
 

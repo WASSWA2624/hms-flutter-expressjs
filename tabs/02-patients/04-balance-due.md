@@ -4,7 +4,7 @@
 
 - Label: `patientsTabBalanceDue`
 - Icon: `Icons.payments_outlined`
-- Count source: `state.overview.unpaidInvoices`
+- Count source: `state.overview.unpaidInvoices`; when this tab is active and search/user advanced filters narrow (ignoring section-imposed `hasOutstandingBalance: true`), `page.totalItemCount`
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `balance-due` (aliases `balance_due`, `balancedue`)
 - Tab gate: `PatientBalanceDueAtomPermissions.tab` = ∩ `patient:read` + `billing:read`
@@ -13,11 +13,11 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Same order: **Filters → Settings → Export → Register**
+Same order: **Filters → Settings → Export → Print → Register**
 
 - List chrome / search / filters / settings / empty / retry use Balance due tab read ∩
+- Export / Print: ∩ `evidence:export` (omitted when denied)
 - Register still ∩ `patient:write` (omitted when denied)
-- Table Print: **absent**
 
 ## 3. Table
 
@@ -29,7 +29,7 @@ Same order: **Filters → Settings → Export → Register**
 
 ## 4. Advanced filters / search fields
 
-Same advanced filter dialog as All (identity / visit / record).
+Same advanced filter dialog as All (identity / visit / record). Footer: Clear filters → Apply filters → Close.
 
 ## 5. Primary / secondary / row actions
 
@@ -37,7 +37,7 @@ Register / Duplicate / Complete-Open / row detail — same pattern; gates from `
 
 ## 6. Dialogs from this tab
 
-Same detail hub; billing context panel is primary nested read surface for this tab.
+Same detail hub; billing context panel is primary nested read surface for this tab; table Print preview when export allowed.
 
 ## 7. Nested / follow-on
 
@@ -48,24 +48,17 @@ Same detail hub; billing context panel is primary nested read surface for this t
 
 ## 8. Forms (summary)
 
-Same as All; billing workbench navigation emphasized.
+Same as All; billing workbench handoff emphasized.
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
-- Detail Report → `PrintDocumentTemplates.patientChart` (∩ `reports:read`)
+- Table Print: preview-first registry template (∩ `evidence:export`)
+- Detail Report: patient chart preview (∩ `reports:read`)
 
 ## 10. Loading / empty / error / success
 
-Shared registry feedback; success snackbars still write-gated entry paths.
+Same as All.
 
-## 11. RBAC / ABAC
+## 11. RBAC / ABAC (omitted when unauthorized)
 
-| Atom | Gate |
-| --- | --- |
-| Tab / list chrome / row select / Open record label | ∩ `patient:read` + `billing:read` |
-| Register / Duplicate / Complete / Edit | ∩ `patient:write` |
-| Billing workbench / nested write | ∩ `billing:write` + `billing-payments` |
-| Enroll insurance | source ∪ + claims module |
-| Report | ∩ `reports:read` |
-| Delete | ∩ `patient:delete` |
+Tab/list chrome ∩ `patient:read` + `billing:read`; Export/Print ∩ `evidence:export`; Register/write ∩ `patient:write`; billing workbench ∩ `billing:write` + module.

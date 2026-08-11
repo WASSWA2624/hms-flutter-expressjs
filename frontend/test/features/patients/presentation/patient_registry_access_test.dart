@@ -143,4 +143,61 @@ void main() {
       },
     );
   });
+
+  group('Patient registry export / print gate', () {
+    AppAccessPolicy policyFor({
+      required Set<AppPermission> permissions,
+      List<AppModuleEntitlement> modules = const <AppModuleEntitlement>[
+        AppModuleEntitlement(
+          code: patientRegistryModule,
+          licenseStatus: 'ACTIVE',
+        ),
+      ],
+    }) {
+      return AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'token'),
+          user: const AuthUserProfile(
+            roles: <String>['CUSTOM'],
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+          ),
+          permissions: permissions,
+          moduleEntitlements: modules,
+          isAuthorizationHydrated: true,
+        ),
+      );
+    }
+
+    test('allows export/print when evidence:export is granted', () {
+      final AppAccessPolicy policy = policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.patientRead,
+          AppPermissions.evidenceExport,
+        },
+      );
+      expect(canExportPatientRegistry(policy), isTrue);
+      expect(canPrintPatientRegistry(policy), isTrue);
+      expect(PatientAllAtomPermissions.export.isAllowed(policy), isTrue);
+      expect(PatientAllAtomPermissions.print.isAllowed(policy), isTrue);
+      expect(PatientActiveAtomPermissions.export.isAllowed(policy), isTrue);
+      expect(PatientAdmittedAtomPermissions.print.isAllowed(policy), isTrue);
+      expect(
+        PatientBalanceDueAtomPermissions.export.isAllowed(policy),
+        isTrue,
+      );
+    });
+
+    test('denies export/print without evidence:export', () {
+      final AppAccessPolicy policy = policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.patientRead,
+          AppPermissions.patientWrite,
+          AppPermissions.reportsRead,
+        },
+      );
+      expect(canExportPatientRegistry(policy), isFalse);
+      expect(canPrintPatientRegistry(policy), isFalse);
+    });
+  });
 }

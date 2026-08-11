@@ -29,14 +29,14 @@ Remediate cross-tab Patients registry chrome so it fully complies with `screens.
 
 ## Acceptance Criteria
 
-- [ ] Every visible countable tab shows a count badge sourced per Requirements 2–3; tones match the urgency policy.
-- [ ] Toolbar order on every printable table tab matches Requirement 4 (with unauthorized controls omitted).
-- [ ] Print always opens shared preview before device print when present; trigger label is `Print`.
-- [ ] Export is omitted when the export gate denies; present when allowed.
-- [ ] Unauthorized tabs and strip actions are absent (not disabled).
-- [ ] Dialogs opened from shared chrome keep generic titles and reuse shared form/dialog primitives.
-- [ ] Mutations refresh table rows and all visible tab counts that can change.
-- [ ] `tabs/02-patients/00-shared-chrome.md` updated to match.
+- [x] Every visible countable tab shows a count badge sourced per Requirements 2–3; tones match the urgency policy.
+- [x] Toolbar order on every printable table tab matches Requirement 4 (with unauthorized controls omitted).
+- [x] Print always opens shared preview before device print when present; trigger label is `Print`.
+- [x] Export is omitted when the export gate denies; present when allowed.
+- [x] Unauthorized tabs and strip actions are absent (not disabled).
+- [x] Dialogs opened from shared chrome keep generic titles and reuse shared form/dialog primitives.
+- [x] Mutations refresh table rows and all visible tab counts that can change.
+- [x] `tabs/02-patients/00-shared-chrome.md` updated to match.
 
 ## Verification
 

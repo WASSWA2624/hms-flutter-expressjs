@@ -1381,8 +1381,9 @@ void main() {
     expect(find.text('Vital signs'), findsWidgets);
     expect(find.text('Demo General Hospital'), findsWidgets);
     expect(find.text('Amina Kato'), findsWidgets);
-    expect(find.text('Print'), findsOneWidget);
-    expect(find.textContaining(RegExp(r'1 of [2-9]')), findsOneWidget);
+    // Preview Print plus toolbar Print when export is allowed.
+    expect(find.text('Print'), findsWidgets);
+    expect(find.textContaining(RegExp(r'1 of [2-9]')), findsWidgets);
     expect(find.textContaining(RegExp(r'2 of [2-9]')), findsWidgets);
   });
 
@@ -1421,7 +1422,134 @@ void main() {
       expect(find.byTooltip('Filters'), findsOneWidget);
       expect(find.text('Advanced filters'), findsNothing);
       expect(find.byTooltip('Settings'), findsOneWidget);
+      // Doctor pack lacks evidence:export — Export/Print omitted.
+      expect(find.byTooltip('Export'), findsNothing);
+      expect(find.byTooltip('Print'), findsNothing);
       expect(find.byType(AppListTable<Patient>), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'PLATFORM_ADMIN shows Export and Print; Filters dialog includes Close',
+    (WidgetTester tester) async {
+      final patientRepository = _MockPatientRepository();
+      final opdRepository = _MockOpdRepository();
+      final patient = Patient(
+        id: 'patient-1',
+        publicId: 'PAT-1001',
+        firstName: 'Amina',
+        lastName: 'Kato',
+      );
+
+      _stubPatientRegistry(patientRepository, patient);
+      _stubProviderLookup(opdRepository);
+
+      await _pumpPatientRegistry(
+        tester,
+        patientRepository: patientRepository,
+        opdRepository: opdRepository,
+        size: const Size(1280, 900),
+        roles: const <String>['PLATFORM_ADMIN'],
+        useRouter: true,
+      );
+
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+      expect(find.text('ADVANCED FILTERS'), findsOneWidget);
+      expect(find.text('Clear filters'), findsOneWidget);
+      expect(find.text('Apply filters'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
+
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+      expect(find.text('ADVANCED FILTERS'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'active-tab search narrows badge to filtered total; siblings stay overview',
+    (WidgetTester tester) async {
+      final patientRepository = _MockPatientRepository();
+      final opdRepository = _MockOpdRepository();
+      final patient = Patient(
+        id: 'patient-1',
+        publicId: 'PAT-1001',
+        firstName: 'Amina',
+        lastName: 'Kato',
+      );
+
+      when(() => patientRepository.loadOverview()).thenAnswer(
+        (_) async => const Result<PatientRegistryOverview>.success(
+          PatientRegistryOverview(
+            totalPatients: 12,
+            activePatients: 5,
+            activeAdmissions: 3,
+          ),
+        ),
+      );
+      when(() => patientRepository.loadReferenceData()).thenAnswer(
+        (_) async =>
+            const Result<PatientReferenceData>.success(PatientReferenceData()),
+      );
+      when(() => patientRepository.listPatients(any())).thenAnswer((
+        Invocation invocation,
+      ) async {
+        final PatientListQuery query =
+            invocation.positionalArguments.single as PatientListQuery;
+        final bool narrowed = query.search.trim().isNotEmpty;
+        return Result<AppPage<Patient>>.success(
+          AppPage<Patient>(
+            items: narrowed ? <Patient>[patient] : <Patient>[patient, patient],
+            request: query.pageRequest,
+            totalItemCount: narrowed ? 1 : 12,
+          ),
+        );
+      });
+      when(() => patientRepository.loadPatientDetail(patient.id)).thenAnswer(
+        (_) async => Result<PatientDetail>.success(
+          PatientDetail(
+            patient: patient,
+            workspace: const PatientWorkspaceSnapshot(),
+          ),
+        ),
+      );
+      _stubProviderLookup(opdRepository);
+
+      await _pumpPatientRegistry(
+        tester,
+        patientRepository: patientRepository,
+        opdRepository: opdRepository,
+        size: const Size(1280, 900),
+        useRouter: true,
+      );
+
+      final AppTabStrip initialStrip = tester.widget<AppTabStrip>(
+        find.byType(AppTabStrip),
+      );
+      final AppTabItem allTab = initialStrip.tabs.firstWhere(
+        (AppTabItem item) => item.id == 'all',
+      );
+      expect(allTab.count, 12);
+      expect(allTab.countTone, AppTabCountTone.info);
+
+      await tester.enterText(find.byType(TextField).first, 'Amina');
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      final AppTabStrip filteredStrip = tester.widget<AppTabStrip>(
+        find.byType(AppTabStrip),
+      );
+      final AppTabItem filteredAll = filteredStrip.tabs.firstWhere(
+        (AppTabItem item) => item.id == 'all',
+      );
+      final AppTabItem activeSibling = filteredStrip.tabs.firstWhere(
+        (AppTabItem item) => item.id == 'active',
+      );
+      expect(filteredAll.count, 1);
+      expect(activeSibling.count, 5);
     },
   );
 

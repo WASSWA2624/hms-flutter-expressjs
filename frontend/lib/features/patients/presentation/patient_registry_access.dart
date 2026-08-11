@@ -125,6 +125,25 @@ const AccessRequirement patientReportReadRequirement = AccessRequirement(
   allPermissions: <AppPermission>[AppPermissions.reportsRead],
 );
 
+/// Registry list Export / Print (worklist Excel + preview print).
+///
+/// Uses ∩ `evidence:export` (same atom as Reception desk export gate).
+const AccessRequirement patientRegistryExportRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.evidenceExport],
+);
+
+/// Alias — Print uses the same registry export gate.
+const AccessRequirement patientRegistryPrintRequirement =
+    patientRegistryExportRequirement;
+
+bool canExportPatientRegistry(AppAccessPolicy policy) {
+  return patientRegistryExportRequirement.isAllowed(policy);
+}
+
+bool canPrintPatientRegistry(AppAccessPolicy policy) {
+  return patientRegistryPrintRequirement.isAllowed(policy);
+}
+
 /// Billing context panel open-workbench (matrix ∩ `billing:write` + module).
 ///
 /// Balance-due nested write row; Active reuses the same helper.
@@ -545,6 +564,7 @@ PatientRegistrySection? patientRegistryFallbackSection(
 /// | Register patient (search trailing) | create | write ∩ `patient:write` |
 /// | Duplicate review (secondary) | update | write ∩ |
 /// | Search / Clear / Filters / Settings / columns | read chrome | read ∩ |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Empty / loading / error / retry | read chrome | read ∩ |
 /// | Success snackbar / validation (authorized) | visible feedback | write ∩ |
 /// | Row select → patient detail | read | read ∩ |
@@ -575,6 +595,8 @@ abstract final class PatientAllAtomPermissions {
   static const AccessRequirement search = patientRegistryReadRequirement;
   static const AccessRequirement filters = patientRegistryReadRequirement;
   static const AccessRequirement settings = patientRegistryReadRequirement;
+  static const AccessRequirement export = patientRegistryExportRequirement;
+  static const AccessRequirement print = patientRegistryPrintRequirement;
   static const AccessRequirement pagination = patientRegistryReadRequirement;
   static const AccessRequirement empty = patientRegistryReadRequirement;
   static const AccessRequirement loading = patientRegistryReadRequirement;
@@ -655,6 +677,7 @@ abstract final class PatientAllAtomPermissions {
 /// | Register patient (search trailing) | create | write ∩ `patient:write` |
 /// | Duplicate review (secondary) | update | write ∩ |
 /// | Search / Clear / Filters / Settings / columns | read chrome | read ∩ |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Empty / loading / error / retry | read chrome | read ∩ |
 /// | Success snackbar / validation (authorized) | visible feedback | write ∩ |
 /// | Row select → patient detail | read | read ∩ |
@@ -685,6 +708,8 @@ abstract final class PatientActiveAtomPermissions {
   static const AccessRequirement search = patientRegistryReadRequirement;
   static const AccessRequirement filters = patientRegistryReadRequirement;
   static const AccessRequirement settings = patientRegistryReadRequirement;
+  static const AccessRequirement export = patientRegistryExportRequirement;
+  static const AccessRequirement print = patientRegistryPrintRequirement;
   static const AccessRequirement pagination = patientRegistryReadRequirement;
   static const AccessRequirement empty = patientRegistryReadRequirement;
   static const AccessRequirement loading = patientRegistryReadRequirement;
@@ -766,6 +791,7 @@ abstract final class PatientActiveAtomPermissions {
 /// | Register patient (search trailing) | create | write ∩ `patient:write` |
 /// | Duplicate review (secondary) | update | write ∩ |
 /// | Search / Clear / Filters / Settings / columns | read chrome | read ∩ |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Visit column (admission context) | nested read | ∪ clinical\|billing read |
 /// | Status badge (admission status) | nested read | ∪ clinical\|billing read |
 /// | Outstanding balance filter | nested read | ∩ `billing:read` |
@@ -800,6 +826,8 @@ abstract final class PatientAdmittedAtomPermissions {
   static const AccessRequirement search = patientRegistryReadRequirement;
   static const AccessRequirement filters = patientRegistryReadRequirement;
   static const AccessRequirement settings = patientRegistryReadRequirement;
+  static const AccessRequirement export = patientRegistryExportRequirement;
+  static const AccessRequirement print = patientRegistryPrintRequirement;
   static const AccessRequirement pagination = patientRegistryReadRequirement;
   static const AccessRequirement empty = patientRegistryReadRequirement;
   static const AccessRequirement loading = patientRegistryReadRequirement;
@@ -890,6 +918,7 @@ abstract final class PatientAdmittedAtomPermissions {
 /// | Register patient (search trailing) | create | write ∩ patient:write |
 /// | Duplicate review (secondary) | update | write ∩ |
 /// | Search / Clear / Filters / Settings / columns | read chrome | tab read ∩ |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Empty / loading / error / retry | read chrome | tab read ∩ |
 /// | Success snackbar / validation (authorized) | visible feedback | write ∩ |
 /// | Row select → patient detail | read | tab read ∩ |
@@ -920,6 +949,8 @@ abstract final class PatientBalanceDueAtomPermissions {
   static const AccessRequirement search = patientBalanceDueReadRequirement;
   static const AccessRequirement filters = patientBalanceDueReadRequirement;
   static const AccessRequirement settings = patientBalanceDueReadRequirement;
+  static const AccessRequirement export = patientRegistryExportRequirement;
+  static const AccessRequirement print = patientRegistryPrintRequirement;
   static const AccessRequirement pagination = patientBalanceDueReadRequirement;
   static const AccessRequirement empty = patientBalanceDueReadRequirement;
   static const AccessRequirement loading = patientBalanceDueReadRequirement;

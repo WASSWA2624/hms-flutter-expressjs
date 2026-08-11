@@ -4,7 +4,7 @@
 
 - Label: `patientsTabAll`
 - Icon: `Icons.people_outlined`
-- Count source: `state.overview.totalPatients` (sibling overview total; not filtered membership)
+- Count source: `state.overview.totalPatients` (sibling overview total); when this tab is active and search/user advanced filters narrow, `page.totalItemCount`
 - Count tone: `AppTabCountTone.info`
 - Deep-link `section`: omitted / empty (default All)
 - Tab gate: `PatientAllAtomPermissions.tab` = ∩ `patient:read`
@@ -12,14 +12,14 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Filters → Settings → Export → Register patient**
+Order: **Filters → Settings → Export → Print → Register patient**
 
 - Search hint: `patientsSearchHint`
-- Clear: `patientsClearFiltersAction`
-- Filters: `patientsAdvancedFiltersAction` → `patientsAdvancedFiltersTitle`
-- Settings: `commonTableSettings*`
-- Export: present via `AppListTable` (`patients_all` stem); no atom `evidence:export` gate in access map
-- Print (toolbar): **absent**
+- Clear: `opdClearFiltersAction` (`Clear filters`)
+- Filters: `commonFiltersActionLabel` → `commonAdvancedFiltersTitle`
+- Settings: `commonTableSettings*` (+ Close `commonCloseActionLabel`)
+- Export: `canExport` via `PatientAllAtomPermissions.export` = ∩ `evidence:export` (omitted when denied)
+- Print (toolbar): `commonPrintActionLabel` → `printPatientRegistryList` preview-first (same export gate)
 - Context: Register (`patientsRegisterPatientAction`) — omitted without ∩ `patient:write`
 - Strip secondary: Duplicate review when duplicates exist — omitted without write
 - Date filter on search-bar chrome: **not** the shared date-range strip; dates live inside Advanced filters
@@ -44,7 +44,7 @@ Patients-owned `_PatientAdvancedFiltersDialog` (same model as table query):
 - Identity: Patient ID, Contact, Facility (if >1), Gender
 - Visit: Visit date, Visit from/to, Appointment status
 - Record: Status (active/inactive), Consent, Active admission, Outstanding balance, DOB from/to, Created from/to
-- Footer: Clear filters → Apply filters (**no Close** action in dialog)
+- Footer: Clear filters → Apply filters → Close
 
 ## 5. Primary / secondary / row actions
 
@@ -61,6 +61,7 @@ Patients-owned `_PatientAdvancedFiltersDialog` (same model as table query):
 | Duplicate review | Patients-owned |
 | Edit / Complete record | Patients-owned |
 | Advanced filters | Patients-owned |
+| Table Print preview | Shared `PrintDocumentTemplates.registry` |
 
 ## 7. Nested / follow-on
 
@@ -76,7 +77,7 @@ From detail Quick Actions / Active Work (see shared chrome): appointment, OPD en
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
+- Table Print: `Print` → `printPatientRegistryList` → `PrintDocumentTemplates.registry` (gate ∩ `evidence:export`)
 - Detail Report Quick Action → `_PatientReportPrintPreviewDialog` → `PrintDocumentTemplates.patientChart` (gate ∩ `reports:read`)
 
 ## 10. Loading / empty / error / success
@@ -92,7 +93,7 @@ From detail Quick Actions / Active Work (see shared chrome): appointment, OPD en
 | Atom | Gate |
 | --- | --- |
 | Tab / list chrome / search / filters / settings / empty / loading / retry | ∩ `patient:read` |
-| Export | mounted with table (no dedicated `evidence:export` atom) |
+| Export / Print | ∩ `evidence:export` |
 | Register / Duplicate review / Complete record / Edit | ∩ `patient:write` |
 | Delete in detail | ∩ `patient:delete` |
 | Quick Actions / Active Work continues | section nested atoms (see access map) |

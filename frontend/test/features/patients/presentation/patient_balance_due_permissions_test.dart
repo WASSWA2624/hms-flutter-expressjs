@@ -1145,6 +1145,168 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets(
+      'defaults five data columns; Balance due count tone is warning; Settings lists choices',
+      (WidgetTester tester) async {
+        await _pumpBalanceDueTab(
+          tester,
+          patientRepository: patientRepository,
+          opdRepository: opdRepository,
+          policy: _tabReadWritePolicy(),
+          overviewOverride: const Result<PatientRegistryOverview>.success(
+            PatientRegistryOverview(
+              totalPatients: 12,
+              activePatients: 5,
+              unpaidInvoices: 4,
+            ),
+          ),
+        );
+
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem balanceDue = strip.tabs.firstWhere(
+          (AppTabItem item) => item.id == 'balanceDue',
+        );
+        expect(balanceDue.count, 4);
+        expect(balanceDue.countTone, AppTabCountTone.warning);
+
+        expect(find.text('Patient name'), findsWidgets);
+        expect(find.text('Phone'), findsWidgets);
+        expect(find.text('Visit'), findsWidgets);
+        expect(find.text('Status'), findsWidgets);
+        expect(find.text('Next action'), findsWidgets);
+        expect(find.text('Alerts'), findsNothing);
+
+        await tester.tap(find.byTooltip('Settings'));
+        await tester.pumpAndSettle();
+        expect(find.text('TABLE SETTINGS'), findsOneWidget);
+        expect(find.text('Alerts'), findsOneWidget);
+        expect(find.text('Patient no.'), findsOneWidget);
+        expect(find.text('Age'), findsOneWidget);
+        expect(find.text('Gender'), findsOneWidget);
+        expect(find.text('Close'), findsOneWidget);
+        await tester.tap(find.text('Close'));
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'Advanced filters footer is Clear filters → Apply filters → Close',
+      (WidgetTester tester) async {
+        await _pumpBalanceDueTab(
+          tester,
+          patientRepository: patientRepository,
+          opdRepository: opdRepository,
+          policy: _tabReadWritePolicy(),
+        );
+
+        await tester.tap(find.byTooltip('Filters'));
+        await tester.pumpAndSettle();
+        expect(find.text('ADVANCED FILTERS'), findsOneWidget);
+        expect(find.text('Clear filters'), findsOneWidget);
+        expect(find.text('Apply filters'), findsOneWidget);
+        expect(find.text('Close'), findsOneWidget);
+        await tester.tap(find.text('Close'));
+        await tester.pumpAndSettle();
+        expect(find.text('ADVANCED FILTERS'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'active Balance due badge uses filtered total; All sibling stays overview',
+      (WidgetTester tester) async {
+        await _pumpBalanceDueTab(
+          tester,
+          patientRepository: patientRepository,
+          opdRepository: opdRepository,
+          policy: _tabReadWritePolicy(),
+          overviewOverride: const Result<PatientRegistryOverview>.success(
+            PatientRegistryOverview(
+              totalPatients: 12,
+              activePatients: 5,
+              unpaidInvoices: 4,
+            ),
+          ),
+        );
+
+        final AppTabStrip initial = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        expect(
+          initial.tabs
+              .firstWhere((AppTabItem t) => t.id == 'balanceDue')
+              .count,
+          4,
+        );
+
+        when(() => patientRepository.listPatients(any())).thenAnswer((
+          Invocation invocation,
+        ) async {
+          final PatientListQuery query =
+              invocation.positionalArguments.single as PatientListQuery;
+          final bool narrowed = query.search.trim().isNotEmpty;
+          return Result<AppPage<Patient>>.success(
+            AppPage<Patient>(
+              items: narrowed
+                  ? const <Patient>[_balancePatient]
+                  : const <Patient>[_balancePatient, _incompletePatient],
+              request: query.pageRequest,
+              totalItemCount: narrowed ? 1 : 4,
+            ),
+          );
+        });
+
+        await tester.enterText(find.byType(TextField).first, 'Bea');
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pumpAndSettle();
+
+        final AppTabStrip filtered = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        expect(
+          filtered.tabs
+              .firstWhere((AppTabItem t) => t.id == 'balanceDue')
+              .count,
+          1,
+        );
+        expect(
+          filtered.tabs.firstWhere((AppTabItem t) => t.id == 'all').count,
+          12,
+        );
+      },
+    );
+
+    testWidgets(
+      'Export/Print omit without evidence:export; present when granted',
+      (WidgetTester tester) async {
+        await _pumpBalanceDueTab(
+          tester,
+          patientRepository: patientRepository,
+          opdRepository: opdRepository,
+          policy: _tabReadWritePolicy(),
+        );
+        expect(find.byTooltip('Export'), findsNothing);
+        expect(find.byTooltip('Print'), findsNothing);
+
+        await _pumpBalanceDueTab(
+          tester,
+          patientRepository: patientRepository,
+          opdRepository: opdRepository,
+          policy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.patientRead,
+              AppPermissions.billingRead,
+              AppPermissions.patientWrite,
+              AppPermissions.evidenceExport,
+            },
+          ),
+        );
+        expect(find.byTooltip('Export'), findsOneWidget);
+        expect(find.byTooltip('Print'), findsOneWidget);
+      },
+    );
+
     testWidgets('light and dark themes render Balance due strip', (
       WidgetTester tester,
     ) async {
