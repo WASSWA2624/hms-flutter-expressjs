@@ -2,9 +2,11 @@
 
 Source of truth for the **Billing** workspace. Mirror **Human resources** (`/hr`): one gated page, short desk tabs, `AppListTable` chrome, row → detail dialog.
 
-**Billing is the only cashier desk.** Clinical modules post charges here; issue, collect, claims, approvals, patient ledgers, and prices live here. No parallel billing UIs.
+**Billing is the only cashier desk.** Clinical modules post charges here; issue, collect, claims, approvals, and prices live here. No parallel billing UIs.
 
-**Accounts is a separate module/screen** (`/accounts`, see `accounts.md`). Billing does not implement general ledger, chart of accounts, journals, or books. Billing may deep-link or post summaries to Accounts later; it must not absorb Accounts UI.
+**Accounts is a separate module/screen** (`/accounts`, see `accounts.md`). Patient ledgers, general ledger, chart of accounts, journals, and books live there. Billing may deep-link to Accounts (e.g. patient ledger); it must not absorb Accounts UI.
+
+**Reporting & analytics** owns period totals and financial KPIs. Billing does not host an Analytics tab.
 
 | | |
 |---|---|
@@ -13,6 +15,7 @@ Source of truth for the **Billing** workspace. Mirror **Human resources** (`/hr`
 | **Module** | `billing-payments` (+ `insurance-claims` for Claims) |
 | **Mirror** | `/hr` |
 | **Sibling** | **Accounts** — separate screen; not a Billing tab |
+| **Reports** | **Reporting & analytics** — not a Billing tab |
 
 ---
 
@@ -22,7 +25,7 @@ Source of truth for the **Billing** workspace. Mirror **Human resources** (`/hr`
 2. **No duplicate surfaces** — each capability has one home. Do not repeat the same trailing action on every tab. Do not add a second tab that only restates another queue.
 3. **Short flows** — happy path is **row Next action → one modal → save**. Detail dialog is for review + secondary actions, not a required stop.
 4. **Progressive disclosure** — tables stay lean (≤5 default columns). Extra columns via Table settings. Extra actions inside the detail dialog.
-5. **Adaptability** — fewer tabs, shared table contract, shared detail shell, shared ledger dialog. New charge sources plug into Inbox/Issue without new screens.
+5. **Adaptability** — fewer tabs, shared table contract, shared detail shell. New charge sources plug into Work/Issue without new screens. Ledger browse lives on Accounts; analytics on Reporting.
 
 ---
 
@@ -41,8 +44,8 @@ Rules:
 
 1. No app-bar trailing actions.
 2. First viewport = strip + one body. No KPI cards above the table.
-3. Count tones: Inbox = info · Issue/Collect/Claims/Approvals = warning · Collect overdue subset uses danger badge on the **Overdue** filter chip, not a separate tab.
-4. Fallback tab when unauthorized: **Inbox**.
+3. Count tones: Work = info · Issue/Collect/Claims/Approvals = warning · Collect overdue subset uses danger badge on the **Overdue** filter chip, not a separate tab.
+4. Fallback tab when unauthorized: **Work**.
 5. Snackbars for mutations; no sticky banner between strip and table.
 6. Realtime + light poll on the active section.
 
@@ -60,25 +63,26 @@ Rules:
 
 | # | Label | Tooltip | Enum | `?section=` | Body | Count |
 |---|---|---|---|---|---|---|
-| 1 | **Inbox** | All open billing work | `inbox` | `inbox` | Work queue | Open work |
+| 1 | **Work** | Open billing work across queues | `work` | `work` | Work queue | Open work |
 | 2 | **Issue** | Drafts ready to issue | `issue` | `issue` | Work queue | Drafts |
 | 3 | **Collect** | Balances due (incl. overdue) | `collect` | `collect` | Work queue | Open balances |
 | 4 | **Claims** | Claims & pre-auth | `claims` | `claims` | Work queue | Open claims |
 | 5 | **Approvals** | Refunds, voids, adjustments | `approvals` | `approvals` | Work queue | Pending |
-| 6 | **Ledgers** | Patient balances | `ledgers` | `ledgers` | Patient table | With balance |
-| 7 | **Prices** | Price book | `prices` | `prices` | CRUD table | Active |
-| 8 | **Analytics** | Period totals | `analytics` | `analytics` | Panel | — |
+| 6 | **Prices** | Price book | `prices` | `prices` | CRUD table | Active |
 
-**Aliases (compat):** `all` → inbox · `needs-issue` / `ready-to-issue` → issue · `awaiting-payment` / `pending-payment` / `overdue` → collect · `claims-pending` → claims · `approval-required` → approvals · `patient-ledgers` → ledgers · `price-book` → prices.
+**Aliases (compat):** `all` / `inbox` → work · `needs-issue` / `ready-to-issue` → issue · `awaiting-payment` / `pending-payment` / `overdue` → collect · `claims-pending` → claims · `approval-required` → approvals · `price-book` → prices · `patient-ledgers` / `ledgers` → deep-link `/accounts?section=ledgers` · `analytics` → deep-link Reporting & analytics.
 
 ### What was deliberately removed / merged
 
 | Removed | Why | Where it lives now |
 |---|---|---|
+| **Inbox** label | Sounds like email; vague for a cashier desk | Renamed **Work** (same cross-queue list) |
+| **Ledgers** tab | Patient money browse is books domain | **Accounts** → **Ledgers** (`accounts.md`) |
+| **Analytics** tab | Period totals belong with reporting | **Reporting & analytics** |
 | **Payments** tab | Duplicated Collect + invoice payment history | Payments list inside **invoice detail**; refund/reconcile from there or Collect next action |
 | **Overdue** tab | Same rows as Collect with age | **Collect** + Overdue status/age filter (danger chip) |
 | Close shift/day on every tab | Duplicate chrome | **Collect** only |
-| Quick charge on many tabs | Duplicate entry points | **Inbox** only |
+| Quick charge on many tabs | Duplicate entry points | **Work** only |
 | Receive payment trailing on many tabs | Duplicate of row Pay | Row **Pay** / detail **Pay** only |
 | Long tab names | Slow scanning | 1-word labels above |
 
@@ -86,7 +90,7 @@ Rules:
 
 ## 3. Shared work-queue contract
 
-Used by **Inbox · Issue · Collect · Claims · Approvals**.
+Used by **Work · Issue · Collect · Claims · Approvals**.
 
 | Control | Spec |
 |---|---|
@@ -103,11 +107,11 @@ Used by **Inbox · Issue · Collect · Claims · Approvals**.
 
 | ID | Header | Default on |
 |---|---|---|
-| `patient` | Patient | all queues, Ledgers |
-| `invoice` | Invoice | Inbox, Issue, Collect, Claims, Approvals |
+| `patient` | Patient | all queues |
+| `invoice` | Invoice | Work, Issue, Collect, Claims, Approvals |
 | `encounter` | Encounter | Issue, Claims (optional elsewhere) |
 | `source` | Source | optional |
-| `due` | Due | Inbox, Collect, Approvals |
+| `due` | Due | Work, Collect, Approvals |
 | `status` | Status | all queues |
 | `age` | Age | Collect (optional) |
 | `type` | Type | Approvals (request type) |
@@ -117,14 +121,14 @@ Used by **Inbox · Issue · Collect · Claims · Approvals**.
 
 ## 4. Tab specs
 
-### 4.1 Inbox (`inbox`)
+### 4.1 Work (`work`)
 
-Cross-queue list for “what needs me next.”
+Cross-queue list for “what needs me next” (issue, pay, claim, approve, …). Not an email inbox.
 
 | | |
 |---|---|
 | **Columns** | Patient · Invoice · Due · Status · Next |
-| **Empty** | *Nothing in the inbox.* |
+| **Empty** | *No open work.* |
 | **Trailing (owned here)** | **Charge** |
 | **Next priority** | Approve → Issue → Pay → Submit claim → Settle claim → Auth → Refund → Adjust → Void → Send |
 | **Row click** | Detail |
@@ -139,7 +143,7 @@ Drafts only.
 | **Empty** | *No drafts to issue.* |
 | **Trailing** | **Issue all** (selection or page, write) |
 | **Next** | **Issue** |
-| **Row click** | Detail (secondary: Adjust, Void, Send, Ledger, Print) |
+| **Row click** | Detail (secondary: Adjust, Void, Send, Ledger → Accounts, Print) |
 
 ### 4.3 Collect (`collect`)
 
@@ -153,7 +157,7 @@ Open balances. Overdue is a **filter**, not a tab.
 | **Filters** | + Overdue chip (danger count) · Age |
 | **Next** | **Pay** |
 | **Deep link** | `?section=collect&action=pay&id=` → open Pay modal |
-| **Row click** | Detail (secondary: Refund, Adjust, Void, Send, Ledger, Print) |
+| **Row click** | Detail (secondary: Refund, Adjust, Void, Send, Ledger → Accounts, Print) |
 
 ### 4.4 Claims (`claims`)
 
@@ -178,20 +182,7 @@ Open balances. Overdue is a **filter**, not a tab.
 | **Next** | **Approve** (Reject only in Detail) |
 | **Row click** | Detail |
 
-### 4.6 Ledgers (`ledgers`)
-
-Patient money browse — not a second invoice queue.
-
-| | |
-|---|---|
-| **Columns** | Patient · Invoiced · Paid · Balance · Next |
-| **Optional** | Clearance · Updated |
-| **Empty** | *No patients match.* |
-| **Trailing** | none (Charge lives on Inbox; Pay on Collect/row) |
-| **Next** | Balance → **Pay** · else → **Ledger** |
-| **Row click** | **Ledger** dialog (same widget as Detail → Ledger) |
-
-### 4.7 Prices (`prices`)
+### 4.6 Prices (`prices`)
 
 | | |
 |---|---|
@@ -201,30 +192,19 @@ Patient money browse — not a second invoice queue.
 | **Trailing** | **Add** |
 | **Row** | Edit / Deactivate · click opens edit dialog |
 
-### 4.8 Analytics (`analytics`)
-
-| | |
-|---|---|
-| **Body** | Compact KPI + period switch (Day / Month / Year / Custom) |
-| **KPIs** | Collected · Spent · Surplus · Open invoices |
-| **More** | Progressive: by method · trend · mix |
-| **Action** | **Reports** (leaves to reporting when needed) |
-| **Empty** | *No activity for this period.* |
-
 ---
 
 ## 5. Trailing actions (one owner each)
 
 | Button | Label | Owner tab only | Opens |
 |---|---|---|---|
-| Charge | *Charge* | Inbox | Charge modal |
+| Charge | *Charge* | Work | Charge modal |
 | Issue all | *Issue all* | Issue | Confirm → bulk issue |
 | Close shift | *Close shift* | Collect | Close shift modal |
 | Close day | *Close day* | Collect | Close day modal |
 | Add | *Add* | Prices | Price create |
-| Reports | *Reports* | Analytics | Reports module |
 
-No other trailing buttons. Do not re-add Pay / Charge / Close on multiple tabs.
+No other trailing buttons. Do not re-add Pay / Charge / Close on multiple tabs. Do not add Reports / Analytics trailing here.
 
 ---
 
@@ -242,7 +222,7 @@ No other trailing buttons. Do not re-add Pay / Charge / Close on multiple tabs.
 | **Submit** | Submit claim | Submit modal |
 | **Settle** | Record insurer response | Settle modal |
 | **Auth** | Approve authorization | Auth modal |
-| **Ledger** | Open patient ledger | Ledger dialog |
+| **Ledger** | Open patient ledger | Navigate `/accounts?section=ledgers&patientId=` |
 
 One Next button per row. Everything else waits in Detail.
 
@@ -258,12 +238,12 @@ One Next button per row. Everything else waits in Detail.
 | Take payment | Collect → **Pay** → amount/method → save |
 | Approve | Approvals → **Approve** → save |
 | Submit claim | Claims → **Submit** → save |
-| Open ledger | Ledgers → row or **Ledger** |
-| Walk-in charge | Inbox → **Charge** → save → lands on Issue |
+| Open patient ledger | Detail / Next **Ledger** → **Accounts** Ledgers |
+| Walk-in charge | Work → **Charge** → save → lands on Issue |
 
 ### Detail path (only when needed)
 
-Row click → **Detail** → secondary action (Refund / Adjust / Void / Reject / Deny / Print / Send / Ledger).
+Row click → **Detail** → secondary action (Refund / Adjust / Void / Reject / Deny / Print / Send / Ledger → Accounts).
 
 Do **not** require Detail before Pay / Issue / Approve / Submit.
 
@@ -275,12 +255,13 @@ Do **not** require Detail before Pay / Issue / Approve / Submit.
 - Modal that only opens another modal before the user can finish
 - Separate Payments tab that reprints invoice payment lines
 - Separate Overdue tab that reprints Collect rows
+- Ledgers or Analytics tabs inside Billing
 
 ---
 
 ## 8. Dialogs (shared, minimal)
 
-One **Detail** shell; body switches by kind. One **Ledger** dialog reused everywhere.
+One **Detail** shell; body switches by kind. Patient ledger UI is on **Accounts** (deep-link), not a Billing panel.
 
 ### 8.1 Detail
 
@@ -290,7 +271,7 @@ One **Detail** shell; body switches by kind. One **Ledger** dialog reused everyw
 
 **Invoice sections (progressive):** Line items → Payments → Adjustments (collapsed/empty omitted)
 
-**Actions shown only if capable:** Issue · Pay · Refund · Adjust · Void · Send · Approve · Reject · Submit · Settle · Auth · Deny · Clearance · Ledger · Print · Download
+**Actions shown only if capable:** Issue · Pay · Refund · Adjust · Void · Send · Approve · Reject · Submit · Settle · Auth · Deny · Clearance · Ledger (→ Accounts) · Print · Download
 
 ### 8.2 Pay
 
@@ -308,19 +289,15 @@ Only required fields (amount/reason/status). No extra wizard steps.
 
 Shift: Expected · Actual · Notes · Submit for approval. Day: Notes · Submit for approval.
 
-### 8.6 Ledger
-
-Summary (Invoiced · Paid · Balance) + entry list. Actions: **Pay** (if balance) only — not Charge (Charge stays on Inbox).
-
-### 8.7 Charge
+### 8.6 Charge
 
 Patient · Item · Qty · Price (book-resolved) · Mode · Notes. Primary: **Charge**. Creates draft → Issue tab.
 
-### 8.8 Price Add/Edit
+### 8.7 Price Add/Edit
 
 Item · Mode · Price · Scheme · Effective · Active. Primary: **Save**.
 
-### 8.9 Clearance
+### 8.8 Clearance
 
 One confirm: *Charges settled. Clear this encounter?* Primary: **Clear**.
 
@@ -336,7 +313,7 @@ One confirm: *Charges settled. Clear this encounter?* Primary: **Clear**.
 | Approve / Reject | `billing:write` ∩ `financial:approve` |
 | Claim mutations | `billing:write` ∩ `insurance-claims` |
 | Prices write | pricing/admin write |
-| Analytics / Reports | read; Reports needs `reports:read` |
+| Ledger link | Accounts route gates (`accounts:read` ∩ `facility-accounts`); omit if unauthorized |
 
 Hide unauthorized tabs and actions. Do not render disabled “no access” controls.
 
@@ -350,7 +327,7 @@ Hide unauthorized tabs and actions. Do not render disabled “no access” contr
 | `queue` | Legacy queue → mapped section |
 | `search` | Prefill search |
 | `id` | Open Detail after load |
-| `patientId` | Open Ledger or Ledgers filter |
+| `patientId` | Prefer navigate `/accounts?section=ledgers&patientId=` (compat redirect) |
 | `action=pay` | Open Pay on Collect |
 
 URL write: `/billing?section=<slug>`.
@@ -371,9 +348,11 @@ Copy: *Saved.* · *Submitted for approval.* · document save/fail strings as tod
 
 ## 12. Domain ownership
 
-**Billing owns:** invoices, charge events, payments, refunds, adjustments, approvals, claims/pre-auth, price book, patient ledgers, cashier analytics — via Billing APIs. Clinical UIs deep-link here; they do not reimplement cashier flows.
+**Billing owns:** invoices, charge events, payments, refunds, adjustments, approvals, claims/pre-auth, price book — via Billing APIs. Clinical UIs deep-link here; they do not reimplement cashier flows.
 
-**Accounts owns (separate screen):** general ledger, chart of accounts, journals, period close/books, facility accounting views. Spec lives in `accounts.md`. Billing must not add GL/journal tabs or recreate Accounts flows.
+**Accounts owns (separate screen):** patient ledgers, general ledger, chart of accounts, journals, period close/books, facility accounting views. Spec lives in `accounts.md`.
+
+**Reporting & analytics owns:** period totals, cashier/facility financial KPIs and reports. Billing must not host an Analytics tab.
 
 ---
 
@@ -387,26 +366,24 @@ widgets/
   billing_detail_widgets.dart          # one Detail shell
   billing_receive_payment_dialog.dart  # Pay
   billing_form_dialogs.dart            # Issue/Send/Refund/Adjust/Void/Approve/…
-  billing_ledger_dialog.dart           # one Ledger
   billing_quick_charge_dialog.dart     # Charge
   billing_price_book_panel.dart
-  billing_ledgers_panel.dart
-  billing_financial_analytics_panel.dart
   billing_workspace_table_support.dart
 ```
 
-No `billing_payments_panel` tab. Payment rows stay inside Detail.
+No `billing_payments_panel` tab. Payment rows stay inside Detail.  
+No `billing_ledgers_panel` or `billing_financial_analytics_panel`. Ledger → Accounts; analytics → Reporting.
 
 ---
 
 ## 14. Acceptance
 
-- [ ] Eight tabs with short labels: Inbox · Issue · Collect · Claims · Approvals · Ledgers · Prices · Analytics
-- [ ] No Payments tab; no Overdue tab
+- [ ] Six tabs with short labels: Work · Issue · Collect · Claims · Approvals · Prices
+- [ ] No Inbox label; no Ledgers tab; no Analytics tab; no Payments tab; no Overdue tab
 - [ ] Trailing actions have a single owner tab (§5)
 - [ ] Happy paths complete from Next → one modal → save
 - [ ] Detail is optional for Pay / Issue / Approve / Submit
-- [ ] Ledger dialog is shared (Ledgers tab + Detail)
+- [ ] Ledger action deep-links to Accounts Ledgers
 - [ ] Default columns ≤5; filters status lists are tab-scoped
 - [ ] Unauthorized tabs/actions absent
 - [ ] Chrome and mutate/refresh flow match `/hr`
@@ -418,11 +395,11 @@ No `billing_payments_panel` tab. Payment rows stay inside Detail.
 | Item | Home |
 |---|---|
 | SaaS subscriptions | `/subscriptions` |
-| **Accounts** (GL, journals, chart of accounts, books) | Separate **Accounts** screen — `accounts.md` / `/accounts` |
+| **Accounts** (patient ledgers, GL, journals, chart of accounts, books) | Separate **Accounts** screen — `accounts.md` / `/accounts` |
 | Clinical ordering | Clinical modules → deep-link Billing |
-| Heavy reporting | Analytics → **Reports** |
+| Period analytics / heavy reporting | **Reporting & analytics** |
 
-Do not place Accounts tabs inside Billing. Optional future handoff: Billing posts settled totals to Accounts; Accounts never becomes a Billing desk section.
+Do not place Accounts or Reporting tabs inside Billing. Optional future handoff: Billing posts settled totals to Accounts; Accounts never becomes a Billing desk section.
 
 ---
 
@@ -431,8 +408,8 @@ Do not place Accounts tabs inside Billing. Optional future handoff: Billing post
 | HR | Billing |
 |---|---|
 | Human resources | Billing |
-| Staff members | Ledgers |
+| Staff members | *(patient Ledgers → Accounts)* |
 | Positions | Prices |
-| Work queues | Inbox / Issue / Collect / Claims / Approvals |
-| Staff detail | Detail + Ledger |
-| Trailing create on one tab | Charge on Inbox; Add on Prices; Close on Collect |
+| Work queues | Work / Issue / Collect / Claims / Approvals |
+| Staff detail | Detail (+ Ledger → Accounts) |
+| Trailing create on one tab | Charge on Work; Add on Prices; Close on Collect |
