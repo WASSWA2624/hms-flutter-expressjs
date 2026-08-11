@@ -168,6 +168,9 @@ class _LabWorkspaceContentState extends ConsumerState<_LabWorkspaceContent> {
     }
 
     return ResponsivePage(
+      padding: ResponsiveSpacing.workspacePagePaddingFor(
+        spacing: Theme.of(context).spacing,
+      ),
       maxWidth: PageMaxWidth.dataHeavy,
       scrollable: false,
       child: SizedBox(

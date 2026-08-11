@@ -361,6 +361,9 @@ class _BillingWorkspaceContentState
     final ThemeData theme = Theme.of(context);
 
     return ResponsivePage(
+      padding: ResponsiveSpacing.workspacePagePaddingFor(
+        spacing: Theme.of(context).spacing,
+      ),
       maxWidth: PageMaxWidth.dataHeavy,
       child: SizedBox(
         width: double.infinity,

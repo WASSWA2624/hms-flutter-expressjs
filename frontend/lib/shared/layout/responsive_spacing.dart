@@ -3,17 +3,27 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 
 abstract final class ResponsiveSpacing {
+  /// Default page inset: side + vertical breathing room under the app bar.
   static EdgeInsets pagePaddingFor(
     AppBreakpoint breakpoint, {
     required AppDesignTokens designTokens,
   }) {
     // Tight side inset for dense shells; vertical inset gives breathing room
     // under the app bar and at the scroll end. Workspace tab pages override
-    // via _compactWorkspacePagePadding when content must sit flush.
+    // via [workspacePagePaddingFor] when content must sit flush.
     return EdgeInsets.symmetric(
       horizontal: AppSpacingTokens.standard.xs,
       vertical: AppSpacingTokens.standard.lg,
     );
+  }
+
+  /// Horizontal-only inset for desks whose first body child is [AppTabStrip].
+  ///
+  /// Tabs sit flush under the app bar; do not add top/bottom page padding here.
+  static EdgeInsets workspacePagePaddingFor({
+    required AppSpacingTokens spacing,
+  }) {
+    return EdgeInsets.symmetric(horizontal: spacing.xs);
   }
 
   static double pagePaddingValueFor(

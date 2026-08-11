@@ -223,6 +223,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         : (sections.isNotEmpty ? sections.first.id : null);
 
     return ResponsivePage(
+      padding: ResponsiveSpacing.workspacePagePaddingFor(
+        spacing: Theme.of(context).spacing,
+      ),
       maxWidth: PageMaxWidth.dashboard,
       child: SizedBox(
         width: double.infinity,

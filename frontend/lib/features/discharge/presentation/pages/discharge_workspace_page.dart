@@ -329,6 +329,9 @@ class _DischargeWorkspaceContentState
         _dischargeDefaultColumns(context, section: _section);
 
     return ResponsivePage(
+      padding: ResponsiveSpacing.workspacePagePaddingFor(
+        spacing: Theme.of(context).spacing,
+      ),
       maxWidth: PageMaxWidth.dataHeavy,
       child: SizedBox(
         width: double.infinity,

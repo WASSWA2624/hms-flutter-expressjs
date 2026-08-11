@@ -131,6 +131,9 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
     final List<_OpdTableItem> allItems = _tableItems(context, state);
 
     return ResponsivePage(
+      padding: ResponsiveSpacing.workspacePagePaddingFor(
+        spacing: Theme.of(context).spacing,
+      ),
       maxWidth: PageMaxWidth.dataHeavy,
       child: SizedBox(
         width: double.infinity,

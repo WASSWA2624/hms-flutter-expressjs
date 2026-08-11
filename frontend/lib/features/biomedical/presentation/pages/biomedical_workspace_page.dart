@@ -205,6 +205,9 @@ class _BiomedicalWorkspaceContentState
     }
 
     return ResponsivePage(
+      padding: ResponsiveSpacing.workspacePagePaddingFor(
+        spacing: Theme.of(context).spacing,
+      ),
       maxWidth: PageMaxWidth.dataHeavy,
       child: SizedBox(
         width: double.infinity,

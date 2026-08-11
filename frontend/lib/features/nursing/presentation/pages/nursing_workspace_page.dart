@@ -233,6 +233,9 @@ class _NursingWorkspaceContentState
       });
     }
     return ResponsivePage(
+      padding: ResponsiveSpacing.workspacePagePaddingFor(
+        spacing: Theme.of(context).spacing,
+      ),
       maxWidth: PageMaxWidth.dataHeavy,
       scrollable: false,
       child: SizedBox(

@@ -311,6 +311,9 @@ class _PhysiotherapyWorkspace extends ConsumerWidget {
     }
 
     return ResponsivePage(
+      padding: ResponsiveSpacing.workspacePagePaddingFor(
+        spacing: Theme.of(context).spacing,
+      ),
       maxWidth: PageMaxWidth.dataHeavy,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

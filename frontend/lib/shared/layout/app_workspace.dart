@@ -2260,5 +2260,5 @@ EdgeInsets _compactWorkspacePagePadding(
 ) {
   // Workspace tabs sit flush under the app bar; only side inset here.
   // Non-workspace pages use ResponsiveSpacing.pagePaddingFor (adds vertical).
-  return EdgeInsets.symmetric(horizontal: theme.spacing.xs);
+  return ResponsiveSpacing.workspacePagePaddingFor(spacing: theme.spacing);
 }

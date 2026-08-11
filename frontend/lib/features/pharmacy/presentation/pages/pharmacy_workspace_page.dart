@@ -635,6 +635,9 @@ class _PharmacyWorkspaceContentState
     }
 
     return ResponsivePage(
+      padding: ResponsiveSpacing.workspacePagePaddingFor(
+        spacing: Theme.of(context).spacing,
+      ),
       maxWidth: PageMaxWidth.dataHeavy,
       // Fill the shell viewport so nested AppListTable horizontal scrollbars
       // stay pinned to the visible table bottom (not below-fold content).

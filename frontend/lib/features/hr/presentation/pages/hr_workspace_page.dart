@@ -299,6 +299,9 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
     }
 
     return ResponsivePage(
+      padding: ResponsiveSpacing.workspacePagePaddingFor(
+        spacing: Theme.of(context).spacing,
+      ),
       maxWidth: PageMaxWidth.dataHeavy,
       scrollable: false,
       child: SizedBox(
