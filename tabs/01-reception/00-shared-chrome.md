@@ -26,25 +26,29 @@
 
 - Component: `AppTabStrip` / `AppTabItem` (standard variant)
 - Tabs omitted when unauthorized (`receptionDeskSectionRequirement(section)`) — not disabled
-- Every visible tab shows `count` with `AppTabCountTone.warning`
+- Every visible tab shows authoritative `count`:
+  - Sibling model: dedicated unfiltered scope totals (Follow-ups / Payment gate prefer controller `totalCount`)
+  - Active tab with search/advanced filters: filtered membership total for that query
+- Count tones (`AppTabCountTone`): `warning` for Desk queue + High priority; `info` for Appointments, Active visits, Follow-ups, Payment gate
 - Icons per section (leading): event / queue / priority / pending / phone / payments
 
 ## Table toolbar (shared pattern)
 
-Order on search bar (comment in page): **Filters → Settings → Export → Schedule → Register**
+Order on search bar: **Filters → Settings → Export → Print → Schedule → Register**
 
 | Control | Label / key | Notes |
 | --- | --- | --- |
 | Search | section hint (`receptionSearchHint` / payment / follow-ups variants) | mic via `AppSearchBar` default |
 | Clear | `receptionClearFiltersAction` | |
-| Filters | `receptionFiltersLabel` → title `commonAdvancedFiltersTitle` | **omitted** on Follow-ups |
+| Filters | `commonFiltersActionLabel` → title `commonAdvancedFiltersTitle` | all tabs including Follow-ups; date filter on all tabs including Payment gate |
 | Settings | `commonTableSettingsActionLabel` → `commonTableSettingsTitle` | Apply `receptionApplyColumnsAction`, Reset `receptionResetColumnsAction`, Close `commonCloseActionLabel` |
-| Export | default `Export` via `AppListTable.enableExport` | always on (no Reception `canExport` gate) |
-| Print (table) | — | **absent** on list toolbar |
+| Export | `Export` via `AppListTable.enableExport` + `canExport` | gated by `receptionDeskExportRequirement` (∩ `evidence:export`); omitted when denied |
+| Print (table) | `commonPrintActionLabel` → `Print` | `AppListTable.enablePrint` + `canPrint`; opens `printReceptionDeskList` → `PrintDocumentTemplates.registry` preview-first |
 | Schedule | `receptionScheduleAppointmentAction` | omitted when ∩ `patient:write` denied |
 | Register | `receptionRegisterPatientAction` | omitted when ∩ `patient:write` denied |
 
 Column visibility storage: `reception_${section.name}` / widths `reception_cw_${section.name}`.
+Default visible columns prefer **5** data columns (+ optional next-action when authorized).
 
 ## Shared strip actions → dialogs
 
@@ -75,7 +79,7 @@ Column visibility storage: `reception_${section.name}` / widths `reception_cw_${
 | Encounter / check-in | **reused** `showOpdEncounterDialog` | `opd_actions` |
 | Reschedule appointment | **reused** `showOpdRescheduleAppointmentDialog` | |
 | Cancel appointment | **reused** `showOpdCancelAppointmentDialog` | |
-| Print OPD summary | **reused** `showPrintOpdSummaryDialog` → `PrintDocumentTemplates.clinicalSummary` | from Flow Actions only |
+| Print OPD summary | **reused** `showPrintOpdSummaryDialog` → `PrintDocumentTemplates.clinicalSummary` | from Flow Actions; Reception passes `printActionLabel: Print` |
 
 ## Flow Actions from Reception (flags)
 
@@ -84,8 +88,9 @@ Opened with:
 - `allowBillingActions: false`
 - `allowVitalsActions: false`
 - `allowClinicalActions: false`
+- `printActionLabel: commonPrintActionLabel` (`Print`)
 
-Still reachable when stage/permission allows (front-desk gates): Assign/Change doctor, Follow up, Print summary (`opdPrintSummaryAction`), Correct stage / other front-desk stage actions per hub. Clinical / vitals / billing panels stripped.
+Still reachable when stage/permission allows (front-desk gates): Assign/Change doctor, Follow up, Print (`Print`), Correct stage / other front-desk stage actions per hub. Clinical / vitals / billing panels stripped.
 
 ## Feedback patterns (cross-tab)
 
