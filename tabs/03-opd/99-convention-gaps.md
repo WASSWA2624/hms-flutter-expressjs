@@ -1,9 +1,11 @@
 # OPD inventory — convention gaps
 
-Required compliance gaps vs `prompts/.cursor/*.mdc` after shared-chrome remediation.
+Required compliance gaps vs `prompts/.cursor/*.mdc` after shared-chrome and per-tab remediation.
 
 ## Residual
 
-None — shared chrome closed table Print (preview-first), Export RBAC (`evidence:export`), All-tab authoritative counts (`allOpdPatients` + filtered active badge), Follow-ups Filters/date filter parity, forbidden empty workspace, and Flow Actions Print label (`commonPrintActionLabel`).
+None — `prompts/03-opd/00-overview.md` program complete:
 
-Per-tab inventory refresh continues under `prompts/03-opd/01-all.md` … `06-follow-ups.md`.
+- Shared chrome: table Print (preview-first), Export RBAC (`evidence:export`), authoritative/filtered counts + tones, forbidden empty workspace, Flow Actions Print label
+- Follow-ups: Filters/date/Close parity, Export/Print gated, prefer-5 columns, narrowed badge
+- Per-tab inventories refreshed: All, Arrivals, Queue, Triage, Active, Follow-ups

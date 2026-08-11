@@ -36,22 +36,25 @@
 - Icons: dashboard / event / queue / monitor_heart / medical_services / event_repeat
 - No strip primary/secondary actions (Start OPD lives on search bar)
 
-## Table toolbar (board tabs; not Follow-ups)
+## Table toolbar
 
-Order on search bar: **Filters → Settings → Export → Print → Start OPD**
+Board tabs (`AppListTable`) and Follow-ups (`FollowUpWorklistPanel`):
+
+Order on search bar: **Filters → Settings → Export → Print → Start OPD**  
+(Start OPD omitted on Follow-ups by design; omitted on board tabs without encounter gate)
 
 | Control | Label / key | Notes |
 | --- | --- | --- |
-| Search | `opdSearchHint` / `opdSearchLabel` | field-scoped via `searchFields` |
-| Clear | `opdClearFiltersAction` | |
-| Filters | `commonFiltersActionLabel` → `commonAdvancedFiltersTitle` | Apply `opdApplyFiltersAction`; Clear `opdClearFiltersAction`; Close `commonCloseActionLabel` |
-| Settings | `commonTableSettings*` | storage `opd_${section.name}`; Close `commonCloseActionLabel` |
-| Export | `commonTableExportActionLabel` | date via item `time`; gated by `opdWorkspaceExportRequirement` (∩ `evidence:export`); omitted when denied |
-| Print (table) | `commonPrintActionLabel` → `Print` | `enablePrint` + `canPrint`; opens `printOpdWorkspaceList` → `PrintDocumentTemplates.registry` preview-first |
-| Start OPD | `opdStartWalkInAction` / tooltip `opdStartEncounterTooltip` | omitted on Follow-ups; omitted without `opdStartEncounterRequirementForSection` |
+| Search | board `opdSearchHint` / Follow-ups `receptionFollowUpsSearchHint` | field-scoped on board via `searchFields` |
+| Clear | board `opdClearFiltersAction` / Follow-ups `receptionClearFiltersAction` | |
+| Filters | `commonFiltersActionLabel` → `commonAdvancedFiltersTitle` | Apply/Clear/Close common labels; Follow-ups date + status group |
+| Settings | `commonTableSettings*` | board storage `opd_${section.name}`; Follow-ups `opd_follow_ups_*`; Close `commonCloseActionLabel` |
+| Export | `commonTableExportActionLabel` | gated by `opdWorkspaceExportRequirement` (∩ `evidence:export`); omitted when denied |
+| Print (table) | `commonPrintActionLabel` → `Print` | board `printOpdWorkspaceList`; Follow-ups same helper with follow-up columns; preview-first |
+| Start OPD | `opdStartWalkInAction` / tooltip `opdStartEncounterTooltip` | board only; omitted without `opdStartEncounterRequirementForSection` |
 
-Date filter: **enabled** — label `opdArrivalDateFilterLabel`; From/To `opdDateFromLabel` / `opdDateToLabel`.  
-Default visible columns prefer **5** data columns.
+Date filter: **enabled** — board/Follow-ups label `opdArrivalDateFilterLabel`; From/To `opdDateFromLabel` / `opdDateToLabel`.  
+Default visible columns prefer **5** data columns. Follow-ups active badge uses narrowed membership via panel `onNarrowedCountChanged`.
 
 ## Shared row hubs (owner notes)
 

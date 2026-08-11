@@ -45,7 +45,7 @@ Conventions for every page and dialog that shows a data table via `AppListTable`
 2. Dialog sections:
    - **Columns to export:** comprehensive—every exportable field for the row model, not only currently visible columns. Include a section reset that restores the default export column selection.
    - **Filters:** same comprehensive filter set as the table where practical; arrange inputs in two columns; place **Clear filters** in the filters section header (near the section chevron / collapse control).
-3. Footer actions only: **Close** (or Cancel) and **Export**.
+3. Footer actions only:  **Export** and **Close**.
 4. Reuse shared date/text/select filter components; do not duplicate filter UI outside the shared export path.
 
 ## Print
@@ -59,6 +59,9 @@ Conventions for every page and dialog that shows a data table via `AppListTable`
 2. **No duplicate columns:** do not show the same fact twice (e.g. raw id beside an identical display id, or the same timestamp in two formats) unless one column is clearly a distinct derived value users need side by side.
 3. **Avoid nesting:** do not nest tables, expanders, or stacked multi-line blocks inside cells unless the domain truly requires it and a flat column cannot express the data.
 4. **Uniformity:** column alignment, density, status treatment, empty values, and truncation/wrapping must stay consistent across the table and across similar desks.
+5. **No bolded (strong) text in table rows:** Do not use bold text for any content inside table cells or rows. Reserve bold styling for headers, section labels, or summary rows as specifically required by the overall UI, but avoid in the regular data rows and columns.
+6. **Atomic cells:** Each cell must display a single, atomic data value representing one fact (e.g., one status, date, count, label, or ID). Do not concatenate unrelated information into a single cell. If a field is composite, consider splitting it into separate columns or using clear, unambiguous formatting for truly atomic compound types (e.g., formatted date+time where inseparable, but not "Name — Status" in a single cell).
+
 
 ## Implementation constraints
 
