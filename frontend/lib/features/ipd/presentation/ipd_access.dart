@@ -29,10 +29,10 @@ const AccessRequirement ipdWorkspaceReadRequirement = AccessRequirement(
 const AccessRequirement ipdReadRequirement = ipdWorkspaceReadRequirement;
 
 /// Route entry — unique atom from [RouteAccessCatalog.ipd]
-/// (∪ `clinical:read` | `operations:read` | `billing:read` + module).
+/// (∪ `ipd:read` | `clinical:read` | `operations:read` | `billing:read` + module).
 ///
 /// Matches [AppRoutes.ipd] `requiredAnyPermissions`. Matrix view chrome still
-/// uses [ipdWorkspaceReadRequirement] (no `billing:read` alone for tabs).
+/// uses [ipdWorkspaceReadRequirement] (no `billing:read` / `ipd:read` alone for tabs).
 const AccessRequirement ipdWorkspaceEntryRequirement =
     RouteAccessCatalog.ipdEntry;
 
@@ -136,6 +136,25 @@ const AccessRequirement ipdFollowUpsRequirement = ipdWorkspaceReadRequirement;
 /// (reuses [ipdClinicalWriteRequirement] roles + module).
 const AccessRequirement ipdFollowUpsWriteRequirement =
     ipdClinicalWriteRequirement;
+
+/// IPD board list Export / Print (worklist Excel + preview print).
+///
+/// Uses ∩ `evidence:export` (same atom as Reception / Patients / OPD export).
+const AccessRequirement ipdWorkspaceExportRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.evidenceExport],
+);
+
+/// Alias — Print uses the same desk export gate.
+const AccessRequirement ipdWorkspacePrintRequirement =
+    ipdWorkspaceExportRequirement;
+
+bool canExportIpdWorkspace(AppAccessPolicy policy) {
+  return ipdWorkspaceExportRequirement.isAllowed(policy);
+}
+
+bool canPrintIpdWorkspace(AppAccessPolicy policy) {
+  return ipdWorkspacePrintRequirement.isAllowed(policy);
+}
 
 /// Per-section tab strip gate.
 AccessRequirement ipdBoardTabRequirement(IpdWorkspaceSection section) {
@@ -295,6 +314,7 @@ AccessRequirement? ipdFocusedMutationRequirement({
 /// | Admission Queue tab / count badge | navigate | read ∪ ([tab]) |
 /// | Start admission (toolbar primary) | create | operational write ∪ ([startAdmission]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Export / Print | export | ∩ `evidence:export` ([export] / [print]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | operational write / form |
 /// | Row select → admission detail | read | ([detail]) |
@@ -317,6 +337,8 @@ abstract final class IpdAdmissionQueueAtomPermissions {
   static const AccessRequirement search = ipdWorkspaceReadRequirement;
   static const AccessRequirement filters = ipdWorkspaceReadRequirement;
   static const AccessRequirement settings = ipdWorkspaceReadRequirement;
+  static const AccessRequirement export = ipdWorkspaceExportRequirement;
+  static const AccessRequirement print = ipdWorkspacePrintRequirement;
   static const AccessRequirement empty = ipdWorkspaceReadRequirement;
   static const AccessRequirement loading = ipdWorkspaceReadRequirement;
   static const AccessRequirement retry = ipdWorkspaceReadRequirement;
@@ -412,6 +434,7 @@ abstract final class IpdAdmissionQueueAtomPermissions {
 /// | Active Patients tab / count badge | navigate | read ∪ ([tab]) |
 /// | Start admission (toolbar) | create | operational write ∪ ([startAdmission]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Export / Print | export | ∩ `evidence:export` ([export] / [print]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | clinical write / form |
 /// | Row select → admission detail | read | ([detail]) |
@@ -431,6 +454,8 @@ abstract final class IpdActivePatientsAtomPermissions {
   static const AccessRequirement search = ipdWorkspaceReadRequirement;
   static const AccessRequirement filters = ipdWorkspaceReadRequirement;
   static const AccessRequirement settings = ipdWorkspaceReadRequirement;
+  static const AccessRequirement export = ipdWorkspaceExportRequirement;
+  static const AccessRequirement print = ipdWorkspacePrintRequirement;
   static const AccessRequirement empty = ipdWorkspaceReadRequirement;
   static const AccessRequirement loading = ipdWorkspaceReadRequirement;
   static const AccessRequirement retry = ipdWorkspaceReadRequirement;
@@ -526,6 +551,7 @@ abstract final class IpdActivePatientsAtomPermissions {
 /// | --- | --- | --- |
 /// | Bed board tab | navigate | read ∪ ([tab]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Export / Print | export | ∩ `evidence:export` ([export] / [print]) |
 /// | Empty / loading / error / retry | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar (start admission) | visible feedback | operational write ([success]) |
 /// | Validation (authorized forms) | visible feedback | operational / manage |
@@ -543,6 +569,8 @@ abstract final class IpdBedBoardAtomPermissions {
   static const AccessRequirement search = ipdWorkspaceReadRequirement;
   static const AccessRequirement filters = ipdWorkspaceReadRequirement;
   static const AccessRequirement settings = ipdWorkspaceReadRequirement;
+  static const AccessRequirement export = ipdWorkspaceExportRequirement;
+  static const AccessRequirement print = ipdWorkspacePrintRequirement;
   static const AccessRequirement empty = ipdWorkspaceReadRequirement;
   static const AccessRequirement loading = ipdWorkspaceReadRequirement;
   static const AccessRequirement retry = ipdWorkspaceReadRequirement;
@@ -596,6 +624,7 @@ abstract final class IpdBedBoardAtomPermissions {
 /// | Discharge tab / count badge | navigate | read ∪ ([tab]) |
 /// | Start admission (toolbar) | create | operational write ∪ ([startAdmission]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Export / Print | export | ∩ `evidence:export` ([export] / [print]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | write / form |
 /// | Row select → admission detail | read | ([detail]) |
@@ -616,6 +645,8 @@ abstract final class IpdDischargeAtomPermissions {
   static const AccessRequirement search = ipdWorkspaceReadRequirement;
   static const AccessRequirement filters = ipdWorkspaceReadRequirement;
   static const AccessRequirement settings = ipdWorkspaceReadRequirement;
+  static const AccessRequirement export = ipdWorkspaceExportRequirement;
+  static const AccessRequirement print = ipdWorkspacePrintRequirement;
   static const AccessRequirement empty = ipdWorkspaceReadRequirement;
   static const AccessRequirement loading = ipdWorkspaceReadRequirement;
   static const AccessRequirement retry = ipdWorkspaceReadRequirement;
@@ -719,6 +750,7 @@ bool ipdRouteEntryMatchesAppRoutes() {
 /// | Transfers tab / count badge | navigate | read ∪ ([tab]) |
 /// | Start admission (toolbar) | create | operational write ∪ ([startAdmission]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Export / Print | export | ∩ `evidence:export` ([export] / [print]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | write / form |
 /// | Row select → admission detail | read | ([detail]) |
@@ -740,6 +772,8 @@ abstract final class IpdTransfersAtomPermissions {
   static const AccessRequirement search = ipdWorkspaceReadRequirement;
   static const AccessRequirement filters = ipdWorkspaceReadRequirement;
   static const AccessRequirement settings = ipdWorkspaceReadRequirement;
+  static const AccessRequirement export = ipdWorkspaceExportRequirement;
+  static const AccessRequirement print = ipdWorkspacePrintRequirement;
   static const AccessRequirement empty = ipdWorkspaceReadRequirement;
   static const AccessRequirement loading = ipdWorkspaceReadRequirement;
   static const AccessRequirement retry = ipdWorkspaceReadRequirement;
@@ -830,7 +864,8 @@ abstract final class IpdTransfersAtomPermissions {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Follow-ups tab / count badge | navigate | read ∪ ([tab]) |
-/// | Search / Clear / Settings / columns | read chrome | ([listChrome]) |
+/// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Export / Print | export | ∩ `evidence:export` ([export] / [print]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | write ∩ / form |
 /// | Row select → Follow-up details | read | ([detail]) |
@@ -846,7 +881,10 @@ abstract final class IpdFollowUpsAtomPermissions {
   static const AccessRequirement tab = ipdFollowUpsRequirement;
   static const AccessRequirement listChrome = ipdFollowUpsRequirement;
   static const AccessRequirement search = ipdFollowUpsRequirement;
+  static const AccessRequirement filters = ipdFollowUpsRequirement;
   static const AccessRequirement settings = ipdFollowUpsRequirement;
+  static const AccessRequirement export = ipdWorkspaceExportRequirement;
+  static const AccessRequirement print = ipdWorkspacePrintRequirement;
   static const AccessRequirement empty = ipdFollowUpsRequirement;
   static const AccessRequirement loading = ipdFollowUpsRequirement;
   static const AccessRequirement retry = ipdFollowUpsRequirement;

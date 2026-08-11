@@ -82,6 +82,7 @@ class _ClinicalFreeTextActionDialogState
       icon: widget.icon,
       maxWidth: widget.maxWidth,
       scrollable: true,
+      pinActionsToBottom: true,
       closeEnabled: !_isSaving,
       content: Form(
         key: _formKey,

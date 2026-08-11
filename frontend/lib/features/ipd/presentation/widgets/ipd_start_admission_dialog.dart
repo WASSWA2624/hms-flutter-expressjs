@@ -85,7 +85,6 @@ class _IpdStartAdmissionDialogState
       referenceData: ipdAdmissionReferenceData(context, widget.referenceData),
       bedRequired: false,
       maxWidth: 560,
-      initialMaximized: false,
       leadingSectionsBuilder: _patientSection,
       trailingSectionsBuilder: _billingSection,
       onSubmit: _submit,

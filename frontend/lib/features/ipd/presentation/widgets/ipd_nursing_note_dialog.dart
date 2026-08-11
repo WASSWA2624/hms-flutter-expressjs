@@ -102,6 +102,7 @@ class _IpdNursingNoteDialogState extends ConsumerState<IpdNursingNoteDialog> {
       icon: const Icon(Icons.note_add_outlined),
       maxWidth: 560,
       scrollable: true,
+      pinActionsToBottom: true,
       closeEnabled: !_submitting,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

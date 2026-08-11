@@ -49,6 +49,30 @@ final ReceptionFollowUpEntry _followUp = ReceptionFollowUpEntry(
   status: 'SCHEDULED',
 );
 
+final ReceptionFollowUpEntry _followUpOther = ReceptionFollowUpEntry(
+  id: 'fu-ipd-2',
+  encounterId: 'enc-2',
+  patientId: 'pat-2',
+  patientIdentifier: 'PAT-FU-IPD2',
+  patientDisplayName: 'Other Follow Patient',
+  patientPhone: '+256700000002',
+  scheduledAt: DateTime.utc(2026, 7, 30, 10, 0),
+  notes: 'Second callback',
+  status: 'SCHEDULED',
+);
+
+final ReceptionFollowUpEntry _followUpCompleted = ReceptionFollowUpEntry(
+  id: 'fu-ipd-3',
+  encounterId: 'enc-3',
+  patientId: 'pat-3',
+  patientIdentifier: 'PAT-FU-IPD3',
+  patientDisplayName: 'Completed Follow Patient',
+  patientPhone: '+256700000003',
+  scheduledAt: DateTime.utc(2026, 7, 28, 8, 0),
+  notes: 'Done',
+  status: 'COMPLETED',
+);
+
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
 
@@ -159,6 +183,18 @@ void main() {
       expect(
         IpdFollowUpsAtomPermissions.catalogEntry,
         same(RouteAccessCatalog.ipdEntry),
+      );
+      expect(
+        IpdFollowUpsAtomPermissions.export,
+        same(ipdWorkspaceExportRequirement),
+      );
+      expect(
+        IpdFollowUpsAtomPermissions.print,
+        same(ipdWorkspacePrintRequirement),
+      );
+      expect(
+        IpdFollowUpsAtomPermissions.filters,
+        same(ipdFollowUpsRequirement),
       );
       expect(ipdRouteEntryMatchesAppRoutes(), isTrue);
     });
@@ -829,6 +865,146 @@ void main() {
       expect(find.textContaining('no access'), findsNothing);
     },
   );
+
+  testWidgets(
+    'Export/Print omit without evidence:export; present when granted',
+    (WidgetTester tester) async {
+      await _pumpFollowUpsTab(
+        tester,
+        ipdRepository: ipdRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+      );
+      expect(find.byTooltip('Export'), findsNothing);
+      expect(find.byTooltip('Print'), findsNothing);
+      expect(find.byTooltip('Filters'), findsOneWidget);
+      expect(find.byTooltip('Start admission'), findsNothing);
+
+      await _pumpFollowUpsTab(
+        tester,
+        ipdRepository: ipdRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+      expect(find.byTooltip('Start admission'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'defaults five columns; warning tone; search syncs badge; filters footer',
+    (WidgetTester tester) async {
+      await _pumpFollowUpsTab(
+        tester,
+        ipdRepository: ipdRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+        followUps: <ReceptionFollowUpEntry>[
+          _followUp,
+          _followUpOther,
+          _followUpCompleted,
+        ],
+      );
+
+      final AppTabStrip strip = tester.widget<AppTabStrip>(
+        find.byType(AppTabStrip),
+      );
+      final AppTabItem followUps = strip.tabs.firstWhere(
+        (AppTabItem item) => item.id == 'followUps',
+      );
+      expect(followUps.countTone, AppTabCountTone.warning);
+      expect(followUps.count, 3);
+
+      expect(find.text('Patient name'), findsWidgets);
+      expect(find.text('Phone'), findsWidgets);
+      expect(find.text('Status'), findsWidgets);
+      expect(find.text('Follow-up date'), findsWidgets);
+      expect(find.text('Follow-up time'), findsWidgets);
+      expect(find.text('Patient ID'), findsNothing);
+      expect(find.text('Email'), findsNothing);
+      expect(find.text('Notes'), findsNothing);
+
+      await tester.tap(find.byTooltip('Settings'));
+      await tester.pumpAndSettle();
+      expect(find.text('TABLE SETTINGS'), findsOneWidget);
+      expect(find.text('Patient ID'), findsOneWidget);
+      expect(find.text('Email'), findsOneWidget);
+      expect(find.text('Notes'), findsOneWidget);
+      expect(find.text('Reset columns'), findsOneWidget);
+      expect(find.text('Apply columns'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+      expect(find.text('ADVANCED FILTERS'), findsOneWidget);
+      expect(find.text('Clear filters'), findsOneWidget);
+      expect(find.text('Apply filters'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
+      expect(find.text('Follow-up date'), findsWidgets);
+      expect(find.text('Scheduled'), findsWidgets);
+      expect(find.text('Completed'), findsWidgets);
+      await tester.tap(find.text('Close').last);
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField).first, 'Other Follow');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Other Follow Patient'), findsOneWidget);
+      expect(find.text('Follow Up Patient'), findsNothing);
+      expect(find.text('Completed Follow Patient'), findsNothing);
+
+      final AppTabStrip filteredStrip = tester.widget<AppTabStrip>(
+        find.byType(AppTabStrip),
+      );
+      final AppTabItem filtered = filteredStrip.tabs.firstWhere(
+        (AppTabItem item) => item.id == 'followUps',
+      );
+      expect(filtered.count, 1);
+      expect(filtered.countTone, AppTabCountTone.warning);
+    },
+  );
+
+  testWidgets(
+    'toolbar Filters Settings Export Print; Print opens preview; no Start admission',
+    (WidgetTester tester) async {
+      await _pumpFollowUpsTab(
+        tester,
+        ipdRepository: ipdRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+
+      expect(find.byTooltip('Filters'), findsOneWidget);
+      expect(find.byTooltip('Settings'), findsOneWidget);
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+      expect(find.byTooltip('Start admission'), findsNothing);
+      expect(find.byTooltip('Manage beds'), findsNothing);
+
+      await tester.tap(find.byTooltip('Print'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('PRINT PREVIEW'), findsOneWidget);
+    },
+  );
 }
 
 Future<void> _pumpFollowUpsTab(
@@ -839,7 +1015,17 @@ Future<void> _pumpFollowUpsTab(
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
   String initialLocation = '/ipd?section=follow-ups',
+  List<ReceptionFollowUpEntry>? followUps,
 }) async {
+  if (followUps != null) {
+    when(
+      () => followUpRepository.listScheduledFollowUps(
+        encounterType: any(named: 'encounterType'),
+      ),
+    ).thenAnswer(
+      (_) async => Result<List<ReceptionFollowUpEntry>>.success(followUps),
+    );
+  }
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
 

@@ -25,6 +25,8 @@ import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_nursing_note_di
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_start_admission_dialog.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_transfer_request_dialog.dart';
 import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_transfer_update_dialog.dart';
+import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_workspace_print_helpers.dart';
+import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -36,6 +38,7 @@ import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/ipd_actions/ipd_actions.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 class IpdWorkspacePage extends ConsumerStatefulWidget {
@@ -207,6 +210,7 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
   late IpdWorkspaceSection _section;
   final Map<IpdWorkspaceSection, IpdAdmissionQuery> _sectionQueries =
       <IpdWorkspaceSection, IpdAdmissionQuery>{};
+  int? _followUpsNarrowedCount;
 
   @override
   void initState() {
@@ -260,7 +264,12 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
     if (!_section.isFollowUps && !_section.isBedBoard) {
       _sectionQueries[_section] = widget.state.query.copyWith(section: _section);
     }
-    setState(() => _section = section);
+    setState(() {
+      _section = section;
+      if (!section.isFollowUps) {
+        _followUpsNarrowedCount = null;
+      }
+    });
     _applySectionFilter(section);
     _updateUrlForSection(section);
   }
@@ -320,7 +329,10 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
       policy,
     );
     if (visibleSections.isEmpty) {
-      return const SizedBox.shrink();
+      return AppWorkspaceStatePanel.forbidden(
+        title: l10n.routeForbiddenTitle,
+        body: l10n.routeForbiddenBody,
+      );
     }
     if (!visibleSections.contains(_section)) {
       final IpdWorkspaceSection fallback =
@@ -353,14 +365,23 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
                     icon: _sectionIcon(section),
                     label: _sectionLabel(l10n, section),
                     count: section.isFollowUps
-                        ? ref.watch(
-                            followUpTabCountProvider(
-                              const FollowUpWorklistScope(encounterType: 'IPD'),
-                            ),
-                          )
+                        ? (_section == IpdWorkspaceSection.followUps &&
+                                  _followUpsNarrowedCount != null
+                              ? _followUpsNarrowedCount
+                              : ref.watch(
+                                  followUpTabCountProvider(
+                                    const FollowUpWorklistScope(
+                                      encounterType: 'IPD',
+                                    ),
+                                  ),
+                                ))
                         : section.isBedBoard
                         ? null
-                        : _sectionCount(state, section),
+                        : _sectionCount(
+                            state,
+                            section,
+                            activeSection: _section,
+                          ),
                     countTone: _sectionCountTone(section),
                   ),
               ],
@@ -377,11 +398,56 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
             ),
             SizedBox(height: theme.spacing.sm),
             if (_section.isFollowUps)
-              const FollowUpWorklistPanel(
-                scope: FollowUpWorklistScope(encounterType: 'IPD'),
+              FollowUpWorklistPanel(
+                scope: const FollowUpWorklistScope(encounterType: 'IPD'),
                 storageKeyPrefix: 'ipd_follow_ups',
                 readRequirement: IpdFollowUpsAtomPermissions.tab,
                 writeRequirement: IpdFollowUpsAtomPermissions.write,
+                showAdvancedFilterButton: true,
+                advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+                advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+                advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                advancedFilterResetLabel: l10n.opdClearFiltersAction,
+                advancedFilterCloseLabel: l10n.commonCloseActionLabel,
+                enableDateFilter: true,
+                dateFilterLabel: l10n.opdFollowUpDateLabel,
+                dateFromLabel: l10n.opdDateFromLabel,
+                dateToLabel: l10n.opdDateToLabel,
+                filterGroups: <AppSearchBarFilterGroup>[
+                  AppSearchBarFilterGroup(
+                    key: 'follow_up_status',
+                    label: l10n.receptionStatusLabel,
+                    choices: <AppSearchBarFilterChoice>[
+                      AppSearchBarFilterChoice(
+                        value: 'pending',
+                        label: l10n.patientsActiveWorkStatusAppointmentScheduled,
+                      ),
+                      AppSearchBarFilterChoice(
+                        value: 'completed',
+                        label: l10n.opdCompletedFlowSummaryLabel,
+                      ),
+                    ],
+                  ),
+                ],
+                canExport: canExportIpdWorkspace(policy),
+                enablePrint: true,
+                canPrint: canPrintIpdWorkspace(policy),
+                printLabel: l10n.commonPrintActionLabel,
+                onPrint: (List<ReceptionFollowUpEntry> entries) =>
+                    _printIpdFollowUpsList(
+                      context,
+                      ref,
+                      entries: entries,
+                      l10n: l10n,
+                    ),
+                onNarrowedCountChanged: (int? narrowedCount) {
+                  if (_followUpsNarrowedCount == narrowedCount) {
+                    return;
+                  }
+                  setState(() {
+                    _followUpsNarrowedCount = narrowedCount;
+                  });
+                },
               )
             else if (_section.isBedBoard)
               IpdBedBoardPanel(
@@ -440,7 +506,29 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
     };
   }
 
-  static int? _sectionCount(IpdWorkspaceState state, IpdWorkspaceSection section) {
+  static int? _sectionCount(
+    IpdWorkspaceState state,
+    IpdWorkspaceSection section, {
+    required IpdWorkspaceSection activeSection,
+  }) {
+    final int? scopeTotal = _sectionScopeTotal(state, section);
+    if (scopeTotal == null) {
+      return null;
+    }
+    if (section != activeSection) {
+      return scopeTotal;
+    }
+    if (!_hasIpdListNarrowing(state.query)) {
+      return scopeTotal;
+    }
+    // Active tab only — filtered membership from the current list query.
+    return state.admissions.totalItemCount ?? state.admissions.items.length;
+  }
+
+  static int? _sectionScopeTotal(
+    IpdWorkspaceState state,
+    IpdWorkspaceSection section,
+  ) {
     return switch (section) {
       IpdWorkspaceSection.admissionQueue => state.admissionQueueCount,
       IpdWorkspaceSection.activePatients => state.activePatientCount,
@@ -536,6 +624,7 @@ class _IpdBoardPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     final IpdWorkspaceController controller = ref.read(
       ipdWorkspaceControllerProvider.notifier,
     );
@@ -564,6 +653,7 @@ class _IpdBoardPanel extends ConsumerWidget {
       columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
       columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
       enableExport: true,
+      canExport: canExportIpdWorkspace(policy),
       exportLabel: l10n.commonTableExportActionLabel,
       exportDialogTitle: l10n.commonTableExportDialogTitle,
       exportCancelLabel: l10n.commonCancelActionLabel,
@@ -574,6 +664,17 @@ class _IpdBoardPanel extends ConsumerWidget {
       exportSuccessMessage: l10n.commonTableExportSuccessMessage,
       exportFailureMessage: l10n.commonTableExportFailureMessage,
       exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrintIpdWorkspace(policy),
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () => _printIpdAdmissionsList(
+        context,
+        ref,
+        state: state,
+        section: section,
+        showNextAction: showNextAction,
+        l10n: l10n,
+      ),
       exportConfig: AppListTableExportConfig<IpdAdmissionSummary>(
         fileNameStem: 'ipd_${section.name}',
         dateOf: (IpdAdmissionSummary item) => item.admittedAt,
@@ -609,10 +710,11 @@ class _IpdBoardPanel extends ConsumerWidget {
           unawaited(controller.applyFilters(next));
         },
         showAdvancedFilterButton: true,
-        advancedFilterButtonLabel: l10n.ipdFiltersLabel,
+        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
         advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         enableDateFilter: true,
         dateFilterLabel: l10n.ipdAdmittedAtColumnLabel,
         dateFromLabel: l10n.opdDateFromLabel,
@@ -641,6 +743,7 @@ class _IpdBoardPanel extends ConsumerWidget {
             _showFailureIfNeeded(context, failure);
           }
         },
+        // Filters → Settings → Export → Print → Start admission.
         trailingActions: <AppSearchBarAction>[
           if (onStartAdmission != null)
             AppSearchBarAction(
@@ -693,6 +796,116 @@ class _IpdBoardPanel extends ConsumerWidget {
       IpdWorkspaceSection.followUps => l10n.opdFollowUpsTitle,
     };
   }
+}
+
+bool _hasIpdListNarrowing(IpdAdmissionQuery query) {
+  return query.search.trim().isNotEmpty || query.hasAdvancedFilters;
+}
+
+Future<void> _printIpdAdmissionsList(
+  BuildContext context,
+  WidgetRef ref, {
+  required IpdWorkspaceState state,
+  required IpdWorkspaceSection section,
+  required bool showNextAction,
+  required AppLocalizations l10n,
+}) async {
+  final List<AppListTableColumn<IpdAdmissionSummary>> columns =
+      <AppListTableColumn<IpdAdmissionSummary>>[
+        ..._ipdAdmissionDefaultColumns(
+          context,
+          state,
+          showNextAction: showNextAction,
+        ),
+        ..._ipdAdmissionOptionalColumns(context),
+      ].where(
+        (AppListTableColumn<IpdAdmissionSummary> column) =>
+            column.includesInExport,
+      ).toList(growable: false);
+  final List<IpdWorkspacePrintColumn> printColumns =
+      <IpdWorkspacePrintColumn>[
+        for (final AppListTableColumn<IpdAdmissionSummary> column in columns)
+          IpdWorkspacePrintColumn(id: column.key, label: column.label),
+      ];
+  final List<Map<String, String>> printRows = <Map<String, String>>[
+    for (final IpdAdmissionSummary item in state.admissions.items)
+      <String, String>{
+        for (final AppListTableColumn<IpdAdmissionSummary> column in columns)
+          column.key: _ipdAdmissionPrintCellValue(context, item, column.key),
+      },
+  ];
+  await printIpdWorkspaceList(
+    ref: ref,
+    context: context,
+    title: _IpdBoardPanel._sectionLabel(l10n, section),
+    columns: printColumns,
+    rows: printRows,
+    emptyText: l10n.ipdNoAdmissionsTitle,
+  );
+}
+
+Future<void> _printIpdFollowUpsList(
+  BuildContext context,
+  WidgetRef ref, {
+  required List<ReceptionFollowUpEntry> entries,
+  required AppLocalizations l10n,
+}) async {
+  final Locale locale = Localizations.localeOf(context);
+  final List<IpdWorkspacePrintColumn> printColumns =
+      <IpdWorkspacePrintColumn>[
+        IpdWorkspacePrintColumn(id: 'patient', label: l10n.opdPatientNameLabel),
+        IpdWorkspacePrintColumn(
+          id: 'phone',
+          label: l10n.patientsPhoneIdentifierColumnLabel,
+        ),
+        IpdWorkspacePrintColumn(id: 'status', label: l10n.receptionStatusLabel),
+        IpdWorkspacePrintColumn(id: 'date', label: l10n.opdFollowUpDateLabel),
+        IpdWorkspacePrintColumn(id: 'time', label: l10n.opdFollowUpTimeLabel),
+        IpdWorkspacePrintColumn(id: 'patient_id', label: l10n.opdPatientIdLabel),
+        IpdWorkspacePrintColumn(id: 'email', label: l10n.patientsEmailLabel),
+        IpdWorkspacePrintColumn(id: 'notes', label: l10n.opdNotesLabel),
+      ];
+  final List<Map<String, String>> printRows = <Map<String, String>>[
+    for (final ReceptionFollowUpEntry entry in entries)
+      <String, String>{
+        'patient': entry.patientDisplayName?.trim().isNotEmpty == true
+            ? entry.patientDisplayName!.trim()
+            : l10n.profileUnknownValue,
+        'phone': entry.patientPhone?.trim() ?? '',
+        'status': opdStageDisplayLabel(l10n, entry.status),
+        'date': AppFormatters.shortDate(entry.scheduledAt.toLocal(), locale),
+        'time': AppFormatters.time(entry.scheduledAt.toLocal(), locale),
+        'patient_id': entry.patientIdentifier,
+        'email': entry.patientEmail?.trim() ?? '',
+        'notes': entry.notes?.trim() ?? '',
+      },
+  ];
+  await printIpdWorkspaceList(
+    ref: ref,
+    context: context,
+    title: l10n.receptionSectionFollowUps,
+    columns: printColumns,
+    rows: printRows,
+    emptyText: l10n.receptionFollowUpsEmptyTitle,
+  );
+}
+
+String _ipdAdmissionPrintCellValue(
+  BuildContext context,
+  IpdAdmissionSummary item,
+  String columnId,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return switch (columnId) {
+    'patient' => item.displayTitle,
+    'location' => item.location ?? l10n.profileUnknownValue,
+    'admitted_at' => _dateTimeLabel(context, item.admittedAt),
+    'status' => _stageStatus(context, item.stage).label,
+    'next_action' => item.nextStep ?? '',
+    'owner_role' => _ipdOwnerRoleLabel(context, item.stage),
+    'length_of_stay' => _lengthOfStayLabel(context, item),
+    _ => '',
+  };
 }
 
 List<AppListTableColumn<IpdAdmissionSummary>> _ipdAdmissionDefaultColumns(
@@ -1751,6 +1964,7 @@ class _WardRoundActionDialogState
       icon: const Icon(Icons.fact_check_outlined),
       maxWidth: 560,
       scrollable: true,
+      pinActionsToBottom: true,
       closeEnabled: !_submitting,
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2333,6 +2547,7 @@ class _MedicationAdministrationDialogState
       title: Text(l10n.ipdRecordMedicationAction),
       icon: const Icon(Icons.medication_outlined),
       scrollable: true,
+      pinActionsToBottom: true,
       content: Form(
         key: _formKey,
         child: AppFormSection(

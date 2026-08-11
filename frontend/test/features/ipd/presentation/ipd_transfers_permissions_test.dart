@@ -46,6 +46,22 @@ const IpdAdmissionSummary _transferPending = IpdAdmissionSummary(
   transferStatus: 'REQUESTED',
 );
 
+const IpdAdmissionSummary _transferOther = IpdAdmissionSummary(
+  id: 'adm-transfer-2',
+  displayId: 'ADM-XFER-2',
+  patientId: 'pat-xfer-2',
+  patientDisplayName: 'Uma Update',
+  stage: 'TRANSFER_REQUESTED',
+  admissionStatus: 'ADMITTED',
+  nextStep: 'APPROVE_TRANSFER',
+  hasActiveBed: true,
+  openTransferRequestId: 'tr-2',
+  encounterId: 'enc-xfer-2',
+  wardDisplayName: 'Surgical Ward',
+  bedDisplayLabel: 'Bed 201',
+  transferStatus: 'REQUESTED',
+);
+
 const IpdTransferRequest _openTransfer = IpdTransferRequest(
   id: 'tr-1',
   status: 'REQUESTED',
@@ -121,6 +137,7 @@ void _stubRepository(
   ],
   Result<AppPage<IpdAdmissionSummary>>? listOverride,
   IpdAdmissionDetail? detailOverride,
+  IpdFlowAggregateCounts summaryCounts = IpdFlowAggregateCounts.empty,
 }) {
   when(() => repository.listAdmissions(any())).thenAnswer((
     Invocation invocation,
@@ -138,7 +155,9 @@ void _stubRepository(
       ),
     );
   });
-  when(() => repository.getSummaryCounts()).thenAnswer((_) async => const Result<IpdFlowAggregateCounts>.success(IpdFlowAggregateCounts.empty));
+  when(() => repository.getSummaryCounts()).thenAnswer(
+    (_) async => Result<IpdFlowAggregateCounts>.success(summaryCounts),
+  );
   when(() => repository.listWards(search: any(named: 'search'))).thenAnswer(
     (_) async => const Result<List<IpdWardOption>>.success(<IpdWardOption>[
       IpdWardOption(id: 'ward-1', name: 'Medical Ward'),
@@ -227,6 +246,7 @@ Future<void> _pumpTransfersTab(
   ThemeMode themeMode = ThemeMode.light,
   List<IpdAdmissionSummary>? items,
   Result<AppPage<IpdAdmissionSummary>>? listOverride,
+  IpdFlowAggregateCounts summaryCounts = IpdFlowAggregateCounts.empty,
   String initialLocation = '/ipd?section=transfers',
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -235,6 +255,7 @@ Future<void> _pumpTransfersTab(
     repository,
     items: items ?? const <IpdAdmissionSummary>[_transferPending],
     listOverride: listOverride,
+    summaryCounts: summaryCounts,
   );
 
   tester.view.physicalSize = physicalSize;
@@ -365,6 +386,14 @@ void main() {
       expect(
         IpdTransfersAtomPermissions.billingRead,
         same(ipdBillingReadRequirement),
+      );
+      expect(
+        IpdTransfersAtomPermissions.export,
+        same(ipdWorkspaceExportRequirement),
+      );
+      expect(
+        IpdTransfersAtomPermissions.print,
+        same(ipdWorkspacePrintRequirement),
       );
       expect(
         IpdTransfersAtomPermissions.manageBeds,
@@ -600,6 +629,7 @@ void main() {
         AppRoutes.ipd.requiredAnyPermissions.toSet(),
         equals(
           <AppPermission>{
+            AppPermissions.ipdRead,
             AppPermissions.clinicalRead,
             AppPermissions.operationsRead,
             AppPermissions.billingRead,
@@ -993,6 +1023,183 @@ void main() {
         find.descendant(of: dialog, matching: find.text('Request transfer')),
         findsNothing,
       );
+    },
+  );
+
+  testWidgets(
+    'Export/Print omit without evidence:export; present when granted',
+    (WidgetTester tester) async {
+      await _pumpTransfersTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+      );
+      expect(find.byTooltip('Export'), findsNothing);
+      expect(find.byTooltip('Print'), findsNothing);
+      expect(find.byTooltip('Filters'), findsOneWidget);
+
+      await _pumpTransfersTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'transfers badge uses filtered total when narrowed; tone stays warning',
+    (WidgetTester tester) async {
+      await _pumpTransfersTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+        summaryCounts: const IpdFlowAggregateCounts(
+          transferPending: 6,
+          activePatients: 3,
+        ),
+        items: const <IpdAdmissionSummary>[_transferPending, _transferOther],
+      );
+
+      AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      expect(
+        strip.tabs
+            .firstWhere((AppTabItem t) => t.id == 'transferPending')
+            .count,
+        6,
+      );
+      expect(
+        strip.tabs
+            .firstWhere((AppTabItem t) => t.id == 'transferPending')
+            .countTone,
+        AppTabCountTone.warning,
+      );
+
+      when(() => repository.listAdmissions(any())).thenAnswer((
+        Invocation invocation,
+      ) async {
+        final IpdAdmissionQuery query =
+            invocation.positionalArguments.single as IpdAdmissionQuery;
+        final bool narrowed = query.search.trim().isNotEmpty;
+        return Result<AppPage<IpdAdmissionSummary>>.success(
+          AppPage<IpdAdmissionSummary>(
+            items: narrowed
+                ? const <IpdAdmissionSummary>[_transferPending]
+                : const <IpdAdmissionSummary>[_transferPending, _transferOther],
+            request: query.pageRequest,
+            totalItemCount: narrowed ? 1 : 2,
+          ),
+        );
+      });
+
+      await tester.enterText(find.byType(TextField).first, 'Terry');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      strip = tester.widget(find.byType(AppTabStrip));
+      expect(
+        strip.tabs
+            .firstWhere((AppTabItem t) => t.id == 'transferPending')
+            .count,
+        1,
+      );
+      expect(
+        strip.tabs
+            .firstWhere((AppTabItem t) => t.id == 'activePatients')
+            .count,
+        3,
+      );
+    },
+  );
+
+  testWidgets(
+    'defaults five columns; Settings lists optional Role and Length of stay',
+    (WidgetTester tester) async {
+      await _pumpTransfersTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+      );
+
+      expect(find.text('Patient name'), findsWidgets);
+      expect(find.text('Ward and bed'), findsWidgets);
+      expect(find.text('Admitted'), findsWidgets);
+      expect(find.text('Status'), findsWidgets);
+      expect(find.text('Next action'), findsWidgets);
+      expect(find.text('Length of stay'), findsNothing);
+
+      await tester.tap(find.byTooltip('Settings'));
+      await tester.pumpAndSettle();
+      expect(find.text('TABLE SETTINGS'), findsOneWidget);
+      expect(find.text('Length of stay'), findsOneWidget);
+      expect(find.text('Role'), findsOneWidget);
+      expect(find.text('Reset columns'), findsOneWidget);
+      expect(find.text('Apply columns'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets(
+    'Advanced filters footer is Clear filters → Apply filters → Close',
+    (WidgetTester tester) async {
+      await _pumpTransfersTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+      );
+
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+      expect(find.text('ADVANCED FILTERS'), findsOneWidget);
+      expect(find.text('Clear filters'), findsOneWidget);
+      expect(find.text('Apply filters'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets(
+    'toolbar Filters Settings Export Print Start admission; Print opens preview',
+    (WidgetTester tester) async {
+      await _pumpTransfersTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+
+      expect(find.byTooltip('Filters'), findsOneWidget);
+      expect(find.byTooltip('Settings'), findsOneWidget);
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+      expect(find.byTooltip('Start admission'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Print'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('PRINT PREVIEW'), findsOneWidget);
     },
   );
 }

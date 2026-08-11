@@ -4,30 +4,32 @@
 
 - Label: `ipdBedBoardTab`
 - Icon: `Icons.grid_view_outlined`
-- Count source: **none** (`null` — board with no row-total badge)
-- Count tone: `AppTabCountTone.info`
-- Deep-link `section`: `bed-board` (aliases `beds`, …)
+- Count source: **none** (`null` — board with no row-total badge; justified product exception — occupancy board is not a queue total)
+- Count tone: `AppTabCountTone.info` (applies if a count is ever introduced; currently unused while count is null)
+- Deep-link `section`: `bed-board` (aliases `beds`, `bed_board`, `bedboard`)
 - Tab gate: `IpdBedBoardAtomPermissions.tab`
 - **Omitted when unauthorized**
 - Strip primary: Manage beds (`ipdBedBoardManageBedsAction`) → `AppRoutes.roomsBeds` — **omitted when unauthorized** (`ipdBedManageRequirement`)
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Hosted by IPD-owned `IpdBedBoardPanel` (own `AppListTable<IpdBedBoardEntry>`):
+Hosted by IPD-owned `IpdBedBoardPanel` (own `AppListTable<IpdBedBoardEntry>`).
+
+Order: **Filters → Settings → Export → Print → Start admission**
 
 - Search: `ipdBedBoardSearchHint` / `ipdBedBoardSearchLabel`
-- Filters: `ipdFiltersLabel` → Advanced filters; date filter **disabled**
+- Filters: `commonFiltersActionLabel` → `commonAdvancedFiltersTitle`; Apply `opdApplyFiltersAction`; Clear `opdClearFiltersAction`; Close `commonCloseActionLabel`; date filter **disabled**
 - Settings: `commonTableSettings*` (storage `ipd_bed_board`)
-- Export: enabled (`ipd_bed_board` stem)
-- Print (toolbar): **absent**
+- Export: `commonTableExportActionLabel` — gated by `ipdWorkspaceExportRequirement` / `canExportIpdWorkspace` (∩ `evidence:export`); **omitted when unauthorized**
+- Print: `commonPrintActionLabel` — preview-first via `printIpdWorkspaceList` / `PrintDocumentTemplates.registry`; gated by `canPrintIpdWorkspace`; **omitted when unauthorized**
 - Context: Start admission on search trailing when operational write allows
 
 ## 3. Table / board
 
 - Row model: `IpdBedBoardEntry` from `state.bedBoard`
 - Row select: opens admission detail when occupant admission id present
-- Default columns (from panel helpers): Bed label, Occupant, Ward/room location, Status, Next action (bed status menu when `canManageBeds`)
-- Optional columns: panel-defined extras (room/ward metadata as coded in `_ipdBedBoardOptionalColumns`)
+- Default columns (5): Bed, Ward, Room, Current patient, Status — plus Next action when `canManageBeds` (manage-gated, always-visible when shown)
+- Optional columns: **none** (full available set is the default + manage next-action)
 - Next actions (manage gate): Reserve / Block / Cleaning / Available / Open admission (status-dependent via `_bedActionsFor`)
 
 ## 4. Advanced filters / search fields
@@ -35,11 +37,12 @@ Hosted by IPD-owned `IpdBedBoardPanel` (own `AppListTable<IpdBedBoardEntry>`):
 - Groups: Ward (`ipdWardFilterLabel`), Bed status (`ipdBedStatusFilterLabel`)
 - No admitted-at date filter
 - Client search via `bed.matchesSearch`
+- Same filter model as table (`bedBoardWardId` / `bedBoardStatus`); active tab has no count badge to update
 
 ## 5. Primary / secondary / row actions
 
 - Strip: Manage beds
-- Search bar: Start admission
+- Search bar: Start admission (after Print)
 - Next-action / menu: bed status updates (`controller.updateBedStatus`) when manage allowed
 - Occupied row → admission detail
 
@@ -61,8 +64,8 @@ Start admission fields; bed status mutations are direct controller updates (no s
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
-- Export Excel present
+- Table Print: present — `commonPrintActionLabel`, preview-first (`printIpdWorkspaceList`); omitted when unauthorized
+- Export Excel when `canExportIpdWorkspace` allows
 
 ## 10. Loading / empty / error / success
 
@@ -70,6 +73,7 @@ Start admission fields; bed status mutations are direct controller updates (no s
 - Empty: `ipdBedBoardEmptyTitle` / `ipdBedBoardEmptyBody`
 - Failures: `_showFailure` after ward/status/bed updates
 - Success: `_showSaved` after start admission
+- Empty unauthorized workspace: `AppWorkspaceStatePanel.forbidden` (shared chrome)
 
 ## 11. RBAC / ABAC
 
@@ -79,4 +83,9 @@ Start admission fields; bed status mutations are direct controller updates (no s
 | Start admission | operational write ∪ |
 | Bed status next-actions / Manage beds | `ipdBedManageRequirement` (admin ∪; no `unit:manage`) |
 | Nested billing in detail | ∩ `billing:read` |
-| Export | mounted (no evidence:export atom) |
+| Export / Print | `ipdWorkspaceExportRequirement` (∩ `evidence:export`) |
+
+## 12. Compliance notes
+
+- Shared chrome Print/Export/Filters labels applied; regression coverage in `ipd_bed_board_permissions_test.dart`
+- Residual convention gaps for this tab: **none**

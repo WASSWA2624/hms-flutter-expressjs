@@ -334,6 +334,7 @@ abstract final class AppRoutes {
     path: '/ipd',
     access: AppRouteAccess.authenticated,
     requiredAnyPermissions: <AppPermission>[
+      AppPermissions.ipdRead,
       AppPermissions.clinicalRead,
       AppPermissions.operationsRead,
       AppPermissions.billingRead,

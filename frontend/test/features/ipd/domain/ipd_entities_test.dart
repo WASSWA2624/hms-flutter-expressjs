@@ -101,8 +101,72 @@ void main() {
 
     test('fromQueryParam accepts aliases', () {
       expect(
+        IpdWorkspaceSectionX.fromQueryParam('admission-queue'),
+        IpdWorkspaceSection.admissionQueue,
+      );
+      expect(
+        IpdWorkspaceSectionX.fromQueryParam('admission_queue'),
+        IpdWorkspaceSection.admissionQueue,
+      );
+      expect(
+        IpdWorkspaceSectionX.fromQueryParam('queue'),
+        IpdWorkspaceSection.admissionQueue,
+      );
+      expect(
         IpdWorkspaceSectionX.fromQueryParam('active-patients'),
         IpdWorkspaceSection.activePatients,
+      );
+      expect(
+        IpdWorkspaceSectionX.fromQueryParam('active'),
+        IpdWorkspaceSection.activePatients,
+      );
+      expect(
+        IpdWorkspaceSectionX.fromQueryParam('active_patients'),
+        IpdWorkspaceSection.activePatients,
+      );
+      expect(
+        IpdWorkspaceSectionX.fromQueryParam('activepatients'),
+        IpdWorkspaceSection.activePatients,
+      );
+      expect(
+        IpdWorkspaceSectionX.fromQueryParam('transfers'),
+        IpdWorkspaceSection.transferPending,
+      );
+      expect(
+        IpdWorkspaceSectionX.fromQueryParam('transfer-pending'),
+        IpdWorkspaceSection.transferPending,
+      );
+      expect(
+        IpdWorkspaceSectionX.fromQueryParam('transfer_pending'),
+        IpdWorkspaceSection.transferPending,
+      );
+      expect(
+        IpdWorkspaceSectionX.fromQueryParam('transferpending'),
+        IpdWorkspaceSection.transferPending,
+      );
+      expect(
+        IpdWorkspaceSectionX.fromQueryParam('discharge'),
+        IpdWorkspaceSection.dischargePlanned,
+      );
+      expect(
+        IpdWorkspaceSectionX.fromQueryParam('discharge-planned'),
+        IpdWorkspaceSection.dischargePlanned,
+      );
+      expect(
+        IpdWorkspaceSectionX.fromQueryParam('discharge_planned'),
+        IpdWorkspaceSection.dischargePlanned,
+      );
+      expect(
+        IpdWorkspaceSectionX.fromQueryParam('dischargeplanned'),
+        IpdWorkspaceSection.dischargePlanned,
+      );
+      expect(
+        IpdWorkspaceSectionX.fromQueryParam('bed-board'),
+        IpdWorkspaceSection.bedBoard,
+      );
+      expect(
+        IpdWorkspaceSectionX.fromQueryParam('bedboard'),
+        IpdWorkspaceSection.bedBoard,
       );
       expect(
         IpdWorkspaceSectionX.fromQueryParam('beds'),
@@ -110,6 +174,14 @@ void main() {
       );
       expect(
         IpdWorkspaceSectionX.fromQueryParam('follow-ups'),
+        IpdWorkspaceSection.followUps,
+      );
+      expect(
+        IpdWorkspaceSectionX.fromQueryParam('follow_ups'),
+        IpdWorkspaceSection.followUps,
+      );
+      expect(
+        IpdWorkspaceSectionX.fromQueryParam('followups'),
         IpdWorkspaceSection.followUps,
       );
       expect(

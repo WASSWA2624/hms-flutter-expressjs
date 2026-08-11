@@ -328,6 +328,14 @@ void main() {
         same(ipdBillingPanelReadRequirement),
       );
       expect(
+        IpdBedBoardAtomPermissions.export,
+        same(ipdWorkspaceExportRequirement),
+      );
+      expect(
+        IpdBedBoardAtomPermissions.print,
+        same(ipdWorkspacePrintRequirement),
+      );
+      expect(
         IpdBedBoardAtomPermissions.routeEntry,
         same(RouteAccessCatalog.ipdEntry),
       );
@@ -842,4 +850,133 @@ void main() {
     expect(find.byTooltip('Manage beds'), findsOneWidget);
     expect(find.textContaining('no access'), findsNothing);
   });
+
+  testWidgets(
+    'Export/Print omit without evidence:export; present when granted',
+    (WidgetTester tester) async {
+      await _pumpBedBoard(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+      );
+      expect(find.byTooltip('Export'), findsNothing);
+      expect(find.byTooltip('Print'), findsNothing);
+      expect(find.byTooltip('Filters'), findsOneWidget);
+
+      await _pumpBedBoard(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Bed board tab has no count badge (null scope); tone stays info',
+    (WidgetTester tester) async {
+      await _pumpBedBoard(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+      );
+
+      final AppTabStrip strip = tester.widget<AppTabStrip>(
+        find.byType(AppTabStrip),
+      );
+      final AppTabItem bedBoardTab = strip.tabs.firstWhere(
+        (AppTabItem tab) => tab.label.contains('Bed board'),
+      );
+      expect(bedBoardTab.count, isNull);
+      expect(bedBoardTab.countTone, AppTabCountTone.info);
+    },
+  );
+
+  testWidgets(
+    'default columns are 5 without manage; Room visible; Settings lists set',
+    (WidgetTester tester) async {
+      await _pumpBedBoard(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+      );
+
+      expect(find.text('Bed'), findsWidgets);
+      expect(find.text('Ward'), findsWidgets);
+      expect(find.text('Room'), findsWidgets);
+      expect(find.text('Current patient'), findsWidgets);
+      expect(find.text('Status'), findsWidgets);
+      expect(find.text('Next action'), findsNothing);
+
+      await tester.tap(find.byTooltip('Settings'));
+      await tester.pumpAndSettle();
+      expect(find.text('TABLE SETTINGS'), findsOneWidget);
+      expect(find.text('Reset columns'), findsOneWidget);
+      expect(find.text('Apply columns'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets(
+    'Advanced filters footer is Clear filters → Apply filters → Close',
+    (WidgetTester tester) async {
+      await _pumpBedBoard(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+      );
+
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+      expect(find.text('ADVANCED FILTERS'), findsOneWidget);
+      expect(find.text('Clear filters'), findsOneWidget);
+      expect(find.text('Apply filters'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets(
+    'toolbar Filters Settings Export Print Start admission; Print opens preview',
+    (WidgetTester tester) async {
+      await _pumpBedBoard(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+
+      expect(find.byTooltip('Filters'), findsOneWidget);
+      expect(find.byTooltip('Settings'), findsOneWidget);
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+      expect(find.byTooltip('Start admission'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Print'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('PRINT PREVIEW'), findsOneWidget);
+    },
+  );
 }

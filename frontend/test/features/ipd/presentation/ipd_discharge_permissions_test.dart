@@ -48,6 +48,20 @@ const IpdAdmissionSummary _dischargePlanned = IpdAdmissionSummary(
   dischargeStatus: 'PLANNED',
 );
 
+const IpdAdmissionSummary _dischargeOther = IpdAdmissionSummary(
+  id: 'adm-discharge-2',
+  displayId: 'ADM-DISC-2',
+  patientId: 'pat-disc-2',
+  patientDisplayName: 'Eve Exit',
+  stage: 'DISCHARGE_PLANNED',
+  admissionStatus: 'ADMITTED',
+  nextStep: 'FINALIZE_DISCHARGE',
+  hasActiveBed: true,
+  encounterId: 'enc-disc-2',
+  wardDisplayName: 'Surgical Ward',
+  dischargeStatus: 'PLANNED',
+);
+
 AppAccessPolicy _policy({
   required Set<AppPermission> permissions,
   List<AppModuleEntitlement>? modules,
@@ -116,6 +130,7 @@ void _stubRepository(
   ],
   Result<AppPage<IpdAdmissionSummary>>? listOverride,
   IpdAdmissionDetail? detailOverride,
+  IpdFlowAggregateCounts summaryCounts = IpdFlowAggregateCounts.empty,
 }) {
   when(() => repository.listAdmissions(any())).thenAnswer((
     Invocation invocation,
@@ -133,7 +148,9 @@ void _stubRepository(
       ),
     );
   });
-  when(() => repository.getSummaryCounts()).thenAnswer((_) async => const Result<IpdFlowAggregateCounts>.success(IpdFlowAggregateCounts.empty));
+  when(() => repository.getSummaryCounts()).thenAnswer(
+    (_) async => Result<IpdFlowAggregateCounts>.success(summaryCounts),
+  );
   when(() => repository.listWards(search: any(named: 'search'))).thenAnswer(
     (_) async => const Result<List<IpdWardOption>>.success(<IpdWardOption>[
       IpdWardOption(id: 'ward-1', name: 'Medical Ward'),
@@ -234,6 +251,7 @@ Future<void> _pumpDischargeTab(
   ThemeMode themeMode = ThemeMode.light,
   List<IpdAdmissionSummary>? items,
   Result<AppPage<IpdAdmissionSummary>>? listOverride,
+  IpdFlowAggregateCounts summaryCounts = IpdFlowAggregateCounts.empty,
   String initialLocation = '/ipd?section=discharge',
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -242,6 +260,7 @@ Future<void> _pumpDischargeTab(
     repository,
     items: items ?? const <IpdAdmissionSummary>[_dischargePlanned],
     listOverride: listOverride,
+    summaryCounts: summaryCounts,
   );
   final _MockDischargeRepository discharge =
       dischargeRepository ?? _MockDischargeRepository();
@@ -380,6 +399,14 @@ void main() {
       expect(
         IpdDischargeAtomPermissions.billingRead,
         same(ipdBillingReadRequirement),
+      );
+      expect(
+        IpdDischargeAtomPermissions.export,
+        same(ipdWorkspaceExportRequirement),
+      );
+      expect(
+        IpdDischargeAtomPermissions.print,
+        same(ipdWorkspacePrintRequirement),
       );
       expect(
         IpdDischargeAtomPermissions.manageBeds,
@@ -603,6 +630,7 @@ void main() {
         AppRoutes.ipd.requiredAnyPermissions.toSet(),
         equals(
           <AppPermission>{
+            AppPermissions.ipdRead,
             AppPermissions.clinicalRead,
             AppPermissions.operationsRead,
             AppPermissions.billingRead,
@@ -910,6 +938,186 @@ void main() {
       expect(find.text('Manage discharge'), findsWidgets);
       expect(find.byTooltip('Start admission'), findsOneWidget);
       expect(find.byType(AppListTable<IpdAdmissionSummary>), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Export/Print omit without evidence:export; present when granted',
+    (WidgetTester tester) async {
+      await _pumpDischargeTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+      );
+      expect(find.byTooltip('Export'), findsNothing);
+      expect(find.byTooltip('Print'), findsNothing);
+      expect(find.byTooltip('Filters'), findsOneWidget);
+
+      await _pumpDischargeTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'discharge badge uses filtered total when narrowed; tone stays warning',
+    (WidgetTester tester) async {
+      await _pumpDischargeTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+        summaryCounts: const IpdFlowAggregateCounts(
+          dischargePlanned: 7,
+          activePatients: 4,
+        ),
+        items: const <IpdAdmissionSummary>[_dischargePlanned, _dischargeOther],
+      );
+
+      AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      expect(
+        strip.tabs
+            .firstWhere((AppTabItem t) => t.id == 'dischargePlanned')
+            .count,
+        7,
+      );
+      expect(
+        strip.tabs
+            .firstWhere((AppTabItem t) => t.id == 'dischargePlanned')
+            .countTone,
+        AppTabCountTone.warning,
+      );
+
+      when(() => repository.listAdmissions(any())).thenAnswer((
+        Invocation invocation,
+      ) async {
+        final IpdAdmissionQuery query =
+            invocation.positionalArguments.single as IpdAdmissionQuery;
+        final bool narrowed = query.search.trim().isNotEmpty;
+        return Result<AppPage<IpdAdmissionSummary>>.success(
+          AppPage<IpdAdmissionSummary>(
+            items: narrowed
+                ? const <IpdAdmissionSummary>[_dischargePlanned]
+                : const <IpdAdmissionSummary>[
+                    _dischargePlanned,
+                    _dischargeOther,
+                  ],
+            request: query.pageRequest,
+            totalItemCount: narrowed ? 1 : 2,
+          ),
+        );
+      });
+
+      await tester.enterText(find.byType(TextField).first, 'Dana');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      strip = tester.widget(find.byType(AppTabStrip));
+      expect(
+        strip.tabs
+            .firstWhere((AppTabItem t) => t.id == 'dischargePlanned')
+            .count,
+        1,
+      );
+      expect(
+        strip.tabs
+            .firstWhere((AppTabItem t) => t.id == 'activePatients')
+            .count,
+        4,
+      );
+    },
+  );
+
+  testWidgets(
+    'defaults five columns; Settings lists optional Role and Length of stay',
+    (WidgetTester tester) async {
+      await _pumpDischargeTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+      );
+
+      expect(find.text('Patient name'), findsWidgets);
+      expect(find.text('Ward and bed'), findsWidgets);
+      expect(find.text('Admitted'), findsWidgets);
+      expect(find.text('Status'), findsWidgets);
+      expect(find.text('Next action'), findsWidgets);
+      expect(find.text('Length of stay'), findsNothing);
+
+      await tester.tap(find.byTooltip('Settings'));
+      await tester.pumpAndSettle();
+      expect(find.text('TABLE SETTINGS'), findsOneWidget);
+      expect(find.text('Length of stay'), findsOneWidget);
+      expect(find.text('Role'), findsOneWidget);
+      expect(find.text('Reset columns'), findsOneWidget);
+      expect(find.text('Apply columns'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets(
+    'Advanced filters footer is Clear filters → Apply filters → Close',
+    (WidgetTester tester) async {
+      await _pumpDischargeTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+      );
+
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+      expect(find.text('ADVANCED FILTERS'), findsOneWidget);
+      expect(find.text('Clear filters'), findsOneWidget);
+      expect(find.text('Apply filters'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets(
+    'toolbar Filters Settings Export Print Start admission; Print opens preview',
+    (WidgetTester tester) async {
+      await _pumpDischargeTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+
+      expect(find.byTooltip('Filters'), findsOneWidget);
+      expect(find.byTooltip('Settings'), findsOneWidget);
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+      expect(find.byTooltip('Start admission'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Print'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('PRINT PREVIEW'), findsOneWidget);
     },
   );
 }

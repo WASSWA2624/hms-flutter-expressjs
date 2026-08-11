@@ -92,7 +92,7 @@ void main() {
       expect(dialog.closeEnabled, isTrue);
       expect(dialog.scrollable, isTrue);
       expect(dialog.pinActionsToBottom, isTrue);
-      expect(dialog.initialMaximized, isFalse);
+      expect(dialog.initialMaximized, isTrue);
     },
   );
 
@@ -375,6 +375,11 @@ Future<void> _pumpDialog(
   bool dark = false,
   TextScaler textScaler = TextScaler.noScaling,
 }) async {
+  tester.view.physicalSize = const Size(1440, 900);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
   await tester.pumpWidget(
     ProviderScope(
       overrides: [

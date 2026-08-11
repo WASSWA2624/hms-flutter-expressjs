@@ -125,6 +125,7 @@ void _stubBoard(
   ],
   Result<AppPage<IpdAdmissionSummary>>? listOverride,
   IpdAdmissionDetail? detailOverride,
+  IpdFlowAggregateCounts summaryCounts = IpdFlowAggregateCounts.empty,
 }) {
   when(() => repository.listAdmissions(any())).thenAnswer((
     Invocation invocation,
@@ -153,7 +154,9 @@ void _stubBoard(
       ),
     );
   });
-  when(() => repository.getSummaryCounts()).thenAnswer((_) async => const Result<IpdFlowAggregateCounts>.success(IpdFlowAggregateCounts.empty));
+  when(() => repository.getSummaryCounts()).thenAnswer(
+    (_) async => Result<IpdFlowAggregateCounts>.success(summaryCounts),
+  );
   when(() => repository.listWards(search: any(named: 'search'))).thenAnswer(
     (_) async => const Result<List<IpdWardOption>>.success(<IpdWardOption>[
       IpdWardOption(id: 'ward-1', name: 'Medical Ward'),
@@ -228,11 +231,17 @@ Future<void> _pumpActiveTab(
     _continueCare,
   ],
   Result<AppPage<IpdAdmissionSummary>>? listOverride,
+  IpdFlowAggregateCounts summaryCounts = IpdFlowAggregateCounts.empty,
   String initialLocation = '/ipd?section=active',
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
-  _stubBoard(repository, board: board, listOverride: listOverride);
+  _stubBoard(
+    repository,
+    board: board,
+    listOverride: listOverride,
+    summaryCounts: summaryCounts,
+  );
 
   tester.view.physicalSize = physicalSize;
   tester.view.devicePixelRatio = 1;
@@ -351,6 +360,20 @@ void main() {
         identical(
           IpdActivePatientsAtomPermissions.billingPanel,
           ipdBillingPanelReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          IpdActivePatientsAtomPermissions.export,
+          ipdWorkspaceExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          IpdActivePatientsAtomPermissions.print,
+          ipdWorkspacePrintRequirement,
         ),
         isTrue,
       );
@@ -1045,6 +1068,183 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.text('Insurance authorization'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Export/Print omit without evidence:export; present when granted',
+    (WidgetTester tester) async {
+      await _pumpActiveTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+      );
+      expect(find.byTooltip('Export'), findsNothing);
+      expect(find.byTooltip('Print'), findsNothing);
+      expect(find.byTooltip('Filters'), findsOneWidget);
+
+      await _pumpActiveTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'active badge uses filtered total when narrowed; tone stays info',
+    (WidgetTester tester) async {
+      await _pumpActiveTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+        summaryCounts: const IpdFlowAggregateCounts(
+          admissionQueue: 5,
+          activePatients: 8,
+        ),
+        board: const <IpdAdmissionSummary>[_needsNursing, _continueCare],
+      );
+
+      AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      expect(
+        strip.tabs
+            .firstWhere((AppTabItem t) => t.id == 'activePatients')
+            .count,
+        8,
+      );
+      expect(
+        strip.tabs
+            .firstWhere((AppTabItem t) => t.id == 'activePatients')
+            .countTone,
+        AppTabCountTone.info,
+      );
+
+      when(() => repository.listAdmissions(any())).thenAnswer((
+        Invocation invocation,
+      ) async {
+        final IpdAdmissionQuery query =
+            invocation.positionalArguments.single as IpdAdmissionQuery;
+        final bool narrowed = query.search.trim().isNotEmpty;
+        return Result<AppPage<IpdAdmissionSummary>>.success(
+          AppPage<IpdAdmissionSummary>(
+            items: narrowed
+                ? const <IpdAdmissionSummary>[_needsNursing]
+                : const <IpdAdmissionSummary>[_needsNursing, _continueCare],
+            request: query.pageRequest,
+            totalItemCount: narrowed ? 1 : 2,
+          ),
+        );
+      });
+
+      await tester.enterText(find.byType(TextField).first, 'Ada');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      strip = tester.widget(find.byType(AppTabStrip));
+      expect(
+        strip.tabs
+            .firstWhere((AppTabItem t) => t.id == 'activePatients')
+            .count,
+        1,
+      );
+      expect(
+        strip.tabs
+            .firstWhere((AppTabItem t) => t.id == 'admissionQueue')
+            .count,
+        5,
+      );
+    },
+  );
+
+  testWidgets(
+    'defaults five columns; Settings lists optional Role and Length of stay',
+    (WidgetTester tester) async {
+      await _pumpActiveTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+      );
+
+      expect(find.text('Patient name'), findsWidgets);
+      expect(find.text('Ward and bed'), findsWidgets);
+      expect(find.text('Admitted'), findsWidgets);
+      expect(find.text('Status'), findsWidgets);
+      expect(find.text('Next action'), findsWidgets);
+      expect(find.text('Length of stay'), findsNothing);
+
+      await tester.tap(find.byTooltip('Settings'));
+      await tester.pumpAndSettle();
+      expect(find.text('TABLE SETTINGS'), findsOneWidget);
+      expect(find.text('Length of stay'), findsOneWidget);
+      expect(find.text('Role'), findsOneWidget);
+      expect(find.text('Reset columns'), findsOneWidget);
+      expect(find.text('Apply columns'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets(
+    'Advanced filters footer is Clear filters → Apply filters → Close',
+    (WidgetTester tester) async {
+      await _pumpActiveTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+      );
+
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+      expect(find.text('ADVANCED FILTERS'), findsOneWidget);
+      expect(find.text('Clear filters'), findsOneWidget);
+      expect(find.text('Apply filters'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
+      await tester.tap(find.text('Close'));
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets(
+    'toolbar Filters Settings Export Print Start admission; Print opens preview',
+    (WidgetTester tester) async {
+      await _pumpActiveTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+
+      expect(find.byTooltip('Filters'), findsOneWidget);
+      expect(find.byTooltip('Settings'), findsOneWidget);
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+      expect(find.byTooltip('Start admission'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Print'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('PRINT PREVIEW'), findsOneWidget);
     },
   );
 }

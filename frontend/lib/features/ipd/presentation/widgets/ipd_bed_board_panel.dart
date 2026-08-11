@@ -4,8 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
 import 'package:hosspi_hms/features/ipd/presentation/controllers/ipd_workspace_controller.dart';
+import 'package:hosspi_hms/features/ipd/presentation/ipd_access.dart';
+import 'package:hosspi_hms/features/ipd/presentation/widgets/ipd_workspace_print_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -70,6 +74,7 @@ class _IpdBedBoardPanelState extends ConsumerState<IpdBedBoardPanel> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     final IpdWorkspaceState state = widget.state;
     final IpdWorkspaceController controller = ref.read(
       ipdWorkspaceControllerProvider.notifier,
@@ -83,9 +88,6 @@ class _IpdBedBoardPanelState extends ConsumerState<IpdBedBoardPanel> {
           onAction: (_BedAction action, IpdBedBoardEntry bed) =>
               _runAction(context, controller, bed, action),
         );
-    final List<AppListTableColumn<IpdBedBoardEntry>> optionalColumns =
-        _ipdBedBoardOptionalColumns(context);
-
     return AppListTable<IpdBedBoardEntry>(
       items: state.bedBoard,
       isLoading: state.isLoadingBedBoard,
@@ -95,8 +97,12 @@ class _IpdBedBoardPanelState extends ConsumerState<IpdBedBoardPanel> {
       columnWidthStorageKey: 'ipd_bed_board_cw',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
       columns: defaultColumns,
-      columnChoices: optionalColumns,
+      // Defaults are the full set (5 + manage next-action). No optional extras.
+      columnChoices: const <AppListTableColumn<IpdBedBoardEntry>>[],
       onRowSelected: (IpdBedBoardEntry bed) {
         if (bed.occupantAdmissionId != null) {
           widget.onOpenAdmission(bed);
@@ -109,10 +115,11 @@ class _IpdBedBoardPanelState extends ConsumerState<IpdBedBoardPanel> {
         matcher: (IpdBedBoardEntry bed, String query) =>
             bed.matchesSearch(query),
         showAdvancedFilterButton: true,
-        advancedFilterButtonLabel: l10n.ipdFiltersLabel,
+        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
         advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         enableDateFilter: false,
         allFieldsLabel: l10n.ipdAllWardsOption,
         filterGroups: <AppSearchBarFilterGroup>[
@@ -167,6 +174,7 @@ class _IpdBedBoardPanelState extends ConsumerState<IpdBedBoardPanel> {
             _showFailure(context, failure);
           }
         },
+        // Filters → Settings → Export → Print → Start admission.
         trailingActions: <AppSearchBarAction>[
           if (widget.onStartAdmission != null)
             AppSearchBarAction(
@@ -179,6 +187,7 @@ class _IpdBedBoardPanelState extends ConsumerState<IpdBedBoardPanel> {
         ],
       ),
       enableExport: true,
+      canExport: canExportIpdWorkspace(policy),
       exportLabel: l10n.commonTableExportActionLabel,
       exportDialogTitle: l10n.commonTableExportDialogTitle,
       exportCancelLabel: l10n.commonCancelActionLabel,
@@ -188,6 +197,16 @@ class _IpdBedBoardPanelState extends ConsumerState<IpdBedBoardPanel> {
       exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
       exportSuccessMessage: l10n.commonTableExportSuccessMessage,
       exportFailureMessage: l10n.commonTableExportFailureMessage,
+      enablePrint: true,
+      canPrint: canPrintIpdWorkspace(policy),
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () => _printIpdBedBoardList(
+        context,
+        ref,
+        state: state,
+        canManageBeds: widget.canManageBeds,
+        l10n: l10n,
+      ),
       exportConfig: AppListTableExportConfig<IpdBedBoardEntry>(
         fileNameStem: 'ipd_bed_board',
         sheetName: l10n.ipdBedBoardTab,
@@ -417,6 +436,13 @@ List<AppListTableColumn<IpdBedBoardEntry>> _ipdBedBoardDefaultColumns(
       },
     ),
     AppListTableColumn<IpdBedBoardEntry>(
+      id: 'room',
+      label: l10n.ipdRoomColumnLabel,
+      cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
+        return Text(bed.roomDisplayName ?? context.l10n.profileUnknownValue);
+      },
+    ),
+    AppListTableColumn<IpdBedBoardEntry>(
       id: 'current_patient',
       label: l10n.ipdCurrentPatientColumnLabel,
       cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
@@ -459,19 +485,58 @@ List<AppListTableColumn<IpdBedBoardEntry>> _ipdBedBoardDefaultColumns(
   ];
 }
 
-List<AppListTableColumn<IpdBedBoardEntry>> _ipdBedBoardOptionalColumns(
+Future<void> _printIpdBedBoardList(
   BuildContext context,
+  WidgetRef ref, {
+  required IpdWorkspaceState state,
+  required bool canManageBeds,
+  required AppLocalizations l10n,
+}) async {
+  final List<AppListTableColumn<IpdBedBoardEntry>> columns =
+      _ipdBedBoardDefaultColumns(
+        context,
+        canManageBeds: canManageBeds,
+        enabled: false,
+        onAction: (_BedAction action, IpdBedBoardEntry bed) {},
+      ).where(
+        (AppListTableColumn<IpdBedBoardEntry> column) => column.includesInExport,
+      ).toList(growable: false);
+  final List<IpdWorkspacePrintColumn> printColumns =
+      <IpdWorkspacePrintColumn>[
+        for (final AppListTableColumn<IpdBedBoardEntry> column in columns)
+          IpdWorkspacePrintColumn(id: column.key, label: column.label),
+      ];
+  final List<Map<String, String>> printRows = <Map<String, String>>[
+    for (final IpdBedBoardEntry bed in state.bedBoard)
+      <String, String>{
+        for (final AppListTableColumn<IpdBedBoardEntry> column in columns)
+          column.key: _ipdBedBoardPrintCellValue(context, bed, column.key),
+      },
+  ];
+  await printIpdWorkspaceList(
+    ref: ref,
+    context: context,
+    title: l10n.ipdBedBoardTab,
+    columns: printColumns,
+    rows: printRows,
+    emptyText: l10n.ipdBedBoardEmptyTitle,
+  );
+}
+
+String _ipdBedBoardPrintCellValue(
+  BuildContext context,
+  IpdBedBoardEntry bed,
+  String columnId,
 ) {
   final AppLocalizations l10n = context.l10n;
-  return <AppListTableColumn<IpdBedBoardEntry>>[
-    AppListTableColumn<IpdBedBoardEntry>(
-      id: 'room',
-      label: l10n.ipdRoomColumnLabel,
-      cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
-        return Text(bed.roomDisplayName ?? context.l10n.profileUnknownValue);
-      },
-    ),
-  ];
+  return switch (columnId) {
+    'bed' => bed.bedLabel,
+    'ward' => bed.wardDisplayName ?? l10n.profileUnknownValue,
+    'current_patient' => bed.occupantPatientName ?? '—',
+    'status' => bedStatusLabel(context, bed.status),
+    'room' => bed.roomDisplayName ?? l10n.profileUnknownValue,
+    _ => '',
+  };
 }
 
 const List<String> _bedStatuses = <String>[
