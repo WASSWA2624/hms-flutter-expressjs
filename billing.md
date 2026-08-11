@@ -26,6 +26,9 @@ Source of truth for the **Billing** workspace. Mirror **Human resources** (`/hr`
 3. **Short flows** — happy path is **row Next → one modal → save**. Detail is for review and secondary actions, not a required stop.
 4. **Progressive disclosure** — tables stay lean (≤5 default columns). Extra columns via Table settings. Extra actions inside Detail.
 5. **Adaptability** — fewer tabs, shared table contract, shared Detail shell. New charge sources plug into Open work / To issue without new screens.
+6. **Human-readable IDs only** — never display raw UUIDs or internal primary keys in tables, Detail, dialogs, filters, snackbars, printouts, or URLs the user sees. Use `human_friendly_id`, invoice numbers, patient display names/MRNs, encounter codes, and catalog codes.
+7. **Print = preview first** — every Print / receipt / download-print path opens the shared print-preview workspace with comprehensive section options before printing. Printed layout must be branded, well spaced, and visually clear (see §17).
+8. **Similarity on create/update** — every create and update dialog runs similarity review before commit when near/exact matches exist (see §18).
 
 ---
 
@@ -259,9 +262,12 @@ One **Detail** shell; body switches by kind. Patient ledger UI lives on **Accoun
 
 **Actions shown only if capable:** Issue · Pay · Refund · Adjust · Void · Send · Approve · Reject · Submit · Settle · Auth · Deny · Clearance · Ledger (→ Accounts) · Print · Download
 
+**Identifiers:** show invoice number, patient display name / MRN, encounter code — never UUIDs.
+
 ### 8.2 Pay
 
-Fields: Amount · Method · Reference · Payer · Receipt toggle. Context: Due + shares. Primary: **Pay**.
+Fields: Amount · Method · Reference · Payer · Receipt toggle. Context: Due + shares. Primary: **Pay**.  
+When Receipt is on (or user chooses Print after pay), open **Print preview** (§17) for the receipt — do not print silently.
 
 ### 8.3 Issue / Send / Submit / Approve / Auth
 
@@ -269,7 +275,7 @@ Optional notes (Send adds email). Primary = short verb.
 
 ### 8.4 Refund / Adjust / Void / Reject / Deny / Settle
 
-Only required fields (amount / reason / status). No wizard steps.
+Only required fields (amount / reason / status). No wizard steps. Adjust (amount update) runs similarity / near-duplicate review when an equivalent pending adjust already exists (§18).
 
 ### 8.5 Close shift / Close day
 
@@ -277,15 +283,21 @@ Shift: Expected · Actual · Notes · Submit for approval. Day: Notes · Submit 
 
 ### 8.6 Charge
 
-Patient · Item · Qty · Price (book-resolved) · Mode · Notes. Primary: **Charge**. Creates draft → To issue.
+Patient · Item · Qty · Price (book-resolved) · Mode · Notes. Primary: **Charge**. Creates draft → To issue.  
+**Before save:** run similarity check against near-duplicate open drafts / recent charges for the same patient · item · encounter (§18).
 
 ### 8.7 Price Add/Edit
 
-Item · Mode · Price · Scheme · Effective · Active. Primary: **Save**.
+Item · Mode · Price · Scheme · Effective · Active. Primary: **Save**.  
+**Before save (create and update):** run similarity check on Item · Mode · Scheme · Effective against existing price-book rows (§18). Exact match blocks create; near match offers Select existing / Overwrite / Continue.
 
 ### 8.8 Clearance
 
 One confirm: *Charges settled. Clear this encounter?* Primary: **Clear**.
+
+### 8.9 Print preview
+
+Opened from Detail **Print**, Pay receipt, Send→print, or any other print entry. Reuse `AppPrintPreviewWorkspace` / `AppReportSectionPicker` (mirror HR / clinical print). See §17.
 
 ---
 
@@ -374,6 +386,9 @@ Payment history stays inside Detail. No ledgers panel and no analytics panel in 
 - [ ] Default columns ≤5; status filters are tab-scoped
 - [ ] Unauthorized tabs / actions are absent
 - [ ] Chrome and mutate / refresh flow match `/hr`
+- [ ] Every Print opens preview with section options; printout is well laid out (§17)
+- [ ] No raw UUIDs appear in Billing UI, printouts, or user-visible URLs (§19)
+- [ ] Every create/update dialog runs similarity review before commit (§18)
 
 ---
 
@@ -397,3 +412,77 @@ Payment history stays inside Detail. No ledgers panel and no analytics panel in 
 | Work queues | Open work / To issue / Collect due / Open claims / Need approval |
 | Staff detail | Detail (+ Ledger → Accounts) |
 | Trailing create on one tab | Charge on Open work; Add on Price book; Close on Collect due |
+
+---
+
+## 17. Print preview contract
+
+Every Billing print path (invoice, receipt, claim summary, approval packet, price list export-print) **must**:
+
+1. Open the shared **print preview** dialog/workspace **before** sending to the printer (reuse `AppPrintPreviewWorkspace`, `AppPrintPreviewToolbar`, `AppReportSectionPicker` — same pattern as HR staff / clinical summary print).
+2. Offer **comprehensive section options** so the user chooses what appears on the printed output. Defaults are sensible; at least one content section must stay selected to enable Print.
+3. Live-update the preview when section options change (split / sections / preview pane modes).
+4. Produce **well-laid-out, visually appealing** output: facility branding header/footer, clear hierarchy, readable typography, aligned money columns, consistent spacing, page breaks that do not clip tables, light-theme print CSS suitable for paper.
+5. Show only human-readable identifiers on the printout (§19) — never raw UUIDs.
+6. Support zoom, page navigation, Copy/Print actions from the preview toolbar; omit Print when no section is selected.
+
+### Invoice / Detail print sections (toggle)
+
+| Section | Default | Contents |
+|---|---|---|
+| Header / facility | on | Facility name, logo, address, document title |
+| Patient | on | Display name, MRN / patient friendly id, contact (if present) |
+| Invoice summary | on | Invoice number, status, issued/due dates, totals |
+| Line items | on | Item · Qty · Unit · Amount |
+| Payments | on when present | Method · Reference · Amount · Date |
+| Adjustments | on when present | Type · Reason · Amount |
+| Insurance / shares | on when claim-related | Scheme · Patient share · Insurer share |
+| Notes | off | Free-text notes |
+| Footer / signature | on | Printed-by · timestamp · page |
+
+### Receipt print sections (Pay)
+
+Header · Patient · Invoice reference · Payment (amount/method/reference) · Balance remaining · Footer. Same preview chrome.
+
+### Claim / approval print sections
+
+Header · Patient · Invoice · Claim/insurer fields · Status / decision · Notes · Footer.
+
+Do **not** print silently from Detail or Pay. Do **not** invent a second print stack outside shared printing.
+
+---
+
+## 18. Similarity checks (create & update)
+
+Every **create** and **update** flow that saves Billing-owned records must run similarity review before commit, mirroring `AppSimilarity*` / catalog similarity dialogs used elsewhere.
+
+| Flow | Compared fields (min) | Behavior |
+|---|---|---|
+| **Charge** (create draft) | Patient · Item · Encounter · Mode · Qty/amount window | Near: review → Select existing draft / Continue create. Exact open draft: prefer open existing. |
+| **Price Add** | Item · Mode · Scheme · Effective | Exact active row: block create, offer Select. Near: Select / Overwrite / Continue. |
+| **Price Edit** | Same, excluding self | Exact clash with another row: block. Near: warn + confirm. |
+| **Adjust** (create request) | Invoice · type · amount | Near pending adjust: review before submit. |
+| **Send / Issue metadata updates** that rename or retarget identifiable fields | Relevant identity fields | Same review pattern when a conflicting open document exists. |
+
+Rules:
+
+1. Show loading while similarity runs; empty “no matches” may proceed.
+2. Exact full-parameter match on create must not silently duplicate — Select existing or explicit Continue when product allows override.
+3. Similarity UI shows proposed vs existing field rows with scores; never show UUIDs.
+4. Unauthorized users never see write dialogs; similarity is part of the write path only.
+5. After Select existing, land on that record’s Detail / edit surface and refresh lists.
+
+---
+
+## 19. Identifier display (no UUIDs)
+
+| Surface | Show | Never show |
+|---|---|---|
+| Tables | Invoice number, patient name/MRN, encounter code, item code | Raw UUID / internal PK columns |
+| Detail / dialogs | Same + human_friendly_id where useful as a secondary label | UUID as primary title or copy target |
+| Filters / search | Resolve by friendly id / code / name | Require pasting a UUID |
+| Deep links user can read | Prefer friendly ids in query values when the API supports them | Leak internal UUIDs into chrome the user copies |
+| Print / export | Friendly ids and business numbers only | UUID strings in headers or tables |
+| Snackbars / errors | Business labels | “id=550e8400-…” |
+
+Internal IDs may exist in repositories and wire DTOs mapped at the data boundary; presentation must not render them.

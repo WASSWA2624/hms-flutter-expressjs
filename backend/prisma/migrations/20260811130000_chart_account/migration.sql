@@ -20,7 +20,9 @@ CREATE TABLE IF NOT EXISTS `chart_account` (
   PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- Unique per tenant + facility + code (MySQL allows multiple NULLs for facility_id)
+-- Unique per tenant + facility + code.
+-- MariaDB 10.4 does not support functional unique indexes (IFNULL(...)), so
+-- NULL facility_id uniqueness follows InnoDB NULL semantics (multiple NULLs allowed).
 SET @idx_exists := (
   SELECT COUNT(1) FROM information_schema.STATISTICS
   WHERE TABLE_SCHEMA = DATABASE()
@@ -29,18 +31,6 @@ SET @idx_exists := (
 );
 SET @sql := IF(@idx_exists = 0,
   'CREATE UNIQUE INDEX `chart_account_tenant_id_facility_id_code_key` ON `chart_account`(`tenant_id`, `facility_id`, `code`)',
-  'SELECT 1');
-PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
-
--- Null-safe uniqueness when facility_id is NULL (treat as empty string)
-SET @idx_exists := (
-  SELECT COUNT(1) FROM information_schema.STATISTICS
-  WHERE TABLE_SCHEMA = DATABASE()
-    AND TABLE_NAME = 'chart_account'
-    AND INDEX_NAME = 'chart_account_tenant_code_null_facility_uidx'
-);
-SET @sql := IF(@idx_exists = 0,
-  'CREATE UNIQUE INDEX `chart_account_tenant_code_null_facility_uidx` ON `chart_account` (`tenant_id`, (IFNULL(`facility_id`, '''')), `code`)',
   'SELECT 1');
 PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 

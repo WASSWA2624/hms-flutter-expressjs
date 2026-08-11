@@ -2,7 +2,7 @@
 
 ## Context
 
-Implement the **To issue** desk section (`?section=issue`) on `/billing` per `billing.md`. This queue lists draft invoices only, ready to issue to the patient or payer. Source of truth: root `billing.md` §§2–8, 9–11.
+Implement the **To issue** desk section (`?section=issue`) on `/billing` per `billing.md`. This queue lists draft invoices only, ready to issue to the patient or payer. Source of truth: root `billing.md` §§2–8, 9–11, 17–19.
 
 ## Requirements
 
@@ -15,16 +15,20 @@ Implement the **To issue** desk section (`?section=issue`) on `/billing` per `bi
 7. Row Next is **Issue** when authorized; omit when unauthorized. Happy path: Next → Issue modal (optional notes) → save → snackbar → refresh. Do not require Detail first.
 8. Trailing **Issue all** confirms then bulk-issues the selection or current page when write-authorized; refresh list and strip count afterward.
 9. Row click opens shared Detail; secondary actions include Adjust, Void, Send, Ledger → Accounts, Print when capable.
-10. Gate with (`billing:read` ∪ `billing:write`) ∩ `billing-payments`. Write actions require `billing:write`. Omit unauthorized controls; no disabled “no access” chrome.
-11. Keep count tone **warning**. Enable realtime + light poll while active.
-12. After issue mutations, remove or update rows that leave the draft queue and synchronize strip counts.
+10. **Print** opens shared print preview with comprehensive invoice section options and a well-laid-out printout (`billing.md` §17); never print silently.
+11. **Adjust** (create/update of an adjustment request) runs similarity review against near-duplicate pending adjusts for the same invoice (`billing.md` §18).
+12. Gate with (`billing:read` ∪ `billing:write`) ∩ `billing-payments`. Write actions require `billing:write`. Omit unauthorized controls; no disabled “no access” chrome.
+13. Keep count tone **warning**. Enable realtime + light poll while active.
+14. After issue mutations, remove or update rows that leave the draft queue and synchronize strip counts.
+15. Never display raw UUIDs — use invoice numbers, patient name/MRN, encounter codes (`billing.md` §19).
 
 ## Constraints
 
 - Show draft invoices only; do not mix collect / claims / approval rows into this tab.
 - Do not put Charge, Close shift, Close day, or Pay as trailing on this tab.
 - Do not host patient ledger UI here; Ledger deep-links to `/accounts?section=ledgers&patientId=`.
-- Reuse Billing workspace page, controller, access gates, shared table support, Detail shell, and Issue modal.
+- Do not skip print preview or Adjust similarity review.
+- Reuse Billing workspace page, controller, access gates, shared table support, Detail shell, Issue modal, `AppPrintPreviewWorkspace`, and `AppSimilarity*` patterns.
 - No unrelated refactoring outside this section’s surface.
 
 ## Acceptance Criteria
@@ -37,18 +41,23 @@ Implement the **To issue** desk section (`?section=issue`) on `/billing` per `bi
 - [ ] AC6: **Issue all** appears only with write access; confirms then bulk-issues and refreshes. (R3, R8, R10)
 - [ ] AC7: Unauthorized Issue / Issue all / secondary actions are absent (not disabled). (R7, R10)
 - [ ] AC8: Row click opens Detail with secondary Adjust / Void / Send / Ledger / Print when capable. (R9)
-- [ ] AC9: Layout remains usable on mobile, tablet, and desktop in light and dark themes. (R3)
+- [ ] AC9: Print opens preview with section toggles; printout is branded and well laid out; no silent print. (R10)
+- [ ] AC10: Adjust runs similarity review when matches exist before submit. (R11)
+- [ ] AC11: No raw UUIDs appear in To issue UI, Detail, or print. (R15)
+- [ ] AC12: Layout remains usable on mobile, tablet, and desktop in light and dark themes. (R3)
 
 ## Verification
 
 - Permissions tests: tab visible with read; Issue / Issue all absent without write.
-- Flow test: single Issue and Issue all update list membership and counts.
-- Manual check: empty/loading/error, search/filters, table settings, viewports, themes.
-- Confirm only drafts appear in the queue.
+- Flow test: single Issue and Issue all update list membership and counts; Print → preview; Adjust similarity when matches.
+- Manual check: empty/loading/error, search/filters, table settings, print layout, viewports, themes.
+- Confirm only drafts appear in the queue; confirm no UUID strings in UI/print.
 
 ## Relevant Files
 
-- `billing.md`
+- `billing.md` (§§17–19)
+- `frontend/lib/shared/printing/app_print_preview.dart`
+- `frontend/lib/shared/components/app_similarity.dart`
 - `frontend/lib/features/billing/presentation/pages/billing_workspace_page.dart`
 - `frontend/lib/features/billing/presentation/billing_access.dart`
 - `frontend/lib/features/billing/presentation/controllers/billing_workspace_controller.dart`

@@ -2,7 +2,7 @@
 
 ## Context
 
-Implement the **Open work** desk section (`?section=work`) on `/billing` per `billing.md`. This is the cross-queue list of billing items that still need action (issue, pay, claim, approve, …). It is the fallback tab when other sections are unauthorized. Source of truth: root `billing.md` §§2–8, 9–11.
+Implement the **Open work** desk section (`?section=work`) on `/billing` per `billing.md`. This is the cross-queue list of billing items that still need action (issue, pay, claim, approve, …). It is the fallback tab when other sections are unauthorized. Source of truth: root `billing.md` §§2–8, 9–11, 17–19.
 
 ## Requirements
 
@@ -15,17 +15,20 @@ Implement the **Open work** desk section (`?section=work`) on `/billing` per `bi
 7. Resolve one Next action per row using priority Approve → Issue → Pay → Submit → Settle → Auth → Refund → Adjust → Void → Send. Omit Next when unauthorized.
 8. On Next, open the matching one-step modal, save, snackbar, and refresh the active section without requiring Detail first.
 9. On row click, open the shared Billing Detail dialog; secondary actions stay in Detail.
-10. Trailing **Charge** opens the Charge modal; on success create a draft and land the user on To issue (`?section=issue`).
+10. Trailing **Charge** opens the Charge modal; **before save** run similarity review against near-duplicate open drafts / recent charges (Patient · Item · Encounter · Mode · amount window) per `billing.md` §18; on success create a draft and land the user on To issue (`?section=issue`).
 11. Gate the tab with (`billing:read` ∪ `billing:write`) ∩ `billing-payments`. Omit unauthorized trailing / Next / Detail actions; do not render disabled “no access” chrome.
 12. Keep count tone **info** on the tab strip. Enable realtime + light poll while this section is active.
 13. After mutations, synchronize workspace state so the Open work list and strip count update.
+14. Detail **Print** opens shared print preview with comprehensive invoice section options and a well-laid-out printout (`billing.md` §17); never print silently.
+15. Never display raw UUIDs in the table, Detail, Charge dialog, similarity UI, snackbars, or printout — use invoice numbers, patient name/MRN, encounter codes, and `human_friendly_id` (`billing.md` §19).
 
 ## Constraints
 
 - Do not add Payments, Overdue, Ledgers, or Analytics tabs.
 - Do not place Close shift, Close day, Issue all, or Pay as trailing on this tab.
 - Do not require Detail before Next happy paths.
-- Reuse Billing workspace page, controller, access gates, shared table support, Detail shell, and form dialogs; mirror `/hr` chrome.
+- Do not skip Charge similarity review or print-preview for Print.
+- Reuse Billing workspace page, controller, access gates, shared table support, Detail shell, form dialogs, `AppPrintPreviewWorkspace`, and `AppSimilarity*` patterns; mirror `/hr` chrome.
 - Patient ledger opens only via deep-link to Accounts (`/accounts?section=ledgers&patientId=`).
 - No unrelated refactoring outside this section’s surface.
 
@@ -38,20 +41,22 @@ Implement the **Open work** desk section (`?section=work`) on `/billing` per `bi
 - [ ] AC5: Empty state shows *No open work.*; loading and error states are visible. (R6)
 - [ ] AC6: Authorized Next opens one modal → save → snackbar → list refresh without opening Detail first. (R7, R8, R13)
 - [ ] AC7: Unauthorized Next / Charge / Detail actions are absent (not disabled). (R7, R11)
-- [ ] AC8: Charge creates a draft and navigates to To issue. (R10, R13)
+- [ ] AC8: Charge runs similarity review when matches exist, then creates a draft and navigates to To issue. (R10, R13, R14)
 - [ ] AC9: Row click opens shared Detail; secondary actions are available from Detail only. (R9)
-- [ ] AC10: Layout remains usable on mobile, tablet, and desktop in light and dark themes without clipping or inaccessible actions. (R3)
+- [ ] AC10: Detail Print opens preview with section toggles; printout is branded and well laid out; no silent print. (R14)
+- [ ] AC11: No raw UUIDs appear in Open work UI, Charge, similarity, or print. (R15)
+- [ ] AC12: Layout remains usable on mobile, tablet, and desktop in light and dark themes without clipping or inaccessible actions. (R3)
 
 ## Verification
 
 - Widget / permissions tests for Open work tab visibility, Charge omission without `billing:write`, and Next omission when unauthorized.
-- Flow test: Charge → draft → lands on To issue; Next Pay/Issue path without Detail.
-- Manual check: strip count tone, empty/loading/error, search debounce, table settings persistence, light + dark, narrow viewport.
-- Confirm no Payments / Overdue / Ledgers / Analytics tab appears.
+- Flow test: Charge → similarity (when matches) → draft → lands on To issue; Next Pay/Issue path without Detail; Print → preview → Print.
+- Manual check: strip count tone, empty/loading/error, search debounce, table settings persistence, print layout, light + dark, narrow viewport.
+- Confirm no Payments / Overdue / Ledgers / Analytics tab appears; confirm no UUID strings in UI/print.
 
 ## Relevant Files
 
-- `billing.md`
+- `billing.md` (§§17–19)
 - `frontend/lib/features/billing/presentation/pages/billing_workspace_page.dart`
 - `frontend/lib/features/billing/presentation/billing_access.dart`
 - `frontend/lib/features/billing/presentation/controllers/billing_workspace_controller.dart`
@@ -59,6 +64,8 @@ Implement the **Open work** desk section (`?section=work`) on `/billing` per `bi
 - `frontend/lib/features/billing/presentation/widgets/billing_detail_widgets.dart`
 - `frontend/lib/features/billing/presentation/widgets/billing_form_dialogs.dart`
 - `frontend/lib/features/billing/presentation/widgets/billing_quick_charge_dialog.dart` (or Charge dialog equivalent)
+- `frontend/lib/shared/printing/app_print_preview.dart`
+- `frontend/lib/shared/components/app_similarity.dart`
 - `frontend/test/features/billing/presentation/billing_access_test.dart`
 - `frontend/test/features/billing/presentation/billing_workspace_page_test.dart`
 - `frontend/test/features/billing/presentation/billing_all_permissions_test.dart`
