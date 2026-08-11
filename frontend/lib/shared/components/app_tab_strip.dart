@@ -115,8 +115,8 @@ class AppTabStrip extends StatelessWidget {
             border: theme.borders.only(bottom: true, color: hairline),
           ),
           padding: EdgeInsets.symmetric(
-            vertical: theme.spacing.sm,
-            horizontal: theme.spacing.sm,
+            vertical: theme.spacing.xs,
+            horizontal: theme.spacing.xs,
           ),
           child: Wrap(
             spacing: theme.spacing.xs,
@@ -369,7 +369,7 @@ double _estimateTabWidth({
 }) {
   // Match _AppTabChip horizontal padding, including selected flare insets.
   const double flareRadius = 8;
-  final double horizontalPad = nested ? theme.spacing.sm : theme.spacing.md;
+  final double horizontalPad = nested ? theme.spacing.xs : theme.spacing.sm;
   double width = horizontalPad * 2;
   if (!nested && isSelected) {
     if (!isFirst) {
@@ -450,8 +450,8 @@ class AppTabToolbarAction extends StatelessWidget {
       style: TextButton.styleFrom(
         foregroundColor: colorScheme.onSurfaceVariant,
         disabledForegroundColor: colorScheme.onSurface.withValues(alpha: 0.38),
-        padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
-        minimumSize: Size(theme.spacing.none, 32),
+        padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
+        minimumSize: Size(theme.spacing.none, 30),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         visualDensity: VisualDensity.compact,
         backgroundColor: Colors.transparent,
@@ -537,8 +537,8 @@ class AppTabToolbarPrimary extends StatelessWidget {
       style: TextButton.styleFrom(
         foregroundColor: colorScheme.primary,
         disabledForegroundColor: colorScheme.onSurface.withValues(alpha: 0.38),
-        padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
-        minimumSize: Size(theme.spacing.none, 32),
+        padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
+        minimumSize: Size(theme.spacing.none, 30),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         visualDensity: VisualDensity.compact,
         backgroundColor: colorScheme.primary.withValues(alpha: 0.08),
@@ -843,15 +843,15 @@ class _AppTabChipState extends State<_AppTabChip> {
                 flareRight: flareRight,
               ),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 44),
+                constraints: const BoxConstraints(minHeight: 40),
                 child: Padding(
                   // Horizontal padding widens by the flare so the label never
                   // overlaps the curved corners.
                   padding: EdgeInsets.only(
-                    left: theme.spacing.md + (flareLeft ? _flareRadius : 0),
-                    right: theme.spacing.md + (flareRight ? _flareRadius : 0),
-                    top: theme.spacing.sm,
-                    bottom: theme.spacing.sm,
+                    left: theme.spacing.sm + (flareLeft ? _flareRadius : 0),
+                    right: theme.spacing.sm + (flareRight ? _flareRadius : 0),
+                    top: theme.spacing.xs,
+                    bottom: theme.spacing.xs,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -941,8 +941,8 @@ class _AppTabChipState extends State<_AppTabChip> {
                 constraints: const BoxConstraints(minHeight: 40),
                 child: Padding(
                   padding: EdgeInsets.symmetric(
-                    horizontal: theme.spacing.sm,
-                    vertical: theme.spacing.sm,
+                    horizontal: theme.spacing.xs,
+                    vertical: theme.spacing.xs,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
