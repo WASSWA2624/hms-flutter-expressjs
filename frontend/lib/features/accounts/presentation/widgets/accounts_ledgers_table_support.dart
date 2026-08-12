@@ -68,6 +68,7 @@ _accountsLedgersColumnBuilders({
     accountsLedgersPatientColumnId: AppListTableColumn<AccountsPatientBalance>(
       id: accountsLedgersPatientColumnId,
       label: AccountsStrings.patientColumn,
+      alwaysVisible: true,
       cellBuilder: (_, AccountsPatientBalance row) => Text(row.displayLabel),
       exportValue: (AccountsPatientBalance row) => row.displayLabel,
     ),
@@ -77,8 +78,7 @@ _accountsLedgersColumnBuilders({
       numeric: true,
       cellBuilder: (BuildContext context, AccountsPatientBalance row) =>
           Text(accountsMoney(context, row.invoiced, row.currency)),
-      exportValue: (AccountsPatientBalance row) =>
-          accountsMoney(context, row.invoiced, row.currency),
+      exportValue: (AccountsPatientBalance row) => row.invoiced.toString(),
     ),
     accountsLedgersPaidColumnId: AppListTableColumn<AccountsPatientBalance>(
       id: accountsLedgersPaidColumnId,
@@ -86,8 +86,7 @@ _accountsLedgersColumnBuilders({
       numeric: true,
       cellBuilder: (BuildContext context, AccountsPatientBalance row) =>
           Text(accountsMoney(context, row.paid, row.currency)),
-      exportValue: (AccountsPatientBalance row) =>
-          accountsMoney(context, row.paid, row.currency),
+      exportValue: (AccountsPatientBalance row) => row.paid.toString(),
     ),
     accountsLedgersBalanceColumnId: AppListTableColumn<AccountsPatientBalance>(
       id: accountsLedgersBalanceColumnId,
@@ -95,12 +94,13 @@ _accountsLedgersColumnBuilders({
       numeric: true,
       cellBuilder: (BuildContext context, AccountsPatientBalance row) =>
           Text(accountsMoney(context, row.balance, row.currency)),
-      exportValue: (AccountsPatientBalance row) =>
-          accountsMoney(context, row.balance, row.currency),
+      exportValue: (AccountsPatientBalance row) => row.balance.toString(),
     ),
     accountsLedgersNextColumnId: AppListTableColumn<AccountsPatientBalance>(
       id: accountsLedgersNextColumnId,
       label: AccountsStrings.nextColumn,
+      alwaysVisible: true,
+      exportable: false,
       cellBuilder: (_, AccountsPatientBalance row) {
         final String? label = accountsPatientLedgerNextActionLabel(
           policy: policy,
