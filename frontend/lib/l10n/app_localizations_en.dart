@@ -9500,7 +9500,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clinicalSectionInConsultationLabel => 'In consultation';
 
   @override
-  String get clinicalSectionCompletedLabel => 'Completed today';
+  String get clinicalSectionCompletedLabel => 'Completed';
 
   @override
   String get clinicalSectionCompletedTodayLabel => 'Completed today';
@@ -9986,6 +9986,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String clinicalDeleteSelectedLabOrdersDialogBody(int count) {
     return 'Delete $count lab orders from the active patient record?';
   }
+
+  @override
+  String get clinicalCancelSelectedPharmacyOrdersAction => 'Cancel selected';
+
+  @override
+  String get clinicalDeleteSelectedPharmacyOrdersAction => 'Delete selected';
 
   @override
   String get clinicalCancelSelectedPharmacyOrdersDialogTitle =>
@@ -11794,6 +11800,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dischargeSectionCompleted => 'Completed';
 
   @override
+  String get dischargeSectionFollowUps => 'Follow-ups';
+
+  @override
   String get dischargeWorklistTitle => 'Discharge worklist';
 
   @override
@@ -11851,10 +11860,22 @@ class AppLocalizationsEn extends AppLocalizations {
       'Select a patient to coordinate discharge.';
 
   @override
-  String get dischargePrintSummaryAction => 'Print discharge summary';
+  String get dischargePrintSummaryAction => 'Print';
 
   @override
   String get dischargePatientContextLabel => 'Patient discharge context';
+
+  @override
+  String get dischargeDateFilterLabel => 'Date range';
+
+  @override
+  String get dischargeDateFromLabel => 'From';
+
+  @override
+  String get dischargeDateToLabel => 'To';
+
+  @override
+  String get dischargeWorklistPrintTitle => 'Discharge worklist';
 
   @override
   String get dischargeAdmissionFieldLabel => 'Admission';
@@ -24951,7 +24972,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get labPreviewReportAction => 'Preview report';
 
   @override
-  String get labPrintReportAction => 'Print report';
+  String get labPrintReportAction => 'Print';
 
   @override
   String get labResetReportSelectionAction => 'Reset selection';

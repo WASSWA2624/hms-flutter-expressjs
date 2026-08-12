@@ -4,9 +4,9 @@
 
 - Label: `labScopeCollection` (Pending)
 - Icon: `Icons.biotech_outlined`
-- Count source: `summary.collectionForView(LabWorkbenchView.patients)`
-- Sibling tabs: patient-view summary totals (shared chrome)
-- Count tone: `AppTabCountTone.warning`
+- Count source: `labSectionTabCount` → `summary.collectionForView(LabWorkbenchView.patients)`; active + narrowed → filtered total
+- Sibling tabs: patient-view summary totals (shared chrome sibling model)
+- Count tone: `AppTabCountTone.warning` (`labSectionCountTone`)
 - Deep-link `section`: `pending` (+ awaiting/processing/verification aliases → Pending)
 - Tab gate: `LabAwaitingResultsAtomPermissions.tab` = ∩ `lab:read` + `lab-workflows`
 - Scope: `LabQueueScope.collection`
@@ -14,11 +14,11 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Filters → Settings → Export → Create Lab Order**
+Order: **Filters → Settings → Export → Print → Create Lab Order**
 
 - Search: `labSearchHint` / `labSearchLabel`
-- Filters / Settings / Export: shared chrome
-- Print (toolbar): **not mounted**
+- Filters / Settings / Export / Print: shared chrome (Export/Print ∩ `evidence:export`)
+- Print (toolbar): preview-first `printLabWorkspaceList` / `commonPrintActionLabel`
 - Create: `labCreateAction` — `LabAwaitingResultsAtomPermissions.create`
 - Date filter: **enabled** — `labOrderedDateFilterLabel`; From/To `opdDateFromLabel` / `opdDateToLabel`
 
@@ -78,7 +78,7 @@ From create: register patient when ∩ `patient:write`.
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
+- Table Print: preview-first worklist print (`commonPrintActionLabel`) when ∩ `evidence:export`
 - Report: `PrintDocumentTemplates.clinicalResult` (`labReportTitle` / `labReportFooter`); preview columns `lab_report_preview_columns`
 
 ## 10. Loading / empty / error / success
@@ -95,6 +95,6 @@ From create: register patient when ∩ `patient:write`.
 | createPatient (nested) | ∩ `patient:write` |
 | previewReport | ∪ `lab:read` \| `lab:write` |
 | resultEntry / workflowMutate | ∩ `lab:write` |
-| Export | ungated |
+| Export | ∩ `evidence:export` (`canExportLabWorkspace`) |
 | Collect / Open billing / criticalNotify chrome | documented / residual — **not mounted** |
-| Table Print | n/a |
+| Table Print | ∩ `evidence:export` (`canPrintLabWorkspace`) |

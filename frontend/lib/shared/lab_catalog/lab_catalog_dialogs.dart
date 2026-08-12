@@ -150,6 +150,7 @@ class _LabOrderContextDialogState extends ConsumerState<LabOrderContextDialog> {
       ),
       icon: const Icon(Icons.assignment_outlined),
       scrollable: true,
+      pinActionsToBottom: true,
       maxWidth: 640,
       content: Form(
         key: _formKey,

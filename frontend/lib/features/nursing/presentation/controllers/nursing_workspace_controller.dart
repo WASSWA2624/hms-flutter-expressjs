@@ -867,17 +867,18 @@ final class NursingWorkspaceController
         _safePendingHandovers();
     final Future<List<NursingRosterAssignment>> rostersFuture =
         _safeCurrentRosters();
+    final List<NursingHandover> handovers = await handoversFuture;
     final Result<AppPage<NursingPatientSummary>> worklistResult =
-        await _loadWorklist(query, const <NursingHandover>[]);
+        await _loadWorklist(query, handovers);
 
     return worklistResult.when(
       success: (AppPage<NursingPatientSummary> worklist) async {
-        final List<NursingHandover> handovers = await handoversFuture;
         final List<NursingRosterAssignment> rosters = await rostersFuture;
         return Result<NursingWorkspaceState>.success(
           NursingWorkspaceState(
             query: query,
-            worklist: _applyPendingHandovers(worklist, handovers, query),
+            worklist: worklist,
+            scopeCounts: _lastScopeCounts,
             pendingHandovers: handovers,
             rosters: rosters,
           ),
@@ -1002,6 +1003,7 @@ final class NursingWorkspaceController
           _emit(
             latest.copyWith(
               worklist: worklist,
+              scopeCounts: _lastScopeCounts,
               pendingHandovers: effectiveHandovers,
               rosters: rosters ?? latest.rosters,
               isRefreshing: showLoading ? false : latest.isRefreshing,
@@ -1032,7 +1034,7 @@ final class NursingWorkspaceController
         .listWardPatients(fetchQuery);
 
     return result.map((AppPage<NursingPatientSummary> source) {
-      final List<NursingPatientSummary> filtered = source.items
+      final List<NursingPatientSummary> catalog = source.items
           .map((NursingPatientSummary item) {
             // When shift/ops context cannot load handovers, keep API-provided
             // pendingHandoverCount so handover-pending scope still works for
@@ -1050,6 +1052,13 @@ final class NursingWorkspaceController
                 .length;
             return item.copyWith(pendingHandoverCount: handoverCount);
           })
+          .toList(growable: false);
+
+      // Stash sibling totals on a side channel via _lastScopeCounts; callers
+      // that need counts read them after this map (see _refreshWorklist).
+      _lastScopeCounts = NursingScopeCounts.fromCatalog(catalog);
+
+      final List<NursingPatientSummary> filtered = catalog
           .where(
             (NursingPatientSummary item) => item.matchesWorklistQuery(query),
           )
@@ -1071,6 +1080,8 @@ final class NursingWorkspaceController
       );
     });
   }
+
+  NursingScopeCounts _lastScopeCounts = NursingScopeCounts.empty;
 
   Future<List<NursingHandover>> _pendingHandovers() async {
     final Result<List<NursingHandover>> result = await _repository
@@ -1112,37 +1123,6 @@ final class NursingWorkspaceController
         .catchError((_) => <T>[]);
   }
 
-  AppPage<NursingPatientSummary> _applyPendingHandovers(
-    AppPage<NursingPatientSummary> page,
-    List<NursingHandover> handovers,
-    NursingWorklistQuery query,
-  ) {
-    if (handovers.isEmpty) {
-      return page;
-    }
-
-    final List<NursingPatientSummary> filtered = page.items
-        .map((NursingPatientSummary item) {
-          final int handoverCount = handovers
-              .where(
-                (NursingHandover handover) =>
-                    handover.isPending &&
-                    handover.admissionId != null &&
-                    handover.admissionId == item.admissionId,
-              )
-              .length;
-          return item.copyWith(pendingHandoverCount: handoverCount);
-        })
-        .where((NursingPatientSummary item) => item.matchesWorklistQuery(query))
-        .toList(growable: false);
-
-    return AppPage<NursingPatientSummary>(
-      items: filtered,
-      request: page.request,
-      totalItemCount: page.totalItemCount,
-    );
-  }
-
   Future<AppFailure?> _mutateSelected(
     Future<Result<NursingPatientDetail>> Function(NursingPatientSummary summary)
     action,
@@ -1173,7 +1153,13 @@ final class NursingWorkspaceController
           );
         }
         unawaited(
-          _syncVisibleData(plan: const WorkspaceRefreshPlan(context: true)),
+          _syncVisibleData(
+            plan: const WorkspaceRefreshPlan(
+              primaryList: true,
+              selectedDetail: true,
+              context: true,
+            ),
+          ),
         );
         return null;
       },

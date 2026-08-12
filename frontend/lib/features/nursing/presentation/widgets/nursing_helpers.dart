@@ -127,6 +127,8 @@ String nursingAdmissionLabel(BuildContext context, NursingPatientSummary item) {
   return label.trim().isEmpty ? context.l10n.profileUnknownValue : label;
 }
 
+/// Synthetic responsible-nurse summary (tables.mdc product exception — no
+/// assignee API field on [NursingPatientSummary]; uses handover/shift cues).
 String nursingResponsibleNurseLabel(
   BuildContext context,
   NursingPatientSummary item,

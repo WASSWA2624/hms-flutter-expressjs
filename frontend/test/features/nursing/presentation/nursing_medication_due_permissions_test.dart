@@ -112,13 +112,14 @@ AppAccessPolicy _policy({
   );
 }
 
-AppAccessPolicy _readerPolicy({AppPermission readKey = AppPermissions.clinicalRead}) {
+AppAccessPolicy _readerPolicy({AppPermission readKey = AppPermissions.nursingRead}) {
   return _policy(permissions: <AppPermission>{readKey});
 }
 
 AppAccessPolicy _fullMedicationPolicy() {
   return _policy(
     permissions: <AppPermission>{
+      AppPermissions.nursingRead,
       AppPermissions.clinicalRead,
       AppPermissions.clinicalWrite,
       AppPermissions.patientRead,
@@ -332,6 +333,26 @@ void main() {
         same(nursingWorkspaceEntryRequirement),
       );
       expect(
+        NursingMedicationDueAtomPermissions.export,
+        same(nursingWorkspaceExportRequirement),
+      );
+      expect(
+        NursingMedicationDueAtomPermissions.print,
+        same(nursingWorkspacePrintRequirement),
+      );
+      expect(
+        NursingMedicationDueAtomPermissions.openIcu,
+        same(nursingNavigationRequirement),
+      );
+      expect(
+        NursingMedicationDueAtomPermissions.navigation,
+        same(RouteAccessCatalog.icuEntry),
+      );
+      expect(
+        NursingMedicationDueAtomPermissions.billingPanel,
+        same(nursingBillingClearanceReadRequirement),
+      );
+      expect(
         NursingMedicationDueAtomPermissions.catalogEntry,
         same(RouteAccessCatalog.nursingEntry),
       );
@@ -353,45 +374,34 @@ void main() {
       );
     });
 
-    test('∪ allowance: patient:read alone satisfies tab / list chrome', () {
+    test('∩ nursing:read grants tab / list chrome; clinical/patient alone do not', () {
+      final AppAccessPolicy nursingReader = _policy(
+        permissions: <AppPermission>{AppPermissions.nursingRead},
+      );
       final AppAccessPolicy patientReader = _policy(
         permissions: <AppPermission>{AppPermissions.patientRead},
       );
-      expect(canViewNursingMedicationDue(patientReader), isTrue);
-      expect(
-        NursingMedicationDueAtomPermissions.tab.isAllowed(patientReader),
-        isTrue,
-      );
-      expect(
-        NursingMedicationDueAtomPermissions.listChrome.isAllowed(patientReader),
-        isTrue,
-      );
-      expect(
-        NursingMedicationDueAtomPermissions.readUnion.isAllowed(patientReader),
-        isTrue,
-      );
-      expect(
-        NursingMedicationDueAtomPermissions.medicationsPanel.isAllowed(
-          patientReader,
-        ),
-        isFalse,
-      );
-      expect(
-        NursingMedicationDueAtomPermissions.nextActionMedication.isAllowed(
-          patientReader,
-        ),
-        isFalse,
-      );
-    });
-
-    test('∪ allowance: clinical:read alone satisfies tab; not med panel', () {
       final AppAccessPolicy clinicalReader = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalRead},
       );
-      expect(canViewNursingMedicationDue(clinicalReader), isTrue);
+      expect(canViewNursingMedicationDue(nursingReader), isTrue);
+      expect(
+        NursingMedicationDueAtomPermissions.tab.isAllowed(nursingReader),
+        isTrue,
+      );
+      expect(
+        NursingMedicationDueAtomPermissions.listChrome.isAllowed(nursingReader),
+        isTrue,
+      );
+      expect(
+        NursingMedicationDueAtomPermissions.readUnion.isAllowed(nursingReader),
+        isTrue,
+      );
+      expect(canViewNursingMedicationDue(patientReader), isFalse);
+      expect(canViewNursingMedicationDue(clinicalReader), isFalse);
       expect(
         NursingMedicationDueAtomPermissions.medicationsPanel.isAllowed(
-          clinicalReader,
+          nursingReader,
         ),
         isFalse,
       );
@@ -406,6 +416,7 @@ void main() {
     test('∩ denial: missing pharmacy:read hides med panel / administer', () {
       final AppAccessPolicy clinicalWriter = _policy(
         permissions: <AppPermission>{
+          AppPermissions.nursingRead,
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
         },
@@ -442,6 +453,7 @@ void main() {
     test('∩ full set: pharmacy:read + clinical:write mounts administer', () {
       final AppAccessPolicy full = _policy(
         permissions: <AppPermission>{
+          AppPermissions.nursingRead,
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
           AppPermissions.pharmacyRead,
@@ -474,6 +486,7 @@ void main() {
     test('∪ write: pharmacy:write + pharmacy:read satisfies administer', () {
       final AppAccessPolicy pharmacyWriter = _policy(
         permissions: <AppPermission>{
+          AppPermissions.nursingRead,
           AppPermissions.clinicalRead,
           AppPermissions.pharmacyRead,
           AppPermissions.pharmacyWrite,
@@ -519,6 +532,7 @@ void main() {
     test('subscription strip: inpatient-bed-management required', () {
       final AppAccessPolicy noModule = _policy(
         permissions: <AppPermission>{
+          AppPermissions.nursingRead,
           AppPermissions.clinicalRead,
           AppPermissions.pharmacyRead,
           AppPermissions.clinicalWrite,
@@ -554,7 +568,7 @@ void main() {
     });
 
     test(
-      'route entry ∪ alone (last_office / operations) does not unlock tab chrome',
+      'route entry ∩ nursing:read; last_office / operations alone do not enter or unlock tab',
       () {
         final AppAccessPolicy lastOfficeReader = _policy(
           permissions: <AppPermission>{AppPermissions.lastOfficeRead},
@@ -572,14 +586,14 @@ void main() {
             ),
           ],
         );
-        expect(canEnterNursingWorkspace(lastOfficeReader), isTrue);
-        expect(canEnterNursingWorkspace(operationsReader), isTrue);
+        expect(canEnterNursingWorkspace(lastOfficeReader), isFalse);
+        expect(canEnterNursingWorkspace(operationsReader), isFalse);
         expect(canViewNursingMedicationDue(lastOfficeReader), isFalse);
         expect(canViewNursingMedicationDue(operationsReader), isFalse);
       },
     );
 
-    test('pharmacy:read alone does not unlock Medication due tab (∪ read)', () {
+    test('pharmacy:read alone does not unlock Medication due tab (∩ nursing:read)', () {
       final AppAccessPolicy pharmacyOnly = _policy(
         permissions: <AppPermission>{AppPermissions.pharmacyRead},
       );
@@ -601,6 +615,7 @@ void main() {
     test('ABAC session still evaluates Medication due when facility present', () {
       final AppAccessPolicy withFacility = _policy(
         permissions: <AppPermission>{
+          AppPermissions.nursingRead,
           AppPermissions.clinicalRead,
           AppPermissions.patientRead,
         },
@@ -618,12 +633,14 @@ void main() {
     test('matrix create/update/delete ∩ clinical:write mapping noted', () {
       final AppAccessPolicy clinicalWriter = _policy(
         permissions: <AppPermission>{
+          AppPermissions.nursingRead,
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
         },
       );
       final AppAccessPolicy patientWriter = _policy(
         permissions: <AppPermission>{
+          AppPermissions.nursingRead,
           AppPermissions.clinicalRead,
           AppPermissions.patientWrite,
         },
@@ -698,12 +715,12 @@ void main() {
     );
 
     testWidgets(
-      '∪ allowance: patient:read alone shows Medication due tab chrome',
+      '∩ nursing:read shows Medication due tab chrome',
       (WidgetTester tester) async {
         await _pumpMedicationDueTab(
           tester,
           repository: repository,
-          accessPolicy: _readerPolicy(readKey: AppPermissions.patientRead),
+          accessPolicy: _readerPolicy(readKey: AppPermissions.nursingRead),
         );
 
         final AppLocalizations l10n = AppLocalizations.of(
@@ -724,6 +741,7 @@ void main() {
       (WidgetTester tester) async {
         final AppAccessPolicy clinicalWriter = _policy(
           permissions: <AppPermission>{
+            AppPermissions.nursingRead,
             AppPermissions.clinicalRead,
             AppPermissions.clinicalWrite,
             AppPermissions.patientWrite,

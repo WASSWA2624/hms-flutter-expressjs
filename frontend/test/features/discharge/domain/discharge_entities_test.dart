@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 
 void main() {
   group('DischargeWorklistQuery.fromUri', () {
@@ -241,6 +242,62 @@ void main() {
         detail.buildSyncClearancePayload(),
         containsPair('billing_cleared', true),
       );
+    });
+  });
+
+  group('DischargeSectionCounts', () {
+    const IpdAdmissionSummary planned = IpdAdmissionSummary(
+      id: 'ADM-PLANNED',
+      displayId: 'ADM-P1',
+      patientDisplayName: 'Planned Patient',
+      stage: 'DISCHARGE_PLANNED',
+      dischargeStatus: 'PLANNED',
+    );
+    const IpdAdmissionSummary pending = IpdAdmissionSummary(
+      id: 'ADM-PENDING',
+      displayId: 'ADM-S1',
+      patientDisplayName: 'Summary Pending',
+      stage: 'ADMITTED',
+      dischargeStatus: 'SUMMARY_PENDING',
+    );
+    const IpdAdmissionSummary completed = IpdAdmissionSummary(
+      id: 'ADM-DONE',
+      displayId: 'ADM-C1',
+      patientDisplayName: 'Completed Patient',
+      stage: 'DISCHARGED',
+      dischargeStatus: 'COMPLETED',
+    );
+
+    test('fromCatalog builds sibling totals', () {
+      final DischargeSectionCounts counts = DischargeSectionCounts.fromCatalog(
+        <IpdAdmissionSummary>[planned, pending, completed],
+      );
+      expect(counts.all, 3);
+      expect(counts.planned, 1);
+      expect(counts.pendingClearance, 1);
+      expect(counts.completed, 1);
+      expect(counts.forSection(DischargeDeskSection.all), 3);
+      expect(counts.forSection(DischargeDeskSection.planned), 1);
+    });
+
+    test('workspace state counts come from sectionCounts', () {
+      final DischargeWorkspaceState state = DischargeWorkspaceState(
+        query: const DischargeWorklistQuery(),
+        queue: const AppPage<IpdAdmissionSummary>(
+          items: <IpdAdmissionSummary>[planned],
+          request: AppPageRequest(pageSize: 12),
+        ),
+        sectionCounts: const DischargeSectionCounts(
+          all: 10,
+          planned: 4,
+          pendingClearance: 3,
+          completed: 3,
+        ),
+      );
+      expect(state.plannedCount, 4);
+      expect(state.summaryPendingCount, 3);
+      expect(state.completedCount, 3);
+      expect(state.workloadCount, 7);
     });
   });
 }

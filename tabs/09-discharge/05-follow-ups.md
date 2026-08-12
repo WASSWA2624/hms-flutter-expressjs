@@ -2,10 +2,10 @@
 
 ## 1. Tab strip
 
-- Label: `opdFollowUpsTitle`
+- Label: `dischargeSectionFollowUps`
 - Icon: `Icons.phone_callback_outlined`
-- Count source: `followUpTabCountProvider(FollowUpWorklistScope(encounterType: 'IPD'))`
-- Sibling tabs: queue counts separate; this tab uses follow-up provider
+- Count source: `followUpTabCountProvider(FollowUpWorklistScope(encounterType: 'IPD'))`; active tab uses narrowed callback from panel (`onNarrowedCountChanged`)
+- Sibling tabs: dedicated unfiltered `DischargeSectionCounts` for queue sections; this tab uses follow-up provider + narrowed count
 - Count tone: `AppTabCountTone.info`
 - Deep-link `section`: `follow-ups` (aliases `follow_ups`, `followups`)
 - Tab gate: `DischargeFollowUpsAtomPermissions.tab` = workspace read ∪
@@ -15,12 +15,12 @@
 ## 2. Search / Filters / Settings / Export / Print / context
 
 - Search: `receptionFollowUpsSearchHint`; Clear `receptionClearFiltersAction`
-- Filters: **off** (host does not enable advanced filters)
-- Date filter: **off**
+- Filters: **on** (`commonFiltersActionLabel` → advanced filters; Apply/Reset/Close shared OPD/common labels)
+- Date filter: **on** (`dischargeDateFilterLabel` / From / To)
 - Settings: `commonTableSettings*` + `receptionApplyColumnsAction` / `receptionResetColumnsAction`
-- Export: AppListTable default (ungated)
-- Print: **not mounted**
-- Plan / Clearance / pharmacy strip: **not mounted**
+- Export: enabled; gated ∩ `evidence:export` (`canExportDischargeWorkspace`)
+- Print: `commonPrintActionLabel` → preview-first `printDischargeWorkspaceList` (same export gate)
+- Plan / Clearance / pharmacy strip: **not mounted** (justified)
 
 ## 3. Table
 
@@ -31,7 +31,8 @@
 
 ## 4. Advanced filters / search fields
 
-- Advanced filters: **not enabled** by Discharge host
+- Advanced filters: **enabled** by Discharge host (`showAdvancedFilterButton: true`)
+- Date range: **on**
 
 ## 5. Primary / secondary / row actions
 
@@ -53,20 +54,20 @@ Detail read tiles + nested reschedule scheduled_at/notes.
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
+- Table Print: preview-first `printDischargeWorkspaceList` (`Print` label; ∩ `evidence:export`)
 - Detail: no print surface
 
 ## 10. Loading / empty / error / success
 
 - Empty: `receptionFollowUpsEmptyTitle` / `receptionFollowUpsEmptyBody`
 - Hard failure: `errorUnexpectedTitle` / `errorUnexpectedMessage` + `commonRetryActionLabel`
+- Unauthorized empty desk (no tabs): `AppFailureStateView` forbidden (`AppRoutes` / entry ∩ `discharge:read`)
 
 ## 11. RBAC / ABAC (omitted when unauthorized)
 
 | Atom | Gate |
 | --- | --- |
-| Tab / list / search / settings / detail / close | `DischargeFollowUpsAtomPermissions.*` → workspace read ∪ |
+| Tab / list / search / filters / settings / detail / close | `DischargeFollowUpsAtomPermissions.*` → workspace read ∪ |
 | reschedule / markCompleted / saveFollowUp / write | follow-ups write ∩ |
-| Export | ungated |
+| Export / Print (toolbar) | ∩ `evidence:export` |
 | Planning / clearance / pharmacy / billing UI | n/a (not mounted on this tab) |
-| Print | n/a |

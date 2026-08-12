@@ -891,7 +891,17 @@ const listTheatreFlows = async (
   }
 
   if (filters.status) where.status = toUpper(filters.status);
-  if (filters.stage) where.workflow_stage = sanitize(filters.stage);
+  if (filters.stage) {
+    const stages = String(filters.stage)
+      .split(',')
+      .map((value) => sanitize(value))
+      .filter(Boolean);
+    if (stages.length === 1) {
+      where.workflow_stage = stages[0];
+    } else if (stages.length > 1) {
+      where.workflow_stage = { in: stages };
+    }
+  }
 
   if (filters.room_id) {
     const room = await resolveRoomByIdentifier(prisma, filters.room_id, tenant?.id || null);

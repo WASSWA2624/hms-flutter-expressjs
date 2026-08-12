@@ -28,6 +28,10 @@ final class DischargeWorkspaceController
 
   final WorkspacePendingRefresh _pendingRefresh = WorkspacePendingRefresh();
   bool _isSyncing = false;
+  DischargeSectionCounts _lastSectionCounts = DischargeSectionCounts.empty;
+
+  /// Catalog fetch size so sibling tab counts are not painted-page length.
+  static const AppPageRequest _fetchRequest = AppPageRequest(pageSize: 100);
 
   @override
   Future<Result<DischargeWorkspaceState>> build() async {
@@ -46,8 +50,9 @@ final class DischargeWorkspaceController
   Future<Result<DischargeWorkspaceState>> _loadWorkspace(
     DischargeWorklistQuery query,
   ) async {
-    final Result<AppPage<IpdAdmissionSummary>> queueResult = await _repository
-        .listQueue(query);
+    final Result<AppPage<IpdAdmissionSummary>> queueResult = await _loadQueue(
+      query,
+    );
 
     return queueResult.when(
       success: (AppPage<IpdAdmissionSummary> queue) async {
@@ -63,6 +68,7 @@ final class DischargeWorkspaceController
           DischargeWorkspaceState(
             query: query,
             queue: queue,
+            sectionCounts: _lastSectionCounts,
             referenceData: referenceData,
           ),
         );
@@ -73,6 +79,46 @@ final class DischargeWorkspaceController
     );
   }
 
+  Future<Result<AppPage<IpdAdmissionSummary>>> _loadQueue(
+    DischargeWorklistQuery query,
+  ) async {
+    // Fetch unfiltered-by-status catalog for sibling counts; apply status/date
+    // client-side so badges stay authoritative (tabs.mdc).
+    final DischargeWorklistQuery fetchQuery = query.copyWith(
+      status: DischargeStatusFilter.all,
+      pageRequest: _fetchRequest,
+      clearDateFrom: true,
+      clearDateTo: true,
+    );
+    final Result<AppPage<IpdAdmissionSummary>> result = await _repository
+        .listQueue(fetchQuery);
+
+    return result.map((AppPage<IpdAdmissionSummary> source) {
+      final List<IpdAdmissionSummary> catalog = source.items;
+      _lastSectionCounts = DischargeSectionCounts.fromCatalog(catalog);
+
+      final List<IpdAdmissionSummary> filtered = catalog
+          .where(
+            (IpdAdmissionSummary item) =>
+                matchesDischargeStatus(item, query.status) &&
+                matchesDischargeDateRange(
+                  item,
+                  query.dateFrom,
+                  query.dateTo,
+                ),
+          )
+          .toList(growable: false);
+
+      // Desk tables paint section slices client-side from the filtered catalog;
+      // keep the full filtered set so tab badges and rows stay aligned.
+      return AppPage<IpdAdmissionSummary>(
+        items: filtered,
+        request: query.pageRequest,
+        totalItemCount: filtered.length,
+      );
+    });
+  }
+
   Future<AppFailure?> applyBoardQuery(DischargeWorklistQuery query) async {
     _emit(
       DischargeWorkspaceState(
@@ -81,6 +127,7 @@ final class DischargeWorkspaceController
           items: <IpdAdmissionSummary>[],
           request: AppPageRequest(pageSize: 12),
         ),
+        sectionCounts: _lastSectionCounts,
         isRefreshing: true,
       ),
     );
@@ -99,6 +146,7 @@ final class DischargeWorkspaceController
                   items: <IpdAdmissionSummary>[],
                   request: AppPageRequest(pageSize: 12),
                 ),
+                sectionCounts: _lastSectionCounts,
                 lastFailure: failure,
               ),
         );
@@ -269,6 +317,34 @@ final class DischargeWorkspaceController
       current.copyWith(
         query: current.query.copyWith(
           status: status,
+          pageRequest: current.query.pageRequest.first(),
+        ),
+        isRefreshing: true,
+        clearSelectedDetail: true,
+        clearLastFailure: true,
+      ),
+    );
+    return _refreshQueue();
+  }
+
+  Future<AppFailure?> applyFilters({
+    required DischargeStatusFilter status,
+    DateTime? dateFrom,
+    DateTime? dateTo,
+  }) async {
+    final DischargeWorkspaceState? current = _currentState;
+    if (current == null) {
+      return refresh();
+    }
+
+    _emit(
+      current.copyWith(
+        query: current.query.copyWith(
+          status: status,
+          dateFrom: dateFrom,
+          dateTo: dateTo,
+          clearDateFrom: dateFrom == null,
+          clearDateTo: dateTo == null,
           pageRequest: current.query.pageRequest.first(),
         ),
         isRefreshing: true,
@@ -492,11 +568,18 @@ final class DischargeWorkspaceController
 
   Future<AppFailure?> _refreshQueue() async {
     final DischargeWorkspaceState current = _currentState!;
-    final Result<AppPage<IpdAdmissionSummary>> result = await _repository
-        .listQueue(current.query);
+    final Result<AppPage<IpdAdmissionSummary>> result = await _loadQueue(
+      current.query,
+    );
     return result.when(
       success: (AppPage<IpdAdmissionSummary> queue) {
-        _emit(_currentState!.copyWith(queue: queue, isRefreshing: false));
+        _emit(
+          _currentState!.copyWith(
+            queue: queue,
+            sectionCounts: _lastSectionCounts,
+            isRefreshing: false,
+          ),
+        );
         return null;
       },
       failure: (AppFailure failure) {

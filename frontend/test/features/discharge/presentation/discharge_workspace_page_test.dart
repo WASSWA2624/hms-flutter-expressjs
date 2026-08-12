@@ -223,13 +223,18 @@ void main() {
     expect(find.byTooltip('Refresh'), findsNothing);
     expect(find.byTooltip('Start discharge plan'), findsOneWidget);
     expect(find.byTooltip('Manage clearance'), findsOneWidget);
-    expect(find.byTooltip('Print discharge summary'), findsOneWidget);
+    expect(find.byTooltip('Print'), findsOneWidget);
     expect(find.text('Filters'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
+    expect(find.byTooltip('Export'), findsNothing);
+    expect(_table(tester).enablePrint, isTrue);
+    expect(_table(tester).canExport, isFalse);
+    expect(_table(tester).canPrint, isFalse);
     expect(_table(tester).columnVisibilityLabel, 'Settings');
     expect(_table(tester).columnVisibilityTitle, 'Table Settings');
     expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
     expect(_table(tester).search?.advancedFilterTitle, 'Advanced filters');
+    expect(_table(tester).search?.enableDateFilter, isTrue);
     expect(_table(tester).columns.length, lessThanOrEqualTo(5));
     expect(
       _table(tester).columns.any((
@@ -285,7 +290,7 @@ void main() {
     expect(find.text('Carol Completed'), findsOneWidget);
     expect(find.text('Alice Planned'), findsNothing);
     expect(find.text('Bob Pending'), findsNothing);
-    expect(find.byTooltip('Print discharge summary'), findsOneWidget);
+    expect(find.byTooltip('Print'), findsOneWidget);
     expect(find.byTooltip('Refresh'), findsNothing);
   });
 
@@ -300,7 +305,7 @@ void main() {
     expect(find.text('Carol Completed'), findsOneWidget);
     expect(find.text('Alice Planned'), findsNothing);
     expect(find.text('Bob Pending'), findsNothing);
-    expect(find.byTooltip('Print discharge summary'), findsOneWidget);
+    expect(find.byTooltip('Print'), findsOneWidget);
 
     await tester.tap(find.textContaining('Pending clearance').first);
     await tester.pumpAndSettle();
@@ -384,7 +389,7 @@ void main() {
 
     expect(find.byTooltip('Start discharge plan'), findsNothing);
     expect(find.byTooltip('Manage clearance'), findsNothing);
-    expect(find.byTooltip('Print discharge summary'), findsOneWidget);
+    expect(find.byTooltip('Print'), findsOneWidget);
   });
 
   testWidgets('switches to mobile list layout at small breakpoints', (
@@ -430,6 +435,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('ADVANCED FILTERS'), findsOneWidget);
+    expect(find.text('Clear filters'), findsOneWidget);
+    expect(find.text('Apply filters'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
+    expect(_table(tester).search?.advancedFilterCloseLabel, 'Close');
   });
 
   testWidgets('settings modal uses Table Settings title', (
@@ -447,4 +456,90 @@ void main() {
     expect(find.byType(AppDialog), findsOneWidget);
     expect(find.text('TABLE SETTINGS'), findsOneWidget);
   });
+
+  testWidgets(
+    'Export/Print omit without evidence:export; present when granted',
+    (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+      _stubQueue(repository);
+
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/discharge',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/discharge',
+            builder: (BuildContext context, GoRouterState state) {
+              return const Scaffold(body: DischargeWorkspacePage());
+            },
+          ),
+        ],
+      );
+
+      Future<void> pumpWith(AppAccessPolicy policy) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              dischargeRepositoryProvider.overrideWithValue(repository),
+              sharedPreferencesProvider.overrideWithValue(preferences),
+              initialSessionStateProvider.overrideWithValue(
+                const SessionState.ready(),
+              ),
+              appAccessPolicyProvider.overrideWithValue(policy),
+            ],
+            child: MaterialApp.router(
+              routerConfig: router,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(seconds: 1));
+      }
+
+      await pumpWith(_dischargeWritePolicy());
+      expect(find.byTooltip('Filters'), findsOneWidget);
+      expect(find.byTooltip('Settings'), findsOneWidget);
+      expect(find.byTooltip('Export'), findsNothing);
+      expect(_table(tester).canExport, isFalse);
+      expect(_table(tester).canPrint, isFalse);
+
+      final AppAccessPolicy withExport = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(roles: <String>['DOCTOR']),
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+            AppPermissions.evidenceExport,
+          },
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'inpatient-bed-management',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        ),
+      );
+
+      await pumpWith(withExport);
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(_table(tester).canExport, isTrue);
+      expect(_table(tester).canPrint, isTrue);
+      expect(_table(tester).enablePrint, isTrue);
+      expect(_table(tester).printLabel, 'Print');
+    },
+  );
 }

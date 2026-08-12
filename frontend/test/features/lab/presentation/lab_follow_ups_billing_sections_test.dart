@@ -324,7 +324,7 @@ void main() {
       );
     });
 
-    testWidgets('Create Order primary absent on Follow-ups strip', (
+    testWidgets('Create Lab Order charge atom stays unmounted on Follow-ups', (
       WidgetTester tester,
     ) async {
       await _pumpFollowUpsTab(
@@ -339,8 +339,10 @@ void main() {
         ),
       );
 
-      expect(find.textContaining('Create Lab Order'), findsNothing);
-      expect(find.textContaining('Create order'), findsNothing);
+      // Strip Create is the lab order flow, not a billing charge atom.
+      expect(find.byTooltip('Create Lab Order'), findsOneWidget);
+      expect(find.textContaining('Receive payment'), findsNothing);
+      expect(find.textContaining('Issue invoice'), findsNothing);
       expect(LabFollowUpsBillingInventory.createLabOrderCharge.mounted, isFalse);
     });
   });

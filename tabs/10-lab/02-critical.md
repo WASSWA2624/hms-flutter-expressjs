@@ -4,9 +4,9 @@
 
 - Label: `labScopeCritical`
 - Icon: `Icons.priority_high_outlined`
-- Count source: `summary.criticalForView(LabWorkbenchView.patients)`
-- Sibling tabs: patient-view summary totals (shared chrome)
-- Count tone: `AppTabCountTone.danger`
+- Count source: `labSectionTabCount` → `summary.criticalForView(LabWorkbenchView.patients)`; active + narrowed → filtered total
+- Sibling tabs: patient-view summary totals (shared chrome sibling model)
+- Count tone: `AppTabCountTone.danger` (`labSectionCountTone`)
 - Deep-link `section`: `critical`
 - Tab gate: `LabCriticalAtomPermissions.tab`
 - Scope: `LabQueueScope.critical` (`hasCriticalResult`)
@@ -14,11 +14,11 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Filters → Settings → Export → Create Lab Order**
+Order: **Filters → Settings → Export → Print → Create Lab Order**
 
-- Same worklist chrome as Pending
+- Same worklist chrome as Pending (Export/Print ∩ `evidence:export`)
 - Create: `LabCriticalAtomPermissions.create`
-- Print (toolbar): **not mounted**
+- Print (toolbar): preview-first `printLabWorkspaceList`
 - Date filter: **enabled**
 
 ## 3. Table
@@ -51,7 +51,7 @@ Same create + result entry forms as Pending.
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
+- Table Print: preview-first worklist print when ∩ `evidence:export`
 - Report preview → `PrintDocumentTemplates.clinicalResult`
 
 ## 10. Loading / empty / error / success
@@ -65,5 +65,5 @@ Shared Lab patterns.
 | Tab / chrome / rowSelect | `LabCriticalAtomPermissions.*` → ∩ `lab:read` |
 | Create / result mutations | ∩ `lab:write` |
 | criticalNotify | ∩ `lab:write` + `clinical:read` — **no chrome** |
-| Export | ungated |
-| Table Print | n/a |
+| Export | ∩ `evidence:export` (`canExportLabWorkspace`) |
+| Table Print | ∩ `evidence:export` (`canPrintLabWorkspace`) |

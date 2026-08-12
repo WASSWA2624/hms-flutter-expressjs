@@ -23,7 +23,7 @@ Future<void> showNursingPrintSummary({
     ref: ref,
     context: context,
     title: l10n.nursingReportTitle,
-    previewDialogTitle: l10n.nursingActionPrintSummary,
+    previewDialogTitle: l10n.printPreviewTitle,
     patientContext: buildPrintFormPatientContext(
       l10n,
       patientName: summary.displayTitle,

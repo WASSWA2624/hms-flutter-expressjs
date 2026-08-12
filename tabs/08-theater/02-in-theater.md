@@ -4,8 +4,8 @@
 
 - Label: `theaterInTheaterSummaryLabel`
 - Icon: `Icons.meeting_room_outlined`
-- Count source: `state.inTheaterCount` — current page membership with status `IN_PROGRESS`
-- Sibling tabs: page-membership / page-total model (shared chrome)
+- Count source: `theaterSectionTabCount` → `scopeCounts.inTheater`; active narrowed → filtered page total
+- Sibling tabs: dedicated unfiltered `TheaterScopeCounts` (shared chrome)
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `in-theater` (aliases `in_theater`, `intheater`)
 - Tab gate: `TheaterInTheaterAtomPermissions.tab`
@@ -14,23 +14,23 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Filters → Settings → Export → Schedule case**
+Order: **Filters → Settings → Export → Print → Schedule case**
 
-- Search / Filters / Settings / Export / Schedule: same as Scheduled (shared chrome)
-- Print (toolbar): **not mounted**
+- Search / Filters / Settings / Export / Print / Schedule: same as Scheduled (shared chrome)
 - Date filter: **enabled** — `theaterScheduleDateFilterLabel`
 
 ## 3. Table
 
 - Row model: `TheaterCase`
 - Row select → case detail hub
-- Default columns:
+- Default columns (**5** + optional next-action):
   1. Patient (`theaterPatientColumnLabel`)
   2. Procedure (`theaterProcedureColumnLabel`)
   3. Room (`theaterRoomColumnLabel`)
-  4. Status (`theaterStatusColumnLabel`)
-  5. Next action — when write ∩
-- Column choices: Case ID, Time, Readiness, Owner
+  4. Time (`theaterTimeColumnLabel`)
+  5. Status (`theaterStatusColumnLabel`)
+  6. Next action — when write ∩
+- Column choices: Case ID, Readiness, Owner
 - Storage: `theater_inTheater` / `theater_cw_inTheater`
 
 ## 4. Advanced filters / search fields
@@ -51,27 +51,8 @@ Same Theater-owned case detail + mutation dialogs as Scheduled (see shared chrom
 
 ## 7. Nested / follow-on
 
-Same chain: Open IPD/Emergency; schedule form billing/procedure reuse; mutation snackbars.
+Open IPD/Emergency; schedule reuse; mutation → `theaterSavedMessage`.
 
-## 8. Forms (summary)
+## 8–10. Forms / Print / Feedback
 
-Same Theater-owned mutation form set as Scheduled.
-
-## 9. Print / labels / preview
-
-- Table Print: **absent**
-- No Theater-owned label/print path on this tab
-
-## 10. Loading / empty / error / success
-
-Shared Theater loading / empty / snackbar patterns.
-
-## 11. RBAC / ABAC (omitted when unauthorized)
-
-| Atom | Gate |
-| --- | --- |
-| Tab / list / search / filters / settings / detail | `TheaterInTheaterAtomPermissions.*` → board read ∪ |
-| Export | ungated |
-| Schedule / next-action / writes / panels | clinical write ∩ |
-| Billing holds | billing read ∩ |
-| Print | n/a |
+Shared chrome: gated Export/Print, prefer-5 columns, empty/loading/error/success coverage.

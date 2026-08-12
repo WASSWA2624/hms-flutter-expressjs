@@ -245,7 +245,12 @@ class _NursingWorkspaceContentState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             AppTabStrip(
-              tabs: nursingTabItems(l10n, state, policy: policy),
+              tabs: nursingTabItems(
+                l10n,
+                state,
+                policy: policy,
+                activeScope: _scope,
+              ),
               selectedId: nursingScopeToQueryValue(_scope),
               onTabTapped: _onTabTapped,
             ),

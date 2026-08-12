@@ -263,12 +263,51 @@ void main() {
       'All patients',
     ]);
 
-    // Toolbar order: Filters (in search bar) → Settings → Create.
+    // Toolbar order: Filters → Settings → Export → Print → Create.
     final List<AppSearchBarAction> trailing =
         _table(tester).search?.trailingActions ?? const <AppSearchBarAction>[];
     expect(trailing, isNotEmpty);
     expect(trailing.last.label, 'Create Lab Order');
+    expect(_table(tester).enablePrint, isTrue);
+    expect(_table(tester).canExport, isFalse);
+    expect(_table(tester).canPrint, isFalse);
+    expect(find.byTooltip('Export'), findsNothing);
+    expect(find.byTooltip('Print'), findsNothing);
   });
+
+  testWidgets(
+    'Export/Print omit without evidence:export; present when granted',
+    (WidgetTester tester) async {
+      await _pumpLabWorkspace(tester, repository: repository);
+      expect(_table(tester).canExport, isFalse);
+      expect(_table(tester).canPrint, isFalse);
+      expect(find.byTooltip('Export'), findsNothing);
+      expect(find.byTooltip('Print'), findsNothing);
+
+      await _pumpLabWorkspace(
+        tester,
+        repository: repository,
+        policy: _policyFor(
+          permissions: <AppPermission>{
+            AppPermissions.labRead,
+            AppPermissions.labWrite,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+      expect(_table(tester).canExport, isTrue);
+      expect(_table(tester).canPrint, isTrue);
+      expect(_table(tester).enablePrint, isTrue);
+      expect(_table(tester).printLabel, 'Print');
+      expect(_table(tester).exportLabel, 'Export');
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+      final List<AppSearchBarAction> trailing =
+          _table(tester).search?.trailingActions ??
+          const <AppSearchBarAction>[];
+      expect(trailing.last.label, 'Create Lab Order');
+    },
+  );
 
   testWidgets('does not paint a dedicated laboratory title header', (
     WidgetTester tester,
@@ -499,6 +538,9 @@ void main() {
     expect(find.text(l10n.labCollectSampleAction), findsNothing);
     expect(find.text(l10n.labPreviewReportAction), findsOneWidget);
     expect(find.text(l10n.labSaveResultsAction), findsOneWidget);
+    // Nested report Print trigger must resolve to Print (printing.mdc).
+    expect(l10n.commonPrintActionLabel, 'Print');
+    expect(l10n.labPrintReportAction, 'Print');
   });
 
   testWidgets('mobile viewport: All tab authorized chrome remains', (

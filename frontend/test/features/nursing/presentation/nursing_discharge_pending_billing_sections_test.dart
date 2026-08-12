@@ -87,12 +87,13 @@ AppAccessPolicy _policy({
 }
 
 AppAccessPolicy _clinicalReadPolicy() {
-  return _policy(permissions: <AppPermission>{AppPermissions.clinicalRead});
+  return _policy(permissions: <AppPermission>{AppPermissions.nursingRead, AppPermissions.clinicalRead});
 }
 
 AppAccessPolicy _billingReadPolicy() {
   return _policy(
     permissions: <AppPermission>{
+      AppPermissions.nursingRead,
       AppPermissions.clinicalRead,
       AppPermissions.billingRead,
     },
@@ -106,6 +107,7 @@ AppAccessPolicy _billingReadPolicy() {
 AppAccessPolicy _writeWithBillingPolicy() {
   return _policy(
     permissions: <AppPermission>{
+      AppPermissions.nursingRead,
       AppPermissions.clinicalRead,
       AppPermissions.clinicalWrite,
       AppPermissions.billingRead,

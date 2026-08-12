@@ -133,6 +133,7 @@ AppAccessPolicy _policy({
 AppAccessPolicy _readerPolicy() {
   return _policy(
     permissions: <AppPermission>{
+      AppPermissions.nursingRead,
       AppPermissions.clinicalRead,
       AppPermissions.patientRead,
     },
@@ -142,6 +143,7 @@ AppAccessPolicy _readerPolicy() {
 AppAccessPolicy _writerPolicy() {
   return _policy(
     permissions: <AppPermission>{
+      AppPermissions.nursingRead,
       AppPermissions.clinicalRead,
       AppPermissions.clinicalWrite,
       AppPermissions.patientRead,
@@ -153,6 +155,7 @@ AppAccessPolicy _writerPolicy() {
 AppAccessPolicy _medicationWriterPolicy() {
   return _policy(
     permissions: <AppPermission>{
+      AppPermissions.nursingRead,
       AppPermissions.clinicalRead,
       AppPermissions.clinicalWrite,
       AppPermissions.patientRead,
@@ -164,6 +167,7 @@ AppAccessPolicy _medicationWriterPolicy() {
 AppAccessPolicy _shiftContextPolicy() {
   return _policy(
     permissions: <AppPermission>{
+      AppPermissions.nursingRead,
       AppPermissions.clinicalRead,
       AppPermissions.patientRead,
       AppPermissions.rosterRead,
@@ -386,6 +390,41 @@ void main() {
       );
       expect(
         identical(
+          NursingAssignedWardAtomPermissions.export,
+          nursingWorkspaceExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingAssignedWardAtomPermissions.print,
+          nursingWorkspacePrintRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingAssignedWardAtomPermissions.openIcu,
+          nursingNavigationRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingAssignedWardAtomPermissions.navigation,
+          RouteAccessCatalog.icuEntry,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingAssignedWardAtomPermissions.billingPanel,
+          nursingBillingClearanceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           nursingBoardTabRequirement(NursingQueueScope.assignedWard),
           NursingAssignedWardAtomPermissions.tab,
         ),
@@ -467,6 +506,7 @@ void main() {
     test('∩ denial: pharmacy:read alone does not grant administer', () {
       final AppAccessPolicy pharmacyOnly = _policy(
         permissions: <AppPermission>{
+          AppPermissions.nursingRead,
           AppPermissions.clinicalRead,
           AppPermissions.pharmacyRead,
         },
@@ -496,31 +536,33 @@ void main() {
       expect(canWriteNursing(pharmacyOnly), isFalse);
     });
 
-    test('∪ allowance: clinical:read alone grants Assigned ward read chrome', () {
+    test('∩ nursing:read grants Assigned ward chrome; clinical/patient alone do not', () {
+      final AppAccessPolicy nursingOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.nursingRead},
+      );
       final AppAccessPolicy clinicalOnly = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalRead},
       );
       final AppAccessPolicy patientOnly = _policy(
         permissions: <AppPermission>{AppPermissions.patientRead},
       );
+      expect(NursingAssignedWardAtomPermissions.tab.isAllowed(nursingOnly), isTrue);
       expect(
-        NursingAssignedWardAtomPermissions.tab.isAllowed(clinicalOnly),
+        NursingAssignedWardAtomPermissions.listChrome.isAllowed(nursingOnly),
         isTrue,
       );
-      expect(
-        NursingAssignedWardAtomPermissions.tab.isAllowed(patientOnly),
-        isTrue,
-      );
-      expect(NursingAssignedWardAtomPermissions.listChrome.isAllowed(clinicalOnly), isTrue);
-      expect(canViewNursingAssignedWard(clinicalOnly), isTrue);
-      expect(canViewNursingAssignedWard(patientOnly), isTrue);
-      expect(canViewNursingTab(clinicalOnly, NursingQueueScope.assignedWard), isTrue);
-      expect(canViewNursingTab(patientOnly, NursingQueueScope.assignedWard), isTrue);
+      expect(canViewNursingAssignedWard(nursingOnly), isTrue);
+      expect(canViewNursingTab(nursingOnly, NursingQueueScope.assignedWard), isTrue);
+      expect(NursingAssignedWardAtomPermissions.tab.isAllowed(clinicalOnly), isFalse);
+      expect(NursingAssignedWardAtomPermissions.tab.isAllowed(patientOnly), isFalse);
+      expect(canViewNursingAssignedWard(clinicalOnly), isFalse);
+      expect(canViewNursingAssignedWard(patientOnly), isFalse);
     });
 
     test('∪ write allowance: patient:write + roles unlocks source write gate', () {
       final AppAccessPolicy patientWriter = _policy(
         permissions: <AppPermission>{
+          AppPermissions.nursingRead,
           AppPermissions.clinicalRead,
           AppPermissions.patientRead,
           AppPermissions.patientWrite,
@@ -560,8 +602,8 @@ void main() {
             ),
           ],
         );
-        expect(canEnterNursingWorkspace(lastOfficeRead), isTrue);
-        expect(canEnterNursingWorkspace(operationsRead), isTrue);
+        expect(canEnterNursingWorkspace(lastOfficeRead), isFalse);
+        expect(canEnterNursingWorkspace(operationsRead), isFalse);
         expect(
           NursingAssignedWardAtomPermissions.tab.isAllowed(lastOfficeRead),
           isFalse,
@@ -581,6 +623,7 @@ void main() {
     test('subscription denial: permissions without inpatient module strip UI', () {
       final AppAccessPolicy noModule = _policy(
         permissions: <AppPermission>{
+          AppPermissions.nursingRead,
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
           AppPermissions.patientRead,
@@ -607,6 +650,7 @@ void main() {
     test('ABAC session still evaluates Assigned ward when facility is present', () {
       final AppAccessPolicy withFacility = _policy(
         permissions: <AppPermission>{
+          AppPermissions.nursingRead,
           AppPermissions.clinicalRead,
           AppPermissions.patientRead,
         },
@@ -620,6 +664,81 @@ void main() {
   });
 
   group('Nursing Assigned ward tab UI gates', () {
+    testWidgets(
+      'Assigned ward chrome: ≤5 defaults, Filters/Settings/Print labels, info tone',
+      (WidgetTester tester) async {
+        await _pumpAssignedWard(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+        );
+
+        final AppListTable<NursingWorkItem> table = tester
+            .widget<AppListTable<NursingWorkItem>>(
+              find.byType(AppListTable<NursingWorkItem>),
+            );
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem assigned = strip.tabs.firstWhere(
+          (AppTabItem t) => t.id == 'assigned-ward',
+        );
+
+        expect(table.columnVisibilityLabel, 'Settings');
+        expect(table.columnVisibilityTitle, 'Table Settings');
+        expect(table.search?.advancedFilterButtonLabel, 'Filters');
+        expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
+        expect(table.search?.advancedFilterResetLabel, 'Clear filters');
+        expect(table.search?.advancedFilterCloseLabel, 'Close');
+        expect(table.enablePrint, isTrue);
+        expect(table.printLabel, 'Print');
+        expect(table.canExport, isFalse);
+        expect(table.canPrint, isFalse);
+        expect(find.byTooltip('Export'), findsNothing);
+        expect(find.byTooltip('Print'), findsNothing);
+        expect(table.columns.length, lessThanOrEqualTo(5));
+        expect(table.columnChoices, isNotNull);
+        expect(
+          table.columnChoices!.length,
+          greaterThan(table.columns.length),
+        );
+        expect(assigned.countTone, AppTabCountTone.info);
+        expect(assigned.count, isNotNull);
+        expect(find.textContaining('Assigned'), findsWidgets);
+      },
+    );
+
+    testWidgets(
+      'Export/Print present on Assigned ward when evidence:export granted',
+      (WidgetTester tester) async {
+        await _pumpAssignedWard(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.nursingRead,
+              AppPermissions.clinicalRead,
+              AppPermissions.clinicalWrite,
+              AppPermissions.patientRead,
+              AppPermissions.patientWrite,
+              AppPermissions.evidenceExport,
+            },
+          ),
+        );
+
+        final AppListTable<NursingWorkItem> table = tester
+            .widget<AppListTable<NursingWorkItem>>(
+              find.byType(AppListTable<NursingWorkItem>),
+            );
+        expect(find.byTooltip('Filters'), findsOneWidget);
+        expect(find.byTooltip('Settings'), findsOneWidget);
+        expect(find.byTooltip('Export'), findsOneWidget);
+        expect(find.byTooltip('Print'), findsOneWidget);
+        expect(table.canExport, isTrue);
+        expect(table.canPrint, isTrue);
+      },
+    );
+
     testWidgets('read-only: worklist present; next-action writes absent', (
       WidgetTester tester,
     ) async {

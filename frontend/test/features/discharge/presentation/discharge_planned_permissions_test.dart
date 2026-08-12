@@ -539,7 +539,7 @@ void main() {
       expect(find.text('Start discharge plan'), findsNothing);
       expect(find.text('Request final billing'), findsNothing);
       expect(find.text('Request medicines'), findsNothing);
-      expect(find.text('Print discharge summary'), findsWidgets);
+      expect(find.text('Print'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

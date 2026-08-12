@@ -96,6 +96,7 @@ class _LabReportPreviewSettingsDialogState<T>
       icon: const Icon(Icons.settings_outlined),
       maxWidth: 760,
       scrollable: true,
+      pinActionsToBottom: true,
       content: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           final bool sideBySide =

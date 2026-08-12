@@ -564,4 +564,97 @@ void main() {
       ),
     ).called(1);
   });
+
+  test(
+    'facet badge totals use max-page candidate loads, not UI page length',
+    () async {
+      final _MockClinicalRepository clinical = _MockClinicalRepository();
+      final _MockOpdRepository opd = _MockOpdRepository();
+      final _MockIpdRepository ipd = _MockIpdRepository();
+      final List<ClinicalWorklistEntry> encounters = <ClinicalWorklistEntry>[
+        for (int i = 0; i < 40; i++)
+          ClinicalWorklistEntry(
+            id: 'enc-$i',
+            sourceQueue: 'OPD',
+            encounterId: 'enc-$i',
+            encounterPublicId: 'ENC${i.toString().padLeft(6, '0')}',
+            patientDisplayName: 'Patient $i',
+            encounterType: 'OUTPATIENT',
+            status: 'OPEN',
+            stage: 'WAITING_DOCTOR_REVIEW',
+            updatedAt: DateTime.utc(2026, 8, 12, 8),
+          ),
+      ];
+      final ProviderContainer container = buildContainer(
+        clinical: clinical,
+        opd: opd,
+        ipd: ipd,
+        encounters: encounters,
+      );
+
+      await container.read(clinicalWorkspaceControllerProvider.future);
+
+      final List<Object?> captured = verify(
+        () => clinical.listEncounters(captureAny()),
+      ).captured;
+      expect(captured, isNotEmpty);
+      expect(
+        captured.every(
+          (Object? query) =>
+              (query as ClinicalWorklistQuery).pageRequest.pageSize ==
+              AppPageRequest.maxPageSize,
+        ),
+        isTrue,
+      );
+
+      final ClinicalWorkspaceState? state = readState(container);
+      expect(state, isNotNull);
+      expect(state!.pendingCount, 40);
+      expect(state.worklist.items.length, lessThanOrEqualTo(25));
+      expect(state.worklist.totalItemCount, 40);
+    },
+  );
+
+  test('Pending active badge uses filtered facet total after search', () async {
+    final _MockClinicalRepository clinical = _MockClinicalRepository();
+    final _MockOpdRepository opd = _MockOpdRepository();
+    final _MockIpdRepository ipd = _MockIpdRepository();
+    final ProviderContainer container = buildContainer(
+      clinical: clinical,
+      opd: opd,
+      ipd: ipd,
+      encounters: <ClinicalWorklistEntry>[
+        const ClinicalWorklistEntry(
+          id: 'enc-a',
+          sourceQueue: 'OPD',
+          encounterId: 'enc-a',
+          patientDisplayName: 'Alice Pending',
+          encounterType: 'OUTPATIENT',
+          status: 'OPEN',
+          stage: 'WAITING_DOCTOR_REVIEW',
+        ),
+        const ClinicalWorklistEntry(
+          id: 'enc-b',
+          sourceQueue: 'OPD',
+          encounterId: 'enc-b',
+          patientDisplayName: 'Bob Pending',
+          encounterType: 'OUTPATIENT',
+          status: 'OPEN',
+          stage: 'WAITING_DOCTOR_REVIEW',
+        ),
+      ],
+    );
+
+    await container.read(clinicalWorkspaceControllerProvider.future);
+    final ClinicalWorkspaceController controller = container.read(
+      clinicalWorkspaceControllerProvider.notifier,
+    );
+    expect(readState(container)!.pendingCount, 2);
+
+    await controller.applySearch('Alice');
+    final ClinicalWorkspaceState? filtered = readState(container);
+    expect(filtered, isNotNull);
+    expect(filtered!.pendingCount, 1);
+    expect(filtered.worklist.totalItemCount, 1);
+  });
 }

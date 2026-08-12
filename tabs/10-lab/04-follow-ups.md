@@ -4,9 +4,9 @@
 
 - Label: `opdFollowUpsTitle` (not a `labScope*` key)
 - Icon: `Icons.phone_callback_outlined`
-- Count source: `followUpTabCountProvider(FollowUpWorklistScope())`
+- Count source: `followUpTabCountProvider(FollowUpWorklistScope())`; narrowed via `onNarrowedCountChanged`
 - Sibling tabs: patient-view summary for worklist tabs; this tab uses follow-up provider
-- Count tone: `AppTabCountTone.info`
+- Count tone: `AppTabCountTone.info` (`labSectionCountTone`)
 - Deep-link `section`: `follow-ups` (aliases `follow_ups`, `followups`)
 - Tab gate: `LabFollowUpsAtomPermissions.tab` = ∩ `lab:read` + `lab-workflows`
 - Host: **reused** `FollowUpWorklistPanel` (`storageKeyPrefix: lab_follow_ups`)
@@ -15,18 +15,18 @@
 ## 2. Search / Filters / Settings / Export / Print / context
 
 - Search: `receptionFollowUpsSearchHint`; Clear `receptionClearFiltersAction`
-- Filters: `commonFiltersActionLabel` / `commonAdvancedFiltersTitle`; Apply `opdApplyFiltersAction`; Reset `opdClearFiltersAction`
+- Filters: `commonFiltersActionLabel` / `commonAdvancedFiltersTitle`; Apply `opdApplyFiltersAction`; Reset `opdClearFiltersAction`; Close `commonCloseActionLabel`
 - Date: `labFollowUpDateFilterLabel`; From/To `opdDateFromLabel` / `opdDateToLabel`
-- Settings: opens **Lab desk settings** (worklist column prefs for `lab_followUps`) — **bypasses** follow-up column dialog (`lab_follow_ups_cols`)
-- Export: AppListTable default (ungated)
-- Print: **not mounted**
+- Settings: panel-owned follow-up column dialog (`lab_follow_ups_cols`)
+- Export: gated `canExportLabWorkspace` (∩ `evidence:export`)
+- Print: preview-first `printLabWorkspaceList` / `commonPrintActionLabel` when print ∩
 - Create: `labCreateAction` via `LabFollowUpsAtomPermissions.create`
 
 ## 3. Table
 
 - Row model: `ReceptionFollowUpEntry`
 - Columns (defaults): `opdPatientNameLabel`, `patientsPhoneLabel`, `patientsEmailLabel`, `opdFollowUpDateLabel`, `opdFollowUpTimeLabel`
-- Panel storage keys: `lab_follow_ups_cols` / `lab_follow_ups_cw` (unused when Lab Settings override)
+- Panel storage keys: `lab_follow_ups_cols` / `lab_follow_ups_cw`
 - Empty: `receptionFollowUpsEmptyTitle` / `receptionFollowUpsEmptyBody`
 
 ## 4. Advanced filters / search fields
@@ -46,7 +46,7 @@
 | --- | --- |
 | Follow-up detail | **reused** `showReceptionFollowUpDetailDialog` |
 | Create order path | shared / **reused** clinical (same as worklist) |
-| Desk settings | Lab-owned |
+| Follow-up column settings | panel-owned |
 
 ## 7. Nested / follow-on
 
@@ -58,7 +58,7 @@ Detail read + nested reschedule; create-order forms if Create used.
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
+- Table Print: preview-first follow-up list print when ∩ `evidence:export`
 - Detail: no print surface
 
 ## 10. Loading / empty / error / success
@@ -73,5 +73,5 @@ Detail read + nested reschedule; create-order forms if Create used.
 | Tab / list / search / filters / settings / empty / loading / retry / detail / close | ∩ `lab:read` |
 | create / reschedule / markCompleted / saveFollowUp / write | ∩ `lab:write` |
 | createPatient | ∩ `patient:write` |
-| Export | ungated |
+| Export | ∩ `evidence:export` (`canExportLabWorkspace`) |
 | Print | n/a |

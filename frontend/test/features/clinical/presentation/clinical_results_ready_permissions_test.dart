@@ -355,7 +355,7 @@ void main() {
       );
       expect(
         ClinicalResultsReadyAtomPermissions.printSummary,
-        same(clinicalWorkspaceReadRequirement),
+        same(clinicalWorkspaceExportRequirement),
       );
       expect(
         ClinicalResultsReadyAtomPermissions.nestedRead,
@@ -657,6 +657,7 @@ void main() {
         permissions: <AppPermission>{
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
+          AppPermissions.evidenceExport,
         },
       );
       expect(
@@ -719,7 +720,7 @@ void main() {
       expect(find.text('Add clinical notes'), findsNothing);
       expect(find.text('Request lab'), findsNothing);
       expect(find.text('Prescribe'), findsNothing);
-      expect(find.text('Print summary'), findsWidgets);
+      expect(find.text('Print'), findsNothing);
       expect(find.text('Results timeline'), findsNothing);
       expect(find.text('Lab orders'), findsWidgets);
       expect(find.text('Radiology orders'), findsWidgets);
@@ -739,6 +740,7 @@ void main() {
         permissions: <AppPermission>{
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
+          AppPermissions.evidenceExport,
         },
       );
       expect(
@@ -764,7 +766,7 @@ void main() {
       expect(find.text('Add clinical notes'), findsWidgets);
       expect(find.text('Request lab'), findsWidgets);
       expect(find.text('Prescribe'), findsWidgets);
-      expect(find.text('Print summary'), findsWidgets);
+      expect(find.text('Print'), findsWidgets);
       expect(find.text('Results timeline'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -807,6 +809,7 @@ void main() {
           permissions: <AppPermission>{
             AppPermissions.clinicalRead,
             AppPermissions.clinicalWrite,
+            AppPermissions.evidenceExport,
           },
           modules: const <AppModuleEntitlement>[],
         ),
@@ -858,7 +861,7 @@ void main() {
       expect(find.text('Request lab'), findsWidgets);
       expect(find.text('Add clinical notes'), findsNothing);
       expect(find.text('Prescribe'), findsNothing);
-      expect(find.text('Print summary'), findsWidgets);
+      expect(find.text('Print'), findsNothing);
       expect(find.text('Results timeline'), findsNothing);
     },
   );
@@ -1026,6 +1029,7 @@ void main() {
         permissions: <AppPermission>{
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
+          AppPermissions.evidenceExport,
         },
       ),
       physicalSize: const Size(390, 844),
@@ -1051,6 +1055,7 @@ void main() {
         permissions: <AppPermission>{
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
+          AppPermissions.evidenceExport,
         },
       ),
     );
@@ -1071,6 +1076,7 @@ void main() {
         permissions: <AppPermission>{
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
+          AppPermissions.evidenceExport,
         },
       ),
       themeMode: ThemeMode.dark,
@@ -1090,6 +1096,7 @@ void main() {
         permissions: <AppPermission>{
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
+          AppPermissions.evidenceExport,
         },
       ),
     );
@@ -1126,6 +1133,7 @@ void main() {
           permissions: <AppPermission>{
             AppPermissions.clinicalRead,
             AppPermissions.clinicalWrite,
+            AppPermissions.evidenceExport,
           },
         ),
         listOverride: const Result<AppPage<ClinicalWorklistEntry>>.failure(
@@ -1149,6 +1157,7 @@ void main() {
           permissions: <AppPermission>{
             AppPermissions.clinicalRead,
             AppPermissions.clinicalWrite,
+            AppPermissions.evidenceExport,
           },
         ),
       );
@@ -1195,6 +1204,7 @@ void main() {
               permissions: <AppPermission>{
                 AppPermissions.clinicalRead,
                 AppPermissions.clinicalWrite,
+                AppPermissions.evidenceExport,
               },
             ),
           ),
@@ -1272,7 +1282,7 @@ void main() {
 
       expect(find.text('Add clinical notes'), findsWidgets);
       expect(find.text('Request lab'), findsWidgets);
-      expect(find.text('Print summary'), findsWidgets);
+      expect(find.text('Print'), findsNothing);
     },
   );
 

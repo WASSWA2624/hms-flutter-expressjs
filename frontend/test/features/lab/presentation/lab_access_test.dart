@@ -75,6 +75,33 @@ void main() {
       expect(canConfigureLab(writer), isTrue);
     });
 
+    test('export/print ∩ needs evidence:export', () {
+      final AppAccessPolicy withoutExport = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.labRead,
+          AppPermissions.labWrite,
+        },
+      );
+      final AppAccessPolicy withExport = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.labRead,
+          AppPermissions.evidenceExport,
+        },
+      );
+
+      expect(canExportLabWorkspace(withoutExport), isFalse);
+      expect(canPrintLabWorkspace(withoutExport), isFalse);
+      expect(canExportLabWorkspace(withExport), isTrue);
+      expect(canPrintLabWorkspace(withExport), isTrue);
+      expect(
+        identical(
+          labWorkspacePrintRequirement,
+          labWorkspaceExportRequirement,
+        ),
+        isTrue,
+      );
+    });
+
     test('create patient via lab ∩ needs patient:write', () {
       final AppAccessPolicy withoutWrite = _policyFor(
         permissions: <AppPermission>{

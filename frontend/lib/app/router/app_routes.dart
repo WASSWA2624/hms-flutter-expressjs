@@ -377,10 +377,8 @@ abstract final class AppRoutes {
     name: 'clinical',
     path: '/clinical',
     access: AppRouteAccess.authenticated,
-    requiredAnyPermissions: <AppPermission>[
-      AppPermissions.clinicalRead,
-      AppPermissions.clinicalWrite,
-    ],
+    // Live gate is RouteAccessCatalog.clinicalEntry (∩ clinical:read + module).
+    requiredPermissions: <AppPermission>[AppPermissions.clinicalRead],
     requiredAnyRoles: clinicalWorkspaceRoles,
     requiredActiveModules: <String>['encounters-vitals'],
   );
@@ -510,13 +508,8 @@ abstract final class AppRoutes {
     name: 'discharge',
     path: '/discharge',
     access: AppRouteAccess.authenticated,
-    requiredAnyPermissions: <AppPermission>[
-      AppPermissions.clinicalRead,
-      AppPermissions.clinicalWrite,
-      AppPermissions.pharmacyRead,
-      AppPermissions.billingRead,
-      AppPermissions.operationsRead,
-    ],
+    // Live gate is RouteAccessCatalog.dischargeEntry (∩ discharge:read + module).
+    requiredPermissions: <AppPermission>[AppPermissions.dischargeRead],
     requiredAnyRoles: dischargeWorkspaceRoles,
     requiredActiveModules: <String>['inpatient-bed-management'],
   );

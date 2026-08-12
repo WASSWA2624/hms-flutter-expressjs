@@ -4,8 +4,8 @@
 
 - Label: `dischargeSectionPlanned`
 - Icon: `Icons.event_available_outlined`
-- Count source: `state.plannedCount` (client filter `isPlannedDischarge`)
-- Sibling tabs: loaded-queue / client-filter model (shared chrome)
+- Count source: `DischargeSectionCounts.planned` (catalog); active + search/filters → filtered section membership
+- Sibling tabs: dedicated unfiltered `DischargeSectionCounts` sibling-count model
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `planned`
 - Tab gate: `DischargePlannedAtomPermissions.tab`
@@ -13,9 +13,11 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Filters → Settings → Export**
+Order: **Filters → Settings → Export → Print**
 
-- Same queue chrome as All; date filter **off**; no strip Plan/Clearance; no table Print
+- Same queue chrome as All; date filter **on**; strip Plan/Clearance **not mounted** (row next-action; justified)
+- Export: ∩ `evidence:export` (`canExportDischargeWorkspace` / Planned export atom)
+- Print (toolbar): `commonPrintActionLabel` → `printDischargeWorkspaceList` (same export gate)
 
 ## 3. Table
 
@@ -32,7 +34,7 @@ Order: **Filters → Settings → Export**
 
 ## 4. Advanced filters / search fields
 
-- Status group (shared list); date filter **off**
+- Status group (shared list); date filter **on** (`dischargeDateFilterLabel` / From / To)
 
 ## 5. Primary / secondary / row actions
 
@@ -41,7 +43,12 @@ Order: **Filters → Settings → Export**
 
 ## 6. Dialogs from this tab
 
-Same as All: detail, planning, pharmacy, clinicalSummary print.
+| Dialog | Owner |
+| --- | --- |
+| Detail | Discharge-owned |
+| Planning (`showDischargePlanningDialog` + Planned create/update gates) | Discharge-owned |
+| Pharmacy request | Discharge-owned |
+| Print clinical summary | **reused** `PrintDocumentTemplates.clinicalSummary` (trigger `Print`) |
 
 ## 7. Nested / follow-on
 
@@ -53,8 +60,8 @@ Planning clearance + pharmacy request forms (shared).
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
-- Detail print when summary present (`DischargePlannedAtomPermissions.printSummary`)
+- Table Print: preview-first `printDischargeWorkspaceList` (`commonPrintActionLabel`)
+- Detail print when summary present (`DischargePlannedAtomPermissions.printSummary`; trigger `Print` / `dischargePrintSummaryAction` → "Print")
 
 ## 10. Loading / empty / error / success
 
@@ -67,6 +74,6 @@ Shared Discharge patterns.
 | Tab / chrome / detail | `DischargePlannedAtomPermissions.*` → workspace read ∪ |
 | nextActionClearance / write / pharmacy | clinical write |
 | printSummary | read ∪ |
+| create / update (planning dialog) | Planned atom map (section-scoped) |
 | Billing / pharmacy / operations / nursing panels | nested ∩ as All |
-| Export | ungated |
-| Table Print | n/a |
+| Export / Print (toolbar) | ∩ `evidence:export` |

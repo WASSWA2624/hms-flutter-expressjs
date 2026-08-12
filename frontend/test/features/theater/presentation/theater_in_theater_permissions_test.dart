@@ -953,6 +953,104 @@ void main() {
       );
     },
   );
+
+  testWidgets(
+    'compliance: In theater toolbar Print/Export omit without evidence:export',
+    (WidgetTester tester) async {
+      await _pumpInTheaterTab(
+        tester,
+        theaterRepository: theaterRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+        ),
+      );
+
+      final AppListTable<TheaterCase> table = tester
+          .widget<AppListTable<TheaterCase>>(
+            find.byType(AppListTable<TheaterCase>),
+          );
+      expect(table.canExport, isFalse);
+      expect(table.canPrint, isFalse);
+      expect(table.enablePrint, isTrue);
+      expect(table.printLabel, 'Print');
+      expect(table.search?.advancedFilterButtonLabel, 'Filters');
+      expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
+      expect(table.search?.advancedFilterResetLabel, 'Clear filters');
+      expect(table.search?.advancedFilterCloseLabel, 'Close');
+      expect(table.columnVisibilityLabel, 'Settings');
+      expect(find.text('Export'), findsNothing);
+      expect(find.text('Print'), findsNothing);
+      expect(find.text('Schedule case'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'compliance: In theater mounts Export/Print when evidence:export allowed',
+    (WidgetTester tester) async {
+      await _pumpInTheaterTab(
+        tester,
+        theaterRepository: theaterRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+
+      final AppListTable<TheaterCase> table = tester
+          .widget<AppListTable<TheaterCase>>(
+            find.byType(AppListTable<TheaterCase>),
+          );
+      expect(table.canExport, isTrue);
+      expect(table.canPrint, isTrue);
+      expect(table.printLabel, 'Print');
+      expect(find.text('Export'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+      expect(find.text('Schedule case'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'compliance: In theater defaults prefer-5 data columns and warning count',
+    (WidgetTester tester) async {
+      await _pumpInTheaterTab(
+        tester,
+        theaterRepository: theaterRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+        ),
+      );
+
+      final AppListTable<TheaterCase> table = tester
+          .widget<AppListTable<TheaterCase>>(
+            find.byType(AppListTable<TheaterCase>),
+          );
+      final Set<String> dataIds = table.columns
+          .map((AppListTableColumn<TheaterCase> c) => c.key)
+          .where((String id) => id != 'next_action')
+          .toSet();
+      expect(
+        dataIds,
+        <String>{'patient', 'procedure', 'room', 'time', 'status'},
+      );
+      expect(dataIds.length, 5);
+
+      final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      final AppTabItem inTheater = strip.tabs.firstWhere(
+        (AppTabItem tab) => tab.id == TheaterSection.inTheater.name,
+      );
+      expect(inTheater.countTone, AppTabCountTone.warning);
+      expect(inTheater.count, isNotNull);
+    },
+  );
 }
 
 Future<void> _pumpAfterAction(WidgetTester tester) async {
@@ -1040,8 +1138,15 @@ void _stubTheater(
           .toList(growable: false);
     }
     if (stage != null && stage.isNotEmpty) {
+      final Set<String> stages = stage
+          .split(',')
+          .map((String part) => part.trim().toUpperCase())
+          .where((String part) => part.isNotEmpty)
+          .toSet();
       items = items
-          .where((TheaterCase item) => item.normalizedStage == stage)
+          .where(
+            (TheaterCase item) => stages.contains(item.normalizedStage),
+          )
           .toList(growable: false);
     }
     return Result<AppPage<TheaterCase>>.success(

@@ -20,6 +20,26 @@ const List<String> theaterWorkflowStages = <String>[
   'COMPLETED',
 ];
 
+/// Recovery board stages (comma-separated for API `stage` filter).
+const String theaterRecoveryStageFilter = 'POST_OP,PACU_HANDOFF';
+
+bool theaterIsRecoveryStageFilter(String? stage) {
+  if (stage == null || stage.trim().isEmpty) {
+    return false;
+  }
+  final Set<String> parts = stage
+      .split(',')
+      .map((String part) => part.trim().toUpperCase())
+      .where((String part) => part.isNotEmpty)
+      .toSet();
+  return parts.contains('POST_OP') && parts.contains('PACU_HANDOFF');
+}
+
+bool theaterCaseMatchesRecoveryScope(TheaterCase item) {
+  final String stage = item.normalizedStage;
+  return stage == 'POST_OP' || stage == 'PACU_HANDOFF';
+}
+
 const List<String> theaterChecklistPhases = <String>[
   'PRE_OP',
   'SIGN_IN',
@@ -577,6 +597,83 @@ final class TheaterCaseQuery {
       pageRequest: pageRequest ?? this.pageRequest,
     );
   }
+
+  /// Operator advanced filters (excludes tab-owned status/stage when
+  /// [includeStatusStage] is false).
+  bool hasOperatorFilters({required bool includeStatusStage}) {
+    return (includeStatusStage && status != null) ||
+        (includeStatusStage && stage != null) ||
+        scheduledDate != null ||
+        roomId != null ||
+        surgeonUserId != null ||
+        anesthetistUserId != null;
+  }
+}
+
+/// Dedicated unfiltered scope totals for sibling tab badges.
+@immutable
+final class TheaterScopeCounts {
+  const TheaterScopeCounts({
+    this.scheduled = 0,
+    this.inTheater = 0,
+    this.recovery = 0,
+    this.all = 0,
+  });
+
+  static const TheaterScopeCounts empty = TheaterScopeCounts();
+
+  final int scheduled;
+  final int inTheater;
+  final int recovery;
+  final int all;
+
+  int forSection(TheaterSection section) {
+    return switch (section) {
+      TheaterSection.scheduled => scheduled,
+      TheaterSection.inTheater => inTheater,
+      TheaterSection.recovery => recovery,
+      TheaterSection.all => all,
+      TheaterSection.followUps => 0,
+    };
+  }
+
+  TheaterScopeCounts copyWith({
+    int? scheduled,
+    int? inTheater,
+    int? recovery,
+    int? all,
+  }) {
+    return TheaterScopeCounts(
+      scheduled: scheduled ?? this.scheduled,
+      inTheater: inTheater ?? this.inTheater,
+      recovery: recovery ?? this.recovery,
+      all: all ?? this.all,
+    );
+  }
+}
+
+/// Sibling-count model: dedicated unfiltered [TheaterScopeCounts].
+/// Active tab with search/advanced filters uses the filtered page total.
+int theaterSectionTabCount(
+  TheaterWorkspaceState state,
+  TheaterSection section, {
+  TheaterSection? activeSection,
+}) {
+  if (section.isFollowUps) {
+    return 0;
+  }
+  final int scopeTotal = state.scopeCounts.forSection(section);
+  if (activeSection == null || section != activeSection) {
+    return scopeTotal;
+  }
+  final bool includeStatusStage = section == TheaterSection.all;
+  final bool narrowed =
+      state.query.search.trim().isNotEmpty ||
+      state.query.hasOperatorFilters(includeStatusStage: includeStatusStage);
+  if (!narrowed) {
+    return scopeTotal;
+  }
+  return state.cases.totalItemCount ?? state.cases.items.length;
 }
 
 @immutable
@@ -584,6 +681,7 @@ final class TheaterWorkspaceState {
   const TheaterWorkspaceState({
     required this.cases,
     required this.query,
+    this.scopeCounts = TheaterScopeCounts.empty,
     this.selectedCase,
     this.isRefreshing = false,
     this.isRefreshingDetail = false,
@@ -593,6 +691,9 @@ final class TheaterWorkspaceState {
 
   final AppPage<TheaterCase> cases;
   final TheaterCaseQuery query;
+
+  /// Dedicated unfiltered scope totals (sibling-count model).
+  final TheaterScopeCounts scopeCounts;
   final TheaterCase? selectedCase;
   final bool isRefreshing;
   final bool isRefreshingDetail;
@@ -603,17 +704,9 @@ final class TheaterWorkspaceState {
     return cases.items.where((TheaterCase item) => item.isActive).length;
   }
 
-  int get scheduledCount {
-    return cases.items
-        .where((TheaterCase item) => item.normalizedStatus == 'SCHEDULED')
-        .length;
-  }
+  int get scheduledCount => scopeCounts.scheduled;
 
-  int get inTheaterCount {
-    return cases.items
-        .where((TheaterCase item) => item.normalizedStatus == 'IN_PROGRESS')
-        .length;
-  }
+  int get inTheaterCount => scopeCounts.inTheater;
 
   int get completedCount {
     return cases.items
@@ -627,12 +720,7 @@ final class TheaterWorkspaceState {
         .length;
   }
 
-  int get recoveryCount {
-    return cases.items.where((TheaterCase item) {
-      final String stage = item.normalizedStage;
-      return stage == 'POST_OP' || stage == 'PACU_HANDOFF';
-    }).length;
-  }
+  int get recoveryCount => scopeCounts.recovery;
 
   int get readyCount {
     return cases.items.where((TheaterCase item) => item.isReady).length;
@@ -641,6 +729,7 @@ final class TheaterWorkspaceState {
   TheaterWorkspaceState copyWith({
     AppPage<TheaterCase>? cases,
     TheaterCaseQuery? query,
+    TheaterScopeCounts? scopeCounts,
     TheaterCase? selectedCase,
     bool? isRefreshing,
     bool? isRefreshingDetail,
@@ -652,6 +741,7 @@ final class TheaterWorkspaceState {
     return TheaterWorkspaceState(
       cases: cases ?? this.cases,
       query: query ?? this.query,
+      scopeCounts: scopeCounts ?? this.scopeCounts,
       selectedCase: clearSelectedCase
           ? null
           : selectedCase ?? this.selectedCase,

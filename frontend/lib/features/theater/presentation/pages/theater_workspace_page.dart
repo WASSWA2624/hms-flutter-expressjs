@@ -15,6 +15,9 @@ import 'package:hosspi_hms/features/theater/presentation/controllers/theater_wor
 import 'package:hosspi_hms/features/theater/presentation/theater_access.dart';
 import 'package:hosspi_hms/features/theater/presentation/theater_next_action.dart';
 import 'package:hosspi_hms/features/theater/presentation/widgets/theater_schedule_case_form.dart';
+import 'package:hosspi_hms/features/theater/presentation/widgets/theater_scope_navigation.dart';
+import 'package:hosspi_hms/features/theater/presentation/widgets/theater_workspace_print_helpers.dart';
+import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -24,6 +27,7 @@ import 'package:hosspi_hms/shared/follow_up/follow_up_worklist_panel.dart';
 import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 part '../widgets/theater_workspace_widgets.dart';
@@ -123,6 +127,7 @@ class _TheaterWorkspacePageState extends ConsumerState<TheaterWorkspacePage> {
       loadingBody: l10n.theaterLoadingBody,
       maxWidth: PageMaxWidth.dataHeavy,
       centerVertically: false,
+      keepPreviousDataDuringRefresh: true,
       onRetry: () {
         ref.read(theaterWorkspaceControllerProvider.notifier).refresh();
       },
@@ -165,6 +170,7 @@ class _TheaterWorkspaceContentState
   _tableColumnController;
   late TheaterSection _section;
   bool _scheduleDialogHandled = false;
+  int? _followUpsNarrowedCount;
 
   @override
   void initState() {
@@ -246,7 +252,9 @@ class _TheaterWorkspaceContentState
       case TheaterSection.inTheater:
         unawaited(controller.applyStatus('IN_PROGRESS', clearStage: true));
       case TheaterSection.recovery:
-        unawaited(controller.applyStage('POST_OP', clearStatus: true));
+        unawaited(
+          controller.applyStage(theaterRecoveryStageFilter, clearStatus: true),
+        );
       case TheaterSection.all:
         unawaited(controller.clearFilters());
       case TheaterSection.followUps:
@@ -278,22 +286,15 @@ class _TheaterWorkspaceContentState
     if (section.isFollowUps) {
       return null;
     }
-    return switch (section) {
-      TheaterSection.scheduled => state.scheduledCount,
-      TheaterSection.inTheater => state.inTheaterCount,
-      TheaterSection.recovery => state.recoveryCount,
-      TheaterSection.all => _pageTotal(state.cases),
-      TheaterSection.followUps => null,
-    };
+    return theaterSectionTabCount(
+      state,
+      section,
+      activeSection: _section,
+    );
   }
 
   static AppTabCountTone _sectionCountTone(TheaterSection section) {
-    return switch (section) {
-      TheaterSection.scheduled ||
-      TheaterSection.inTheater ||
-      TheaterSection.recovery => AppTabCountTone.warning,
-      TheaterSection.all || TheaterSection.followUps => AppTabCountTone.info,
-    };
+    return theaterSectionCountTone(section);
   }
 
   @override
@@ -322,7 +323,11 @@ class _TheaterWorkspaceContentState
     }
 
     if (visibleSections.isEmpty) {
-      return const SizedBox.shrink();
+      return const ResponsivePage(
+        maxWidth: PageMaxWidth.authForm,
+        centerVertically: true,
+        child: AppFailureStateView(failure: AppFailure.forbidden()),
+      );
     }
     if (!visibleSections.contains(_section)) {
       final TheaterSection fallback =
@@ -357,13 +362,14 @@ class _TheaterWorkspaceContentState
                     icon: _sectionIcon(section),
                     label: _sectionLabel(l10n, section),
                     count: section == TheaterSection.followUps
-                        ? ref.watch(
-                            followUpTabCountProvider(
-                              const FollowUpWorklistScope(
-                                encounterType: 'THEATRE',
-                              ),
-                            ),
-                          )
+                        ? (_followUpsNarrowedCount ??
+                              ref.watch(
+                                followUpTabCountProvider(
+                                  const FollowUpWorklistScope(
+                                    encounterType: 'THEATRE',
+                                  ),
+                                ),
+                              ))
                         : _sectionCount(state, section),
                     countTone: _sectionCountTone(section),
                   ),
@@ -383,11 +389,56 @@ class _TheaterWorkspaceContentState
             ),
             SizedBox(height: theme.spacing.sm),
             if (_section.isFollowUps)
-              const FollowUpWorklistPanel(
-                scope: FollowUpWorklistScope(encounterType: 'THEATRE'),
+              FollowUpWorklistPanel(
+                scope: const FollowUpWorklistScope(encounterType: 'THEATRE'),
                 storageKeyPrefix: 'theater_follow_ups',
                 readRequirement: TheaterFollowUpsAtomPermissions.tab,
                 writeRequirement: TheaterFollowUpsAtomPermissions.write,
+                showAdvancedFilterButton: true,
+                advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+                advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+                advancedFilterApplyLabel: l10n.theaterApplyFiltersAction,
+                advancedFilterResetLabel: l10n.theaterClearFiltersAction,
+                advancedFilterCloseLabel: l10n.commonCloseActionLabel,
+                enableDateFilter: true,
+                dateFilterLabel: l10n.opdFollowUpDateLabel,
+                dateFromLabel: l10n.opdDateFromLabel,
+                dateToLabel: l10n.opdDateToLabel,
+                filterGroups: <AppSearchBarFilterGroup>[
+                  AppSearchBarFilterGroup(
+                    key: 'follow_up_status',
+                    label: l10n.receptionStatusLabel,
+                    choices: <AppSearchBarFilterChoice>[
+                      AppSearchBarFilterChoice(
+                        value: 'pending',
+                        label: l10n.patientsActiveWorkStatusAppointmentScheduled,
+                      ),
+                      AppSearchBarFilterChoice(
+                        value: 'completed',
+                        label: l10n.opdCompletedFlowSummaryLabel,
+                      ),
+                    ],
+                  ),
+                ],
+                canExport: canExportTheaterWorkspace(accessPolicy),
+                enablePrint: true,
+                canPrint: canPrintTheaterWorkspace(accessPolicy),
+                printLabel: l10n.commonPrintActionLabel,
+                onPrint: (List<ReceptionFollowUpEntry> entries) =>
+                    _printTheaterFollowUpsList(
+                      context,
+                      ref,
+                      entries: entries,
+                      l10n: l10n,
+                    ),
+                onNarrowedCountChanged: (int? narrowedCount) {
+                  if (_followUpsNarrowedCount == narrowedCount) {
+                    return;
+                  }
+                  setState(() {
+                    _followUpsNarrowedCount = narrowedCount;
+                  });
+                },
               )
             else
               _TheaterCaseBoard(
@@ -429,7 +480,7 @@ class _TheaterCaseBoard extends ConsumerWidget {
   final ValueChanged<AppPageRequest> onPageChanged;
   final TheaterBoardQuery? initialQuery;
 
-  /// Schedule case lives after Export in the search bar (not the tab toolbar).
+  /// Schedule case lives after Print in the search bar (not the tab toolbar).
   List<AppSearchBarAction> _scheduleCaseSearchActions(
     BuildContext context,
     WidgetRef ref,
@@ -465,6 +516,9 @@ class _TheaterCaseBoard extends ConsumerWidget {
     final TheaterWorkspaceController controller = ref.read(
       theaterWorkspaceControllerProvider.notifier,
     );
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canExport = canExportTheaterWorkspace(policy);
+    final bool canPrint = canPrintTheaterWorkspace(policy);
 
     return AppListTable<TheaterCase>(
       page: state.cases,
@@ -474,6 +528,9 @@ class _TheaterCaseBoard extends ConsumerWidget {
       columnWidthStorageKey: 'theater_cw_${section.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.theaterTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
       search: AppListTableSearch<TheaterCase>(
         controller: searchController,
         semanticLabel: l10n.theaterSearchLabel,
@@ -484,10 +541,11 @@ class _TheaterCaseBoard extends ConsumerWidget {
         onSubmitted: controller.applySearch,
         onClear: () => controller.applySearch(''),
         showAdvancedFilterButton: true,
-        advancedFilterButtonLabel: l10n.theaterFiltersLabel,
+        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
         advancedFilterTitle: l10n.theaterAdvancedFiltersTitle,
-        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterApplyLabel: l10n.theaterApplyFiltersAction,
         advancedFilterResetLabel: l10n.theaterClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         dateFilterLabel: l10n.theaterScheduleDateFilterLabel,
         dateFromLabel: l10n.theaterScheduleDateFilterLabel,
         dateToLabel: l10n.opdDateToLabel,
@@ -535,7 +593,7 @@ class _TheaterCaseBoard extends ConsumerWidget {
         ],
         filterValue: _theaterFilterValue(state.query, section),
         hasActiveFilters: _hasTheaterFilters(state.query, section),
-        // Filters → Settings → Export → Schedule case.
+        // Filters → Settings → Export → Print → Schedule case.
         trailingActions: _scheduleCaseSearchActions(context, ref),
         onFilterChanged: (AppSearchBarFilterValue value) async {
           final String? nextStatus = value.option(_theaterStatusFilterKey);
@@ -600,6 +658,34 @@ class _TheaterCaseBoard extends ConsumerWidget {
         );
       },
       onPageChanged: onPageChanged,
+      enableExport: true,
+      canExport: canExport,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.appDateInvalidMessage,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () => _printTheaterCaseBoard(
+        context,
+        ref,
+        state: state,
+        section: section,
+        showNextAction: showNextAction,
+        l10n: l10n,
+      ),
+      exportConfig: AppListTableExportConfig<TheaterCase>(
+        fileNameStem: 'theater_${section.name}',
+        dateOf: (TheaterCase item) => item.scheduledAt,
+        sheetName: _theaterSectionExportSheetName(l10n, section),
+      ),
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.theaterNoCasesTitle,
         body: l10n.theaterNoCasesBody,
@@ -2408,7 +2494,146 @@ String _responsibleRoleLabel(AppLocalizations l10n, TheaterCase theaterCase) {
   };
 }
 
-int _pageTotal<T>(AppPage<T> page) => page.totalItemCount ?? page.items.length;
+String _theaterSectionExportSheetName(
+  AppLocalizations l10n,
+  TheaterSection section,
+) {
+  return switch (section) {
+    TheaterSection.scheduled => l10n.theaterScheduledSummaryLabel,
+    TheaterSection.inTheater => l10n.theaterInTheaterSummaryLabel,
+    TheaterSection.recovery => l10n.theaterRecoverySectionLabel,
+    TheaterSection.all => l10n.theaterAllCasesSummaryLabel,
+    TheaterSection.followUps => l10n.opdFollowUpsTitle,
+  };
+}
+
+Future<void> _printTheaterCaseBoard(
+  BuildContext context,
+  WidgetRef ref, {
+  required TheaterWorkspaceState state,
+  required TheaterSection section,
+  required bool showNextAction,
+  required AppLocalizations l10n,
+}) async {
+  final List<AppListTableColumn<TheaterCase>> columns =
+      <AppListTableColumn<TheaterCase>>[
+        ...defaultTheaterColumnsForSection(
+          context,
+          section,
+          showNextAction: showNextAction,
+        ),
+        ...theaterColumnChoicesForSection(
+          context,
+          section,
+          showNextAction: showNextAction,
+        ),
+      ].where(
+        (AppListTableColumn<TheaterCase> column) => column.includesInExport,
+      ).toList(growable: false);
+  final List<TheaterWorkspacePrintColumn> printColumns =
+      <TheaterWorkspacePrintColumn>[
+        for (final AppListTableColumn<TheaterCase> column in columns)
+          TheaterWorkspacePrintColumn(id: column.key, label: column.label),
+      ];
+  final List<Map<String, String>> printRows = <Map<String, String>>[
+    for (final TheaterCase item in state.cases.items)
+      <String, String>{
+        for (final AppListTableColumn<TheaterCase> column in columns)
+          column.key: _theaterCasePrintCellValue(context, item, column.key),
+      },
+  ];
+  await printTheaterWorkspaceList(
+    ref: ref,
+    context: context,
+    title: _theaterSectionExportSheetName(l10n, section),
+    columns: printColumns,
+    rows: printRows,
+    emptyText: l10n.theaterNoCasesTitle,
+  );
+}
+
+Future<void> _printTheaterFollowUpsList(
+  BuildContext context,
+  WidgetRef ref, {
+  required List<ReceptionFollowUpEntry> entries,
+  required AppLocalizations l10n,
+}) async {
+  final Locale locale = Localizations.localeOf(context);
+  final List<TheaterWorkspacePrintColumn> printColumns =
+      <TheaterWorkspacePrintColumn>[
+        TheaterWorkspacePrintColumn(
+          id: 'patient',
+          label: l10n.opdPatientNameLabel,
+        ),
+        TheaterWorkspacePrintColumn(
+          id: 'phone',
+          label: l10n.patientsPhoneIdentifierColumnLabel,
+        ),
+        TheaterWorkspacePrintColumn(
+          id: 'status',
+          label: l10n.receptionStatusLabel,
+        ),
+        TheaterWorkspacePrintColumn(
+          id: 'date',
+          label: l10n.opdFollowUpDateLabel,
+        ),
+        TheaterWorkspacePrintColumn(
+          id: 'time',
+          label: l10n.opdFollowUpTimeLabel,
+        ),
+        TheaterWorkspacePrintColumn(
+          id: 'patient_id',
+          label: l10n.opdPatientIdLabel,
+        ),
+        TheaterWorkspacePrintColumn(id: 'email', label: l10n.patientsEmailLabel),
+        TheaterWorkspacePrintColumn(id: 'notes', label: l10n.opdNotesLabel),
+      ];
+  final List<Map<String, String>> printRows = <Map<String, String>>[
+    for (final ReceptionFollowUpEntry entry in entries)
+      <String, String>{
+        'patient': entry.patientDisplayName?.trim().isNotEmpty == true
+            ? entry.patientDisplayName!.trim()
+            : l10n.profileUnknownValue,
+        'phone': entry.patientPhone?.trim() ?? '',
+        'status': opdStageDisplayLabel(l10n, entry.status),
+        'date': AppFormatters.shortDate(entry.scheduledAt.toLocal(), locale),
+        'time': AppFormatters.time(entry.scheduledAt.toLocal(), locale),
+        'patient_id': entry.patientIdentifier,
+        'email': entry.patientEmail?.trim() ?? '',
+        'notes': entry.notes?.trim() ?? '',
+      },
+  ];
+  await printTheaterWorkspaceList(
+    ref: ref,
+    context: context,
+    title: l10n.opdFollowUpsTitle,
+    columns: printColumns,
+    rows: printRows,
+    emptyText: l10n.receptionFollowUpsEmptyTitle,
+  );
+}
+
+String _theaterCasePrintCellValue(
+  BuildContext context,
+  TheaterCase item,
+  String columnId,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return switch (columnId) {
+    'case_id' => item.effectiveDisplayId,
+    'patient' => item.patientDisplayName ?? l10n.profileUnknownValue,
+    'procedure' => item.procedureName ?? l10n.profileUnknownValue,
+    'time' => _formatDateTime(context, item.scheduledAt),
+    'room' => item.roomDisplayLabel?.trim().isNotEmpty == true
+        ? item.roomDisplayLabel!.trim()
+        : (item.roomDisplayId?.trim() ?? l10n.profileUnknownValue),
+    'status' => _caseStatusLabel(l10n, item.status),
+    'readiness' =>
+      '${item.checklistCompleted}/${item.checklistTotal}',
+    'owner' => _responsibleRoleLabel(l10n, item),
+    _ => '',
+  };
+}
 
 String? _formatDateTimeOrNull(BuildContext context, DateTime? value) {
   return value == null

@@ -286,8 +286,47 @@ void main() {
         DischargeAllPatientsAtomPermissions.routeEntry,
         same(dischargeWorkspaceEntryRequirement),
       );
+      expect(
+        DischargeAllPatientsAtomPermissions.export,
+        same(dischargeWorkspaceExportRequirement),
+      );
+      expect(
+        DischargeAllPatientsAtomPermissions.print,
+        same(dischargeWorkspacePrintRequirement),
+      );
+      expect(
+        DischargeAllPatientsAtomPermissions.printSummary,
+        same(dischargeWorkspaceReadRequirement),
+      );
     });
 
+    test('export/print toolbar atoms omit without evidence:export', () {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      );
+      expect(
+        DischargeAllPatientsAtomPermissions.export.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        DischargeAllPatientsAtomPermissions.print.isAllowed(reader),
+        isFalse,
+      );
+      final AppAccessPolicy withExport = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.evidenceExport,
+        },
+      );
+      expect(
+        DischargeAllPatientsAtomPermissions.export.isAllowed(withExport),
+        isTrue,
+      );
+      expect(
+        DischargeAllPatientsAtomPermissions.print.isAllowed(withExport),
+        isTrue,
+      );
+    });
     test('∩ denial: clinical:write missing hides write atoms', () {
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalRead},
@@ -504,7 +543,7 @@ void main() {
       expect(find.text('Alice Planned'), findsOneWidget);
       expect(find.byTooltip('Start discharge plan'), findsNothing);
       expect(find.byTooltip('Manage clearance'), findsNothing);
-      expect(find.byTooltip('Print discharge summary'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
 
       await tester.tap(find.text('Bob Pending'));
@@ -515,7 +554,7 @@ void main() {
       expect(find.text('Request final billing'), findsNothing);
       expect(find.text('Open billing'), findsNothing);
       expect(find.text('Request medicines'), findsNothing);
-      expect(find.text('Print discharge summary'), findsWidgets);
+      expect(find.text('Print'), findsWidgets);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -594,7 +633,7 @@ void main() {
       expect(find.textContaining('All patients'), findsWidgets);
       expect(find.text('Alice Planned'), findsOneWidget);
       expect(find.byTooltip('Start discharge plan'), findsNothing);
-      expect(find.byTooltip('Print discharge summary'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
     },
   );
 
@@ -757,7 +796,7 @@ void main() {
     expect(find.byType(AppListTable<IpdAdmissionSummary>), findsOneWidget);
     expect(find.byTooltip('Start discharge plan'), findsOneWidget);
     expect(find.byTooltip('Manage clearance'), findsOneWidget);
-    expect(find.byTooltip('Print discharge summary'), findsOneWidget);
+    expect(find.byTooltip('Print'), findsOneWidget);
   });
 
   testWidgets('light theme keeps authorized All chrome without no-access banners', (
@@ -776,7 +815,7 @@ void main() {
 
     expect(find.text('Alice Planned'), findsOneWidget);
     expect(find.byTooltip('Start discharge plan'), findsNothing);
-    expect(find.byTooltip('Print discharge summary'), findsOneWidget);
+    expect(find.byTooltip('Print'), findsOneWidget);
     expect(find.textContaining('no access'), findsNothing);
   });
 

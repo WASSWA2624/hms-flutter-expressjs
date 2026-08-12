@@ -91,6 +91,23 @@ const AccessRequirement dischargeFollowUpsWriteRequirement = AccessRequirement(
   activeModules: <String>[dischargeInpatientBedModule],
 );
 
+/// Worklist Export / Print — ∩ `evidence:export` (omit when unauthorized).
+const AccessRequirement dischargeWorkspaceExportRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.evidenceExport],
+);
+
+/// Alias — Print uses the same desk export gate.
+const AccessRequirement dischargeWorkspacePrintRequirement =
+    dischargeWorkspaceExportRequirement;
+
+bool canExportDischargeWorkspace(AppAccessPolicy policy) {
+  return dischargeWorkspaceExportRequirement.isAllowed(policy);
+}
+
+bool canPrintDischargeWorkspace(AppAccessPolicy policy) {
+  return dischargeWorkspacePrintRequirement.isAllowed(policy);
+}
+
 /// Clearance meds / pharmacy related-records panel (∩ `pharmacy:read`).
 const AccessRequirement dischargePharmacyClearanceReadRequirement =
     AccessRequirement(
@@ -310,6 +327,8 @@ abstract final class DischargeAllPatientsAtomPermissions {
   static const AccessRequirement search = dischargeWorkspaceReadRequirement;
   static const AccessRequirement filters = dischargeWorkspaceReadRequirement;
   static const AccessRequirement settings = dischargeWorkspaceReadRequirement;
+  static const AccessRequirement export = dischargeWorkspaceExportRequirement;
+  static const AccessRequirement print = dischargeWorkspacePrintRequirement;
   static const AccessRequirement empty = dischargeWorkspaceReadRequirement;
   static const AccessRequirement loading = dischargeWorkspaceReadRequirement;
   static const AccessRequirement retry = dischargeWorkspaceReadRequirement;
@@ -402,6 +421,8 @@ abstract final class DischargePlannedAtomPermissions {
   static const AccessRequirement search = dischargeWorkspaceReadRequirement;
   static const AccessRequirement filters = dischargeWorkspaceReadRequirement;
   static const AccessRequirement settings = dischargeWorkspaceReadRequirement;
+  static const AccessRequirement export = dischargeWorkspaceExportRequirement;
+  static const AccessRequirement print = dischargeWorkspacePrintRequirement;
   static const AccessRequirement empty = dischargeWorkspaceReadRequirement;
   static const AccessRequirement loading = dischargeWorkspaceReadRequirement;
   static const AccessRequirement retry = dischargeWorkspaceReadRequirement;
@@ -497,6 +518,8 @@ abstract final class DischargePendingClearanceAtomPermissions {
       dischargePendingClearanceReadRequirement;
   static const AccessRequirement settings =
       dischargePendingClearanceReadRequirement;
+  static const AccessRequirement export = dischargeWorkspaceExportRequirement;
+  static const AccessRequirement print = dischargeWorkspacePrintRequirement;
   static const AccessRequirement empty =
       dischargePendingClearanceReadRequirement;
   static const AccessRequirement loading =
@@ -594,6 +617,8 @@ abstract final class DischargeCompletedAtomPermissions {
   static const AccessRequirement search = dischargeWorkspaceReadRequirement;
   static const AccessRequirement filters = dischargeWorkspaceReadRequirement;
   static const AccessRequirement settings = dischargeWorkspaceReadRequirement;
+  static const AccessRequirement export = dischargeWorkspaceExportRequirement;
+  static const AccessRequirement print = dischargeWorkspacePrintRequirement;
   static const AccessRequirement empty = dischargeWorkspaceReadRequirement;
   static const AccessRequirement loading = dischargeWorkspaceReadRequirement;
   static const AccessRequirement retry = dischargeWorkspaceReadRequirement;
@@ -665,7 +690,10 @@ abstract final class DischargeFollowUpsAtomPermissions {
   static const AccessRequirement tab = dischargeFollowUpsRequirement;
   static const AccessRequirement listChrome = dischargeFollowUpsRequirement;
   static const AccessRequirement search = dischargeFollowUpsRequirement;
+  static const AccessRequirement filters = dischargeFollowUpsRequirement;
   static const AccessRequirement settings = dischargeFollowUpsRequirement;
+  static const AccessRequirement export = dischargeWorkspaceExportRequirement;
+  static const AccessRequirement print = dischargeWorkspacePrintRequirement;
   static const AccessRequirement empty = dischargeFollowUpsRequirement;
   static const AccessRequirement loading = dischargeFollowUpsRequirement;
   static const AccessRequirement retry = dischargeFollowUpsRequirement;

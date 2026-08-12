@@ -36,6 +36,8 @@ See [99-convention-gaps.md](99-convention-gaps.md).
 
 - `frontend/lib/features/lab/presentation/pages/lab_workspace_page.dart`
 - `frontend/lib/features/lab/presentation/lab_access.dart`
+- `frontend/lib/features/lab/presentation/widgets/lab_scope_navigation.dart`
+- `frontend/lib/features/lab/presentation/widgets/lab_workspace_print_helpers.dart`
 - `frontend/lib/features/lab/domain/entities/lab_entities.dart`
 - `frontend/lib/features/lab/presentation/controllers/lab_workspace_controller.dart`
 - `frontend/lib/features/lab/presentation/pages/lab_result_entry_dialog.dart`

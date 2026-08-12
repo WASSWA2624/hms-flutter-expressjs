@@ -1,6 +1,6 @@
 # Discharge workspace UI inventory
 
-Source: `tabs-lister/09-discharge.md` · Code base date: 2026-08-11
+Source: `tabs-lister/09-discharge.md` · Code base date: 2026-08-12
 
 ## Context
 

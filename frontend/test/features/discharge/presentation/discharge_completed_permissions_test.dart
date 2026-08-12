@@ -460,7 +460,7 @@ void main() {
       expect(find.text('Carol Completed'), findsOneWidget);
       expect(find.byType(AppTabStrip), findsOneWidget);
       expect(find.textContaining('Completed'), findsWidgets);
-      expect(find.byTooltip('Print discharge summary'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
       expect(find.text('Filters'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
@@ -472,7 +472,7 @@ void main() {
       expect(find.text('Request final billing'), findsNothing);
       expect(find.text('Request medicines'), findsNothing);
       expect(find.text('Start discharge plan'), findsNothing);
-      expect(find.text('Print discharge summary'), findsWidgets);
+      expect(find.text('Print'), findsWidgets);
       expect(find.text('Discharge medicines'), findsNothing);
       expect(find.text('Billing clearance'), findsNothing);
       expect(find.text('Open pharmacy'), findsNothing);
@@ -533,7 +533,7 @@ void main() {
       );
 
       expect(find.text('Carol Completed'), findsOneWidget);
-      expect(find.byTooltip('Print discharge summary'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
 
       await tester.tap(find.text('Carol Completed'));
       await tester.pumpAndSettle();
@@ -572,7 +572,7 @@ void main() {
       );
 
       expect(find.text('Carol Completed'), findsOneWidget);
-      expect(find.byTooltip('Print discharge summary'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
       expect(find.byTooltip('Start discharge plan'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -734,7 +734,7 @@ void main() {
       accessPolicy: reader,
       physicalSize: const Size(1440, 900),
     );
-    expect(find.byTooltip('Print discharge summary'), findsOneWidget);
+    expect(find.byTooltip('Print'), findsOneWidget);
     expect(find.text('Carol Completed'), findsOneWidget);
 
     await _pumpCompletedTab(

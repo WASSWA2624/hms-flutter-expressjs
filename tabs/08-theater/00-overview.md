@@ -1,6 +1,6 @@
 # Theater workspace UI inventory
 
-Source: `tabs-lister/08-theater.md` · Code base date: 2026-08-11
+Source: `tabs-lister/08-theater.md` · Code base date: 2026-08-12
 
 ## Context
 

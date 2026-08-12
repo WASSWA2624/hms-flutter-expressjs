@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 
 void main() {
   group('NursingDetailPanel.fromValue', () {
@@ -22,6 +23,10 @@ void main() {
         NursingDetailPanel.handover,
       );
       expect(
+        NursingDetailPanel.fromValue('transfer'),
+        NursingDetailPanel.transfer,
+      );
+      expect(
         NursingDetailPanel.fromValue('clearance'),
         NursingDetailPanel.discharge,
       );
@@ -31,6 +36,74 @@ void main() {
       expect(NursingDetailPanel.fromValue(null), isNull);
       expect(NursingDetailPanel.fromValue(''), isNull);
       expect(NursingDetailPanel.fromValue('unknown'), isNull);
+    });
+  });
+
+  group('NursingPatientSummary.matchesScope', () {
+    test('assignedWard requires hasActiveBed', () {
+      const NursingPatientSummary withBed = NursingPatientSummary(
+        id: 'adm-1',
+        admissionId: 'adm-1',
+        hasActiveBed: true,
+      );
+      const NursingPatientSummary withoutBed = NursingPatientSummary(
+        id: 'adm-2',
+        admissionId: 'adm-2',
+        hasActiveBed: false,
+      );
+      expect(withBed.matchesScope(NursingQueueScope.assignedWard), isTrue);
+      expect(withoutBed.matchesScope(NursingQueueScope.assignedWard), isFalse);
+      expect(withBed.matchesScope(NursingQueueScope.all), isTrue);
+      expect(withoutBed.matchesScope(NursingQueueScope.all), isTrue);
+    });
+  });
+
+  group('NursingScopeCounts', () {
+    test('fromCatalog and forScope use matchesScope including assignedWard', () {
+      const List<NursingPatientSummary> catalog = <NursingPatientSummary>[
+        NursingPatientSummary(
+          id: 'a',
+          admissionId: 'a',
+          hasActiveBed: true,
+          hasCriticalAlert: true,
+        ),
+        NursingPatientSummary(
+          id: 'b',
+          admissionId: 'b',
+          hasActiveBed: false,
+          medicationDueCount: 1,
+        ),
+      ];
+      final NursingScopeCounts counts = NursingScopeCounts.fromCatalog(catalog);
+      expect(counts.all, 2);
+      expect(counts.assignedWard, 1);
+      expect(counts.urgent, 1);
+      expect(counts.medicationDue, 1);
+      expect(counts.forScope(NursingQueueScope.all), 2);
+      expect(counts.forScope(NursingQueueScope.assignedWard), 1);
+      expect(counts.forScope(NursingQueueScope.urgent), 1);
+    });
+
+    test('workspace state counts come from scopeCounts', () {
+      const NursingWorkspaceState state = NursingWorkspaceState(
+        query: NursingWorklistQuery(),
+        worklist: AppPage<NursingPatientSummary>(
+          items: <NursingPatientSummary>[],
+          request: AppPageRequest(),
+          totalItemCount: 0,
+        ),
+        scopeCounts: NursingScopeCounts(
+          all: 5,
+          handoverPending: 2,
+          transferPending: 1,
+        ),
+        pendingHandovers: <NursingHandover>[
+          NursingHandover(id: 'h1', admissionId: 'a'),
+        ],
+      );
+      expect(state.allCount, 5);
+      expect(state.handoverPendingCount, 2);
+      expect(state.transferPendingCount, 1);
     });
   });
 

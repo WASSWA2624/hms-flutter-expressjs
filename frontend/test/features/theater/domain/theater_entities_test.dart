@@ -106,7 +106,7 @@ void main() {
   });
 
   group('TheaterWorkspaceState.recoveryCount', () {
-    test('counts POST_OP and PACU_HANDOFF cases', () {
+    test('uses dedicated scopeCounts for POST_OP and PACU_HANDOFF', () {
       const TheaterWorkspaceState state = TheaterWorkspaceState(
         cases: AppPage<TheaterCase>(
           items: <TheaterCase>[
@@ -119,10 +119,61 @@ void main() {
           totalItemCount: 4,
         ),
         query: TheaterCaseQuery(),
+        scopeCounts: TheaterScopeCounts(
+          scheduled: 1,
+          inTheater: 0,
+          recovery: 2,
+          all: 4,
+        ),
       );
 
       expect(state.recoveryCount, 2);
       expect(state.scheduledCount, 1);
+      expect(theaterIsRecoveryStageFilter(theaterRecoveryStageFilter), isTrue);
+      expect(
+        theaterCaseMatchesRecoveryScope(
+          const TheaterCase(id: '2', workflowStage: 'PACU_HANDOFF'),
+        ),
+        isTrue,
+      );
+    });
+  });
+
+  group('theaterSectionTabCount', () {
+    test('uses sibling scope totals until active tab is narrowed', () {
+      const TheaterWorkspaceState state = TheaterWorkspaceState(
+        cases: AppPage<TheaterCase>(
+          items: <TheaterCase>[
+            TheaterCase(id: '1', status: 'SCHEDULED'),
+          ],
+          request: AppPageRequest(),
+          totalItemCount: 1,
+        ),
+        query: TheaterCaseQuery(search: 'Sam'),
+        scopeCounts: TheaterScopeCounts(
+          scheduled: 5,
+          inTheater: 2,
+          recovery: 3,
+          all: 10,
+        ),
+      );
+
+      expect(
+        theaterSectionTabCount(
+          state,
+          TheaterSection.scheduled,
+          activeSection: TheaterSection.scheduled,
+        ),
+        1,
+      );
+      expect(
+        theaterSectionTabCount(
+          state,
+          TheaterSection.inTheater,
+          activeSection: TheaterSection.scheduled,
+        ),
+        2,
+      );
     });
   });
 

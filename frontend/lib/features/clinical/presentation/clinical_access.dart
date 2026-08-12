@@ -107,13 +107,23 @@ const AccessRequirement clinicalFollowUpsRequirement =
 const AccessRequirement clinicalFollowUpsWriteRequirement =
     clinicalWorkspaceWriteRequirement;
 
+/// Clinical worklist Export / Print (Excel + preview print).
+///
+/// Uses ∩ `evidence:export` (same atom as OPD / Reception / IPD export gate).
+const AccessRequirement clinicalWorkspaceExportRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.evidenceExport],
+);
+
+/// Alias — Print uses the same desk export gate.
+const AccessRequirement clinicalWorkspacePrintRequirement =
+    clinicalWorkspaceExportRequirement;
+
 /// Per-section tab strip gate.
 ///
 /// Worklist tabs share ∩ `clinical:read` + `encounters-vitals`; Follow-ups uses
-/// [clinicalFollowUpsRequirement]. Returns each tab’s atom `tab` requirement so
-/// strip filtering traces to the inventory maps (e.g. Urgent →
-/// [ClinicalUrgentAtomPermissions.tab], Waiting review →
-/// [ClinicalWaitingReviewAtomPermissions.tab]).
+/// [clinicalFollowUpsRequirement]. Returns each tab’s atom `tab` requirement.
+/// Legacy `waiting-review` / `in-consultation` deep-links remap to Pending
+/// ([ClinicalWorkspaceSection.all]) — no live strip sections for those aliases.
 AccessRequirement clinicalSectionTabRequirement(
   ClinicalWorkspaceSection section,
 ) {
@@ -174,6 +184,14 @@ bool canWriteClinicalFollowUps(AppAccessPolicy policy) {
   return clinicalFollowUpsWriteRequirement.isAllowed(policy);
 }
 
+bool canExportClinicalWorkspace(AppAccessPolicy policy) {
+  return clinicalWorkspaceExportRequirement.isAllowed(policy);
+}
+
+bool canPrintClinicalWorkspace(AppAccessPolicy policy) {
+  return clinicalWorkspacePrintRequirement.isAllowed(policy);
+}
+
 bool canViewClinicalSection(
   AppAccessPolicy policy,
   ClinicalWorkspaceSection section,
@@ -229,7 +247,8 @@ ClinicalWorkspaceSection? clinicalFallbackSection(AppAccessPolicy policy) {
 /// | Detail Prescribe (+ medicine / billing nested) | create | pharmacy order ∪ |
 /// | Detail Request procedure (+ Review billing) | create-charge | write ∪ + clinical-request-billing |
 /// | Detail Request admission | create | admission ∪ |
-/// | Detail Print summary | export / read | read ∩ |
+/// | List Export / Print | export | ∩ `evidence:export` |
+/// | Detail Print | export | ∩ `evidence:export` |
 /// | Lab / radiology / pharmacy order mutate | update / delete | nested order ∪ |
 /// | Diagnosis delete | delete | write ∪ source |
 /// | Discharge Open billing / financial | nested read | billing:read ∩ |
@@ -282,8 +301,10 @@ abstract final class ClinicalAllAtomPermissions {
       clinicalPharmacyOrderWriteRequirement;
   static const AccessRequirement requestAdmission =
       clinicalAdmissionWriteRequirement;
+  static const AccessRequirement export = clinicalWorkspaceExportRequirement;
+  static const AccessRequirement listPrint = clinicalWorkspacePrintRequirement;
   static const AccessRequirement printSummary =
-      clinicalWorkspaceReadRequirement;
+      clinicalWorkspaceExportRequirement;
   static const AccessRequirement nestedLabWrite =
       clinicalLabOrderWriteRequirement;
   static const AccessRequirement nestedRadiologyWrite =
@@ -344,8 +365,10 @@ abstract final class ClinicalAssignedToMeAtomPermissions {
       clinicalPharmacyOrderWriteRequirement;
   static const AccessRequirement requestAdmission =
       clinicalAdmissionWriteRequirement;
+  static const AccessRequirement export = clinicalWorkspaceExportRequirement;
+  static const AccessRequirement listPrint = clinicalWorkspacePrintRequirement;
   static const AccessRequirement printSummary =
-      clinicalWorkspaceReadRequirement;
+      clinicalWorkspaceExportRequirement;
   static const AccessRequirement nestedLabWrite =
       clinicalLabOrderWriteRequirement;
   static const AccessRequirement nestedRadiologyWrite =
@@ -375,7 +398,8 @@ bool canViewClinicalAssignedToMe(AppAccessPolicy policy) {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Follow-ups strip tab | navigate | read ∩ `clinical:read` + `encounters-vitals` |
-/// | Search / clear / Settings / columns | read chrome | read ∩ |
+/// | Search / clear / Filters / Settings / columns | read chrome | read ∩ |
+/// | List Export / Print | export | ∩ `evidence:export` |
 /// | Empty / loading / error / retry | read chrome | read ∩ |
 /// | Success snackbar / validation (authorized) | visible feedback | write ∪ / form |
 /// | Row select → Follow-up details | read | read ∩ |
@@ -392,7 +416,10 @@ abstract final class ClinicalFollowUpsAtomPermissions {
   static const AccessRequirement tab = clinicalFollowUpsRequirement;
   static const AccessRequirement listChrome = clinicalFollowUpsRequirement;
   static const AccessRequirement search = clinicalFollowUpsRequirement;
+  static const AccessRequirement filters = clinicalFollowUpsRequirement;
   static const AccessRequirement settings = clinicalFollowUpsRequirement;
+  static const AccessRequirement export = clinicalWorkspaceExportRequirement;
+  static const AccessRequirement listPrint = clinicalWorkspacePrintRequirement;
   static const AccessRequirement empty = clinicalFollowUpsRequirement;
   static const AccessRequirement loading = clinicalFollowUpsRequirement;
   static const AccessRequirement retry = clinicalFollowUpsRequirement;
@@ -421,144 +448,51 @@ abstract final class ClinicalFollowUpsAtomPermissions {
   static const AccessRequirement routeEntry = clinicalWorkspaceEntryRequirement;
 }
 
-/// Atom → requirement map for In consultation (`/clinical?section=in-consultation`).
-///
-/// Active outpatient consultation worklist (`screens/clinical.md`); richest
-/// nested action bar (same encounter detail chrome as All). Matrix nested
-/// write / read rows are _(n/a)_; prompt narrative ∪ helpers still gate lab /
-/// radiology / pharmacy / admission. Discharge Open billing reuses
-/// [clinicalDischargeFinancialReadRequirement] (`billing:read` ∩
-/// `billing-payments`); dialog host reuses billing read requirement.
-///
-/// | Atom | Kind | Gate |
-/// | --- | --- | --- |
-/// | In consultation tab / count badge | navigate | read ∩ `clinical:read` |
-/// | Search / clear / Filters / columns / pagination | read chrome | read ∩ |
-/// | Empty / error / retry / loading | read chrome | read ∩ |
-/// | Success snackbar / validation (authorized) | visible feedback | write ∪ / form |
-/// | Row select → encounter detail | read | read ∩ |
-/// | Next action Review encounter | navigate / read | read ∩ |
-/// | Next action RECORD_VITALS / disposition | create / update | write ∪ source |
-/// | Next action WorkflowActionButton | navigate / write | registry; absent if denied |
-/// | Detail Add note / diagnosis / procedure / refer / follow-up | create | write ∪ source |
-/// | Detail Record/Edit vitals / Disposition | create / update | write ∪ source |
-/// | Detail Request lab (+ catalog / billing nested) | create / update | lab order ∪ |
-/// | Detail Request radiology (+ catalog / billing) | create / update | radiology order ∪ |
-/// | Detail Prescribe (+ medicine / billing nested) | create | pharmacy order ∪ |
-/// | Detail Request admission | create | admission ∪ |
-/// | Detail Print summary | export / read | read ∩ |
-/// | Lab / radiology / pharmacy order mutate | update / delete | nested order ∪ |
-/// | Diagnosis delete | delete | write ∪ source |
-/// | Discharge Open billing / financial | nested read | billing:read ∩ |
-/// | Route entry (deep link) | navigate | [RouteAccessCatalog.clinicalEntry] ∩ `clinical:read` |
-///
-/// Write keeps source ∪ `clinical:write` | `platform:admin` rather than matrix ∩
-/// `clinical:write` alone. Nested order / admission rows document prompt ∪
-/// (matrix nested write _(n/a)_). Prompt route entry ∪ (`clinical:read` |
-/// `clinical:write`) maps to catalog ∩ `clinical:read` — keep catalog.
-abstract final class ClinicalInConsultationAtomPermissions {
-  static const AccessRequirement tab = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement listChrome = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement search = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement filters = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement settings = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement pagination = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement empty = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement loading = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement retry = clinicalWorkspaceReadRequirement;
-  /// Authorized success snackbar path (mutation entry already write-gated).
-  static const AccessRequirement success = clinicalWorkspaceWriteRequirement;
-  /// Authorized form validation feedback (nested write dialogs).
-  static const AccessRequirement validation =
-      clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement rowSelect = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement detail = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement nextActionReview =
-      clinicalWorkspaceReadRequirement;
-  static const AccessRequirement create = clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement update = clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement delete = clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement write = clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement addNote = clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement recordVitals =
-      clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement addDiagnosis =
-      clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement recordProcedure =
-      clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement refer = clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement followUp = clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement disposition =
-      clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement requestLab = clinicalLabOrderWriteRequirement;
-  static const AccessRequirement requestRadiology =
-      clinicalRadiologyOrderWriteRequirement;
-  static const AccessRequirement prescribe =
-      clinicalPharmacyOrderWriteRequirement;
-  static const AccessRequirement requestAdmission =
-      clinicalAdmissionWriteRequirement;
-  static const AccessRequirement printSummary =
-      clinicalWorkspaceReadRequirement;
-  static const AccessRequirement nestedLabWrite =
-      clinicalLabOrderWriteRequirement;
-  static const AccessRequirement nestedRadiologyWrite =
-      clinicalRadiologyOrderWriteRequirement;
-  static const AccessRequirement nestedPharmacyWrite =
-      clinicalPharmacyOrderWriteRequirement;
-  static const AccessRequirement nestedWrite =
-      clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement nestedRead = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement dischargeFinancialRead =
-      clinicalDischargeFinancialReadRequirement;
-  static const AccessRequirement entry = clinicalWorkspaceEntryRequirement;
-  static const AccessRequirement routeEntry = clinicalWorkspaceEntryRequirement;
-}
+/// Legacy In-consultation / Waiting-review strip sections were removed.
+/// Deep-links in-consultation / waiting-review remap to Pending
+/// ([ClinicalWorkspaceSection.all]) via _parseClinicalSection.
 
-bool canViewClinicalInConsultation(AppAccessPolicy policy) {
-  return ClinicalInConsultationAtomPermissions.tab.isAllowed(policy);
-}
-
-/// Results ready tab atom → permission mapping (inventory + matrix).
+/// Results ready tab atom ΓåÆ permission mapping (inventory + matrix).
 ///
 /// Worklist `?section=results-ready` (`screens/clinical.md`). Same outpatient
 /// encounter chrome as All; distinctive surfaces are results-ready chips
 /// and lab / radiology order panels. Prompt context names
 /// lab:read / radiology:read **domain** panels; matrix nested cross-module
-/// read is _(n/a)_, so panel **read** stays ∩ `clinical:read` (+
-/// `encounters-vitals`) — not a separate `lab:read` / `radiology:read` gate.
-/// Nested **writes** use prompt narrative ∪ helpers (matrix nested write
+/// read is _(n/a)_, so panel **read** stays Γê⌐ `clinical:read` (+
+/// `encounters-vitals`) ΓÇö not a separate `lab:read` / `radiology:read` gate.
+/// Nested **writes** use prompt narrative Γê¬ helpers (matrix nested write
 /// _(n/a)_): lab / radiology / pharmacy / admission.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Results ready tab / count badge | navigate | read ∩ `clinical:read` |
-/// | Search / filters / columns / pagination | read chrome | read ∩ |
-/// | Results-ready summary chip / badge | read | read ∩ |
-/// | Empty / error / retry / loading | read chrome | read ∩ |
-/// | Success snackbar / validation (authorized) | visible feedback | write ∪ / form |
-/// | Row select → encounter detail | read | read ∩ |
-/// | Next action Review encounter / REVIEW_RESULTS | navigate / read | read ∩ |
-/// | Next action RECORD_VITALS / disposition | create / update | write ∪ source |
+/// | Results ready tab / count badge | navigate | read Γê⌐ `clinical:read` |
+/// | Search / filters / columns / pagination | read chrome | read Γê⌐ |
+/// | Results-ready summary chip / badge | read | read Γê⌐ |
+/// | Empty / error / retry / loading | read chrome | read Γê⌐ |
+/// | Success snackbar / validation (authorized) | visible feedback | write Γê¬ / form |
+/// | Row select ΓåÆ encounter detail | read | read Γê⌐ |
+/// | Next action Review encounter / REVIEW_RESULTS | navigate / read | read Γê⌐ |
+/// | Next action RECORD_VITALS / disposition | create / update | write Γê¬ source |
 /// | Next action WorkflowActionButton | navigate / write | registry; absent if denied |
 /// | Detail Lab orders panel (data) | read | [labResultsPanel] |
 /// | Detail Radiology orders panel (data) | read | [radiologyResultsPanel] |
-/// | Detail Pharmacy orders / diagnoses panels | read | nestedRead ∩ |
-/// | Detail Add note / diagnosis / procedure / refer / follow-up | create | write ∪ source |
-/// | Detail Record/Edit vitals / Disposition | create / update | write ∪ source |
-/// | Detail Request lab (+ catalog / billing nested) | create / update | lab order ∪ |
-/// | Detail Request radiology (+ catalog / billing) | create / update | radiology order ∪ |
-/// | Detail Prescribe (+ medicine / billing nested) | create | pharmacy order ∪ |
-/// | Detail Request admission | create | admission ∪ |
-/// | Detail Print summary | export / read | read ∩ |
-/// | Lab / radiology / pharmacy order mutate | update / delete | nested order ∪ |
-/// | Diagnosis delete | delete | write ∪ source |
-/// | Discharge Open billing / financial | nested read | billing:read ∩ |
-/// | Route entry (deep link) | navigate | [RouteAccessCatalog.clinicalEntry] ∩ `clinical:read` |
+/// | Detail Pharmacy orders / diagnoses panels | read | nestedRead Γê⌐ |
+/// | Detail Add note / diagnosis / procedure / refer / follow-up | create | write Γê¬ source |
+/// | Detail Record/Edit vitals / Disposition | create / update | write Γê¬ source |
+/// | Detail Request lab (+ catalog / billing nested) | create / update | lab order Γê¬ |
+/// | Detail Request radiology (+ catalog / billing) | create / update | radiology order Γê¬ |
+/// | Detail Prescribe (+ medicine / billing nested) | create | pharmacy order Γê¬ |
+/// | Detail Request admission | create | admission Γê¬ |
+/// | Detail Print summary | export / read | read Γê⌐ |
+/// | Lab / radiology / pharmacy order mutate | update / delete | nested order Γê¬ |
+/// | Diagnosis delete | delete | write Γê¬ source |
+/// | Discharge Open billing / financial | nested read | billing:read Γê⌐ |
+/// | Route entry (deep link) | navigate | [RouteAccessCatalog.clinicalEntry] Γê⌐ `clinical:read` |
 ///
-/// Write keeps source ∪ `clinical:write` | `platform:admin` rather than matrix ∩
-/// `clinical:write` alone. Nested order / admission rows document prompt ∪
-/// (matrix nested write _(n/a)_). Prompt route entry ∪ (`clinical:read` |
-/// `clinical:write`) maps to catalog ∩ `clinical:read` — keep catalog.
+/// Write keeps source Γê¬ `clinical:write` | `platform:admin` rather than matrix Γê⌐
+/// `clinical:write` alone. Nested order / admission rows document prompt Γê¬
+/// (matrix nested write _(n/a)_). Prompt route entry Γê¬ (`clinical:read` |
+/// `clinical:write`) maps to catalog Γê⌐ `clinical:read` ΓÇö keep catalog.
 abstract final class ClinicalResultsReadyAtomPermissions {
   static const AccessRequirement tab = clinicalWorkspaceReadRequirement;
   static const AccessRequirement listChrome = clinicalWorkspaceReadRequirement;
@@ -580,10 +514,10 @@ abstract final class ClinicalResultsReadyAtomPermissions {
   static const AccessRequirement detail = clinicalWorkspaceReadRequirement;
   static const AccessRequirement nextActionReview =
       clinicalWorkspaceReadRequirement;
-  /// Lab-domain results / orders panel (context lab:read; matrix nested read n/a → clinical:read).
+  /// Lab-domain results / orders panel (context lab:read; matrix nested read n/a ΓåÆ clinical:read).
   static const AccessRequirement labResultsPanel =
       clinicalWorkspaceReadRequirement;
-  /// Imaging-domain results / orders panel (context radiology:read; nested n/a → clinical:read).
+  /// Imaging-domain results / orders panel (context radiology:read; nested n/a ΓåÆ clinical:read).
   static const AccessRequirement radiologyResultsPanel =
       clinicalWorkspaceReadRequirement;
   static const AccessRequirement create = clinicalWorkspaceWriteRequirement;
@@ -608,8 +542,10 @@ abstract final class ClinicalResultsReadyAtomPermissions {
       clinicalPharmacyOrderWriteRequirement;
   static const AccessRequirement requestAdmission =
       clinicalAdmissionWriteRequirement;
+  static const AccessRequirement export = clinicalWorkspaceExportRequirement;
+  static const AccessRequirement listPrint = clinicalWorkspacePrintRequirement;
   static const AccessRequirement printSummary =
-      clinicalWorkspaceReadRequirement;
+      clinicalWorkspaceExportRequirement;
   static const AccessRequirement nestedLabWrite =
       clinicalLabOrderWriteRequirement;
   static const AccessRequirement nestedRadiologyWrite =
@@ -639,44 +575,44 @@ bool canViewClinicalRadiologyResultsPanel(AppAccessPolicy policy) {
   );
 }
 
-/// Atom → requirement map for Urgent (`/clinical?section=urgent`).
+/// Atom ΓåÆ requirement map for Urgent (`/clinical?section=urgent`).
 ///
 /// Urgent outpatient encounters (`isUrgent` + non-terminal). Same encounter
 /// chrome as All / In consultation; distinctive surfaces are the Urgent tab
 /// (danger count tone) and Urgent summary chips on rows / detail. Matrix
-/// nested write rows are _(n/a)_; prompt narrative ∪ helpers still gate lab /
+/// nested write rows are _(n/a)_; prompt narrative Γê¬ helpers still gate lab /
 /// radiology / pharmacy / admission. Discharge Open billing uses
-/// [clinicalDischargeFinancialReadRequirement] (`billing:read` ∩
+/// [clinicalDischargeFinancialReadRequirement] (`billing:read` Γê⌐
 /// `billing-payments`).
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Urgent tab / count badge | navigate | read ∩ `clinical:read` |
-/// | Search / filters / columns / pagination | read chrome | read ∩ |
-/// | Urgent summary chip / badge (row + detail) | read | read ∩ |
-/// | Empty / error / retry / loading | read chrome | read ∩ |
-/// | Success snackbar / validation (authorized) | visible feedback | write ∪ / form |
-/// | Row select → encounter detail | read | read ∩ |
-/// | Next action Review encounter | navigate / read | read ∩ |
-/// | Next action RECORD_VITALS / disposition | create / update | write ∪ source |
+/// | Urgent tab / count badge | navigate | read Γê⌐ `clinical:read` |
+/// | Search / filters / columns / pagination | read chrome | read Γê⌐ |
+/// | Urgent summary chip / badge (row + detail) | read | read Γê⌐ |
+/// | Empty / error / retry / loading | read chrome | read Γê⌐ |
+/// | Success snackbar / validation (authorized) | visible feedback | write Γê¬ / form |
+/// | Row select ΓåÆ encounter detail | read | read Γê⌐ |
+/// | Next action Review encounter | navigate / read | read Γê⌐ |
+/// | Next action RECORD_VITALS / disposition | create / update | write Γê¬ source |
 /// | Next action WorkflowActionButton | navigate / write | registry; absent if denied |
-/// | Detail Add note / diagnosis / procedure / refer / follow-up | create | write ∪ source |
-/// | Detail Record/Edit vitals / Disposition | create / update | write ∪ source |
-/// | Detail Request lab (+ catalog / billing nested) | create / update | lab order ∪ |
-/// | Detail Request radiology (+ catalog / billing) | create / update | radiology order ∪ |
-/// | Detail Prescribe (+ medicine / billing nested) | create | pharmacy order ∪ |
-/// | Detail Request admission | create | admission ∪ |
-/// | Detail Print summary | export / read | read ∩ |
-/// | Lab / radiology / pharmacy order mutate | update / delete | nested order ∪ |
-/// | Diagnosis delete | delete | write ∪ source |
-/// | Discharge Open billing / financial | nested read | billing:read ∩ |
-/// | Route entry (deep link) | navigate | [RouteAccessCatalog.clinicalEntry] ∩ `clinical:read` |
+/// | Detail Add note / diagnosis / procedure / refer / follow-up | create | write Γê¬ source |
+/// | Detail Record/Edit vitals / Disposition | create / update | write Γê¬ source |
+/// | Detail Request lab (+ catalog / billing nested) | create / update | lab order Γê¬ |
+/// | Detail Request radiology (+ catalog / billing) | create / update | radiology order Γê¬ |
+/// | Detail Prescribe (+ medicine / billing nested) | create | pharmacy order Γê¬ |
+/// | Detail Request admission | create | admission Γê¬ |
+/// | Detail Print summary | export / read | read Γê⌐ |
+/// | Lab / radiology / pharmacy order mutate | update / delete | nested order Γê¬ |
+/// | Diagnosis delete | delete | write Γê¬ source |
+/// | Discharge Open billing / financial | nested read | billing:read Γê⌐ |
+/// | Route entry (deep link) | navigate | [RouteAccessCatalog.clinicalEntry] Γê⌐ `clinical:read` |
 ///
-/// Write keeps source ∪ `clinical:write` | `platform:admin` rather than matrix ∩
-/// `clinical:write` alone. Nested order / admission rows document prompt ∪
-/// (matrix nested write _(n/a)_). Prompt route entry ∪ (`clinical:read` |
-/// `clinical:write`) and `AppRoutes.clinical` ∪ map to catalog ∩
-/// `clinical:read` — keep catalog.
+/// Write keeps source Γê¬ `clinical:write` | `platform:admin` rather than matrix Γê⌐
+/// `clinical:write` alone. Nested order / admission rows document prompt Γê¬
+/// (matrix nested write _(n/a)_). Prompt route entry Γê¬ (`clinical:read` |
+/// `clinical:write`) and `AppRoutes.clinical` Γê¬ map to catalog Γê⌐
+/// `clinical:read` ΓÇö keep catalog.
 abstract final class ClinicalUrgentAtomPermissions {
   static const AccessRequirement tab = clinicalWorkspaceReadRequirement;
   static const AccessRequirement listChrome = clinicalWorkspaceReadRequirement;
@@ -719,8 +655,10 @@ abstract final class ClinicalUrgentAtomPermissions {
       clinicalAdmissionWriteRequirement;
   static const AccessRequirement prescribe =
       clinicalPharmacyOrderWriteRequirement;
+  static const AccessRequirement export = clinicalWorkspaceExportRequirement;
+  static const AccessRequirement listPrint = clinicalWorkspacePrintRequirement;
   static const AccessRequirement printSummary =
-      clinicalWorkspaceReadRequirement;
+      clinicalWorkspaceExportRequirement;
   static const AccessRequirement nestedLabWrite =
       clinicalLabOrderWriteRequirement;
   static const AccessRequirement nestedRadiologyWrite =
@@ -740,316 +678,43 @@ bool canViewClinicalUrgent(AppAccessPolicy policy) {
   return ClinicalUrgentAtomPermissions.tab.isAllowed(policy);
 }
 
-/// Atom → requirement map for Waiting review (`/clinical?section=waiting-review`).
+/// Atom ΓåÆ requirement map for Waiting review (`/clinical?section=waiting-review`).
 ///
 /// Outpatient encounters awaiting clinician review (`WAITING_DOCTOR_REVIEW` /
 /// review-stage aliases). Same encounter chrome as All / Urgent; distinctive
 /// surfaces are the Waiting review tab (warning count tone) and review-stage
 /// next actions (`DOCTOR_REVIEW` / Clinical notes). Matrix nested write rows
-/// are _(n/a)_; prompt narrative ∪ helpers still gate lab / radiology /
+/// are _(n/a)_; prompt narrative Γê¬ helpers still gate lab / radiology /
 /// pharmacy / admission. Discharge Open billing uses
-/// [clinicalDischargeFinancialReadRequirement] (`billing:read` ∩
+/// [clinicalDischargeFinancialReadRequirement] (`billing:read` Γê⌐
 /// `billing-payments`).
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Waiting review tab | navigate | read ∩ `clinical:read` |
-/// | Search / filters / columns / pagination | read chrome | read ∩ |
-/// | Waiting review tab count / summary badge | read | read ∩ |
-/// | Empty / loading / error / retry | read chrome | read ∩ |
-/// | Success snackbar / validation (authorized) | visible feedback | write ∪ / form |
-/// | Row select → encounter detail | read | read ∩ |
-/// | Next action Review encounter / DOCTOR_REVIEW | navigate / read | read ∩ |
-/// | Next action RECORD_VITALS / disposition | create / update | write ∪ source |
+/// | Waiting review tab | navigate | read Γê⌐ `clinical:read` |
+/// | Search / filters / columns / pagination | read chrome | read Γê⌐ |
+/// | Waiting review tab count / summary badge | read | read Γê⌐ |
+/// | Empty / loading / error / retry | read chrome | read Γê⌐ |
+/// | Success snackbar / validation (authorized) | visible feedback | write Γê¬ / form |
+/// | Row select ΓåÆ encounter detail | read | read Γê⌐ |
+/// | Next action Review encounter / DOCTOR_REVIEW | navigate / read | read Γê⌐ |
+/// | Next action RECORD_VITALS / disposition | create / update | write Γê¬ source |
 /// | Next action WorkflowActionButton | navigate / write | registry; absent if denied |
-/// | Detail Add note / diagnosis / procedure / refer / follow-up | create | write ∪ source |
-/// | Detail Record/Edit vitals / Disposition | create / update | write ∪ source |
-/// | Detail Request lab (+ catalog / billing nested) | create / update | lab order ∪ |
-/// | Detail Request radiology (+ catalog / billing) | create / update | radiology order ∪ |
-/// | Detail Prescribe (+ medicine / billing nested) | create | pharmacy order ∪ |
-/// | Detail Request admission | create | admission ∪ |
-/// | Detail Print summary | export / read | read ∩ |
-/// | Lab / radiology / pharmacy order mutate | update / delete | nested order ∪ |
-/// | Diagnosis delete | delete | write ∪ source |
-/// | Discharge Open billing / financial | nested read | billing:read ∩ |
-/// | Route entry (deep link) | navigate | [RouteAccessCatalog.clinicalEntry] ∩ `clinical:read` |
+/// | Detail Add note / diagnosis / procedure / refer / follow-up | create | write Γê¬ source |
+/// | Detail Record/Edit vitals / Disposition | create / update | write Γê¬ source |
+/// | Detail Request lab (+ catalog / billing nested) | create / update | lab order Γê¬ |
+/// | Detail Request radiology (+ catalog / billing) | create / update | radiology order Γê¬ |
+/// | Detail Prescribe (+ medicine / billing nested) | create | pharmacy order Γê¬ |
+/// | Detail Request admission | create | admission Γê¬ |
+/// | Detail Print summary | export / read | read Γê⌐ |
+/// | Lab / radiology / pharmacy order mutate | update / delete | nested order Γê¬ |
+/// | Diagnosis delete | delete | write Γê¬ source |
+/// | Discharge Open billing / financial | nested read | billing:read Γê⌐ |
+/// | Route entry (deep link) | navigate | [RouteAccessCatalog.clinicalEntry] Γê⌐ `clinical:read` |
 ///
-/// Write keeps source ∪ `clinical:write` | `platform:admin` rather than matrix ∩
-/// `clinical:write` alone. Nested order / admission rows document prompt ∪
-/// (matrix nested write _(n/a)_). Prompt route entry ∪ (`clinical:read` |
-/// `clinical:write`) maps to catalog ∩ `clinical:read` — keep catalog.
-abstract final class ClinicalWaitingReviewAtomPermissions {
-  static const AccessRequirement tab = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement listChrome = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement search = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement filters = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement settings = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement pagination = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement waitingReviewChip =
-      clinicalWorkspaceReadRequirement;
-  static const AccessRequirement empty = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement loading = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement retry = clinicalWorkspaceReadRequirement;
-  /// Authorized success snackbar path (mutation entry already write-gated).
-  static const AccessRequirement success = clinicalWorkspaceWriteRequirement;
-  /// Authorized form validation feedback (nested write dialogs).
-  static const AccessRequirement validation =
-      clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement rowSelect = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement detail = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement nextActionReview =
-      clinicalWorkspaceReadRequirement;
-  static const AccessRequirement create = clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement update = clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement delete = clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement write = clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement addNote = clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement recordVitals =
-      clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement addDiagnosis =
-      clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement recordProcedure =
-      clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement refer = clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement followUp = clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement disposition =
-      clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement requestLab = clinicalLabOrderWriteRequirement;
-  static const AccessRequirement requestRadiology =
-      clinicalRadiologyOrderWriteRequirement;
-  static const AccessRequirement prescribe =
-      clinicalPharmacyOrderWriteRequirement;
-  static const AccessRequirement requestAdmission =
-      clinicalAdmissionWriteRequirement;
-  static const AccessRequirement printSummary =
-      clinicalWorkspaceReadRequirement;
-  static const AccessRequirement nestedLabWrite =
-      clinicalLabOrderWriteRequirement;
-  static const AccessRequirement nestedRadiologyWrite =
-      clinicalRadiologyOrderWriteRequirement;
-  static const AccessRequirement nestedPharmacyWrite =
-      clinicalPharmacyOrderWriteRequirement;
-  static const AccessRequirement nestedWrite =
-      clinicalWorkspaceWriteRequirement;
-  static const AccessRequirement nestedRead = clinicalWorkspaceReadRequirement;
-  static const AccessRequirement dischargeFinancialRead =
-      clinicalDischargeFinancialReadRequirement;
-  static const AccessRequirement entry = clinicalWorkspaceEntryRequirement;
-  static const AccessRequirement routeEntry = clinicalWorkspaceEntryRequirement;
-}
-
-bool canViewClinicalWaitingReview(AppAccessPolicy policy) {
-  return ClinicalWaitingReviewAtomPermissions.tab.isAllowed(policy);
-}
-
-/// Billing action classes for Clinical Waiting review tab inventory (Req 1).
-enum ClinicalWaitingReviewFinancialClass {
-  createCharge,
-  settle,
-  adjust,
-  reverse,
-  defer,
-  notBillable,
-}
-
-/// Financial atom reachable from Waiting review (`?section=waiting-review`).
-final class ClinicalWaitingReviewFinancialAtom {
-  const ClinicalWaitingReviewFinancialAtom({
-    required this.id,
-    required this.classification,
-    this.auditReason,
-    this.billingPath,
-  });
-
-  final String id;
-  final ClinicalWaitingReviewFinancialClass classification;
-
-  /// Explicit not-billable protocol when [classification] is notBillable.
-  final String? auditReason;
-
-  /// Shared Billing / clinical-request path when billable.
-  final String? billingPath;
-}
-
-/// Canonical Waiting-review financial inventory (AC1).
-///
-/// Tab is a scoped outpatient worklist (`WAITING_DOCTOR_REVIEW` / review-stage
-/// aliases) over the same encounter detail chrome as All/Urgent. Billable
-/// atoms reuse clinical-request billing + Billing module; cashier collect /
-/// issue / adjust stay on Billing (pay-now only via request billing panel when
-/// `billing:write`). Consult-on-review and follow-up visit fees are not mounted
-/// here (`NOT_BILLED` / unmounted create-charge docs).
-const List<ClinicalWaitingReviewFinancialAtom>
-clinicalWaitingReviewFinancialInventory =
-    <ClinicalWaitingReviewFinancialAtom>[
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'tab_chrome',
-        classification: ClinicalWaitingReviewFinancialClass.notBillable,
-        auditReason: 'NOT_REQUIRED',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'search_filters_pagination',
-        classification: ClinicalWaitingReviewFinancialClass.notBillable,
-        auditReason: 'NOT_REQUIRED',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'waiting_review_count_chip',
-        classification: ClinicalWaitingReviewFinancialClass.notBillable,
-        auditReason: 'NOT_REQUIRED',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'empty_loading_error_retry',
-        classification: ClinicalWaitingReviewFinancialClass.notBillable,
-        auditReason: 'NOT_REQUIRED',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'row_select_open_encounter',
-        classification: ClinicalWaitingReviewFinancialClass.notBillable,
-        auditReason: 'NOT_REQUIRED',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'next_action_doctor_review',
-        classification: ClinicalWaitingReviewFinancialClass.notBillable,
-        auditReason: 'NOT_REQUIRED',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'next_action_record_vitals',
-        classification: ClinicalWaitingReviewFinancialClass.notBillable,
-        auditReason: 'NOT_BILLED',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'next_action_disposition',
-        classification: ClinicalWaitingReviewFinancialClass.notBillable,
-        auditReason: 'NOT_BILLED',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'results_chronology',
-        classification: ClinicalWaitingReviewFinancialClass.notBillable,
-        auditReason: 'NOT_REQUIRED',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'print_summary',
-        classification: ClinicalWaitingReviewFinancialClass.notBillable,
-        auditReason: 'NOT_REQUIRED',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'add_note',
-        classification: ClinicalWaitingReviewFinancialClass.notBillable,
-        auditReason: 'NOT_BILLED',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'add_diagnosis',
-        classification: ClinicalWaitingReviewFinancialClass.notBillable,
-        auditReason: 'NOT_BILLED',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'refer',
-        classification: ClinicalWaitingReviewFinancialClass.notBillable,
-        auditReason: 'NOT_BILLED',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'follow_up',
-        classification: ClinicalWaitingReviewFinancialClass.notBillable,
-        auditReason: 'NOT_BILLED',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'record_vitals',
-        classification: ClinicalWaitingReviewFinancialClass.notBillable,
-        auditReason: 'NOT_BILLED',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'disposition',
-        classification: ClinicalWaitingReviewFinancialClass.notBillable,
-        auditReason: 'NOT_BILLED',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'consult_charge_on_doctor_review',
-        classification: ClinicalWaitingReviewFinancialClass.notBillable,
-        auditReason: 'NOT_BILLED',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'request_lab',
-        classification: ClinicalWaitingReviewFinancialClass.createCharge,
-        billingPath: 'clinical-request-billing/lab-order',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'request_lab_pay_now',
-        classification: ClinicalWaitingReviewFinancialClass.settle,
-        billingPath: 'clinical-request-billing/receive-payment',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'cancel_lab_order',
-        classification: ClinicalWaitingReviewFinancialClass.reverse,
-        billingPath: 'clinical-request-billing/reverse',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'request_radiology',
-        classification: ClinicalWaitingReviewFinancialClass.createCharge,
-        billingPath: 'clinical-request-billing/radiology-order',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'request_radiology_pay_now',
-        classification: ClinicalWaitingReviewFinancialClass.settle,
-        billingPath: 'clinical-request-billing/receive-payment',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'cancel_radiology_order',
-        classification: ClinicalWaitingReviewFinancialClass.reverse,
-        billingPath: 'clinical-request-billing/reverse',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'prescribe',
-        classification: ClinicalWaitingReviewFinancialClass.createCharge,
-        billingPath: 'clinical-request-billing/pharmacy-order',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'prescribe_pay_now',
-        classification: ClinicalWaitingReviewFinancialClass.settle,
-        billingPath: 'clinical-request-billing/receive-payment',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'cancel_pharmacy_order',
-        classification: ClinicalWaitingReviewFinancialClass.reverse,
-        billingPath: 'clinical-request-billing/reverse',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'request_procedure',
-        classification: ClinicalWaitingReviewFinancialClass.createCharge,
-        billingPath: 'clinical-request-billing/procedure',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'request_procedure_pay_now',
-        classification: ClinicalWaitingReviewFinancialClass.settle,
-        billingPath: 'clinical-request-billing/receive-payment',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'request_admission',
-        classification: ClinicalWaitingReviewFinancialClass.defer,
-        billingPath: 'clinical-request-billing/admission-on-start',
-        auditReason: 'NOT_REQUIRED',
-      ),
-      ClinicalWaitingReviewFinancialAtom(
-        id: 'discharge_open_billing',
-        classification: ClinicalWaitingReviewFinancialClass.notBillable,
-        auditReason: 'NOT_REQUIRED',
-      ),
-    ];
-
-/// Billable Waiting-review atoms must point at shared clinical-request Billing.
-bool clinicalWaitingReviewBillableAtomsUseSharedBilling() {
-  return clinicalWaitingReviewFinancialInventory
-      .where(
-        (ClinicalWaitingReviewFinancialAtom atom) =>
-            atom.classification !=
-            ClinicalWaitingReviewFinancialClass.notBillable,
-      )
-      .every(
-        (ClinicalWaitingReviewFinancialAtom atom) =>
-            atom.billingPath != null &&
-            atom.billingPath!.startsWith('clinical-request-billing'),
-      );
-}
-
+/// Write keeps source Γê¬ `clinical:write` | `platform:admin` rather than matrix Γê⌐
+/// `clinical:write` alone. Nested order / admission rows document prompt Γê¬
+/// (matrix nested write _(n/a)_). Prompt route entry Γê¬ (`clinical:read` |
 /// Completed tab atom → permission mapping (inventory + matrix).
 ///
 /// Same-day terminal outpatient encounters (`?section=completed`). Prefer
@@ -1079,7 +744,8 @@ bool clinicalWaitingReviewBillableAtomsUseSharedBilling() {
 /// | Detail Request radiology (+ catalog / billing) | create / update | radiology order ∪ |
 /// | Detail Prescribe (+ medicine / billing nested) | create | pharmacy order ∪ |
 /// | Detail Request admission | create | admission ∪ |
-/// | Detail Print summary | export / read | read ∩ |
+/// | List Export / Print | export | ∩ `evidence:export` |
+/// | Detail Print | export | ∩ `evidence:export` |
 /// | Lab / radiology / pharmacy order mutate | update / delete | nested order ∪ |
 /// | Diagnosis delete | delete | write ∪ source |
 /// | Discharge Open billing / financial | nested read | billing:read ∩ |
@@ -1136,8 +802,10 @@ abstract final class ClinicalCompletedAtomPermissions {
       clinicalPharmacyOrderWriteRequirement;
   static const AccessRequirement requestAdmission =
       clinicalAdmissionWriteRequirement;
+  static const AccessRequirement export = clinicalWorkspaceExportRequirement;
+  static const AccessRequirement listPrint = clinicalWorkspacePrintRequirement;
   static const AccessRequirement printSummary =
-      clinicalWorkspaceReadRequirement;
+      clinicalWorkspaceExportRequirement;
   static const AccessRequirement nestedLabWrite =
       clinicalLabOrderWriteRequirement;
   static const AccessRequirement nestedRadiologyWrite =

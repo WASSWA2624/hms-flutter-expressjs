@@ -1967,7 +1967,7 @@ class _LabReportPreviewDialogState
           onPressed: () => setState(_resetSelection),
         ),
         AppReportActionButton.print(
-          label: l10n.labPrintReportAction,
+          label: l10n.commonPrintActionLabel,
           isLoading: _isPrinting,
           enabled: printEligible && !_isPrinting && documentHtml != null,
           onPressed: printEligible && documentHtml != null

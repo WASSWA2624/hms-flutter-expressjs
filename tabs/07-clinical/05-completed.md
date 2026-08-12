@@ -2,7 +2,7 @@
 
 ## 1. Tab strip
 
-- Label: `clinicalSectionCompletedTodayLabel`
+- Label: `clinicalSectionCompletedLabel`
 - Icon: `Icons.task_alt_outlined`
 - Count source: `state.completedCount`
 - Count tone: `AppTabCountTone.info`
@@ -12,7 +12,7 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Same as Pending; Export / Print absent; date enabled.
+Same as Pending; Export / Print gated by ∩ `evidence:export`; date enabled. Label `Completed` (`clinicalSectionCompletedLabel`); query `completed`.
 
 ## 3. Table
 

@@ -781,7 +781,7 @@ void main() {
       await tester.tap(find.text('Bob Pending'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Print discharge summary'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
       expect(find.text('Start discharge plan'), findsNothing);
       expect(find.text('Request final billing'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);

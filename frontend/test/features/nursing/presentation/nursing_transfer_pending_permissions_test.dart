@@ -86,13 +86,14 @@ AppAccessPolicy _policy({
   );
 }
 
-AppAccessPolicy _readPolicy({AppPermission readKey = AppPermissions.clinicalRead}) {
+AppAccessPolicy _readPolicy({AppPermission readKey = AppPermissions.nursingRead}) {
   return _policy(permissions: <AppPermission>{readKey});
 }
 
 AppAccessPolicy _readWritePolicy() {
   return _policy(
     permissions: <AppPermission>{
+      AppPermissions.nursingRead,
       AppPermissions.clinicalRead,
       AppPermissions.clinicalWrite,
       AppPermissions.patientRead,
@@ -104,6 +105,7 @@ AppAccessPolicy _readWritePolicy() {
 AppAccessPolicy _clinicalWriteOnlyPolicy() {
   return _policy(
     permissions: <AppPermission>{
+      AppPermissions.nursingRead,
       AppPermissions.clinicalRead,
       AppPermissions.clinicalWrite,
     },
@@ -113,6 +115,7 @@ AppAccessPolicy _clinicalWriteOnlyPolicy() {
 AppAccessPolicy _patientWriteWithoutClinicalWritePolicy() {
   return _policy(
     permissions: <AppPermission>{
+      AppPermissions.nursingRead,
       AppPermissions.clinicalRead,
       AppPermissions.patientRead,
       AppPermissions.patientWrite,
@@ -124,6 +127,7 @@ AppAccessPolicy _lastOfficeReadOnlyPolicy() {
   return _policy(
     roles: const <String>['RECEPTION'],
     permissions: <AppPermission>{
+      AppPermissions.nursingRead,
       AppPermissions.lastOfficeRead,
       AppPermissions.clinicalRead,
     },
@@ -133,6 +137,7 @@ AppAccessPolicy _lastOfficeReadOnlyPolicy() {
 AppAccessPolicy _shiftContextPolicy() {
   return _policy(
     permissions: <AppPermission>{
+      AppPermissions.nursingRead,
       AppPermissions.clinicalRead,
       AppPermissions.rosterRead,
     },
@@ -146,6 +151,7 @@ AppAccessPolicy _shiftContextPolicy() {
 AppAccessPolicy _medicationsPanelPolicy() {
   return _policy(
     permissions: <AppPermission>{
+      AppPermissions.nursingRead,
       AppPermissions.clinicalRead,
       AppPermissions.pharmacyRead,
     },
@@ -400,6 +406,41 @@ void main() {
       );
       expect(
         identical(
+          NursingTransferPendingAtomPermissions.export,
+          nursingWorkspaceExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingTransferPendingAtomPermissions.print,
+          nursingWorkspacePrintRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingTransferPendingAtomPermissions.openIcu,
+          nursingNavigationRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingTransferPendingAtomPermissions.navigation,
+          RouteAccessCatalog.icuEntry,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingTransferPendingAtomPermissions.billingPanel,
+          nursingBillingClearanceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           NursingTransferPendingAtomPermissions.catalogEntry,
           RouteAccessCatalog.nursingEntry,
         ),
@@ -467,18 +508,24 @@ void main() {
       );
     });
 
-    test('union allowance: clinical:read OR patient:read for tab read', () {
+    test('∩ nursing:read grants tab read; clinical/patient alone do not', () {
       expect(
         NursingTransferPendingAtomPermissions.tab.isAllowed(
-          _readPolicy(readKey: AppPermissions.clinicalRead),
+          _readPolicy(readKey: AppPermissions.nursingRead),
         ),
         isTrue,
       );
       expect(
         NursingTransferPendingAtomPermissions.tab.isAllowed(
+          _readPolicy(readKey: AppPermissions.clinicalRead),
+        ),
+        isFalse,
+      );
+      expect(
+        NursingTransferPendingAtomPermissions.tab.isAllowed(
           _readPolicy(readKey: AppPermissions.patientRead),
         ),
-        isTrue,
+        isFalse,
       );
       expect(
         NursingTransferPendingAtomPermissions.listChrome.isAllowed(
@@ -546,7 +593,7 @@ void main() {
         NursingTransferPendingAtomPermissions.routeEntry.isAllowed(
           lastOfficeOnly,
         ),
-        isTrue,
+        isFalse,
       );
       expect(
         NursingTransferPendingAtomPermissions.tab.isAllowed(lastOfficeOnly),
@@ -624,6 +671,7 @@ void main() {
     test('ABAC facility context strip', () {
       final AppAccessPolicy noFacility = _policy(
         permissions: <AppPermission>{
+          AppPermissions.nursingRead,
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
         },
@@ -858,13 +906,13 @@ void main() {
       expect(find.textContaining('no access'), findsNothing);
     });
 
-    testWidgets('∪ allowance: patient:read alone shows transfer-pending tab', (
+    testWidgets('∩ nursing:read shows transfer-pending tab', (
       WidgetTester tester,
     ) async {
       await _pumpTransferPending(
         tester,
         repository: repository,
-        policy: _readPolicy(readKey: AppPermissions.patientRead),
+        policy: _readPolicy(readKey: AppPermissions.nursingRead),
       );
       final AppLocalizations l10n = AppLocalizations.of(
         tester.element(find.byType(AppTabStrip)),
@@ -895,7 +943,7 @@ void main() {
       expect(find.byTooltip(l10n.nursingShiftContextTitle), findsOneWidget);
     });
 
-    testWidgets('detail: transfer write absent for read-only; Open ICU ok', (
+    testWidgets('detail: transfer write absent for read-only; Open ICU omitted without ICU entry', (
       WidgetTester tester,
     ) async {
       await _pumpTransferPending(

@@ -83,6 +83,7 @@ AppAccessPolicy _nursingWritePolicy() {
       tokens: SessionTokens(accessToken: 'access-token'),
       user: const AuthUserProfile(roles: <String>['NURSE']),
       permissions: <AppPermission>{
+        AppPermissions.nursingRead,
         AppPermissions.clinicalRead,
         AppPermissions.clinicalWrite,
         AppPermissions.patientRead,
@@ -252,11 +253,144 @@ void main() {
       tester.element(find.byType(AppTabStrip)),
     );
 
-    expect(find.text(l10n.nursingAdvancedFiltersLabel), findsOneWidget);
-    expect(find.text(l10n.commonTableSettingsActionLabel), findsOneWidget);
+    expect(find.byTooltip(l10n.commonFiltersActionLabel), findsOneWidget);
+    expect(find.byTooltip(l10n.commonTableSettingsActionLabel), findsOneWidget);
+    expect(find.byTooltip(l10n.commonTableExportActionLabel), findsNothing);
+    expect(find.byTooltip(l10n.commonPrintActionLabel), findsNothing);
     expect(find.text(l10n.nursingNextActionColumnLabel), findsWidgets);
     expect(find.byTooltip(l10n.nursingActionRecordVitals), findsWidgets);
   });
+
+  testWidgets('All tab chrome: ≤5 defaults, Filters/Settings/Print labels, info tone', (
+    WidgetTester tester,
+  ) async {
+    await _pumpNursingWorkspace(tester, repository: repository);
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
+    final AppListTable<NursingWorkItem> table = tester
+        .widget<AppListTable<NursingWorkItem>>(
+          find.byType(AppListTable<NursingWorkItem>),
+        );
+    final AppTabStrip strip = tester.widget<AppTabStrip>(
+      find.byType(AppTabStrip),
+    );
+    final AppTabItem allTab = strip.tabs.firstWhere(
+      (AppTabItem t) => t.id == 'all',
+    );
+
+    expect(table.columnVisibilityLabel, 'Settings');
+    expect(table.columnVisibilityTitle, 'Table Settings');
+    expect(table.search?.advancedFilterButtonLabel, 'Filters');
+    expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
+    expect(table.search?.advancedFilterResetLabel, 'Clear filters');
+    expect(table.search?.advancedFilterCloseLabel, 'Close');
+    expect(table.enablePrint, isTrue);
+    expect(table.printLabel, 'Print');
+    expect(table.columns.length, lessThanOrEqualTo(5));
+    expect(table.columnChoices, isNotNull);
+    expect(table.columnChoices!.length, greaterThan(table.columns.length));
+    expect(allTab.countTone, AppTabCountTone.info);
+    expect(allTab.count, isNotNull);
+    expect(find.text(l10n.nursingScopeAllLabel), findsWidgets);
+  });
+
+  testWidgets(
+    'Export/Print omit without evidence:export; present when granted',
+    (WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences = await SharedPreferences.getInstance();
+      _stubNursingRepository(repository);
+
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final GoRouter router = GoRouter(
+        initialLocation: '/nursing',
+        routes: <RouteBase>[
+          GoRoute(
+            path: '/nursing',
+            builder: (BuildContext context, GoRouterState state) {
+              return const Scaffold(body: NursingWorkspacePage());
+            },
+          ),
+        ],
+      );
+
+      Future<void> pumpWith(AppAccessPolicy policy) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              nursingRepositoryProvider.overrideWithValue(repository),
+              sharedPreferencesProvider.overrideWithValue(preferences),
+              initialSessionStateProvider.overrideWithValue(
+                const SessionState.ready(),
+              ),
+              appAccessPolicyProvider.overrideWithValue(policy),
+            ],
+            child: MaterialApp.router(
+              routerConfig: router,
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(seconds: 1));
+      }
+
+      await pumpWith(_nursingWritePolicy());
+      expect(find.byTooltip('Filters'), findsOneWidget);
+      expect(find.byTooltip('Settings'), findsOneWidget);
+      expect(find.byTooltip('Export'), findsNothing);
+      expect(find.byTooltip('Print'), findsNothing);
+
+      final AppAccessPolicy withExport = AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(roles: <String>['NURSE']),
+          permissions: <AppPermission>{
+            AppPermissions.nursingRead,
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+            AppPermissions.patientRead,
+            AppPermissions.patientWrite,
+            AppPermissions.pharmacyRead,
+            AppPermissions.pharmacyWrite,
+            AppPermissions.rosterRead,
+            AppPermissions.evidenceExport,
+          },
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'inpatient-bed-management',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'patient-registry',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'pharmacy-dispensing',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(code: 'hr-rosters', licenseStatus: 'ACTIVE'),
+          ],
+        ),
+      );
+      await pumpWith(withExport);
+      expect(find.byTooltip('Filters'), findsOneWidget);
+      expect(find.byTooltip('Settings'), findsOneWidget);
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+    },
+  );
 
   testWidgets('renders tab strip without duplicate toolbar writes', (
     WidgetTester tester,
@@ -286,6 +420,127 @@ void main() {
 
     expect(find.text(l10n.nursingTitle), findsNothing);
     expect(find.byType(AppWorkspaceHeader), findsNothing);
+  });
+
+  testWidgets('Assigned ward tab filters to hasActiveBed and keeps chrome labels', (
+    WidgetTester tester,
+  ) async {
+    const NursingPatientSummary withoutBed = NursingPatientSummary(
+      id: 'adm-no-bed',
+      admissionId: 'adm-no-bed',
+      displayId: 'ADM-NO-BED',
+      patientDisplayId: 'PT-NO-BED',
+      patientDisplayName: 'No Bed Patient',
+      stage: 'ADMITTED_IN_BED',
+      admissionStatus: 'ADMITTED_IN_BED',
+      hasActiveBed: false,
+    );
+
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    when(() => repository.listWardPatients(any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      final NursingWorklistQuery query =
+          invocation.positionalArguments.single as NursingWorklistQuery;
+      final List<NursingPatientSummary> filtered = <NursingPatientSummary>[
+        ..._allPatients,
+        withoutBed,
+      ]
+          .where((NursingPatientSummary item) => item.matchesScope(query.scope))
+          .where(
+            (NursingPatientSummary item) =>
+                query.search.trim().isEmpty ||
+                item.matchesSearch(query.search.trim().toLowerCase()),
+          )
+          .toList(growable: false);
+      return Result<AppPage<NursingPatientSummary>>.success(
+        AppPage<NursingPatientSummary>(
+          items: filtered,
+          request: query.pageRequest,
+          totalItemCount: filtered.length,
+        ),
+      );
+    });
+    when(() => repository.listPendingHandovers()).thenAnswer(
+      (_) async =>
+          const Result<List<NursingHandover>>.success(<NursingHandover>[]),
+    );
+    when(() => repository.listCurrentRosters()).thenAnswer(
+      (_) async => const Result<List<NursingRosterAssignment>>.success(
+        <NursingRosterAssignment>[],
+      ),
+    );
+    when(() => repository.loadPatientDetail(any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      final NursingPatientSummary summary =
+          invocation.positionalArguments.single as NursingPatientSummary;
+      return Result<NursingPatientDetail>.success(
+        NursingPatientDetail(summary: summary),
+      );
+    });
+
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final GoRouter router = GoRouter(
+      initialLocation: '/nursing?scope=assigned-ward',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/nursing',
+          builder: (BuildContext context, GoRouterState state) {
+            return Scaffold(
+              body: NursingWorkspacePage(
+                initialQuery: NursingWorkspaceQuery.fromUri(state.uri),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          nursingRepositoryProvider.overrideWithValue(repository),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(_nursingWritePolicy()),
+        ],
+        child: MaterialApp.router(
+          routerConfig: router,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(router.state.uri.queryParameters['scope'], 'assigned-ward');
+    final AppListTable<NursingWorkItem> table = tester
+        .widget<AppListTable<NursingWorkItem>>(
+          find.byType(AppListTable<NursingWorkItem>),
+        );
+    final AppTabStrip strip = tester.widget<AppTabStrip>(
+      find.byType(AppTabStrip),
+    );
+    final AppTabItem assigned = strip.tabs.firstWhere(
+      (AppTabItem t) => t.id == 'assigned-ward',
+    );
+
+    expect(find.text('Routine Patient'), findsOneWidget);
+    expect(find.text('No Bed Patient'), findsNothing);
+    expect(table.columns.length, lessThanOrEqualTo(5));
+    expect(table.printLabel, 'Print');
+    expect(table.search?.advancedFilterButtonLabel, 'Filters');
+    expect(assigned.countTone, AppTabCountTone.info);
   });
 
   testWidgets('switching tabs updates scope query parameter', (
@@ -421,6 +676,7 @@ void main() {
         tokens: SessionTokens(accessToken: 'access-token'),
         user: const AuthUserProfile(roles: <String>['RECEPTION']),
         permissions: <AppPermission>{
+          AppPermissions.nursingRead,
           AppPermissions.clinicalRead,
           AppPermissions.patientRead,
         },
@@ -466,17 +722,25 @@ void main() {
     expect(find.byTooltip('Record vitals'), findsNothing);
     expect(find.byTooltip('Administer medication'), findsNothing);
     expect(find.byTooltip('Escalate'), findsNothing);
+    expect(find.byTooltip('Export'), findsNothing);
+    expect(find.byTooltip('Print'), findsNothing);
   });
 
   testWidgets('tapping a row opens the nursing detail dialog', (
     WidgetTester tester,
   ) async {
     await _pumpNursingWorkspace(tester, repository: repository);
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTabStrip)),
+    );
 
     await tester.tap(find.text('Routine Patient'));
     await _pumpAfterAction(tester);
 
     expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+    // dialogs.mdc: generic surface title; identity stays in body.
+    expect(find.text(l10n.nursingPatientContextLabel.toUpperCase()), findsOneWidget);
+    expect(find.text('Routine Patient'), findsWidgets);
     verify(
       () => repository.loadPatientDetail(any()),
     ).called(greaterThanOrEqualTo(1));

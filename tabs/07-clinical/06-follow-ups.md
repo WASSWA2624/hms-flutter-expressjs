@@ -4,7 +4,7 @@
 
 - Label: `opdFollowUpsTitle`
 - Icon: `Icons.phone_callback_outlined`
-- Count source: `followUpTabCountProvider(FollowUpWorklistScope())`
+- Count source: `followUpTabCountProvider(FollowUpWorklistScope())`; active narrowed via `onNarrowedCountChanged`
 - Count tone: `AppTabCountTone.info`
 - Deep-link `section`: `follow-ups` (aliases `follow_ups`, `followups`)
 - Tab gate: `ClinicalFollowUpsAtomPermissions.tab` = `clinicalFollowUpsRequirement`
@@ -12,9 +12,14 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-- Search: `receptionFollowUpsSearchHint`; clear `receptionClearFiltersAction`
-- Settings: `commonTableSettings*` with Apply/Reset `receptionApplyColumnsAction` / `receptionResetColumnsAction`
-- Filters / Export / Print / create: **not enabled** on Clinical host
+Order: **Filters → Settings → Export → Print**
+
+- Search: shared follow-up search
+- Filters: `commonFiltersActionLabel` → Advanced filters (status + date); Close `commonCloseActionLabel`
+- Settings: `commonTableSettings*`
+- Export / Print: gated by ∩ `evidence:export`; Print label `Print` (preview-first)
+- Create: **not** mounted on Clinical host
+- Requirements override: clinical follow-ups read/write (not Reception defaults)
 
 ## 3. Table
 
@@ -25,18 +30,18 @@
 
 ## 4. Advanced filters / search fields
 
-- Advanced filters **not** mounted by Clinical host
+- Status group + scheduled date range (mounted by Clinical host)
 
 ## 5. Primary / secondary / row actions
 
-- Detail: Reschedule (`receptionScheduleAnotherFollowUpAction`) / Mark completed (`receptionMarkFollowUpCompletedAction`) / Save (`opdSaveFollowUpAction`) / Close (`commonCloseActionLabel`)
-- Titles: `clinicalFollowUpDetailsTitle`, `receptionFollowUpNextStepTitle`, body `receptionFollowUpDetailBody`
+- Detail: Reschedule / Mark completed / Save / Close
+- Titles: `clinicalFollowUpDetailsTitle`, Reception follow-up copy where reused
 
 ## 6. Dialogs from this tab
 
 | Dialog | Owner |
 | --- | --- |
-| Follow-up detail | **reused** Reception |
+| Follow-up detail | **reused** Reception (clinical RW gates)
 
 ## 7. Nested / follow-on
 
@@ -49,19 +54,10 @@
 
 ## 9. Print / labels / preview
 
-- **Absent** on this tab
+- Toolbar Print → shared preview-first list print
+- Trigger label: `Print`
 
-## 10. Loading / empty / error / success
+## 10. Access notes
 
-- Empty: `receptionFollowUpsEmptyTitle` / `Body`
-- Error: `errorUnexpectedTitle` / `Message` + `commonRetryActionLabel`
-- Success via follow-up mutations / Clinical RW overrides
-
-## 11. RBAC / ABAC (omitted when unauthorized)
-
-| Atom | Gate |
-| --- | --- |
-| Tab / listChrome / search / settings / empty / loading / retry / rowSelect / detail / close / nestedRead | `clinicalFollowUpsRequirement` |
-| success / validation / create / update / delete / reschedule / markCompleted / saveFollowUp / write / nestedWrite | `clinicalFollowUpsWriteRequirement` |
-| entry / routeEntry | catalog entry |
-| Lab / radiology / pharmacy / admission atoms | **n/a** on this tab |
+- Read/write: clinical follow-ups requirements
+- Export/Print: `clinicalWorkspaceExportRequirement`

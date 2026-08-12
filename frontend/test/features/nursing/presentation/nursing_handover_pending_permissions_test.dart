@@ -113,7 +113,7 @@ AppAccessPolicy _policy({
 }
 
 AppAccessPolicy _readPolicy({
-  AppPermission readKey = AppPermissions.clinicalRead,
+  AppPermission readKey = AppPermissions.nursingRead,
 }) {
   return _policy(
     permissions: <AppPermission>{readKey},
@@ -124,6 +124,7 @@ AppAccessPolicy _readPolicy({
 AppAccessPolicy _writePolicy() {
   return _policy(
     permissions: <AppPermission>{
+      AppPermissions.nursingRead,
       AppPermissions.clinicalRead,
       AppPermissions.clinicalWrite,
       AppPermissions.patientRead,
@@ -135,6 +136,7 @@ AppAccessPolicy _writePolicy() {
 AppAccessPolicy _clinicalWriteOnlyPolicy() {
   return _policy(
     permissions: <AppPermission>{
+      AppPermissions.nursingRead,
       AppPermissions.clinicalRead,
       AppPermissions.clinicalWrite,
     },
@@ -144,6 +146,7 @@ AppAccessPolicy _clinicalWriteOnlyPolicy() {
 AppAccessPolicy _patientWriteWithoutClinicalWritePolicy() {
   return _policy(
     permissions: <AppPermission>{
+      AppPermissions.nursingRead,
       AppPermissions.clinicalRead,
       AppPermissions.patientRead,
       AppPermissions.patientWrite,
@@ -422,6 +425,34 @@ void main() {
       );
       expect(
         identical(
+          NursingHandoverPendingAtomPermissions.export,
+          nursingWorkspaceExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingHandoverPendingAtomPermissions.print,
+          nursingWorkspacePrintRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingHandoverPendingAtomPermissions.openIcu,
+          nursingNavigationRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingHandoverPendingAtomPermissions.navigation,
+          RouteAccessCatalog.icuEntry,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           NursingHandoverPendingAtomPermissions.catalogEntry,
           RouteAccessCatalog.nursingEntry,
         ),
@@ -547,33 +578,37 @@ void main() {
       );
     });
 
-    test('∪ allowance: clinical:read alone satisfies tab read chrome', () {
+    test('∩ nursing:read grants tab chrome; clinical/patient alone do not', () {
+      final AppAccessPolicy nursingOnly = _readPolicy(
+        readKey: AppPermissions.nursingRead,
+      );
       final AppAccessPolicy clinicalOnly = _readPolicy(
         readKey: AppPermissions.clinicalRead,
       );
-      expect(
-        NursingHandoverPendingAtomPermissions.tab.isAllowed(clinicalOnly),
-        isTrue,
-      );
-      expect(
-        NursingHandoverPendingAtomPermissions.search.isAllowed(clinicalOnly),
-        isTrue,
-      );
-      expect(
-        NursingHandoverPendingAtomPermissions.write.isAllowed(clinicalOnly),
-        isFalse,
-      );
-    });
-
-    test('∪ allowance: patient:read alone satisfies tab read chrome', () {
       final AppAccessPolicy patientOnly = _readPolicy(
         readKey: AppPermissions.patientRead,
       );
       expect(
-        NursingHandoverPendingAtomPermissions.tab.isAllowed(patientOnly),
+        NursingHandoverPendingAtomPermissions.tab.isAllowed(nursingOnly),
         isTrue,
       );
-      expect(canViewNursingHandoverPending(patientOnly), isTrue);
+      expect(
+        NursingHandoverPendingAtomPermissions.search.isAllowed(nursingOnly),
+        isTrue,
+      );
+      expect(
+        NursingHandoverPendingAtomPermissions.write.isAllowed(nursingOnly),
+        isFalse,
+      );
+      expect(
+        NursingHandoverPendingAtomPermissions.tab.isAllowed(clinicalOnly),
+        isFalse,
+      );
+      expect(
+        NursingHandoverPendingAtomPermissions.tab.isAllowed(patientOnly),
+        isFalse,
+      );
+      expect(canViewNursingHandoverPending(patientOnly), isFalse);
     });
 
     test('last_office:read alone does not unlock write or tab chrome', () {
@@ -585,7 +620,7 @@ void main() {
         NursingHandoverPendingAtomPermissions.routeEntry.isAllowed(
           lastOfficeOnly,
         ),
-        isTrue,
+        isFalse,
       );
       expect(
         NursingHandoverPendingAtomPermissions.tab.isAllowed(lastOfficeOnly),
@@ -615,6 +650,7 @@ void main() {
 
       final AppAccessPolicy withPharmacy = _policy(
         permissions: <AppPermission>{
+          AppPermissions.nursingRead,
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
           AppPermissions.pharmacyRead,
@@ -667,6 +703,7 @@ void main() {
 
       final AppAccessPolicy withRoster = _policy(
         permissions: <AppPermission>{
+          AppPermissions.nursingRead,
           AppPermissions.clinicalRead,
           AppPermissions.rosterRead,
         },
@@ -823,7 +860,7 @@ void main() {
             of: find.byType(AppQuickActions),
             matching: find.text('Open ICU workspace'),
           ),
-          findsOneWidget,
+          findsNothing,
         );
         // Medications panel absent without pharmacy:read.
         expect(find.text('Medications'), findsNothing);
@@ -842,6 +879,7 @@ void main() {
       (WidgetTester tester) async {
         final AppAccessPolicy withMeds = _policy(
           permissions: <AppPermission>{
+            AppPermissions.nursingRead,
             AppPermissions.clinicalRead,
             AppPermissions.clinicalWrite,
             AppPermissions.pharmacyRead,
@@ -883,6 +921,7 @@ void main() {
         repository: repository,
         accessPolicy: _policy(
           permissions: <AppPermission>{
+            AppPermissions.nursingRead,
             AppPermissions.clinicalRead,
             AppPermissions.clinicalWrite,
             AppPermissions.rosterRead,

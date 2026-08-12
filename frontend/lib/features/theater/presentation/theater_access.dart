@@ -119,6 +119,23 @@ const AccessRequirement theaterOperationsReadRequirement =
 const AccessRequirement theaterScheduleCaseRequirement =
     theaterClinicalWriteRequirement;
 
+/// Worklist Export / Print — ∩ `evidence:export` (omit when unauthorized).
+const AccessRequirement theaterWorkspaceExportRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.evidenceExport],
+);
+
+/// Alias — Print uses the same desk export gate.
+const AccessRequirement theaterWorkspacePrintRequirement =
+    theaterWorkspaceExportRequirement;
+
+bool canExportTheaterWorkspace(AppAccessPolicy policy) {
+  return theaterWorkspaceExportRequirement.isAllowed(policy);
+}
+
+bool canPrintTheaterWorkspace(AppAccessPolicy policy) {
+  return theaterWorkspacePrintRequirement.isAllowed(policy);
+}
+
 /// Per-section tab strip gate.
 ///
 /// All board tabs use matrix read ∪ (`clinical:read` | `patient:read` +
@@ -350,7 +367,8 @@ AccessRequirement theaterNextActionRequirement(TheaterNextActionKind kind) {
 /// | --- | --- | --- |
 /// | All cases tab / count badge | navigate | read ∪ ([tab]) |
 /// | Schedule case (search bar) | create | write ∩ ([scheduleCase]) |
-/// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Search / Clear / Filters / Settings / Export / Print / columns | read chrome | ([listChrome]) |
+/// | Export / Print | export | ∩ evidence:export ([export] / [print]) |
 /// | Status / stage filters (All only) | read chrome | ([filters]) |
 /// | Room / surgeon / anesthetist filters | read chrome | ([filters]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
@@ -371,6 +389,8 @@ abstract final class TheaterAllAtomPermissions {
   static const AccessRequirement search = theaterWorkspaceReadRequirement;
   static const AccessRequirement filters = theaterWorkspaceReadRequirement;
   static const AccessRequirement settings = theaterWorkspaceReadRequirement;
+  static const AccessRequirement export = theaterWorkspaceExportRequirement;
+  static const AccessRequirement print = theaterWorkspacePrintRequirement;
   static const AccessRequirement empty = theaterWorkspaceReadRequirement;
   static const AccessRequirement loading = theaterWorkspaceReadRequirement;
   static const AccessRequirement retry = theaterWorkspaceReadRequirement;
@@ -439,7 +459,7 @@ abstract final class TheaterAllAtomPermissions {
 ///
 /// Pre-op board (`/theater?section=scheduled`, status=SCHEDULED owned by the
 /// tab — no status/stage filter groups). Schedule case is the search-bar
-/// primary after Export (matrix create ∩ `clinical:write` + `theatre-anesthesia`);
+/// context action after Print (matrix create ∩ `clinical:write` + `theatre-anesthesia`);
 /// reschedule /
 /// stage / readiness / start / cancel use the same write ∩. Nested
 /// cross-module matrix rows are _(n/a)_ — [nestedWrite] / [nestedRead] reuse
@@ -455,7 +475,8 @@ abstract final class TheaterAllAtomPermissions {
 /// | --- | --- | --- |
 /// | Scheduled tab / count badge | navigate | read ∪ ([tab]) |
 /// | Schedule case (search bar) | create | write ∩ ([scheduleCase]) |
-/// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Search / Clear / Filters / Settings / Export / Print / columns | read chrome | ([listChrome]) |
+/// | Export / Print | export | ∩ evidence:export ([export] / [print]) |
 /// | Date / room / surgeon / anesthetist filters | read chrome | ([filters]) |
 /// | Time column (default) | read | ([timeColumn]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
@@ -475,6 +496,8 @@ abstract final class TheaterScheduledAtomPermissions {
   static const AccessRequirement search = theaterWorkspaceReadRequirement;
   static const AccessRequirement filters = theaterWorkspaceReadRequirement;
   static const AccessRequirement settings = theaterWorkspaceReadRequirement;
+  static const AccessRequirement export = theaterWorkspaceExportRequirement;
+  static const AccessRequirement print = theaterWorkspacePrintRequirement;
   static const AccessRequirement empty = theaterWorkspaceReadRequirement;
   static const AccessRequirement loading = theaterWorkspaceReadRequirement;
   static const AccessRequirement retry = theaterWorkspaceReadRequirement;
@@ -551,7 +574,8 @@ abstract final class TheaterScheduledAtomPermissions {
 /// | --- | --- | --- |
 /// | In theater tab / count badge | navigate | read ∪ ([tab]) |
 /// | Schedule case (search bar) | create | write ∩ ([scheduleCase]) |
-/// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Search / Clear / Filters / Settings / Export / Print / columns | read chrome | ([listChrome]) |
+/// | Export / Print | export | ∩ evidence:export ([export] / [print]) |
 /// | Room / surgeon / anesthetist filters | read chrome | ([filters]) |
 /// | Room column (default) | read | ([roomColumn]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
@@ -571,6 +595,8 @@ abstract final class TheaterInTheaterAtomPermissions {
   static const AccessRequirement search = theaterWorkspaceReadRequirement;
   static const AccessRequirement filters = theaterWorkspaceReadRequirement;
   static const AccessRequirement settings = theaterWorkspaceReadRequirement;
+  static const AccessRequirement export = theaterWorkspaceExportRequirement;
+  static const AccessRequirement print = theaterWorkspacePrintRequirement;
   static const AccessRequirement empty = theaterWorkspaceReadRequirement;
   static const AccessRequirement loading = theaterWorkspaceReadRequirement;
   static const AccessRequirement retry = theaterWorkspaceReadRequirement;
@@ -650,7 +676,8 @@ abstract final class TheaterInTheaterAtomPermissions {
 /// | --- | --- | --- |
 /// | Follow-ups tab / count badge | navigate | read ∪ ([tab]) |
 /// | Schedule case (search bar) | create | write ∩ — not mounted ([scheduleCase]) |
-/// | Search / Clear / Settings / columns | read chrome | ([listChrome]) |
+/// | Search / Clear / Filters / Settings / Export / Print / columns | read chrome | ([listChrome]) |
+/// | Export / Print | export | ∩ evidence:export ([export] / [print]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | write ∩ / form |
 /// | Row select → Follow-up details | read | ([detail]) |
@@ -666,6 +693,9 @@ abstract final class TheaterFollowUpsAtomPermissions {
   static const AccessRequirement listChrome = theaterFollowUpsRequirement;
   static const AccessRequirement search = theaterFollowUpsRequirement;
   static const AccessRequirement settings = theaterFollowUpsRequirement;
+  static const AccessRequirement filters = theaterFollowUpsRequirement;
+  static const AccessRequirement export = theaterWorkspaceExportRequirement;
+  static const AccessRequirement print = theaterWorkspacePrintRequirement;
   static const AccessRequirement empty = theaterFollowUpsRequirement;
   static const AccessRequirement loading = theaterFollowUpsRequirement;
   static const AccessRequirement retry = theaterFollowUpsRequirement;
@@ -705,7 +735,8 @@ abstract final class TheaterFollowUpsAtomPermissions {
 
 /// Recovery tab atom → permission mapping (inventory + matrix).
 ///
-/// PACU / recovery board (`/theater?section=recovery`, stage `POST_OP`).
+/// PACU / recovery board (`/theater?section=recovery`, stage
+/// `POST_OP,PACU_HANDOFF`).
 /// Post-op / handover / readiness / anesthesia / stage / reschedule / cancel
 /// need matrix ∩ `clinical:write` + `theatre-anesthesia`. Nested cross-module
 /// matrix rows are _(n/a)_ — [nestedWrite] / [nestedRead] reuse theater
@@ -720,7 +751,8 @@ abstract final class TheaterFollowUpsAtomPermissions {
 /// | --- | --- | --- |
 /// | Recovery tab / count badge | navigate | read ∪ ([tab]) |
 /// | Schedule case (search bar) | create | write ∩ ([scheduleCase]) |
-/// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Search / Clear / Filters / Settings / Export / Print / columns | read chrome | ([listChrome]) |
+/// | Export / Print | export | ∩ evidence:export ([export] / [print]) |
 /// | Room / surgeon / anesthetist filters | read chrome | ([filters]) |
 /// | Room column (default) | read | ([roomColumn]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
@@ -740,6 +772,8 @@ abstract final class TheaterRecoveryAtomPermissions {
   static const AccessRequirement search = theaterWorkspaceReadRequirement;
   static const AccessRequirement filters = theaterWorkspaceReadRequirement;
   static const AccessRequirement settings = theaterWorkspaceReadRequirement;
+  static const AccessRequirement export = theaterWorkspaceExportRequirement;
+  static const AccessRequirement print = theaterWorkspacePrintRequirement;
   static const AccessRequirement empty = theaterWorkspaceReadRequirement;
   static const AccessRequirement loading = theaterWorkspaceReadRequirement;
   static const AccessRequirement retry = theaterWorkspaceReadRequirement;

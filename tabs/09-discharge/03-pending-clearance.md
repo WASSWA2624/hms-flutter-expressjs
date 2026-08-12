@@ -4,8 +4,8 @@
 
 - Label: `dischargeSectionPendingClearance`
 - Icon: `Icons.pending_actions_outlined`
-- Count source: `state.summaryPendingCount`
-- Sibling tabs: loaded-queue / client-filter model (shared chrome)
+- Count source: `DischargeSectionCounts.pendingClearance` (catalog); active + search/filters → filtered section membership
+- Sibling tabs: dedicated unfiltered `DischargeSectionCounts` sibling-count model
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `pending` (aliases `pending_clearance`, `pending-clearance`, `pendingclearance`)
 - Tab gate: `DischargePendingClearanceAtomPermissions.tab` = **pending clearance read ∪** (broader than workspace read)
@@ -14,9 +14,11 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Filters → Settings → Export**
+Order: **Filters → Settings → Export → Print**
 
-- Same queue chrome; date filter **off**; no strip actions; no table Print
+- Same queue chrome; date filter **on**; strip Plan/Clearance **not mounted** (justified)
+- Export: ∩ `evidence:export` (`canExportDischargeWorkspace`)
+- Print (toolbar): `commonPrintActionLabel` → `printDischargeWorkspaceList` (same export gate)
 
 ## 3. Table
 
@@ -33,7 +35,7 @@ Order: **Filters → Settings → Export**
 
 ## 4. Advanced filters / search fields
 
-- Status group; date filter **off**
+- Status group; date filter **on** (`dischargeDateFilterLabel` / From / To)
 
 ## 5. Primary / secondary / row actions
 
@@ -42,7 +44,12 @@ Order: **Filters → Settings → Export**
 
 ## 6. Dialogs from this tab
 
-Detail + planning + pharmacy + clinicalSummary print (shared).
+| Dialog | Owner |
+| --- | --- |
+| Detail | Discharge-owned |
+| Planning (`showDischargePlanningDialog` + Pending create/update gates) | Discharge-owned |
+| Pharmacy request | Discharge-owned |
+| Print clinical summary | **reused** `PrintDocumentTemplates.clinicalSummary` (trigger `Print`) |
 
 ## 7. Nested / follow-on
 
@@ -54,8 +61,8 @@ Plan summary + pharmacy + finalize override when applicable.
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
-- Detail print via pending `printSummary` (pending read ∪)
+- Table Print: preview-first `printDischargeWorkspaceList` (`commonPrintActionLabel`)
+- Detail print via pending `printSummary` (pending read ∪; trigger `Print`)
 
 ## 10. Loading / empty / error / success
 
@@ -67,6 +74,6 @@ Shared Discharge patterns.
 | --- | --- |
 | Tab / list / search / filters / settings / detail / printSummary | `DischargePendingClearanceAtomPermissions.*` → pending read ∪ |
 | nextActionPlan / write / pharmacy | clinical write |
+| create / update (planning dialog) | Pending atom map (section-scoped) |
 | Nested billing / pharmacy / operations / nursing | ∩ as shared clearance gates |
-| Export | ungated |
-| Table Print | n/a |
+| Export / Print (toolbar) | ∩ `evidence:export` |

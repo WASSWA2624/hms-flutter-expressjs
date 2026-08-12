@@ -10,7 +10,7 @@ Catalog of every visible / reachable UI atom on `NursingWorkspacePage`. Not a re
 **Page:** `frontend/lib/features/nursing/presentation/pages/nursing_workspace_page.dart`  
 **Access:** `frontend/lib/features/nursing/presentation/nursing_access.dart`  
 **Scopes enum:** `NursingQueueScope`  
-**Detail panels:** `NursingDetailPanel` (`checklist`, `vitals`, `medication`, `handover`, `discharge`)
+**Detail panels:** `NursingDetailPanel` (`checklist`, `vitals`, `medication`, `handover`, `transfer`, `discharge`)
 
 ## Desk tabs (order — `nursingTabStripOrder`)
 

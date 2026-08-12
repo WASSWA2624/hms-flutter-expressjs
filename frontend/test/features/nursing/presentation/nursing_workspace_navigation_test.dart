@@ -302,39 +302,111 @@ void main() {
       ]);
     });
 
-    test('omits zero counts and maps tones from workspace state', () {
+    test('always shows counts including zero; tones from scope', () {
       final List<AppTabItem> emptyTabs = nursingTabItems(l10n, emptyState());
       for (final AppTabItem tab in emptyTabs) {
-        expect(tab.count, isNull);
+        expect(tab.count, 0);
       }
+      expect(emptyTabs[0].countTone, AppTabCountTone.info); // all
+      expect(emptyTabs[1].countTone, AppTabCountTone.info); // assignedWard
+      expect(emptyTabs[2].countTone, AppTabCountTone.danger); // urgent
+      expect(emptyTabs[3].countTone, AppTabCountTone.warning); // medicationDue
+      expect(emptyTabs[4].countTone, AppTabCountTone.warning); // handover
+      expect(emptyTabs[5].countTone, AppTabCountTone.warning); // transfer
+      expect(emptyTabs[6].countTone, AppTabCountTone.warning); // discharge
 
-      const NursingPatientSummary urgentPatient = NursingPatientSummary(
-        id: 'adm-urgent',
-        admissionId: 'adm-urgent',
-        displayId: 'ADM-URGENT',
-        patientDisplayId: 'PT-URGENT',
-        patientDisplayName: 'Urgent Patient',
-        stage: 'ADMITTED_IN_BED',
-        admissionStatus: 'ADMITTED_IN_BED',
-        wardDisplayName: 'Ward C',
-        bedDisplayLabel: 'Bed 3',
-        hasActiveBed: true,
-        hasCriticalAlert: true,
-        criticalSeverity: 'CRITICAL',
-      );
       const NursingWorkspaceState state = NursingWorkspaceState(
         query: NursingWorklistQuery(),
         worklist: AppPage<NursingPatientSummary>(
-          items: <NursingPatientSummary>[urgentPatient],
+          items: <NursingPatientSummary>[],
           request: AppPageRequest(),
-          totalItemCount: 1,
+          totalItemCount: 0,
+        ),
+        scopeCounts: NursingScopeCounts(
+          all: 4,
+          assignedWard: 3,
+          urgent: 1,
+          medicationDue: 2,
+          handoverPending: 0,
+          transferPending: 1,
+          dischargePending: 0,
         ),
       );
       final List<AppTabItem> tabs = nursingTabItems(l10n, state);
-      expect(tabs[0].count, 1);
+      expect(tabs[0].count, 4);
       expect(tabs[0].countTone, AppTabCountTone.info);
+      expect(tabs[1].count, 3);
+      expect(tabs[1].countTone, AppTabCountTone.info);
       expect(tabs[2].count, 1);
       expect(tabs[2].countTone, AppTabCountTone.danger);
+      expect(tabs[3].count, 2);
+      expect(tabs[3].countTone, AppTabCountTone.warning);
+      expect(tabs[4].count, 0);
+      expect(tabs[4].countTone, AppTabCountTone.warning);
+      expect(tabs[5].count, 1);
+      expect(tabs[5].countTone, AppTabCountTone.warning);
+      expect(tabs[6].count, 0);
+      expect(tabs[6].countTone, AppTabCountTone.warning);
+    });
+
+    test('active tab badge uses filtered worklist total when narrowed', () {
+      const NursingWorkspaceState state = NursingWorkspaceState(
+        query: NursingWorklistQuery(search: 'Ada'),
+        worklist: AppPage<NursingPatientSummary>(
+          items: <NursingPatientSummary>[],
+          request: AppPageRequest(),
+          totalItemCount: 1,
+        ),
+        scopeCounts: NursingScopeCounts(
+          all: 4,
+          assignedWard: 3,
+          urgent: 1,
+          medicationDue: 2,
+          handoverPending: 0,
+          transferPending: 1,
+          dischargePending: 0,
+        ),
+      );
+      final List<AppTabItem> tabs = nursingTabItems(
+        l10n,
+        state,
+        activeScope: NursingQueueScope.all,
+      );
+      expect(tabs[0].count, 1); // active all → filtered total
+      expect(tabs[1].count, 3); // sibling assignedWard → scopeCounts
+      expect(tabs[2].count, 1); // sibling urgent → scopeCounts
+    });
+
+    test('active assigned-ward badge uses filtered total; siblings stay unfiltered', () {
+      const NursingWorkspaceState state = NursingWorkspaceState(
+        query: NursingWorklistQuery(
+          scope: NursingQueueScope.assignedWard,
+          search: 'Ada',
+        ),
+        worklist: AppPage<NursingPatientSummary>(
+          items: <NursingPatientSummary>[],
+          request: AppPageRequest(),
+          totalItemCount: 2,
+        ),
+        scopeCounts: NursingScopeCounts(
+          all: 4,
+          assignedWard: 3,
+          urgent: 1,
+          medicationDue: 2,
+          handoverPending: 0,
+          transferPending: 1,
+          dischargePending: 0,
+        ),
+      );
+      final List<AppTabItem> tabs = nursingTabItems(
+        l10n,
+        state,
+        activeScope: NursingQueueScope.assignedWard,
+      );
+      expect(tabs[1].count, 2); // active assignedWard → filtered total
+      expect(tabs[0].count, 4); // sibling all → scopeCounts
+      expect(tabs[2].count, 1); // sibling urgent → scopeCounts
+      expect(tabs[1].countTone, AppTabCountTone.info);
     });
   });
 }

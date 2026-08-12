@@ -18,6 +18,7 @@ enum NursingDetailPanel {
   vitals,
   medication,
   handover,
+  transfer,
   discharge;
 
   static NursingDetailPanel? fromValue(String? value) {
@@ -26,6 +27,7 @@ enum NursingDetailPanel {
       'vitals' || 'observations' => NursingDetailPanel.vitals,
       'medication' || 'mar' || 'meds' => NursingDetailPanel.medication,
       'handover' => NursingDetailPanel.handover,
+      'transfer' => NursingDetailPanel.transfer,
       'discharge' || 'clearance' => NursingDetailPanel.discharge,
       _ => null,
     };
@@ -619,7 +621,8 @@ final class NursingPatientSummary {
 
   bool matchesScope(NursingQueueScope scope) {
     return switch (scope) {
-      NursingQueueScope.assignedWard => true,
+      // Assigned ward = patients currently on a ward bed (ABAC ward board).
+      NursingQueueScope.assignedWard => hasActiveBed,
       NursingQueueScope.urgent => isUrgent,
       NursingQueueScope.medicationDue => hasMedicationDue,
       NursingQueueScope.handoverPending => pendingHandoverCount > 0,
@@ -1117,11 +1120,85 @@ final class NursingUserOption {
   }
 }
 
+/// Unfiltered per-scope totals for sibling tab badges (sibling-count model).
+@immutable
+final class NursingScopeCounts {
+  const NursingScopeCounts({
+    this.all = 0,
+    this.assignedWard = 0,
+    this.urgent = 0,
+    this.medicationDue = 0,
+    this.handoverPending = 0,
+    this.transferPending = 0,
+    this.dischargePending = 0,
+  });
+
+  static const NursingScopeCounts empty = NursingScopeCounts();
+
+  final int all;
+  final int assignedWard;
+  final int urgent;
+  final int medicationDue;
+  final int handoverPending;
+  final int transferPending;
+  final int dischargePending;
+
+  factory NursingScopeCounts.fromCatalog(
+    List<NursingPatientSummary> catalog,
+  ) {
+    int count(NursingQueueScope scope) => catalog
+        .where((NursingPatientSummary item) => item.matchesScope(scope))
+        .length;
+    return NursingScopeCounts(
+      all: catalog.length,
+      assignedWard: count(NursingQueueScope.assignedWard),
+      urgent: count(NursingQueueScope.urgent),
+      medicationDue: count(NursingQueueScope.medicationDue),
+      handoverPending: count(NursingQueueScope.handoverPending),
+      transferPending: count(NursingQueueScope.transferPending),
+      dischargePending: count(NursingQueueScope.dischargePending),
+    );
+  }
+
+  int forScope(NursingQueueScope scope) {
+    return switch (scope) {
+      NursingQueueScope.all => all,
+      NursingQueueScope.assignedWard => assignedWard,
+      NursingQueueScope.urgent => urgent,
+      NursingQueueScope.medicationDue => medicationDue,
+      NursingQueueScope.handoverPending => handoverPending,
+      NursingQueueScope.transferPending => transferPending,
+      NursingQueueScope.dischargePending => dischargePending,
+    };
+  }
+
+  NursingScopeCounts copyWith({
+    int? all,
+    int? assignedWard,
+    int? urgent,
+    int? medicationDue,
+    int? handoverPending,
+    int? transferPending,
+    int? dischargePending,
+  }) {
+    return NursingScopeCounts(
+      all: all ?? this.all,
+      assignedWard: assignedWard ?? this.assignedWard,
+      urgent: urgent ?? this.urgent,
+      medicationDue: medicationDue ?? this.medicationDue,
+      handoverPending: handoverPending ?? this.handoverPending,
+      transferPending: transferPending ?? this.transferPending,
+      dischargePending: dischargePending ?? this.dischargePending,
+    );
+  }
+}
+
 @immutable
 final class NursingWorkspaceState {
   const NursingWorkspaceState({
     required this.query,
     required this.worklist,
+    this.scopeCounts = NursingScopeCounts.empty,
     this.pendingHandovers = const <NursingHandover>[],
     this.rosters = const <NursingRosterAssignment>[],
     this.selectedDetail,
@@ -1133,6 +1210,9 @@ final class NursingWorkspaceState {
 
   final NursingWorklistQuery query;
   final AppPage<NursingPatientSummary> worklist;
+
+  /// Dedicated unfiltered scope totals (sibling-count model).
+  final NursingScopeCounts scopeCounts;
   final List<NursingHandover> pendingHandovers;
   final List<NursingRosterAssignment> rosters;
   final NursingPatientDetail? selectedDetail;
@@ -1141,32 +1221,23 @@ final class NursingWorkspaceState {
   final bool isRefreshingDetail;
   final bool isSaving;
 
-  int get assignedWardCount => _filtered(NursingQueueScope.assignedWard).length;
-  int get urgentCount => _filtered(NursingQueueScope.urgent).length;
-  int get medicationDueCount =>
-      _filtered(NursingQueueScope.medicationDue).length;
-  int get handoverPendingCount {
-    return pendingHandovers
-        .where((NursingHandover item) => item.isPending)
-        .length;
-  }
+  int get allCount => scopeCounts.all;
+  int get assignedWardCount => scopeCounts.assignedWard;
+  int get urgentCount => scopeCounts.urgent;
+  int get medicationDueCount => scopeCounts.medicationDue;
 
-  int get transferPendingCount =>
-      _filtered(NursingQueueScope.transferPending).length;
-  int get dischargePendingCount =>
-      _filtered(NursingQueueScope.dischargePending).length;
+  /// Worklist-scoped pending handovers (not the raw global handover list).
+  int get handoverPendingCount => scopeCounts.handoverPending;
+
+  int get transferPendingCount => scopeCounts.transferPending;
+  int get dischargePendingCount => scopeCounts.dischargePending;
   int get workloadCount =>
       assignedWardCount + urgentCount + handoverPendingCount;
-
-  List<NursingPatientSummary> _filtered(NursingQueueScope scope) {
-    return worklist.items
-        .where((NursingPatientSummary item) => item.matchesScope(scope))
-        .toList(growable: false);
-  }
 
   NursingWorkspaceState copyWith({
     NursingWorklistQuery? query,
     AppPage<NursingPatientSummary>? worklist,
+    NursingScopeCounts? scopeCounts,
     List<NursingHandover>? pendingHandovers,
     List<NursingRosterAssignment>? rosters,
     NursingPatientDetail? selectedDetail,
@@ -1180,6 +1251,7 @@ final class NursingWorkspaceState {
     return NursingWorkspaceState(
       query: query ?? this.query,
       worklist: worklist ?? this.worklist,
+      scopeCounts: scopeCounts ?? this.scopeCounts,
       pendingHandovers: pendingHandovers ?? this.pendingHandovers,
       rosters: rosters ?? this.rosters,
       selectedDetail: clearSelectedDetail

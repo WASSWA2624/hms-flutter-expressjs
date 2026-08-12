@@ -985,6 +985,7 @@ final class ClinicalWorklistFacetCounts {
     this.urgent = 0,
     this.resultsReady = 0,
     this.completedToday = 0,
+    this.workload = 0,
   });
 
   final int pending;
@@ -992,6 +993,9 @@ final class ClinicalWorklistFacetCounts {
   final int urgent;
   final int resultsReady;
   final int completedToday;
+
+  /// Outpatient non-terminal urgent ∪ results-ready union for shell badge.
+  final int workload;
 
   static const ClinicalWorklistFacetCounts empty = ClinicalWorklistFacetCounts();
 }
@@ -1032,25 +1036,7 @@ final class ClinicalWorkspaceState {
 
   int get completedCount => facetCounts.completedToday;
 
-  int get workloadCount {
-    final Set<String> activeWorkItems = <String>{};
-
-    for (final ClinicalWorklistEntry item in worklist.items) {
-      if (!clinicalWorklistEntryIsOutpatient(item) || item.isTerminal) {
-        continue;
-      }
-
-      final bool needsClinicalAction =
-          item.isUrgent || item.resultsReady;
-      if (!needsClinicalAction) {
-        continue;
-      }
-
-      activeWorkItems.add(_worklistDeduplicationKey(item));
-    }
-
-    return activeWorkItems.length;
-  }
+  int get workloadCount => facetCounts.workload;
 
   ClinicalWorkspaceState copyWith({
     ClinicalWorklistQuery? query,
@@ -1168,6 +1154,7 @@ ClinicalWorklistFacetCounts clinicalWorklistFacetCounts(
   int urgent = 0;
   int resultsReady = 0;
   int completedToday = 0;
+  final Set<String> workloadKeys = <String>{};
 
   for (final ClinicalWorklistEntry item in openCandidates) {
     if (clinicalWorklistEntryMatchesScope(
@@ -1198,6 +1185,11 @@ ClinicalWorklistFacetCounts clinicalWorklistFacetCounts(
     )) {
       resultsReady += 1;
     }
+    if (clinicalWorklistEntryIsOutpatient(item) &&
+        !item.isTerminal &&
+        (item.isUrgent || item.resultsReady)) {
+      workloadKeys.add(_worklistDeduplicationKey(item));
+    }
   }
 
   for (final ClinicalWorklistEntry item in completedCandidates) {
@@ -1216,6 +1208,7 @@ ClinicalWorklistFacetCounts clinicalWorklistFacetCounts(
     urgent: urgent,
     resultsReady: resultsReady,
     completedToday: completedToday,
+    workload: workloadKeys.length,
   );
 }
 

@@ -16,10 +16,12 @@ import 'package:hosspi_hms/features/clinical/domain/entities/clinical_entities.d
 import 'package:hosspi_hms/features/clinical/presentation/clinical_access.dart';
 import 'package:hosspi_hms/features/clinical/presentation/controllers/clinical_workspace_controller.dart';
 import 'package:hosspi_hms/features/clinical/presentation/widgets/clinical_encounter_detail_panels.dart';
+import 'package:hosspi_hms/features/clinical/presentation/widgets/clinical_workspace_print_helpers.dart';
 import 'package:hosspi_hms/features/discharge/presentation/widgets/show_discharge_planning_dialog.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/data/repositories/pharmacy_repository_impl.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_prescription_catalog.dart';
+import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -30,10 +32,10 @@ import 'package:hosspi_hms/shared/follow_up/follow_up_worklist_panel.dart';
 import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
+import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action_button.dart';
 import 'package:hosspi_hms/shared/workflow_actions/workflow_action_registry.dart';
-import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 class ClinicalWorkspacePage extends ConsumerWidget {
   const ClinicalWorkspacePage({this.initialQuery, super.key});
@@ -118,6 +120,7 @@ class _ClinicalWorkspaceContentState
   Timer? _searchDebounce;
   String? _appliedRouteSignature;
   late ClinicalWorkspaceSection _section;
+  int? _followUpsNarrowedCount;
 
   @override
   void initState() {
@@ -176,8 +179,13 @@ class _ClinicalWorkspaceContentState
       final ClinicalWorklistEntry? entry = _findEntryByEncounterId(
         query.encounterId,
       );
-      if (entry != null) {
-        await controller.selectEntry(entry);
+      if (entry != null && mounted) {
+        await _openClinicalEntryDialog(
+          context,
+          ref,
+          entry,
+          initialPanel: query.panel.trim().isEmpty ? null : query.panel.trim(),
+        );
       }
     }
   }
@@ -205,7 +213,12 @@ class _ClinicalWorkspaceContentState
     if (section == _section) {
       return;
     }
-    setState(() => _section = section);
+    setState(() {
+      _section = section;
+      if (!section.isFollowUps) {
+        _followUpsNarrowedCount = null;
+      }
+    });
     _updateUrlForSection(section);
     if (section.isFollowUps) {
       return;
@@ -265,11 +278,12 @@ class _ClinicalWorkspaceContentState
                     icon: _clinicalSectionIcon(section),
                     label: _clinicalSectionLabel(l10n, section),
                     count: section.isFollowUps
-                        ? ref.watch(
-                            followUpTabCountProvider(
-                              const FollowUpWorklistScope(),
-                            ),
-                          )
+                        ? (_followUpsNarrowedCount ??
+                              ref.watch(
+                                followUpTabCountProvider(
+                                  const FollowUpWorklistScope(),
+                                ),
+                              ))
                         : _clinicalSectionCount(state, section),
                     countTone: _clinicalSectionCountTone(section),
                   ),
@@ -287,11 +301,56 @@ class _ClinicalWorkspaceContentState
             ),
             SizedBox(height: theme.spacing.sm),
             if (_section.isFollowUps)
-              const FollowUpWorklistPanel(
-                scope: FollowUpWorklistScope(),
+              FollowUpWorklistPanel(
+                scope: const FollowUpWorklistScope(),
                 storageKeyPrefix: 'clinical_follow_ups',
                 readRequirement: clinicalFollowUpsRequirement,
                 writeRequirement: clinicalFollowUpsWriteRequirement,
+                showAdvancedFilterButton: true,
+                advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+                advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+                advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                advancedFilterResetLabel: l10n.opdClearFiltersAction,
+                advancedFilterCloseLabel: l10n.commonCloseActionLabel,
+                enableDateFilter: true,
+                dateFilterLabel: l10n.opdFollowUpDateLabel,
+                dateFromLabel: l10n.opdDateFromLabel,
+                dateToLabel: l10n.opdDateToLabel,
+                filterGroups: <AppSearchBarFilterGroup>[
+                  AppSearchBarFilterGroup(
+                    key: 'follow_up_status',
+                    label: l10n.receptionStatusLabel,
+                    choices: <AppSearchBarFilterChoice>[
+                      AppSearchBarFilterChoice(
+                        value: 'pending',
+                        label: l10n.patientsActiveWorkStatusAppointmentScheduled,
+                      ),
+                      AppSearchBarFilterChoice(
+                        value: 'completed',
+                        label: l10n.opdCompletedFlowSummaryLabel,
+                      ),
+                    ],
+                  ),
+                ],
+                canExport: canExportClinicalWorkspace(accessPolicy),
+                enablePrint: true,
+                canPrint: canPrintClinicalWorkspace(accessPolicy),
+                printLabel: l10n.commonPrintActionLabel,
+                onPrint: (List<ReceptionFollowUpEntry> entries) =>
+                    _printClinicalFollowUpsList(
+                      context,
+                      ref,
+                      entries: entries,
+                      l10n: l10n,
+                    ),
+                onNarrowedCountChanged: (int? narrowedCount) {
+                  if (_followUpsNarrowedCount == narrowedCount) {
+                    return;
+                  }
+                  setState(() {
+                    _followUpsNarrowedCount = narrowedCount;
+                  });
+                },
               )
             else
               _ClinicalWorklistPanel(
@@ -369,7 +428,7 @@ String _clinicalSectionLabel(
     ClinicalWorkspaceSection.resultsReady =>
       l10n.clinicalSectionResultsReadyLabel,
     ClinicalWorkspaceSection.completed =>
-      l10n.clinicalSectionCompletedTodayLabel,
+      l10n.clinicalSectionCompletedLabel,
   };
 }
 
@@ -469,6 +528,9 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
     final ClinicalWorkspaceController controller = ref.read(
       clinicalWorkspaceControllerProvider.notifier,
     );
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canExport = canExportClinicalWorkspace(policy);
+    final bool canPrint = canPrintClinicalWorkspace(policy);
     return AppListTable<ClinicalWorklistEntry>(
       key: ValueKey<String>('clinical_table_${section.name}'),
       page: state.worklist,
@@ -495,6 +557,17 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
         title: l10n.clinicalNoWorklistTitle,
         body: l10n.clinicalNoWorklistBody,
         icon: Icons.assignment_outlined,
+      ),
+      canExport: canExport,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () => _printClinicalWorklist(
+        context,
+        ref,
+        state: state,
+        section: section,
+        l10n: l10n,
       ),
       search: _worklistSearch(
         context,
@@ -558,10 +631,11 @@ AppListTableSearch<ClinicalWorklistEntry> _worklistSearch(
     onChanged: onSearchChanged,
     onSubmitted: onSearchSubmitted,
     showAdvancedFilterButton: true,
-    advancedFilterButtonLabel: l10n.clinicalFiltersLabel,
+    advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
     advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
     advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
     advancedFilterResetLabel: l10n.opdClearFiltersAction,
+    advancedFilterCloseLabel: l10n.commonCloseActionLabel,
     textFilters: _clinicalTextFilters(l10n),
     searchFieldLabel: l10n.clinicalSearchLabel,
     allFieldsLabel: l10n.opdAllFieldsFilterLabel,
@@ -1211,8 +1285,9 @@ Color? _clinicalRowColor(BuildContext context, ClinicalWorklistEntry item) {
 Future<void> _openClinicalEntryDialog(
   BuildContext context,
   WidgetRef ref,
-  ClinicalWorklistEntry entry,
-) async {
+  ClinicalWorklistEntry entry, {
+  String? initialPanel,
+}) async {
   final ClinicalWorkspaceController controller = ref.read(
     clinicalWorkspaceControllerProvider.notifier,
   );
@@ -1228,15 +1303,22 @@ Future<void> _openClinicalEntryDialog(
   await showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
-    builder: (_) => _ClinicalEncounterDialog(initialEntry: entry),
+    builder: (_) => _ClinicalEncounterDialog(
+      initialEntry: entry,
+      initialPanel: initialPanel,
+    ),
   );
   controller.clearSelection();
 }
 
 class _ClinicalEncounterDialog extends ConsumerWidget {
-  const _ClinicalEncounterDialog({required this.initialEntry});
+  const _ClinicalEncounterDialog({
+    required this.initialEntry,
+    this.initialPanel,
+  });
 
   final ClinicalWorklistEntry initialEntry;
+  final String? initialPanel;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1272,7 +1354,10 @@ class _ClinicalEncounterDialog extends ConsumerWidget {
                   icon: Icons.medical_services_outlined,
                 );
               }
-              return _ClinicalDetailPanel(state: state);
+              return _ClinicalDetailPanel(
+                state: state,
+                initialPanel: initialPanel,
+              );
             },
             failure: (AppFailure failure) {
               return AppFailureStateView(
@@ -1300,9 +1385,13 @@ class _ClinicalEncounterDialog extends ConsumerWidget {
 }
 
 class _ClinicalDetailPanel extends ConsumerWidget {
-  const _ClinicalDetailPanel({required this.state});
+  const _ClinicalDetailPanel({
+    required this.state,
+    this.initialPanel,
+  });
 
   final ClinicalWorkspaceState state;
+  final String? initialPanel;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1317,6 +1406,8 @@ class _ClinicalDetailPanel extends ConsumerWidget {
       );
     }
 
+    // Deep-link ?panel= notes|vitals|lab|radiology|pharmacy|diagnoses.
+    final String panel = (initialPanel ?? '').trim().toLowerCase();
     final ClinicalWorklistEntry entry = bundle.entry;
     final AppWorkspaceStatus primaryStatus = _entryStatus(entry);
     final ClinicalTriageHandoff? triageHandoff = bundle.triageHandoff;
@@ -1337,7 +1428,10 @@ class _ClinicalDetailPanel extends ConsumerWidget {
         deduplicateClinicalRelatedRecords(bundle.diagnoses, diagnoses: true);
     final List<ClinicalRelatedRecord> pharmacyOrders =
         deduplicateClinicalRelatedRecords(bundle.pharmacyOrders);
+    final Key? panelAnchorKey =
+        panel.isEmpty ? null : ValueKey<String>('clinical_panel_$panel');
     final List<Widget> sections = <Widget>[
+      if (panelAnchorKey != null) SizedBox(key: panelAnchorKey, height: 0),
       _ClinicalEncounterContextPanel(
         entry: entry,
         status: primaryStatus,
@@ -1408,7 +1502,7 @@ class _ClinicalDetailPanel extends ConsumerWidget {
                       orders.length,
                     ),
                     confirmLabel:
-                        l10n.clinicalCancelSelectedRadiologyOrdersAction,
+                        l10n.clinicalCancelSelectedPharmacyOrdersAction,
                     action: () async {
                       AppFailure? failure;
                       for (final ClinicalRelatedRecord order in orders) {
@@ -1432,7 +1526,7 @@ class _ClinicalDetailPanel extends ConsumerWidget {
                       orders.length,
                     ),
                     confirmLabel:
-                        l10n.clinicalDeleteSelectedRadiologyOrdersAction,
+                        l10n.clinicalDeleteSelectedPharmacyOrdersAction,
                     action: () async {
                       AppFailure? failure;
                       for (final ClinicalRelatedRecord order in orders) {
@@ -2028,7 +2122,7 @@ class _ClinicalActionBar extends ConsumerWidget {
     final bool canRadiology = canWriteClinicalRadiologyOrder(policy);
     final bool canPharmacy = canWriteClinicalPharmacyOrder(policy);
     final bool canAdmission = canRequestClinicalAdmission(policy);
-    final bool canPrint = canReadClinical(policy);
+    final bool canPrint = canPrintClinicalWorkspace(policy);
     final String dispositionActionLabel = clinicalDispositionActionLabel(
       l10n,
       sourceQueue: bundle.entry.sourceQueue,
@@ -2170,7 +2264,7 @@ class _ClinicalActionBar extends ConsumerWidget {
         ),
       if (canPrint)
         AppActionItem(
-          label: l10n.clinicalPrintSummaryAction,
+          label: l10n.commonPrintActionLabel,
           leadingIcon: AppActionIcons.print,
           onPressed: () async {
             await showClinicalPrintSummaryDialog(
@@ -3751,4 +3845,137 @@ ClinicalRequestPatientContext _clinicalLabOrderPatientContext(
     patientId: entry.apiPatientId,
     encounterId: entry.apiEncounterId,
   );
+}
+
+Future<void> _printClinicalWorklist(
+  BuildContext context,
+  WidgetRef ref, {
+  required ClinicalWorkspaceState state,
+  required ClinicalWorkspaceSection section,
+  required AppLocalizations l10n,
+}) async {
+  final List<_ClinicalTableColumnId> defaults =
+      _clinicalDefaultColumnsForSection(section);
+  final List<_ClinicalTableColumnId> columnIds = <_ClinicalTableColumnId>[
+    ...defaults,
+    ..._availableClinicalTableColumns.where(
+      (_ClinicalTableColumnId column) => !defaults.contains(column),
+    ),
+  ];
+  final List<ClinicalWorkspacePrintColumn> printColumns =
+      <ClinicalWorkspacePrintColumn>[
+        for (final _ClinicalTableColumnId column in columnIds)
+          ClinicalWorkspacePrintColumn(
+            id: column.name,
+            label: _clinicalTableColumnLabel(context, column),
+          ),
+      ];
+  final List<Map<String, String>> printRows = <Map<String, String>>[
+    for (final ClinicalWorklistEntry item in state.worklist.items)
+      <String, String>{
+        for (final _ClinicalTableColumnId column in columnIds)
+          column.name: _clinicalPrintCellValue(context, item, column),
+      },
+  ];
+  await printClinicalWorkspaceList(
+    ref: ref,
+    context: context,
+    title: _clinicalSectionLabel(l10n, section),
+    columns: printColumns,
+    rows: printRows,
+    emptyText: l10n.clinicalNoWorklistTitle,
+  );
+}
+
+Future<void> _printClinicalFollowUpsList(
+  BuildContext context,
+  WidgetRef ref, {
+  required List<ReceptionFollowUpEntry> entries,
+  required AppLocalizations l10n,
+}) async {
+  final Locale locale = Localizations.localeOf(context);
+  final List<ClinicalWorkspacePrintColumn> printColumns =
+      <ClinicalWorkspacePrintColumn>[
+        ClinicalWorkspacePrintColumn(
+          id: 'patient',
+          label: l10n.opdPatientNameLabel,
+        ),
+        ClinicalWorkspacePrintColumn(
+          id: 'phone',
+          label: l10n.patientsPhoneIdentifierColumnLabel,
+        ),
+        ClinicalWorkspacePrintColumn(
+          id: 'status',
+          label: l10n.receptionStatusLabel,
+        ),
+        ClinicalWorkspacePrintColumn(
+          id: 'date',
+          label: l10n.opdFollowUpDateLabel,
+        ),
+        ClinicalWorkspacePrintColumn(
+          id: 'time',
+          label: l10n.opdFollowUpTimeLabel,
+        ),
+        ClinicalWorkspacePrintColumn(
+          id: 'patient_id',
+          label: l10n.opdPatientIdLabel,
+        ),
+        ClinicalWorkspacePrintColumn(
+          id: 'email',
+          label: l10n.patientsEmailLabel,
+        ),
+        ClinicalWorkspacePrintColumn(id: 'notes', label: l10n.opdNotesLabel),
+      ];
+  final List<Map<String, String>> printRows = <Map<String, String>>[
+    for (final ReceptionFollowUpEntry entry in entries)
+      <String, String>{
+        'patient': entry.patientDisplayName?.trim().isNotEmpty == true
+            ? entry.patientDisplayName!.trim()
+            : l10n.profileUnknownValue,
+        'phone': entry.patientPhone?.trim() ?? '',
+        'status': opdStageDisplayLabel(l10n, entry.status),
+        'date': AppFormatters.shortDate(entry.scheduledAt.toLocal(), locale),
+        'time': AppFormatters.time(entry.scheduledAt.toLocal(), locale),
+        'patient_id': entry.patientIdentifier,
+        'email': entry.patientEmail?.trim() ?? '',
+        'notes': entry.notes?.trim() ?? '',
+      },
+  ];
+  await printClinicalWorkspaceList(
+    ref: ref,
+    context: context,
+    title: l10n.opdFollowUpsTitle,
+    columns: printColumns,
+    rows: printRows,
+    emptyText: l10n.receptionFollowUpsEmptyTitle,
+  );
+}
+
+String _clinicalPrintCellValue(
+  BuildContext context,
+  ClinicalWorklistEntry item,
+  _ClinicalTableColumnId column,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return switch (column) {
+    _ClinicalTableColumnId.patient => item.displayTitle,
+    _ClinicalTableColumnId.patientId =>
+      item.apiPatientId ?? l10n.profileUnknownValue,
+    _ClinicalTableColumnId.phone =>
+      item.patientPhone ?? l10n.profileUnknownValue,
+    _ClinicalTableColumnId.ageSex => _clinicalWorklistAgeSexLabel(context, item),
+    _ClinicalTableColumnId.queue => item.sourceQueue,
+    _ClinicalTableColumnId.status => item.status ?? '',
+    _ClinicalTableColumnId.nextAction => item.nextStep ?? '',
+    _ClinicalTableColumnId.provider => _clinicalProviderLabel(l10n, item),
+    _ClinicalTableColumnId.lastUpdated =>
+      _dateTimeLabel(context, item.updatedAt ?? item.startedAt),
+    _ClinicalTableColumnId.encounter => item.apiEncounterId,
+    _ClinicalTableColumnId.admission =>
+      item.apiAdmissionId ?? l10n.profileUnknownValue,
+    _ClinicalTableColumnId.encounterType =>
+      _apiLabel(item.encounterType ?? ''),
+    _ClinicalTableColumnId.location =>
+      item.currentLocation ?? l10n.profileUnknownValue,
+  };
 }

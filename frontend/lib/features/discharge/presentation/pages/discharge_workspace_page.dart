@@ -18,8 +18,11 @@ import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities
 import 'package:hosspi_hms/features/discharge/presentation/controllers/discharge_workspace_controller.dart';
 import 'package:hosspi_hms/features/discharge/presentation/discharge_access.dart';
 import 'package:hosspi_hms/features/discharge/presentation/widgets/discharge_clearance_tile.dart';
+import 'package:hosspi_hms/features/discharge/presentation/widgets/discharge_scope_navigation.dart';
+import 'package:hosspi_hms/features/discharge/presentation/widgets/discharge_workspace_print_helpers.dart';
 import 'package:hosspi_hms/features/discharge/presentation/widgets/show_discharge_planning_dialog.dart';
 import 'package:hosspi_hms/features/ipd/domain/entities/ipd_entities.dart';
+import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -29,6 +32,7 @@ import 'package:hosspi_hms/shared/follow_up/follow_up_worklist_panel.dart';
 import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
@@ -89,7 +93,7 @@ class _DischargeWorkspacePageState
       return;
     }
     final DischargeDeskSection section =
-        _DischargeWorkspaceContentState._sectionFromQuery(query.section) ??
+        dischargeSectionFromQuery(query.section) ??
         DischargeDeskSection.all;
     await _openDischargeDetailDialog(
       context,
@@ -144,6 +148,7 @@ class _DischargeWorkspaceContentState
   late final AppListTableColumnVisibilityController<IpdAdmissionSummary>
   _columnVisibilityController;
   late DischargeDeskSection _section;
+  int? _followUpsNarrowedCount;
 
   @override
   void initState() {
@@ -152,7 +157,7 @@ class _DischargeWorkspaceContentState
     _columnVisibilityController =
         AppListTableColumnVisibilityController<IpdAdmissionSummary>();
     _section =
-        _sectionFromQuery(widget.initialQuery?.section ?? '') ??
+        dischargeSectionFromQuery(widget.initialQuery?.section ?? '') ??
         DischargeDeskSection.all;
   }
 
@@ -166,7 +171,9 @@ class _DischargeWorkspaceContentState
     final String? nextSection = widget.initialQuery?.section;
     final String? previousSection = oldWidget.initialQuery?.section;
     if (nextSection != previousSection) {
-      final DischargeDeskSection? parsed = _sectionFromQuery(nextSection ?? '');
+      final DischargeDeskSection? parsed = dischargeSectionFromQuery(
+        nextSection ?? '',
+      );
       if (parsed != null && parsed != _section) {
         _section = parsed;
       }
@@ -184,91 +191,11 @@ class _DischargeWorkspaceContentState
     if (!mounted) {
       return;
     }
-    final String tab = _sectionToQueryValue(section);
+    final String tab = dischargeSectionToQueryValue(section);
     final String location = AppRoutes.discharge.location(
       queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
     );
     syncWorkspaceLocation(context, location);
-  }
-
-  static String _sectionToQueryValue(DischargeDeskSection section) {
-    return switch (section) {
-      DischargeDeskSection.all => 'all',
-      DischargeDeskSection.planned => 'planned',
-      DischargeDeskSection.pendingClearance => 'pending',
-      DischargeDeskSection.completed => 'completed',
-      DischargeDeskSection.followUps => 'follow-ups',
-    };
-  }
-
-  static DischargeDeskSection? _sectionFromQuery(String raw) {
-    switch (raw.trim().toLowerCase()) {
-      case 'all':
-        return DischargeDeskSection.all;
-      case 'planned':
-        return DischargeDeskSection.planned;
-      case 'pending':
-      case 'pending_clearance':
-      case 'pending-clearance':
-      case 'pendingclearance':
-        return DischargeDeskSection.pendingClearance;
-      case 'completed':
-      case 'discharged':
-        return DischargeDeskSection.completed;
-      case 'follow-ups':
-      case 'follow_ups':
-      case 'followups':
-        return DischargeDeskSection.followUps;
-      default:
-        return null;
-    }
-  }
-
-  String _sectionLabel(AppLocalizations l10n, DischargeDeskSection section) {
-    return switch (section) {
-      DischargeDeskSection.all => l10n.dischargeSectionAll,
-      DischargeDeskSection.planned => l10n.dischargeSectionPlanned,
-      DischargeDeskSection.pendingClearance =>
-        l10n.dischargeSectionPendingClearance,
-      DischargeDeskSection.completed => l10n.dischargeSectionCompleted,
-      DischargeDeskSection.followUps => l10n.opdFollowUpsTitle,
-    };
-  }
-
-  static IconData _sectionIcon(DischargeDeskSection section) {
-    return switch (section) {
-      DischargeDeskSection.all => Icons.inventory_2_outlined,
-      DischargeDeskSection.planned => Icons.event_available_outlined,
-      DischargeDeskSection.pendingClearance => Icons.pending_actions_outlined,
-      DischargeDeskSection.completed => Icons.check_circle_outline,
-      DischargeDeskSection.followUps => Icons.phone_callback_outlined,
-    };
-  }
-
-  int? _sectionCount(
-    DischargeWorkspaceState state,
-    DischargeDeskSection section,
-  ) {
-    if (section.isFollowUps) {
-      return null;
-    }
-    return switch (section) {
-      DischargeDeskSection.all => state.queue.items.length,
-      DischargeDeskSection.planned => state.plannedCount,
-      DischargeDeskSection.pendingClearance => state.summaryPendingCount,
-      DischargeDeskSection.completed => state.completedCount,
-      DischargeDeskSection.followUps => null,
-    };
-  }
-
-  static AppTabCountTone _sectionCountTone(DischargeDeskSection section) {
-    return switch (section) {
-      DischargeDeskSection.planned ||
-      DischargeDeskSection.pendingClearance => AppTabCountTone.warning,
-      DischargeDeskSection.all ||
-      DischargeDeskSection.completed ||
-      DischargeDeskSection.followUps => AppTabCountTone.info,
-    };
   }
 
   List<IpdAdmissionSummary> _buildRows(DischargeWorkspaceState state) {
@@ -278,12 +205,7 @@ class _DischargeWorkspaceContentState
       DischargeDeskSection.planned =>
         state.queue.items.where(isPlannedDischarge).toList(),
       DischargeDeskSection.pendingClearance =>
-        state.queue.items
-            .where(
-              (IpdAdmissionSummary item) =>
-                  !isCompletedDischarge(item) && !isPlannedDischarge(item),
-            )
-            .toList(),
+        state.queue.items.where(isPendingClearanceDischarge).toList(),
       DischargeDeskSection.completed =>
         state.queue.items.where(isCompletedDischarge).toList(),
     };
@@ -295,6 +217,9 @@ class _DischargeWorkspaceContentState
     }
     setState(() {
       _section = section;
+      if (!section.isFollowUps) {
+        _followUpsNarrowedCount = null;
+      }
     });
     _updateUrlForSection(section);
   }
@@ -311,7 +236,11 @@ class _DischargeWorkspaceContentState
     final List<DischargeDeskSection> visibleSections =
         dischargeAllowedSections(accessPolicy);
     if (visibleSections.isEmpty) {
-      return const SizedBox.shrink();
+      return const ResponsivePage(
+        maxWidth: PageMaxWidth.authForm,
+        centerVertically: true,
+        child: AppFailureStateView(failure: AppFailure.forbidden()),
+      );
     }
     if (!visibleSections.contains(_section)) {
       final DischargeDeskSection fallback = visibleSections.first;
@@ -328,6 +257,15 @@ class _DischargeWorkspaceContentState
         _dischargeTableColumns(context, section: _section);
     final List<AppListTableColumn<IpdAdmissionSummary>> defaultColumns =
         _dischargeDefaultColumns(context, section: _section);
+    final bool canExport = canExportDischargeWorkspace(accessPolicy);
+    final bool canPrint = canPrintDischargeWorkspace(accessPolicy);
+    final int? followUpsCount = _section.isFollowUps
+        ? _followUpsNarrowedCount
+        : ref.watch(
+            followUpTabCountProvider(
+              const FollowUpWorklistScope(encounterType: 'IPD'),
+            ),
+          );
 
     return ResponsivePage(
       padding: ResponsiveSpacing.workspacePagePaddingFor(
@@ -340,24 +278,13 @@ class _DischargeWorkspaceContentState
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             AppTabStrip(
-              tabs: <AppTabItem>[
-                for (final DischargeDeskSection section in visibleSections)
-                  AppTabItem(
-                    id: section.name,
-                    icon: _sectionIcon(section),
-                    label: _sectionLabel(l10n, section),
-                    count: section == DischargeDeskSection.followUps
-                        ? ref.watch(
-                            followUpTabCountProvider(
-                              const FollowUpWorklistScope(
-                                encounterType: 'IPD',
-                              ),
-                            ),
-                          )
-                        : _sectionCount(state, section),
-                    countTone: _sectionCountTone(section),
-                  ),
-              ],
+              tabs: dischargeTabItems(
+                l10n,
+                state,
+                policy: accessPolicy,
+                activeSection: _section,
+                followUpsCount: followUpsCount,
+              ),
               selectedId: _section.name,
               onTabTapped: (String tabId) {
                 for (final DischargeDeskSection section in visibleSections) {
@@ -370,11 +297,39 @@ class _DischargeWorkspaceContentState
             ),
             SizedBox(height: theme.spacing.sm),
             if (_section.isFollowUps)
-              const FollowUpWorklistPanel(
-                scope: FollowUpWorklistScope(encounterType: 'IPD'),
+              FollowUpWorklistPanel(
+                scope: const FollowUpWorklistScope(encounterType: 'IPD'),
                 storageKeyPrefix: 'discharge_follow_ups',
                 readRequirement: DischargeFollowUpsAtomPermissions.tab,
                 writeRequirement: DischargeFollowUpsAtomPermissions.write,
+                showAdvancedFilterButton: true,
+                advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+                advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+                advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                advancedFilterResetLabel: l10n.opdClearFiltersAction,
+                advancedFilterCloseLabel: l10n.commonCloseActionLabel,
+                enableDateFilter: true,
+                dateFilterLabel: l10n.dischargeDateFilterLabel,
+                dateFromLabel: l10n.dischargeDateFromLabel,
+                dateToLabel: l10n.dischargeDateToLabel,
+                enableExport: true,
+                canExport: canExport,
+                enablePrint: true,
+                canPrint: canPrint,
+                printLabel: l10n.commonPrintActionLabel,
+                onPrint: (List<ReceptionFollowUpEntry> entries) =>
+                    _printDischargeFollowUpsList(
+                      context,
+                      ref,
+                      entries: entries,
+                      l10n: l10n,
+                    ),
+                onNarrowedCountChanged: (int? count) {
+                  if (_followUpsNarrowedCount == count) {
+                    return;
+                  }
+                  setState(() => _followUpsNarrowedCount = count);
+                },
               )
             else if (dischargeSectionTabRequirement(_section).isAllowed(
               accessPolicy,
@@ -388,9 +343,41 @@ class _DischargeWorkspaceContentState
               columnWidthStorageKey: 'discharge_cw_${_section.name}',
               columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
               columnVisibilityTitle: l10n.commonTableSettingsTitle,
+              columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+              columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+              columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
               isLoading: state.isRefreshing,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
+              enableExport: true,
+              canExport: canExport,
+              exportLabel: l10n.commonTableExportActionLabel,
+              exportDialogTitle: l10n.commonTableExportDialogTitle,
+              exportCancelLabel: l10n.commonCancelActionLabel,
+              exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+              exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+              exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+              exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+              exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+              exportFailureMessage: l10n.commonTableExportFailureMessage,
+              exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+              enablePrint: true,
+              canPrint: canPrint,
+              printLabel: l10n.commonPrintActionLabel,
+              onPrint: () => _printDischargeWorklist(
+                context,
+                ref,
+                rows: rows,
+                columns: allColumns,
+                section: _section,
+                l10n: l10n,
+              ),
+              exportConfig: AppListTableExportConfig<IpdAdmissionSummary>(
+                fileNameStem: 'discharge_${_section.name}',
+                dateOf: (IpdAdmissionSummary item) =>
+                    item.dischargedAt ?? item.admittedAt,
+                sheetName: dischargeSectionLabel(l10n, _section),
+              ),
               onRowSelected: (IpdAdmissionSummary item) {
                 unawaited(
                   _openDischargeDetailDialog(
@@ -423,11 +410,17 @@ class _DischargeWorkspaceContentState
                   }
                 },
                 showAdvancedFilterButton: true,
-                advancedFilterButtonLabel: l10n.dischargeFiltersLabel,
+                advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
                 advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
                 advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
                 advancedFilterResetLabel: l10n.opdClearFiltersAction,
-                enableDateFilter: false,
+                advancedFilterCloseLabel: l10n.commonCloseActionLabel,
+                enableDateFilter: true,
+                dateFilterLabel: l10n.dischargeDateFilterLabel,
+                dateFromLabel: l10n.dischargeDateFromLabel,
+                dateToLabel: l10n.dischargeDateToLabel,
+                datePickerButtonLabel: l10n.dischargeDatePickerLabel,
+                invalidDateMessage: l10n.dischargeInvalidDateMessage,
                 allFieldsLabel: l10n.dischargeStatusAll,
                 filterGroups: <AppSearchBarFilterGroup>[
                   AppSearchBarFilterGroup(
@@ -438,13 +431,14 @@ class _DischargeWorkspaceContentState
                   ),
                 ],
                 filterValue: _dischargeFilterValue(state.query),
-                hasActiveFilters:
-                    state.query.status != DischargeStatusFilter.all,
+                hasActiveFilters: state.query.hasAdvancedFilters,
                 onFilterChanged: (AppSearchBarFilterValue value) async {
-                  final AppFailure? failure = await controller.applyStatus(
-                    _dischargeStatusFromFilter(
+                  final AppFailure? failure = await controller.applyFilters(
+                    status: _dischargeStatusFromFilter(
                       value.option(_dischargeStatusFilterKey),
                     ),
+                    dateFrom: value.dateFrom,
+                    dateTo: value.dateTo,
                   );
                   if (context.mounted) {
                     _showFailureIfNeeded(context, failure);
@@ -466,6 +460,7 @@ class _DischargeWorkspaceContentState
                         context,
                         item,
                         section: _section,
+                        compact: true,
                       ),
                       meta: <AppListTableMobileMeta>[
                         AppListTableMobileMeta(
@@ -545,6 +540,7 @@ Future<void> _openDischargeDetailDialog(
       title: Text(l10n.dischargeDetailTitle),
       icon: const Icon(Icons.assignment_turned_in_outlined),
       scrollable: true,
+      pinActionsToBottom: true,
       maxWidth: 980,
       content: _DischargeDetailContent(
         state: state,
@@ -556,7 +552,7 @@ Future<void> _openDischargeDetailDialog(
           requirement: dischargeDetailPrintRequirement(section),
           builder: (BuildContext context, bool isAllowed) {
             return AppReportActionButton.print(
-              label: l10n.dischargePrintSummaryAction,
+              label: l10n.commonPrintActionLabel,
               onPressed: detail.hasSummary
                   ? () =>
                       unawaited(_printDischargeSummary(context, ref, detail))
@@ -701,6 +697,7 @@ class _DischargeDetailContent extends ConsumerWidget {
                       ref,
                       detail,
                       title: Text(continueDischargeLabel),
+                      section: section,
                     ),
                   );
                 },
@@ -1212,13 +1209,32 @@ Future<void> _openDischargePlanningDialog(
   WidgetRef ref,
   DischargeAdmissionDetail detail, {
   Widget? title,
+  DischargeDeskSection section = DischargeDeskSection.all,
 }) async {
+  final AccessRequirement createRequirement = switch (section) {
+    DischargeDeskSection.planned => DischargePlannedAtomPermissions.create,
+    DischargeDeskSection.pendingClearance =>
+      DischargePendingClearanceAtomPermissions.create,
+    DischargeDeskSection.completed => DischargeCompletedAtomPermissions.create,
+    DischargeDeskSection.all || DischargeDeskSection.followUps =>
+      DischargeAllPatientsAtomPermissions.create,
+  };
+  final AccessRequirement updateRequirement = switch (section) {
+    DischargeDeskSection.planned => DischargePlannedAtomPermissions.update,
+    DischargeDeskSection.pendingClearance =>
+      DischargePendingClearanceAtomPermissions.update,
+    DischargeDeskSection.completed => DischargeCompletedAtomPermissions.update,
+    DischargeDeskSection.all || DischargeDeskSection.followUps =>
+      DischargeAllPatientsAtomPermissions.update,
+  };
   final bool? saved = await showDischargePlanningDialog(
     context: context,
     ref: ref,
     admissionId: detail.summary.apiId,
     title: title,
     initialDetail: detail,
+    createRequirement: createRequirement,
+    updateRequirement: updateRequirement,
   );
   if (saved == true && context.mounted) {
     await ref.read(dischargeWorkspaceControllerProvider.notifier).refresh();
@@ -1458,8 +1474,13 @@ Widget _dischargeNextActionWidget(
   BuildContext context,
   IpdAdmissionSummary item, {
   required DischargeDeskSection section,
+  bool compact = false,
 }) {
-  return _DischargeNextActionButton(item: item, section: section);
+  return _DischargeNextActionButton(
+    item: item,
+    section: section,
+    compact: compact,
+  );
 }
 
 /// Row next-action gate keyed by active desk section atom map.
@@ -1502,10 +1523,12 @@ class _DischargeNextActionButton extends ConsumerWidget {
   const _DischargeNextActionButton({
     required this.item,
     required this.section,
+    this.compact = false,
   });
 
   final IpdAdmissionSummary item;
   final DischargeDeskSection section;
+  final bool compact;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1519,8 +1542,9 @@ class _DischargeNextActionButton extends ConsumerWidget {
         ),
         builder: (BuildContext context, bool isAllowed) {
           return _DischargeCompactAction(
-            label: l10n.dischargePrintSummaryAction,
+            label: l10n.commonPrintActionLabel,
             icon: Icons.print_outlined,
+            compact: compact,
             onPressed: () =>
                 unawaited(_printOrOpenDetailFromQueue(context, ref, item)),
           );
@@ -1543,8 +1567,10 @@ class _DischargeNextActionButton extends ConsumerWidget {
           icon: planned
               ? Icons.fact_check_outlined
               : Icons.edit_note_outlined,
-          onPressed: () =>
-              unawaited(_openPlanningFromQueue(context, ref, item)),
+          compact: compact,
+          onPressed: () => unawaited(
+            _openPlanningFromQueue(context, ref, item, section: section),
+          ),
         );
       },
     );
@@ -1556,11 +1582,13 @@ class _DischargeCompactAction extends StatelessWidget {
     required this.label,
     required this.icon,
     required this.onPressed,
+    this.compact = false,
   });
 
   final String label;
   final IconData icon;
   final VoidCallback onPressed;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -1583,24 +1611,24 @@ class _DischargeCompactAction extends StatelessWidget {
                 horizontal: theme.spacing.xs,
                 vertical: 2,
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Icon(icon, size: 14, color: primaryColor),
-                  SizedBox(width: theme.spacing.xs),
-                  Flexible(
-                    child: Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: primaryColor,
-                        fontWeight: AppFontWeight.emphasis,
-                      ),
+              child: compact
+                  ? Icon(icon, size: 18, color: primaryColor)
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Icon(icon, size: 14, color: primaryColor),
+                        SizedBox(width: theme.spacing.xs),
+                        Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: primaryColor,
+                            fontWeight: AppFontWeight.emphasis,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
             ),
           ),
         ),
@@ -1612,8 +1640,9 @@ class _DischargeCompactAction extends StatelessWidget {
 Future<void> _openPlanningFromQueue(
   BuildContext context,
   WidgetRef ref,
-  IpdAdmissionSummary admission,
-) async {
+  IpdAdmissionSummary admission, {
+  required DischargeDeskSection section,
+}) async {
   final DischargeWorkspaceController controller = ref.read(
     dischargeWorkspaceControllerProvider.notifier,
   );
@@ -1646,6 +1675,7 @@ Future<void> _openPlanningFromQueue(
     ref,
     detail,
     title: Text(title),
+    section: section,
   );
 }
 
@@ -1720,11 +1750,15 @@ String _blockingItemLabel(BuildContext context, IpdAdmissionSummary item) {
 }
 
 AppSearchBarFilterValue _dischargeFilterValue(DischargeWorklistQuery query) {
-  if (query.status == DischargeStatusFilter.all) {
+  if (!query.hasAdvancedFilters) {
     return AppSearchBarFilterValue.empty;
   }
   return AppSearchBarFilterValue(
-    options: <String, String>{_dischargeStatusFilterKey: query.status.name},
+    options: query.status == DischargeStatusFilter.all
+        ? const <String, String>{}
+        : <String, String>{_dischargeStatusFilterKey: query.status.name},
+    dateFrom: query.dateFrom,
+    dateTo: query.dateTo,
   );
 }
 
@@ -1923,6 +1957,7 @@ Future<void> _printDischargeSummary(
     ref: ref,
     context: context,
     title: l10n.dischargeReportTitle,
+    previewDialogTitle: l10n.printPreviewTitle,
     patientContext: buildPrintFormPatientContext(
       l10n,
       patientName: detail.ipd.patientDisplayName,
@@ -1939,6 +1974,133 @@ Future<void> _printDischargeSummary(
     footerNote: l10n.dischargeReportFooter,
     includeSignatures: true,
   );
+}
+
+Future<void> _printDischargeWorklist(
+  BuildContext context,
+  WidgetRef ref, {
+  required List<IpdAdmissionSummary> rows,
+  required List<AppListTableColumn<IpdAdmissionSummary>> columns,
+  required DischargeDeskSection section,
+  required AppLocalizations l10n,
+}) async {
+  final List<AppListTableColumn<IpdAdmissionSummary>> exportColumns = columns
+      .where(
+        (AppListTableColumn<IpdAdmissionSummary> column) =>
+            column.includesInExport,
+      )
+      .toList(growable: false);
+  final List<DischargeWorkspacePrintColumn> printColumns =
+      <DischargeWorkspacePrintColumn>[
+        for (final AppListTableColumn<IpdAdmissionSummary> column
+            in exportColumns)
+          DischargeWorkspacePrintColumn(id: column.key, label: column.label),
+      ];
+  final List<Map<String, String>> printRows = <Map<String, String>>[
+    for (final IpdAdmissionSummary item in rows)
+      <String, String>{
+        for (final AppListTableColumn<IpdAdmissionSummary> column
+            in exportColumns)
+          column.key: _dischargeWorklistPrintCellValue(
+            context,
+            item,
+            column.key,
+          ),
+      },
+  ];
+  await printDischargeWorkspaceList(
+    ref: ref,
+    context: context,
+    title: dischargeSectionLabel(l10n, section),
+    columns: printColumns,
+    rows: printRows,
+    emptyText: l10n.dischargeEmptyQueueTitle,
+  );
+}
+
+Future<void> _printDischargeFollowUpsList(
+  BuildContext context,
+  WidgetRef ref, {
+  required List<ReceptionFollowUpEntry> entries,
+  required AppLocalizations l10n,
+}) async {
+  final Locale locale = Localizations.localeOf(context);
+  final List<DischargeWorkspacePrintColumn> printColumns =
+      <DischargeWorkspacePrintColumn>[
+        DischargeWorkspacePrintColumn(
+          id: 'patient',
+          label: l10n.opdPatientNameLabel,
+        ),
+        DischargeWorkspacePrintColumn(
+          id: 'phone',
+          label: l10n.patientsPhoneIdentifierColumnLabel,
+        ),
+        DischargeWorkspacePrintColumn(
+          id: 'status',
+          label: l10n.receptionStatusLabel,
+        ),
+        DischargeWorkspacePrintColumn(
+          id: 'date',
+          label: l10n.opdFollowUpDateLabel,
+        ),
+        DischargeWorkspacePrintColumn(
+          id: 'time',
+          label: l10n.opdFollowUpTimeLabel,
+        ),
+        DischargeWorkspacePrintColumn(
+          id: 'patient_id',
+          label: l10n.opdPatientIdLabel,
+        ),
+        DischargeWorkspacePrintColumn(
+          id: 'email',
+          label: l10n.patientsEmailLabel,
+        ),
+        DischargeWorkspacePrintColumn(id: 'notes', label: l10n.opdNotesLabel),
+      ];
+  final List<Map<String, String>> printRows = <Map<String, String>>[
+    for (final ReceptionFollowUpEntry entry in entries)
+      <String, String>{
+        'patient': entry.patientDisplayName?.trim().isNotEmpty == true
+            ? entry.patientDisplayName!.trim()
+            : l10n.profileUnknownValue,
+        'phone': entry.patientPhone?.trim() ?? '',
+        'status': opdStageDisplayLabel(l10n, entry.status),
+        'date': AppFormatters.shortDate(entry.scheduledAt.toLocal(), locale),
+        'time': AppFormatters.time(entry.scheduledAt.toLocal(), locale),
+        'patient_id': entry.patientIdentifier,
+        'email': entry.patientEmail?.trim() ?? '',
+        'notes': entry.notes?.trim() ?? '',
+      },
+  ];
+  await printDischargeWorkspaceList(
+    ref: ref,
+    context: context,
+    title: l10n.dischargeSectionFollowUps,
+    columns: printColumns,
+    rows: printRows,
+    emptyText: l10n.receptionFollowUpsEmptyTitle,
+  );
+}
+
+String _dischargeWorklistPrintCellValue(
+  BuildContext context,
+  IpdAdmissionSummary item,
+  String columnId,
+) {
+  return switch (columnId) {
+    'patient' => item.displayTitle,
+    'location' => _locationLabel(context, item),
+    'target_date' => _dateLabel(context, item.dischargedAt),
+    'status' => _statusFor(context, item).label,
+    'next_action' => _nextActionLabel(context, item),
+    'clearance_phase' => item.clearancePhase == null
+        ? ''
+        : _apiLabel(item.clearancePhase!),
+    'blocking_item' => _blockingItemLabel(context, item),
+    'discharged_at' => _dateLabel(context, item.dischargedAt),
+    'admitted_at' => _dateLabel(context, item.admittedAt),
+    _ => '',
+  };
 }
 
 String _dischargeSummaryHtml(

@@ -17431,7 +17431,7 @@ abstract class AppLocalizations {
   /// Legacy key; completed-today clinical worklist tab label
   ///
   /// In en, this message translates to:
-  /// **'Completed today'**
+  /// **'Completed'**
   String get clinicalSectionCompletedLabel;
 
   /// Tab label for encounters completed today
@@ -18279,6 +18279,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete {count} lab orders from the active patient record?'**
   String clinicalDeleteSelectedLabOrdersDialogBody(int count);
+
+  /// Confirm label for cancelling selected pharmacy orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel selected'**
+  String get clinicalCancelSelectedPharmacyOrdersAction;
+
+  /// Confirm label for deleting selected pharmacy orders.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete selected'**
+  String get clinicalDeleteSelectedPharmacyOrdersAction;
 
   /// Confirmation title for cancelling selected pharmacy orders.
   ///
@@ -21670,6 +21682,12 @@ abstract class AppLocalizations {
   /// **'Completed'**
   String get dischargeSectionCompleted;
 
+  /// Tab label for the Discharge Follow-ups section.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-ups'**
+  String get dischargeSectionFollowUps;
+
   /// Discharge queue panel title.
   ///
   /// In en, this message translates to:
@@ -21772,10 +21790,10 @@ abstract class AppLocalizations {
   /// **'Select a patient to coordinate discharge.'**
   String get dischargeNoSelectionBody;
 
-  /// Discharge summary print action label.
+  /// Generic Print trigger label for discharge summary (printing.mdc).
   ///
   /// In en, this message translates to:
-  /// **'Print discharge summary'**
+  /// **'Print'**
   String get dischargePrintSummaryAction;
 
   /// Accessible label for discharge patient context card.
@@ -21783,6 +21801,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Patient discharge context'**
   String get dischargePatientContextLabel;
+
+  /// Advanced filters date range section label on discharge queues.
+  ///
+  /// In en, this message translates to:
+  /// **'Date range'**
+  String get dischargeDateFilterLabel;
+
+  /// Discharge advanced filters start date label.
+  ///
+  /// In en, this message translates to:
+  /// **'From'**
+  String get dischargeDateFromLabel;
+
+  /// Discharge advanced filters end date label.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get dischargeDateToLabel;
+
+  /// Title for discharge queue print preview documents.
+  ///
+  /// In en, this message translates to:
+  /// **'Discharge worklist'**
+  String get dischargeWorklistPrintTitle;
 
   /// Discharge patient context admission field label.
   ///

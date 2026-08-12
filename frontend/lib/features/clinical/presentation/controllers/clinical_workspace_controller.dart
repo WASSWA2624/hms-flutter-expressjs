@@ -1388,12 +1388,22 @@ final class ClinicalWorkspaceController
     // Non-completed scopes still fetch OPEN rows; keep the active scope on the
     // open query so callers/tests can observe tab selection. Always load CLOSED
     // rows in parallel for Completed today facets.
+    // Facet/candidate loads use backend max page size so tab badges reflect
+    // authoritative scope totals under the shared filter context (tabs.mdc),
+    // not the UI page length alone.
+    const AppPageRequest candidatePageRequest = AppPageRequest(
+      pageSize: AppPageRequest.maxPageSize,
+    );
     final ClinicalWorklistQuery openQuery =
         query.scope == ClinicalQueueScope.completed
-        ? query.copyWith(scope: ClinicalQueueScope.all)
-        : query;
+        ? query.copyWith(
+            scope: ClinicalQueueScope.all,
+            pageRequest: candidatePageRequest,
+          )
+        : query.copyWith(pageRequest: candidatePageRequest);
     final ClinicalWorklistQuery completedQuery = query.copyWith(
       scope: ClinicalQueueScope.completed,
+      pageRequest: candidatePageRequest,
     );
 
     final List<Result<AppPage<ClinicalWorklistEntry>>> openResults =
@@ -1422,7 +1432,7 @@ final class ClinicalWorkspaceController
           <ClinicalWorklistEntry>[
             for (final Result<AppPage<ClinicalWorklistEntry>> result
                 in openResults)
-              ..._worklistPageOrEmpty(result, query.pageRequest).items,
+              ..._worklistPageOrEmpty(result, candidatePageRequest).items,
           ].where((ClinicalWorklistEntry item) {
             return item.matchesSearch(query.search, filters: query.filters) &&
                 item.matchesFilters(query.filters);
@@ -1433,7 +1443,7 @@ final class ClinicalWorkspaceController
         deduplicateClinicalWorklistEntries(
           _worklistPageOrEmpty(
             completedEncounters,
-            query.pageRequest,
+            candidatePageRequest,
           ).items.where((ClinicalWorklistEntry item) {
             return item.matchesSearch(query.search, filters: query.filters) &&
                 item.matchesFilters(query.filters);
@@ -1491,7 +1501,9 @@ final class ClinicalWorkspaceController
         .listOpdFlows(
           OpdFlowQuery(
             search: query.databaseSearch,
-            pageRequest: const AppPageRequest(),
+            pageRequest: const AppPageRequest(
+              pageSize: AppPageRequest.maxPageSize,
+            ),
           ),
         );
 
@@ -1513,7 +1525,9 @@ final class ClinicalWorkspaceController
         .listTriageQueue(
           OpdTriageQueueQuery(
             search: query.databaseSearch,
-            pageRequest: const AppPageRequest(),
+            pageRequest: const AppPageRequest(
+              pageSize: AppPageRequest.maxPageSize,
+            ),
           ),
         );
 

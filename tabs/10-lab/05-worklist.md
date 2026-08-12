@@ -4,9 +4,9 @@
 
 - Label: `labScopeAll` (All patients)
 - Icon: `Icons.assignment_outlined`
-- Count source: `summary.totalForView(LabWorkbenchView.patients)`
-- Sibling tabs: patient-view summary totals (shared chrome)
-- Count tone: `AppTabCountTone.info`
+- Count source: `labSectionTabCount` → `summary.totalForView(LabWorkbenchView.patients)`; active + narrowed → filtered total
+- Sibling tabs: patient-view summary totals (shared chrome sibling model)
+- Count tone: `AppTabCountTone.info` (`labSectionCountTone`)
 - Deep-link `section`: `worklist` (alias `all`)
 - Tab gate: `LabAllAtomPermissions.tab`
 - Scope: `LabQueueScope.all`
@@ -14,12 +14,12 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Filters → Settings → Export → Create Lab Order**
+Order: **Filters → Settings → Export → Print → Create Lab Order**
 
-- Identical worklist chrome to Pending
+- Identical worklist chrome to Pending (Export/Print ∩ `evidence:export`)
 - Create: `LabAllAtomPermissions.create`
 - Clearing advanced filters resets section to **All patients**
-- Print (toolbar): **not mounted**
+- Print (toolbar): preview-first `printLabWorkspaceList`
 - Date filter: **enabled**
 
 ## 3. Table
@@ -52,7 +52,7 @@ Same create + result entry forms.
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
+- Table Print: preview-first worklist print when ∩ `evidence:export`
 - Report: `PrintDocumentTemplates.clinicalResult`
 
 ## 10. Loading / empty / error / success
@@ -67,5 +67,5 @@ Shared Lab patterns (`labNoPatientsTitle` / `labNoPatientsBody`).
 | Create / result mutations | ∩ `lab:write` |
 | previewReport | ∪ `lab:read` \| `lab:write` |
 | viewToggle / configure / deleteOrder | documented — **not mounted** |
-| Export | ungated |
-| Table Print | n/a |
+| Export | ∩ `evidence:export` (`canExportLabWorkspace`) |
+| Table Print | ∩ `evidence:export` (`canPrintLabWorkspace`) |

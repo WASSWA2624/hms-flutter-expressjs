@@ -4,8 +4,8 @@
 
 - Label: `dischargeSectionAll`
 - Icon: `Icons.inventory_2_outlined`
-- Count source: `state.queue.items.length` (loaded queue)
-- Sibling tabs: client-filtered counts from same queue; Follow-ups provider separate
+- Count source: `DischargeSectionCounts.all` (catalog); active + search/filters → filtered section membership
+- Sibling tabs: dedicated unfiltered `DischargeSectionCounts` sibling-count model
 - Count tone: `AppTabCountTone.info`
 - Deep-link `section`: `all`
 - Tab gate: `DischargeAllPatientsAtomPermissions.tab` = workspace read ∪
@@ -13,14 +13,14 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Filters → Settings → Export**
+Order: **Filters → Settings → Export → Print**
 
 - Search hint: `dischargeQueueSearchHint`
-- Filters / Settings: shared labels
-- Export: ungated default Export
-- Print (toolbar): **not mounted**
-- Strip Plan/Clearance: **not mounted**
-- Date filter: **off**
+- Filters / Settings: shared labels (`Filters`, `Settings`, Advanced filters Close)
+- Export: ∩ `evidence:export` (`DischargeAllPatientsAtomPermissions.export`)
+- Print (toolbar): `commonPrintActionLabel` → `printDischargeWorkspaceList` (same export gate)
+- Strip Plan/Clearance: **not mounted** (row next-action; justified)
+- Date filter: **on**
 
 ## 3. Table
 
@@ -40,24 +40,24 @@ Order: **Filters → Settings → Export**
 
 - Groups: Status (`dischargeStatusFilterLabel`) — planned / summaryPending / pharmacyPending / nursingPending / billingPending / insurancePending / documentsReady / completed
 - Search: patient + location/status/next-action/dates/phase/stage matcher
-- Date filter: **off**
+- Date filter: **on** (`dischargeDateFilterLabel` / From / To)
 
 ## 5. Primary / secondary / row actions
 
 - Next-action:
   - Unplanned incomplete → `dischargeStartPlanAction` (write)
   - Planned → `dischargeManageClearanceAction` (write)
-  - Completed → `dischargePrintSummaryAction` (read)
+  - Completed → `Print` (read)
 - Row select → detail
 
 ## 6. Dialogs from this tab
 
 | Dialog | Owner |
 | --- | --- |
-| Detail (`dischargeDetailTitle`) | Discharge-owned |
-| Planning (`showDischargePlanningDialog`) | Discharge-owned |
+| Detail (`dischargeDetailTitle` = surface type; identity in body; pinned footer) | Discharge-owned |
+| Planning (`showDischargePlanningDialog` + All create/update gates) | Discharge-owned |
 | Pharmacy request (`_PharmacyDialog`) | Discharge-owned |
-| Print clinical summary | **reused** printing (`PrintDocumentTemplates.clinicalSummary`) |
+| Print clinical summary | **reused** printing (`PrintDocumentTemplates.clinicalSummary`; trigger `Print`) |
 
 ## 7. Nested / follow-on
 
@@ -72,8 +72,8 @@ From detail: Request medicines → pharmacy form; Open billing → navigate.
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
-- Detail / completed next-action → `PrintDocumentTemplates.clinicalSummary` (`dischargeReportTitle`, summary/medicines/billing sections, doctor/nurse signatures)
+- Table Print: preview-first registry list (`printDischargeWorkspaceList`)
+- Detail / completed next-action → `PrintDocumentTemplates.clinicalSummary` (trigger `Print`)
 
 ## 10. Loading / empty / error / success
 
@@ -94,5 +94,4 @@ From detail: Request medicines → pharmacy form; Open billing → navigate.
 | roomTurnover / openHousekeeping | operations read ∩ |
 | openNursing | ∩ `last_office:read` |
 | openIpd | workspace read ∪ |
-| Export | ungated |
-| Table Print | n/a |
+| Export / Print (toolbar) | ∩ `evidence:export` |

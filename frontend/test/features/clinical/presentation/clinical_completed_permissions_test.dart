@@ -342,7 +342,7 @@ void main() {
       );
       expect(
         ClinicalCompletedAtomPermissions.printSummary,
-        same(clinicalWorkspaceReadRequirement),
+        same(clinicalWorkspaceExportRequirement),
       );
       expect(
         ClinicalCompletedAtomPermissions.nestedRead,
@@ -527,6 +527,7 @@ void main() {
         permissions: <AppPermission>{
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
+          AppPermissions.evidenceExport,
         },
       );
       expect(
@@ -565,6 +566,7 @@ void main() {
         permissions: <AppPermission>{
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
+          AppPermissions.evidenceExport,
         },
         modules: const <AppModuleEntitlement>[],
       );
@@ -590,7 +592,7 @@ void main() {
 
       expect(find.text('Completed Tab Patient'), findsOneWidget);
       expect(find.byType(AppTabStrip), findsOneWidget);
-      expect(find.text('Completed today'), findsWidgets);
+      expect(find.text('Completed'), findsWidgets);
       expect(find.text('Review encounter'), findsWidgets);
 
       await tester.tap(find.text('Completed Tab Patient'));
@@ -599,7 +601,7 @@ void main() {
       expect(find.text('Add clinical notes'), findsNothing);
       expect(find.text('Request lab'), findsNothing);
       expect(find.text('Prescribe'), findsNothing);
-      expect(find.text('Print summary'), findsWidgets);
+      expect(find.text('Print'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
       expect(find.byTooltip('Edit order'), findsNothing);
       expect(find.byTooltip('Delete'), findsNothing);
@@ -613,6 +615,7 @@ void main() {
         permissions: <AppPermission>{
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
+          AppPermissions.evidenceExport,
         },
       );
       expect(ClinicalCompletedAtomPermissions.write.isAllowed(writer), isTrue);
@@ -629,7 +632,7 @@ void main() {
       );
 
       expect(find.text('Completed Tab Patient'), findsOneWidget);
-      expect(find.text('Completed today'), findsWidgets);
+      expect(find.text('Completed'), findsWidgets);
 
       await tester.tap(find.text('Completed Tab Patient'));
       await tester.pumpAndSettle();
@@ -639,7 +642,7 @@ void main() {
       expect(find.text('Request radiology'), findsWidgets);
       expect(find.text('Prescribe'), findsWidgets);
       expect(find.text('Request admission'), findsWidgets);
-      expect(find.text('Print summary'), findsWidgets);
+      expect(find.text('Print'), findsWidgets);
       expect(find.byTooltip('Edit order'), findsWidgets);
       // Terminal completed: vitals / disposition stay absent (prefer read).
       expect(find.text('Record vitals'), findsNothing);
@@ -682,6 +685,7 @@ void main() {
           permissions: <AppPermission>{
             AppPermissions.clinicalRead,
             AppPermissions.clinicalWrite,
+            AppPermissions.evidenceExport,
           },
           modules: const <AppModuleEntitlement>[],
         ),
@@ -736,7 +740,7 @@ void main() {
       expect(find.text('Prescribe'), findsNothing);
       expect(find.text('Request radiology'), findsNothing);
       expect(find.text('Request admission'), findsNothing);
-      expect(find.text('Print summary'), findsWidgets);
+      expect(find.text('Print'), findsNothing);
     },
   );
 
@@ -774,6 +778,7 @@ void main() {
         permissions: <AppPermission>{
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
+          AppPermissions.evidenceExport,
         },
       ),
       physicalSize: const Size(390, 844),
@@ -799,6 +804,7 @@ void main() {
         permissions: <AppPermission>{
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
+          AppPermissions.evidenceExport,
         },
       ),
       physicalSize: const Size(1440, 900),
@@ -820,6 +826,7 @@ void main() {
         permissions: <AppPermission>{
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
+          AppPermissions.evidenceExport,
         },
       ),
       themeMode: ThemeMode.dark,
@@ -839,6 +846,7 @@ void main() {
         permissions: <AppPermission>{
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
+          AppPermissions.evidenceExport,
         },
       ),
       themeMode: ThemeMode.light,
@@ -876,6 +884,7 @@ void main() {
           permissions: <AppPermission>{
             AppPermissions.clinicalRead,
             AppPermissions.clinicalWrite,
+            AppPermissions.evidenceExport,
           },
         ),
         listOverride: const Result<AppPage<ClinicalWorklistEntry>>.failure(
@@ -899,6 +908,7 @@ void main() {
           permissions: <AppPermission>{
             AppPermissions.clinicalRead,
             AppPermissions.clinicalWrite,
+            AppPermissions.evidenceExport,
           },
         ),
       );
@@ -925,6 +935,7 @@ void main() {
           permissions: <AppPermission>{
             AppPermissions.clinicalRead,
             AppPermissions.clinicalWrite,
+            AppPermissions.evidenceExport,
           },
         ),
       );
@@ -971,6 +982,7 @@ void main() {
               permissions: <AppPermission>{
                 AppPermissions.clinicalRead,
                 AppPermissions.clinicalWrite,
+                AppPermissions.evidenceExport,
               },
             ),
           ),
@@ -1032,7 +1044,7 @@ void main() {
 
       expect(find.text('Add clinical notes'), findsWidgets);
       expect(find.text('Request lab'), findsWidgets);
-      expect(find.text('Print summary'), findsWidgets);
+      expect(find.text('Print'), findsNothing);
       expect(find.text('Record vitals'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -1110,6 +1122,7 @@ void main() {
                 permissions: <AppPermission>{
                   AppPermissions.clinicalRead,
                   AppPermissions.clinicalWrite,
+                  AppPermissions.evidenceExport,
                 },
               ),
             ),

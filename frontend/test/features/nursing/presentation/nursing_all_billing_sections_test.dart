@@ -343,7 +343,7 @@ void main() {
           tester,
           repository: repository,
           accessPolicy: _policy(
-            permissions: <AppPermission>{AppPermissions.clinicalRead},
+            permissions: <AppPermission>{AppPermissions.nursingRead, AppPermissions.clinicalRead},
           ),
         );
 
@@ -373,6 +373,7 @@ void main() {
           repository: repository,
           accessPolicy: _policy(
             permissions: <AppPermission>{
+              AppPermissions.nursingRead,
               AppPermissions.clinicalRead,
               AppPermissions.billingRead,
             },
@@ -406,6 +407,7 @@ void main() {
         repository: repository,
         accessPolicy: _policy(
           permissions: <AppPermission>{
+            AppPermissions.nursingRead,
             AppPermissions.clinicalRead,
             AppPermissions.clinicalWrite,
           },
@@ -425,6 +427,7 @@ void main() {
           repository: repository,
           accessPolicy: _policy(
             permissions: <AppPermission>{
+              AppPermissions.nursingRead,
               AppPermissions.clinicalRead,
               AppPermissions.billingRead,
             },
@@ -454,6 +457,7 @@ void main() {
         repository: repository,
         accessPolicy: _policy(
           permissions: <AppPermission>{
+            AppPermissions.nursingRead,
             AppPermissions.clinicalRead,
             AppPermissions.clinicalWrite,
             AppPermissions.billingRead,
@@ -475,6 +479,7 @@ void main() {
         repository: repository,
         accessPolicy: _policy(
           permissions: <AppPermission>{
+            AppPermissions.nursingRead,
             AppPermissions.clinicalRead,
             AppPermissions.billingRead,
           },

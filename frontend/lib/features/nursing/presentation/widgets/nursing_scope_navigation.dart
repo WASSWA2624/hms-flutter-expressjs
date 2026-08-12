@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/presentation/nursing_access.dart';
-import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 
@@ -41,58 +40,98 @@ NursingQueueScope? nursingScopeFromQueryValue(String? raw) {
   };
 }
 
-int? _tabCountOrNull(int value) => value > 0 ? value : null;
+/// Sibling-count model: dedicated unfiltered [NursingScopeCounts].
+/// Active tab with search/advanced filters uses the filtered worklist total.
+int nursingScopeTabCount(
+  NursingWorkspaceState state,
+  NursingQueueScope scope, {
+  NursingQueueScope? activeScope,
+}) {
+  final int scopeTotal = state.scopeCounts.forScope(scope);
+  if (activeScope == null || scope != activeScope) {
+    return scopeTotal;
+  }
+  final bool narrowed =
+      state.query.search.trim().isNotEmpty || state.query.hasAdvancedFilters;
+  if (!narrowed) {
+    return scopeTotal;
+  }
+  return state.worklist.totalItemCount ?? state.worklist.items.length;
+}
+
+AppTabCountTone nursingScopeCountTone(NursingQueueScope scope) {
+  return switch (scope) {
+    NursingQueueScope.urgent => AppTabCountTone.danger,
+    NursingQueueScope.medicationDue ||
+    NursingQueueScope.handoverPending ||
+    NursingQueueScope.transferPending ||
+    NursingQueueScope.dischargePending => AppTabCountTone.warning,
+    NursingQueueScope.all ||
+    NursingQueueScope.assignedWard => AppTabCountTone.info,
+  };
+}
 
 AppTabItem? _tabItemForScope(
   AppLocalizations l10n,
   NursingWorkspaceState state,
-  NursingQueueScope scope,
-) {
+  NursingQueueScope scope, {
+  NursingQueueScope? activeScope,
+}) {
+  final int count = nursingScopeTabCount(
+    state,
+    scope,
+    activeScope: activeScope,
+  );
+  final AppTabCountTone tone = nursingScopeCountTone(scope);
   return switch (scope) {
     NursingQueueScope.all => AppTabItem(
       id: nursingScopeToQueryValue(NursingQueueScope.all),
       icon: Icons.inventory_2_outlined,
       label: l10n.nursingScopeAllLabel,
-      count: _tabCountOrNull(nursingPageTotal(state.worklist)),
+      count: count,
+      countTone: tone,
     ),
     NursingQueueScope.assignedWard => AppTabItem(
       id: nursingScopeToQueryValue(NursingQueueScope.assignedWard),
       icon: Icons.local_hospital_outlined,
       label: l10n.nursingScopeAssignedWardLabel,
-      count: _tabCountOrNull(state.assignedWardCount),
+      count: count,
+      countTone: tone,
     ),
     NursingQueueScope.urgent => AppTabItem(
       id: nursingScopeToQueryValue(NursingQueueScope.urgent),
       icon: Icons.priority_high_outlined,
       label: l10n.nursingScopeUrgentLabel,
-      count: _tabCountOrNull(state.urgentCount),
-      countTone: AppTabCountTone.danger,
+      count: count,
+      countTone: tone,
     ),
     NursingQueueScope.medicationDue => AppTabItem(
       id: nursingScopeToQueryValue(NursingQueueScope.medicationDue),
       icon: Icons.medication_outlined,
       label: l10n.nursingScopeMedicationDueLabel,
-      count: _tabCountOrNull(state.medicationDueCount),
-      countTone: AppTabCountTone.warning,
+      count: count,
+      countTone: tone,
     ),
     NursingQueueScope.handoverPending => AppTabItem(
       id: nursingScopeToQueryValue(NursingQueueScope.handoverPending),
       icon: Icons.swap_horiz_outlined,
       label: l10n.nursingScopeHandoverPendingLabel,
-      count: _tabCountOrNull(state.handoverPendingCount),
+      count: count,
+      countTone: tone,
     ),
     NursingQueueScope.transferPending => AppTabItem(
       id: nursingScopeToQueryValue(NursingQueueScope.transferPending),
       icon: Icons.transfer_within_a_station_outlined,
       label: l10n.nursingScopeTransferPendingLabel,
-      count: _tabCountOrNull(state.transferPendingCount),
-      countTone: AppTabCountTone.warning,
+      count: count,
+      countTone: tone,
     ),
     NursingQueueScope.dischargePending => AppTabItem(
       id: nursingScopeToQueryValue(NursingQueueScope.dischargePending),
       icon: Icons.logout_outlined,
       label: l10n.nursingScopeDischargePendingLabel,
-      count: _tabCountOrNull(state.dischargePendingCount),
+      count: count,
+      countTone: tone,
     ),
   };
 }
@@ -101,12 +140,20 @@ List<AppTabItem> nursingTabItems(
   AppLocalizations l10n,
   NursingWorkspaceState state, {
   AppAccessPolicy? policy,
+  NursingQueueScope? activeScope,
 }) {
   final Iterable<NursingQueueScope> scopes = policy == null
       ? nursingTabStripOrder
       : nursingAllowedScopes(policy);
   return <AppTabItem>[
     for (final NursingQueueScope scope in scopes)
-      if (_tabItemForScope(l10n, state, scope) case final AppTabItem item) item,
+      if (_tabItemForScope(
+            l10n,
+            state,
+            scope,
+            activeScope: activeScope,
+          )
+          case final AppTabItem item)
+        item,
   ];
 }

@@ -4,9 +4,9 @@
 
 - Label: `labScopeCompleted`
 - Icon: `Icons.task_alt_outlined`
-- Count source: `summary.completedForView(LabWorkbenchView.patients)`
-- Sibling tabs: patient-view summary totals (shared chrome)
-- Count tone: `AppTabCountTone.info`
+- Count source: `labSectionTabCount` → `summary.completedForView(LabWorkbenchView.patients)`; active + narrowed → filtered total
+- Sibling tabs: patient-view summary totals (shared chrome sibling model)
+- Count tone: `AppTabCountTone.info` (`labSectionCountTone`)
 - Deep-link `section`: `completed-today` (aliases `verified`, `completed`, `completed_today`, `done`)
 - Tab gate: `LabVerifiedAtomPermissions.tab`
 - Scope: `LabQueueScope.completed`
@@ -14,11 +14,11 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Filters → Settings → Export → Create Lab Order**
+Order: **Filters → Settings → Export → Print → Create Lab Order**
 
-- Same worklist chrome as Pending
+- Same worklist chrome as Pending (Export/Print ∩ `evidence:export`)
 - Create: `LabVerifiedAtomPermissions.create`
-- Print (toolbar): **not mounted**
+- Print (toolbar): preview-first `printLabWorkspaceList`
 - Date filter: **enabled**
 
 ## 3. Table
@@ -50,7 +50,7 @@ Result reopen notes + draft fields; create forms if Create used.
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
+- Table Print: preview-first worklist print when ∩ `evidence:export`
 - Report: `PrintDocumentTemplates.clinicalResult`
 
 ## 10. Loading / empty / error / success
@@ -64,5 +64,5 @@ Shared Lab patterns; reopen success `labVerifiedResultReopenedMessage`.
 | Tab / chrome / rowSelect | `LabVerifiedAtomPermissions.*` → ∩ `lab:read` |
 | Create / editVerifiedResult / reopenVerifiedResult | ∩ `lab:write` |
 | openBilling | documented — **not mounted** |
-| Export | ungated |
-| Table Print | n/a |
+| Export | ∩ `evidence:export` (`canExportLabWorkspace`) |
+| Table Print | ∩ `evidence:export` (`canPrintLabWorkspace`) |

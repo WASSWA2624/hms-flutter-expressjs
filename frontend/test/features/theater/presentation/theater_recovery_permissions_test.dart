@@ -954,6 +954,152 @@ void main() {
       );
     },
   );
+
+  testWidgets(
+    'compliance: Recovery toolbar Print/Export omit without evidence:export',
+    (WidgetTester tester) async {
+      await _pumpRecoveryTab(
+        tester,
+        theaterRepository: theaterRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+        ),
+      );
+
+      final AppListTable<TheaterCase> table = tester
+          .widget<AppListTable<TheaterCase>>(
+            find.byType(AppListTable<TheaterCase>),
+          );
+      expect(table.canExport, isFalse);
+      expect(table.canPrint, isFalse);
+      expect(table.enablePrint, isTrue);
+      expect(table.printLabel, 'Print');
+      expect(table.search?.advancedFilterButtonLabel, 'Filters');
+      expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
+      expect(table.search?.advancedFilterResetLabel, 'Clear filters');
+      expect(table.search?.advancedFilterCloseLabel, 'Close');
+      expect(table.columnVisibilityLabel, 'Settings');
+      expect(find.text('Export'), findsNothing);
+      expect(find.text('Print'), findsNothing);
+      expect(find.text('Schedule case'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'compliance: Recovery mounts Export/Print when evidence:export allowed',
+    (WidgetTester tester) async {
+      await _pumpRecoveryTab(
+        tester,
+        theaterRepository: theaterRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+
+      final AppListTable<TheaterCase> table = tester
+          .widget<AppListTable<TheaterCase>>(
+            find.byType(AppListTable<TheaterCase>),
+          );
+      expect(table.canExport, isTrue);
+      expect(table.canPrint, isTrue);
+      expect(table.printLabel, 'Print');
+      expect(find.text('Export'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+      expect(find.text('Schedule case'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'compliance: Recovery defaults prefer-5 columns, warning count, aligned stage',
+    (WidgetTester tester) async {
+      clearInteractions(theaterRepository);
+      when(() => theaterRepository.listCases(any())).thenAnswer((
+        Invocation invocation,
+      ) async {
+        final TheaterCaseQuery query =
+            invocation.positionalArguments.single as TheaterCaseQuery;
+        List<TheaterCase> items = const <TheaterCase>[_recoveryCase];
+        final String? status = query.status?.trim().toUpperCase();
+        final String? stage = query.stage?.trim().toUpperCase();
+        if (status != null && status.isNotEmpty) {
+          items = items
+              .where((TheaterCase item) => item.normalizedStatus == status)
+              .toList(growable: false);
+        }
+        if (stage != null && stage.isNotEmpty) {
+          final Set<String> stages = stage
+              .split(',')
+              .map((String part) => part.trim().toUpperCase())
+              .where((String part) => part.isNotEmpty)
+              .toSet();
+          items = items
+              .where(
+                (TheaterCase item) => stages.contains(item.normalizedStage),
+              )
+              .toList(growable: false);
+        }
+        return Result<AppPage<TheaterCase>>.success(
+          AppPage<TheaterCase>(
+            items: items,
+            request: query.pageRequest,
+            totalItemCount: items.length,
+          ),
+        );
+      });
+      when(() => theaterRepository.getCase(any())).thenAnswer(
+        (_) async => const Result<TheaterCase>.success(_recoveryCase),
+      );
+
+      await _pumpRecoveryTab(
+        tester,
+        theaterRepository: theaterRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+        ),
+      );
+
+      final List<TheaterCaseQuery> queries = verify(
+        () => theaterRepository.listCases(captureAny()),
+      ).captured.cast<TheaterCaseQuery>();
+      expect(
+        queries.any(
+          (TheaterCaseQuery q) => q.stage == theaterRecoveryStageFilter,
+        ),
+        isTrue,
+      );
+
+      final AppListTable<TheaterCase> table = tester
+          .widget<AppListTable<TheaterCase>>(
+            find.byType(AppListTable<TheaterCase>),
+          );
+      final Set<String> dataIds = table.columns
+          .map((AppListTableColumn<TheaterCase> c) => c.key)
+          .where((String id) => id != 'next_action')
+          .toSet();
+      expect(
+        dataIds,
+        <String>{'patient', 'procedure', 'room', 'time', 'status'},
+      );
+      expect(dataIds.length, 5);
+
+      final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      final AppTabItem recovery = strip.tabs.firstWhere(
+        (AppTabItem tab) => tab.id == TheaterSection.recovery.name,
+      );
+      expect(recovery.countTone, AppTabCountTone.warning);
+      expect(recovery.count, isNotNull);
+    },
+  );
 }
 
 Future<void> _pumpAfterAction(WidgetTester tester) async {
@@ -1041,8 +1187,15 @@ void _stubTheater(
           .toList(growable: false);
     }
     if (stage != null && stage.isNotEmpty) {
+      final Set<String> stages = stage
+          .split(',')
+          .map((String part) => part.trim().toUpperCase())
+          .where((String part) => part.isNotEmpty)
+          .toSet();
       items = items
-          .where((TheaterCase item) => item.normalizedStage == stage)
+          .where(
+            (TheaterCase item) => stages.contains(item.normalizedStage),
+          )
           .toList(growable: false);
     }
     return Result<AppPage<TheaterCase>>.success(

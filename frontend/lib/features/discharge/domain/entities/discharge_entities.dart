@@ -45,6 +45,8 @@ final class DischargeWorklistQuery {
   const DischargeWorklistQuery({
     this.search = '',
     this.status = DischargeStatusFilter.all,
+    this.dateFrom,
+    this.dateTo,
     this.pageRequest = const AppPageRequest(pageSize: 12),
     this.focusAdmissionId,
     this.section = '',
@@ -52,6 +54,8 @@ final class DischargeWorklistQuery {
 
   final String search;
   final DischargeStatusFilter status;
+  final DateTime? dateFrom;
+  final DateTime? dateTo;
   final AppPageRequest pageRequest;
 
   /// Deep-link target: pre-select this admission (display id or uuid).
@@ -59,6 +63,12 @@ final class DischargeWorklistQuery {
 
   /// Tab section from URL query parameter (e.g. `?section=planned`).
   final String section;
+
+  bool get hasAdvancedFilters {
+    return status != DischargeStatusFilter.all ||
+        dateFrom != null ||
+        dateTo != null;
+  }
 
   factory DischargeWorklistQuery.fromUri(Uri uri) {
     final Map<String, String> params = uri.queryParameters;
@@ -94,14 +104,20 @@ final class DischargeWorklistQuery {
   DischargeWorklistQuery copyWith({
     String? search,
     DischargeStatusFilter? status,
+    DateTime? dateFrom,
+    DateTime? dateTo,
     AppPageRequest? pageRequest,
     String? focusAdmissionId,
     String? section,
     bool clearFocus = false,
+    bool clearDateFrom = false,
+    bool clearDateTo = false,
   }) {
     return DischargeWorklistQuery(
       search: search ?? this.search,
       status: status ?? this.status,
+      dateFrom: clearDateFrom ? null : dateFrom ?? this.dateFrom,
+      dateTo: clearDateTo ? null : dateTo ?? this.dateTo,
       pageRequest: pageRequest ?? this.pageRequest,
       focusAdmissionId: clearFocus
           ? null
@@ -429,11 +445,63 @@ final class DischargeReferenceData {
   final List<DischargeDrugOption> drugs;
 }
 
+/// Unfiltered per-section totals for sibling tab badges (sibling-count model).
+@immutable
+final class DischargeSectionCounts {
+  const DischargeSectionCounts({
+    this.all = 0,
+    this.planned = 0,
+    this.pendingClearance = 0,
+    this.completed = 0,
+  });
+
+  static const DischargeSectionCounts empty = DischargeSectionCounts();
+
+  final int all;
+  final int planned;
+  final int pendingClearance;
+  final int completed;
+
+  factory DischargeSectionCounts.fromCatalog(
+    List<IpdAdmissionSummary> catalog,
+  ) {
+    int planned = 0;
+    int pending = 0;
+    int completed = 0;
+    for (final IpdAdmissionSummary item in catalog) {
+      if (isCompletedDischarge(item)) {
+        completed++;
+      } else if (isPlannedDischarge(item)) {
+        planned++;
+      } else {
+        pending++;
+      }
+    }
+    return DischargeSectionCounts(
+      all: catalog.length,
+      planned: planned,
+      pendingClearance: pending,
+      completed: completed,
+    );
+  }
+
+  int forSection(DischargeDeskSection section) {
+    return switch (section) {
+      DischargeDeskSection.all => all,
+      DischargeDeskSection.planned => planned,
+      DischargeDeskSection.pendingClearance => pendingClearance,
+      DischargeDeskSection.completed => completed,
+      DischargeDeskSection.followUps => 0,
+    };
+  }
+}
+
 @immutable
 final class DischargeWorkspaceState {
   const DischargeWorkspaceState({
     required this.query,
     required this.queue,
+    this.sectionCounts = DischargeSectionCounts.empty,
     this.referenceData = const DischargeReferenceData(),
     this.selectedDetail,
     this.lastFailure,
@@ -444,6 +512,9 @@ final class DischargeWorkspaceState {
 
   final DischargeWorklistQuery query;
   final AppPage<IpdAdmissionSummary> queue;
+
+  /// Dedicated unfiltered sibling totals (tabs.mdc sibling-count model).
+  final DischargeSectionCounts sectionCounts;
   final DischargeReferenceData referenceData;
   final DischargeAdmissionDetail? selectedDetail;
   final Object? lastFailure;
@@ -451,15 +522,9 @@ final class DischargeWorkspaceState {
   final bool isRefreshingDetail;
   final bool isSaving;
 
-  int get plannedCount {
-    return queue.items.where(isPlannedDischarge).length;
-  }
+  int get plannedCount => sectionCounts.planned;
 
-  int get summaryPendingCount {
-    return queue.items.where((IpdAdmissionSummary item) {
-      return !isCompletedDischarge(item) && !isPlannedDischarge(item);
-    }).length;
-  }
+  int get summaryPendingCount => sectionCounts.pendingClearance;
 
   int get pharmacyPendingCount {
     return queue.items.where((IpdAdmissionSummary item) {
@@ -488,19 +553,16 @@ final class DischargeWorkspaceState {
     }).length;
   }
 
-  int get completedCount {
-    return queue.items.where(isCompletedDischarge).length;
-  }
+  int get completedCount => sectionCounts.completed;
 
   int get workloadCount {
-    return queue.items.where((IpdAdmissionSummary item) {
-      return !isCompletedDischarge(item);
-    }).length;
+    return sectionCounts.all - sectionCounts.completed;
   }
 
   DischargeWorkspaceState copyWith({
     DischargeWorklistQuery? query,
     AppPage<IpdAdmissionSummary>? queue,
+    DischargeSectionCounts? sectionCounts,
     DischargeReferenceData? referenceData,
     DischargeAdmissionDetail? selectedDetail,
     Object? lastFailure,
@@ -513,6 +575,7 @@ final class DischargeWorkspaceState {
     return DischargeWorkspaceState(
       query: query ?? this.query,
       queue: queue ?? this.queue,
+      sectionCounts: sectionCounts ?? this.sectionCounts,
       referenceData: referenceData ?? this.referenceData,
       selectedDetail: clearSelectedDetail
           ? null
@@ -540,6 +603,51 @@ bool isPlannedDischarge(IpdAdmissionSummary item) {
   return !isCompletedDischarge(item) &&
       ((item.stage ?? '').toUpperCase() == 'DISCHARGE_PLANNED' ||
           (item.dischargeStatus ?? '').toUpperCase() == 'PLANNED');
+}
+
+bool isPendingClearanceDischarge(IpdAdmissionSummary item) {
+  return !isCompletedDischarge(item) && !isPlannedDischarge(item);
+}
+
+bool matchesDischargeDeskSection(
+  IpdAdmissionSummary item,
+  DischargeDeskSection section,
+) {
+  return switch (section) {
+    DischargeDeskSection.all => true,
+    DischargeDeskSection.planned => isPlannedDischarge(item),
+    DischargeDeskSection.pendingClearance => isPendingClearanceDischarge(item),
+    DischargeDeskSection.completed => isCompletedDischarge(item),
+    DischargeDeskSection.followUps => false,
+  };
+}
+
+bool matchesDischargeDateRange(
+  IpdAdmissionSummary item,
+  DateTime? from,
+  DateTime? to,
+) {
+  if (from == null && to == null) {
+    return true;
+  }
+  final DateTime? raw = item.dischargedAt ?? item.admittedAt;
+  if (raw == null) {
+    return false;
+  }
+  final DateTime localDate = DateTime(raw.year, raw.month, raw.day);
+  if (from != null) {
+    final DateTime fromDate = DateTime(from.year, from.month, from.day);
+    if (localDate.isBefore(fromDate)) {
+      return false;
+    }
+  }
+  if (to != null) {
+    final DateTime toDate = DateTime(to.year, to.month, to.day);
+    if (localDate.isAfter(toDate)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool matchesDischargeStatus(

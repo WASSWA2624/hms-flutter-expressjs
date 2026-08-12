@@ -475,6 +475,7 @@ final class TheaterWorkspaceController
     const TheaterCaseQuery query = TheaterCaseQuery();
     final Result<AppPage<TheaterCase>> casesResult = await _repository
         .listCases(query);
+    final TheaterScopeCounts scopeCounts = await _fetchScopeCounts();
 
     return casesResult.when(
       success: (AppPage<TheaterCase> cases) async {
@@ -495,6 +496,7 @@ final class TheaterWorkspaceController
                 ? cases
                 : _replaceCase(cases, selectedCase),
             query: query,
+            scopeCounts: scopeCounts,
             selectedCase: selectedCase,
           ),
         );
@@ -617,6 +619,7 @@ final class TheaterWorkspaceController
     final Result<AppPage<TheaterCase>> result = await _repository.listCases(
       current.query,
     );
+    final TheaterScopeCounts scopeCounts = await _fetchScopeCounts();
     return result.when(
       success: (AppPage<TheaterCase> page) {
         final TheaterWorkspaceState? latest = _currentState;
@@ -624,6 +627,7 @@ final class TheaterWorkspaceController
           _emit(
             latest.copyWith(
               cases: page,
+              scopeCounts: scopeCounts,
               isRefreshing: false,
               clearLastFailure: true,
               selectedCase: _selectedAfterRefresh(page, latest.selectedCase),
@@ -637,6 +641,7 @@ final class TheaterWorkspaceController
         if (latest != null) {
           _emit(
             latest.copyWith(
+              scopeCounts: scopeCounts,
               isRefreshing: false,
               // Background polls must not sticky-banner over a loaded workspace.
               lastFailure: showLoading ? failure : latest.lastFailure,
@@ -645,6 +650,50 @@ final class TheaterWorkspaceController
         }
         return failure;
       },
+    );
+  }
+
+  /// Dedicated unfiltered sibling totals (pageSize 1 → server `totalItemCount`).
+  Future<TheaterScopeCounts> _fetchScopeCounts() async {
+    const AppPageRequest tiny = AppPageRequest(pageSize: 1);
+    final List<Result<AppPage<TheaterCase>>> results =
+        await Future.wait(<Future<Result<AppPage<TheaterCase>>>>[
+          _repository.listCases(
+            const TheaterCaseQuery(
+              status: 'SCHEDULED',
+              pageRequest: tiny,
+            ),
+          ),
+          _repository.listCases(
+            const TheaterCaseQuery(
+              status: 'IN_PROGRESS',
+              pageRequest: tiny,
+            ),
+          ),
+          _repository.listCases(
+            const TheaterCaseQuery(
+              stage: theaterRecoveryStageFilter,
+              pageRequest: tiny,
+            ),
+          ),
+          _repository.listCases(
+            const TheaterCaseQuery(pageRequest: tiny),
+          ),
+        ]);
+
+    int totalOf(Result<AppPage<TheaterCase>> result) {
+      return result.when(
+        success: (AppPage<TheaterCase> page) =>
+            page.totalItemCount ?? page.items.length,
+        failure: (_) => 0,
+      );
+    }
+
+    return TheaterScopeCounts(
+      scheduled: totalOf(results[0]),
+      inTheater: totalOf(results[1]),
+      recovery: totalOf(results[2]),
+      all: totalOf(results[3]),
     );
   }
 

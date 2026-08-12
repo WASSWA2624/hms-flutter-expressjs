@@ -35,6 +35,11 @@ void main() {
   testWidgets(
     'showNursingPrintSummary opens shared AppPrintPreviewPanel chrome',
     (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1440, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -75,7 +80,7 @@ void main() {
       expect(find.byType(AppDialog), findsOneWidget);
       expect(find.byType(AppPrintPreviewPanel), findsOneWidget);
       expect(find.byType(AppPrintPreviewWorkspace), findsOneWidget);
-      expect(find.text('PRINT NURSING SUMMARY'), findsOneWidget);
+      expect(find.text('PRINT PREVIEW'), findsOneWidget);
       expect(find.text('Print'), findsOneWidget);
 
       await tester.tap(find.widgetWithText(AppButton, 'Print'));

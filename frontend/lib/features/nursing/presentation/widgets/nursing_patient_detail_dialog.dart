@@ -53,10 +53,9 @@ class NursingPatientDetailDialog extends ConsumerWidget {
       nursingWorkspaceControllerProvider,
     );
     final NursingPatientDetail? detail = nursingSelectedDetailFromState(state);
-    final NursingPatientSummary? summary = detail?.enrichedSummary;
 
     return AppPatientDetailDialog(
-      title: summary?.displayTitle ?? l10n.nursingPatientContextLabel,
+      title: l10n.nursingPatientContextLabel,
       icon: const Icon(Icons.bed_outlined),
       semanticLabel: l10n.nursingPatientContextLabel,
       closeLabel: l10n.commonCloseActionLabel,
@@ -342,7 +341,7 @@ class _NursingActionBar extends ConsumerWidget {
           ),
         AppPermissionActionItem(
           requirement: NursingAllAtomPermissions.printSummary,
-          label: l10n.nursingActionPrintSummary,
+          label: l10n.commonPrintActionLabel,
           icon: Icons.print_outlined,
           onPressed: () => _openPrintSummaryDialog(context, ref, detail),
         ),

@@ -7,6 +7,7 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/discharge/data/repositories/discharge_repository_impl.dart';
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
@@ -27,6 +28,8 @@ class DischargePlanningDialog extends ConsumerStatefulWidget {
     required this.title,
     this.initialDetail,
     this.initialMaximized = true,
+    this.createRequirement = DischargeAllPatientsAtomPermissions.create,
+    this.updateRequirement = DischargeAllPatientsAtomPermissions.update,
     super.key,
   });
 
@@ -34,6 +37,12 @@ class DischargePlanningDialog extends ConsumerStatefulWidget {
   final Widget title;
   final DischargeAdmissionDetail? initialDetail;
   final bool initialMaximized;
+
+  /// Planning create gate for the desk section that opened this dialog.
+  final AccessRequirement createRequirement;
+
+  /// Planning update / finalize gate for the desk section that opened this dialog.
+  final AccessRequirement updateRequirement;
 
   @override
   ConsumerState<DischargePlanningDialog> createState() =>
@@ -344,7 +353,7 @@ class _DischargePlanningDialogState
           ),
           if (!_isPlanned)
             AppAccessActionGate(
-              requirement: DischargeAllPatientsAtomPermissions.create,
+              requirement: widget.createRequirement,
               builder: (BuildContext context, bool isAllowed) {
                 return AppButton.primary(
                   label: l10n.dischargeSavePlanAction,
@@ -355,7 +364,7 @@ class _DischargePlanningDialogState
             )
           else
             AppAccessActionGate(
-              requirement: DischargeAllPatientsAtomPermissions.update,
+              requirement: widget.updateRequirement,
               builder: (BuildContext context, bool isAllowed) {
                 return AppButton.primary(
                   label: clinicalDispositionActionLabel(

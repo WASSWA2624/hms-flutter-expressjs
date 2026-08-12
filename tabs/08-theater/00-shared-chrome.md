@@ -6,7 +6,7 @@
 - Catalog entry: `RouteAccessCatalog.theaterEntry` = `theaterWorkspaceEntryRequirement` — ∩ `theater:read` + module `theatre-anesthesia`
 - Board / tab chrome read: `theaterWorkspaceReadRequirement` — ∪ `clinical:read` | `patient:read` + `theatre-anesthesia`
 - AppRoutes metadata (broader ∪): `patient:read` | `clinical:read` | `billing:read` | `operations:read` + module + `theaterWorkspaceRoles`
-- If no board tabs allowed: `SizedBox.shrink()` (not `AppFailureStateView` forbidden)
+- If no board tabs allowed: `AppFailureStateView(failure: AppFailure.forbidden())` (Reception pattern)
 
 ## Page chrome
 
@@ -14,7 +14,7 @@
   - Loading: `theaterLoadingTitle` / `theaterLoadingBody`
   - App bar: `theaterTitle`
   - Retry → controller `refresh()`
-  - `keepPreviousDataDuringRefresh`: default **false**
+  - `keepPreviousDataDuringRefresh`: **true**
 - Body: `ResponsivePage` + `AppTabStrip` + either `_TheaterCaseBoard` (`AppListTable<TheaterCase>`) or **reused** `FollowUpWorklistPanel`
 - In-desk URL: `syncWorkspaceLocation` with `?section=<queryValue>` (cleared when section is All)
 - Deep-link (`TheaterBoardQuery.fromUri`):
@@ -30,30 +30,29 @@
 - Component: `AppTabStrip` / `AppTabItem`
 - Tabs omitted when unauthorized (`theaterBoardTabRequirement` / `theaterAllowedBoardSections`) — not disabled
 - Enum order: Scheduled → In theater → Recovery → All cases → Follow-ups
-- Counts:
-  - Scheduled / In theater / Recovery: membership on **current loaded page** (`scheduledCount` / `inTheaterCount` / `recoveryCount`)
-  - All: `page.totalItemCount ?? items.length`
-  - Follow-ups: `followUpTabCountProvider(FollowUpWorklistScope(encounterType: 'THEATRE'))`
-- Count tones: `warning` for Scheduled, In theater, Recovery; `info` for All and Follow-ups
+- Counts (sibling-count model — dedicated unfiltered `TheaterScopeCounts` from pageSize-1 scope queries):
+  - Scheduled / In theater / Recovery / All: `theaterSectionTabCount` → `state.scopeCounts` unless active tab is narrowed by search/operator filters (then filtered `cases.totalItemCount`)
+  - Follow-ups: `followUpTabCountProvider(FollowUpWorklistScope(encounterType: 'THEATRE'))` with `onNarrowedCountChanged` when Filters/search narrow
+- Count tones: `warning` for Scheduled, In theater, Recovery; `info` for All and Follow-ups (`theaterSectionCountTone`)
 - Icons: event_available / meeting_room / monitor_heart / inventory_2 / phone_callback
 
 ## Table toolbar (case boards)
 
-Order on search bar: **Filters → Settings → Export → Schedule case**
+Order on search bar: **Filters → Settings → Export → Print → Schedule case**
 
 | Control | Label / key | Notes |
 | --- | --- | --- |
 | Search | `theaterSearchLabel` / hint `theaterSearchHint` | mic via `AppSearchBar` default |
 | Clear | `theaterClearFiltersAction` | |
-| Filters | `theaterFiltersLabel` → `theaterAdvancedFiltersTitle` | Apply `opdApplyFiltersAction`; Reset `theaterClearFiltersAction` |
-| Settings | `commonTableSettingsActionLabel` → `theaterTableSettingsTitle` | AppListTable default Apply/Reset labels |
-| Export | hardcoded `Export` via `enableExport` default | **no** ∩ `evidence:export` / `canExport` gate |
-| Print (table) | — | **not mounted** (`enablePrint` default false) |
+| Filters | `commonFiltersActionLabel` → `theaterAdvancedFiltersTitle` | Apply `theaterApplyFiltersAction`; Reset `theaterClearFiltersAction`; Close `commonCloseActionLabel` |
+| Settings | `commonTableSettingsActionLabel` → `theaterTableSettingsTitle` | Apply/Reset/Close via reception column keys |
+| Export | `commonTableExportActionLabel` | gated ∩ `evidence:export` (`canExportTheaterWorkspace`); omitted when denied |
+| Print (table) | `commonPrintActionLabel` | preview-first via `printTheaterWorkspaceList` / `PrintDocumentTemplates.registry`; same export gate; omitted when denied |
 | Schedule case | `theaterScheduleCaseAction` | omitted without `theaterScheduleCaseRequirement` |
 
 Column visibility storage: `theater_${section.name}` / widths `theater_cw_${section.name}`.  
 Follow-ups: `theater_follow_ups_cols` / `theater_follow_ups_cw`.  
-Default visible columns: **4** data columns (+ optional `next_action` when write ∩).
+Default visible columns: **5** data columns (+ optional `next_action` when write ∩).
 
 ## Shared strip actions → dialogs
 

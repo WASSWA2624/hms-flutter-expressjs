@@ -12100,7 +12100,7 @@
   "@clinicalSectionInConsultationLabel": {
     "description": "Deprecated legacy tab label retained for locale stability"
   },
-  "clinicalSectionCompletedLabel": "Completed today",
+  "clinicalSectionCompletedLabel": "Completed",
   "@clinicalSectionCompletedLabel": {
     "description": "Legacy key; completed-today clinical worklist tab label"
   },
@@ -12743,6 +12743,14 @@
         "type": "int"
       }
     }
+  },
+  "clinicalCancelSelectedPharmacyOrdersAction": "Cancel selected",
+  "@clinicalCancelSelectedPharmacyOrdersAction": {
+    "description": "Confirm label for cancelling selected pharmacy orders."
+  },
+  "clinicalDeleteSelectedPharmacyOrdersAction": "Delete selected",
+  "@clinicalDeleteSelectedPharmacyOrdersAction": {
+    "description": "Confirm label for deleting selected pharmacy orders."
   },
   "clinicalCancelSelectedPharmacyOrdersDialogTitle": "Cancel selected pharmacy orders",
   "@clinicalCancelSelectedPharmacyOrdersDialogTitle": {
@@ -15095,6 +15103,10 @@
   "@dischargeSectionCompleted": {
     "description": "Tab label for the Completed discharge section."
   },
+  "dischargeSectionFollowUps": "Follow-ups",
+  "@dischargeSectionFollowUps": {
+    "description": "Tab label for the Discharge Follow-ups section."
+  },
   "dischargeWorklistTitle": "Discharge worklist",
   "@dischargeWorklistTitle": {
     "description": "Discharge queue panel title."
@@ -15174,13 +15186,29 @@
   "@dischargeNoSelectionBody": {
     "description": "Discharge detail empty selection body."
   },
-  "dischargePrintSummaryAction": "Print discharge summary",
+  "dischargePrintSummaryAction": "Print",
   "@dischargePrintSummaryAction": {
-    "description": "Discharge summary print action label."
+    "description": "Generic Print trigger label for discharge summary (printing.mdc)."
   },
   "dischargePatientContextLabel": "Patient discharge context",
   "@dischargePatientContextLabel": {
     "description": "Accessible label for discharge patient context card."
+  },
+  "dischargeDateFilterLabel": "Date range",
+  "@dischargeDateFilterLabel": {
+    "description": "Advanced filters date range section label on discharge queues."
+  },
+  "dischargeDateFromLabel": "From",
+  "@dischargeDateFromLabel": {
+    "description": "Discharge advanced filters start date label."
+  },
+  "dischargeDateToLabel": "To",
+  "@dischargeDateToLabel": {
+    "description": "Discharge advanced filters end date label."
+  },
+  "dischargeWorklistPrintTitle": "Discharge worklist",
+  "@dischargeWorklistPrintTitle": {
+    "description": "Title for discharge queue print preview documents."
   },
   "dischargeAdmissionFieldLabel": "Admission",
   "@dischargeAdmissionFieldLabel": {
@@ -31976,9 +32004,9 @@
   "@labPreviewReportAction": {
     "description": "Action label for opening a lab report print preview."
   },
-  "labPrintReportAction": "Print report",
+  "labPrintReportAction": "Print",
   "@labPrintReportAction": {
-    "description": "Action label for printing a lab report from the preview."
+    "description": "Print trigger on lab report preview; must resolve to Print (printing.mdc). Prefer commonPrintActionLabel."
   },
   "labResetReportSelectionAction": "Reset selection",
   "@labResetReportSelectionAction": {

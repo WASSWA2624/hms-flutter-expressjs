@@ -12,7 +12,7 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Same as Pending; Export / Print absent; date enabled.
+Same as Pending; Export / Print gated by ∩ `evidence:export`; date enabled.
 
 ## 3. Table
 

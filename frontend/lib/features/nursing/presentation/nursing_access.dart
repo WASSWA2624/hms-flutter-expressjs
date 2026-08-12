@@ -19,13 +19,10 @@ const List<AppRole> nursingWriteRoles = <AppRole>[
   AppRole.platformAdmin,
 ];
 
-/// View / read UI (matrix ∪): `clinical:read` | `patient:read` +
-/// `inpatient-bed-management`.
+/// View / read UI — ∩ `nursing:read` + `inpatient-bed-management`
+/// (aligned with [RouteAccessCatalog.nursingEntry] / [AppRoutes.nursing]).
 const AccessRequirement nursingWorkspaceReadRequirement = AccessRequirement(
-  anyPermissions: <AppPermission>[
-    AppPermissions.clinicalRead,
-    AppPermissions.patientRead,
-  ],
+  allPermissions: <AppPermission>[AppPermissions.nursingRead],
   activeModules: <String>[nursingInpatientBedModule],
 );
 
@@ -33,15 +30,34 @@ const AccessRequirement nursingWorkspaceReadRequirement = AccessRequirement(
 const AccessRequirement nursingReadRequirement = nursingWorkspaceReadRequirement;
 
 /// Route entry — [RouteAccessCatalog.nursingEntry] matches [AppRoutes.nursing]
-/// ∪ `clinical:read` | `patient:read` | `last_office:read` | `operations:read`
-/// + module. Matrix All-tab chrome still uses [nursingWorkspaceReadRequirement]
-/// (`clinical:read` | `patient:read` only).
+/// ∩ `nursing:read` + module.
 const AccessRequirement nursingWorkspaceEntryRequirement =
     RouteAccessCatalog.nursingEntry;
 
-/// Prompt / AppRoutes route-entry ∪ alias (same as catalog entry).
+/// Prompt / AppRoutes route-entry alias (same as catalog entry).
 const AccessRequirement nursingWorkspaceRouteUnionRequirement =
     RouteAccessCatalog.nursingEntry;
+
+/// Worklist Export / Print — ∩ `evidence:export` (omit when unauthorized).
+const AccessRequirement nursingWorkspaceExportRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.evidenceExport],
+);
+
+/// Alias — Print uses the same desk export gate.
+const AccessRequirement nursingWorkspacePrintRequirement =
+    nursingWorkspaceExportRequirement;
+
+bool canExportNursingWorkspace(AppAccessPolicy policy) {
+  return nursingWorkspaceExportRequirement.isAllowed(policy);
+}
+
+bool canPrintNursingWorkspace(AppAccessPolicy policy) {
+  return nursingWorkspacePrintRequirement.isAllowed(policy);
+}
+
+/// Cross-module Open ICU — omit unless ICU route entry is allowed.
+const AccessRequirement nursingNavigationRequirement =
+    RouteAccessCatalog.icuEntry;
 
 /// Create / update / delete nursing mutations.
 ///
@@ -288,6 +304,8 @@ AccessRequirement? nursingFocusedPanelRequirement(NursingDetailPanel panel) {
       NursingMedicationDueAtomPermissions.panelDeepLink,
     NursingDetailPanel.handover =>
       NursingHandoverPendingAtomPermissions.panelDeepLink,
+    NursingDetailPanel.transfer =>
+      NursingTransferPendingAtomPermissions.panelDeepLink,
     NursingDetailPanel.discharge =>
       NursingDischargePendingAtomPermissions.panelDeepLink,
     NursingDetailPanel.checklist => null,
@@ -382,13 +400,15 @@ abstract final class NursingAllAtomPermissions {
       nursingBillingClearanceReadRequirement;
   static const AccessRequirement openBilling =
       nursingBillingClearanceReadRequirement;
-  static const AccessRequirement openIcu = AccessRequirement();
-  static const AccessRequirement navigation = AccessRequirement();
+  static const AccessRequirement openIcu = nursingNavigationRequirement;
+  static const AccessRequirement navigation = nursingNavigationRequirement;
   /// Nested cross-module write — matrix _(n/a)_; medication uses [administerMedication].
   static const AccessRequirement nestedWrite = nursingWriteRequirement;
   /// Nested cross-module read — medication panel uses [medicationsPanel].
   static const AccessRequirement nestedRead = nursingWorkspaceReadRequirement;
   static const AccessRequirement panelDeepLink = nursingWriteRequirement;
+  static const AccessRequirement export = nursingWorkspaceExportRequirement;
+  static const AccessRequirement print = nursingWorkspacePrintRequirement;
   static const AccessRequirement entry = nursingWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = nursingWorkspaceEntryRequirement;
   static const AccessRequirement routeEntryUnion =
@@ -404,13 +424,14 @@ abstract final class NursingAllAtomPermissions {
 /// context ([shiftContext] — roster/hr ∪ + `hr-rosters`). Write controls keep
 /// source [nursingWriteRequirement] (∪ clinical|patient|last_office write +
 /// roles) rather than matrix ∩ `clinical:write` alone — `last_office:read`
-/// alone never unlocks write. Route entry ∪ is [routeEntry].
+/// alone never unlocks write. Route entry ∩ is [routeEntry].
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Assigned ward tab / count badge | navigate | read ∪ ([tab]) |
+/// | Assigned ward tab / count badge | navigate | read ∩ ([tab]) |
 /// | Shift context (search bar) | progressive disclosure | ([shiftContext]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Export / Print (table toolbar) | export | ([export] / [print]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | write / form |
 /// | Row select → patient detail | read | ([detail]) |
@@ -423,7 +444,7 @@ abstract final class NursingAllAtomPermissions {
 /// | Detail billing clearance panel | nested read | ([billingPanel]) |
 /// | Admission checklist write steps | create / update | write ∪ |
 /// | Nested mutation dialogs / `panel=` deep link | create / update | matching write |
-/// | Route entry (deep link) | navigate | clinical \| patient \| last_office \| operations:read |
+/// | Route entry (deep link) | navigate | nursing:read ∩ module |
 abstract final class NursingAssignedWardAtomPermissions {
   static const AccessRequirement tab = nursingWorkspaceReadRequirement;
   static const AccessRequirement listChrome = nursingWorkspaceReadRequirement;
@@ -481,13 +502,15 @@ abstract final class NursingAssignedWardAtomPermissions {
       nursingBillingClearanceReadRequirement;
   static const AccessRequirement openBilling =
       nursingBillingClearanceReadRequirement;
-  static const AccessRequirement openIcu = AccessRequirement();
-  static const AccessRequirement navigation = AccessRequirement();
+  static const AccessRequirement openIcu = nursingNavigationRequirement;
+  static const AccessRequirement navigation = nursingNavigationRequirement;
   /// Nested cross-module write — matrix _(n/a)_; medication uses [administerMedication].
   static const AccessRequirement nestedWrite = nursingWriteRequirement;
   /// Nested cross-module read — medication panel uses [medicationsPanel].
   static const AccessRequirement nestedRead = nursingWorkspaceReadRequirement;
   static const AccessRequirement panelDeepLink = nursingWriteRequirement;
+  static const AccessRequirement export = nursingWorkspaceExportRequirement;
+  static const AccessRequirement print = nursingWorkspacePrintRequirement;
   static const AccessRequirement entry = nursingWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = nursingWorkspaceEntryRequirement;
   static const AccessRequirement routeEntryUnion =
@@ -580,13 +603,19 @@ abstract final class NursingUrgentAtomPermissions {
   static const AccessRequirement medicationWrite =
       nursingMedicationAdministerRequirement;
   static const AccessRequirement shiftContext = nursingShiftContextRequirement;
-  static const AccessRequirement openIcu = AccessRequirement();
-  static const AccessRequirement navigation = AccessRequirement();
+  static const AccessRequirement billingPanel =
+      nursingBillingClearanceReadRequirement;
+  static const AccessRequirement openBilling =
+      nursingBillingClearanceReadRequirement;
+  static const AccessRequirement openIcu = nursingNavigationRequirement;
+  static const AccessRequirement navigation = nursingNavigationRequirement;
   /// Nested cross-module write — matrix _(n/a)_; medication uses [administerMedication].
   static const AccessRequirement nestedWrite = nursingWriteRequirement;
   /// Nested cross-module read — medication panel uses [medicationsPanel].
   static const AccessRequirement nestedRead = nursingWorkspaceReadRequirement;
   static const AccessRequirement panelDeepLink = nursingWriteRequirement;
+  static const AccessRequirement export = nursingWorkspaceExportRequirement;
+  static const AccessRequirement print = nursingWorkspacePrintRequirement;
   static const AccessRequirement entry = nursingWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = nursingWorkspaceEntryRequirement;
   static const AccessRequirement routeEntryUnion =
@@ -668,12 +697,18 @@ abstract final class NursingMedicationDueAtomPermissions {
   static const AccessRequirement printSummary = nursingWriteRequirement;
   static const AccessRequirement panelDeepLink =
       nursingMedicationAdministerRequirement;
-  static const AccessRequirement openIcu = AccessRequirement();
-  static const AccessRequirement navigation = AccessRequirement();
+  static const AccessRequirement billingPanel =
+      nursingBillingClearanceReadRequirement;
+  static const AccessRequirement openBilling =
+      nursingBillingClearanceReadRequirement;
+  static const AccessRequirement openIcu = nursingNavigationRequirement;
+  static const AccessRequirement navigation = nursingNavigationRequirement;
   /// Nested cross-module matrix rows _(n/a)_; medication uses [medicationsPanel].
   static const AccessRequirement nestedRead = nursingMedicationsPanelRequirement;
   static const AccessRequirement nestedWrite =
       nursingMedicationAdministerRequirement;
+  static const AccessRequirement export = nursingWorkspaceExportRequirement;
+  static const AccessRequirement print = nursingWorkspacePrintRequirement;
   static const AccessRequirement entry = nursingWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = nursingWorkspaceEntryRequirement;
   static const AccessRequirement routeEntryUnion =
@@ -770,8 +805,10 @@ abstract final class NursingHandoverPendingAtomPermissions {
   static const AccessRequirement nestedWrite = nursingClinicalWriteRequirement;
   static const AccessRequirement printSummary = nursingWriteRequirement;
   static const AccessRequirement panelDeepLink = nursingClinicalWriteRequirement;
-  static const AccessRequirement openIcu = AccessRequirement();
-  static const AccessRequirement navigation = AccessRequirement();
+  static const AccessRequirement openIcu = nursingNavigationRequirement;
+  static const AccessRequirement navigation = nursingNavigationRequirement;
+  static const AccessRequirement export = nursingWorkspaceExportRequirement;
+  static const AccessRequirement print = nursingWorkspacePrintRequirement;
   static const AccessRequirement entry = nursingWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = nursingWorkspaceEntryRequirement;
   static const AccessRequirement routeEntryUnion =
@@ -790,14 +827,16 @@ abstract final class NursingHandoverPendingAtomPermissions {
 /// [write]. Complementary detail writes (note / vitals / …) keep source
 /// [nursingWriteRequirement] ∪ — mapping noted in tests. `last_office:read`
 /// alone must not unlock writes. Nested cross-module matrix rows are _(n/a)_
-/// except medication panels ([medicationsPanel] / [administerMedication]) and
-/// shift context ([shiftContext]). No `panel=transfer` deep link in inventory.
+/// except medication panels ([medicationsPanel] / [administerMedication]),
+/// billing clearance ([billingPanel] / [openBilling]), and shift context
+/// ([shiftContext]). Deep link `panel=transfer` uses [panelDeepLink].
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Transfer pending tab / count badge | navigate | read ∪ ([tab]) |
+/// | Transfer pending tab / count badge | navigate | read ∩ ([tab]) |
 /// | Shift context | progressive disclosure | ([shiftContext]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
+/// | Export / Print (table toolbar) | export | ([export] / [print]) |
 /// | Transfer status column / filter | read | ([listChrome]) |
 /// | Empty / error / retry / loading | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | ([success] / [validation]) |
@@ -807,11 +846,12 @@ abstract final class NursingHandoverPendingAtomPermissions {
 /// | Detail Acknowledge transfer | update | ([acknowledgeTransfer]) |
 /// | Detail Administer medication | update | ([administerMedication]) |
 /// | Detail medications panel | nested read | ([medicationsPanel]) |
+/// | Detail billing clearance / Open billing | nested read | ([billingPanel] / [openBilling]) |
 /// | Detail Open ICU | navigate | ([openIcu]) |
 /// | Detail Print summary | export | ([printSummary]) |
 /// | Admission checklist write steps | create / update | ([checklistWrite]) |
-/// | Transfer dialog | update | ([write]) |
-/// | Route entry (deep link) | navigate | clinical \| patient \| last_office \| operations:read ([routeEntry]) |
+/// | Transfer dialog / `panel=transfer` | update | ([panelDeepLink] / [write]) |
+/// | Route entry (deep link) | navigate | nursing:read ∩ module ([routeEntry]) |
 abstract final class NursingTransferPendingAtomPermissions {
   static const AccessRequirement tab = nursingWorkspaceReadRequirement;
   static const AccessRequirement listChrome = nursingWorkspaceReadRequirement;
@@ -845,13 +885,20 @@ abstract final class NursingTransferPendingAtomPermissions {
       nursingMedicationsPanelRequirement;
   static const AccessRequirement administerMedication =
       nursingMedicationAdministerRequirement;
+  static const AccessRequirement billingPanel =
+      nursingBillingClearanceReadRequirement;
+  static const AccessRequirement openBilling =
+      nursingBillingClearanceReadRequirement;
   /// Nested cross-module matrix _(n/a)_; medication uses [medicationsPanel].
   static const AccessRequirement nestedRead =
       nursingNestedCrossModuleReadRequirement;
   static const AccessRequirement nestedWrite = nursingClinicalWriteRequirement;
   static const AccessRequirement printSummary = nursingWriteRequirement;
-  static const AccessRequirement openIcu = AccessRequirement();
-  static const AccessRequirement navigation = AccessRequirement();
+  static const AccessRequirement panelDeepLink = nursingClinicalWriteRequirement;
+  static const AccessRequirement openIcu = nursingNavigationRequirement;
+  static const AccessRequirement navigation = nursingNavigationRequirement;
+  static const AccessRequirement export = nursingWorkspaceExportRequirement;
+  static const AccessRequirement print = nursingWorkspacePrintRequirement;
   static const AccessRequirement entry = nursingWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = nursingWorkspaceEntryRequirement;
   static const AccessRequirement routeEntryUnion =
@@ -947,8 +994,10 @@ abstract final class NursingDischargePendingAtomPermissions {
   static const AccessRequirement nestedWrite = nursingClinicalWriteRequirement;
   static const AccessRequirement printSummary = nursingWriteRequirement;
   static const AccessRequirement panelDeepLink = nursingClinicalWriteRequirement;
-  static const AccessRequirement openIcu = AccessRequirement();
-  static const AccessRequirement navigation = AccessRequirement();
+  static const AccessRequirement openIcu = nursingNavigationRequirement;
+  static const AccessRequirement navigation = nursingNavigationRequirement;
+  static const AccessRequirement export = nursingWorkspaceExportRequirement;
+  static const AccessRequirement print = nursingWorkspacePrintRequirement;
   static const AccessRequirement entry = nursingWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = nursingWorkspaceEntryRequirement;
   static const AccessRequirement routeEntryUnion =

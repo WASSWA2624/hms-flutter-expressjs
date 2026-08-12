@@ -4,8 +4,8 @@
 
 - Label: `theaterScheduledSummaryLabel`
 - Icon: `Icons.event_available_outlined`
-- Count source: `state.scheduledCount` — cases on **current loaded page** with status `SCHEDULED`
-- Sibling tabs: page-membership / page-total model (shared chrome); not dedicated unfiltered sibling totals
+- Count source: `theaterSectionTabCount` → dedicated `scopeCounts.scheduled` (unfiltered sibling total); active badge uses filtered `cases.totalItemCount` when search/operator filters narrow
+- Sibling tabs: dedicated unfiltered `TheaterScopeCounts` (shared chrome)
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `scheduled`
 - Tab gate: `TheaterScheduledAtomPermissions.tab` = theater board read ∪
@@ -14,14 +14,14 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Filters → Settings → Export → Schedule case**
+Order: **Filters → Settings → Export → Print → Schedule case**
 
 - Search hint: `theaterSearchHint`
 - Clear: `theaterClearFiltersAction`
-- Filters: `theaterFiltersLabel` → `theaterAdvancedFiltersTitle`; Apply `opdApplyFiltersAction`
+- Filters: `commonFiltersActionLabel` → `theaterAdvancedFiltersTitle`; Apply `theaterApplyFiltersAction`; Close `commonCloseActionLabel`
 - Settings: `commonTableSettings*` / `theaterTableSettingsTitle`
-- Export: default AppListTable Export — **no** `evidence:export` gate
-- Print (toolbar): **not mounted**
+- Export: `commonTableExportActionLabel` — ∩ `evidence:export` (`canExportTheaterWorkspace`); omitted when denied
+- Print (toolbar): `commonPrintActionLabel` — preview-first (`printTheaterWorkspaceList`); same export gate; omitted when denied
 - Context: Schedule case (`theaterScheduleCaseAction`) — omitted without schedule write ∩
 - Date filter: **enabled** — `theaterScheduleDateFilterLabel` (From uses same label; To `opdDateToLabel`)
 
@@ -29,15 +29,15 @@ Order: **Filters → Settings → Export → Schedule case**
 
 - Row model: `TheaterCase`
 - Row select → case detail hub (`omitNextActionKind` = resolved next)
-- Default columns (**4** + optional next-action):
+- Default columns (**5** + optional next-action):
   1. Patient (`theaterPatientColumnLabel`)
   2. Procedure (`theaterProcedureColumnLabel`)
   3. Time (`theaterTimeColumnLabel`)
-  4. Status (`theaterStatusColumnLabel`)
-  5. Next action (`theaterNextActionColumnLabel`) — **only if** write ∩ (`theaterBoardShowsNextActionColumn`)
+  4. Room (`theaterRoomColumnLabel`)
+  5. Status (`theaterStatusColumnLabel`)
+  6. Next action (`theaterNextActionColumnLabel`) — **only if** write ∩ (`theaterBoardShowsNextActionColumn`)
 - Column choices (Settings):
   - Case ID (`theaterCaseIdColumnLabel`)
-  - Room (`theaterRoomColumnLabel`)
   - Readiness (`theaterReadinessColumnLabel`)
   - Owner / responsible (`theaterResponsibleRoleColumnLabel`)
 - Storage: `theater_scheduled` / `theater_cw_scheduled`
@@ -59,48 +59,21 @@ Order: **Filters → Settings → Export → Schedule case**
 | Dialog | Owner |
 | --- | --- |
 | Case detail | Theater-owned |
-| Schedule / reschedule (`showTheaterScheduleCaseDialog`) | Theater-owned |
-| Start case confirm (`AppConfirmActionDialog`) | Theater-owned |
-| Stage / handover / cancel / resource / checklist / anesthesia / post-op / finalize forms | Theater-owned |
-| Deep-link panel dialogs | Theater-owned (see shared chrome) |
+| Schedule / reschedule / stage / resource / checklist / anesthesia / post-op / finalize / cancel | Theater-owned |
+| Deep-link `panel=` mutation dialogs | Theater-owned |
 
 ## 7. Nested / follow-on
 
-From detail / Quick Actions:
-
-1. Open IPD / Open Emergency (source context navigation)
-2. Schedule form → **reused** procedure catalog + optional billing panel
-3. Mutation forms → repository calls → `theaterSavedMessage`
+Open IPD / Open Emergency (navigation, no write). Billing holds on schedule form need `billing:read`.
 
 ## 8. Forms (summary)
 
-- Schedule: patient, encounter, emergency case, scheduled at/time, room, surgeon, anesthetist, stage notes, procedures (+ optional billing)
-- Stage: stage, status, stage notes
-- Start: confirm only
-- Handover: destination WARD/ICU/OPD, notes
-- Cancel: cancellation reason
-- Checklist / anesthesia / post-op / resource / finalize: as shared chrome panel forms
+Schedule case form hides tenant/facility/session context; reuses shared patient/encounter/procedure fields.
 
-## 9. Print / labels / preview
+## 9. Print / Export
 
-- Table Print: **absent**
-- Detail / mutations: no Theater print path / `PrintDocumentTemplates` wiring
+Preview-first Print; Export gated ∩ `evidence:export`.
 
-## 10. Loading / empty / error / success
+## 10. Feedback
 
-- Loading: `theaterLoadingTitle` / `theaterLoadingBody`
-- Empty: `theaterNoCasesTitle` / `theaterNoCasesBody`
-- Error: snackbars via `showAppFailureSnackBar`
-- Success: `theaterSavedMessage`
-- After mutations: refresh table rows and visible tab counts
-
-## 11. RBAC / ABAC (omitted when unauthorized)
-
-| Atom | Gate |
-| --- | --- |
-| Tab / list chrome / search / filters / settings / empty / loading / retry / detail | `TheaterScheduledAtomPermissions.*` → board read ∪ |
-| Export | ungated (default Export) |
-| Schedule case / next-action / detail writes / panel mutations | clinical write ∩ (`theaterClinicalWriteRequirement` / section write) |
-| Billing holds on schedule | ∩ `billing:read` + `billing-payments` |
-| Open IPD / Emergency | navigation requirement (empty / permissive) |
-| Print | n/a (not mounted) |
+Empty / loading / error-retry / success snackbar / validation on authorized mutations.

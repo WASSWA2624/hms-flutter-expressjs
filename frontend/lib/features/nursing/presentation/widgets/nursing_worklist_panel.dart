@@ -12,10 +12,12 @@ import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_helpers
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_medication_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_patient_detail_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_shift_context_dialog.dart';
+import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_transfer_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_vitals_dialog.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_actions.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_columns.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_worklist_filters.dart';
+import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_workspace_print_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -52,6 +54,8 @@ class NursingWorklistPanel extends ConsumerWidget {
       policy,
       scope,
     );
+    final bool canExport = canExportNursingWorkspace(policy);
+    final bool canPrint = canPrintNursingWorkspace(policy);
 
     return AppListTable<NursingWorkItem>(
       page: state.worklist,
@@ -59,6 +63,9 @@ class NursingWorklistPanel extends ConsumerWidget {
       columnVisibilityController: columnVisibilityController,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
       columnVisibilityStorageKey: 'nursing_${scope.name}',
       columnWidthStorageKey: 'nursing_cw_${scope.name}',
       previousPageLabel: l10n.opdPreviousPageLabel,
@@ -67,6 +74,34 @@ class NursingWorklistPanel extends ConsumerWidget {
         return nursingPageLabel(context, page);
       },
       onPageChanged: controller.changePage,
+      enableExport: true,
+      canExport: canExport,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () => _printNursingWorklist(
+        context,
+        ref,
+        state: state,
+        scope: scope,
+        policy: policy,
+        l10n: l10n,
+      ),
+      exportConfig: AppListTableExportConfig<NursingWorkItem>(
+        fileNameStem: 'nursing_${scope.name}',
+        dateOf: (NursingWorkItem item) => item.dueReferenceAt ?? item.admittedAt,
+        sheetName: _scopeLabel(l10n, scope),
+      ),
       onRowSelected: (NursingWorkItem item) {
         openNursingPatientDetailDialog(
           context,
@@ -83,10 +118,11 @@ class NursingWorklistPanel extends ConsumerWidget {
         onSubmitted: controller.applySearch,
         onClear: () => controller.applySearch(''),
         showAdvancedFilterButton: true,
-        advancedFilterButtonLabel: l10n.nursingAdvancedFiltersLabel,
+        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
         advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
-        advancedFilterApplyLabel: l10n.nursingApplyFiltersLabel,
-        advancedFilterResetLabel: l10n.nursingResetFiltersLabel,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         searchFieldLabel: l10n.nursingSearchFieldLabel,
         allFieldsLabel: l10n.nursingAllFieldsLabel,
         dateFilterLabel: l10n.nursingDateFilterLabel,
@@ -101,7 +137,7 @@ class NursingWorklistPanel extends ConsumerWidget {
         filterValue: filterValue,
         hasActiveFilters: state.query.hasAdvancedFilters,
         onFilterChanged: onFilterChanged,
-        // Filters → Settings → Export → Shift context.
+        // Filters → Settings → Export → Print → Shift context.
         trailingActions: _shiftContextSearchActions(context, policy),
       ),
       emptyBuilder: (_) => AppWorkspaceStatePanel.state(
@@ -155,7 +191,7 @@ class NursingWorklistPanel extends ConsumerWidget {
     );
   }
 
-  /// Shift context lives after Export in the search bar (not the tab toolbar).
+  /// Shift context lives after Print in the search bar (not the tab toolbar).
   List<AppSearchBarAction> _shiftContextSearchActions(
     BuildContext context,
     AppAccessPolicy policy,
@@ -179,6 +215,83 @@ class NursingWorklistPanel extends ConsumerWidget {
       ),
     ];
   }
+}
+
+String _scopeLabel(AppLocalizations l10n, NursingQueueScope scope) {
+  return switch (scope) {
+    NursingQueueScope.all => l10n.nursingScopeAllLabel,
+    NursingQueueScope.assignedWard => l10n.nursingScopeAssignedWardLabel,
+    NursingQueueScope.urgent => l10n.nursingScopeUrgentLabel,
+    NursingQueueScope.medicationDue => l10n.nursingScopeMedicationDueLabel,
+    NursingQueueScope.handoverPending => l10n.nursingScopeHandoverPendingLabel,
+    NursingQueueScope.transferPending => l10n.nursingScopeTransferPendingLabel,
+    NursingQueueScope.dischargePending =>
+      l10n.nursingScopeDischargePendingLabel,
+  };
+}
+
+Future<void> _printNursingWorklist(
+  BuildContext context,
+  WidgetRef ref, {
+  required NursingWorkspaceState state,
+  required NursingQueueScope scope,
+  required AppAccessPolicy policy,
+  required AppLocalizations l10n,
+}) async {
+  final List<AppListTableColumn<NursingWorkItem>> columns =
+      <AppListTableColumn<NursingWorkItem>>[
+        ...nursingColumnsForScope(l10n, scope, policy: policy),
+        ...nursingColumnChoicesForScope(l10n, scope, policy: policy),
+      ].where(
+        (AppListTableColumn<NursingWorkItem> column) => column.includesInExport,
+      ).toList(growable: false);
+  final List<NursingWorkspacePrintColumn> printColumns =
+      <NursingWorkspacePrintColumn>[
+        for (final AppListTableColumn<NursingWorkItem> column in columns)
+          NursingWorkspacePrintColumn(id: column.key, label: column.label),
+      ];
+  final List<Map<String, String>> printRows = <Map<String, String>>[
+    for (final NursingWorkItem item in state.worklist.items)
+      <String, String>{
+        for (final AppListTableColumn<NursingWorkItem> column in columns)
+          column.key: _nursingWorklistPrintCellValue(context, item, column.key),
+      },
+  ];
+  await printNursingWorkspaceList(
+    ref: ref,
+    context: context,
+    title: _scopeLabel(l10n, scope),
+    columns: printColumns,
+    rows: printRows,
+    emptyText: l10n.nursingNoWorklistTitle,
+  );
+}
+
+String _nursingWorklistPrintCellValue(
+  BuildContext context,
+  NursingWorkItem item,
+  String columnId,
+) {
+  return switch (columnId) {
+    'patient' => item.displayTitle,
+    'location' => item.locationLabel ?? context.l10n.profileUnknownValue,
+    'task_type' => nursingTaskTypeLabel(context, item),
+    'priority' => nursingPriorityStatus(context, item).label,
+    'status' => nursingSummaryStatus(item).label,
+    'admission' => nursingAdmissionLabel(context, item),
+    'due_time' => nursingDueTimeLabel(context, item),
+    // Product exception (tables.mdc): no assignee API field — synthetic summary.
+    'responsible_nurse' => nursingResponsibleNurseLabel(context, item),
+    'observations' => nursingLastObservationLabel(context, item),
+    'medication_due_count' => '${item.medicationDueCount}',
+    'transfer_status' => nursingApiLabel(
+      item.transferStatus ?? context.l10n.profileUnknownValue,
+    ),
+    'discharge_status' => nursingApiLabel(
+      item.dischargeStatus ?? context.l10n.profileUnknownValue,
+    ),
+    _ => '',
+  };
 }
 
 Future<void> openNursingPatientDetailDialog(
@@ -258,6 +371,15 @@ Future<void> openNursingFocusedAction(
           context: context,
           barrierDismissible: false,
           builder: (_) => const NursingHandoverDialog(),
+        ),
+      );
+    case NursingDetailPanel.transfer:
+      await nursingShowActionResult(
+        context,
+        showAppDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => NursingTransferDialog(detail: detail),
         ),
       );
     case NursingDetailPanel.discharge:

@@ -920,6 +920,121 @@ void main() {
       expect(panel.scope.normalizedType, 'THEATRE');
     },
   );
+
+  testWidgets(
+    'compliance: Follow-ups toolbar Print/Export omit without evidence:export',
+    (WidgetTester tester) async {
+      await _pumpFollowUpsTab(
+        tester,
+        theaterRepository: theaterRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+        ),
+      );
+
+      final FollowUpWorklistPanel panel = tester.widget<FollowUpWorklistPanel>(
+        find.byType(FollowUpWorklistPanel),
+      );
+      expect(panel.showAdvancedFilterButton, isTrue);
+      expect(panel.enableDateFilter, isTrue);
+      expect(panel.canExport, isFalse);
+      expect(panel.enablePrint, isTrue);
+      expect(panel.canPrint, isFalse);
+      expect(panel.printLabel, 'Print');
+      expect(panel.advancedFilterButtonLabel, 'Filters');
+      expect(panel.advancedFilterApplyLabel, 'Apply filters');
+      expect(panel.advancedFilterResetLabel, 'Clear filters');
+      expect(panel.advancedFilterCloseLabel, 'Close');
+
+      final AppListTable<ReceptionFollowUpEntry> table =
+          tester.widget<AppListTable<ReceptionFollowUpEntry>>(
+            find.byType(AppListTable<ReceptionFollowUpEntry>),
+          );
+      expect(table.canExport, isFalse);
+      expect(table.canPrint, isFalse);
+      expect(table.columnVisibilityStorageKey, 'theater_follow_ups_cols');
+      expect(find.byTooltip('Export'), findsNothing);
+      expect(find.byTooltip('Print'), findsNothing);
+      expect(find.byTooltip('Filters'), findsOneWidget);
+      expect(find.byTooltip('Settings'), findsOneWidget);
+      expect(_scheduleCaseAction(), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'compliance: Follow-ups mounts Export/Print when evidence:export allowed',
+    (WidgetTester tester) async {
+      await _pumpFollowUpsTab(
+        tester,
+        theaterRepository: theaterRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+
+      final AppListTable<ReceptionFollowUpEntry> table =
+          tester.widget<AppListTable<ReceptionFollowUpEntry>>(
+            find.byType(AppListTable<ReceptionFollowUpEntry>),
+          );
+      expect(table.canExport, isTrue);
+      expect(table.canPrint, isTrue);
+      expect(table.enablePrint, isTrue);
+      expect(table.printLabel, 'Print');
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+      expect(_scheduleCaseAction(), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'compliance: Follow-ups defaults prefer-5 columns and info count tone',
+    (WidgetTester tester) async {
+      await _pumpFollowUpsTab(
+        tester,
+        theaterRepository: theaterRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+        ),
+      );
+
+      final AppListTable<ReceptionFollowUpEntry> table =
+          tester.widget<AppListTable<ReceptionFollowUpEntry>>(
+            find.byType(AppListTable<ReceptionFollowUpEntry>),
+          );
+      expect(table.columns.length, 5);
+      expect(
+        table.columns.map(
+          (AppListTableColumn<ReceptionFollowUpEntry> c) => c.key,
+        ),
+        containsAll(<String>['patient', 'phone', 'status', 'date', 'time']),
+      );
+      expect(
+        table.columnChoices?.map(
+          (AppListTableColumn<ReceptionFollowUpEntry> c) => c.key,
+        ),
+        containsAll(<String>['patient_id', 'email', 'notes']),
+      );
+
+      final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      final AppTabItem followUps = strip.tabs.firstWhere(
+        (AppTabItem tab) => tab.id == TheaterSection.followUps.name,
+      );
+      expect(followUps.countTone, AppTabCountTone.info);
+    },
+  );
 }
 
 Future<void> _pumpFollowUpsTab(

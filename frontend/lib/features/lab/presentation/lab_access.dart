@@ -101,6 +101,23 @@ const AccessRequirement labFollowUpsWriteRequirement =
 const AccessRequirement labOpenBillingRequirement =
     billingWorkspaceReadRequirement;
 
+/// Worklist Export / Print — ∩ `evidence:export` (omit when unauthorized).
+const AccessRequirement labWorkspaceExportRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.evidenceExport],
+);
+
+/// Alias — Print uses the same desk export gate.
+const AccessRequirement labWorkspacePrintRequirement =
+    labWorkspaceExportRequirement;
+
+bool canExportLabWorkspace(AppAccessPolicy policy) {
+  return labWorkspaceExportRequirement.isAllowed(policy);
+}
+
+bool canPrintLabWorkspace(AppAccessPolicy policy) {
+  return labWorkspacePrintRequirement.isAllowed(policy);
+}
+
 /// Per-section tab strip gate.
 ///
 /// Worklist tabs (All / Pending / Critical / Completed today) share ∩ `lab:read`

@@ -106,6 +106,7 @@ class _LabDeskSettingsDialogState<T> extends State<_LabDeskSettingsDialog<T>> {
       icon: const Icon(Icons.settings_outlined),
       maxWidth: 520,
       scrollable: true,
+      pinActionsToBottom: true,
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

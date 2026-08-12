@@ -135,6 +135,7 @@ AppAccessPolicy _policy({
 AppAccessPolicy _readerPolicy() {
   return _policy(
     permissions: <AppPermission>{
+      AppPermissions.nursingRead,
       AppPermissions.clinicalRead,
       AppPermissions.patientRead,
     },
@@ -144,6 +145,7 @@ AppAccessPolicy _readerPolicy() {
 AppAccessPolicy _writerPolicy() {
   return _policy(
     permissions: <AppPermission>{
+      AppPermissions.nursingRead,
       AppPermissions.clinicalRead,
       AppPermissions.clinicalWrite,
       AppPermissions.patientRead,
@@ -155,6 +157,7 @@ AppAccessPolicy _writerPolicy() {
 AppAccessPolicy _medicationWriterPolicy() {
   return _policy(
     permissions: <AppPermission>{
+      AppPermissions.nursingRead,
       AppPermissions.clinicalRead,
       AppPermissions.clinicalWrite,
       AppPermissions.patientRead,
@@ -166,6 +169,7 @@ AppAccessPolicy _medicationWriterPolicy() {
 AppAccessPolicy _shiftContextPolicy() {
   return _policy(
     permissions: <AppPermission>{
+      AppPermissions.nursingRead,
       AppPermissions.clinicalRead,
       AppPermissions.patientRead,
       AppPermissions.rosterRead,
@@ -389,6 +393,41 @@ void main() {
       );
       expect(
         identical(
+          NursingUrgentAtomPermissions.export,
+          nursingWorkspaceExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingUrgentAtomPermissions.print,
+          nursingWorkspacePrintRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingUrgentAtomPermissions.openIcu,
+          nursingNavigationRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingUrgentAtomPermissions.navigation,
+          RouteAccessCatalog.icuEntry,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          NursingUrgentAtomPermissions.billingPanel,
+          nursingBillingClearanceReadRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           NursingUrgentAtomPermissions.listChrome,
           nursingWorkspaceReadRequirement,
         ),
@@ -489,6 +528,7 @@ void main() {
     test('∩ denial: pharmacy:read alone does not grant administer', () {
       final AppAccessPolicy pharmacyOnly = _policy(
         permissions: <AppPermission>{
+          AppPermissions.nursingRead,
           AppPermissions.clinicalRead,
           AppPermissions.pharmacyRead,
         },
@@ -517,28 +557,33 @@ void main() {
       expect(canWriteNursing(pharmacyOnly), isFalse);
     });
 
-    test('∪ allowance: clinical:read alone grants Urgent-tab read chrome', () {
+    test('∩ nursing:read grants Urgent chrome; clinical/patient alone do not', () {
+      final AppAccessPolicy nursingOnly = _policy(
+        permissions: <AppPermission>{AppPermissions.nursingRead},
+      );
       final AppAccessPolicy clinicalOnly = _policy(
         permissions: <AppPermission>{AppPermissions.clinicalRead},
       );
       final AppAccessPolicy patientOnly = _policy(
         permissions: <AppPermission>{AppPermissions.patientRead},
       );
-      expect(NursingUrgentAtomPermissions.tab.isAllowed(clinicalOnly), isTrue);
-      expect(NursingUrgentAtomPermissions.tab.isAllowed(patientOnly), isTrue);
+      expect(NursingUrgentAtomPermissions.tab.isAllowed(nursingOnly), isTrue);
       expect(
-        NursingUrgentAtomPermissions.listChrome.isAllowed(clinicalOnly),
+        NursingUrgentAtomPermissions.listChrome.isAllowed(nursingOnly),
         isTrue,
       );
-      expect(canViewNursingUrgent(clinicalOnly), isTrue);
-      expect(canViewNursingUrgent(patientOnly), isTrue);
-      expect(canViewNursingTab(clinicalOnly, NursingQueueScope.urgent), isTrue);
-      expect(canViewNursingTab(patientOnly, NursingQueueScope.urgent), isTrue);
+      expect(canViewNursingUrgent(nursingOnly), isTrue);
+      expect(canViewNursingTab(nursingOnly, NursingQueueScope.urgent), isTrue);
+      expect(NursingUrgentAtomPermissions.tab.isAllowed(clinicalOnly), isFalse);
+      expect(NursingUrgentAtomPermissions.tab.isAllowed(patientOnly), isFalse);
+      expect(canViewNursingUrgent(clinicalOnly), isFalse);
+      expect(canViewNursingUrgent(patientOnly), isFalse);
     });
 
     test('∪ write allowance: patient:write + roles unlocks source write gate', () {
       final AppAccessPolicy patientWriter = _policy(
         permissions: <AppPermission>{
+          AppPermissions.nursingRead,
           AppPermissions.clinicalRead,
           AppPermissions.patientRead,
           AppPermissions.patientWrite,
@@ -580,8 +625,8 @@ void main() {
             ),
           ],
         );
-        expect(canEnterNursingWorkspace(lastOfficeRead), isTrue);
-        expect(canEnterNursingWorkspace(operationsRead), isTrue);
+        expect(canEnterNursingWorkspace(lastOfficeRead), isFalse);
+        expect(canEnterNursingWorkspace(operationsRead), isFalse);
         expect(
           NursingUrgentAtomPermissions.tab.isAllowed(lastOfficeRead),
           isFalse,
@@ -607,6 +652,7 @@ void main() {
     test('subscription denial: permissions without inpatient module strip UI', () {
       final AppAccessPolicy noModule = _policy(
         permissions: <AppPermission>{
+          AppPermissions.nursingRead,
           AppPermissions.clinicalRead,
           AppPermissions.clinicalWrite,
           AppPermissions.patientRead,
@@ -630,6 +676,7 @@ void main() {
     test('ABAC session still evaluates Urgent when facility is present', () {
       final AppAccessPolicy withFacility = _policy(
         permissions: <AppPermission>{
+          AppPermissions.nursingRead,
           AppPermissions.clinicalRead,
           AppPermissions.patientRead,
         },

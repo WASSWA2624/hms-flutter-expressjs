@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/features/discharge/data/repositories/discharge_repository_impl.dart';
 import 'package:hosspi_hms/features/discharge/domain/entities/discharge_entities.dart';
+import 'package:hosspi_hms/features/discharge/presentation/discharge_access.dart';
 import 'package:hosspi_hms/features/discharge/presentation/widgets/discharge_planning_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -17,6 +19,10 @@ Future<bool?> showDischargePlanningDialog({
   required String admissionId,
   Widget? title,
   DischargeAdmissionDetail? initialDetail,
+  AccessRequirement createRequirement =
+      DischargeAllPatientsAtomPermissions.create,
+  AccessRequirement updateRequirement =
+      DischargeAllPatientsAtomPermissions.update,
   void Function(AppFailure failure)? onFailure,
 }) async {
   final String normalizedAdmissionId = admissionId.trim();
@@ -77,6 +83,8 @@ Future<bool?> showDischargePlanningDialog({
       admissionId: normalizedAdmissionId,
       title: resolvedTitle,
       initialDetail: detail,
+      createRequirement: createRequirement,
+      updateRequirement: updateRequirement,
     ),
   );
 }

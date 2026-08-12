@@ -121,6 +121,31 @@ AppAccessPolicy _theaterWritePolicy() {
   );
 }
 
+AppAccessPolicy _theaterExportPolicy() {
+  return AppAccessPolicy.fromSession(
+    AuthSession(
+      tokens: SessionTokens(accessToken: 'access-token'),
+      user: const AuthUserProfile(roles: <String>['DOCTOR']),
+      permissions: <AppPermission>{
+        AppPermissions.clinicalRead,
+        AppPermissions.clinicalWrite,
+        AppPermissions.evidenceExport,
+      },
+      moduleEntitlements: const <AppModuleEntitlement>[
+        AppModuleEntitlement(
+          code: 'theatre-anesthesia',
+          licenseStatus: 'ACTIVE',
+        ),
+        AppModuleEntitlement(
+          code: 'encounters-vitals',
+          licenseStatus: 'ACTIVE',
+        ),
+      ],
+      isAuthorizationHydrated: true,
+    ),
+  );
+}
+
 void _stubCases(
   _MockTheaterRepository repository, {
   List<TheaterCase> cases = const <TheaterCase>[
@@ -143,8 +168,15 @@ void _stubCases(
           .toList(growable: false);
     }
     if (stage != null && stage.isNotEmpty) {
+      final Set<String> stages = stage
+          .split(',')
+          .map((String part) => part.trim().toUpperCase())
+          .where((String part) => part.isNotEmpty)
+          .toSet();
       items = items
-          .where((TheaterCase item) => item.normalizedStage == stage)
+          .where(
+            (TheaterCase item) => stages.contains(item.normalizedStage),
+          )
           .toList(growable: false);
     }
     final String search = query.search.trim().toLowerCase();
@@ -279,10 +311,63 @@ void main() {
     expect(_table(tester).columnVisibilityLabel, 'Settings');
     expect(_table(tester).columnVisibilityTitle, 'Table Settings');
     expect(_table(tester).columnVisibilityStorageKey, 'theater_all');
-    expect(_table(tester).columns.length, lessThanOrEqualTo(5));
+    expect(
+      _table(tester).columns
+          .where((AppListTableColumn<TheaterCase> c) => c.key != 'next_action')
+          .length,
+      5,
+    );
+    expect(_table(tester).enablePrint, isTrue);
+    expect(_table(tester).canPrint, isFalse);
+    expect(_table(tester).canExport, isFalse);
+    expect(_table(tester).printLabel, 'Print');
+    expect(_table(tester).search?.advancedFilterApplyLabel, 'Apply filters');
     expect(find.text('Filters'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
     expect(find.widgetWithText(AppButton, 'Update readiness'), findsWidgets);
+  });
+
+  testWidgets('shows Export and Print when evidence:export is allowed', (
+    WidgetTester tester,
+  ) async {
+    await _pumpTheaterWorkspace(
+      tester,
+      repository: repository,
+      accessPolicy: _theaterExportPolicy(),
+    );
+
+    expect(_table(tester).canExport, isTrue);
+    expect(_table(tester).canPrint, isTrue);
+    expect(_table(tester).enablePrint, isTrue);
+    expect(_table(tester).printLabel, 'Print');
+    expect(find.text('Export'), findsOneWidget);
+    expect(find.text('Print'), findsOneWidget);
+  });
+
+  testWidgets('shows forbidden view when no board tabs are allowed', (
+    WidgetTester tester,
+  ) async {
+    await _pumpTheaterWorkspace(
+      tester,
+      repository: repository,
+      accessPolicy: AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(roles: <String>['BILLING_CLERK']),
+          permissions: <AppPermission>{AppPermissions.billingRead},
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'theatre-anesthesia',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      ),
+    );
+
+    expect(find.byType(AppFailureStateView), findsOneWidget);
+    expect(find.byType(AppTabStrip), findsNothing);
   });
 
   testWidgets('switching tabs applies status/stage filters and updates URL', (
@@ -335,7 +420,12 @@ void main() {
     queries = verify(
       () => repository.listCases(captureAny()),
     ).captured.cast<TheaterCaseQuery>();
-    expect(queries.any((TheaterCaseQuery q) => q.stage == 'POST_OP'), isTrue);
+    expect(
+      queries.any(
+        (TheaterCaseQuery q) => q.stage == theaterRecoveryStageFilter,
+      ),
+      isTrue,
+    );
     expect(find.text('Riley Recovery'), findsOneWidget);
 
     clearInteractions(repository);

@@ -49,6 +49,7 @@ AppAccessPolicy _fullClinicalPolicy() {
       permissions: <AppPermission>{
         AppPermissions.clinicalRead,
         AppPermissions.clinicalWrite,
+        AppPermissions.evidenceExport,
       },
       moduleEntitlements: const <AppModuleEntitlement>[
         AppModuleEntitlement(
@@ -94,7 +95,7 @@ void main() {
     expect(_tab('Assigned to me'), findsOneWidget);
     expect(_tab('Urgent'), findsOneWidget);
     expect(_tab('Results ready'), findsOneWidget);
-    expect(_tab('Completed today'), findsOneWidget);
+    expect(_tab('Completed'), findsOneWidget);
     expect(_tab('Waiting review'), findsNothing);
     expect(_tab('In consultation'), findsNothing);
     expect(find.text('Status'), findsWidgets);
@@ -274,6 +275,69 @@ void main() {
   });
 
   testWidgets(
+    'worklist toolbar order is Filters Settings Export Print when export allowed',
+    (tester) async {
+      await _pumpClinicalWorkspace(tester);
+
+      expect(find.text('Filters'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('Export'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+
+      final List<String> labels = <String>[
+        for (final String label in <String>[
+          'Filters',
+          'Settings',
+          'Export',
+          'Print',
+        ])
+          label,
+      ];
+      final List<double> xs = <double>[
+        for (final String label in labels)
+          tester.getTopLeft(find.text(label).first).dx,
+      ];
+      for (int i = 1; i < xs.length; i++) {
+        expect(xs[i] >= xs[i - 1], isTrue, reason: '${labels[i]} after ${labels[i - 1]}');
+      }
+    },
+  );
+
+  testWidgets('worklist Export and Print omit without evidence:export', (
+    tester,
+  ) async {
+    await _pumpClinicalWorkspace(
+      tester,
+      accessPolicy: AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            roles: <String>['DOCTOR'],
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+          ),
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      ),
+    );
+
+    expect(find.text('Filters'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
+    expect(find.text('Export'), findsNothing);
+    expect(find.text('Print'), findsNothing);
+  });
+
+  testWidgets(
     'assigned provider without display name does not show Not assigned',
     (tester) async {
       await _pumpClinicalWorkspace(
@@ -338,6 +402,85 @@ void main() {
 
     expect(find.text('Queue scope'), findsNothing);
   });
+
+  testWidgets('Pending advanced filters footer includes Close', (tester) async {
+    await _pumpClinicalWorkspace(tester);
+
+    await tester.tap(find.text('Filters'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Advanced filters'), findsOneWidget);
+    expect(find.text('Clear filters'), findsOneWidget);
+    expect(find.text('Apply filters'), findsOneWidget);
+    expect(find.text('Close'), findsWidgets);
+  });
+
+  testWidgets('Pending default visible columns are five', (tester) async {
+    await _pumpClinicalWorkspace(tester);
+
+    expect(
+      find.descendant(
+        of: find.byType(AppListTableGrid),
+        matching: find.text('Patient'),
+      ),
+      findsWidgets,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppListTableGrid),
+        matching: find.text('Queue'),
+      ),
+      findsWidgets,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppListTableGrid),
+        matching: find.text('Doctor'),
+      ),
+      findsWidgets,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppListTableGrid),
+        matching: find.text('Status'),
+      ),
+      findsWidgets,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppListTableGrid),
+        matching: find.text('Next action'),
+      ),
+      findsWidgets,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppListTableGrid),
+        matching: find.text('Encounter type'),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets(
+    'legacy waiting-review deep link opens Pending without writing section',
+    (tester) async {
+      final _Harness harness = await _pumpClinicalWorkspace(
+        tester,
+        initialLocation: '/clinical?section=waiting-review',
+        initialQuery: ClinicalWorkspaceQuery.fromUri(
+          Uri.parse('/clinical?section=waiting-review'),
+        ),
+      );
+
+      expect(_tab('Pending'), findsOneWidget);
+      expect(
+        harness.router.routeInformationProvider.value.uri.queryParameters,
+        isNot(contains('section')),
+      );
+    },
+  );
 
   testWidgets('clinical tabs omit Refresh and cross-module toolbar actions', (
     tester,
@@ -439,7 +582,7 @@ void main() {
   testWidgets('Completed today tab omits Discharge toolbar action', (tester) async {
     await _pumpClinicalWorkspace(tester);
 
-    await tester.tap(_tab('Completed today'));
+    await tester.tap(_tab('Completed'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -473,6 +616,7 @@ Future<_Harness> _pumpClinicalWorkspace(
   String initialLocation = '/clinical',
   Size physicalSize = const Size(1440, 900),
   List<ClinicalWorklistEntry>? encounters,
+  AppAccessPolicy? accessPolicy,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -520,27 +664,30 @@ Future<_Harness> _pumpClinicalWorkspace(
   addTearDown(tester.view.resetDevicePixelRatio);
   addTearDown(tester.view.resetPhysicalSize);
 
-  final AppAccessPolicy accessPolicy = AppAccessPolicy.fromSession(
-    AuthSession(
-      tokens: SessionTokens(accessToken: 'access-token'),
-      user: const AuthUserProfile(
-        roles: <String>['DOCTOR'],
-        tenantId: 'tenant-1',
-        facilityId: 'facility-1',
-      ),
-      permissions: <AppPermission>{
-        AppPermissions.clinicalRead,
-        AppPermissions.clinicalWrite,
-      },
-      moduleEntitlements: const <AppModuleEntitlement>[
-        AppModuleEntitlement(
-          code: 'encounters-vitals',
-          licenseStatus: 'ACTIVE',
+  final AppAccessPolicy resolvedAccessPolicy =
+      accessPolicy ??
+      AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            roles: <String>['DOCTOR'],
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+          ),
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+            AppPermissions.evidenceExport,
+          },
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
         ),
-      ],
-      isAuthorizationHydrated: true,
-    ),
-  );
+      );
 
   final GoRouter router = GoRouter(
     initialLocation: initialLocation,
@@ -572,7 +719,7 @@ Future<_Harness> _pumpClinicalWorkspace(
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
         ),
-        appAccessPolicyProvider.overrideWithValue(accessPolicy),
+        appAccessPolicyProvider.overrideWithValue(resolvedAccessPolicy),
       ],
       child: MaterialApp.router(
         routerConfig: router,

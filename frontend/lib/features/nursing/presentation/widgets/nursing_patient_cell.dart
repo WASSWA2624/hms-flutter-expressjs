@@ -19,7 +19,8 @@ class NursingPatientCell extends StatelessWidget {
           item.displayTitle,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.titleSmall,
+          // tables.mdc: no strong/bold weight in table row cells.
+          style: theme.textTheme.bodyMedium,
         ),
         if (nursingJoinDisplay(<String?>[
           item.patientDisplayId,
