@@ -209,7 +209,6 @@ class _PatientRegistryContentState
                   }
                 }
               },
-              secondaryActions: _buildSecondaryActions(l10n),
             ),
             SizedBox(height: theme.spacing.sm),
             Expanded(
@@ -223,45 +222,6 @@ class _PatientRegistryContentState
           ],
         ),
       ),
-    );
-  }
-
-  List<Widget> _buildSecondaryActions(AppLocalizations l10n) {
-    final List<PatientDuplicateCandidate> duplicates =
-        widget.state.overview.duplicates;
-    if (duplicates.isEmpty) {
-      return const <Widget>[];
-    }
-
-    return <Widget>[
-      AppAccessActionGate(
-        requirement: patientRegistryDuplicateReviewAtom(_section),
-        builder: (BuildContext context, bool isAllowed) {
-          if (!isAllowed) {
-            return const SizedBox.shrink();
-          }
-          return AppTabToolbarAction(
-            icon: Icons.content_copy_outlined,
-            label: l10n.patientsDuplicateSummaryLabel,
-            semanticLabel: l10n.patientsDuplicateSummaryLabel,
-            tooltip: l10n.patientsDuplicateSummaryBody,
-            enabled: isAllowed,
-            onPressed: () {
-              unawaited(_openDuplicateReviewDialog(context, duplicates));
-            },
-          );
-        },
-      ),
-    ];
-  }
-
-  Future<void> _openDuplicateReviewDialog(
-    BuildContext context,
-    List<PatientDuplicateCandidate> duplicates,
-  ) async {
-    await showAppDialog<void>(
-      context: context,
-      builder: (_) => PatientDuplicateReviewDialog(duplicates: duplicates),
     );
   }
 
@@ -396,6 +356,16 @@ class _PatientRegistryContentState
     };
   }
 
+}
+
+Future<void> _openDuplicateReviewDialog(
+  BuildContext context,
+  List<PatientDuplicateCandidate> duplicates,
+) async {
+  await showAppDialog<void>(
+    context: context,
+    builder: (_) => PatientDuplicateReviewDialog(duplicates: duplicates),
+  );
 }
 
 Future<void> _openRegisterPatientDialog(
@@ -1101,8 +1071,23 @@ class _PatientList extends ConsumerWidget {
             ),
           );
         },
-        // Filters → Settings → Export → Print → Register patient.
+        // Filters → Settings → Export → Print → Duplicate review → Register.
         trailingActions: <AppSearchBarAction>[
+          if (state.overview.duplicates.isNotEmpty &&
+              patientRegistryDuplicateReviewAtom(section).isAllowed(policy))
+            AppSearchBarAction(
+              icon: Icons.content_copy_outlined,
+              label: l10n.patientsDuplicateSummaryLabel,
+              tooltip: l10n.patientsDuplicateSummaryBody,
+              onPressed: () {
+                unawaited(
+                  _openDuplicateReviewDialog(
+                    context,
+                    state.overview.duplicates,
+                  ),
+                );
+              },
+            ),
           if (patientRegistryRegisterAtom(section).isAllowed(policy))
             AppSearchBarAction(
               icon: Icons.person_add_alt_1_outlined,
@@ -4378,10 +4363,13 @@ class _PatientDuplicateReviewDialogState
               minHeight: 180,
             )
           else if (_preview != null && _selectedDuplicate != null)
-            _PatientMergePreviewPanel(
+            PatientDuplicateMergeWorkspace(
               preview: _preview!,
+              comparisons: _selectedDuplicate!.fieldComparisons,
               isSaving: _isSaving,
-              onMerge: () => _mergeDuplicate(_selectedDuplicate!),
+              onConfirmMerge: (PatientMergeCommitPlan plan) {
+                return _mergeDuplicate(_selectedDuplicate!, plan: plan);
+              },
             ),
         ],
       ),
@@ -4451,14 +4439,22 @@ class _PatientDuplicateReviewDialogState
     });
   }
 
-  Future<void> _mergeDuplicate(PatientDuplicateCandidate duplicate) async {
+  Future<void> _mergeDuplicate(
+    PatientDuplicateCandidate duplicate, {
+    required PatientMergeCommitPlan plan,
+  }) async {
     setState(() {
       _isSaving = true;
       _failure = null;
     });
     final AppFailure? failure = await ref
         .read(patientRegistryControllerProvider.notifier)
-        .mergeDuplicateCandidate(duplicate);
+        .mergeDuplicateCandidate(
+          duplicate,
+          primaryPatientId: plan.primaryPatientId,
+          secondaryPatientId: plan.secondaryPatientId,
+          summary: plan.summary,
+        );
     if (!mounted) {
       return;
     }
@@ -4636,65 +4632,6 @@ class _DuplicatePatientSummary extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _PatientMergePreviewPanel extends StatelessWidget {
-  const _PatientMergePreviewPanel({
-    required this.preview,
-    required this.isSaving,
-    required this.onMerge,
-  });
-
-  final PatientMergePreview preview;
-  final bool isSaving;
-  final VoidCallback onMerge;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final l10n = context.l10n;
-    final List<MapEntry<String, int>> counts = preview.transferCounts.entries
-        .where((MapEntry<String, int> entry) => entry.value > 0)
-        .toList(growable: false);
-
-    return AppSectionPanel(
-      title: l10n.patientsMergePreviewTitle,
-      leadingIcon: Icons.merge_type_outlined,
-      tone: AppWorkspaceStatusTone.warning,
-      children: <Widget>[
-        _DuplicatePatientPair(
-          primary: preview.primaryPatient,
-          secondary: preview.secondaryPatient,
-        ),
-        if (counts.isNotEmpty)
-          Wrap(
-            spacing: theme.spacing.xs,
-            runSpacing: theme.spacing.xs,
-            children: <Widget>[
-              for (final MapEntry<String, int> count in counts)
-                AppWorkspaceStatusBadge(
-                  status: AppWorkspaceStatus(
-                    label: l10n.patientsMergeTransferCountLabel(
-                      _apiLabel(count.key),
-                      count.value,
-                    ),
-                    tone: AppWorkspaceStatusTone.info,
-                  ),
-                ),
-            ],
-          ),
-        Align(
-          alignment: AlignmentDirectional.centerEnd,
-          child: AppButton.primary(
-            label: l10n.patientsMergePatientsAction,
-            leadingIcon: Icons.merge_type_outlined,
-            isLoading: isSaving,
-            onPressed: onMerge,
-          ),
-        ),
-      ],
     );
   }
 }

@@ -12853,6 +12853,78 @@ abstract class AppLocalizations {
   /// **'Merge patients'**
   String get patientsMergePatientsAction;
 
+  /// Guidance text for the patient duplicate merge workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare fields side by side. Swap values, then keep left, keep right, or auto-merge before confirming.'**
+  String get patientsMergeWorkspaceBody;
+
+  /// Left column label in patient duplicate merge workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Left'**
+  String get patientsMergeLeftColumnLabel;
+
+  /// Right column label in patient duplicate merge workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Right'**
+  String get patientsMergeRightColumnLabel;
+
+  /// Tooltip for swapping left and right field values in merge workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Swap field values'**
+  String get patientsMergeSwapFieldAction;
+
+  /// Select left-side field values as the survivor profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep left'**
+  String get patientsMergeKeepLeftAction;
+
+  /// Select right-side field values as the survivor profile.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep right'**
+  String get patientsMergeKeepRightAction;
+
+  /// Automatically choose the better value per field before confirming merge.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-merge'**
+  String get patientsMergeAutoAction;
+
+  /// Banner title after Keep left is selected in merge workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeping left profile'**
+  String get patientsMergeKeepLeftSelected;
+
+  /// Banner title after Keep right is selected in merge workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Keeping right profile'**
+  String get patientsMergeKeepRightSelected;
+
+  /// Banner title after Auto-merge is selected in merge workspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-merge selected'**
+  String get patientsMergeAutoSelected;
+
+  /// Hint shown before confirming a patient duplicate merge.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm to merge linked history into the surviving patient. This cannot be undone from this dialog.'**
+  String get patientsMergeConfirmHint;
+
+  /// Placeholder shown when a merge field value is blank.
+  ///
+  /// In en, this message translates to:
+  /// **'Empty'**
+  String get patientsMergeEmptyValueLabel;
+
   /// Patient registry activity section title.
   ///
   /// In en, this message translates to:

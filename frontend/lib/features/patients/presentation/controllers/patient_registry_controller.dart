@@ -248,22 +248,37 @@ final class PatientRegistryController
   }
 
   Future<AppFailure?> mergeDuplicateCandidate(
-    PatientDuplicateCandidate duplicate,
-  ) async {
+    PatientDuplicateCandidate duplicate, {
+    String? primaryPatientId,
+    String? secondaryPatientId,
+    Map<String, Object?> summary = const <String, Object?>{},
+  }) async {
     final PatientRegistryState? current = _currentState;
     if (current == null) {
       return refresh();
     }
     final _DuplicatePair? pair = _duplicatePair(duplicate);
-    if (pair == null) {
+    final String? resolvedPrimary = (primaryPatientId ?? '').trim().isNotEmpty
+        ? primaryPatientId!.trim()
+        : pair?.primary.id;
+    final String? resolvedSecondary =
+        (secondaryPatientId ?? '').trim().isNotEmpty
+        ? secondaryPatientId!.trim()
+        : pair?.secondary.id;
+    if (resolvedPrimary == null ||
+        resolvedSecondary == null ||
+        resolvedPrimary.isEmpty ||
+        resolvedSecondary.isEmpty ||
+        resolvedPrimary == resolvedSecondary) {
       return null;
     }
 
     _emit(current.copyWith(isSaving: true, clearLastFailure: true));
     final Result<PatientMutationResult> result = await _repository
         .mergePatients(
-          primaryPatientId: pair.primary.id,
-          secondaryPatientId: pair.secondary.id,
+          primaryPatientId: resolvedPrimary,
+          secondaryPatientId: resolvedSecondary,
+          summary: summary,
         );
     return result.when(
       success: (PatientMutationResult result) async {

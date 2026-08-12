@@ -261,13 +261,15 @@ final class PatientRepositoryImpl implements PatientRepository {
   Future<Result<PatientMutationResult>> mergePatients({
     required String primaryPatientId,
     required String secondaryPatientId,
+    Map<String, Object?> summary = const <String, Object?>{},
   }) {
     return _apiClient.post<PatientMutationResult>(
       ApiEndpoints.apiV1(<String>[HmsApiResource.patients.path, 'merge']),
-      data: <String, Object?>{
+      data: _withoutEmpty(<String, Object?>{
         'primary_patient_id': primaryPatientId,
         'secondary_patient_id': secondaryPatientId,
-      },
+        if (summary.isNotEmpty) 'summary': _withoutEmpty(summary),
+      }),
       decoder: (_) => PatientMutationResult(patientId: primaryPatientId),
     );
   }

@@ -553,7 +553,7 @@ PatientRegistrySection? patientRegistryFallbackSection(
 /// (`/patients` / `?section=all`).
 ///
 /// Inventory: `screens/patients.md` → full registry list; Register patient +
-/// Duplicate review on strip. Nested matrix rows are _(n/a)_; Quick Action /
+/// Duplicate review on search trailing. Nested matrix rows are _(n/a)_; Quick Action /
 /// Active Work continues keep source module + clinical gates (documented
 /// below). Route entry uses AppRoutes ∩ `patient:read` ([entry]); catalog
 /// `patients:read` is [catalogEntry].
@@ -562,7 +562,7 @@ PatientRegistrySection? patientRegistryFallbackSection(
 /// | --- | --- | --- |
 /// | All patients strip tab / count | navigate | read ∩ `patient:read` |
 /// | Register patient (search trailing) | create | write ∩ `patient:write` |
-/// | Duplicate review (secondary) | update | write ∩ |
+/// | Duplicate review (search trailing) | update | write ∩ |
 /// | Search / Clear / Filters / Settings / columns | read chrome | read ∩ |
 /// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Empty / loading / error / retry | read chrome | read ∩ |
@@ -675,7 +675,7 @@ abstract final class PatientAllAtomPermissions {
 /// | --- | --- | --- |
 /// | Active strip tab / count | navigate | read ∩ `patient:read` |
 /// | Register patient (search trailing) | create | write ∩ `patient:write` |
-/// | Duplicate review (secondary) | update | write ∩ |
+/// | Duplicate review (search trailing) | update | write ∩ |
 /// | Search / Clear / Filters / Settings / columns | read chrome | read ∩ |
 /// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Empty / loading / error / retry | read chrome | read ∩ |
@@ -789,7 +789,7 @@ abstract final class PatientActiveAtomPermissions {
 /// | --- | --- | --- |
 /// | Admitted strip tab / count | navigate | read ∩ `patient:read` |
 /// | Register patient (search trailing) | create | write ∩ `patient:write` |
-/// | Duplicate review (secondary) | update | write ∩ |
+/// | Duplicate review (search trailing) | update | write ∩ |
 /// | Search / Clear / Filters / Settings / columns | read chrome | read ∩ |
 /// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Visit column (admission context) | nested read | ∪ clinical\|billing read |
@@ -916,7 +916,7 @@ abstract final class PatientAdmittedAtomPermissions {
 /// | --- | --- | --- |
 /// | Balance due strip tab / count | navigate | read ∩ patient:read + billing:read |
 /// | Register patient (search trailing) | create | write ∩ patient:write |
-/// | Duplicate review (secondary) | update | write ∩ |
+/// | Duplicate review (search trailing) | update | write ∩ |
 /// | Search / Clear / Filters / Settings / columns | read chrome | tab read ∩ |
 /// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Empty / loading / error / retry | read chrome | tab read ∩ |

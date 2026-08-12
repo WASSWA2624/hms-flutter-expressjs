@@ -582,17 +582,28 @@ void main() {
         firstName: 'Amina',
         lastName: 'Kato',
       );
+      const secondary = Patient(
+        id: 'patient-2',
+        publicId: 'PAT-1002',
+        firstName: 'Amina',
+        lastName: 'Kato',
+      );
       const duplicate = PatientDuplicateCandidate(
         reviewId: 'dup-1',
         confidenceScore: 88,
         classification: 'STRONG',
         primaryPatient: patient,
-        secondaryPatient: Patient(
-          id: 'patient-2',
-          publicId: 'PAT-1002',
-          firstName: 'Amina',
-          lastName: 'Kato',
-        ),
+        secondaryPatient: secondary,
+        fieldComparisons: <PatientDuplicateFieldComparison>[
+          PatientDuplicateFieldComparison(
+            field: 'PHONE',
+            inputValue: '+256700000001',
+            candidateValue: '+256700000001',
+            status: 'MATCH',
+            contribution: 45,
+            similarityPercent: 100,
+          ),
+        ],
       );
 
       _stubPatientRegistry(
@@ -601,6 +612,22 @@ void main() {
         duplicates: const <PatientDuplicateCandidate>[duplicate],
       );
       _stubProviderLookup(opdRepository);
+      when(
+        () => patientRepository.previewPatientMerge(
+          primaryPatientId: any(named: 'primaryPatientId'),
+          secondaryPatientId: any(named: 'secondaryPatientId'),
+        ),
+      ).thenAnswer(
+        (_) async => const Result<PatientMergePreview>.success(
+          PatientMergePreview(
+            primaryPatient: patient,
+            secondaryPatient: secondary,
+            confidenceScore: 88,
+            classification: 'STRONG',
+            transferCounts: <String, int>{'contacts': 1},
+          ),
+        ),
+      );
 
       await _pumpPatientRegistry(
         tester,
@@ -617,6 +644,25 @@ void main() {
       expect(find.text('Duplicate review'), findsWidgets);
       expect(find.text('Review merge'), findsOneWidget);
       expect(find.text('Dismiss'), findsOneWidget);
+
+      await tester.tap(find.text('Review merge'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Merge preview'), findsOneWidget);
+      expect(find.text('Keep left'), findsOneWidget);
+      expect(find.text('Keep right'), findsOneWidget);
+      expect(find.text('Auto-merge'), findsOneWidget);
+      expect(find.text('Merge patients'), findsNothing);
+
+      final Finder autoMerge = find.text('Auto-merge');
+      await tester.ensureVisible(autoMerge);
+      await tester.pumpAndSettle();
+      await tester.tap(autoMerge);
+      await tester.pumpAndSettle();
+      final Finder mergePatients = find.text('Merge patients');
+      await tester.ensureVisible(mergePatients);
+      await tester.pumpAndSettle();
+      expect(mergePatients, findsOneWidget);
     },
   );
 

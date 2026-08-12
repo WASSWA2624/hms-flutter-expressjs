@@ -8763,6 +8763,54 @@
   "@patientsMergePatientsAction": {
     "description": "Patient duplicate merge confirm action label."
   },
+  "patientsMergeWorkspaceBody": "Compare fields side by side. Swap values, then keep left, keep right, or auto-merge before confirming.",
+  "@patientsMergeWorkspaceBody": {
+    "description": "Guidance text for the patient duplicate merge workspace."
+  },
+  "patientsMergeLeftColumnLabel": "Left",
+  "@patientsMergeLeftColumnLabel": {
+    "description": "Left column label in patient duplicate merge workspace."
+  },
+  "patientsMergeRightColumnLabel": "Right",
+  "@patientsMergeRightColumnLabel": {
+    "description": "Right column label in patient duplicate merge workspace."
+  },
+  "patientsMergeSwapFieldAction": "Swap field values",
+  "@patientsMergeSwapFieldAction": {
+    "description": "Tooltip for swapping left and right field values in merge workspace."
+  },
+  "patientsMergeKeepLeftAction": "Keep left",
+  "@patientsMergeKeepLeftAction": {
+    "description": "Select left-side field values as the survivor profile."
+  },
+  "patientsMergeKeepRightAction": "Keep right",
+  "@patientsMergeKeepRightAction": {
+    "description": "Select right-side field values as the survivor profile."
+  },
+  "patientsMergeAutoAction": "Auto-merge",
+  "@patientsMergeAutoAction": {
+    "description": "Automatically choose the better value per field before confirming merge."
+  },
+  "patientsMergeKeepLeftSelected": "Keeping left profile",
+  "@patientsMergeKeepLeftSelected": {
+    "description": "Banner title after Keep left is selected in merge workspace."
+  },
+  "patientsMergeKeepRightSelected": "Keeping right profile",
+  "@patientsMergeKeepRightSelected": {
+    "description": "Banner title after Keep right is selected in merge workspace."
+  },
+  "patientsMergeAutoSelected": "Auto-merge selected",
+  "@patientsMergeAutoSelected": {
+    "description": "Banner title after Auto-merge is selected in merge workspace."
+  },
+  "patientsMergeConfirmHint": "Confirm to merge linked history into the surviving patient. This cannot be undone from this dialog.",
+  "@patientsMergeConfirmHint": {
+    "description": "Hint shown before confirming a patient duplicate merge."
+  },
+  "patientsMergeEmptyValueLabel": "Empty",
+  "@patientsMergeEmptyValueLabel": {
+    "description": "Placeholder shown when a merge field value is blank."
+  },
   "patientsActivityTitle": "Registry attention",
   "@patientsActivityTitle": {
     "description": "Patient registry activity section title."

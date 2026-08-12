@@ -23,6 +23,7 @@ abstract interface class PatientRepository {
   Future<Result<PatientMutationResult>> mergePatients({
     required String primaryPatientId,
     required String secondaryPatientId,
+    Map<String, Object?> summary = const <String, Object?>{},
   });
 
   Future<Result<PatientMutationResult>> dismissDuplicateCandidate({

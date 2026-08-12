@@ -6822,6 +6822,44 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsMergePatientsAction => 'Merge patients';
 
   @override
+  String get patientsMergeWorkspaceBody =>
+      'Compare fields side by side. Swap values, then keep left, keep right, or auto-merge before confirming.';
+
+  @override
+  String get patientsMergeLeftColumnLabel => 'Left';
+
+  @override
+  String get patientsMergeRightColumnLabel => 'Right';
+
+  @override
+  String get patientsMergeSwapFieldAction => 'Swap field values';
+
+  @override
+  String get patientsMergeKeepLeftAction => 'Keep left';
+
+  @override
+  String get patientsMergeKeepRightAction => 'Keep right';
+
+  @override
+  String get patientsMergeAutoAction => 'Auto-merge';
+
+  @override
+  String get patientsMergeKeepLeftSelected => 'Keeping left profile';
+
+  @override
+  String get patientsMergeKeepRightSelected => 'Keeping right profile';
+
+  @override
+  String get patientsMergeAutoSelected => 'Auto-merge selected';
+
+  @override
+  String get patientsMergeConfirmHint =>
+      'Confirm to merge linked history into the surviving patient. This cannot be undone from this dialog.';
+
+  @override
+  String get patientsMergeEmptyValueLabel => 'Empty';
+
+  @override
   String get patientsActivityTitle => 'Registry attention';
 
   @override
