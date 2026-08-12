@@ -17,6 +17,14 @@ const String accountsGlUpdatedColumnId = 'updated';
 
 const String accountsGlTableSettingsKey = 'accounts_gl_v1';
 
+const List<String> accountsGlDefaultColumnIds = <String>[
+  accountsGlAccountColumnId,
+  accountsGlDebitColumnId,
+  accountsGlCreditColumnId,
+  accountsGlBalanceColumnId,
+  accountsGlNextColumnId,
+];
+
 List<AppListTableColumn<AccountsGlAccount>> accountsGlDefaultColumns({
   required BuildContext context,
   required bool Function(AccountsGlAccount account) showNext,
@@ -65,6 +73,7 @@ List<AppListTableColumn<AccountsGlAccount>> accountsGlDefaultColumns({
     AppListTableColumn<AccountsGlAccount>(
       id: accountsGlNextColumnId,
       label: AccountsStrings.nextColumn,
+      alwaysVisible: true,
       exportable: false,
       preferredWidth: 72,
       cellBuilder: (BuildContext context, AccountsGlAccount item) {

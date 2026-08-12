@@ -160,17 +160,23 @@ class _AccountsGlPanelState extends ConsumerState<AccountsGlPanel> {
         final List<AccountsGlAccount> filtered = _applyLocalDateFilters(
           page.items,
         );
+        final bool dateNarrowed =
+            _filterValue.dateFrom != null || _filterValue.dateTo != null;
+        // Local Updated-date filter is client-side; use painted total then.
+        final int totalItemCount = dateNarrowed
+            ? filtered.length
+            : (page.totalItemCount ?? filtered.length);
         setState(() {
           _page = AppPage<AccountsGlAccount>(
             items: filtered,
             request: page.request,
-            totalItemCount: filtered.length,
+            totalItemCount: totalItemCount,
           );
           _loading = false;
         });
         if (_hasActiveFilters) {
           ref.read(accountsGlActivityCountProvider.notifier).state =
-              page.totalItemCount ?? filtered.length;
+              totalItemCount;
         } else {
           // Fall back to workspace summary — do not badge from painted page.
           ref.read(accountsGlActivityCountProvider.notifier).state = null;
@@ -207,7 +213,12 @@ class _AccountsGlPanelState extends ConsumerState<AccountsGlPanel> {
         break;
       }
     }
-    if (match == null || !mounted) {
+    if (match == null ||
+        !canOpenAccountsGlNext(
+          ref.read(appAccessPolicyProvider),
+          match,
+        ) ||
+        !mounted) {
       return;
     }
     _handledAccountDeepLink = true;
@@ -247,7 +258,11 @@ class _AccountsGlPanelState extends ConsumerState<AccountsGlPanel> {
       columnWidthStorageKey: '${accountsGlTableSettingsKey}_cw',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
-      onRowSelected: (AccountsGlAccount item) => unawaited(_openLedger(item)),
+      onRowSelected: (AccountsGlAccount item) {
+        if (canOpenAccountsGlNext(accessPolicy, item)) {
+          unawaited(_openLedger(item));
+        }
+      },
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: AccountsStrings.glEmpty,
         body: '',
@@ -295,6 +310,7 @@ class _AccountsGlPanelState extends ConsumerState<AccountsGlPanel> {
         advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: AccountsStrings.clearFilters,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         dateFilterLabel: 'Updated date',
         dateFromLabel: l10n.opdDateFromLabel,
         dateToLabel: l10n.opdDateToLabel,

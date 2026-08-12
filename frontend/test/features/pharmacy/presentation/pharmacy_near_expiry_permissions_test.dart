@@ -106,7 +106,6 @@ void _stubPharmacyRepository(_MockPharmacyRepository repository) {
       PharmacyInventoryWorkbench(
         summary: PharmacyInventoryStockSummary(
           expiringSoonRows: items.length,
-          totalRows: items.length,
         ),
         stocks: AppPage<PharmacyInventoryStock>(
           items: items,
