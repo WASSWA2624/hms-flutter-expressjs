@@ -360,12 +360,19 @@ class _PatientRegistryContentState
 
 Future<void> _openDuplicateReviewDialog(
   BuildContext context,
+  WidgetRef ref,
   List<PatientDuplicateCandidate> duplicates,
 ) async {
-  await showAppDialog<void>(
+  final String? survivorPatientId = await showAppDialog<String>(
     context: context,
     builder: (_) => PatientDuplicateReviewDialog(duplicates: duplicates),
   );
+  if (!context.mounted ||
+      survivorPatientId == null ||
+      survivorPatientId.trim().isEmpty) {
+    return;
+  }
+  await showPatientDetailDialog(context, ref, survivorPatientId.trim());
 }
 
 Future<void> _openRegisterPatientDialog(
@@ -1084,6 +1091,7 @@ class _PatientList extends ConsumerWidget {
                 unawaited(
                   _openDuplicateReviewDialog(
                     context,
+                    ref,
                     state.overview.duplicates,
                   ),
                 );
@@ -4478,7 +4486,7 @@ class _PatientDuplicateReviewDialogState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(context.l10n.patientsMergedMessage)),
       );
-      await Navigator.of(context).maybePop();
+      await Navigator.of(context).maybePop(plan.primaryPatientId);
       return;
     }
     setState(() {

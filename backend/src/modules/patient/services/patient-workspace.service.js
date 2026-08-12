@@ -75,12 +75,25 @@ const normalizeComparableText = (value) =>
 const normalizeEmail = (value) => normalizeLower(value).replace(/\s+/g, '');
 const normalizeName = (value) =>
   normalizeComparableText(value).split(' ').filter(Boolean).sort().join(' ');
+const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const normalizeDateOnly = (value) => {
   const normalized = normalizeText(value);
   if (!normalized) return '';
   const parsed = new Date(normalized);
   if (Number.isNaN(parsed.getTime())) return '';
   return parsed.toISOString().slice(0, 10);
+};
+const parseDateOfBirthValue = (value) => {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+  const normalized = normalizeText(value);
+  if (!normalized) return null;
+  if (DATE_ONLY_REGEX.test(normalized)) {
+    const date = new Date(`${normalized}T00:00:00.000Z`);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? null : date;
 };
 const levenshteinDistance = (left, right) => {
   if (!left) return right.length;
@@ -1890,7 +1903,9 @@ const mergePatients = async (payload = {}, scope = {}, userContext = {}) => {
     if (payload?.summary && typeof payload.summary === 'object') {
       if (payload.summary.first_name !== undefined) primaryUpdate.first_name = normalizeText(payload.summary.first_name) || primary.first_name;
       if (payload.summary.last_name !== undefined) primaryUpdate.last_name = normalizeText(payload.summary.last_name) || primary.last_name;
-      if (payload.summary.date_of_birth !== undefined) primaryUpdate.date_of_birth = payload.summary.date_of_birth || null;
+      if (payload.summary.date_of_birth !== undefined) {
+        primaryUpdate.date_of_birth = parseDateOfBirthValue(payload.summary.date_of_birth);
+      }
       if (payload.summary.gender !== undefined) primaryUpdate.gender = normalizeText(payload.summary.gender) || null;
       if (payload.summary.facility_id !== undefined) {
         primaryUpdate.facility_id = await resolveIdentifierForPayload({
