@@ -98,6 +98,9 @@ void main() {
             tenantId: 'TEN0001',
             facilityId: 'FAC0001',
           ),
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(code: 'hr-rosters', licenseStatus: 'ACTIVE'),
+          ],
         ),
       );
 

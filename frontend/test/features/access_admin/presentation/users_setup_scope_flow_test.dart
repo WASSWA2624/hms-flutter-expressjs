@@ -106,7 +106,10 @@ void main() {
     );
     expect(source.contains('_AccessAdminUserDetailDialog'), isTrue);
     expect(dialogsSource.contains('showUserMutationDialog'), isTrue);
-    expect(source.contains('tenantFacilitySoftDeleteUserTitle'), isTrue);
+    expect(
+      managementSource.contains('tenantFacilitySoftDeleteUserTitle'),
+      isTrue,
+    );
   });
 
   test('user row actions are spaced and hide unauthorized delete', () {
@@ -117,9 +120,14 @@ void main() {
       reason: 'Edit/Delete must not sit flush',
     );
     expect(
-      source.contains('if (!user.isDemo && !user.isSystemCritical)'),
+      source.contains('if (_canDeleteUser(user))'),
       isTrue,
       reason: 'Delete must be unrendered for demo/system-critical users',
+    );
+    expect(
+      managementSource.contains('canSoftDeleteAccessAdminUser'),
+      isTrue,
+      reason: 'Soft-delete gating stays centralized',
     );
     expect(
       RegExp(
