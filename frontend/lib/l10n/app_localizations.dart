@@ -44801,13 +44801,37 @@ abstract class AppLocalizations {
   /// **'Formatting note…'**
   String get commonAiFormatBusyTooltip;
 
-  /// Snack bar when AI clinical note formatting fails or is degraded.
+  /// Inline banner title while AI is rewriting a clinical note.
+  ///
+  /// In en, this message translates to:
+  /// **'Formatting note'**
+  String get commonAiFormatBusyTitle;
+
+  /// Inline banner body while AI is rewriting a clinical note.
+  ///
+  /// In en, this message translates to:
+  /// **'Rewriting into professional medical language. This can take up to a minute.'**
+  String get commonAiFormatBusyMessage;
+
+  /// Inline banner title when AI clinical note formatting cannot complete.
+  ///
+  /// In en, this message translates to:
+  /// **'AI formatting unavailable'**
+  String get commonAiFormatUnavailableTitle;
+
+  /// Inline banner when AI clinical note formatting fails or is degraded.
   ///
   /// In en, this message translates to:
   /// **'AI note formatting is unavailable right now. Your original note was kept.'**
   String get commonAiFormatUnavailableMessage;
 
-  /// Snack bar when AI clinical note formatting is blocked offline.
+  /// Inline banner title when AI clinical note formatting is blocked offline.
+  ///
+  /// In en, this message translates to:
+  /// **'No connection'**
+  String get commonAiFormatOfflineTitle;
+
+  /// Inline banner when AI clinical note formatting is blocked offline.
   ///
   /// In en, this message translates to:
   /// **'AI note formatting needs an internet connection.'**

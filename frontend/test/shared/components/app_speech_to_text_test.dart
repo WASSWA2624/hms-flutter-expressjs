@@ -676,6 +676,42 @@ void main() {
     expect(controller.text, 'The patient reports fever since yesterday.');
   });
 
+  testWidgets('rich text AI format shows a color-coded warning banner', (
+    WidgetTester tester,
+  ) async {
+    final TextEditingController controller = TextEditingController(
+      text: 'pt c/o fever',
+    );
+
+    await pumpSpeechApp(
+      tester,
+      AppRichTextEditor(
+        controller: controller,
+        labelText: 'Clinical note',
+      ),
+      clinicalNoteFormatter:
+          ({
+            required String text,
+            required AppSpeechAiAbort abort,
+            String? locale,
+            String? hint,
+          }) async {
+            return const AppClinicalNoteAiFormatResult();
+          },
+    );
+
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppRichTextEditor)),
+    );
+    await tester.tap(find.byTooltip(l10n.commonAiFormatTooltip));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text(l10n.commonAiFormatUnavailableTitle), findsOneWidget);
+    expect(find.text(l10n.commonAiFormatUnavailableMessage), findsOneWidget);
+    expect(controller.text, 'pt c/o fever');
+  });
+
   testWidgets('starting speech on a second field stops the first', (
     WidgetTester tester,
   ) async {

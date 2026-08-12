@@ -24221,8 +24221,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonAiFormatBusyTooltip => 'Formatting note…';
 
   @override
+  String get commonAiFormatBusyTitle => 'Formatting note';
+
+  @override
+  String get commonAiFormatBusyMessage =>
+      'Rewriting into professional medical language. This can take up to a minute.';
+
+  @override
+  String get commonAiFormatUnavailableTitle => 'AI formatting unavailable';
+
+  @override
   String get commonAiFormatUnavailableMessage =>
       'AI note formatting is unavailable right now. Your original note was kept.';
+
+  @override
+  String get commonAiFormatOfflineTitle => 'No connection';
 
   @override
   String get commonAiFormatOfflineMessage =>

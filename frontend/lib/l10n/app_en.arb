@@ -31045,13 +31045,29 @@
   "@commonAiFormatBusyTooltip": {
     "description": "Toolbar tooltip shown while AI note formatting is in progress."
   },
+  "commonAiFormatBusyTitle": "Formatting note",
+  "@commonAiFormatBusyTitle": {
+    "description": "Inline banner title while AI is rewriting a clinical note."
+  },
+  "commonAiFormatBusyMessage": "Rewriting into professional medical language. This can take up to a minute.",
+  "@commonAiFormatBusyMessage": {
+    "description": "Inline banner body while AI is rewriting a clinical note."
+  },
+  "commonAiFormatUnavailableTitle": "AI formatting unavailable",
+  "@commonAiFormatUnavailableTitle": {
+    "description": "Inline banner title when AI clinical note formatting cannot complete."
+  },
   "commonAiFormatUnavailableMessage": "AI note formatting is unavailable right now. Your original note was kept.",
   "@commonAiFormatUnavailableMessage": {
-    "description": "Snack bar when AI clinical note formatting fails or is degraded."
+    "description": "Inline banner when AI clinical note formatting fails or is degraded."
+  },
+  "commonAiFormatOfflineTitle": "No connection",
+  "@commonAiFormatOfflineTitle": {
+    "description": "Inline banner title when AI clinical note formatting is blocked offline."
   },
   "commonAiFormatOfflineMessage": "AI note formatting needs an internet connection.",
   "@commonAiFormatOfflineMessage": {
-    "description": "Snack bar when AI clinical note formatting is blocked offline."
+    "description": "Inline banner when AI clinical note formatting is blocked offline."
   },
   "speechToTextStartTooltip": "Dictate with microphone",
   "@speechToTextStartTooltip": {

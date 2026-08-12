@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/ai/ai_clinical_note_formatter.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/network/app_connectivity_status.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
+import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
 import 'package:hosspi_hms/shared/components/app_speech_ai.dart';
 import 'package:hosspi_hms/shared/components/app_speech_to_text.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -265,7 +267,10 @@ class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
   late FocusNode _focusNode;
   AppSpeechAiAbort? _aiAbort;
   bool _aiFormatting = false;
+  String? _aiFeedbackTitle;
   String? _aiFeedback;
+  AppFormInformationVariant _aiFeedbackVariant =
+      AppFormInformationVariant.warning;
   late String _lastKnownText;
 
   @override
@@ -371,14 +376,22 @@ class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
       orElse: () => true,
     );
     if (!online) {
-      setState(() => _aiFeedback = l10n.commonAiFormatOfflineMessage);
+      setState(() {
+        _aiFeedbackTitle = l10n.commonAiFormatOfflineTitle;
+        _aiFeedback = l10n.commonAiFormatOfflineMessage;
+        _aiFeedbackVariant = AppFormInformationVariant.warning;
+      });
       return;
     }
 
     final AppClinicalNoteAiFormatter? formatter =
         widget.aiFormatter ?? ref.read(aiClinicalNoteFormatterProvider);
     if (formatter == null) {
-      setState(() => _aiFeedback = l10n.commonAiFormatUnavailableMessage);
+      setState(() {
+        _aiFeedbackTitle = l10n.commonAiFormatUnavailableTitle;
+        _aiFeedback = l10n.commonAiFormatUnavailableMessage;
+        _aiFeedbackVariant = AppFormInformationVariant.warning;
+      });
       return;
     }
 
@@ -388,6 +401,7 @@ class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
     _aiAbort = abort;
     setState(() {
       _aiFormatting = true;
+      _aiFeedbackTitle = null;
       _aiFeedback = null;
     });
 
@@ -412,10 +426,18 @@ class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
     final String? formatted = outcome.text;
     if (!stillOwned || formatted == null || formatted.trim().isEmpty) {
       if (stillOwned) {
+        final bool timedOut =
+            outcome.failure?.category == AppFailureCategory.timeout;
         setState(() {
+          _aiFeedbackTitle = timedOut
+              ? l10n.commonAiFormatBusyTitle
+              : l10n.commonAiFormatUnavailableTitle;
           _aiFeedback = outcome.failure != null
               ? l10n.failureMessage(outcome.failure!)
               : l10n.commonAiFormatUnavailableMessage;
+          _aiFeedbackVariant = timedOut
+              ? AppFormInformationVariant.error
+              : AppFormInformationVariant.warning;
         });
       }
       return;
@@ -433,7 +455,10 @@ class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
       selection: TextSelection.collapsed(offset: next.length),
     );
     widget.onChanged?.call(next);
-    setState(() => _aiFeedback = null);
+    setState(() {
+      _aiFeedbackTitle = null;
+      _aiFeedback = null;
+    });
     _focusNode.requestFocus();
   }
 
@@ -562,14 +587,24 @@ class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
           Divider(height: 1, color: theme.borders.faint),
           SizedBox(height: theme.spacing.xs),
         ],
-        if (_aiFeedback != null && _aiFeedback!.trim().isNotEmpty) ...<Widget>[
-          Text(
-            _aiFeedback!,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colors.onSurfaceVariant,
-            ),
+        if (_aiFormatting ||
+            (_aiFeedback != null && _aiFeedback!.trim().isNotEmpty)) ...<
+          Widget
+        >[
+          AppFormInformationBanner(
+            title: _aiFormatting
+                ? l10n.commonAiFormatBusyTitle
+                : (_aiFeedbackTitle ?? l10n.commonAiFormatUnavailableTitle),
+            message: _aiFormatting
+                ? l10n.commonAiFormatBusyMessage
+                : _aiFeedback!,
+            variant: _aiFormatting
+                ? AppFormInformationVariant.info
+                : _aiFeedbackVariant,
+            icon: _aiFormatting ? Icons.auto_awesome : null,
+            borderRadius: BorderRadius.zero,
           ),
-          SizedBox(height: theme.spacing.xs),
+          SizedBox(height: theme.spacing.sm),
         ],
         TextFormField(
           controller: widget.controller,
