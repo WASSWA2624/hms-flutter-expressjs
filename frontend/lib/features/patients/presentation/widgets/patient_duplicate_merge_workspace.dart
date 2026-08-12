@@ -299,18 +299,11 @@ PatientMergeCommitPlan buildPatientMergeCommitPlan({
 }
 
 String _joinIdentifier(Patient patient) {
-  final String type = patient.primaryIdentifierType?.trim() ?? '';
   final String value = patient.primaryIdentifierValue?.trim() ?? '';
-  if (type.isEmpty && value.isEmpty) {
-    return patient.publicId?.trim() ?? '';
-  }
-  if (type.isEmpty) {
+  if (value.isNotEmpty) {
     return value;
   }
-  if (value.isEmpty) {
-    return type;
-  }
-  return '$type $value';
+  return patient.publicId?.trim() ?? '';
 }
 
 String? _nonEmpty(String value) {

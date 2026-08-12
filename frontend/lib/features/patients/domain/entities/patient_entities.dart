@@ -360,11 +360,11 @@ final class Patient {
   }
 
   String? get effectiveIdentifier {
-    final String? typedIdentifier = _joinNonEmpty(<String?>[
-      primaryIdentifierType,
-      primaryIdentifierValue,
-    ]);
-    return _firstNonEmpty(<String?>[typedIdentifier, publicId]);
+    final String? value = primaryIdentifierValue?.trim();
+    if (value != null && value.isNotEmpty) {
+      return value;
+    }
+    return _firstNonEmpty(<String?>[publicId]);
   }
 
   Patient copyWith({
@@ -1057,12 +1057,4 @@ String? _firstNonEmpty(Iterable<String?> values) {
   }
 
   return null;
-}
-
-String? _joinNonEmpty(Iterable<String?> values) {
-  final String joined = values
-      .map((String? value) => value?.trim() ?? '')
-      .where((String value) => value.isNotEmpty)
-      .join(' ');
-  return joined.isEmpty ? null : joined;
 }
