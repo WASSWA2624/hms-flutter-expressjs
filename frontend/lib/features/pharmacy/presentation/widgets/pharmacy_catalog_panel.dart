@@ -1585,7 +1585,7 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
           id: 'actions',
           label: l10n.pharmacyLineActionsColumnLabel,
           alwaysVisible: true,
-          fixedWidth: 240,
+          fixedWidth: 260,
           cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
             return _catalogRowActions(
               context: context,
