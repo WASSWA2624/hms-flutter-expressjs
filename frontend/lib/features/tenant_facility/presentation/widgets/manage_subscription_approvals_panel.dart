@@ -458,7 +458,7 @@ class _ManageSubscriptionApprovalsPanelState
                 printTenantFacilitySetupListTable<AccessAdminItem>(
               ref: ref,
               context: context,
-              title: l10n.tenantFacilitySubscriptionApprovalsAdminColumn,
+              title: l10n.tenantFacilitySetupTabSubscriptionApprovals,
               columns: <AppListTableColumn<AccessAdminItem>>[
                 ..._columns(l10n),
                 ..._optionalColumns(l10n),
@@ -472,7 +472,7 @@ class _ManageSubscriptionApprovalsPanelState
             exportConfig: AppListTableExportConfig<AccessAdminItem>(
               fileNameStem: 'setup_subscription_approvals',
               dateOf: (_) => null,
-              sheetName: l10n.tenantFacilitySubscriptionApprovalsAdminColumn,
+              sheetName: l10n.tenantFacilitySetupTabSubscriptionApprovals,
               enableDateFilter: false,
               dateFromLabel: l10n.commonTableExportDateFromLabel,
               dateToLabel: l10n.commonTableExportDateToLabel,
