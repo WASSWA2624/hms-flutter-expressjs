@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/core/ai/ai_clinical_note_formatter.dart';
 import 'package:hosspi_hms/core/ai/ai_speech_formatter.dart';
 import 'package:hosspi_hms/core/network/app_connectivity_status.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/app_rich_text_editor.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
+import 'package:hosspi_hms/shared/components/app_speech_ai.dart';
 import 'package:hosspi_hms/shared/components/app_speech_to_text.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 
@@ -72,6 +74,7 @@ void main() {
     WidgetTester tester,
     Widget child, {
     AppConnectivityStatus connectivity = AppConnectivityStatus.online,
+    AppClinicalNoteAiFormatter? clinicalNoteFormatter,
   }) async {
     await pumpComponent(
       tester,
@@ -81,6 +84,9 @@ void main() {
             (Ref ref) => Stream<AppConnectivityStatus>.value(connectivity),
           ),
           aiSpeechFormatterProvider.overrideWithValue(null),
+          aiClinicalNoteFormatterProvider.overrideWithValue(
+            clinicalNoteFormatter,
+          ),
         ],
         child: child,
       ),
@@ -627,6 +633,45 @@ void main() {
     await tester.pump();
 
     expect(controller.text, '**keep** spoken| tail');
+  });
+
+  testWidgets('rich text AI format rewrites the note', (
+    WidgetTester tester,
+  ) async {
+    final TextEditingController controller = TextEditingController(
+      text: 'pt c/o fever since yesterday',
+    );
+    var formatCalls = 0;
+
+    await pumpSpeechApp(
+      tester,
+      AppRichTextEditor(
+        controller: controller,
+        labelText: 'Clinical note',
+      ),
+      clinicalNoteFormatter:
+          ({
+            required String text,
+            required AppSpeechAiAbort abort,
+            String? locale,
+            String? hint,
+          }) async {
+            formatCalls += 1;
+            expect(text, 'pt c/o fever since yesterday');
+            return 'The patient reports fever since yesterday.';
+          },
+    );
+
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppRichTextEditor)),
+    );
+    expect(find.byTooltip(l10n.commonAiFormatTooltip), findsOneWidget);
+    await tester.tap(find.byTooltip(l10n.commonAiFormatTooltip));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(formatCalls, 1);
+    expect(controller.text, 'The patient reports fever since yesterday.');
   });
 
   testWidgets('starting speech on a second field stops the first', (

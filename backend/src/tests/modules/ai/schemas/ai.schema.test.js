@@ -2,12 +2,20 @@ const {
   aiTaskKeyParamsSchema,
   aiTaskBodySchema,
 } = require('@validations/ai/ai.schema');
+const {
+  clinicalNoteFormatTask,
+} = require('@lib/ai/tasks/clinical-note-format');
 const { speechFormatTask } = require('@lib/ai/tasks/speech-format');
 
 describe('ai schemas', () => {
   test('accepts snake_case task keys', () => {
     expect(aiTaskKeyParamsSchema.parse({ task_key: 'speech_format' })).toEqual({
       task_key: 'speech_format',
+    });
+    expect(
+      aiTaskKeyParamsSchema.parse({ task_key: 'clinical_note_format' })
+    ).toEqual({
+      task_key: 'clinical_note_format',
     });
   });
 
@@ -26,6 +34,20 @@ describe('ai schemas', () => {
       transcript: 'hello',
       mode: 'text',
       locale: 'en',
+    });
+  });
+
+  test('clinical_note_format body requires text', () => {
+    expect(() => clinicalNoteFormatTask.inputSchema.parse({})).toThrow();
+    expect(
+      clinicalNoteFormatTask.inputSchema.parse({
+        text: '  patient febrile  ',
+        hint: 'SOAP style',
+      })
+    ).toEqual({
+      text: 'patient febrile',
+      locale: 'en',
+      hint: 'SOAP style',
     });
   });
 

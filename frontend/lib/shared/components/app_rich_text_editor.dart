@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/ai/ai_clinical_note_formatter.dart';
+import 'package:hosspi_hms/core/network/app_connectivity_status.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
+import 'package:hosspi_hms/shared/components/app_speech_ai.dart';
 import 'package:hosspi_hms/shared/components/app_speech_to_text.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace_feedback.dart';
 
 /// Formatting tools exposed by [AppRichTextEditor].
 enum AppRichTextTool { bold, italic, underline, bulletList, numberedList }
@@ -200,7 +205,7 @@ class AppRichTextView extends StatelessWidget {
 ///
 /// Stores content as plain markdown-ish text via [AppRichTextMarkup], so it
 /// works with existing `TEXT` / string API fields without schema changes.
-class AppRichTextEditor extends StatefulWidget {
+class AppRichTextEditor extends ConsumerStatefulWidget {
   const AppRichTextEditor({
     required this.controller,
     this.labelText,
@@ -214,6 +219,9 @@ class AppRichTextEditor extends StatefulWidget {
     this.autofocus = false,
     this.showToolbar = true,
     this.enableSpeechToText = true,
+    this.enableAiFormat = true,
+    this.aiFormatter,
+    this.aiFormatHint,
     this.tools = AppRichTextMarkup.defaultTools,
     this.validator,
     this.onChanged,
@@ -235,23 +243,37 @@ class AppRichTextEditor extends StatefulWidget {
 
   /// When true (default), shows the shared speech-to-text control.
   final bool enableSpeechToText;
+
+  /// When true (default), shows the AI professional-format control.
+  final bool enableAiFormat;
+
+  /// Test override. Production reads [aiClinicalNoteFormatterProvider].
+  final AppClinicalNoteAiFormatter? aiFormatter;
+
+  /// Optional format hint sent to the backend task (e.g. SOAP).
+  final String? aiFormatHint;
   final Set<AppRichTextTool> tools;
   final FormFieldValidator<String>? validator;
   final ValueChanged<String>? onChanged;
   final FocusNode? focusNode;
 
   @override
-  State<AppRichTextEditor> createState() => _AppRichTextEditorState();
+  ConsumerState<AppRichTextEditor> createState() => _AppRichTextEditorState();
 }
 
-class _AppRichTextEditorState extends State<AppRichTextEditor> {
+class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
   FocusNode? _ownedFocusNode;
   late FocusNode _focusNode;
+  AppSpeechAiAbort? _aiAbort;
+  bool _aiFormatting = false;
+  late String _lastKnownText;
 
   @override
   void initState() {
     super.initState();
     _attachFocusNode();
+    _lastKnownText = widget.controller.text;
+    widget.controller.addListener(_handleControllerChanged);
   }
 
   @override
@@ -261,10 +283,19 @@ class _AppRichTextEditorState extends State<AppRichTextEditor> {
       _detachOwnedFocusNode();
       _attachFocusNode();
     }
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_handleControllerChanged);
+      _lastKnownText = widget.controller.text;
+      widget.controller.addListener(_handleControllerChanged);
+      _cancelAiFormat();
+      _aiFormatting = false;
+    }
   }
 
   @override
   void dispose() {
+    _cancelAiFormat();
+    widget.controller.removeListener(_handleControllerChanged);
     _detachOwnedFocusNode();
     super.dispose();
   }
@@ -281,6 +312,29 @@ class _AppRichTextEditorState extends State<AppRichTextEditor> {
   void _detachOwnedFocusNode() {
     _ownedFocusNode?.dispose();
     _ownedFocusNode = null;
+  }
+
+  void _handleControllerChanged() {
+    final String next = widget.controller.text;
+    final bool textChanged = next != _lastKnownText;
+    _lastKnownText = next;
+    if (!textChanged) {
+      return;
+    }
+    if (_aiFormatting) {
+      _cancelAiFormat();
+      if (mounted) {
+        setState(() => _aiFormatting = false);
+      }
+    } else if (mounted) {
+      // Rebuild so the AI button enables/disables with empty vs non-empty text.
+      setState(() {});
+    }
+  }
+
+  void _cancelAiFormat() {
+    _aiAbort?.abort();
+    _aiAbort = null;
   }
 
   void _applyWrap({required String prefix, required String suffix}) {
@@ -303,6 +357,78 @@ class _AppRichTextEditorState extends State<AppRichTextEditor> {
     widget.onChanged?.call(widget.controller.text);
     _focusNode.requestFocus();
     setState(() {});
+  }
+
+  Future<void> _formatWithAi() async {
+    final AppLocalizations l10n = context.l10n;
+    final String source = widget.controller.text.trim();
+    if (!widget.enabled || _aiFormatting || source.isEmpty) {
+      return;
+    }
+
+    final AsyncValue<AppConnectivityStatus> connectivity = ref.read(
+      appConnectivityStatusProvider,
+    );
+    final bool online = connectivity.maybeWhen(
+      data: (AppConnectivityStatus status) => status.isOnline,
+      orElse: () => true,
+    );
+    if (!online) {
+      showAppSuccessSnackBar(context, l10n.commonAiFormatOfflineMessage);
+      return;
+    }
+
+    final AppClinicalNoteAiFormatter? formatter =
+        widget.aiFormatter ?? ref.read(aiClinicalNoteFormatterProvider);
+    if (formatter == null) {
+      showAppSuccessSnackBar(context, l10n.commonAiFormatUnavailableMessage);
+      return;
+    }
+
+    final String baseline = widget.controller.text;
+    final AppSpeechAiAbort abort = AppSpeechAiAbort();
+    _cancelAiFormat();
+    _aiAbort = abort;
+    setState(() => _aiFormatting = true);
+
+    final String? formatted = await formatter(
+      text: source,
+      abort: abort,
+      hint: widget.aiFormatHint ?? widget.labelText,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    final bool stillOwned = identical(_aiAbort, abort);
+    setState(() {
+      if (stillOwned) {
+        _aiFormatting = false;
+        _aiAbort = null;
+      }
+    });
+
+    if (!stillOwned || formatted == null || formatted.trim().isEmpty) {
+      if (stillOwned && formatted == null) {
+        showAppSuccessSnackBar(context, l10n.commonAiFormatUnavailableMessage);
+      }
+      return;
+    }
+
+    // Do not overwrite if the user edited while the request was in flight.
+    if (widget.controller.text != baseline) {
+      return;
+    }
+
+    final String next = formatted.trim();
+    _lastKnownText = next;
+    widget.controller.value = TextEditingValue(
+      text: next,
+      selection: TextSelection.collapsed(offset: next.length),
+    );
+    widget.onChanged?.call(next);
+    _focusNode.requestFocus();
   }
 
   @override
@@ -381,7 +507,9 @@ class _AppRichTextEditorState extends State<AppRichTextEditor> {
         ),
     ];
     final bool showSpeech = widget.enableSpeechToText;
-    final bool showToolbarRow = showToolbar || showSpeech;
+    final bool showAiFormat = widget.enableAiFormat;
+    final bool showToolbarRow = showToolbar || showSpeech || showAiFormat;
+    final bool hasNoteText = widget.controller.text.trim().isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -403,10 +531,21 @@ class _AppRichTextEditorState extends State<AppRichTextEditor> {
                   child: Row(children: toolbarItems),
                 ),
               ),
+              if (showAiFormat)
+                _RichTextToolButton(
+                  tooltip: _aiFormatting
+                      ? l10n.commonAiFormatBusyTooltip
+                      : l10n.commonAiFormatTooltip,
+                  icon: Icons.auto_awesome,
+                  enabled:
+                      widget.enabled && !_aiFormatting && hasNoteText,
+                  busy: _aiFormatting,
+                  onPressed: _formatWithAi,
+                ),
               if (showSpeech)
                 AppSpeechToTextButton(
                   controller: widget.controller,
-                  enabled: widget.enabled,
+                  enabled: widget.enabled && !_aiFormatting,
                   dense: true,
                   transcriptTransform: appSpeechTextTranscript,
                   aiFormatMode: 'text',
@@ -460,7 +599,10 @@ class _AppRichTextEditorState extends State<AppRichTextEditor> {
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.zero,
-              borderSide: theme.borders.side(tone: AppBorderTone.error, weight: AppBorderWeight.medium),
+              borderSide: theme.borders.side(
+                tone: AppBorderTone.error,
+                weight: AppBorderWeight.medium,
+              ),
             ),
           ),
           validator:
@@ -499,20 +641,32 @@ class _RichTextToolButton extends StatelessWidget {
     required this.icon,
     required this.enabled,
     required this.onPressed,
+    this.busy = false,
   });
 
   final String tooltip;
   final IconData icon;
   final bool enabled;
   final VoidCallback onPressed;
+  final bool busy;
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     return IconButton(
       tooltip: tooltip,
-      icon: Icon(icon, size: 20),
+      icon: busy
+          ? SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: theme.colorScheme.primary,
+              ),
+            )
+          : Icon(icon, size: 20),
       visualDensity: VisualDensity.compact,
-      onPressed: enabled ? onPressed : null,
+      onPressed: enabled && !busy ? onPressed : null,
     );
   }
 }

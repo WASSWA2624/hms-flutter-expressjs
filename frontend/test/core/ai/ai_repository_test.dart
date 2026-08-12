@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/core/ai/ai_clinical_note_formatter.dart';
 import 'package:hosspi_hms/core/ai/ai_models.dart';
 import 'package:hosspi_hms/core/ai/ai_remote_data_source.dart';
 import 'package:hosspi_hms/core/ai/ai_repository.dart';
@@ -157,6 +158,61 @@ void main() {
     expect(formatted, 'name@hospital.com');
     expect(remote.lastTaskKey, 'speech_format');
     expect(remote.lastBody?['mode'], 'email');
+  });
+
+  test('clinical note formatter calls clinical_note_format', () async {
+    final _FakeAiRemoteDataSource remote = _FakeAiRemoteDataSource(
+      taskResult: const Result.success(
+        AiTaskResult(
+          taskKey: 'clinical_note_format',
+          output: <String, Object?>{
+            'formatted_text':
+                'The patient reports fever since yesterday.',
+          },
+          degraded: false,
+          model: 'llama3.2:3b',
+          provider: 'ollama',
+        ),
+      ),
+    );
+    final formatter = createAiClinicalNoteFormatter(
+      AiRepositoryImpl(remoteDataSource: remote),
+    );
+
+    final String? formatted = await formatter(
+      text: 'pt c/o fever since yesterday',
+      abort: AppSpeechAiAbort(),
+      hint: 'Clinical note',
+    );
+
+    expect(formatted, 'The patient reports fever since yesterday.');
+    expect(remote.lastTaskKey, 'clinical_note_format');
+    expect(remote.lastBody?['text'], 'pt c/o fever since yesterday');
+    expect(remote.lastBody?['hint'], 'Clinical note');
+  });
+
+  test('clinical note formatter skips when AI is not ready', () async {
+    final _FakeAiRemoteDataSource remote = _FakeAiRemoteDataSource(
+      statusResult: const Result.success(
+        AiStatus(
+          enabled: true,
+          provider: 'ollama',
+          model: 'llama3.2:3b',
+          ready: false,
+        ),
+      ),
+    );
+    final formatter = createAiClinicalNoteFormatter(
+      AiRepositoryImpl(remoteDataSource: remote),
+    );
+
+    final String? formatted = await formatter(
+      text: 'pt febrile',
+      abort: AppSpeechAiAbort(),
+    );
+
+    expect(formatted, isNull);
+    expect(remote.taskCalls, 0);
   });
 
   test('runTask rejects a blank task key', () async {

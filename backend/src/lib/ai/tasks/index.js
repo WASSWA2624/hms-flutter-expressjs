@@ -5,10 +5,12 @@
  * HTTP routes stay generic: POST /api/v1/ai/tasks/:task_key
  */
 
+const { clinicalNoteFormatTask } = require('./clinical-note-format');
 const { speechFormatTask } = require('./speech-format');
 
 const TASKS = Object.freeze({
   [speechFormatTask.key]: speechFormatTask,
+  [clinicalNoteFormatTask.key]: clinicalNoteFormatTask,
 });
 
 const getAiTask = (taskKey) => TASKS[String(taskKey || '').trim()] || null;

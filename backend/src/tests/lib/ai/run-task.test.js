@@ -30,6 +30,32 @@ describe('AI factory and runTask', () => {
     });
   });
 
+  test('completes clinical_note_format through a mocked provider', async () => {
+    const provider = createAiProvider({
+      name: 'mock-clinical',
+      complete: async () => ({
+        text: 'The patient reports fever since yesterday.',
+        model: 'mock-clinical-model',
+        provider: 'mock-clinical',
+      }),
+    });
+
+    const result = await runTask(
+      'clinical_note_format',
+      {
+        text: 'pt c/o fever since yesterday',
+      },
+      { provider }
+    );
+
+    expect(result.degraded).toBe(false);
+    expect(result.provider).toBe('mock-clinical');
+    expect(result.output).toEqual({
+      formatted_text: 'The patient reports fever since yesterday.',
+    });
+    expect(getAiTask('clinical_note_format')).not.toBeNull();
+  });
+
   test('a second mocked provider can satisfy speech_format without route changes', async () => {
     const provider = createAiProvider({
       name: 'mock-other',

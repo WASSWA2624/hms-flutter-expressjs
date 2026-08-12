@@ -31037,6 +31037,22 @@
   "@commonFormatNumberedListLabel": {
     "description": "Toolbar tooltip for numbered list note formatting."
   },
+  "commonAiFormatTooltip": "Format note with AI",
+  "@commonAiFormatTooltip": {
+    "description": "Toolbar tooltip for rewriting a note into professional medical language with AI."
+  },
+  "commonAiFormatBusyTooltip": "Formatting note…",
+  "@commonAiFormatBusyTooltip": {
+    "description": "Toolbar tooltip shown while AI note formatting is in progress."
+  },
+  "commonAiFormatUnavailableMessage": "AI note formatting is unavailable right now. Your original note was kept.",
+  "@commonAiFormatUnavailableMessage": {
+    "description": "Snack bar when AI clinical note formatting fails or is degraded."
+  },
+  "commonAiFormatOfflineMessage": "AI note formatting needs an internet connection.",
+  "@commonAiFormatOfflineMessage": {
+    "description": "Snack bar when AI clinical note formatting is blocked offline."
+  },
   "speechToTextStartTooltip": "Dictate with microphone",
   "@speechToTextStartTooltip": {
     "description": "Tooltip and semantic label for starting speech-to-text dictation."

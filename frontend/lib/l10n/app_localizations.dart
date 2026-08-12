@@ -44789,6 +44789,30 @@ abstract class AppLocalizations {
   /// **'Numbered list'**
   String get commonFormatNumberedListLabel;
 
+  /// Toolbar tooltip for rewriting a note into professional medical language with AI.
+  ///
+  /// In en, this message translates to:
+  /// **'Format note with AI'**
+  String get commonAiFormatTooltip;
+
+  /// Toolbar tooltip shown while AI note formatting is in progress.
+  ///
+  /// In en, this message translates to:
+  /// **'Formatting note…'**
+  String get commonAiFormatBusyTooltip;
+
+  /// Snack bar when AI clinical note formatting fails or is degraded.
+  ///
+  /// In en, this message translates to:
+  /// **'AI note formatting is unavailable right now. Your original note was kept.'**
+  String get commonAiFormatUnavailableMessage;
+
+  /// Snack bar when AI clinical note formatting is blocked offline.
+  ///
+  /// In en, this message translates to:
+  /// **'AI note formatting needs an internet connection.'**
+  String get commonAiFormatOfflineMessage;
+
   /// Tooltip and semantic label for starting speech-to-text dictation.
   ///
   /// In en, this message translates to:

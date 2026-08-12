@@ -24215,6 +24215,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonFormatNumberedListLabel => 'Numbered list';
 
   @override
+  String get commonAiFormatTooltip => 'Format note with AI';
+
+  @override
+  String get commonAiFormatBusyTooltip => 'Formatting note…';
+
+  @override
+  String get commonAiFormatUnavailableMessage =>
+      'AI note formatting is unavailable right now. Your original note was kept.';
+
+  @override
+  String get commonAiFormatOfflineMessage =>
+      'AI note formatting needs an internet connection.';
+
+  @override
   String get speechToTextStartTooltip => 'Dictate with microphone';
 
   @override
