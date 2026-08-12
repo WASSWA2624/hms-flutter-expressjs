@@ -33,11 +33,14 @@ describe('AI factory and runTask', () => {
   test('completes clinical_note_format through a mocked provider', async () => {
     const provider = createAiProvider({
       name: 'mock-clinical',
-      complete: async () => ({
-        text: 'The patient reports fever since yesterday.',
-        model: 'mock-clinical-model',
-        provider: 'mock-clinical',
-      }),
+      complete: async ({ timeoutMs }) => {
+        expect(timeoutMs).toBeGreaterThanOrEqual(60000);
+        return {
+          text: 'The patient reports fever since yesterday.',
+          model: 'mock-clinical-model',
+          provider: 'mock-clinical',
+        };
+      },
     });
 
     const result = await runTask(

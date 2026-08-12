@@ -44,6 +44,7 @@ final class DioAiRemoteDataSource implements AiRemoteDataSource {
     Map<String, Object?> body, {
     CancelToken? cancelToken,
   }) {
+    final bool longRunning = taskKey.trim() == 'clinical_note_format';
     return _apiClient.post<AiTaskResult>(
       ApiEndpoints.apiV1(<String>[
         HmsApiResource.ai.path,
@@ -61,6 +62,12 @@ final class DioAiRemoteDataSource implements AiRemoteDataSource {
         },
       ),
       cancelToken: cancelToken,
+      options: longRunning
+          ? Options(
+              sendTimeout: const Duration(seconds: 120),
+              receiveTimeout: const Duration(seconds: 120),
+            )
+          : null,
     );
   }
 }

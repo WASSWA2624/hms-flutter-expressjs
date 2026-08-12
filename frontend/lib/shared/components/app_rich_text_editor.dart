@@ -9,7 +9,6 @@ import 'package:hosspi_hms/shared/components/app_field_label.dart';
 import 'package:hosspi_hms/shared/components/app_speech_ai.dart';
 import 'package:hosspi_hms/shared/components/app_speech_to_text.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/layout/app_workspace_feedback.dart';
 
 /// Formatting tools exposed by [AppRichTextEditor].
 enum AppRichTextTool { bold, italic, underline, bulletList, numberedList }
@@ -266,6 +265,7 @@ class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
   late FocusNode _focusNode;
   AppSpeechAiAbort? _aiAbort;
   bool _aiFormatting = false;
+  String? _aiFeedback;
   late String _lastKnownText;
 
   @override
@@ -374,14 +374,14 @@ class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
       orElse: () => true,
     );
     if (!online) {
-      showAppSuccessSnackBar(context, l10n.commonAiFormatOfflineMessage);
+      setState(() => _aiFeedback = l10n.commonAiFormatOfflineMessage);
       return;
     }
 
     final AppClinicalNoteAiFormatter? formatter =
         widget.aiFormatter ?? ref.read(aiClinicalNoteFormatterProvider);
     if (formatter == null) {
-      showAppSuccessSnackBar(context, l10n.commonAiFormatUnavailableMessage);
+      setState(() => _aiFeedback = l10n.commonAiFormatUnavailableMessage);
       return;
     }
 
@@ -389,7 +389,10 @@ class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
     final AppSpeechAiAbort abort = AppSpeechAiAbort();
     _cancelAiFormat();
     _aiAbort = abort;
-    setState(() => _aiFormatting = true);
+    setState(() {
+      _aiFormatting = true;
+      _aiFeedback = null;
+    });
 
     final String? formatted = await formatter(
       text: source,
@@ -411,7 +414,7 @@ class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
 
     if (!stillOwned || formatted == null || formatted.trim().isEmpty) {
       if (stillOwned && formatted == null) {
-        showAppSuccessSnackBar(context, l10n.commonAiFormatUnavailableMessage);
+        setState(() => _aiFeedback = l10n.commonAiFormatUnavailableMessage);
       }
       return;
     }
@@ -428,6 +431,7 @@ class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
       selection: TextSelection.collapsed(offset: next.length),
     );
     widget.onChanged?.call(next);
+    setState(() => _aiFeedback = null);
     _focusNode.requestFocus();
   }
 
@@ -554,6 +558,15 @@ class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
             ],
           ),
           Divider(height: 1, color: theme.borders.faint),
+          SizedBox(height: theme.spacing.xs),
+        ],
+        if (_aiFeedback != null && _aiFeedback!.trim().isNotEmpty) ...<Widget>[
+          Text(
+            _aiFeedback!,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colors.onSurfaceVariant,
+            ),
+          ),
           SizedBox(height: theme.spacing.xs),
         ],
         TextFormField(

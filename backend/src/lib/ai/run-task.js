@@ -7,6 +7,7 @@ const {
   AI_MODEL,
   AI_TEMPERATURE,
   AI_TIMEOUT_MS,
+  AI_CLINICAL_NOTE_FORMAT_TIMEOUT_MS,
 } = require('@config/env');
 const { createAiProvider } = require('@lib/ai/factory');
 const { getAiTask } = require('@lib/ai/tasks');
@@ -19,6 +20,16 @@ const degradedResult = (task, input) => ({
   provider: null,
   degraded: true,
 });
+
+const resolveTaskTimeoutMs = (task) => {
+  if (task.key === 'clinical_note_format') {
+    return AI_CLINICAL_NOTE_FORMAT_TIMEOUT_MS;
+  }
+  if (Number(task.timeoutMs) > 0) {
+    return Number(task.timeoutMs);
+  }
+  return AI_TIMEOUT_MS;
+};
 
 const runTask = async (taskKey, rawInput, { signal, provider } = {}) => {
   const task = getAiTask(taskKey);
@@ -39,7 +50,7 @@ const runTask = async (taskKey, rawInput, { signal, provider } = {}) => {
       user: task.buildUserPrompt(input),
       model: AI_MODEL,
       temperature: AI_TEMPERATURE,
-      timeoutMs: AI_TIMEOUT_MS,
+      timeoutMs: resolveTaskTimeoutMs(task),
       signal,
     });
     const text = String(completion?.text || '').trim();
