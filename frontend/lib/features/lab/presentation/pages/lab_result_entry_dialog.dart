@@ -2701,7 +2701,6 @@ class _ReopenSavedResultDialogState
           label: l10n.commonCancelActionLabel,
           leadingIcon: Icons.close,
           enabled: !_isSaving,
-          fullWidth: compact,
           onPressed: _isSaving
               ? null
               : () => Navigator.of(context).pop(false),
@@ -2710,7 +2709,6 @@ class _ReopenSavedResultDialogState
           label: l10n.labEditVerifiedResultAction,
           leadingIcon: Icons.save_outlined,
           isLoading: _isSaving,
-          fullWidth: compact,
           onPressed: _isSaving ? null : _submit,
         ),
       ],

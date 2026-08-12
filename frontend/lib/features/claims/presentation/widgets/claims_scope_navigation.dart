@@ -4,26 +4,36 @@ import 'package:hosspi_hms/shared/components/components.dart';
 /// Default queue filter applied when entering a desk section.
 ClaimsQueueFilter claimsDefaultFilterForSection(ClaimsDeskSection section) {
   return switch (section) {
-    ClaimsDeskSection.authorizations => ClaimsQueueFilter.authorizationPending,
-    ClaimsDeskSection.activeClaims => ClaimsQueueFilter.claimSubmitted,
+    ClaimsDeskSection.authPending => ClaimsQueueFilter.authorizationPending,
+    ClaimsDeskSection.authApproved => ClaimsQueueFilter.authorizationApproved,
+    ClaimsDeskSection.authDenied => ClaimsQueueFilter.authorizationDenied,
+    ClaimsDeskSection.authExpired => ClaimsQueueFilter.authorizationExpired,
+    ClaimsDeskSection.submitted => ClaimsQueueFilter.claimSubmitted,
+    ClaimsDeskSection.approved => ClaimsQueueFilter.claimApproved,
+    ClaimsDeskSection.partialClaims => ClaimsQueueFilter.claimPartial,
+    ClaimsDeskSection.claimRejected => ClaimsQueueFilter.claimRejected,
     ClaimsDeskSection.settled => ClaimsQueueFilter.claimPaid,
     ClaimsDeskSection.insuranceSetup => ClaimsQueueFilter.all,
   };
 }
 
 /// Dedicated unfiltered scope total from workspace summary (sibling model).
+///
+/// Auth denied / expired have no dedicated summary fields yet — badge **0**
+/// (do not use loaded-page `items.length`).
 int claimsSectionScopeTotal(
   ClaimsWorkspaceState state,
   ClaimsDeskSection section,
 ) {
   return switch (section) {
-    ClaimsDeskSection.authorizations =>
-      state.authorizationPendingCount + state.authorizationApprovedCount,
-    ClaimsDeskSection.activeClaims =>
-      state.submittedClaimsCount +
-          state.approvedClaimsCount +
-          state.partialClaimsCount +
-          state.rejectedResubmissionCount,
+    ClaimsDeskSection.authPending => state.authorizationPendingCount,
+    ClaimsDeskSection.authApproved => state.authorizationApprovedCount,
+    ClaimsDeskSection.authDenied => 0,
+    ClaimsDeskSection.authExpired => 0,
+    ClaimsDeskSection.submitted => state.submittedClaimsCount,
+    ClaimsDeskSection.approved => state.approvedClaimsCount,
+    ClaimsDeskSection.partialClaims => state.partialClaimsCount,
+    ClaimsDeskSection.claimRejected => state.rejectedResubmissionCount,
     ClaimsDeskSection.settled => state.paidClosedCount,
     // Insurance Setup is a catalog hub — callers omit the badge (`count: null`).
     ClaimsDeskSection.insuranceSetup => 0,
@@ -65,8 +75,14 @@ int? claimsSectionTabCount(
 
 AppTabCountTone claimsSectionCountTone(ClaimsDeskSection section) {
   return switch (section) {
-    ClaimsDeskSection.authorizations ||
-    ClaimsDeskSection.activeClaims => AppTabCountTone.warning,
+    ClaimsDeskSection.authPending ||
+    ClaimsDeskSection.authApproved ||
+    ClaimsDeskSection.authDenied ||
+    ClaimsDeskSection.authExpired ||
+    ClaimsDeskSection.submitted ||
+    ClaimsDeskSection.approved ||
+    ClaimsDeskSection.partialClaims ||
+    ClaimsDeskSection.claimRejected => AppTabCountTone.warning,
     ClaimsDeskSection.settled ||
     ClaimsDeskSection.insuranceSetup => AppTabCountTone.info,
   };

@@ -344,7 +344,7 @@ void main() {
       // Print helper must reuse the Authorizations document atom (read ∩).
       expect(
         identical(
-          claimsDetailPrintRequirement(ClaimsDeskSection.authorizations),
+          claimsDetailPrintRequirement(ClaimsDeskSection.authPending),
           ClaimsAuthorizationsAtomPermissions.document,
         ),
         isTrue,
@@ -430,7 +430,7 @@ void main() {
         accessPolicy: reader,
       );
 
-      expect(find.textContaining('Authorizations'), findsWidgets);
+      expect(find.textContaining('Auth pending'), findsWidgets);
       expect(find.text('AUTH-PENDING'), findsOneWidget);
       expect(find.byTooltip('Request authorization'), findsNothing);
       expect(
@@ -448,7 +448,7 @@ void main() {
         find.byType(AppListTable<ClaimsQueueItem>),
       );
       expect(table.columns.length, 5);
-      expect(table.search?.showAdvancedFilterButton, isTrue);
+      expect(table.search?.showAdvancedFilterButton, isFalse);
       expect(table.search?.advancedFilterButtonLabel, 'Filters');
       expect(table.search?.advancedFilterCloseLabel, 'Close');
       expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
@@ -479,7 +479,7 @@ void main() {
   );
 
   testWidgets(
-    'Authorizations Filters sheet lists auth statuses; Export/Print when evidence:export',
+    'Auth pending omits status Advanced filters; Export/Print when evidence:export',
     (WidgetTester tester) async {
       await _pumpAuthorizationsTab(
         tester,
@@ -502,21 +502,9 @@ void main() {
       expect(table.canPrint, isTrue);
       expect(find.byTooltip('Export'), findsOneWidget);
       expect(find.byTooltip('Print'), findsOneWidget);
-
-      final List<String> authFilterLabels = table.search!.filterGroups
-          .expand((AppSearchBarFilterGroup group) => group.choices)
-          .map((AppSearchBarFilterChoice choice) => choice.label)
-          .toList(growable: false);
-      expect(authFilterLabels, contains('Authorization pending'));
-      expect(authFilterLabels, contains('Authorization approved'));
-      expect(authFilterLabels, contains('Authorization denied'));
-      expect(authFilterLabels, contains('Authorization expired'));
-
-      await tester.tap(find.textContaining('Filters').first);
-      await tester.pumpAndSettle();
-      expect(find.textContaining('Clear filters'), findsWidgets);
-      expect(find.textContaining('Apply filters'), findsWidgets);
-      expect(find.textContaining('Close'), findsWidgets);
+      expect(table.search?.showAdvancedFilterButton, isFalse);
+      expect(table.search?.filterGroups, isEmpty);
+      expect(find.byTooltip('Request authorization'), findsOneWidget);
     },
   );
 
@@ -723,7 +711,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byType(AppTabStrip),
-          matching: find.textContaining('Authorizations'),
+          matching: find.textContaining('Auth pending'),
         ),
         findsNothing,
       );
@@ -1130,7 +1118,7 @@ void main() {
   );
 
   testWidgets(
-    'read chrome: summary chips mount when counts > 0 for billing:read ∩',
+    'read chrome: Auth pending leaf mounts when counts > 0 for billing:read ∩',
     (WidgetTester tester) async {
       await _pumpAuthorizationsTab(
         tester,
@@ -1140,8 +1128,9 @@ void main() {
         ),
       );
 
-      expect(find.textContaining('Auth pending'), findsOneWidget);
-      expect(find.textContaining('Auth approved'), findsOneWidget);
+      expect(find.textContaining('Auth pending'), findsWidgets);
+      expect(find.textContaining('Auth approved'), findsWidgets);
+      expect(find.byType(ActionChip), findsNothing);
       expect(find.byTooltip('Request authorization'), findsNothing);
     },
   );
@@ -1220,7 +1209,7 @@ void main() {
         accessPolicy: noFacility,
       );
 
-      expect(find.textContaining('Authorizations'), findsWidgets);
+      expect(find.textContaining('Auth pending'), findsWidgets);
       expect(find.text('AUTH-PENDING'), findsOneWidget);
       expect(find.byTooltip('Request authorization'), findsNothing);
       expect(find.byTooltip('Update status'), findsNothing);
@@ -1251,14 +1240,14 @@ void main() {
       expect(
         claimsSectionShowsNextActionColumn(
           reader,
-          ClaimsDeskSection.authorizations,
+          ClaimsDeskSection.authPending,
         ),
         isFalse,
       );
       expect(
         claimsSectionShowsNextActionColumn(
           writer,
-          ClaimsDeskSection.authorizations,
+          ClaimsDeskSection.authPending,
         ),
         isTrue,
       );

@@ -1093,6 +1093,7 @@ class AppListTable<T> extends StatefulWidget {
     this.enableColumnResize = true,
     this.tableHorizontalMargin,
     this.toolbarContentGap,
+    this.pinToolbar = true,
     this.showRowNumbers = true,
     this.padEmptyRows,
     this.surfaceHeader,
@@ -1215,6 +1216,11 @@ class AppListTable<T> extends StatefulWidget {
   /// under the search bar (e.g. inside an [AppCollapsibleSection] with zero
   /// content padding).
   final double? toolbarContentGap;
+
+  /// When true (default), the search/toolbar stays pinned above the scrolling
+  /// table body (main-tab lists). When false, the toolbar scrolls away with
+  /// the rows while the footer stays pinned—prefer this for dialog embeds.
+  final bool pinToolbar;
 
   /// When false, hides the leading `#` index column (desktop and mobile).
   final bool showRowNumbers;
@@ -1734,15 +1740,41 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
 
         final double toolbarGap =
             widget.toolbarContentGap ?? theme.spacing.xs;
+        final bool pinToolbar = widget.pinToolbar || toolbar == null;
+        final Widget body;
+        if (pinToolbar) {
+          body = content;
+        } else {
+          // Unbounded height under a parent scroll view so search + rows share
+          // one vertical scroll while the footer stays pinned below.
+          final Widget scrollChild = Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              toolbar,
+              if (toolbarGap > 0) SizedBox(height: toolbarGap),
+              content,
+            ],
+          );
+          body = canExpand
+              ? Scrollbar(
+                  child: SingleChildScrollView(
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    child: scrollChild,
+                  ),
+                )
+              : scrollChild;
+        }
         return Column(
           mainAxisSize: canExpand ? MainAxisSize.max : MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (toolbar != null) ...<Widget>[
+            if (pinToolbar && toolbar != null) ...<Widget>[
               toolbar,
               if (toolbarGap > 0) SizedBox(height: toolbarGap),
             ],
-            if (canExpand) Expanded(child: content) else content,
+            if (canExpand) Expanded(child: body) else body,
             footer,
           ],
         );

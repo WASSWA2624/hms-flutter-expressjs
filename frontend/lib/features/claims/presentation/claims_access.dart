@@ -53,15 +53,21 @@ const AccessRequirement claimsFinancialApproveRequirement = AccessRequirement(
 
 /// Per-desk-section tab strip gate.
 ///
-/// Authorizations / Active Claims / Settled use matrix ∩ `billing:read`.
-/// Insurance Setup uses the matrix ∪ read row (billing read | facility/tenant
-/// admin).
+/// Authorization-scoped / claim-scoped / Settled leaves use matrix ∩
+/// `billing:read`. Insurance Setup uses the matrix ∪ read row (billing read |
+/// facility/tenant admin).
 AccessRequirement claimsDeskSectionRequirement(ClaimsDeskSection section) {
   return switch (section) {
     ClaimsDeskSection.insuranceSetup =>
       claimsInsuranceSetupReadAnyRequirement,
-    ClaimsDeskSection.authorizations ||
-    ClaimsDeskSection.activeClaims ||
+    ClaimsDeskSection.authPending ||
+    ClaimsDeskSection.authApproved ||
+    ClaimsDeskSection.authDenied ||
+    ClaimsDeskSection.authExpired ||
+    ClaimsDeskSection.submitted ||
+    ClaimsDeskSection.approved ||
+    ClaimsDeskSection.partialClaims ||
+    ClaimsDeskSection.claimRejected ||
     ClaimsDeskSection.settled =>
       claimsWorkspaceReadRequirement,
   };
@@ -153,9 +159,15 @@ bool canPrintClaimsWorkspace(AppAccessPolicy policy) {
 AccessRequirement claimsDetailPrintRequirement(ClaimsDeskSection section) {
   return switch (section) {
     ClaimsDeskSection.settled => claimsWorkspacePrintRequirement,
-    ClaimsDeskSection.authorizations =>
+    ClaimsDeskSection.authPending ||
+    ClaimsDeskSection.authApproved ||
+    ClaimsDeskSection.authDenied ||
+    ClaimsDeskSection.authExpired =>
       ClaimsAuthorizationsAtomPermissions.document,
-    ClaimsDeskSection.activeClaims =>
+    ClaimsDeskSection.submitted ||
+    ClaimsDeskSection.approved ||
+    ClaimsDeskSection.partialClaims ||
+    ClaimsDeskSection.claimRejected =>
       ClaimsActiveClaimsAtomPermissions.document,
     ClaimsDeskSection.insuranceSetup => claimsWorkspaceReadRequirement,
   };
@@ -199,9 +211,15 @@ bool claimsSectionShowsNextActionColumn(
   return switch (section) {
     ClaimsDeskSection.settled ||
     ClaimsDeskSection.insuranceSetup => false,
-    ClaimsDeskSection.authorizations =>
+    ClaimsDeskSection.authPending ||
+    ClaimsDeskSection.authApproved ||
+    ClaimsDeskSection.authDenied ||
+    ClaimsDeskSection.authExpired =>
       ClaimsAuthorizationsAtomPermissions.nextActionColumn.isAllowed(policy),
-    ClaimsDeskSection.activeClaims =>
+    ClaimsDeskSection.submitted ||
+    ClaimsDeskSection.approved ||
+    ClaimsDeskSection.partialClaims ||
+    ClaimsDeskSection.claimRejected =>
       ClaimsActiveClaimsAtomPermissions.nextActionColumn.isAllowed(policy),
   };
 }
@@ -211,8 +229,8 @@ bool claimsSectionShowsNextActionColumn(
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Authorizations tab | navigate | read ∩ `billing:read` |
-/// | Request authorization (strip primary) | create | write ∩ `billing:write` |
-/// | Summary chips (Auth pending / approved / Denied / Expired) | read chrome | read ∩ |
+/// | Request authorization (search trailing) | create | write ∩ `billing:write` |
+/// | Auth pending / approved / denied / expired tabs | navigate | read ∩ |
 /// | Search / Clear / Filters / Settings (columns) | read chrome | read ∩ |
 /// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Empty / error / retry / loading | read chrome | read ∩ |
@@ -256,13 +274,13 @@ abstract final class ClaimsAuthorizationsAtomPermissions {
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Active Claims tab | navigate | read ∩ `billing:read` |
-/// | Summary chips (Submitted / Approved / Partial / Rejected) | read chrome | read ∩ |
+/// | Active Claims leaf tabs | navigate | read ∩ `billing:read` |
+/// | Submitted / Approved / Partial / Rejected tabs | navigate | read ∩ |
 /// | Search / Clear / Filters / column Settings | read chrome | read ∩ |
 /// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Empty / error / retry | read chrome | read ∩ |
 /// | Row select → detail | read | read ∩ |
-/// | Prepare claim (tab-strip primary) | create | write ∩ `billing:write` |
+/// | Prepare claim (search trailing) | create | write ∩ `billing:write` |
 /// | Next action Submit / Resubmit / Record response | update | write ∩ |
 /// | Next action Close as paid | approve | financial:approve ∩ |
 /// | Detail Sync insurer status | update | write ∩ |

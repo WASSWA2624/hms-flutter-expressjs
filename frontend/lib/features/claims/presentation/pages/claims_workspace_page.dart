@@ -85,7 +85,7 @@ class _ClaimsWorkspaceContentState
     super.initState();
     _section = widget.initialQuery?.section.isNotEmpty == true
         ? claimsDeskSectionFromQuery(widget.initialQuery!.section)
-        : ClaimsDeskSection.authorizations;
+        : ClaimsDeskSection.authPending;
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
         AppListTableColumnVisibilityController<ClaimsQueueItem>();
@@ -225,8 +225,14 @@ class _ClaimsWorkspaceContentState
 
   static IconData _sectionIcon(ClaimsDeskSection section) {
     return switch (section) {
-      ClaimsDeskSection.authorizations => Icons.verified_user_outlined,
-      ClaimsDeskSection.activeClaims => Icons.receipt_long_outlined,
+      ClaimsDeskSection.authPending => Icons.schedule_outlined,
+      ClaimsDeskSection.authApproved => Icons.verified_outlined,
+      ClaimsDeskSection.authDenied => Icons.report_gmailerrorred_outlined,
+      ClaimsDeskSection.authExpired => Icons.block_outlined,
+      ClaimsDeskSection.submitted => Icons.outbox_outlined,
+      ClaimsDeskSection.approved => Icons.fact_check_outlined,
+      ClaimsDeskSection.partialClaims => Icons.pie_chart_outline,
+      ClaimsDeskSection.claimRejected => Icons.report_gmailerrorred_outlined,
       ClaimsDeskSection.settled => Icons.task_alt_outlined,
       ClaimsDeskSection.insuranceSetup => Icons.business_outlined,
     };
@@ -234,8 +240,16 @@ class _ClaimsWorkspaceContentState
 
   String _sectionLabel(AppLocalizations l10n, ClaimsDeskSection section) {
     return switch (section) {
-      ClaimsDeskSection.authorizations => l10n.claimsSectionAuthorizations,
-      ClaimsDeskSection.activeClaims => l10n.claimsSectionActiveClaims,
+      ClaimsDeskSection.authPending =>
+        l10n.claimsAuthorizationPendingSummaryLabel,
+      ClaimsDeskSection.authApproved =>
+        l10n.claimsAuthorizationApprovedSummaryLabel,
+      ClaimsDeskSection.authDenied => l10n.claimsFilterAuthorizationDenied,
+      ClaimsDeskSection.authExpired => l10n.claimsFilterAuthorizationExpired,
+      ClaimsDeskSection.submitted => l10n.claimsSubmittedSummaryLabel,
+      ClaimsDeskSection.approved => l10n.claimsApprovedSummaryLabel,
+      ClaimsDeskSection.partialClaims => l10n.claimsPartialSummaryLabel,
+      ClaimsDeskSection.claimRejected => l10n.claimsFilterClaimRejected,
       ClaimsDeskSection.settled => l10n.claimsSectionSettled,
       ClaimsDeskSection.insuranceSetup => l10n.claimsSectionInsuranceSetup,
     };
@@ -259,9 +273,6 @@ class _ClaimsWorkspaceContentState
     final ThemeData theme = Theme.of(context);
     final ClaimsWorkspaceState state = widget.state;
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
-    final ClaimsWorkspaceController controller = ref.read(
-      claimsWorkspaceControllerProvider.notifier,
-    );
     final List<ClaimsDeskSection> visibleSections = <ClaimsDeskSection>[
       for (final ClaimsDeskSection section in ClaimsDeskSection.values)
         if (canViewClaimsDeskSection(accessPolicy, section)) section,
@@ -309,15 +320,8 @@ class _ClaimsWorkspaceContentState
           }
         }
       },
-      primaryAction: _buildPrimaryActionButton(
-        l10n,
-        state,
-        controller,
-        accessPolicy,
-        effectiveSection,
-      ),
-      // Refresh and insurance-setup creates were removed from the strip —
-      // mutations/realtime refresh the queue; setup actions live on the panel.
+      // Create actions live on the queue search bar after Print (claims.md).
+      // Insurance Setup catalog actions live on the panel.
     );
 
     return ResponsivePage(
@@ -334,17 +338,6 @@ class _ClaimsWorkspaceContentState
           children: <Widget>[
             tabStrip,
             SizedBox(height: theme.spacing.sm),
-            if (effectiveSection == ClaimsDeskSection.authorizations ||
-                effectiveSection == ClaimsDeskSection.activeClaims) ...<Widget>[
-              _ClaimsSummaryBar(
-                state: state,
-                section: effectiveSection,
-                onFilterApplied: (ClaimsQueueFilter filter) {
-                  unawaited(_applySummaryFilter(controller, filter));
-                },
-              ),
-              SizedBox(height: theme.spacing.md),
-            ],
             if (effectiveSection == ClaimsDeskSection.insuranceSetup)
               Expanded(child: _ClaimsInsuranceSetupPanel(state: state))
             else
@@ -352,9 +345,15 @@ class _ClaimsWorkspaceContentState
                 child: AppAccessGate(
                   // Queue list chrome → each tab atom map's listChrome (read ∩).
                   requirement: switch (effectiveSection) {
-                    ClaimsDeskSection.authorizations =>
+                    ClaimsDeskSection.authPending ||
+                    ClaimsDeskSection.authApproved ||
+                    ClaimsDeskSection.authDenied ||
+                    ClaimsDeskSection.authExpired =>
                       ClaimsAuthorizationsAtomPermissions.listChrome,
-                    ClaimsDeskSection.activeClaims =>
+                    ClaimsDeskSection.submitted ||
+                    ClaimsDeskSection.approved ||
+                    ClaimsDeskSection.partialClaims ||
+                    ClaimsDeskSection.claimRejected =>
                       ClaimsActiveClaimsAtomPermissions.listChrome,
                     ClaimsDeskSection.settled =>
                       ClaimsSettledAtomPermissions.listChrome,
@@ -372,193 +371,6 @@ class _ClaimsWorkspaceContentState
           ],
         ),
       ),
-    );
-  }
-
-  Widget? _buildPrimaryActionButton(
-    AppLocalizations l10n,
-    ClaimsWorkspaceState state,
-    ClaimsWorkspaceController controller,
-    AppAccessPolicy accessPolicy,
-    ClaimsDeskSection section,
-  ) {
-    // Settled is review-only; Insurance Setup actions live on the panel.
-    if (section == ClaimsDeskSection.settled ||
-        section == ClaimsDeskSection.insuranceSetup) {
-      return null;
-    }
-    // Unauthorized write chrome must not mount (no disabled stub).
-    // Authorizations + Active Claims prepare share write ∩ (`billing:write`).
-    return switch (section) {
-      ClaimsDeskSection.authorizations
-          when ClaimsAuthorizationsAtomPermissions.requestAuthorization
-              .isAllowed(accessPolicy) =>
-        AppTabToolbarPrimary(
-          label: l10n.claimsRequestAuthorizationAction,
-          icon: Icons.verified_user_outlined,
-          semanticLabel: l10n.claimsRequestAuthorizationAction,
-          tooltip: l10n.claimsRequestAuthorizationAction,
-          isLoading: state.isSaving,
-          onPressed: () => unawaited(
-            _openRequestAuthorizationDialog(context, controller, state),
-          ),
-        ),
-      ClaimsDeskSection.activeClaims
-          when ClaimsActiveClaimsAtomPermissions.prepare.isAllowed(
-            accessPolicy,
-          ) =>
-        AppTabToolbarPrimary(
-          label: l10n.claimsPrepareClaimAction,
-          icon: Icons.receipt_long_outlined,
-          semanticLabel: l10n.claimsPrepareClaimAction,
-          tooltip: l10n.claimsPrepareClaimAction,
-          isLoading: state.isSaving,
-          onPressed: () => unawaited(
-            _openPrepareClaimDialog(context, ref, controller, state),
-          ),
-        ),
-      ClaimsDeskSection.authorizations ||
-      ClaimsDeskSection.activeClaims ||
-      ClaimsDeskSection.settled ||
-      ClaimsDeskSection.insuranceSetup => null,
-    };
-  }
-
-  Future<void> _applySummaryFilter(
-    ClaimsWorkspaceController controller,
-    ClaimsQueueFilter filter,
-  ) async {
-    final AppFailure? failure = await controller.applyFilter(filter);
-    if (mounted) {
-      _showFailureIfNeeded(context, failure);
-    }
-  }
-}
-
-class _ClaimsSummaryBar extends StatelessWidget {
-  const _ClaimsSummaryBar({
-    required this.state,
-    required this.section,
-    required this.onFilterApplied,
-  });
-
-  final ClaimsWorkspaceState state;
-  final ClaimsDeskSection section;
-  final ValueChanged<ClaimsQueueFilter> onFilterApplied;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-    final List<AppWorkspaceSummaryNotification> cards = switch (section) {
-      ClaimsDeskSection.authorizations => <AppWorkspaceSummaryNotification>[
-        if (state.authorizationPendingCount > 0)
-          AppWorkspaceSummaryNotification(
-            label: l10n.claimsAuthorizationPendingSummaryLabel,
-            count: state.authorizationPendingCount,
-            icon: Icons.schedule_outlined,
-            tone: AppWorkspaceStatusTone.warning,
-            onSelected: () =>
-                onFilterApplied(ClaimsQueueFilter.authorizationPending),
-          ),
-        if (state.authorizationApprovedCount > 0)
-          AppWorkspaceSummaryNotification(
-            label: l10n.claimsAuthorizationApprovedSummaryLabel,
-            count: state.authorizationApprovedCount,
-            icon: Icons.verified_outlined,
-            tone: AppWorkspaceStatusTone.success,
-            onSelected: () =>
-                onFilterApplied(ClaimsQueueFilter.authorizationApproved),
-          ),
-        if (_claimsCountForFilter(
-              state,
-              ClaimsQueueFilter.authorizationDenied,
-            ) >
-            0)
-          AppWorkspaceSummaryNotification(
-            label: l10n.claimsFilterAuthorizationDenied,
-            count: _claimsCountForFilter(
-              state,
-              ClaimsQueueFilter.authorizationDenied,
-            ),
-            icon: Icons.report_gmailerrorred_outlined,
-            tone: AppWorkspaceStatusTone.error,
-            onSelected: () =>
-                onFilterApplied(ClaimsQueueFilter.authorizationDenied),
-          ),
-        if (_claimsCountForFilter(
-              state,
-              ClaimsQueueFilter.authorizationExpired,
-            ) >
-            0)
-          AppWorkspaceSummaryNotification(
-            label: l10n.claimsFilterAuthorizationExpired,
-            count: _claimsCountForFilter(
-              state,
-              ClaimsQueueFilter.authorizationExpired,
-            ),
-            icon: Icons.block_outlined,
-            onSelected: () =>
-                onFilterApplied(ClaimsQueueFilter.authorizationExpired),
-          ),
-      ],
-      ClaimsDeskSection.activeClaims => <AppWorkspaceSummaryNotification>[
-        if (state.submittedClaimsCount > 0)
-          AppWorkspaceSummaryNotification(
-            label: l10n.claimsSubmittedSummaryLabel,
-            count: state.submittedClaimsCount,
-            icon: Icons.outbox_outlined,
-            tone: AppWorkspaceStatusTone.info,
-            onSelected: () => onFilterApplied(ClaimsQueueFilter.claimSubmitted),
-          ),
-        if (state.approvedClaimsCount > 0)
-          AppWorkspaceSummaryNotification(
-            label: l10n.claimsApprovedSummaryLabel,
-            count: state.approvedClaimsCount,
-            icon: Icons.fact_check_outlined,
-            tone: AppWorkspaceStatusTone.success,
-            onSelected: () => onFilterApplied(ClaimsQueueFilter.claimApproved),
-          ),
-        if (state.partialClaimsCount > 0)
-          AppWorkspaceSummaryNotification(
-            label: l10n.claimsPartialSummaryLabel,
-            count: state.partialClaimsCount,
-            icon: Icons.pie_chart_outline,
-            tone: AppWorkspaceStatusTone.warning,
-            onSelected: () => onFilterApplied(ClaimsQueueFilter.claimPartial),
-          ),
-        if (state.rejectedResubmissionCount > 0)
-          AppWorkspaceSummaryNotification(
-            label: l10n.claimsFilterClaimRejected,
-            count: state.rejectedResubmissionCount,
-            icon: Icons.report_gmailerrorred_outlined,
-            tone: AppWorkspaceStatusTone.error,
-            onSelected: () => onFilterApplied(ClaimsQueueFilter.claimRejected),
-          ),
-      ],
-      _ => const <AppWorkspaceSummaryNotification>[],
-    };
-
-    if (cards.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final ThemeData theme = Theme.of(context);
-
-    return Wrap(
-      spacing: theme.spacing.sm,
-      runSpacing: theme.spacing.sm,
-      children: <Widget>[
-        for (final AppWorkspaceSummaryNotification card in cards)
-          ActionChip(
-            avatar: Icon(
-              card.icon,
-              size: 18,
-              color: workspaceStatusToneAccentColor(theme, card.tone),
-            ),
-            label: Text('${card.label} (${card.count})'),
-            onPressed: card.onSelected,
-          ),
-      ],
     );
   }
 }
@@ -731,6 +543,10 @@ class _ClaimsQueuePanel extends ConsumerWidget {
           showNextAction: showNextAction,
         );
 
+    final List<AppSearchBarFilterChoice> filterChoices =
+        _claimsFilterChoicesForSection(l10n, section);
+    final bool showAdvancedFilters = filterChoices.isNotEmpty;
+
     return AppListTable<ClaimsQueueItem>(
       page: state.queue,
       isLoading: state.isRefreshing,
@@ -765,12 +581,7 @@ class _ClaimsQueuePanel extends ConsumerWidget {
           printClaimsListTable<ClaimsQueueItem>(
         ref: ref,
         context: context,
-        title: switch (section) {
-          ClaimsDeskSection.authorizations => l10n.claimsSectionAuthorizations,
-          ClaimsDeskSection.activeClaims => l10n.claimsSectionActiveClaims,
-          ClaimsDeskSection.settled => l10n.claimsSectionSettled,
-          ClaimsDeskSection.insuranceSetup => l10n.claimsSectionInsuranceSetup,
-        },
+        title: _claimsSectionPrintTitle(l10n, section),
         columns: <AppListTableColumn<ClaimsQueueItem>>[
           ...columns,
           ...columnChoices,
@@ -784,12 +595,7 @@ class _ClaimsQueuePanel extends ConsumerWidget {
       exportConfig: AppListTableExportConfig<ClaimsQueueItem>(
         fileNameStem: 'claims_${section.name}',
         dateOf: (ClaimsQueueItem item) => item.timelineAt,
-        sheetName: switch (section) {
-          ClaimsDeskSection.authorizations => l10n.claimsSectionAuthorizations,
-          ClaimsDeskSection.activeClaims => l10n.claimsSectionActiveClaims,
-          ClaimsDeskSection.settled => l10n.claimsSectionSettled,
-          ClaimsDeskSection.insuranceSetup => l10n.claimsSectionInsuranceSetup,
-        },
+        sheetName: _claimsSectionPrintTitle(l10n, section),
         dateFromLabel: l10n.commonTableExportDateFromLabel,
         dateToLabel: l10n.commonTableExportDateToLabel,
       ),
@@ -811,7 +617,7 @@ class _ClaimsQueuePanel extends ConsumerWidget {
             _showFailureIfNeeded(context, failure);
           }
         },
-        showAdvancedFilterButton: true,
+        showAdvancedFilterButton: showAdvancedFilters,
         advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
         advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
@@ -821,26 +627,40 @@ class _ClaimsQueuePanel extends ConsumerWidget {
         // range; work-items API does not accept date_from/date_to.
         enableDateFilter: false,
         allFieldsLabel: l10n.claimsFilterAll,
-        filterGroups: <AppSearchBarFilterGroup>[
-          AppSearchBarFilterGroup(
-            key: _claimsQueueFilterKey,
-            label: l10n.claimsQueueFilterLabel,
-            allLabel: l10n.claimsFilterAll,
-            choices: _claimsFilterChoicesForSection(l10n, section),
-          ),
-        ],
-        filterValue: _claimsFilterValue(state.query),
-        hasActiveFilters:
-            claimsQueueQueryNarrowed(state.query, section) ||
-            state.query.filter != ClaimsQueueFilter.all,
-        onFilterChanged: (AppSearchBarFilterValue value) async {
-          final AppFailure? failure = await controller.applyFilter(
-            _claimsFilterFromValue(value.option(_claimsQueueFilterKey)),
-          );
-          if (context.mounted) {
-            _showFailureIfNeeded(context, failure);
-          }
-        },
+        filterGroups: showAdvancedFilters
+            ? <AppSearchBarFilterGroup>[
+                AppSearchBarFilterGroup(
+                  key: _claimsQueueFilterKey,
+                  label: l10n.claimsQueueFilterLabel,
+                  allLabel: l10n.claimsFilterAll,
+                  choices: filterChoices,
+                ),
+              ]
+            : const <AppSearchBarFilterGroup>[],
+        filterValue: showAdvancedFilters
+            ? _claimsFilterValue(state.query)
+            : AppSearchBarFilterValue.empty,
+        hasActiveFilters: claimsQueueQueryNarrowed(state.query, section),
+        onFilterChanged: showAdvancedFilters
+            ? (AppSearchBarFilterValue value) async {
+                final ClaimsQueueFilter next = value.isActive
+                    ? _claimsFilterFromValue(value.option(_claimsQueueFilterKey))
+                    : claimsDefaultFilterForSection(section);
+                final AppFailure? failure = await controller.applyFilter(next);
+                if (context.mounted) {
+                  _showFailureIfNeeded(context, failure);
+                }
+              }
+            : null,
+        trailingActions: _claimsQueueTrailingSearchActions(
+          context,
+          ref,
+          l10n,
+          section: section,
+          state: state,
+          accessPolicy: accessPolicy,
+          controller: controller,
+        ),
       ),
       previousPageLabel: l10n.claimsPreviousPageLabel,
       nextPageLabel: l10n.claimsNextPageLabel,
@@ -909,10 +729,8 @@ List<AppListTableColumn<ClaimsQueueItem>> _defaultColumnsForSection(
   ClaimsDeskSection section, {
   required bool showNextAction,
 }) {
-  return switch (section) {
-    // Prefer 5 defaults (tables.mdc). When Next is omitted, promote the first
-    // optional fact column so read-only queues still ship five visible columns.
-    ClaimsDeskSection.authorizations => <AppListTableColumn<ClaimsQueueItem>>[
+  if (claimsDeskSectionIsAuthorizationScoped(section)) {
+    return <AppListTableColumn<ClaimsQueueItem>>[
       _claimsReferenceColumn(l10n, id: 'auth_reference'),
       _claimsPatientColumn(l10n, id: 'auth_patient'),
       _claimsCoverageColumn(l10n, id: 'auth_coverage'),
@@ -921,8 +739,10 @@ List<AppListTableColumn<ClaimsQueueItem>> _defaultColumnsForSection(
         _claimsNextActionColumn(context, ref, section)
       else
         _claimsApprovedAmountColumn(l10n, id: 'auth_approved_amount'),
-    ],
-    ClaimsDeskSection.activeClaims => <AppListTableColumn<ClaimsQueueItem>>[
+    ];
+  }
+  if (claimsDeskSectionIsClaimScoped(section)) {
+    return <AppListTableColumn<ClaimsQueueItem>>[
       _claimsReferenceColumn(l10n, id: 'claim_reference'),
       _claimsPatientColumn(l10n, id: 'claim_patient'),
       _claimsCoverageColumn(l10n, id: 'claim_coverage'),
@@ -931,7 +751,11 @@ List<AppListTableColumn<ClaimsQueueItem>> _defaultColumnsForSection(
         _claimsNextActionColumn(context, ref, section)
       else
         _claimsInvoiceColumn(l10n, id: 'claim_invoice'),
-    ],
+    ];
+  }
+  return switch (section) {
+    // Prefer 5 defaults (tables.mdc). When Next is omitted, promote the first
+    // optional fact column so read-only queues still ship five visible columns.
     ClaimsDeskSection.settled => <AppListTableColumn<ClaimsQueueItem>>[
       _claimsReferenceColumn(l10n, id: 'settled_reference'),
       _claimsPatientColumn(l10n, id: 'settled_patient'),
@@ -941,6 +765,7 @@ List<AppListTableColumn<ClaimsQueueItem>> _defaultColumnsForSection(
     ],
     ClaimsDeskSection.insuranceSetup =>
       const <AppListTableColumn<ClaimsQueueItem>>[],
+    _ => const <AppListTableColumn<ClaimsQueueItem>>[],
   };
 }
 
@@ -950,17 +775,21 @@ List<AppListTableColumn<ClaimsQueueItem>> _columnChoicesForSection(
   ClaimsDeskSection section, {
   required bool showNextAction,
 }) {
-  return switch (section) {
-    ClaimsDeskSection.authorizations => <AppListTableColumn<ClaimsQueueItem>>[
+  if (claimsDeskSectionIsAuthorizationScoped(section)) {
+    return <AppListTableColumn<ClaimsQueueItem>>[
       if (showNextAction)
         _claimsApprovedAmountColumn(l10n, id: 'auth_approved_amount'),
       _claimsRequestedAtColumn(l10n, id: 'auth_requested_at'),
-    ],
-    ClaimsDeskSection.activeClaims => <AppListTableColumn<ClaimsQueueItem>>[
+    ];
+  }
+  if (claimsDeskSectionIsClaimScoped(section)) {
+    return <AppListTableColumn<ClaimsQueueItem>>[
       if (showNextAction) _claimsInvoiceColumn(l10n, id: 'claim_invoice'),
       _claimsClaimAmountColumn(l10n, id: 'claim_amount'),
       _claimsSubmittedAtColumn(l10n, id: 'claim_submitted_at'),
-    ],
+    ];
+  }
+  return switch (section) {
     ClaimsDeskSection.settled => <AppListTableColumn<ClaimsQueueItem>>[
       _claimsInvoiceColumn(l10n, id: 'settled_invoice'),
       _claimsClaimAmountColumn(l10n, id: 'settled_claim_amount'),
@@ -968,6 +797,7 @@ List<AppListTableColumn<ClaimsQueueItem>> _columnChoicesForSection(
     ],
     ClaimsDeskSection.insuranceSetup =>
       const <AppListTableColumn<ClaimsQueueItem>>[],
+    _ => const <AppListTableColumn<ClaimsQueueItem>>[],
   };
 }
 
@@ -2596,24 +2426,14 @@ List<AppSearchBarFilterChoice> _claimsFilterChoicesForSection(
   AppLocalizations l10n,
   ClaimsDeskSection section,
 ) {
+  // Sibling-tab statuses are independent strip tabs — do not re-offer them as
+  // Advanced filters on auth/claim leaves. Settled keeps Paid / Cancelled.
   final List<ClaimsQueueFilter> filters = switch (section) {
-    ClaimsDeskSection.authorizations => <ClaimsQueueFilter>[
-      ClaimsQueueFilter.authorizationPending,
-      ClaimsQueueFilter.authorizationApproved,
-      ClaimsQueueFilter.authorizationDenied,
-      ClaimsQueueFilter.authorizationExpired,
-    ],
-    ClaimsDeskSection.activeClaims => <ClaimsQueueFilter>[
-      ClaimsQueueFilter.claimSubmitted,
-      ClaimsQueueFilter.claimApproved,
-      ClaimsQueueFilter.claimPartial,
-      ClaimsQueueFilter.claimRejected,
-    ],
     ClaimsDeskSection.settled => <ClaimsQueueFilter>[
       ClaimsQueueFilter.claimPaid,
       ClaimsQueueFilter.claimCancelled,
     ],
-    ClaimsDeskSection.insuranceSetup => <ClaimsQueueFilter>[],
+    _ => const <ClaimsQueueFilter>[],
   };
   return <AppSearchBarFilterChoice>[
     for (final ClaimsQueueFilter filter in filters)
@@ -2625,22 +2445,74 @@ List<AppSearchBarFilterChoice> _claimsFilterChoicesForSection(
   ];
 }
 
-int _claimsCountForFilter(
-  ClaimsWorkspaceState state,
-  ClaimsQueueFilter filter,
+String _claimsSectionPrintTitle(
+  AppLocalizations l10n,
+  ClaimsDeskSection section,
 ) {
-  final String? authorizationStatus = preAuthorizationStatusForFilter(filter);
-  final String? claimStatus = insuranceClaimStatusForFilter(filter);
-  return state.queue.items.where((ClaimsQueueItem item) {
-    final String status = item.status.toUpperCase();
-    if (item.isAuthorization && authorizationStatus != null) {
-      return status == authorizationStatus;
-    }
-    if (item.isClaim && claimStatus != null) {
-      return status == claimStatus;
-    }
-    return filter == ClaimsQueueFilter.all;
-  }).length;
+  return switch (section) {
+    ClaimsDeskSection.authPending =>
+      l10n.claimsAuthorizationPendingSummaryLabel,
+    ClaimsDeskSection.authApproved =>
+      l10n.claimsAuthorizationApprovedSummaryLabel,
+    ClaimsDeskSection.authDenied => l10n.claimsFilterAuthorizationDenied,
+    ClaimsDeskSection.authExpired => l10n.claimsFilterAuthorizationExpired,
+    ClaimsDeskSection.submitted => l10n.claimsSubmittedSummaryLabel,
+    ClaimsDeskSection.approved => l10n.claimsApprovedSummaryLabel,
+    ClaimsDeskSection.partialClaims => l10n.claimsPartialSummaryLabel,
+    ClaimsDeskSection.claimRejected => l10n.claimsFilterClaimRejected,
+    ClaimsDeskSection.settled => l10n.claimsSectionSettled,
+    ClaimsDeskSection.insuranceSetup => l10n.claimsSectionInsuranceSetup,
+  };
+}
+
+List<AppSearchBarAction> _claimsQueueTrailingSearchActions(
+  BuildContext context,
+  WidgetRef ref,
+  AppLocalizations l10n, {
+  required ClaimsDeskSection section,
+  required ClaimsWorkspaceState state,
+  required AppAccessPolicy accessPolicy,
+  required ClaimsWorkspaceController controller,
+}) {
+  // Trailing ownership (claims.md §7): Request authorization → auth leaves;
+  // Prepare claim → claim leaves; none on Settled / Insurance Setup.
+  if (claimsDeskSectionIsAuthorizationScoped(section) &&
+      ClaimsAuthorizationsAtomPermissions.requestAuthorization.isAllowed(
+        accessPolicy,
+      )) {
+    final bool enabled = !state.isSaving;
+    return <AppSearchBarAction>[
+      AppSearchBarAction(
+        icon: Icons.verified_user_outlined,
+        label: l10n.claimsRequestAuthorizationAction,
+        tooltip: l10n.claimsRequestAuthorizationAction,
+        enabled: enabled,
+        onPressed: enabled
+            ? () => unawaited(
+                  _openRequestAuthorizationDialog(context, controller, state),
+                )
+            : null,
+      ),
+    ];
+  }
+  if (claimsDeskSectionIsClaimScoped(section) &&
+      ClaimsActiveClaimsAtomPermissions.prepare.isAllowed(accessPolicy)) {
+    final bool enabled = !state.isSaving;
+    return <AppSearchBarAction>[
+      AppSearchBarAction(
+        icon: Icons.receipt_long_outlined,
+        label: l10n.claimsPrepareClaimAction,
+        tooltip: l10n.claimsPrepareClaimAction,
+        enabled: enabled,
+        onPressed: enabled
+            ? () => unawaited(
+                  _openPrepareClaimDialog(context, ref, controller, state),
+                )
+            : null,
+      ),
+    ];
+  }
+  return const <AppSearchBarAction>[];
 }
 
 String _claimsFilterLabel(AppLocalizations l10n, ClaimsQueueFilter filter) {

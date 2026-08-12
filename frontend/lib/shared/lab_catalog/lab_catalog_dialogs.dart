@@ -3072,7 +3072,6 @@ class _LabDeleteReasonDialogState extends State<LabDeleteReasonDialog> {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final bool compact = AppBreakpoints.of(context).isMobile;
     return AppDialog(
       title: Text(widget.title),
       icon: widget.icon,
@@ -3115,7 +3114,6 @@ class _LabDeleteReasonDialogState extends State<LabDeleteReasonDialog> {
             label: l10n.commonCancelActionLabel,
             leadingIcon: Icons.close,
             enabled: !_isSaving,
-            fullWidth: compact,
             onPressed: _isSaving ? null : () => Navigator.of(context).pop(false),
           ),
         AppButton.tertiary(
@@ -3124,7 +3122,6 @@ class _LabDeleteReasonDialogState extends State<LabDeleteReasonDialog> {
           color: widget.destructiveSubmit ? colorScheme.error : null,
           isLoading: _isSaving && !widget._requiresFinalConfirmation,
           enabled: !_isSaving && _canSubmit,
-          fullWidth: compact,
           onPressed: _isSaving ? null : _submit,
         ),
       ],

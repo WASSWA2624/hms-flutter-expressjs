@@ -43,17 +43,23 @@ void main() {
     );
   }
 
-  test('sibling badges use dedicated summary scope totals', () {
+  test('sibling badges use dedicated per-leaf summary totals', () {
     final ClaimsWorkspaceState state = stateFor();
 
     expect(
-      claimsSectionTabCount(state, ClaimsDeskSection.authorizations),
-      5,
+      claimsSectionTabCount(state, ClaimsDeskSection.authPending),
+      3,
     );
     expect(
-      claimsSectionTabCount(state, ClaimsDeskSection.activeClaims),
-      7,
+      claimsSectionTabCount(state, ClaimsDeskSection.authApproved),
+      2,
     );
+    expect(claimsSectionTabCount(state, ClaimsDeskSection.authDenied), 0);
+    expect(claimsSectionTabCount(state, ClaimsDeskSection.authExpired), 0);
+    expect(claimsSectionTabCount(state, ClaimsDeskSection.submitted), 4);
+    expect(claimsSectionTabCount(state, ClaimsDeskSection.approved), 1);
+    expect(claimsSectionTabCount(state, ClaimsDeskSection.partialClaims), 1);
+    expect(claimsSectionTabCount(state, ClaimsDeskSection.claimRejected), 1);
     expect(claimsSectionTabCount(state, ClaimsDeskSection.settled), 7);
     expect(
       claimsSectionTabCount(state, ClaimsDeskSection.insuranceSetup),
@@ -70,8 +76,8 @@ void main() {
     expect(
       claimsSectionTabCount(
         narrowed,
-        ClaimsDeskSection.authorizations,
-        activeSection: ClaimsDeskSection.authorizations,
+        ClaimsDeskSection.authPending,
+        activeSection: ClaimsDeskSection.authPending,
       ),
       1,
     );
@@ -84,56 +90,61 @@ void main() {
     expect(
       claimsSectionTabCount(
         filterNarrowed,
-        ClaimsDeskSection.authorizations,
-        activeSection: ClaimsDeskSection.authorizations,
+        ClaimsDeskSection.authPending,
+        activeSection: ClaimsDeskSection.authPending,
+      ),
+      2,
+    );
+    // Sibling leaf keeps unfiltered summary total.
+    expect(
+      claimsSectionTabCount(
+        filterNarrowed,
+        ClaimsDeskSection.authApproved,
+        activeSection: ClaimsDeskSection.authPending,
       ),
       2,
     );
   });
 
-  test('active tab keeps scope total on default filter without search', () {
-    final ClaimsWorkspaceState state = stateFor(totalItemCount: 1, itemCount: 1);
+  test('active tab keeps scope total when filter matches section default', () {
+    final ClaimsWorkspaceState state = stateFor(
+      filter: ClaimsQueueFilter.authorizationPending,
+      totalItemCount: 99,
+      itemCount: 12,
+    );
     expect(
       claimsSectionTabCount(
         state,
-        ClaimsDeskSection.authorizations,
-        activeSection: ClaimsDeskSection.authorizations,
+        ClaimsDeskSection.authPending,
+        activeSection: ClaimsDeskSection.authPending,
       ),
-      5,
+      3,
     );
   });
 
-  test('active tab falls back to scope total when filtered total is null', () {
-    final ClaimsWorkspaceState narrowed = stateFor(
-      search: 'AUTH',
-      totalItemCount: null,
-      itemCount: 1,
+  test('default filters and count tones match leaf scopes', () {
+    expect(
+      claimsDefaultFilterForSection(ClaimsDeskSection.authPending),
+      ClaimsQueueFilter.authorizationPending,
     );
     expect(
-      claimsSectionTabCount(
-        narrowed,
-        ClaimsDeskSection.authorizations,
-        activeSection: ClaimsDeskSection.authorizations,
-      ),
-      5,
+      claimsDefaultFilterForSection(ClaimsDeskSection.submitted),
+      ClaimsQueueFilter.claimSubmitted,
     );
-  });
-
-  test('count tones follow urgency policy', () {
     expect(
-      claimsSectionCountTone(ClaimsDeskSection.authorizations),
+      claimsDefaultFilterForSection(ClaimsDeskSection.authDenied),
+      ClaimsQueueFilter.authorizationDenied,
+    );
+    expect(
+      claimsSectionCountTone(ClaimsDeskSection.authPending),
       AppTabCountTone.warning,
     );
     expect(
-      claimsSectionCountTone(ClaimsDeskSection.activeClaims),
+      claimsSectionCountTone(ClaimsDeskSection.submitted),
       AppTabCountTone.warning,
     );
     expect(
       claimsSectionCountTone(ClaimsDeskSection.settled),
-      AppTabCountTone.info,
-    );
-    expect(
-      claimsSectionCountTone(ClaimsDeskSection.insuranceSetup),
       AppTabCountTone.info,
     );
   });

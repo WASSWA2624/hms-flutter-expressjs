@@ -135,14 +135,14 @@ void main() {
       expect(
         claimsSectionShowsNextActionColumn(
           reader,
-          ClaimsDeskSection.authorizations,
+          ClaimsDeskSection.authPending,
         ),
         isFalse,
       );
       expect(
         claimsSectionShowsNextActionColumn(
           writer,
-          ClaimsDeskSection.authorizations,
+          ClaimsDeskSection.authPending,
         ),
         isTrue,
       );
@@ -162,7 +162,7 @@ void main() {
         ],
       );
 
-      expect(canViewClaimsSection(noInsurance, ClaimsDeskSection.authorizations), isFalse);
+      expect(canViewClaimsSection(noInsurance, ClaimsDeskSection.authPending), isFalse);
       expect(ClaimsAuthorizationsAtomPermissions.tab.isAllowed(noInsurance), isFalse);
     });
 
@@ -235,7 +235,7 @@ void main() {
       );
       expect(
         identical(
-          claimsDetailPrintRequirement(ClaimsDeskSection.activeClaims),
+          claimsDetailPrintRequirement(ClaimsDeskSection.submitted),
           claimsWorkspaceReadRequirement,
         ),
         isTrue,
@@ -304,7 +304,7 @@ void main() {
       expect(
         claimsSectionShowsNextActionColumn(
           reader,
-          ClaimsDeskSection.activeClaims,
+          ClaimsDeskSection.submitted,
         ),
         isFalse,
       );
@@ -315,14 +315,14 @@ void main() {
       expect(
         claimsSectionShowsNextActionColumn(
           writer,
-          ClaimsDeskSection.activeClaims,
+          ClaimsDeskSection.submitted,
         ),
         isTrue,
       );
       expect(
         claimsSectionShowsNextActionColumn(
           approver,
-          ClaimsDeskSection.activeClaims,
+          ClaimsDeskSection.submitted,
         ),
         isTrue,
       );
@@ -662,7 +662,7 @@ void main() {
         isTrue,
       );
       expect(
-        claimsDetailPrintRequirement(ClaimsDeskSection.authorizations)
+        claimsDetailPrintRequirement(ClaimsDeskSection.authPending)
             .isAllowed(readerOnly),
         isTrue,
       );

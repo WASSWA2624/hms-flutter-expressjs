@@ -20,23 +20,20 @@ List<Widget> buildAppDialogFormActions({
   bool emphasized = false,
 }) {
   final bool canCancel = cancelEnabled ?? !isSubmitting;
+  final IconData resolvedSubmitIcon = submitIcon ?? AppActionIcons.save;
   if (emphasized) {
     return <Widget>[
-      OutlinedButton.icon(
+      AppButton.close(
+        label: cancelLabel,
+        leadingIcon: cancelIcon ?? AppActionIcons.cancel,
+        enabled: canCancel,
         onPressed: canCancel ? onCancel : null,
-        icon: Icon(cancelIcon ?? AppActionIcons.cancel),
-        label: Text(cancelLabel),
       ),
-      FilledButton.icon(
+      AppButton.primary(
+        label: submitLabel,
+        leadingIcon: resolvedSubmitIcon,
+        isLoading: isSubmitting,
         onPressed: isSubmitting ? null : onSubmit,
-        icon: isSubmitting
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : Icon(submitIcon ?? Icons.check),
-        label: Text(submitLabel),
       ),
     ];
   }
@@ -50,7 +47,7 @@ List<Widget> buildAppDialogFormActions({
     ),
     AppButton.primary(
       label: submitLabel,
-      leadingIcon: submitIcon,
+      leadingIcon: resolvedSubmitIcon,
       isLoading: isSubmitting,
       onPressed: isSubmitting ? null : onSubmit,
     ),

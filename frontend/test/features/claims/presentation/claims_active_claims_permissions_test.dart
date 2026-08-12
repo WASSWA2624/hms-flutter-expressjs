@@ -214,6 +214,28 @@ void _stubRepository(
   );
 }
 
+
+Future<void> _selectClaimsTab(WidgetTester tester, String label) async {
+  final Finder visible = find.descendant(
+    of: find.byType(AppTabStrip),
+    matching: find.text(label),
+  );
+  if (visible.evaluate().isNotEmpty) {
+    await tester.ensureVisible(visible.first);
+    await tester.tap(visible.first);
+    await tester.pumpAndSettle();
+    return;
+  }
+  final Finder more = find.byKey(const ValueKey<String>('tabOverflowMore'));
+  expect(more, findsOneWidget, reason: 'Expected overflow More for "$label"');
+  await tester.tap(more);
+  await tester.pumpAndSettle();
+  final Finder menuItem = find.textContaining(label);
+  expect(menuItem, findsWidgets, reason: 'Missing overflow item "$label"');
+  await tester.tap(menuItem.last);
+  await tester.pumpAndSettle();
+}
+
 Future<void> _pumpActiveClaimsTab(
   WidgetTester tester, {
   required _MockClaimsRepository repository,
@@ -421,7 +443,7 @@ void main() {
       );
       expect(
         identical(
-          claimsDetailPrintRequirement(ClaimsDeskSection.activeClaims),
+          claimsDetailPrintRequirement(ClaimsDeskSection.submitted),
           ClaimsActiveClaimsAtomPermissions.document,
         ),
         isTrue,
@@ -492,7 +514,7 @@ void main() {
       );
 
       expect(find.text('CLM-SUB'), findsOneWidget);
-      expect(find.textContaining('Active Claims'), findsWidgets);
+      expect(find.textContaining('Submitted'), findsWidgets);
       expect(find.byTooltip('Prepare claim'), findsNothing);
       expect(
         find.descendant(
@@ -511,11 +533,8 @@ void main() {
         find.byType(AppListTable<ClaimsQueueItem>),
       );
       expect(table.columns.length, 5);
-      expect(table.search?.showAdvancedFilterButton, isTrue);
-      expect(table.search?.advancedFilterButtonLabel, 'Filters');
-      expect(table.search?.advancedFilterCloseLabel, 'Close');
-      expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
-      expect(table.search?.advancedFilterResetLabel, 'Clear filters');
+      expect(table.search?.showAdvancedFilterButton, isFalse);
+      expect(table.search?.filterGroups, isEmpty);
       expect(table.canExport, isFalse);
       expect(table.canPrint, isFalse);
       expect(table.printLabel, 'Print');
@@ -543,7 +562,7 @@ void main() {
   );
 
   testWidgets(
-    'Active Claims Filters sheet + Export/Print when evidence:export',
+    'Submitted omits status Advanced filters; Export/Print when evidence:export',
     (WidgetTester tester) async {
       await _pumpActiveClaimsTab(
         tester,
@@ -567,21 +586,8 @@ void main() {
       expect(find.byTooltip('Export'), findsOneWidget);
       expect(find.byTooltip('Print'), findsOneWidget);
       expect(find.byTooltip('Prepare claim'), findsOneWidget);
-
-      final List<String> claimFilterLabels = table.search!.filterGroups
-          .expand((AppSearchBarFilterGroup group) => group.choices)
-          .map((AppSearchBarFilterChoice choice) => choice.label)
-          .toList(growable: false);
-      expect(claimFilterLabels, contains('Claim submitted'));
-      expect(claimFilterLabels, contains('Claim approved'));
-      expect(claimFilterLabels, contains('Claim partial'));
-      expect(claimFilterLabels, contains('Claim rejected'));
-
-      await tester.tap(find.textContaining('Filters').first);
-      await tester.pumpAndSettle();
-      expect(find.textContaining('Clear filters'), findsWidgets);
-      expect(find.textContaining('Apply filters'), findsWidgets);
-      expect(find.textContaining('Close'), findsWidgets);
+      expect(table.search?.showAdvancedFilterButton, isFalse);
+      expect(table.search?.filterGroups, isEmpty);
     },
   );
 
@@ -624,8 +630,7 @@ void main() {
       await tester.tap(find.byTooltip('Close'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.textContaining('Approved (').first);
-      await tester.pumpAndSettle();
+      await _selectClaimsTab(tester, 'Approved');
 
       expect(find.text('CLM-APPROVED'), findsOneWidget);
       expect(find.text('Close as paid'), findsNothing);
@@ -654,7 +659,7 @@ void main() {
       );
 
       // Without billing:read the Active Claims section is stripped from the strip.
-      expect(find.textContaining('Active Claims'), findsNothing);
+      expect(find.textContaining('Submitted'), findsNothing);
       expect(find.byTooltip('Prepare claim'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -686,10 +691,9 @@ void main() {
       );
 
       expect(find.byTooltip('Prepare claim'), findsNothing);
-      expect(find.textContaining('Active Claims'), findsWidgets);
+      expect(find.textContaining('Submitted'), findsWidgets);
 
-      await tester.tap(find.textContaining('Approved (').first);
-      await tester.pumpAndSettle();
+      await _selectClaimsTab(tester, 'Approved');
 
       expect(find.text('CLM-APPROVED'), findsOneWidget);
       expect(
@@ -845,7 +849,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Active Claims'), findsWidgets);
+    expect(find.textContaining('Submitted'), findsWidgets);
     expect(find.byTooltip('Prepare claim'), findsNothing);
     // Empty panel copy from claimsEmptyQueueTitle / body.
     expect(find.byIcon(Icons.inbox_outlined), findsOneWidget);
@@ -970,7 +974,7 @@ void main() {
       );
       expect(
         claimsDetailPrintRequirement(
-          ClaimsDeskSection.activeClaims,
+          ClaimsDeskSection.submitted,
         ).isAllowed(reader),
         isTrue,
       );
@@ -1016,8 +1020,7 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.tap(find.textContaining('Approved (').first);
-      await tester.pumpAndSettle();
+      await _selectClaimsTab(tester, 'Approved');
 
       expect(
         find.descendant(
@@ -1207,10 +1210,10 @@ void main() {
 
     expect(find.text('CLM-SUB'), findsOneWidget);
     expect(find.byTooltip('Prepare claim'), findsOneWidget);
-    expect(find.textContaining('Submitted ('), findsWidgets);
+    expect(find.textContaining('Submitted'), findsWidgets);
   });
 
-  testWidgets('summary chips remain for authorized reader (read chrome)', (
+  testWidgets('Submitted leaf remains for authorized reader (read chrome)', (
     WidgetTester tester,
   ) async {
     await _pumpActiveClaimsTab(
@@ -1221,8 +1224,8 @@ void main() {
       ),
     );
 
-    expect(find.textContaining('Submitted ('), findsWidgets);
-    expect(find.textContaining('Approved ('), findsWidgets);
+    expect(find.textContaining('Submitted'), findsWidgets);
+    expect(find.byType(ActionChip), findsNothing);
     expect(find.byTooltip('Prepare claim'), findsNothing);
   });
 
@@ -1405,7 +1408,7 @@ void main() {
         accessPolicy: noFacility,
       );
 
-      expect(find.textContaining('Active Claims'), findsWidgets);
+      expect(find.textContaining('Submitted'), findsWidgets);
       expect(find.text('CLM-SUB'), findsOneWidget);
       expect(find.byTooltip('Prepare claim'), findsNothing);
     },
@@ -1583,7 +1586,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byType(AppTabStrip),
-          matching: find.textContaining('Active Claims'),
+          matching: find.textContaining('Submitted'),
         ),
         findsNothing,
       );
@@ -1604,8 +1607,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.textContaining('Approved (').first);
-      await tester.pumpAndSettle();
+      await _selectClaimsTab(tester, 'Approved');
 
       clearInteractions(repository);
       _stubRepository(repository);

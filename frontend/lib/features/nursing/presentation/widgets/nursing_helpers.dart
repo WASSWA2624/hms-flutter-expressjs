@@ -197,6 +197,7 @@ List<Widget> nursingDialogActions(
     ),
     AppButton.primary(
       label: submitLabel,
+      leadingIcon: AppActionIcons.save,
       isLoading: isSaving,
       onPressed: onSubmit,
     ),

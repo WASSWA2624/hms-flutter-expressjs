@@ -46,30 +46,94 @@ final class ClaimsWorkspaceQuery {
   String get signature => '$encounterId|$patientId|$action|$search|$section';
 }
 
-/// Desk sections for the Claims workspace tab strip.
-enum ClaimsDeskSection { authorizations, activeClaims, settled, insuranceSetup }
+/// Desk sections for the Claims workspace tab strip (independent leaf queues).
+enum ClaimsDeskSection {
+  authPending,
+  authApproved,
+  authDenied,
+  authExpired,
+  submitted,
+  approved,
+  partialClaims,
+  claimRejected,
+  settled,
+  insuranceSetup,
+}
+
+/// Authorization queue leaves (pre-auth pending / approved / denied / expired).
+bool claimsDeskSectionIsAuthorizationScoped(ClaimsDeskSection section) {
+  return switch (section) {
+    ClaimsDeskSection.authPending ||
+    ClaimsDeskSection.authApproved ||
+    ClaimsDeskSection.authDenied ||
+    ClaimsDeskSection.authExpired => true,
+    _ => false,
+  };
+}
+
+/// Active-claim queue leaves (submitted / approved / partial / rejected).
+bool claimsDeskSectionIsClaimScoped(ClaimsDeskSection section) {
+  return switch (section) {
+    ClaimsDeskSection.submitted ||
+    ClaimsDeskSection.approved ||
+    ClaimsDeskSection.partialClaims ||
+    ClaimsDeskSection.claimRejected => true,
+    _ => false,
+  };
+}
 
 ClaimsDeskSection claimsDeskSectionFromQuery(String value) {
   switch (value.trim().toLowerCase()) {
+    // Legacy parent deep links → first leaf of that family.
     case 'authorizations':
-      return ClaimsDeskSection.authorizations;
+    case 'auth-pending':
+    case 'auth_pending':
+      return ClaimsDeskSection.authPending;
+    case 'auth-approved':
+    case 'auth_approved':
+      return ClaimsDeskSection.authApproved;
+    case 'auth-denied':
+    case 'auth_denied':
+      return ClaimsDeskSection.authDenied;
+    case 'auth-expired':
+    case 'auth_expired':
+      return ClaimsDeskSection.authExpired;
     case 'active-claims':
     case 'active_claims':
-      return ClaimsDeskSection.activeClaims;
+    case 'submitted':
+      return ClaimsDeskSection.submitted;
+    case 'approved':
+    case 'claim-approved':
+    case 'claim_approved':
+      return ClaimsDeskSection.approved;
+    case 'partial-claims':
+    case 'partial_claims':
+    case 'partial':
+      return ClaimsDeskSection.partialClaims;
+    case 'claim-rejected':
+    case 'claim_rejected':
+    case 'rejected':
+      return ClaimsDeskSection.claimRejected;
     case 'settled':
       return ClaimsDeskSection.settled;
     case 'insurance-setup':
     case 'insurance_setup':
       return ClaimsDeskSection.insuranceSetup;
     default:
-      return ClaimsDeskSection.authorizations;
+      return ClaimsDeskSection.authPending;
   }
 }
 
 String claimsDeskSectionToQuery(ClaimsDeskSection section) {
   return switch (section) {
-    ClaimsDeskSection.authorizations => 'authorizations',
-    ClaimsDeskSection.activeClaims => 'active-claims',
+    ClaimsDeskSection.authPending => 'auth-pending',
+    ClaimsDeskSection.authApproved => 'auth-approved',
+    ClaimsDeskSection.authDenied => 'auth-denied',
+    ClaimsDeskSection.authExpired => 'auth-expired',
+    ClaimsDeskSection.submitted => 'submitted',
+    ClaimsDeskSection.approved => 'approved',
+    ClaimsDeskSection.partialClaims => 'partial-claims',
+    ClaimsDeskSection.claimRejected => 'claim-rejected',
     ClaimsDeskSection.settled => 'settled',
     ClaimsDeskSection.insuranceSetup => 'insurance-setup',
   };

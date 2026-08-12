@@ -3281,7 +3281,7 @@ List<Widget> _dialogActions(
     ),
     AppButton.primary(
       label: submitLabel,
-      leadingIcon: submitLeadingIcon,
+      leadingIcon: submitLeadingIcon ?? AppActionIcons.save,
       isLoading: isSaving,
       onPressed: onSubmit,
     ),

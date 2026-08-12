@@ -19,7 +19,7 @@ class AppDialog extends StatefulWidget {
     this.semanticLabel,
     this.scrollable = false,
     this.pinActionsToBottom = false,
-    this.stackActionsWhenCompact = true,
+    this.stackActionsWhenCompact = false,
     this.denseActions = true,
     this.showCloseButton = true,
     this.showMaximizeButton = true,
@@ -60,8 +60,10 @@ class AppDialog extends StatefulWidget {
   /// Use [EdgeInsets.zero] for dense full-bleed surfaces (e.g. print preview).
   final EdgeInsetsGeometry? contentPadding;
 
-  /// When true (default), compact/mobile footers stack actions full-width.
-  /// Set false to keep a horizontal action row on phones (e.g. Preview + Save).
+  /// When true, compact/mobile footers stack actions full-width.
+  /// Default false: keep a right-aligned horizontal action row (icon-only on
+  /// small screens via [AppActionLabelScope]). Opt into stacking only when a
+  /// long labeled footer truly cannot fit in one row.
   final bool stackActionsWhenCompact;
 
   /// When true (default), footer uses compact chrome padding and dense action
@@ -838,8 +840,8 @@ class _DialogActions extends StatelessWidget {
         ? actions.reversed.toList(growable: false)
         : actions;
     if (compact && stackWhenCompact) {
-      // Stack full-width actions on phones so long action sets stay tappable
-      // without horizontal squeeze or unreadably scaled labels.
+      // Opt-in only: stack full-width actions when a call site cannot fit a
+      // horizontal icon-only row (rare; prefer icons + horizontal default).
       actionRow = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -850,8 +852,8 @@ class _DialogActions extends StatelessWidget {
         ],
       );
     } else {
-      // Keep a single horizontal row on every breakpoint when stacking is off,
-      // including 3+ actions (scale down rather than wrap/stack).
+      // Default: single right-aligned horizontal row on every breakpoint,
+      // including phones (scale down rather than wrap/stack).
       actionRow = Align(
         alignment: AlignmentDirectional.centerEnd,
         child: FittedBox(

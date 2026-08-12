@@ -189,22 +189,45 @@ class AppButton extends StatelessWidget {
     );
   }
 
+  /// Icon used when a compact [AppActionLabelScope] forces icon-only chrome.
+  ///
+  /// Primary footers without an explicit icon fall back to [AppActionIcons.save]
+  /// so dialog/toolbars stay icon-only on small screens instead of showing a
+  /// label-only control.
+  IconData? get _iconForCompactChrome {
+    final IconData? resolved = _resolvedIcon;
+    if (resolved != null) {
+      return resolved;
+    }
+    if (variant == AppButtonVariant.primary) {
+      return AppActionIcons.save;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppActionLabelScope? labelScope = AppActionLabelScope.maybeOf(
       context,
     );
+    final bool forceIconOnly = labelScope?.forceIconOnly == true;
+    final IconData? compactIcon = forceIconOnly ? _iconForCompactChrome : null;
     final bool compactIconOnly = labelScope?.showLabels == true
         ? false
         : iconOnly ||
-              (labelScope?.forceIconOnly == true && _resolvedIcon != null);
+              (forceIconOnly && (compactIcon != null || isLoading));
     final bool showLabel = !compactIconOnly;
     final bool effectiveDense = dense || (labelScope?.dense ?? false);
 
     final bool canPress = enabled && !isLoading && onPressed != null;
     final Widget button = showLabel
         ? _buildLabeledButton(context, canPress, dense: effectiveDense)
-        : _buildIconOnlyButton(context, canPress, dense: effectiveDense);
+        : _buildIconOnlyButton(
+            context,
+            canPress,
+            dense: effectiveDense,
+            iconOverride: compactIcon,
+          );
     final Widget sizedButton = fullWidth
         ? SizedBox(width: double.infinity, child: button)
         : button;
@@ -233,6 +256,7 @@ class AppButton extends StatelessWidget {
     BuildContext context,
     bool canPress, {
     required bool dense,
+    IconData? iconOverride,
   }) {
     final ThemeData theme = Theme.of(context);
     final double iconSize = theme.appTokens.listIconSize;
@@ -248,7 +272,7 @@ class AppButton extends StatelessWidget {
         dense: dense,
       ),
       child: _ButtonGlyph(
-        icon: _resolvedIcon,
+        icon: iconOverride ?? _resolvedIcon,
         iconSize: iconSize,
         isLoading: isLoading,
         loadingColor: foregroundColor,

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
-import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -782,14 +781,12 @@ List<Widget> _actionDialogButtons(
 }) {
   final AppLocalizations l10n = context.l10n;
   final ColorScheme colorScheme = Theme.of(context).colorScheme;
-  final bool compact = AppBreakpoints.of(context).isMobile;
 
   return <Widget>[
     AppButton.close(
       label: cancelLabel ?? l10n.commonCancelActionLabel,
       leadingIcon: cancelLeadingIcon,
       enabled: !isSaving,
-      fullWidth: compact,
       onPressed: isSaving ? null : () => Navigator.of(context).pop(false),
     ),
     if (destructive)
@@ -798,15 +795,13 @@ List<Widget> _actionDialogButtons(
         leadingIcon: submitLeadingIcon ?? AppActionIcons.delete,
         color: colorScheme.error,
         isLoading: isSaving,
-        fullWidth: compact,
         onPressed: isSaving ? null : onSubmit,
       )
     else
       AppButton.primary(
         label: submitLabel,
-        leadingIcon: submitLeadingIcon,
+        leadingIcon: submitLeadingIcon ?? AppActionIcons.save,
         isLoading: isSaving,
-        fullWidth: compact,
         onPressed: isSaving ? null : onSubmit,
       ),
   ];

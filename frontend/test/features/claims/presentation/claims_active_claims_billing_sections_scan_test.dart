@@ -194,6 +194,7 @@ Future<void> _pumpActiveClaimsTab(
   ThemeMode themeMode = ThemeMode.light,
   List<ClaimsQueueItem> items = const <ClaimsQueueItem>[_submittedClaim],
   ClaimInvoiceOption? invoice = _invoiceWithBalance,
+  String initialLocation = '/claims?section=submitted',
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -205,7 +206,7 @@ Future<void> _pumpActiveClaimsTab(
   addTearDown(tester.view.resetDevicePixelRatio);
 
   final GoRouter router = GoRouter(
-    initialLocation: '/claims?section=active-claims',
+    initialLocation: initialLocation,
     routes: <RouteBase>[
       GoRoute(
         path: '/claims',
@@ -381,6 +382,7 @@ void main() {
           tester,
           repository: repository,
           accessPolicy: _settlerPolicy(),
+          initialLocation: '/claims?section=approved',
           items: <ClaimsQueueItem>[approved],
         );
 
@@ -396,7 +398,7 @@ void main() {
         expect(find.textContaining('Settlement'), findsWidgets);
         final Finder settlementField = find.byType(TextFormField).first;
         await tester.enterText(settlementField, '300');
-        await tester.pump();
+        await tester.pumpAndSettle();
 
         await tester.tap(
           find.descendant(

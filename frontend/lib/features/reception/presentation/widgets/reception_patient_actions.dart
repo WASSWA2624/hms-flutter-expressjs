@@ -6,6 +6,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/features/claims/data/repositories/claims_repository_impl.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
 import 'package:hosspi_hms/features/claims/presentation/widgets/claims_insurance_config_dialogs.dart';
@@ -178,6 +179,8 @@ class _ReceptionScheduleAppointmentDialogState
       pinActionsToBottom: true,
       closeEnabled: !_isBusy,
       maxWidth: 720,
+      // Tabs sit flush under the header; step bodies apply their own insets.
+      contentPadding: EdgeInsets.zero,
       content: _isPatientStep
           ? _buildPatientStep(context)
           : _buildAppointmentStep(context),
@@ -185,6 +188,14 @@ class _ReceptionScheduleAppointmentDialogState
           ? _patientStepActions(context)
           : _appointmentStepActions(context),
     );
+  }
+
+  EdgeInsets _dialogBodyPadding(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool compact =
+        AppBreakpoints.of(context).index < AppBreakpoint.md.index;
+    final double inset = compact ? theme.spacing.md : theme.spacing.lg;
+    return EdgeInsets.fromLTRB(inset, theme.spacing.md, inset, inset);
   }
 
   Widget _buildPatientStep(BuildContext context) {
@@ -275,32 +286,39 @@ class _ReceptionScheduleAppointmentDialogState
             });
           },
         ),
-        const SizedBox(height: 16),
-        Expanded(child: tabBody),
+        Expanded(
+          child: Padding(
+            padding: _dialogBodyPadding(context),
+            child: tabBody,
+          ),
+        ),
       ],
     );
   }
 
   Widget _buildAppointmentStep(BuildContext context) {
-    return SingleChildScrollView(
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      child: PatientAppointmentQuickDialog(
-        key: _appointmentKey,
-        patient: _patient!,
-        referenceData: widget.referenceData,
-        embedded: true,
-        allowClinicalActions: false,
-        allowVitalsActions: false,
-        onCancel: () => setState(() {
-          _patient = null;
-          _isAppointmentBusy = false;
-        }),
-        onBusyChanged: (bool value) {
-          if (mounted && value != _isAppointmentBusy) {
-            setState(() => _isAppointmentBusy = value);
-          }
-        },
-        onSaved: () => Navigator.of(context).pop(true),
+    return Padding(
+      padding: _dialogBodyPadding(context),
+      child: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        child: PatientAppointmentQuickDialog(
+          key: _appointmentKey,
+          patient: _patient!,
+          referenceData: widget.referenceData,
+          embedded: true,
+          allowClinicalActions: false,
+          allowVitalsActions: false,
+          onCancel: () => setState(() {
+            _patient = null;
+            _isAppointmentBusy = false;
+          }),
+          onBusyChanged: (bool value) {
+            if (mounted && value != _isAppointmentBusy) {
+              setState(() => _isAppointmentBusy = value);
+            }
+          },
+          onSaved: () => Navigator.of(context).pop(true),
+        ),
       ),
     );
   }
@@ -694,6 +712,7 @@ class _ReceptionPatientPickerDialogState
       page: page,
       isLoading: _isLoading,
       shrinkWrap: false,
+      pinToolbar: false,
       tableHorizontalMargin: 0,
       enableExport: false,
       forceCompact: true,
@@ -746,7 +765,6 @@ class _ReceptionPatientPickerDialogState
         hintText: l10n.patientsSearchHint,
         clearLabel: l10n.patientsClearFiltersAction,
         matcher: (_, _) => true,
-        isLoading: _isLoading,
         enableDateFilter: false,
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.patientsAdvancedFiltersAction,

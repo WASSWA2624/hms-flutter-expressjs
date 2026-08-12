@@ -105,6 +105,8 @@ void main() {
           );
         },
       ),
+      // lg+ so footer action labels remain visible for the tap assertion.
+      size: const Size(1000, 700),
     );
 
     openerFocusNode.requestFocus();
@@ -550,29 +552,76 @@ void main() {
         content: SizedBox(height: 200, child: Text('Filter body')),
         showMaximizeButton: false,
         resizable: false,
-        stackActionsWhenCompact: false,
         actions: <Widget>[
-          AppButton.tertiary(label: 'Clear filters', onPressed: null),
-          AppButton.primary(label: 'Apply filters', onPressed: null),
+          AppButton.tertiary(
+            label: 'Clear filters',
+            leadingIcon: Icons.filter_alt_off_outlined,
+            onPressed: null,
+          ),
+          AppButton.primary(
+            label: 'Apply filters',
+            leadingIcon: Icons.check,
+            onPressed: null,
+          ),
         ],
       ),
       size: const Size(400, 498),
     );
 
-    final Finder clearAction = find.text('Clear filters');
-    final Finder applyAction = find.text('Apply filters');
-
-    expect(clearAction, findsOneWidget);
-    expect(applyAction, findsOneWidget);
+    expect(find.text('Clear filters'), findsNothing);
+    expect(find.text('Apply filters'), findsNothing);
     expect(find.text('Close'), findsNothing);
 
-    expect(
-      tester.getTopLeft(clearAction).dy,
-      tester.getTopLeft(applyAction).dy,
+    final Offset clearAction = tester.getCenter(
+      find.byTooltip('Clear filters'),
     );
+    final Offset applyAction = tester.getCenter(
+      find.byTooltip('Apply filters'),
+    );
+    expect(clearAction.dy, closeTo(applyAction.dy, 1));
+    expect(clearAction.dx, greaterThan(applyAction.dx));
   });
 
-  testWidgets('mobile AppDialog stacks footer actions full width', (
+  testWidgets(
+    'mobile AppDialog keeps footer actions horizontal and icon-only',
+    (WidgetTester tester) async {
+      await pumpComponent(
+        tester,
+        AppDialog(
+          title: const Text('Lab result entry'),
+          content: const Text('Body'),
+          pinActionsToBottom: true,
+          actions: <Widget>[
+            AppButton.secondary(
+              label: 'Preview report',
+              leadingIcon: Icons.visibility_outlined,
+              onPressed: () {},
+            ),
+            AppButton.primary(
+              label: 'Save results',
+              leadingIcon: Icons.save_outlined,
+              onPressed: () {},
+            ),
+          ],
+        ),
+        size: const Size(390, 844),
+      );
+
+      expect(find.text('Preview report'), findsNothing);
+      expect(find.text('Save results'), findsNothing);
+      expect(find.byTooltip('Preview report'), findsOneWidget);
+      expect(find.byTooltip('Save results'), findsOneWidget);
+
+      final Offset preview = tester.getCenter(
+        find.byTooltip('Preview report'),
+      );
+      final Offset save = tester.getCenter(find.byTooltip('Save results'));
+      expect(preview.dy, closeTo(save.dy, 1));
+      expect(preview.dx, greaterThan(save.dx));
+    },
+  );
+
+  testWidgets('mobile AppDialog can opt into stacked footer actions', (
     WidgetTester tester,
   ) async {
     await pumpComponent(
@@ -581,14 +630,17 @@ void main() {
         title: const Text('Lab result entry'),
         content: const Text('Body'),
         pinActionsToBottom: true,
+        stackActionsWhenCompact: true,
         actions: <Widget>[
           AppButton.secondary(
             label: 'Preview report',
+            leadingIcon: Icons.visibility_outlined,
             fullWidth: true,
             onPressed: () {},
           ),
           AppButton.primary(
             label: 'Save results',
+            leadingIcon: Icons.save_outlined,
             fullWidth: true,
             onPressed: () {},
           ),
@@ -597,41 +649,13 @@ void main() {
       size: const Size(390, 844),
     );
 
-    final Offset preview = tester.getCenter(find.text('Preview report'));
-    final Offset save = tester.getCenter(find.text('Save results'));
+    final Offset preview = tester.getCenter(
+      find.byTooltip('Preview report'),
+    );
+    final Offset save = tester.getCenter(find.byTooltip('Save results'));
     // Source [secondary, primary] is reversed so primary is top / left and
     // secondary (dismiss) is bottom / extreme-right.
     expect(preview.dy, greaterThan(save.dy));
-  });
-
-  testWidgets('mobile AppDialog can keep footer actions horizontal', (
-    WidgetTester tester,
-  ) async {
-    await pumpComponent(
-      tester,
-      AppDialog(
-        title: const Text('Lab result entry'),
-        content: const Text('Body'),
-        pinActionsToBottom: true,
-        stackActionsWhenCompact: false,
-        actions: <Widget>[
-          AppButton.secondary(
-            label: 'Preview report',
-            onPressed: () {},
-          ),
-          AppButton.primary(
-            label: 'Save results',
-            onPressed: () {},
-          ),
-        ],
-      ),
-      size: const Size(390, 844),
-    );
-
-    final Offset preview = tester.getCenter(find.text('Preview report'));
-    final Offset save = tester.getCenter(find.text('Save results'));
-    expect(preview.dy, closeTo(save.dy, 1));
-    expect(preview.dx, greaterThan(save.dx));
   });
 
   testWidgets('scrollable dialog puts body padding on the scroll view', (

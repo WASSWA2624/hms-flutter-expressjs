@@ -55,10 +55,11 @@ When the dialog’s job is to browse or pick from a list (patients, roles, items
 ## Footer and chrome
 
 1. Use `AppDialog` footer `actions` for primary/secondary outcomes (`Save`, `Confirm`, `Cancel`, `Close`). Right-align; keep labels short and generic.
-2. Footer icon + label vs icon-only follows [responsiveness.mdc](responsiveness.mdc) (same pattern as list-table toolbars).
-3. Header restore/maximize and close stay icon-only.
-4. Pin footer actions when the body scrolls (`pinActionsToBottom: true`) for long forms and selection tables.
-5. Omit actions the user cannot perform (RBAC/ABAC per [prompt.mdc](prompt.mdc)).
+2. Footer actions stay on **one horizontal row**, right-aligned, on every breakpoint. On small/medium screens they are **icon-only** (tooltip + semantics keep the name); on large screens they show icon + label (`showsToolbarActionLabels` / `AppActionLabelScope`). Prefer always supplying a `leadingIcon` on footer `AppButton`s so compact mode can drop the label.
+3. Do **not** stack footer actions vertically on phones by default. Opt into `stackActionsWhenCompact: true` only when a labeled footer truly cannot fit in one row.
+4. Header restore/maximize and close stay icon-only.
+5. Pin footer actions when the body scrolls (`pinActionsToBottom: true`) for long forms and selection tables.
+6. Omit actions the user cannot perform (RBAC/ABAC per [prompt.mdc](prompt.mdc)).
 
 ## States
 

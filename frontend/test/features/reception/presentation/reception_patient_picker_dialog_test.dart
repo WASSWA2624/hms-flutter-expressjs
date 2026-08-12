@@ -53,11 +53,17 @@ void main() {
     expect(find.text('SCHEDULE APPOINTMENT'), findsOneWidget);
     expect(find.text('Existing patient'), findsOneWidget);
     expect(find.text('New patient'), findsOneWidget);
+    final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
+    expect(dialog.contentPadding, EdgeInsets.zero);
     final AppTabStrip tabs = tester.widget<AppTabStrip>(
       find.byType(AppTabStrip),
     );
     expect(tabs.selectedId, 'existing');
-    expect(find.byType(AppListTable<Patient>), findsOneWidget);
+    final AppListTable<Patient> table = tester.widget<AppListTable<Patient>>(
+      find.byType(AppListTable<Patient>),
+    );
+    expect(table.pinToolbar, isFalse);
+    expect(table.search?.isLoading, isFalse);
     expect(find.text('SELECT PATIENT'), findsNothing);
 
     await tester.tap(find.text('New patient'));

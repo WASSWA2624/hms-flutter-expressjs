@@ -48,7 +48,8 @@ List<Widget> clinicalActionDialogActions(
   final Widget primaryButton = AppButton.primary(
     label: submitLabel,
     leadingIcon:
-        submitLeadingIcon ?? (destructive ? AppActionIcons.delete : null),
+        submitLeadingIcon ??
+        (destructive ? AppActionIcons.delete : AppActionIcons.save),
     tooltip: submitLabel,
     color: destructive ? colorScheme.error : null,
     isLoading: isSaving,

@@ -216,7 +216,7 @@ Future<_Harness> _pumpClaimsWorkspace(
   required _MockClaimsRepository repository,
   ClaimsWorkspaceQuery? initialQuery,
   String initialLocation = '/claims',
-  Size physicalSize = const Size(1440, 900),
+  Size physicalSize = const Size(1600, 900),
   AppAccessPolicy? accessPolicy,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -277,6 +277,29 @@ class _Harness {
   final GoRouter router;
 }
 
+/// Selects a claims strip tab, opening the overflow More menu when needed.
+Future<void> _selectClaimsTab(WidgetTester tester, String label) async {
+  final Finder visible = find.descendant(
+    of: find.byType(AppTabStrip),
+    matching: find.text(label),
+  );
+  if (visible.evaluate().isNotEmpty) {
+    await tester.ensureVisible(visible.first);
+    await tester.tap(visible.first);
+    await tester.pumpAndSettle();
+    return;
+  }
+
+  final Finder more = find.byKey(const ValueKey<String>('tabOverflowMore'));
+  expect(more, findsOneWidget, reason: 'Expected overflow More for "$label"');
+  await tester.tap(more);
+  await tester.pumpAndSettle();
+  final Finder menuItem = find.textContaining(label);
+  expect(menuItem, findsWidgets, reason: 'Missing overflow item "$label"');
+  await tester.tap(menuItem.last);
+  await tester.pumpAndSettle();
+}
+
 AppListTable<ClaimsQueueItem> _table(WidgetTester tester) {
   return tester.widget<AppListTable<ClaimsQueueItem>>(
     find.byType(AppListTable<ClaimsQueueItem>),
@@ -305,18 +328,57 @@ void main() {
     repository = _MockClaimsRepository();
   });
 
-  testWidgets('renders tab strip with section counts and authorization table', (
+  testWidgets('renders tab strip with independent leaf tabs and auth table', (
     WidgetTester tester,
   ) async {
     await _pumpClaimsWorkspace(tester, repository: repository);
 
     expect(find.byType(AppTabStrip), findsOneWidget);
-    expect(find.textContaining('Authorizations'), findsWidgets);
-    expect(find.textContaining('Active Claims'), findsWidgets);
-    expect(find.textContaining('Settled'), findsWidgets);
-    expect(find.textContaining('Insurance Setup'), findsWidgets);
+    final AppTabStrip strip = tester.widget<AppTabStrip>(
+      find.byType(AppTabStrip),
+    );
+    expect(
+      strip.tabs.map((AppTabItem tab) => tab.id).toList(growable: false),
+      <String>[
+        ClaimsDeskSection.authPending.name,
+        ClaimsDeskSection.authApproved.name,
+        ClaimsDeskSection.authDenied.name,
+        ClaimsDeskSection.authExpired.name,
+        ClaimsDeskSection.submitted.name,
+        ClaimsDeskSection.approved.name,
+        ClaimsDeskSection.partialClaims.name,
+        ClaimsDeskSection.claimRejected.name,
+        ClaimsDeskSection.settled.name,
+        ClaimsDeskSection.insuranceSetup.name,
+      ],
+    );
+    expect(
+      strip.tabs.map((AppTabItem tab) => tab.label),
+      containsAll(<String>[
+        'Auth pending',
+        'Auth approved',
+        'Authorization denied',
+        'Authorization expired',
+        'Submitted',
+        'Approved',
+        'Partial claims',
+        'Claim rejected',
+        'Settled',
+        'Insurance Setup',
+      ]),
+    );
+    expect(find.textContaining('Authorizations'), findsNothing);
+    expect(find.textContaining('Active Claims'), findsNothing);
     expect(find.text('AUTH-PENDING'), findsOneWidget);
     expect(find.byTooltip('Request authorization'), findsOneWidget);
+    expect(find.byType(ActionChip), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(AppTabStrip),
+        matching: find.byTooltip('Request authorization'),
+      ),
+      findsNothing,
+    );
     expect(
       find.descendant(
         of: find.byType(AppListTableGrid),
@@ -352,8 +414,8 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(_table(tester).search?.showAdvancedFilterButton, isTrue);
-    expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
+    // Sibling-tab statuses are strip tabs — Advanced filters omitted on leaves.
+    expect(_table(tester).search?.showAdvancedFilterButton, isFalse);
     expect(_table(tester).columnVisibilityTitle, 'Table Settings');
     expect(_table(tester).columnVisibilityLabel, 'Settings');
     expect(_table(tester).enableExport, isTrue);
@@ -373,16 +435,22 @@ void main() {
       repository: repository,
     );
 
-    await tester.tap(find.textContaining('Active Claims').first);
-    await tester.pumpAndSettle();
+    await _selectClaimsTab(tester, 'Submitted');
 
     expect(
       harness.router.state.uri.queryParameters['section'],
-      'active-claims',
+      'submitted',
     );
     expect(find.text('CLM-SUB'), findsOneWidget);
     expect(find.text('AUTH-PENDING'), findsNothing);
     expect(find.byTooltip('Prepare claim'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AppTabStrip),
+        matching: find.byTooltip('Prepare claim'),
+      ),
+      findsNothing,
+    );
     expect(
       find.descendant(
         of: find.byType(AppListTableGrid),
@@ -412,8 +480,7 @@ void main() {
       findsNothing,
     );
 
-    await tester.tap(find.textContaining('Settled').first);
-    await tester.pumpAndSettle();
+    await _selectClaimsTab(tester, 'Settled');
 
     expect(harness.router.state.uri.queryParameters['section'], 'settled');
     expect(find.text('CLM-PAID'), findsOneWidget);
@@ -443,7 +510,7 @@ void main() {
     );
   });
 
-  testWidgets('deep link section=active-claims selects Active Claims tab', (
+  testWidgets('deep link section=active-claims selects Submitted leaf', (
     WidgetTester tester,
   ) async {
     final _Harness harness = await _pumpClaimsWorkspace(
@@ -455,16 +522,32 @@ void main() {
       ),
     );
 
-    expect(
-      harness.router.state.uri.queryParameters['section'],
-      'active-claims',
-    );
     expect(find.text('CLM-SUB'), findsOneWidget);
     expect(find.text('AUTH-PENDING'), findsNothing);
     expect(find.byTooltip('Prepare claim'), findsOneWidget);
+    expect(
+      harness.router.state.uri.queryParameters['section'],
+      anyOf('active-claims', 'submitted'),
+    );
   });
 
-  testWidgets('default route lands on Authorizations without section param', (
+  testWidgets('deep link section=authorizations selects Auth pending leaf', (
+    WidgetTester tester,
+  ) async {
+    await _pumpClaimsWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/claims?section=authorizations',
+      initialQuery: ClaimsWorkspaceQuery.fromUri(
+        Uri.parse('/claims?section=authorizations'),
+      ),
+    );
+
+    expect(find.text('AUTH-PENDING'), findsOneWidget);
+    expect(find.byTooltip('Request authorization'), findsOneWidget);
+  });
+
+  testWidgets('default route lands on Auth pending without section param', (
     WidgetTester tester,
   ) async {
     final _Harness harness = await _pumpClaimsWorkspace(
@@ -488,8 +571,7 @@ void main() {
       repository: repository,
     );
 
-    await tester.tap(find.textContaining('Insurance Setup').first);
-    await tester.pumpAndSettle();
+    await _selectClaimsTab(tester, 'Insurance Setup');
 
     expect(
       harness.router.state.uri.queryParameters['section'],
@@ -513,18 +595,19 @@ void main() {
     expect(find.textContaining('Insurer API'), findsOneWidget);
   });
 
-  testWidgets('summary bar appears on Authorizations and applies sub-filter', (
+  testWidgets('Auth pending strip tab loads authorizationPending filter', (
     WidgetTester tester,
   ) async {
     await _pumpClaimsWorkspace(tester, repository: repository);
 
-    expect(find.textContaining('Auth pending'), findsOneWidget);
+    expect(find.textContaining('Auth pending'), findsWidgets);
+    expect(find.byType(ActionChip), findsNothing);
 
     clearInteractions(repository);
     _stubClaimsRepository(repository);
 
-    await tester.tap(find.textContaining('Auth pending').first);
-    await tester.pumpAndSettle();
+    await _selectClaimsTab(tester, 'Auth approved');
+    await _selectClaimsTab(tester, 'Auth pending');
 
     final List<ClaimsQueueQuery> queries = verify(
       () => repository.listQueue(captureAny()),
@@ -539,26 +622,26 @@ void main() {
   });
 
   testWidgets(
-    'Authorizations and Active Claims expose Filters and omit Refresh',
+    'leaf queues omit status Advanced filters; Settled keeps Filters',
     (WidgetTester tester) async {
       await _pumpClaimsWorkspace(tester, repository: repository);
 
       expect(find.byTooltip('Refresh'), findsNothing);
-      expect(_table(tester).search?.showAdvancedFilterButton, isTrue);
-      expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
+      expect(_table(tester).search?.showAdvancedFilterButton, isFalse);
       // Product exception: ClaimsQueueQuery / work-items API have no date range.
       expect(_table(tester).search?.enableDateFilter, isFalse);
 
-      await tester.tap(find.textContaining('Active Claims').first);
-      await tester.pumpAndSettle();
+      await _selectClaimsTab(tester, 'Submitted');
 
       expect(find.byTooltip('Refresh'), findsNothing);
-      expect(_table(tester).search?.showAdvancedFilterButton, isTrue);
+      expect(_table(tester).search?.showAdvancedFilterButton, isFalse);
       expect(_table(tester).search?.enableDateFilter, isFalse);
-      // Redundant workload chips that duplicated Submitted / Approved are gone.
       expect(find.textContaining('Claims to submit'), findsNothing);
       expect(find.textContaining('Ready to settle'), findsNothing);
       expect(find.textContaining('Eligibility pending'), findsNothing);
+
+      await _selectClaimsTab(tester, 'Settled');
+      expect(_table(tester).search?.showAdvancedFilterButton, isTrue);
     },
   );
 
@@ -609,9 +692,9 @@ void main() {
       find.byType(AppTabStrip),
     );
     final AppTabItem authBefore = stripBefore.tabs.firstWhere(
-      (AppTabItem tab) => tab.id == ClaimsDeskSection.authorizations.name,
+      (AppTabItem tab) => tab.id == ClaimsDeskSection.authPending.name,
     );
-    expect(authBefore.count, 2);
+    expect(authBefore.count, 1);
 
     await tester.enterText(find.byType(TextField).first, 'AUTH-PENDING');
     await tester.testTextInput.receiveAction(TextInputAction.done);
@@ -621,7 +704,7 @@ void main() {
       find.byType(AppTabStrip),
     );
     final AppTabItem authAfter = stripAfter.tabs.firstWhere(
-      (AppTabItem tab) => tab.id == ClaimsDeskSection.authorizations.name,
+      (AppTabItem tab) => tab.id == ClaimsDeskSection.authPending.name,
     );
     expect(authAfter.count, 1);
   });
@@ -640,19 +723,22 @@ void main() {
     expect(setup.count, isNull);
   });
 
-  testWidgets('summary bar is hidden on Settled and Insurance Setup', (
+  testWidgets('nested summary chips stay absent across Settled and Setup', (
     WidgetTester tester,
   ) async {
     await _pumpClaimsWorkspace(tester, repository: repository);
 
-    await tester.tap(find.textContaining('Settled').first);
-    await tester.pumpAndSettle();
-    expect(find.textContaining('Auth pending'), findsNothing);
-    expect(find.textContaining('Submitted'), findsNothing);
+    expect(find.byType(ActionChip), findsNothing);
 
-    await tester.tap(find.textContaining('Insurance Setup').first);
-    await tester.pumpAndSettle();
-    expect(find.textContaining('Auth pending'), findsNothing);
+    await _selectClaimsTab(tester, 'Settled');
+    expect(find.byType(ActionChip), findsNothing);
+    // Leaf tabs remain on the primary strip.
+    expect(find.textContaining('Auth pending'), findsWidgets);
+
+    await _selectClaimsTab(tester, 'Insurance Setup');
+    expect(find.byType(ActionChip), findsNothing);
+    expect(find.byTooltip('Request authorization'), findsNothing);
+    expect(find.byTooltip('Prepare claim'), findsNothing);
   });
 
   testWidgets('search filters visible queue rows', (WidgetTester tester) async {
@@ -678,8 +764,7 @@ void main() {
   ) async {
     await _pumpClaimsWorkspace(tester, repository: repository);
 
-    await tester.tap(find.textContaining('Settled').first);
-    await tester.pumpAndSettle();
+    await _selectClaimsTab(tester, 'Settled');
 
     await tester.tap(find.textContaining('Filters').first);
     await tester.pumpAndSettle();
@@ -693,8 +778,7 @@ void main() {
     (WidgetTester tester) async {
       await _pumpClaimsWorkspace(tester, repository: repository);
 
-      await tester.tap(find.textContaining('Active Claims').first);
-      await tester.pumpAndSettle();
+      await _selectClaimsTab(tester, 'Submitted');
 
       await tester.tap(find.text('CLM-SUB'));
       await tester.pumpAndSettle();
@@ -800,10 +884,8 @@ void main() {
     (WidgetTester tester) async {
       await _pumpClaimsWorkspace(tester, repository: repository);
 
-      await tester.tap(find.textContaining('Active Claims').first);
-      await tester.pumpAndSettle();
-      await tester.tap(find.textContaining('Approved (').first);
-      await tester.pumpAndSettle();
+      await _selectClaimsTab(tester, 'Submitted');
+      await _selectClaimsTab(tester, 'Approved');
 
       expect(find.text('CLM-APPROVED'), findsOneWidget);
       final Finder closeAction = find.descendant(
@@ -840,8 +922,7 @@ void main() {
     expect(find.byTooltip('Request authorization'), findsNothing);
     expect(find.byTooltip('Update status'), findsNothing);
 
-    await tester.tap(find.textContaining('Insurance Setup').first);
-    await tester.pumpAndSettle();
+    await _selectClaimsTab(tester, 'Insurance Setup');
     expect(find.textContaining('Add company'), findsNothing);
     expect(find.textContaining('Add scheme'), findsNothing);
   });
@@ -904,8 +985,7 @@ void main() {
     clearInteractions(repository);
     _stubClaimsRepository(repository);
 
-    await tester.tap(find.textContaining('Active Claims').first);
-    await tester.pumpAndSettle();
+    await _selectClaimsTab(tester, 'Submitted');
 
     final List<ClaimsQueueQuery> queries = verify(
       () => repository.listQueue(captureAny()),
