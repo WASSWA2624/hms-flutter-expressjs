@@ -34,7 +34,7 @@ const AccessRequirement nursingReadRequirement = nursingWorkspaceReadRequirement
 const AccessRequirement nursingWorkspaceEntryRequirement =
     RouteAccessCatalog.nursingEntry;
 
-/// Prompt / AppRoutes route-entry alias (same as catalog entry).
+/// Historical alias — same ∩ `nursing:read` + module as [nursingWorkspaceEntryRequirement].
 const AccessRequirement nursingWorkspaceRouteUnionRequirement =
     RouteAccessCatalog.nursingEntry;
 
@@ -321,12 +321,11 @@ AccessRequirement? nursingFocusedPanelRequirement(NursingDetailPanel panel) {
 /// roster/hr ∪ + `hr-rosters`). Write controls keep source
 /// [nursingWriteRequirement] (∪ clinical|patient|last_office write + roles)
 /// rather than matrix ∩ `clinical:write` alone — `last_office:read` alone
-/// never unlocks write. Route entry ∪ is [routeEntry] (includes
-/// `last_office:read` | `operations:read` for shell entry, not All-tab chrome).
+/// never unlocks write. Route entry is [routeEntry] (∩ `nursing:read` + module).
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | All tab / count badge | navigate | read ∪ ([tab]) |
+/// | All tab / count badge | navigate | read ∩ ([tab]) |
 /// | Shift context (search bar) | progressive disclosure | ([shiftContext]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
 /// | Medication due count (column choices) | nested read | ([medicationsPanel]) |
@@ -341,7 +340,7 @@ AccessRequirement? nursingFocusedPanelRequirement(NursingDetailPanel panel) {
 /// | Detail Open ICU | navigate | ([openIcu]) |
 /// | Admission checklist write steps | create / update | write ∪ |
 /// | Nested mutation dialogs / `panel=` deep link | create / update | matching write |
-/// | Route entry (deep link) | navigate | clinical \| patient \| last_office \| operations:read |
+/// | Route entry (deep link) | navigate | nursing:read ∩ module ([routeEntry]) |
 abstract final class NursingAllAtomPermissions {
   static const AccessRequirement tab = nursingWorkspaceReadRequirement;
   static const AccessRequirement listChrome = nursingWorkspaceReadRequirement;
@@ -527,13 +526,12 @@ abstract final class NursingAssignedWardAtomPermissions {
 /// source [nursingWriteRequirement] (∪ clinical|patient|last_office write +
 /// roles) rather than matrix ∩ `clinical:write` alone — `last_office:read`
 /// alone never unlocks write. Critical rows force Escalate next-action;
-/// non-critical urgent rows use the task-type cascade. Route entry ∪ is
-/// [routeEntry] (includes `last_office:read` | `operations:read` for shell
-/// entry, not Urgent-tab chrome).
+/// non-critical urgent rows use the task-type cascade. Route entry is
+/// [routeEntry] (∩ `nursing:read` + module).
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Urgent tab / danger count badge | navigate | read ∪ ([tab]) |
+/// | Urgent tab / danger count badge | navigate | read ∩ ([tab]) |
 /// | Shift context (search bar) | progressive disclosure | ([shiftContext]) |
 /// | Search / Clear / Filters / Settings / columns | read chrome | ([listChrome]) |
 /// | Priority column / mobile priority meta | read | ([listChrome]) |
@@ -549,7 +547,7 @@ abstract final class NursingAssignedWardAtomPermissions {
 /// | Detail Open ICU | navigate | ([openIcu]) |
 /// | Admission checklist write steps | create / update | write ∪ |
 /// | Nested mutation dialogs / `panel=` deep link | create / update | matching write |
-/// | Route entry (deep link) | navigate | clinical \| patient \| last_office \| operations:read |
+/// | Route entry (deep link) | navigate | nursing:read ∩ module ([routeEntry]) |
 abstract final class NursingUrgentAtomPermissions {
   static const AccessRequirement tab = nursingWorkspaceReadRequirement;
   static const AccessRequirement listChrome = nursingWorkspaceReadRequirement;
@@ -752,7 +750,7 @@ abstract final class NursingMedicationDueAtomPermissions {
 /// | Detail Print summary | export | ([printSummary]) |
 /// | Checklist handover / write steps | create / update | ([checklistWrite]) |
 /// | Deep link `panel=handover` | create / update | ([panelDeepLink]) |
-/// | Route entry (deep link) | navigate | clinical \| patient \| last_office \| operations:read ([routeEntry]) |
+/// | Route entry (deep link) | navigate | nursing:read ∩ module ([routeEntry]) |
 abstract final class NursingHandoverPendingAtomPermissions {
   static const AccessRequirement tab = nursingWorkspaceReadRequirement;
   static const AccessRequirement listChrome = nursingWorkspaceReadRequirement;
@@ -944,7 +942,7 @@ abstract final class NursingTransferPendingAtomPermissions {
 /// | Detail Print summary | export | ([printSummary]) |
 /// | Admission checklist write / clearance step | create / update | ([checklistWrite]) |
 /// | Discharge dialog / `panel=discharge` | update | ([panelDeepLink] / [write]) |
-/// | Route entry (deep link) | navigate | clinical \| patient \| last_office \| operations:read ([routeEntry]) |
+/// | Route entry (deep link) | navigate | nursing:read ∩ module ([routeEntry]) |
 ///
 /// Financial inventory: `nursing_discharge_pending_billing_inventory.dart`.
 abstract final class NursingDischargePendingAtomPermissions {

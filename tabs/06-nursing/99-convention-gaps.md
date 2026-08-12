@@ -8,7 +8,7 @@ none
 
 ## Closed (2026-08-12)
 
-1. Route entry comments/tests aligned to ∩ `nursing:read` + module (`AppRoutes.nursing` / `RouteAccessCatalog.nursingEntry`).
+1. Route entry comments/tests aligned to ∩ `nursing:read` + module (`AppRoutes.nursing` / `RouteAccessCatalog.nursingEntry`); atom-map docs no longer describe ∪ clinical|patient|last_office|operations:read for route entry.
 2. Dual read vocabulary closed — tab/list chrome uses the same ∩ `nursing:read` + module as shell/catalog.
 3. Worklist Print mounted after Export (`printNursingWorkspaceList` / preview-first); detail Print label `Print`.
 4. No dedicated Handover strip toolbar — justified: tab + next-action + detail + Shift context (documented in shared chrome).
@@ -23,4 +23,4 @@ none
 13. Authoritative sibling counts + filtered active-tab badge; urgency tones applied.
 14. Toolbar order Filters → Settings → Export → Print → Shift context; shared filter/settings footer labels.
 
-Regression coverage: `frontend/test/features/nursing/`.
+Regression coverage: `frontend/test/features/nursing/` (per-tab chrome/export/print omit gates, count tones, filtered active badges, `matchesScope`, route-entry ∩).

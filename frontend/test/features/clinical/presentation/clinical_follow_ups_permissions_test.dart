@@ -58,6 +58,18 @@ final ReceptionFollowUpEntry _followUp = ReceptionFollowUpEntry(
   status: 'SCHEDULED',
 );
 
+final ReceptionFollowUpEntry _followUpOther = ReceptionFollowUpEntry(
+  id: 'fu-clinical-2',
+  encounterId: 'enc-2',
+  patientId: 'pat-2',
+  patientIdentifier: 'PAT-FU-2',
+  patientDisplayName: 'Other Follow Up',
+  patientPhone: '+256700000002',
+  scheduledAt: DateTime.utc(2026, 7, 30, 11, 0),
+  notes: 'Second callback',
+  status: 'SCHEDULED',
+);
+
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
 
@@ -144,6 +156,14 @@ void main() {
       expect(
         ClinicalFollowUpsAtomPermissions.routeEntry,
         same(clinicalWorkspaceEntryRequirement),
+      );
+      expect(
+        ClinicalFollowUpsAtomPermissions.export,
+        same(clinicalWorkspaceExportRequirement),
+      );
+      expect(
+        ClinicalFollowUpsAtomPermissions.listPrint,
+        same(clinicalWorkspacePrintRequirement),
       );
       expect(
         clinicalSectionRequirement(ClinicalWorkspaceSection.followUps),
@@ -777,6 +797,221 @@ void main() {
       expect(_tab('Pending'), findsNothing);
     },
   );
+
+  testWidgets(
+    'Export/Print omit without evidence:export; present when granted',
+    (WidgetTester tester) async {
+      await _pumpFollowUpsTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        opdRepository: opdRepository,
+        ipdRepository: ipdRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+        ),
+      );
+      expect(find.text('Export'), findsNothing);
+      expect(find.text('Print'), findsNothing);
+
+      await _pumpFollowUpsTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        opdRepository: opdRepository,
+        ipdRepository: ipdRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+      expect(find.text('Export'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+      expect(find.text('Filters'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'defaults five data columns; Follow-ups count tone is info; Settings lists choices',
+    (WidgetTester tester) async {
+      await _pumpFollowUpsTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        opdRepository: opdRepository,
+        ipdRepository: ipdRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+
+      final AppTabStrip strip = tester.widget<AppTabStrip>(
+        find.byType(AppTabStrip),
+      );
+      final AppTabItem followUps = strip.tabs.firstWhere(
+        (AppTabItem item) => item.id == 'followUps',
+      );
+      expect(followUps.count, 1);
+      expect(followUps.countTone, AppTabCountTone.info);
+
+      expect(find.text('Patient name'), findsWidgets);
+      expect(find.text('Phone'), findsWidgets);
+      expect(find.text('Status'), findsWidgets);
+      expect(find.text('Follow-up date'), findsWidgets);
+      expect(find.text('Follow-up time'), findsWidgets);
+      expect(find.text('Email'), findsNothing);
+      expect(find.text('Patient ID'), findsNothing);
+      expect(find.text('Notes'), findsNothing);
+
+      await tester.tap(find.byTooltip('Settings'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('TABLE SETTINGS'), findsOneWidget);
+      expect(find.text('Patient ID'), findsWidgets);
+      expect(find.text('Email'), findsWidgets);
+      expect(find.text('Notes'), findsWidgets);
+      expect(find.text('Close'), findsWidgets);
+      await tester.tap(find.text('Close').last);
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets(
+    'Advanced filters footer is Clear filters → Apply filters → Close',
+    (WidgetTester tester) async {
+      await _pumpFollowUpsTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        opdRepository: opdRepository,
+        ipdRepository: ipdRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+      );
+
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('ADVANCED FILTERS'), findsOneWidget);
+      expect(find.text('Clear filters'), findsOneWidget);
+      expect(find.text('Apply filters'), findsOneWidget);
+      expect(find.text('Close'), findsWidgets);
+      await tester.tap(find.text('Close').last);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('ADVANCED FILTERS'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'active Follow-ups badge uses filtered total when search narrows',
+    (WidgetTester tester) async {
+      await _pumpFollowUpsTab(
+        tester,
+        clinicalRepository: clinicalRepository,
+        opdRepository: opdRepository,
+        ipdRepository: ipdRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+        followUps: <ReceptionFollowUpEntry>[_followUp, _followUpOther],
+      );
+
+      final AppTabStrip initial = tester.widget<AppTabStrip>(
+        find.byType(AppTabStrip),
+      );
+      expect(
+        initial.tabs.firstWhere((AppTabItem t) => t.id == 'followUps').count,
+        2,
+      );
+
+      await tester.enterText(find.byType(TextField).first, 'Other Follow Up');
+      await tester.pumpAndSettle();
+
+      final AppTabStrip filtered = tester.widget<AppTabStrip>(
+        find.byType(AppTabStrip),
+      );
+      expect(
+        filtered.tabs.firstWhere((AppTabItem t) => t.id == 'followUps').count,
+        1,
+      );
+      expect(find.text('Other Follow Up'), findsWidgets);
+      expect(find.text('Follow Up Patient'), findsNothing);
+    },
+  );
+
+  testWidgets('deep link section=followups opens Follow-ups', (
+    WidgetTester tester,
+  ) async {
+    final GoRouter router = GoRouter(
+      initialLocation: '/clinical?section=followups',
+      routes: <RouteBase>[
+        GoRoute(
+          path: '/clinical',
+          builder: (BuildContext context, GoRouterState state) {
+            return Scaffold(
+              body: ClinicalWorkspacePage(
+                initialQuery: ClinicalWorkspaceQuery.fromUri(state.uri),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+    final SharedPreferences preferences = await SharedPreferences.getInstance();
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          clinicalRepositoryProvider.overrideWithValue(clinicalRepository),
+          opdRepositoryProvider.overrideWithValue(opdRepository),
+          ipdRepositoryProvider.overrideWithValue(ipdRepository),
+          receptionFollowUpRepositoryProvider.overrideWithValue(
+            followUpRepository,
+          ),
+          sharedPreferencesProvider.overrideWithValue(preferences),
+          initialSessionStateProvider.overrideWithValue(
+            const SessionState.ready(),
+          ),
+          appAccessPolicyProvider.overrideWithValue(
+            _policy(
+              permissions: <AppPermission>{AppPermissions.clinicalRead},
+            ),
+          ),
+        ],
+        child: MaterialApp.router(
+          theme: AppTheme.light,
+          routerConfig: router,
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
+    expect(_tab('Follow-ups'), findsOneWidget);
+    expect(
+      router.routeInformationProvider.value.uri.queryParameters,
+      containsPair('section', 'follow-ups'),
+    );
+  });
 }
 
 Future<void> _pumpFollowUpsTab(
@@ -789,7 +1024,11 @@ Future<void> _pumpFollowUpsTab(
   Size physicalSize = const Size(1440, 900),
   ThemeMode themeMode = ThemeMode.light,
   String initialLocation = '/clinical?section=follow-ups',
+  List<ReceptionFollowUpEntry>? followUps,
 }) async {
+  if (followUps != null) {
+    _stubFollowUps(followUpRepository, entries: followUps);
+  }
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
 
@@ -912,14 +1151,17 @@ void _stubIpd(_MockIpdRepository repository) {
   );
 }
 
-void _stubFollowUps(_MockFollowUpRepository repository) {
+void _stubFollowUps(
+  _MockFollowUpRepository repository, {
+  List<ReceptionFollowUpEntry>? entries,
+}) {
+  final List<ReceptionFollowUpEntry> worklist =
+      entries ?? <ReceptionFollowUpEntry>[_followUp];
   when(
     () => repository.listScheduledFollowUps(
       encounterType: any(named: 'encounterType'),
     ),
   ).thenAnswer(
-    (_) async => Result<List<ReceptionFollowUpEntry>>.success(
-      <ReceptionFollowUpEntry>[_followUp],
-    ),
+    (_) async => Result<List<ReceptionFollowUpEntry>>.success(worklist),
   );
 }

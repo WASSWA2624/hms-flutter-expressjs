@@ -37,11 +37,11 @@ Inventory baseline (do not reinvent atoms): `tabs/06-nursing/`. Per-surface reme
 
 ## Acceptance Criteria
 
-- [ ] Every desk section in `tabs/06-nursing/00-overview.md` has a completed remediation prompt under `prompts/06-nursing/` and a matching updated inventory under `tabs/06-nursing/`.
-- [ ] Shared chrome and convention-gap prompts are implemented before claiming per-tab completion for Print, Export gating, authoritative counts, and count tones.
-- [ ] No mid-flow navigation to another feature page except allowed ownership handoffs (`screens.mdc`).
-- [ ] Tests prove unauthorized UI is absent and authorized UI remains for representative roles.
-- [ ] No new markdown inventories under `screens/`.
+- [x] Every desk section in `tabs/06-nursing/00-overview.md` has a completed remediation prompt under `prompts/06-nursing/` and a matching updated inventory under `tabs/06-nursing/`.
+- [x] Shared chrome and convention-gap prompts are implemented before claiming per-tab completion for Print, Export gating, authoritative counts, and count tones.
+- [x] No mid-flow navigation to another feature page except allowed ownership handoffs (`screens.mdc`).
+- [x] Tests prove unauthorized UI is absent and authorized UI remains for representative roles.
+- [x] No new markdown inventories under `screens/`.
 
 ## Verification
 
