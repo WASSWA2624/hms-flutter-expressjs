@@ -7723,50 +7723,7 @@ class _SearchableEntityGroupState<T>
       },
     );
 
-    if (!_hasScopeSelector) {
-      return table;
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        AppSelectField<String>.searchable(
-          value: _scopeId,
-          labelText: widget.scopeLabel,
-          options: <AppSelectOption<String>>[
-            AppSelectOption<String>(
-              value: _allScopes,
-              label: l10n.commonAllLabel,
-            ),
-            for (final _SearchableEntityGroupScopeOption option
-                in widget.scopeOptions)
-              AppSelectOption<String>(value: option.id, label: option.label),
-          ],
-          onChanged: (String? value) {
-            setState(() {
-              _scopeId = value ?? _allScopes;
-              final Map<String, String> nextOptions =
-                  Map<String, String>.of(_filterValue.options);
-              if (_scopeId == _allScopes) {
-                nextOptions.remove(_scopeFilterKey);
-              } else {
-                nextOptions[_scopeFilterKey] = _scopeId;
-              }
-              _filterValue = AppSearchBarFilterValue(
-                options: nextOptions,
-                field: _filterValue.field,
-                dateFrom: _filterValue.dateFrom,
-                dateTo: _filterValue.dateTo,
-                texts: _filterValue.texts,
-                selections: _filterValue.selections,
-              );
-            });
-          },
-        ),
-        SizedBox(height: theme.spacing.sm),
-        Expanded(child: table),
-      ],
-    );
+    return table;
   }
 }
 

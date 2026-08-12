@@ -718,4 +718,109 @@ void main() {
       );
     });
   });
+
+  group('tenantFacilitySetupDeskSectionCount', () {
+    const FacilitySetupSnapshot snapshot = FacilitySetupSnapshot(
+      departments: <DepartmentProfile>[
+        DepartmentProfile(
+          id: 'DEP0001',
+          tenantId: 'TEN0001',
+          facilityId: 'FAC0001',
+          name: 'Emergency',
+          type: DepartmentSetupType.clinical,
+        ),
+      ],
+      units: <UnitProfile>[
+        UnitProfile(
+          id: 'UNI0001',
+          tenantId: 'TEN0001',
+          facilityId: 'FAC0001',
+          name: 'Triage',
+          departmentId: 'DEP0001',
+        ),
+        UnitProfile(
+          id: 'UNI0002',
+          tenantId: 'TEN0001',
+          facilityId: 'FAC0001',
+          name: 'Resus',
+          departmentId: 'DEP0001',
+        ),
+      ],
+      facilities: <FacilityProfile>[
+        FacilityProfile(
+          id: 'FAC0001',
+          tenantId: 'TEN0001',
+          name: 'Main Campus',
+          type: FacilitySetupType.hospital,
+        ),
+      ],
+    );
+
+    test('prefers live count over snapshot length', () {
+      expect(
+        tenantFacilitySetupDeskSectionCount(
+          section: TenantFacilitySetupDeskSection.departments,
+          snapshot: snapshot,
+          liveCount: 42,
+        ),
+        42,
+      );
+    });
+
+    test('uses snapshot totals for structure tabs when live count is absent', () {
+      expect(
+        tenantFacilitySetupDeskSectionCount(
+          section: TenantFacilitySetupDeskSection.departments,
+          snapshot: snapshot,
+        ),
+        1,
+      );
+      expect(
+        tenantFacilitySetupDeskSectionCount(
+          section: TenantFacilitySetupDeskSection.units,
+          snapshot: snapshot,
+        ),
+        2,
+      );
+      expect(
+        tenantFacilitySetupDeskSectionCount(
+          section: TenantFacilitySetupDeskSection.facility,
+          snapshot: snapshot,
+        ),
+        1,
+      );
+    });
+
+    test('omits count for tabs without a snapshot total until live', () {
+      expect(
+        tenantFacilitySetupDeskSectionCount(
+          section: TenantFacilitySetupDeskSection.tenants,
+          snapshot: snapshot,
+        ),
+        isNull,
+      );
+      expect(
+        tenantFacilitySetupDeskSectionCount(
+          section: TenantFacilitySetupDeskSection.users,
+          snapshot: snapshot,
+        ),
+        isNull,
+      );
+      expect(
+        tenantFacilitySetupDeskSectionCount(
+          section: TenantFacilitySetupDeskSection.clinicalCatalog,
+          snapshot: snapshot,
+        ),
+        isNull,
+      );
+      expect(
+        tenantFacilitySetupDeskSectionCount(
+          section: TenantFacilitySetupDeskSection.tenants,
+          snapshot: snapshot,
+          liveCount: 3,
+        ),
+        3,
+      );
+    });
+  });
 }

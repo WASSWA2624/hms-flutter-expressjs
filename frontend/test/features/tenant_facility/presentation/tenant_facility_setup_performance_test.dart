@@ -73,9 +73,9 @@ void main() {
         ),
         isFalse,
       );
-      expect(setupPageSource.contains('const ManageUsersPanel()'), isTrue);
+      expect(setupPageSource.contains('ManageUsersPanel('), isTrue);
       expect(
-        setupPageSource.contains('const ManageRolesPermissionsPanel()'),
+        setupPageSource.contains('ManageRolesPermissionsPanel('),
         isTrue,
       );
       expect(
