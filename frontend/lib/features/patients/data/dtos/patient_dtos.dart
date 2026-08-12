@@ -70,6 +70,7 @@ final class PatientDto {
     final PatientJsonMap? facilityContext = _nullableMap(
       json['facility_context'],
     );
+    final PatientJsonMap? facility = _nullableMap(json['facility']);
     final PatientJsonMap? primaryContact = _nullableMap(
       json['primary_contact_details'],
     );
@@ -95,7 +96,12 @@ final class PatientDto {
       publicId: _string(json['human_friendly_id']),
       displayName: _string(json['display_name']),
       tenantId: _string(json['tenant_id']),
-      facilityId: _string(json['facility_id']),
+      facilityId:
+          _string(json['facility_id']) ??
+          _string(facility?['human_friendly_id']) ??
+          _string(facility?['id']) ??
+          _string(facilityContext?['human_friendly_id']) ??
+          _string(facilityContext?['id']),
       firstName: _string(json['first_name']),
       lastName: _string(json['last_name']),
       dateOfBirth: _date(json['date_of_birth']),
@@ -112,7 +118,7 @@ final class PatientDto {
       facilityLabel:
           _string(json['facility_label']) ??
           _string(facilityContext?['label']) ??
-          _string(_nullableMap(json['facility'])?['label']),
+          _string(facility?['label']),
       requiresCompletion: _bool(registration['requires_completion']),
       registrationSource: _string(registration['source']),
       registrationStatus: _string(registration['status']),

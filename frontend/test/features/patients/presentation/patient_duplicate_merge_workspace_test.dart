@@ -157,6 +157,43 @@ void main() {
       expect(plan.summary['gender'], 'FEMALE');
     });
 
+    test('facility summary uses id only and ignores display labels', () {
+      const Patient left = Patient(
+        id: 'left-id',
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        facilityId: 'FAC0001',
+        facilityLabel: 'DemoCare General Hospital',
+      );
+      const Patient right = Patient(
+        id: 'right-id',
+        firstName: 'Ada',
+        lastName: 'Byron',
+        facilityLabel: 'Other Hospital',
+      );
+      final List<PatientMergeFieldLane> fields = buildPatientMergeFieldLanes(
+        l10n: l10n,
+        locale: const Locale('en'),
+        left: left,
+        right: right,
+      );
+      final PatientMergeCommitPlan keepLeft = buildPatientMergeCommitPlan(
+        left: left,
+        right: right,
+        fields: fields,
+        resolution: PatientMergeResolution.keepLeft,
+      );
+      expect(keepLeft.summary['facility_id'], 'FAC0001');
+
+      final PatientMergeCommitPlan keepRight = buildPatientMergeCommitPlan(
+        left: left,
+        right: right,
+        fields: fields,
+        resolution: PatientMergeResolution.keepRight,
+      );
+      expect(keepRight.summary.containsKey('facility_id'), isFalse);
+    });
+
     test('swapped field values feed keep-left summary', () {
       final List<PatientMergeFieldLane> fields = buildPatientMergeFieldLanes(
         l10n: l10n,

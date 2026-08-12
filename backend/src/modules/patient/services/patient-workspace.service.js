@@ -309,6 +309,14 @@ const serializePatientSummary = (patient) => {
     primary_email: normalizeText(primaryEmail?.value) || null,
     primary_identifier_type: normalizeText(primaryIdentifier?.identifier_type) || null,
     primary_identifier_value: normalizeText(primaryIdentifier?.identifier_value) || null,
+    facility_id: patient?.facility
+      ? resolvePublicIdentifier(
+          patient.facility?.human_friendly_id,
+          patient.facility?.id
+        )
+      : resolvePublicIdentifier(undefined, patient?.facility_id) ||
+        patient?.facility_id ||
+        null,
     tenant: patient?.tenant
       ? {
           human_friendly_id: resolvePublicIdentifier(

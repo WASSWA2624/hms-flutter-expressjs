@@ -94,6 +94,23 @@ final class PatientMergeFieldLane {
     }
   }
 
+  /// Value suitable for merge API summary (IDs/dates never fall back to labels).
+  String? resolvedSummaryValue(PatientMergeResolution resolution) {
+    if (key == 'facility_id' || key == 'date_of_birth') {
+      switch (resolution) {
+        case PatientMergeResolution.keepLeft:
+          return _nonEmpty(leftRaw ?? '');
+        case PatientMergeResolution.keepRight:
+          return _nonEmpty(rightRaw ?? '');
+        case PatientMergeResolution.autoMerge:
+          return prefersLeft
+              ? _nonEmpty(leftRaw ?? '')
+              : _nonEmpty(rightRaw ?? '');
+      }
+    }
+    return resolvedRaw(resolution);
+  }
+
   /// Whether auto-merge keeps the left value for this field.
   bool get prefersLeft {
     final String left = leftValue.trim();
@@ -268,7 +285,7 @@ PatientMergeCommitPlan buildPatientMergeCommitPlan({
     if (!field.includeInSummary) {
       continue;
     }
-    final String? raw = field.resolvedRaw(resolution);
+    final String? raw = field.resolvedSummaryValue(resolution);
     if (raw == null || raw.trim().isEmpty) {
       continue;
     }
