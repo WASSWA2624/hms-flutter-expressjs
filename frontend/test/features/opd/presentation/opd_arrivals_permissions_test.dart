@@ -146,6 +146,7 @@ AppAccessPolicy _writerPolicy() {
 void _stubWorkspace(
   _MockOpdRepository repository, {
   List<OpdAppointment> appointments = const <OpdAppointment>[_arrival],
+  int? appointmentsTotalItemCount,
   bool failLists = false,
 }) {
   when(() => repository.listAppointments(any())).thenAnswer((invocation) async {
@@ -157,7 +158,7 @@ void _stubWorkspace(
         items: appointments,
         request: (invocation.positionalArguments.single as OpdAppointmentQuery)
             .pageRequest,
-        totalItemCount: appointments.length,
+        totalItemCount: appointmentsTotalItemCount ?? appointments.length,
       ),
     );
   });
@@ -244,11 +245,13 @@ Future<GoRouter> _pumpArrivalsTab(
   ThemeMode themeMode = ThemeMode.light,
   String initialLocation = '/opd?section=arrivals',
   List<OpdAppointment> appointments = const <OpdAppointment>[_arrival],
+  int? appointmentsTotalItemCount,
   bool failLists = false,
 }) async {
   _stubWorkspace(
     repository,
     appointments: appointments,
+    appointmentsTotalItemCount: appointmentsTotalItemCount,
     failLists: failLists,
   );
   SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -931,6 +934,28 @@ void main() {
         );
         expect(find.text('Other Arrival'), findsWidgets);
         expect(find.text('Arrivals Patient'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Arrivals badge matches table membership (ignores inflated API total)',
+      (WidgetTester tester) async {
+        await _pumpArrivalsTab(
+          tester,
+          repository: repository,
+          accessPolicy: _readerPolicy(),
+          appointments: const <OpdAppointment>[],
+          appointmentsTotalItemCount: 1001,
+        );
+
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        expect(
+          strip.tabs.firstWhere((AppTabItem t) => t.id == 'arrivals').count,
+          0,
+        );
+        expect(find.text('No arrivals'), findsOneWidget);
       },
     );
   });

@@ -26,9 +26,9 @@
 - Tabs omitted when unauthorized (`opdBoardTabRequirement`) — not disabled
 - Counts (sibling model — dedicated unfiltered scope totals):
   - All → `summaryCounts.allOpdPatients` (fallback combined `_tableItems` length)
-  - Arrivals → `appointments.totalItemCount` (fallback `arrivalCount`)
-  - Queue → `queueEntries.totalItemCount` (fallback `queueCount`)
-  - Triage → `triageQueue.totalItemCount` (fallback `triageQueueCount`)
+  - Arrivals → board ARRIVAL membership (same rows as table; not raw appointments `totalItemCount`)
+  - Queue → board QUEUE membership (same rows as table; not raw queue `totalItemCount`)
+  - Triage → board TRIAGE membership (same rows as table; not raw triage `totalItemCount`)
   - Active → `summaryCounts.activeOpd` (fallback `activeFlowCount`)
   - Follow-ups → `followUpTabCountProvider(OPD)`
   - **Active tab** with search or advanced filters: filtered membership length for that tab only

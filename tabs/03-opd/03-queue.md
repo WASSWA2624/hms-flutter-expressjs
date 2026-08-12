@@ -4,7 +4,7 @@
 
 - Label: `opdSectionQueueLabel`
 - Icon: `Icons.queue_outlined`
-- Count source: `queueEntries.totalItemCount` (fallback `queueCount`); filtered when active + narrowed
+- Count source: board QUEUE membership (same rows as the Queue table); when Queue is active and search/filters narrow, badge uses that filtered total
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `queue` (aliases `desk-queue`, `desk_queue`)
 - Tab gate: `OpdQueueAtomPermissions.tab`

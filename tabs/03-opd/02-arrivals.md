@@ -4,7 +4,7 @@
 
 - Label: `opdSectionArrivalsLabel`
 - Icon: `Icons.event_outlined`
-- Count source: `appointments.totalItemCount` (fallback `arrivalCount`); filtered when active + narrowed
+- Count source: board ARRIVAL membership (same rows as the Arrivals table); when Arrivals is active and search/filters narrow, badge uses that filtered total
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `arrivals` (alias `appointments`)
 - Tab gate: `OpdArrivalsAtomPermissions.tab`

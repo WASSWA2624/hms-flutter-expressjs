@@ -4,7 +4,7 @@
 
 - Label: `opdSectionTriageLabel`
 - Icon: `Icons.monitor_heart_outlined`
-- Count source: `triageQueue.totalItemCount` (fallback `triageQueueCount`); filtered when active + narrowed
+- Count source: board TRIAGE membership (same rows as the Triage table); when Triage is active and search/filters narrow, badge uses that filtered total
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `triage`
 - Tab gate: `OpdTriageAtomPermissions.tab`

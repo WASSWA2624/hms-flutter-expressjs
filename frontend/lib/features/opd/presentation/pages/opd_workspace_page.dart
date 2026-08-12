@@ -2128,18 +2128,34 @@ int _opdSectionScopeTotal(
       state.summaryCounts.allOpdPatients > 0
           ? state.summaryCounts.allOpdPatients
           : allItems.length,
-    OpdWorkspaceSection.arrivals =>
-      state.appointments.totalItemCount ?? state.arrivalCount,
-    OpdWorkspaceSection.queue =>
-      state.queueEntries.totalItemCount ?? state.queueCount,
-    OpdWorkspaceSection.triage =>
-      state.triageQueue.totalItemCount ?? state.triageQueueCount,
+    // Arrivals / Queue / Triage badges must match board membership (same rows
+    // the table paints), not raw list `totalItemCount` which can include
+    // terminal or out-of-scope records the desk filters out.
+    OpdWorkspaceSection.arrivals ||
+    OpdWorkspaceSection.queue ||
+    OpdWorkspaceSection.triage => _opdBoardSectionMembershipCount(
+      allItems,
+      section,
+    ),
     OpdWorkspaceSection.active =>
       state.summaryCounts.activeOpd > 0
           ? state.summaryCounts.activeOpd
-          : state.activeFlowCount,
+          : _opdBoardSectionMembershipCount(allItems, section),
     OpdWorkspaceSection.followUps => 0,
   };
+}
+
+int _opdBoardSectionMembershipCount(
+  List<_OpdTableItem> allItems,
+  OpdWorkspaceSection section,
+) {
+  final String? sectionCategory = _opdSectionCategory(section);
+  if (sectionCategory == null) {
+    return allItems.length;
+  }
+  return allItems
+      .where((_OpdTableItem item) => item.category == sectionCategory)
+      .length;
 }
 
 AppTabCountTone _opdSectionCountTone(OpdWorkspaceSection section) {
