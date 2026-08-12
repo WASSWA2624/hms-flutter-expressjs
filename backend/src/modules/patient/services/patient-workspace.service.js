@@ -1945,6 +1945,7 @@ const mergePatients = async (payload = {}, scope = {}, userContext = {}) => {
       where: { id: secondary.id },
       data: {
         is_active: false,
+        deleted_at: new Date(),
         extension_json: {
           ...secondaryExtension,
           merge: {
@@ -1955,7 +1956,6 @@ const mergePatients = async (payload = {}, scope = {}, userContext = {}) => {
 
     const pairKey = getPairKey(primary.id, secondary.id);
     await addDismissedPair(primary.id, pairKey, tx);
-    await addDismissedPair(secondary.id, pairKey, tx);
   });
 
   await createAuditLog({
@@ -1971,7 +1971,8 @@ const mergePatients = async (payload = {}, scope = {}, userContext = {}) => {
       after: {
         primary_patient_id: primary.id,
         secondary_patient_id: secondary.id,
-        merged: true}},
+        merged: true,
+        secondary_deleted: true}},
     ip_address: userContext?.ip_address});
 
   return getPatientWorkspace(primary.human_friendly_id || primary.id, scope, userContext);
