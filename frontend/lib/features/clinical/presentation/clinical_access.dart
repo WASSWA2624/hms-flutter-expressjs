@@ -483,7 +483,8 @@ abstract final class ClinicalFollowUpsAtomPermissions {
 /// | Detail Request radiology (+ catalog / billing) | create / update | radiology order Γê¬ |
 /// | Detail Prescribe (+ medicine / billing nested) | create | pharmacy order Γê¬ |
 /// | Detail Request admission | create | admission Γê¬ |
-/// | Detail Print summary | export / read | read Γê⌐ |
+/// | List Export / Print | export | ∩ `evidence:export` |
+/// | Detail Print summary | export | ∩ `evidence:export` |
 /// | Lab / radiology / pharmacy order mutate | update / delete | nested order Γê¬ |
 /// | Diagnosis delete | delete | write Γê¬ source |
 /// | Discharge Open billing / financial | nested read | billing:read Γê⌐ |
@@ -602,7 +603,8 @@ bool canViewClinicalRadiologyResultsPanel(AppAccessPolicy policy) {
 /// | Detail Request radiology (+ catalog / billing) | create / update | radiology order Γê¬ |
 /// | Detail Prescribe (+ medicine / billing nested) | create | pharmacy order Γê¬ |
 /// | Detail Request admission | create | admission Γê¬ |
-/// | Detail Print summary | export / read | read Γê⌐ |
+/// | List Export / Print | export | ∩ `evidence:export` |
+/// | Detail Print summary | export | ∩ `evidence:export` |
 /// | Lab / radiology / pharmacy order mutate | update / delete | nested order Γê¬ |
 /// | Diagnosis delete | delete | write Γê¬ source |
 /// | Discharge Open billing / financial | nested read | billing:read Γê⌐ |
@@ -678,43 +680,6 @@ bool canViewClinicalUrgent(AppAccessPolicy policy) {
   return ClinicalUrgentAtomPermissions.tab.isAllowed(policy);
 }
 
-/// Atom ΓåÆ requirement map for Waiting review (`/clinical?section=waiting-review`).
-///
-/// Outpatient encounters awaiting clinician review (`WAITING_DOCTOR_REVIEW` /
-/// review-stage aliases). Same encounter chrome as All / Urgent; distinctive
-/// surfaces are the Waiting review tab (warning count tone) and review-stage
-/// next actions (`DOCTOR_REVIEW` / Clinical notes). Matrix nested write rows
-/// are _(n/a)_; prompt narrative Γê¬ helpers still gate lab / radiology /
-/// pharmacy / admission. Discharge Open billing uses
-/// [clinicalDischargeFinancialReadRequirement] (`billing:read` Γê⌐
-/// `billing-payments`).
-///
-/// | Atom | Kind | Gate |
-/// | --- | --- | --- |
-/// | Waiting review tab | navigate | read Γê⌐ `clinical:read` |
-/// | Search / filters / columns / pagination | read chrome | read Γê⌐ |
-/// | Waiting review tab count / summary badge | read | read Γê⌐ |
-/// | Empty / loading / error / retry | read chrome | read Γê⌐ |
-/// | Success snackbar / validation (authorized) | visible feedback | write Γê¬ / form |
-/// | Row select ΓåÆ encounter detail | read | read Γê⌐ |
-/// | Next action Review encounter / DOCTOR_REVIEW | navigate / read | read Γê⌐ |
-/// | Next action RECORD_VITALS / disposition | create / update | write Γê¬ source |
-/// | Next action WorkflowActionButton | navigate / write | registry; absent if denied |
-/// | Detail Add note / diagnosis / procedure / refer / follow-up | create | write Γê¬ source |
-/// | Detail Record/Edit vitals / Disposition | create / update | write Γê¬ source |
-/// | Detail Request lab (+ catalog / billing nested) | create / update | lab order Γê¬ |
-/// | Detail Request radiology (+ catalog / billing) | create / update | radiology order Γê¬ |
-/// | Detail Prescribe (+ medicine / billing nested) | create | pharmacy order Γê¬ |
-/// | Detail Request admission | create | admission Γê¬ |
-/// | Detail Print summary | export / read | read Γê⌐ |
-/// | Lab / radiology / pharmacy order mutate | update / delete | nested order Γê¬ |
-/// | Diagnosis delete | delete | write Γê¬ source |
-/// | Discharge Open billing / financial | nested read | billing:read Γê⌐ |
-/// | Route entry (deep link) | navigate | [RouteAccessCatalog.clinicalEntry] Γê⌐ `clinical:read` |
-///
-/// Write keeps source Γê¬ `clinical:write` | `platform:admin` rather than matrix Γê⌐
-/// `clinical:write` alone. Nested order / admission rows document prompt Γê¬
-/// (matrix nested write _(n/a)_). Prompt route entry Γê¬ (`clinical:read` |
 /// Completed tab atom → permission mapping (inventory + matrix).
 ///
 /// Same-day terminal outpatient encounters (`?section=completed`). Prefer

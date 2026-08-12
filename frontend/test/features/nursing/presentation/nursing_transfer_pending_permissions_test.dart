@@ -691,6 +691,87 @@ void main() {
   });
 
   group('Transfer pending UI authorization (AC2-AC5)', () {
+    testWidgets(
+      'Transfer pending chrome: ≤5 defaults, Filters/Settings/Print, warning tone',
+      (WidgetTester tester) async {
+        await _pumpTransferPending(
+          tester,
+          repository: repository,
+          policy: _readWritePolicy(),
+        );
+
+        final AppListTable<NursingWorkItem> table = tester
+            .widget<AppListTable<NursingWorkItem>>(
+              find.byType(AppListTable<NursingWorkItem>),
+            );
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem transfer = strip.tabs.firstWhere(
+          (AppTabItem t) => t.id == 'transfer-pending',
+        );
+
+        expect(table.columnVisibilityLabel, 'Settings');
+        expect(table.columnVisibilityTitle, 'Table Settings');
+        expect(table.search?.advancedFilterButtonLabel, 'Filters');
+        expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
+        expect(table.search?.advancedFilterResetLabel, 'Clear filters');
+        expect(table.search?.advancedFilterCloseLabel, 'Close');
+        expect(table.enablePrint, isTrue);
+        expect(table.printLabel, 'Print');
+        expect(table.canExport, isFalse);
+        expect(table.canPrint, isFalse);
+        expect(find.byTooltip('Export'), findsNothing);
+        expect(find.byTooltip('Print'), findsNothing);
+        expect(table.columns.length, lessThanOrEqualTo(5));
+        expect(
+          table.columns.map((AppListTableColumn<NursingWorkItem> c) => c.id),
+          contains('transfer_status'),
+        );
+        expect(table.columnChoices, isNotNull);
+        expect(
+          table.columnChoices!.length,
+          greaterThan(table.columns.length),
+        );
+        expect(transfer.countTone, AppTabCountTone.warning);
+        expect(transfer.count, isNotNull);
+        expect(find.textContaining('Transfer'), findsWidgets);
+      },
+    );
+
+    testWidgets(
+      'Export/Print present on Transfer pending when evidence:export granted',
+      (WidgetTester tester) async {
+        await _pumpTransferPending(
+          tester,
+          repository: repository,
+          policy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.nursingRead,
+              AppPermissions.clinicalRead,
+              AppPermissions.clinicalWrite,
+              AppPermissions.patientRead,
+              AppPermissions.patientWrite,
+              AppPermissions.evidenceExport,
+            },
+          ),
+        );
+
+        final AppListTable<NursingWorkItem> table = tester
+            .widget<AppListTable<NursingWorkItem>>(
+              find.byType(AppListTable<NursingWorkItem>),
+            );
+        expect(table.canExport, isTrue);
+        expect(table.canPrint, isTrue);
+        expect(table.search?.advancedFilterButtonLabel, 'Filters');
+        expect(table.columnVisibilityLabel, 'Settings');
+        expect(table.printLabel, 'Print');
+        expect(find.byTooltip('Settings'), findsOneWidget);
+        expect(find.byTooltip('Export'), findsOneWidget);
+        expect(find.byTooltip('Print'), findsOneWidget);
+      },
+    );
+
     testWidgets('authorized writer sees acknowledge-transfer next-action', (
       WidgetTester tester,
     ) async {
@@ -959,6 +1040,11 @@ void main() {
       await _pumpAfterAction(tester);
 
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      // dialogs.mdc: generic surface title; identity stays in body.
+      expect(
+        find.text(l10n.nursingPatientContextLabel.toUpperCase()),
+        findsOneWidget,
+      );
       expect(
         find.descendant(
           of: find.byType(AppQuickActions),

@@ -2,9 +2,9 @@
 
 ## 1. Tab strip
 
-- Label: `clinicalSectionUrgentLabel`
+- Label: `clinicalSectionUrgentLabel` → **Urgent**
 - Icon: `Icons.priority_high_outlined`
-- Count source: `state.urgentCount`
+- Count source: `state.urgentCount` (facet total under shared filter/search; candidate load `AppPageRequest.maxPageSize`)
 - Count tone: `AppTabCountTone.danger`
 - Deep-link `section`: `urgent`
 - Tab gate: `ClinicalUrgentAtomPermissions.tab` = `clinicalWorkspaceReadRequirement`
@@ -12,50 +12,67 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Same as Pending; Export / Print gated by ∩ `evidence:export`; date enabled.
+Order: **Filters → Settings → Export → Print**
+
+- Same shared worklist chrome as Pending
+- Filters: `commonFiltersActionLabel` → Advanced filters; Clear / Apply / Close
+- Export / Print: gated by ∩ `evidence:export`; Print label `Print`; preview-first via `printClinicalWorkspaceList`
+- Date filter: **enabled** — `clinicalLastUpdatedLabel`
+- Context strip actions: **none**
 
 ## 3. Table
 
-- Scope: urgent non-terminal
-- Default columns: same as Pending
+- Scope: `ClinicalQueueScope.urgent` (non-terminal outpatient + `isUrgent`)
+- Row select → `_ClinicalEncounterDialog`
+- Row tint: `errorContainer` alpha when `isUrgent`
 - Status / detail chip: `clinicalUrgentSummaryLabel` gated by `ClinicalUrgentAtomPermissions.urgentChip`
-- Row tint for urgent
+- **Default columns (5):** patient, queue, provider (`Doctor`), status, nextAction
+- Always-visible: status, nextAction
+- Column choices: same full set as Pending
 - Storage: `clinical_urgent` / `clinical_cw_urgent`
 
 ## 4. Advanced filters / search fields
 
-Shared filters; urgency group especially relevant.
+- Same shared worklist filter model as table + active Urgent badge (shared filter context)
+- Urgency group especially relevant (`__URGENT__` / `__NOT_URGENT__`)
+- Footer: **Clear filters** → **Apply filters** → **Close**
 
 ## 5. Primary / secondary / row actions
 
-Same next-action / encounter / Quick Actions stack as Pending.
+Same next-action / Open encounter / detail Quick Actions as Pending (Print gated by ∩ `evidence:export`).
 
 ## 6. Dialogs from this tab
 
-Same Clinical + **reused** clinical_actions stack.
+Same Clinical-owned encounter shell + **reused** clinical_actions / print / discharge. Flows stay in-desk.
 
 ## 7. Nested / follow-on
 
-Same encounter panels.
+Same encounter detail panels and nested order/billing confirms.
 
 ## 8. Forms (summary)
 
-Same clinical forms as Pending.
+Same clinical action forms as Pending (shared field reuse; hide tenant/facility/session context).
 
 ## 9. Print / labels / preview
 
-Encounter print summary only.
+- Table Print: present after Export when export gate allows; preview-first
+- Encounter Print: `showClinicalPrintSummaryDialog`; trigger label `Print`
 
 ## 10. Loading / empty / error / success
 
-Shared clinical feedback.
+Shared clinical feedback; mutations refresh worklist + all visible tab counts.
 
 ## 11. RBAC / ABAC (omitted when unauthorized)
 
 | Atom | Gate |
 | --- | --- |
-| Tab / list / detail / printSummary | read ∩ |
-| urgentChip | read ∩ |
-| Mutations / clinical writes | write ∪ |
-| Lab / radiology / pharmacy / admission | dedicated write ∪ |
-| routeEntry | catalog entry |
+| Tab / list / search / filters / settings / pagination / empty / loading / retry / rowSelect / detail / nextActionReview / nestedRead / urgentChip | `clinicalWorkspaceReadRequirement` |
+| export / listPrint / printSummary | `clinicalWorkspaceExportRequirement` (∩ `evidence:export`) |
+| success / validation / create/update/delete/write / notes / vitals / diagnosis / procedure / refer / followUp / disposition / nestedWrite | `clinicalWorkspaceWriteRequirement` |
+| requestLab / nestedLabWrite | lab order write ∪ |
+| requestRadiology / nestedRadiologyWrite | radiology order write ∪ |
+| prescribe / nestedPharmacyWrite | pharmacy order write ∪ |
+| requestAdmission | admission write ∪ |
+| dischargeFinancialRead | billing read ∩ |
+| entry / routeEntry | catalog entry |
+| followUpsTab | **n/a** on this atom class |

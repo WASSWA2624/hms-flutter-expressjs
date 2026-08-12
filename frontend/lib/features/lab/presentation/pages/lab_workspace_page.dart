@@ -1705,27 +1705,6 @@ Future<void> _openCreateLabOrderDialog(
   await _openLabOrderActionDialog(context, state, orderContext: orderContext);
 }
 
-Future<void> _openAdditionalLabOrderDialog(
-  BuildContext context,
-  LabWorkspaceState state,
-  LabOrderSummary order,
-) async {
-  final String? patientId = order.patientId?.trim();
-  if (patientId == null || patientId.isEmpty) {
-    return;
-  }
-
-  await _openLabOrderActionDialog(
-    context,
-    state,
-    orderContext: LabOrderContextInput(
-      patientId: patientId,
-      patientName: order.patientDisplayName,
-      encounterId: order.encounterId,
-    ),
-  );
-}
-
 Future<void> _openLabOrderActionDialog(
   BuildContext context,
   LabWorkspaceState state, {
@@ -1808,26 +1787,6 @@ Future<void> _openLabOrderActionDialog(
       ),
     ),
   );
-}
-
-Future<void> _openEditLabOrderDialog(
-  BuildContext context,
-  LabWorkspaceState state,
-  LabOrderWorkflow workflow,
-) async {
-  final LabOrderSummary order = workflow.order;
-  final LabOrderContextInput? orderContext =
-      await showAppDialog<LabOrderContextInput>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) =>
-            LabOrderContextDialog(worklist: state.worklist.items, order: order),
-      );
-  if (orderContext == null || !context.mounted) {
-    return;
-  }
-
-  await _openLabOrderActionDialog(context, state, orderContext: orderContext);
 }
 
 Future<ClinicalActionLabOrderRecord?> _loadExistingLabOrderRecord(

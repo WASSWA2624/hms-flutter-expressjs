@@ -657,4 +657,146 @@ void main() {
     expect(filtered!.pendingCount, 1);
     expect(filtered.worklist.totalItemCount, 1);
   });
+
+  test('Urgent active badge uses filtered facet total after search', () async {
+    final _MockClinicalRepository clinical = _MockClinicalRepository();
+    final _MockOpdRepository opd = _MockOpdRepository();
+    final _MockIpdRepository ipd = _MockIpdRepository();
+    final ProviderContainer container = buildContainer(
+      clinical: clinical,
+      opd: opd,
+      ipd: ipd,
+      encounters: <ClinicalWorklistEntry>[
+        const ClinicalWorklistEntry(
+          id: 'enc-u1',
+          sourceQueue: 'OPD',
+          encounterId: 'enc-u1',
+          patientDisplayName: 'Alice Urgent',
+          encounterType: 'OUTPATIENT',
+          status: 'OPEN',
+          stage: 'WAITING_DOCTOR_REVIEW',
+          isUrgent: true,
+        ),
+        const ClinicalWorklistEntry(
+          id: 'enc-u2',
+          sourceQueue: 'OPD',
+          encounterId: 'enc-u2',
+          patientDisplayName: 'Bob Urgent',
+          encounterType: 'OUTPATIENT',
+          status: 'OPEN',
+          stage: 'WAITING_DOCTOR_REVIEW',
+          isUrgent: true,
+        ),
+      ],
+    );
+
+    await container.read(clinicalWorkspaceControllerProvider.future);
+    final ClinicalWorkspaceController controller = container.read(
+      clinicalWorkspaceControllerProvider.notifier,
+    );
+    await controller.applyScope(ClinicalQueueScope.urgent);
+    expect(readState(container)!.urgentCount, 2);
+
+    await controller.applySearch('Alice');
+    final ClinicalWorkspaceState? filtered = readState(container);
+    expect(filtered, isNotNull);
+    expect(filtered!.urgentCount, 1);
+    expect(filtered.worklist.totalItemCount, 1);
+  });
+
+  test(
+    'Results ready active badge uses filtered facet total after search',
+    () async {
+      final _MockClinicalRepository clinical = _MockClinicalRepository();
+      final _MockOpdRepository opd = _MockOpdRepository();
+      final _MockIpdRepository ipd = _MockIpdRepository();
+      final ProviderContainer container = buildContainer(
+        clinical: clinical,
+        opd: opd,
+        ipd: ipd,
+        encounters: <ClinicalWorklistEntry>[
+          const ClinicalWorklistEntry(
+            id: 'enc-r1',
+            sourceQueue: 'OPD',
+            encounterId: 'enc-r1',
+            patientDisplayName: 'Alice Results',
+            encounterType: 'OUTPATIENT',
+            status: 'OPEN',
+            stage: 'LAB_RESULTS_READY',
+            resultsReady: true,
+          ),
+          const ClinicalWorklistEntry(
+            id: 'enc-r2',
+            sourceQueue: 'OPD',
+            encounterId: 'enc-r2',
+            patientDisplayName: 'Bob Results',
+            encounterType: 'OUTPATIENT',
+            status: 'OPEN',
+            stage: 'LAB_RESULTS_READY',
+            resultsReady: true,
+          ),
+        ],
+      );
+
+      await container.read(clinicalWorkspaceControllerProvider.future);
+      final ClinicalWorkspaceController controller = container.read(
+        clinicalWorkspaceControllerProvider.notifier,
+      );
+      await controller.applyScope(ClinicalQueueScope.resultsReady);
+      expect(readState(container)!.resultsReadyCount, 2);
+
+      await controller.applySearch('Alice');
+      final ClinicalWorkspaceState? filtered = readState(container);
+      expect(filtered, isNotNull);
+      expect(filtered!.resultsReadyCount, 1);
+      expect(filtered.worklist.totalItemCount, 1);
+    },
+  );
+
+  test('Completed active badge uses filtered facet total after search', () async {
+    final DateTime today = DateTime.now();
+    final _MockClinicalRepository clinical = _MockClinicalRepository();
+    final _MockOpdRepository opd = _MockOpdRepository();
+    final _MockIpdRepository ipd = _MockIpdRepository();
+    final ProviderContainer container = buildContainer(
+      clinical: clinical,
+      opd: opd,
+      ipd: ipd,
+      encounters: <ClinicalWorklistEntry>[
+        ClinicalWorklistEntry(
+          id: 'enc-c1',
+          sourceQueue: 'OPD',
+          encounterId: 'enc-c1',
+          patientDisplayName: 'Alice Completed',
+          encounterType: 'OUTPATIENT',
+          status: 'COMPLETED',
+          stage: 'COMPLETED',
+          updatedAt: today,
+        ),
+        ClinicalWorklistEntry(
+          id: 'enc-c2',
+          sourceQueue: 'OPD',
+          encounterId: 'enc-c2',
+          patientDisplayName: 'Bob Completed',
+          encounterType: 'OUTPATIENT',
+          status: 'COMPLETED',
+          stage: 'COMPLETED',
+          updatedAt: today,
+        ),
+      ],
+    );
+
+    await container.read(clinicalWorkspaceControllerProvider.future);
+    final ClinicalWorkspaceController controller = container.read(
+      clinicalWorkspaceControllerProvider.notifier,
+    );
+    await controller.applyScope(ClinicalQueueScope.completed);
+    expect(readState(container)!.completedCount, 2);
+
+    await controller.applySearch('Alice');
+    final ClinicalWorkspaceState? filtered = readState(container);
+    expect(filtered, isNotNull);
+    expect(filtered!.completedCount, 1);
+    expect(filtered.worklist.totalItemCount, 1);
+  });
 }

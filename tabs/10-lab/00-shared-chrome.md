@@ -76,8 +76,8 @@ Date filter: **enabled** — `labOrderedDateFilterLabel`.
 | Reopen verified | Lab-owned `_ReopenSavedResultDialog` |
 | Follow-up detail | **reused** `showReceptionFollowUpDetailDialog` |
 | Collect (`labCollectSampleAction`) | **not mounted** (product exception — enter-result path covers operator work) |
-| Open billing | **not mounted** (Await payment text only; Billing owns settle) |
-| Edit / additional order helpers | defined on page — **no call sites** (product exception) |
+| Open billing | **not mounted** (Await payment text only; Billing owns settle; inventory `mounted: false`) |
+| Edit / additional order helpers | **removed** from page (product exception; inventory atoms `mounted: false`) |
 
 Shared dialog footers: desk settings, report settings, and Create Lab Order context use `pinActionsToBottom: true`.
 

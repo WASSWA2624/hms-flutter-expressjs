@@ -27,29 +27,32 @@ Order: **Filters → Settings → Export → Print → Shift context** (unauthor
 ## 3. Table
 
 - Row model: `NursingWorkItem` via `NursingWorklistPanel`
-- Scope: `NursingQueueScope.transferPending` (`matchesScope` → `hasPendingTransfer`)
-- Row select → `NursingPatientDetailDialog`
-- Default columns (~5): patient, location, **transfer_status**, status + next_action (Next action **omitted** when clinical write gate fails)
-- Column choices (Settings): shared pool beyond defaults
+- Scope: `NursingQueueScope.transferPending` — `matchesScope` = `hasPendingTransfer` (REQUESTED / APPROVED / IN_PROGRESS)
+- Row select → `NursingPatientDetailDialog` (generic title `nursingPatientContextLabel`; identity in body)
+- Default columns (~5): patient, location, **transfer_status**, status + next_action (Next action **omitted** when clinical write gate fails; justified ≤5 with always-visible next_action when write)
+- Column choices (Settings exposes all): shared pool (priority, task_type, admission, due_time, responsible_nurse, observations, medication_due_count when pharmacy:read, discharge_status)
+- Patient cell uses `bodyMedium` (no strong weight in rows — `tables.mdc`)
 - Storage keys: `'nursing_transferPending'` / `'nursing_cw_transferPending'`
 - Cell style: no bold/emphasis in row cells (`tables.mdc`)
 
 ## 4. Advanced filters / search fields
 
-- Shared filters including `transfer_status` (REQUESTED…CANCELLED) + date range
+- Shared nursing filters including `transfer_status` (REQUESTED…CANCELLED) + date range
+- Footer: Clear filters → Apply filters → Close
 - Active badge reflects filtered membership when narrowed
 
 ## 5. Primary / secondary / row actions
 
 - Next-action Acknowledge transfer → `NursingTransferDialog`
-- Detail complementary Quick Actions when source write allows
+- Detail complementary Quick Actions when source write allows; Acknowledge transfer omitted when it is the row next-action
 
 ## 6. Dialogs from this tab
 
 | Dialog | Owner |
 | --- | --- |
+| Patient detail | Nursing-owned; generic title `nursingPatientContextLabel`; identity in body `AppPatientDetails` |
 | `NursingTransferDialog` | Nursing-owned |
-| Patient detail + complementary | Nursing / **reused** |
+| Complementary Nursing/Clinical dialogs | Nursing / **reused** |
 | Print summary | Nursing helper → clinical summary |
 
 Deep link `panel=transfer` → focused transfer dialog when `NursingTransferPendingAtomPermissions.panelDeepLink` (`nursingClinicalWriteRequirement`) allows.

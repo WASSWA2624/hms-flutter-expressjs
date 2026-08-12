@@ -730,12 +730,14 @@ void main() {
             .widget<AppListTable<NursingWorkItem>>(
               find.byType(AppListTable<NursingWorkItem>),
             );
-        expect(find.byTooltip('Filters'), findsOneWidget);
+        expect(table.canExport, isTrue);
+        expect(table.canPrint, isTrue);
+        expect(table.search?.advancedFilterButtonLabel, 'Filters');
+        expect(table.columnVisibilityLabel, 'Settings');
+        expect(table.printLabel, 'Print');
         expect(find.byTooltip('Settings'), findsOneWidget);
         expect(find.byTooltip('Export'), findsOneWidget);
         expect(find.byTooltip('Print'), findsOneWidget);
-        expect(table.canExport, isTrue);
-        expect(table.canPrint, isTrue);
       },
     );
 

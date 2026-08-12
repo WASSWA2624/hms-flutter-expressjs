@@ -243,6 +243,7 @@ LabDeskSection? labFallbackSection(AppAccessPolicy policy) {
 /// | Success snackbar / validation (authorized) | visible feedback | write ∩ |
 /// | Orders view / Patients view toggle | navigate | read ∩ |
 /// | Create Lab Order (primary) | create | write ∩ `lab:write` |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Lab Configurations (secondary) | update | write ∩ |
 /// | Row select / Next action → result entry | read / navigate | read ∩ |
 /// | Detail Preview report | export / read | preview ∪ lab read\|write |
@@ -275,6 +276,8 @@ abstract final class LabAllAtomPermissions {
   static const AccessRequirement viewToggle = labWorkspaceReadRequirement;
   static const AccessRequirement create = labWorkspaceWriteRequirement;
   static const AccessRequirement createPatient = labCreatePatientRequirement;
+  static const AccessRequirement export = labWorkspaceExportRequirement;
+  static const AccessRequirement print = labWorkspacePrintRequirement;
   static const AccessRequirement update = labWorkspaceWriteRequirement;
   static const AccessRequirement delete = labWorkspaceWriteRequirement;
   static const AccessRequirement write = labWorkspaceWriteRequirement;
@@ -323,6 +326,7 @@ bool canViewLabAllTab(AppAccessPolicy policy) {
 /// | Success snackbar / validation (authorized) | visible feedback | write ∩ |
 /// | Orders view / Patients view toggle | navigate | read ∩ |
 /// | Create Lab Order (primary) | create | write ∩ `lab:write` |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Lab Configurations (secondary) | update | write ∩ |
 /// | Row select / Next action → result entry | read / navigate | read ∩ |
 /// | Detail Preview report | export / read | preview ∪ lab read\|write |
@@ -355,6 +359,8 @@ abstract final class LabAwaitingResultsAtomPermissions {
   static const AccessRequirement viewToggle = labWorkspaceReadRequirement;
   static const AccessRequirement create = labWorkspaceWriteRequirement;
   static const AccessRequirement createPatient = labCreatePatientRequirement;
+  static const AccessRequirement export = labWorkspaceExportRequirement;
+  static const AccessRequirement print = labWorkspacePrintRequirement;
   static const AccessRequirement update = labWorkspaceWriteRequirement;
   static const AccessRequirement delete = labWorkspaceWriteRequirement;
   static const AccessRequirement write = labWorkspaceWriteRequirement;
@@ -396,6 +402,7 @@ bool canViewLabAwaitingResultsTab(AppAccessPolicy policy) {
 /// | Critical strip tab / count | navigate | read ∩ `lab:read` |
 /// | Search / Clear / Filters / Settings / pagination | read chrome | read ∩ |
 /// | Create Lab Order (search trailing) | create | write ∩ `lab:write` |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Row select / Next action → result entry | read / navigate | read ∩ |
 /// | Critical notify / acknowledge chrome | approve / update | lab:write ∩ clinical:read |
 /// | Route entry (deep link) | navigate | ∪ lab\|clinical read\|write |
@@ -419,6 +426,8 @@ abstract final class LabCriticalAtomPermissions {
   static const AccessRequirement viewToggle = labWorkspaceReadRequirement;
   static const AccessRequirement create = labWorkspaceWriteRequirement;
   static const AccessRequirement createPatient = labCreatePatientRequirement;
+  static const AccessRequirement export = labWorkspaceExportRequirement;
+  static const AccessRequirement print = labWorkspacePrintRequirement;
   static const AccessRequirement update = labWorkspaceWriteRequirement;
   static const AccessRequirement delete = labWorkspaceWriteRequirement;
   static const AccessRequirement write = labWorkspaceWriteRequirement;
@@ -469,6 +478,7 @@ bool canViewLabCriticalTab(AppAccessPolicy policy) {
 /// | Success snackbar / validation (authorized) | visible feedback | write ∩ |
 /// | Orders view / Patients view toggle | navigate | read ∩ |
 /// | Create Lab Order (primary) | create | write ∩ `lab:write` |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Lab Configurations (secondary) | update | write ∩ |
 /// | Row select → result entry | read / navigate | read ∩ |
 /// | Next action (Completed label, text-only) | progressive disclosure | read ∩ |
@@ -504,6 +514,8 @@ abstract final class LabVerifiedAtomPermissions {
   static const AccessRequirement viewToggle = labWorkspaceReadRequirement;
   static const AccessRequirement create = labWorkspaceWriteRequirement;
   static const AccessRequirement createPatient = labCreatePatientRequirement;
+  static const AccessRequirement export = labWorkspaceExportRequirement;
+  static const AccessRequirement print = labWorkspacePrintRequirement;
   static const AccessRequirement update = labWorkspaceWriteRequirement;
   static const AccessRequirement delete = labWorkspaceWriteRequirement;
   static const AccessRequirement write = labWorkspaceWriteRequirement;
@@ -542,7 +554,7 @@ bool canViewLabVerifiedTab(AppAccessPolicy policy) {
 /// Atom → requirement map for Lab Follow-ups (`/lab?section=follow-ups`).
 ///
 /// Inventory: Follow-ups tab (`FollowUpWorklistPanel`) with Filters, Settings,
-/// and Create Lab Order chrome parity with other lab tabs.
+/// Export, Print, and Create Lab Order chrome parity with other lab tabs.
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
@@ -550,6 +562,7 @@ bool canViewLabVerifiedTab(AppAccessPolicy policy) {
 /// | Search / Clear / Filters / Settings / columns | read chrome | read ∩ ([listChrome]) |
 /// | Empty / loading / error / retry | read chrome | ([empty] / [loading] / [retry]) |
 /// | Success snackbar / validation (authorized) | visible feedback | write ∩ / form |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Row select → Follow-up details | read | ([detail]) |
 /// | Detail Close (read-only footer) | progressive disclosure | ([close]) |
 /// | Reschedule follow-up | update | write ∩ ([reschedule]) |
@@ -577,6 +590,8 @@ abstract final class LabFollowUpsAtomPermissions {
   static const AccessRequirement close = labFollowUpsRequirement;
   static const AccessRequirement create = labFollowUpsWriteRequirement;
   static const AccessRequirement createPatient = labCreatePatientRequirement;
+  static const AccessRequirement export = labWorkspaceExportRequirement;
+  static const AccessRequirement print = labWorkspacePrintRequirement;
   static const AccessRequirement update = labFollowUpsWriteRequirement;
   static const AccessRequirement delete = labFollowUpsWriteRequirement;
   static const AccessRequirement reschedule = labFollowUpsWriteRequirement;

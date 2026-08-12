@@ -28,31 +28,34 @@ Order: **Filters → Settings → Export → Print → Shift context** (unauthor
 ## 3. Table
 
 - Row model: `NursingWorkItem` via `NursingWorklistPanel`
-- Scope: `NursingQueueScope.handoverPending` (`matchesScope` → `pendingHandoverCount > 0`)
-- Row select → `NursingPatientDetailDialog`
-- Default columns (~5): patient, **responsible_nurse**, location, status + next_action (Next action **omitted** when clinical write gate fails)
+- Scope: `NursingQueueScope.handoverPending` — `matchesScope` = `pendingHandoverCount > 0`
+- Row select → `NursingPatientDetailDialog` (generic title `nursingPatientContextLabel`; identity in body)
+- Default columns (~5): patient, **responsible_nurse**, location, status + next_action (Next action **omitted** when clinical write gate fails; justified ≤5 with always-visible next_action when write)
 - Responsible nurse cell: **justified synthetic summary** (`nursingResponsibleNurseLabel` → `nursingHandoverPendingSummaryLabel` / `nursingAssignedShiftLabel`) — no assignee API field on `NursingPatientSummary`; documented in helpers + print path
-- Column choices (Settings): shared pool beyond defaults
+- Column choices (Settings exposes all): shared pool (priority, task_type, admission, due_time, observations, medication_due_count when pharmacy:read, transfer_status, discharge_status)
+- Patient cell uses `bodyMedium` (no strong weight in rows — `tables.mdc`)
 - Storage keys: `'nursing_handoverPending'` / `'nursing_cw_handoverPending'`
 - Cell style: no bold/emphasis in row cells (`tables.mdc`)
 
 ## 4. Advanced filters / search fields
 
-- Shared filters including `handover_status` (PENDING / NONE) + date range
+- Shared nursing filters including `handover_status` (PENDING / NONE) + date range
+- Footer: Clear filters → Apply filters → Close
 - Active badge reflects filtered membership when narrowed
 
 ## 5. Primary / secondary / row actions
 
 - Next-action always Create handover → `NursingHandoverDialog`
-- Detail: accept handover (`ClinicalFreeTextActionDialog`), complementary actions
+- Detail: accept handover (`ClinicalFreeTextActionDialog`), complementary actions; Create handover omitted when it is the row next-action
 
 ## 6. Dialogs from this tab
 
 | Dialog | Owner |
 | --- | --- |
+| Patient detail | Nursing-owned; generic title `nursingPatientContextLabel`; identity in body `AppPatientDetails` |
 | `NursingHandoverDialog` | Nursing-owned |
 | Accept handover free-text | **reused** clinical |
-| Patient detail + complementary | Nursing / **reused** |
+| Complementary Nursing/Clinical dialogs | Nursing / **reused** |
 | Print summary | Nursing helper → clinical summary |
 
 Deep link `panel=handover` → focused handover when `nursingClinicalWriteRequirement` allows.

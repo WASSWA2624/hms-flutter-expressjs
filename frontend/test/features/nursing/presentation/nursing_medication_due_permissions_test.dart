@@ -688,6 +688,88 @@ void main() {
 
   group('Nursing Medication due tab UI gates', () {
     testWidgets(
+      'Medication due chrome: ≤5 defaults, Filters/Settings/Print, warning tone',
+      (WidgetTester tester) async {
+        await _pumpMedicationDueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _fullMedicationPolicy(),
+        );
+
+        final AppListTable<NursingWorkItem> table = tester
+            .widget<AppListTable<NursingWorkItem>>(
+              find.byType(AppListTable<NursingWorkItem>),
+            );
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem medicationDue = strip.tabs.firstWhere(
+          (AppTabItem t) => t.id == 'medication-due',
+        );
+
+        expect(table.columnVisibilityLabel, 'Settings');
+        expect(table.columnVisibilityTitle, 'Table Settings');
+        expect(table.search?.advancedFilterButtonLabel, 'Filters');
+        expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
+        expect(table.search?.advancedFilterResetLabel, 'Clear filters');
+        expect(table.search?.advancedFilterCloseLabel, 'Close');
+        expect(table.enablePrint, isTrue);
+        expect(table.printLabel, 'Print');
+        expect(table.canExport, isFalse);
+        expect(table.canPrint, isFalse);
+        expect(find.byTooltip('Export'), findsNothing);
+        expect(find.byTooltip('Print'), findsNothing);
+        expect(table.columns.length, lessThanOrEqualTo(5));
+        expect(
+          table.columns.map((AppListTableColumn<NursingWorkItem> c) => c.id),
+          contains('medication_due_count'),
+        );
+        expect(table.columnChoices, isNotNull);
+        expect(
+          table.columnChoices!.length,
+          greaterThan(table.columns.length),
+        );
+        expect(medicationDue.countTone, AppTabCountTone.warning);
+        expect(medicationDue.count, isNotNull);
+        expect(find.textContaining('Medication due'), findsWidgets);
+      },
+    );
+
+    testWidgets(
+      'Export/Print present on Medication due when evidence:export granted',
+      (WidgetTester tester) async {
+        await _pumpMedicationDueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.nursingRead,
+              AppPermissions.clinicalRead,
+              AppPermissions.clinicalWrite,
+              AppPermissions.patientRead,
+              AppPermissions.patientWrite,
+              AppPermissions.pharmacyRead,
+              AppPermissions.evidenceExport,
+            },
+          ),
+        );
+
+        final AppListTable<NursingWorkItem> table = tester
+            .widget<AppListTable<NursingWorkItem>>(
+              find.byType(AppListTable<NursingWorkItem>),
+            );
+        expect(table.canExport, isTrue);
+        expect(table.canPrint, isTrue);
+        expect(table.search?.advancedFilterButtonLabel, 'Filters');
+        expect(table.columnVisibilityLabel, 'Settings');
+        expect(table.printLabel, 'Print');
+        expect(find.byTooltip('Settings'), findsOneWidget);
+        expect(find.byTooltip('Export'), findsOneWidget);
+        expect(find.byTooltip('Print'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
       'read-only ∪: Medication due tab + list visible; writes / med panel absent',
       (WidgetTester tester) async {
         await _pumpMedicationDueTab(
@@ -707,6 +789,11 @@ void main() {
 
         final AppLocalizations l10n = AppLocalizations.of(
           tester.element(find.byType(AppDialog).first),
+        );
+        // dialogs.mdc: generic surface title; identity stays in body.
+        expect(
+          find.text(l10n.nursingPatientContextLabel.toUpperCase()),
+          findsOneWidget,
         );
         expect(find.text(l10n.nursingMedicationsTitle), findsNothing);
         expect(find.text(l10n.nursingActionAdministerMedication), findsNothing);

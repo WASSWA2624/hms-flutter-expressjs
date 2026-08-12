@@ -275,12 +275,56 @@ void main() {
         same(dischargeWorkspaceReadRequirement),
       );
       expect(
+        DischargeCompletedAtomPermissions.export,
+        same(dischargeWorkspaceExportRequirement),
+      );
+      expect(
+        DischargeCompletedAtomPermissions.print,
+        same(dischargeWorkspacePrintRequirement),
+      );
+      expect(
+        DischargeCompletedAtomPermissions.printSummary,
+        same(dischargeWorkspaceReadRequirement),
+      );
+      expect(
+        DischargeCompletedAtomPermissions.nextActionPrint,
+        same(dischargeWorkspaceReadRequirement),
+      );
+      expect(
         DischargeCompletedAtomPermissions.medicinesPanel,
         same(DischargeAllPatientsAtomPermissions.medicinesPanel),
       );
       expect(
         DischargeCompletedAtomPermissions.write,
         same(DischargeAllPatientsAtomPermissions.write),
+      );
+    });
+
+    test('export/print toolbar atoms omit without evidence:export', () {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      );
+      expect(
+        DischargeCompletedAtomPermissions.export.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        DischargeCompletedAtomPermissions.print.isAllowed(reader),
+        isFalse,
+      );
+      final AppAccessPolicy withExport = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.evidenceExport,
+        },
+      );
+      expect(
+        DischargeCompletedAtomPermissions.export.isAllowed(withExport),
+        isTrue,
+      );
+      expect(
+        DischargeCompletedAtomPermissions.print.isAllowed(withExport),
+        isTrue,
       );
     });
 
@@ -463,6 +507,26 @@ void main() {
       expect(find.byTooltip('Print'), findsOneWidget);
       expect(find.text('Filters'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
+      expect(find.byTooltip('Export'), findsNothing);
+      final AppListTable<IpdAdmissionSummary> table =
+          tester.widget<AppListTable<IpdAdmissionSummary>>(
+            find.byType(AppListTable<IpdAdmissionSummary>),
+          );
+      expect(table.enablePrint, isTrue);
+      expect(table.canExport, isFalse);
+      expect(table.canPrint, isFalse);
+      expect(table.printLabel, 'Print');
+      expect(table.columns.length, 5);
+      expect(table.columnVisibilityStorageKey, 'discharge_completed');
+      expect(table.search?.advancedFilterCloseLabel, 'Close');
+      expect(table.search?.enableDateFilter, isTrue);
+      expect(
+        table.columns.any(
+          (AppListTableColumn<IpdAdmissionSummary> column) =>
+              column.id == 'discharged_at',
+        ),
+        isTrue,
+      );
       expect(find.textContaining('no access'), findsNothing);
 
       await tester.tap(find.text('Carol Completed'));

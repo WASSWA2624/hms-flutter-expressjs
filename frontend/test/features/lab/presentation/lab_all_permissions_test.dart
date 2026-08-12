@@ -246,6 +246,20 @@ void main() {
       );
       expect(
         identical(
+          LabAllAtomPermissions.export,
+          labWorkspaceExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabAllAtomPermissions.print,
+          labWorkspacePrintRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           LabAllAtomPermissions.criticalNotify,
           labCriticalNotifyRequirement,
         ),
@@ -302,6 +316,78 @@ void main() {
       expect(find.textContaining('All'), findsWidgets);
       expect(_table(tester).columnVisibilityStorageKey, 'lab_worklist');
     });
+
+    testWidgets(
+      'All patients toolbar: Filters/Settings, ≤5 columns, info tone, Close',
+      (WidgetTester tester) async {
+        await _pumpAllTab(tester, repository: repository);
+
+        final AppListTable<LabOrderSummary> table = _table(tester);
+        expect(table.columnVisibilityLabel, 'Settings');
+        expect(table.search?.advancedFilterButtonLabel, 'Filters');
+        expect(table.search?.advancedFilterTitle, 'Advanced filters');
+        expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
+        expect(table.search?.advancedFilterResetLabel, 'Clear filters');
+        expect(table.search?.advancedFilterCloseLabel, 'Close');
+        expect(table.enablePrint, isTrue);
+        expect(table.canExport, isFalse);
+        expect(table.canPrint, isFalse);
+        expect(table.columns.length, lessThanOrEqualTo(5));
+        expect(
+          table.columns.any(
+            (AppListTableColumn<LabOrderSummary> c) =>
+                c.id == 'next_action' && c.alwaysVisible,
+          ),
+          isTrue,
+        );
+        expect(table.columnChoices, isNotEmpty);
+        expect(table.columnVisibilityStorageKey, 'lab_worklist');
+
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem worklist = strip.tabs.firstWhere(
+          (AppTabItem tab) => tab.label.contains('All'),
+        );
+        expect(worklist.countTone, AppTabCountTone.info);
+        expect(worklist.count, isNotNull);
+
+        final List<AppSearchBarAction> trailing =
+            table.search?.trailingActions ?? const <AppSearchBarAction>[];
+        expect(trailing.last.label, 'Create Lab Order');
+      },
+    );
+
+    testWidgets(
+      'All patients Export/Print omit without evidence:export; present when granted',
+      (WidgetTester tester) async {
+        await _pumpAllTab(tester, repository: repository);
+        expect(find.byTooltip('Export'), findsNothing);
+        expect(find.byTooltip('Print'), findsNothing);
+
+        await _pumpAllTab(
+          tester,
+          repository: repository,
+          policy: _policyFor(
+            permissions: <AppPermission>{
+              AppPermissions.labRead,
+              AppPermissions.labWrite,
+              AppPermissions.evidenceExport,
+            },
+          ),
+        );
+        expect(_table(tester).canExport, isTrue);
+        expect(_table(tester).canPrint, isTrue);
+        expect(_table(tester).printLabel, 'Print');
+        expect(_table(tester).exportLabel, 'Export');
+        expect(find.byTooltip('Export'), findsOneWidget);
+        expect(find.byTooltip('Print'), findsOneWidget);
+        final List<AppSearchBarAction> trailing =
+            _table(tester).search?.trailingActions ??
+            const <AppSearchBarAction>[];
+        expect(trailing.last.label, 'Create Lab Order');
+      },
+    );
 
     testWidgets(
       'intersection denial: lab:read alone omits create/config/write detail',

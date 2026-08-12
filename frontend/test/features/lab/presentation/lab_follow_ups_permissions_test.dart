@@ -122,6 +122,14 @@ void main() {
         same(labWorkspaceWriteRequirement),
       );
       expect(
+        LabFollowUpsAtomPermissions.export,
+        same(labWorkspaceExportRequirement),
+      );
+      expect(
+        LabFollowUpsAtomPermissions.print,
+        same(labWorkspacePrintRequirement),
+      );
+      expect(
         LabFollowUpsAtomPermissions.success,
         same(labFollowUpsWriteRequirement),
       );
@@ -507,6 +515,97 @@ void main() {
       ).called(1);
       expect(find.text('Follow Up Patient'), findsNothing);
       expect(find.text('No scheduled follow-ups'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Follow-ups toolbar: Filters/Settings, ≤5 columns, info tone, Close',
+    (WidgetTester tester) async {
+      await _pumpFollowUpsTab(
+        tester,
+        labRepository: labRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.labRead,
+            AppPermissions.labWrite,
+          },
+        ),
+      );
+
+      final AppListTable<ReceptionFollowUpEntry> table =
+          tester.widget<AppListTable<ReceptionFollowUpEntry>>(
+            find.byType(AppListTable<ReceptionFollowUpEntry>),
+          );
+      expect(table.columnVisibilityLabel, 'Settings');
+      expect(table.search?.advancedFilterButtonLabel, 'Filters');
+      expect(table.search?.advancedFilterTitle, 'Advanced filters');
+      expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
+      expect(table.search?.advancedFilterResetLabel, 'Clear filters');
+      expect(table.search?.advancedFilterCloseLabel, 'Close');
+      expect(table.enablePrint, isTrue);
+      expect(table.canExport, isFalse);
+      expect(table.canPrint, isFalse);
+      expect(table.columns.length, lessThanOrEqualTo(5));
+      expect(table.columnChoices, isNotEmpty);
+      expect(table.columnVisibilityStorageKey, 'lab_follow_ups_cols');
+
+      final AppTabStrip strip = tester.widget<AppTabStrip>(
+        find.byType(AppTabStrip),
+      );
+      final AppTabItem followUps = strip.tabs.firstWhere(
+        (AppTabItem tab) => tab.label.contains('Follow-ups'),
+      );
+      expect(followUps.countTone, AppTabCountTone.info);
+      expect(followUps.count, isNotNull);
+
+      final List<AppSearchBarAction> trailing =
+          table.search?.trailingActions ?? const <AppSearchBarAction>[];
+      expect(trailing.last.label, 'Create Lab Order');
+    },
+  );
+
+  testWidgets(
+    'Follow-ups Export/Print omit without evidence:export; present when granted',
+    (WidgetTester tester) async {
+      await _pumpFollowUpsTab(
+        tester,
+        labRepository: labRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.labRead,
+            AppPermissions.labWrite,
+          },
+        ),
+      );
+      expect(find.byTooltip('Export'), findsNothing);
+      expect(find.byTooltip('Print'), findsNothing);
+
+      await _pumpFollowUpsTab(
+        tester,
+        labRepository: labRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.labRead,
+            AppPermissions.labWrite,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+      final AppListTable<ReceptionFollowUpEntry> table =
+          tester.widget<AppListTable<ReceptionFollowUpEntry>>(
+            find.byType(AppListTable<ReceptionFollowUpEntry>),
+          );
+      expect(table.canExport, isTrue);
+      expect(table.canPrint, isTrue);
+      expect(table.printLabel, 'Print');
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+      final List<AppSearchBarAction> trailing =
+          table.search?.trailingActions ?? const <AppSearchBarAction>[];
+      expect(trailing.last.label, 'Create Lab Order');
     },
   );
 

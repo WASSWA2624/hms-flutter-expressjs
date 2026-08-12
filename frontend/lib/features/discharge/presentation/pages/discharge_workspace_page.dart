@@ -259,13 +259,13 @@ class _DischargeWorkspaceContentState
         _dischargeDefaultColumns(context, section: _section);
     final bool canExport = canExportDischargeWorkspace(accessPolicy);
     final bool canPrint = canPrintDischargeWorkspace(accessPolicy);
-    final int? followUpsCount = _section.isFollowUps
-        ? _followUpsNarrowedCount
-        : ref.watch(
-            followUpTabCountProvider(
-              const FollowUpWorklistScope(encounterType: 'IPD'),
-            ),
-          );
+    final int? followUpsCount =
+        (_section.isFollowUps ? _followUpsNarrowedCount : null) ??
+        ref.watch(
+          followUpTabCountProvider(
+            const FollowUpWorklistScope(encounterType: 'IPD'),
+          ),
+        );
 
     return ResponsivePage(
       padding: ResponsiveSpacing.workspacePagePaddingFor(

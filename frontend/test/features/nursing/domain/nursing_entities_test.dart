@@ -56,6 +56,87 @@ void main() {
       expect(withBed.matchesScope(NursingQueueScope.all), isTrue);
       expect(withoutBed.matchesScope(NursingQueueScope.all), isTrue);
     });
+
+    test('urgent requires isUrgent (critical alert / URGENT markers)', () {
+      const NursingPatientSummary critical = NursingPatientSummary(
+        id: 'adm-u1',
+        admissionId: 'adm-u1',
+        hasCriticalAlert: true,
+      );
+      const NursingPatientSummary routine = NursingPatientSummary(
+        id: 'adm-u2',
+        admissionId: 'adm-u2',
+        hasActiveBed: true,
+      );
+      const NursingPatientSummary nextStepUrgent = NursingPatientSummary(
+        id: 'adm-u3',
+        admissionId: 'adm-u3',
+        nextStep: 'URGENT',
+      );
+      expect(critical.matchesScope(NursingQueueScope.urgent), isTrue);
+      expect(nextStepUrgent.matchesScope(NursingQueueScope.urgent), isTrue);
+      expect(routine.matchesScope(NursingQueueScope.urgent), isFalse);
+    });
+
+    test('medicationDue requires hasMedicationDue', () {
+      const NursingPatientSummary due = NursingPatientSummary(
+        id: 'adm-m1',
+        admissionId: 'adm-m1',
+        medicationDueCount: 2,
+      );
+      const NursingPatientSummary none = NursingPatientSummary(
+        id: 'adm-m2',
+        admissionId: 'adm-m2',
+        medicationDueCount: 0,
+      );
+      expect(due.matchesScope(NursingQueueScope.medicationDue), isTrue);
+      expect(none.matchesScope(NursingQueueScope.medicationDue), isFalse);
+    });
+
+    test('handoverPending requires pendingHandoverCount > 0', () {
+      const NursingPatientSummary pending = NursingPatientSummary(
+        id: 'adm-h1',
+        admissionId: 'adm-h1',
+        pendingHandoverCount: 1,
+      );
+      const NursingPatientSummary none = NursingPatientSummary(
+        id: 'adm-h2',
+        admissionId: 'adm-h2',
+        pendingHandoverCount: 0,
+      );
+      expect(pending.matchesScope(NursingQueueScope.handoverPending), isTrue);
+      expect(none.matchesScope(NursingQueueScope.handoverPending), isFalse);
+    });
+
+    test('transferPending requires hasPendingTransfer', () {
+      const NursingPatientSummary pending = NursingPatientSummary(
+        id: 'adm-t1',
+        admissionId: 'adm-t1',
+        transferStatus: 'REQUESTED',
+      );
+      const NursingPatientSummary none = NursingPatientSummary(
+        id: 'adm-t2',
+        admissionId: 'adm-t2',
+        transferStatus: 'COMPLETED',
+      );
+      expect(pending.matchesScope(NursingQueueScope.transferPending), isTrue);
+      expect(none.matchesScope(NursingQueueScope.transferPending), isFalse);
+    });
+
+    test('dischargePending requires isDischargePending', () {
+      const NursingPatientSummary pending = NursingPatientSummary(
+        id: 'adm-d1',
+        admissionId: 'adm-d1',
+        dischargeStatus: 'PLANNED',
+      );
+      const NursingPatientSummary none = NursingPatientSummary(
+        id: 'adm-d2',
+        admissionId: 'adm-d2',
+        dischargeStatus: 'COMPLETED',
+      );
+      expect(pending.matchesScope(NursingQueueScope.dischargePending), isTrue);
+      expect(none.matchesScope(NursingQueueScope.dischargePending), isFalse);
+    });
   });
 
   group('NursingScopeCounts', () {

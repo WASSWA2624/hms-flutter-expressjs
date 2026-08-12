@@ -313,6 +313,14 @@ void main() {
         same(clinicalWorkspaceReadRequirement),
       );
       expect(
+        ClinicalUrgentAtomPermissions.export,
+        same(clinicalWorkspaceExportRequirement),
+      );
+      expect(
+        ClinicalUrgentAtomPermissions.listPrint,
+        same(clinicalWorkspacePrintRequirement),
+      );
+      expect(
         ClinicalUrgentAtomPermissions.printSummary,
         same(clinicalWorkspaceExportRequirement),
       );

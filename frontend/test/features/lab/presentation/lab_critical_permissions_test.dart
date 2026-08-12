@@ -252,6 +252,20 @@ void main() {
       );
       expect(
         identical(
+          LabCriticalAtomPermissions.export,
+          labWorkspaceExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabCriticalAtomPermissions.print,
+          labWorkspacePrintRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           LabCriticalAtomPermissions.update,
           labWorkspaceWriteRequirement,
         ),
@@ -350,6 +364,99 @@ void main() {
       expect(find.textContaining('Critical'), findsWidgets);
       expect(_table(tester).columnVisibilityStorageKey, 'lab_critical');
       expect(_criticalOrder.hasCriticalResult, isTrue);
+    });
+
+    testWidgets(
+      'Critical toolbar: Filters/Settings labels, ≤5 columns, danger tone, Close',
+      (WidgetTester tester) async {
+        await _pumpCriticalTab(tester, repository: repository);
+
+        final AppListTable<LabOrderSummary> table = _table(tester);
+        expect(table.columnVisibilityLabel, 'Settings');
+        expect(table.search?.advancedFilterButtonLabel, 'Filters');
+        expect(table.search?.advancedFilterTitle, 'Advanced filters');
+        expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
+        expect(table.search?.advancedFilterResetLabel, 'Clear filters');
+        expect(table.search?.advancedFilterCloseLabel, 'Close');
+        expect(table.enablePrint, isTrue);
+        expect(table.canExport, isFalse);
+        expect(table.canPrint, isFalse);
+        expect(table.columns.length, lessThanOrEqualTo(5));
+        expect(
+          table.columns.any(
+            (AppListTableColumn<LabOrderSummary> c) =>
+                c.id == 'next_action' && c.alwaysVisible,
+          ),
+          isTrue,
+        );
+        expect(table.columnChoices, isNotEmpty);
+
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem critical = strip.tabs.firstWhere(
+          (AppTabItem tab) => tab.label.toLowerCase().contains('critical'),
+        );
+        expect(critical.countTone, AppTabCountTone.danger);
+        expect(critical.count, isNotNull);
+
+        final List<AppSearchBarAction> trailing =
+            table.search?.trailingActions ?? const <AppSearchBarAction>[];
+        expect(trailing.last.label, 'Create Lab Order');
+      },
+    );
+
+    testWidgets(
+      'Critical Export/Print omit without evidence:export; present when granted',
+      (WidgetTester tester) async {
+        await _pumpCriticalTab(tester, repository: repository);
+        expect(find.byTooltip('Export'), findsNothing);
+        expect(find.byTooltip('Print'), findsNothing);
+
+        await _pumpCriticalTab(
+          tester,
+          repository: repository,
+          policy: _policyFor(
+            permissions: <AppPermission>{
+              AppPermissions.labRead,
+              AppPermissions.labWrite,
+              AppPermissions.evidenceExport,
+            },
+          ),
+        );
+        expect(_table(tester).canExport, isTrue);
+        expect(_table(tester).canPrint, isTrue);
+        expect(_table(tester).printLabel, 'Print');
+        expect(_table(tester).exportLabel, 'Export');
+        expect(find.byTooltip('Export'), findsOneWidget);
+        expect(find.byTooltip('Print'), findsOneWidget);
+        final List<AppSearchBarAction> trailing =
+            _table(tester).search?.trailingActions ??
+            const <AppSearchBarAction>[];
+        expect(trailing.last.label, 'Create Lab Order');
+      },
+    );
+
+    testWidgets('Critical tab omitted when workspace entry denied', (
+      WidgetTester tester,
+    ) async {
+      await _pumpCriticalTab(
+        tester,
+        repository: repository,
+        policy: _policyFor(
+          permissions: <AppPermission>{AppPermissions.patientRead},
+          modules: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: labWorkflowsModule,
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        ),
+      );
+
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(find.byType(AppFailureStateView), findsOneWidget);
+      expect(find.textContaining('Critical today'), findsNothing);
     });
 
     testWidgets(

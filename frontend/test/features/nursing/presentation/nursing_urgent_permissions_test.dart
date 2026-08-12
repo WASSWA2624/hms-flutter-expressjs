@@ -690,6 +690,87 @@ void main() {
   });
 
   group('Nursing Urgent tab UI gates', () {
+    testWidgets(
+      'Urgent chrome: ≤5 defaults, Filters/Settings/Print labels, danger tone',
+      (WidgetTester tester) async {
+        await _pumpUrgentTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writerPolicy(),
+        );
+
+        final AppListTable<NursingWorkItem> table = tester
+            .widget<AppListTable<NursingWorkItem>>(
+              find.byType(AppListTable<NursingWorkItem>),
+            );
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem urgent = strip.tabs.firstWhere(
+          (AppTabItem t) => t.id == 'urgent',
+        );
+
+        expect(table.columnVisibilityLabel, 'Settings');
+        expect(table.columnVisibilityTitle, 'Table Settings');
+        expect(table.search?.advancedFilterButtonLabel, 'Filters');
+        expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
+        expect(table.search?.advancedFilterResetLabel, 'Clear filters');
+        expect(table.search?.advancedFilterCloseLabel, 'Close');
+        expect(table.enablePrint, isTrue);
+        expect(table.printLabel, 'Print');
+        expect(table.canExport, isFalse);
+        expect(table.canPrint, isFalse);
+        expect(find.byTooltip('Export'), findsNothing);
+        expect(find.byTooltip('Print'), findsNothing);
+        expect(table.columns.length, lessThanOrEqualTo(5));
+        expect(
+          table.columns.map((AppListTableColumn<NursingWorkItem> c) => c.id),
+          contains('priority'),
+        );
+        expect(table.columnChoices, isNotNull);
+        expect(
+          table.columnChoices!.length,
+          greaterThan(table.columns.length),
+        );
+        expect(urgent.countTone, AppTabCountTone.danger);
+        expect(urgent.count, isNotNull);
+        expect(find.textContaining('Urgent'), findsWidgets);
+      },
+    );
+
+    testWidgets(
+      'Export/Print present on Urgent when evidence:export granted',
+      (WidgetTester tester) async {
+        await _pumpUrgentTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.nursingRead,
+              AppPermissions.clinicalRead,
+              AppPermissions.clinicalWrite,
+              AppPermissions.patientRead,
+              AppPermissions.patientWrite,
+              AppPermissions.evidenceExport,
+            },
+          ),
+        );
+
+        final AppListTable<NursingWorkItem> table = tester
+            .widget<AppListTable<NursingWorkItem>>(
+              find.byType(AppListTable<NursingWorkItem>),
+            );
+        expect(table.canExport, isTrue);
+        expect(table.canPrint, isTrue);
+        expect(table.search?.advancedFilterButtonLabel, 'Filters');
+        expect(table.columnVisibilityLabel, 'Settings');
+        expect(table.printLabel, 'Print');
+        expect(find.byTooltip('Settings'), findsOneWidget);
+        expect(find.byTooltip('Export'), findsOneWidget);
+        expect(find.byTooltip('Print'), findsOneWidget);
+      },
+    );
+
     testWidgets('read-only: worklist present; Escalate next-action absent', (
       WidgetTester tester,
     ) async {
@@ -786,6 +867,14 @@ void main() {
       await _pumpAfterAction(tester);
 
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      final AppLocalizations l10n = AppLocalizations.of(
+        tester.element(find.byType(AppDialog).first),
+      );
+      // dialogs.mdc: generic surface title; identity stays in body.
+      expect(
+        find.text(l10n.nursingPatientContextLabel.toUpperCase()),
+        findsOneWidget,
+      );
       expect(
         find.descendant(
           of: find.byType(AppQuickActions),

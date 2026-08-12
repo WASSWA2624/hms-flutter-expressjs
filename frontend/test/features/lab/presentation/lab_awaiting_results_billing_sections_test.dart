@@ -247,6 +247,11 @@ void main() {
       expect(LabAwaitingResultsBillingInventory.adjustRefund.mounted, isFalse);
       expect(LabAwaitingResultsBillingInventory.openBilling.mounted, isFalse);
       expect(
+        LabAwaitingResultsBillingInventory.createAdditionalOrder.mounted,
+        isFalse,
+      );
+      expect(LabAwaitingResultsBillingInventory.editOrder.mounted, isFalse);
+      expect(
         LabAwaitingResultsBillingInventory.forbidsInlineCashier(
           LabAwaitingResultsFinancialClass.settle,
         ),

@@ -27,29 +27,32 @@ Order: **Filters → Settings → Export → Print → Shift context** (unauthor
 ## 3. Table
 
 - Row model: `NursingWorkItem` via `NursingWorklistPanel`
-- Scope: `NursingQueueScope.dischargePending` (`matchesScope` → `isDischargePending`)
-- Row select → `NursingPatientDetailDialog`
-- Default columns (~5): patient, location, **discharge_status**, status + next_action (Next action **omitted** when clinical write gate fails)
-- Column choices (Settings): shared pool beyond defaults
+- Scope: `NursingQueueScope.dischargePending` — `matchesScope` = `isDischargePending` (PLANNED / DISCHARGE_PLANNED)
+- Row select → `NursingPatientDetailDialog` (generic title `nursingPatientContextLabel`; identity in body)
+- Default columns (~5): patient, location, **discharge_status**, status + next_action (Next action **omitted** when clinical write gate fails; justified ≤5 with always-visible next_action when write)
+- Column choices (Settings exposes all): shared pool (priority, task_type, admission, due_time, responsible_nurse, observations, medication_due_count when pharmacy:read, transfer_status)
+- Patient cell uses `bodyMedium` (no strong weight in rows — `tables.mdc`)
 - Storage keys: `'nursing_dischargePending'` / `'nursing_cw_dischargePending'`
 - Cell style: no bold/emphasis in row cells (`tables.mdc`)
 
 ## 4. Advanced filters / search fields
 
-- Shared filters including `discharge_status` (PLANNED / DISCHARGE_PLANNED / COMPLETED / DISCHARGED) + date; label `dischargeStatusFilterLabel`
+- Shared nursing filters including `discharge_status` (PLANNED / DISCHARGE_PLANNED / COMPLETED / DISCHARGED) + date; label `dischargeStatusFilterLabel`
+- Footer: Clear filters → Apply filters → Close
 - Active badge reflects filtered membership when narrowed
 
 ## 5. Primary / secondary / row actions
 
 - Next-action Discharge clearance → `NursingDischargeClearanceDialog`
-- Detail Quick Action when discharge pending; complementary writes when source write allows
+- Detail Quick Action when discharge pending; complementary writes when source write allows; Discharge clearance omitted when it is the row next-action
 
 ## 6. Dialogs from this tab
 
 | Dialog | Owner |
 | --- | --- |
+| Patient detail | Nursing-owned; generic title `nursingPatientContextLabel`; identity in body `AppPatientDetails` |
 | `NursingDischargeClearanceDialog` | Nursing-owned |
-| Patient detail + complementary | Nursing / **reused** |
+| Complementary Nursing/Clinical dialogs | Nursing / **reused** |
 | Print summary | Nursing helper → clinical summary |
 
 Deep link `panel=discharge` / `clearance` → focused clearance when `nursingClinicalWriteRequirement` allows.

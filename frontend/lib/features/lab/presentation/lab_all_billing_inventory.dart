@@ -114,6 +114,7 @@ abstract final class LabAllBillingInventory {
     requirement: LabAllAtomPermissions.createAdditionalOrder,
     billingPath:
         'mergeClinicalRequestBilling → lab-order + persistLabOrderBilling',
+    mounted: false,
   );
 
   static const LabAllFinancialAtom editOrder = LabAllFinancialAtom(
@@ -122,6 +123,7 @@ abstract final class LabAllBillingInventory {
     financialClass: LabAllFinancialClass.createCharge,
     requirement: LabAllAtomPermissions.editOrder,
     billingPath: 'updateOrder → resolveLabOrderBillingPayload / persist',
+    mounted: false,
   );
 
   static const LabAllFinancialAtom deleteOrder = LabAllFinancialAtom(
@@ -184,12 +186,14 @@ abstract final class LabAllBillingInventory {
     auditCode: 'NOT_BILLED',
   );
 
+  /// Navigate-only atom reserved for unpaid gates; **UI not mounted**.
   static const LabAllFinancialAtom openBilling = LabAllFinancialAtom(
     id: 'open_billing',
     label: 'Open billing (navigate Billing when gate blocked)',
     financialClass: LabAllFinancialClass.defer,
     requirement: LabAllAtomPermissions.openBilling,
     billingPath: 'AppRoutes.billing?patient_id=… (no inline settle)',
+    mounted: false,
   );
 
   static const LabAllFinancialAtom previewReport = LabAllFinancialAtom(

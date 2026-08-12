@@ -17,19 +17,22 @@
 Order: **Filters → Settings → Export → Print → Create Lab Order**
 
 - Same worklist chrome as Pending (Export/Print ∩ `evidence:export`)
+- Filters / Settings labels: `commonFiltersActionLabel` / `commonTableSettingsActionLabel`
+- Advanced filters footer: Clear filters → Apply filters → Close
 - Create: `LabVerifiedAtomPermissions.create`
-- Print (toolbar): preview-first `printLabWorkspaceList`
+- Print (toolbar): preview-first `printLabWorkspaceList` / `commonPrintActionLabel`
 - Date filter: **enabled**
 
 ## 3. Table
 
-- Same patient-view columns as Pending
+- Same patient-view default columns as Pending (**5**; `next_action` alwaysVisible)
+- Column choices: same optional set as Pending (Settings exposes all)
 - Storage: `lab_completed` / `lab_cw_completed`
 - Row select still opens result entry (read / reopen path)
 
 ## 4. Advanced filters / search fields
 
-Same advanced filter model as Pending.
+Same advanced filter model as Pending; shares filter model with active tab badge via `labSectionTabCount`.
 
 ## 5. Primary / secondary / row actions
 
@@ -38,11 +41,11 @@ Same advanced filter model as Pending.
 
 ## 6. Dialogs from this tab
 
-Result entry + reopen + report preview/settings + create path (shared catalog).
+Result entry + reopen + report preview/settings + create path (shared catalog; generic titles; pinned footers).
 
 ## 7. Nested / follow-on
 
-Edit verified (`labEditVerifiedResultAction`) → `_ReopenSavedResultDialog` → save; preview/print clinicalResult.
+Edit verified (`labEditVerifiedResultAction`) → `_ReopenSavedResultDialog` → save; preview/print clinicalResult (`commonPrintActionLabel`).
 
 ## 8. Forms (summary)
 
@@ -51,7 +54,7 @@ Result reopen notes + draft fields; create forms if Create used.
 ## 9. Print / labels / preview
 
 - Table Print: preview-first worklist print when ∩ `evidence:export`
-- Report: `PrintDocumentTemplates.clinicalResult`
+- Report: `PrintDocumentTemplates.clinicalResult` (Print trigger = `Print`)
 
 ## 10. Loading / empty / error / success
 
@@ -64,5 +67,5 @@ Shared Lab patterns; reopen success `labVerifiedResultReopenedMessage`.
 | Tab / chrome / rowSelect | `LabVerifiedAtomPermissions.*` → ∩ `lab:read` |
 | Create / editVerifiedResult / reopenVerifiedResult | ∩ `lab:write` |
 | openBilling | documented — **not mounted** |
-| Export | ∩ `evidence:export` (`canExportLabWorkspace`) |
-| Table Print | ∩ `evidence:export` (`canPrintLabWorkspace`) |
+| Export | ∩ `evidence:export` (`LabVerifiedAtomPermissions.export`) |
+| Table Print | ∩ `evidence:export` (`LabVerifiedAtomPermissions.print`) |

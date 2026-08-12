@@ -408,5 +408,177 @@ void main() {
       expect(tabs[2].count, 1); // sibling urgent → scopeCounts
       expect(tabs[1].countTone, AppTabCountTone.info);
     });
+
+    test('active urgent badge uses filtered total; siblings stay unfiltered', () {
+      const NursingWorkspaceState state = NursingWorkspaceState(
+        query: NursingWorklistQuery(
+          scope: NursingQueueScope.urgent,
+          search: 'Critical',
+        ),
+        worklist: AppPage<NursingPatientSummary>(
+          items: <NursingPatientSummary>[],
+          request: AppPageRequest(),
+          totalItemCount: 1,
+        ),
+        scopeCounts: NursingScopeCounts(
+          all: 4,
+          assignedWard: 3,
+          urgent: 2,
+          medicationDue: 2,
+          handoverPending: 0,
+          transferPending: 1,
+          dischargePending: 0,
+        ),
+      );
+      final List<AppTabItem> tabs = nursingTabItems(
+        l10n,
+        state,
+        activeScope: NursingQueueScope.urgent,
+      );
+      expect(tabs[2].count, 1); // active urgent → filtered total
+      expect(tabs[0].count, 4); // sibling all → scopeCounts
+      expect(tabs[1].count, 3); // sibling assignedWard → scopeCounts
+      expect(tabs[2].countTone, AppTabCountTone.danger);
+    });
+
+    test(
+      'active medication-due badge uses filtered total; siblings stay unfiltered',
+      () {
+        const NursingWorkspaceState state = NursingWorkspaceState(
+          query: NursingWorklistQuery(
+            scope: NursingQueueScope.medicationDue,
+            search: 'Med',
+          ),
+          worklist: AppPage<NursingPatientSummary>(
+            items: <NursingPatientSummary>[],
+            request: AppPageRequest(),
+            totalItemCount: 1,
+          ),
+          scopeCounts: NursingScopeCounts(
+            all: 4,
+            assignedWard: 3,
+            urgent: 1,
+            medicationDue: 2,
+            handoverPending: 0,
+            transferPending: 1,
+            dischargePending: 0,
+          ),
+        );
+        final List<AppTabItem> tabs = nursingTabItems(
+          l10n,
+          state,
+          activeScope: NursingQueueScope.medicationDue,
+        );
+        expect(tabs[3].count, 1); // active medicationDue → filtered total
+        expect(tabs[0].count, 4); // sibling all → scopeCounts
+        expect(tabs[2].count, 1); // sibling urgent → scopeCounts
+        expect(tabs[3].countTone, AppTabCountTone.warning);
+      },
+    );
+
+    test(
+      'active handover-pending badge uses filtered total; siblings stay unfiltered',
+      () {
+        const NursingWorkspaceState state = NursingWorkspaceState(
+          query: NursingWorklistQuery(
+            scope: NursingQueueScope.handoverPending,
+            search: 'Hand',
+          ),
+          worklist: AppPage<NursingPatientSummary>(
+            items: <NursingPatientSummary>[],
+            request: AppPageRequest(),
+            totalItemCount: 1,
+          ),
+          scopeCounts: NursingScopeCounts(
+            all: 4,
+            assignedWard: 3,
+            urgent: 1,
+            medicationDue: 2,
+            handoverPending: 3,
+            transferPending: 1,
+            dischargePending: 0,
+          ),
+        );
+        final List<AppTabItem> tabs = nursingTabItems(
+          l10n,
+          state,
+          activeScope: NursingQueueScope.handoverPending,
+        );
+        expect(tabs[4].count, 1); // active handoverPending → filtered total
+        expect(tabs[0].count, 4); // sibling all → scopeCounts
+        expect(tabs[3].count, 2); // sibling medicationDue → scopeCounts
+        expect(tabs[4].countTone, AppTabCountTone.warning);
+      },
+    );
+
+    test(
+      'active transfer-pending badge uses filtered total; siblings stay unfiltered',
+      () {
+        const NursingWorkspaceState state = NursingWorkspaceState(
+          query: NursingWorklistQuery(
+            scope: NursingQueueScope.transferPending,
+            search: 'Transfer',
+          ),
+          worklist: AppPage<NursingPatientSummary>(
+            items: <NursingPatientSummary>[],
+            request: AppPageRequest(),
+            totalItemCount: 1,
+          ),
+          scopeCounts: NursingScopeCounts(
+            all: 4,
+            assignedWard: 3,
+            urgent: 1,
+            medicationDue: 2,
+            handoverPending: 3,
+            transferPending: 2,
+            dischargePending: 0,
+          ),
+        );
+        final List<AppTabItem> tabs = nursingTabItems(
+          l10n,
+          state,
+          activeScope: NursingQueueScope.transferPending,
+        );
+        expect(tabs[5].count, 1); // active transferPending → filtered total
+        expect(tabs[0].count, 4); // sibling all → scopeCounts
+        expect(tabs[4].count, 3); // sibling handoverPending → scopeCounts
+        expect(tabs[5].countTone, AppTabCountTone.warning);
+      },
+    );
+
+    test(
+      'active discharge-pending badge uses filtered total; siblings stay unfiltered',
+      () {
+        const NursingWorkspaceState state = NursingWorkspaceState(
+          query: NursingWorklistQuery(
+            scope: NursingQueueScope.dischargePending,
+            search: 'Discharge',
+          ),
+          worklist: AppPage<NursingPatientSummary>(
+            items: <NursingPatientSummary>[],
+            request: AppPageRequest(),
+            totalItemCount: 1,
+          ),
+          scopeCounts: NursingScopeCounts(
+            all: 4,
+            assignedWard: 3,
+            urgent: 1,
+            medicationDue: 2,
+            handoverPending: 3,
+            transferPending: 2,
+            dischargePending: 2,
+          ),
+        );
+        final List<AppTabItem> tabs = nursingTabItems(
+          l10n,
+          state,
+          activeScope: NursingQueueScope.dischargePending,
+        );
+        expect(tabs[6].count, 1); // active dischargePending → filtered total
+        expect(tabs[0].count, 4); // sibling all → scopeCounts
+        expect(tabs[5].count, 2); // sibling transferPending → scopeCounts
+        expect(tabs[6].countTone, AppTabCountTone.warning);
+      },
+    );
   });
 }

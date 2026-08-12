@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -170,6 +171,10 @@ class _ClinicalWorkspaceContentState
     if (query.section != ClinicalWorkspaceSection.all &&
         query.section != _section) {
       _handleTabChanged(query.section);
+    } else {
+      // Canonicalize alias deep-links (e.g. ?section=mine → assigned-to-me)
+      // without dropping search / encounter / panel params.
+      _canonicalizeSectionQuery(_section);
     }
     if (query.search.isNotEmpty) {
       _searchController.text = query.search;
@@ -237,6 +242,32 @@ class _ClinicalWorkspaceContentState
       queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
     );
     syncWorkspaceLocation(context, location);
+  }
+
+  void _canonicalizeSectionQuery(ClinicalWorkspaceSection section) {
+    if (!mounted) {
+      return;
+    }
+    final Uri uri = GoRouterState.of(context).uri;
+    final String expected = _clinicalSectionQueryValue(section);
+    final String current =
+        (uri.queryParameters['section'] ?? uri.queryParameters['tab'] ?? '')
+            .trim();
+    if (current.toLowerCase() == expected.toLowerCase()) {
+      return;
+    }
+    final Map<String, String> params =
+        Map<String, String>.from(uri.queryParameters);
+    params.remove('tab');
+    if (expected.isEmpty) {
+      params.remove('section');
+    } else {
+      params['section'] = expected;
+    }
+    syncWorkspaceLocation(
+      context,
+      AppRoutes.clinical.location(queryParameters: params),
+    );
   }
 
   @override

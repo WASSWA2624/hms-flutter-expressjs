@@ -112,6 +112,42 @@ void main() {
         DischargeFollowUpsAtomPermissions.routeEntry,
         same(dischargeWorkspaceEntryRequirement),
       );
+      expect(
+        DischargeFollowUpsAtomPermissions.export,
+        same(dischargeWorkspaceExportRequirement),
+      );
+      expect(
+        DischargeFollowUpsAtomPermissions.print,
+        same(dischargeWorkspacePrintRequirement),
+      );
+    });
+
+    test('export/print toolbar atoms omit without evidence:export', () {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      );
+      expect(
+        DischargeFollowUpsAtomPermissions.export.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        DischargeFollowUpsAtomPermissions.print.isAllowed(reader),
+        isFalse,
+      );
+      final AppAccessPolicy withExport = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.evidenceExport,
+        },
+      );
+      expect(
+        DischargeFollowUpsAtomPermissions.export.isAllowed(withExport),
+        isTrue,
+      );
+      expect(
+        DischargeFollowUpsAtomPermissions.print.isAllowed(withExport),
+        isTrue,
+      );
     });
 
     test('∩ denial: missing clinical:write hides Follow-ups write atoms', () {
@@ -375,6 +411,40 @@ void main() {
       expect(_tab('Follow-ups'), findsOneWidget);
       expect(find.byType(FollowUpWorklistPanel), findsOneWidget);
       expect(find.text('Follow Up Patient'), findsOneWidget);
+      expect(find.text('Filters'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.byTooltip('Export'), findsNothing);
+      final FollowUpWorklistPanel panel = tester.widget<FollowUpWorklistPanel>(
+        find.byType(FollowUpWorklistPanel),
+      );
+      expect(panel.showAdvancedFilterButton, isTrue);
+      expect(panel.enableDateFilter, isTrue);
+      expect(panel.canExport, isFalse);
+      expect(panel.enablePrint, isTrue);
+      expect(panel.canPrint, isFalse);
+      expect(panel.printLabel, 'Print');
+      expect(panel.advancedFilterButtonLabel, 'Filters');
+      expect(panel.advancedFilterCloseLabel, 'Close');
+      expect(panel.storageKeyPrefix, 'discharge_follow_ups');
+      final AppListTable<ReceptionFollowUpEntry> table =
+          tester.widget<AppListTable<ReceptionFollowUpEntry>>(
+            find.byType(AppListTable<ReceptionFollowUpEntry>),
+          );
+      expect(table.enablePrint, isTrue);
+      expect(table.canExport, isFalse);
+      expect(table.canPrint, isFalse);
+      expect(table.printLabel, 'Print');
+      expect(table.columns.length, 5);
+      expect(table.columnVisibilityStorageKey, 'discharge_follow_ups_cols');
+      expect(table.columnWidthStorageKey, 'discharge_follow_ups_cw');
+      expect(table.search?.advancedFilterCloseLabel, 'Close');
+      expect(table.search?.enableDateFilter, isTrue);
+      expect(
+        table.columns.map(
+          (AppListTableColumn<ReceptionFollowUpEntry> column) => column.id,
+        ),
+        containsAll(<String>['patient', 'phone', 'status', 'date', 'time']),
+      );
       expect(find.text('Reschedule follow-up'), findsNothing);
       expect(find.text('Mark completed'), findsNothing);
 
@@ -385,6 +455,62 @@ void main() {
       expect(find.text('Mark completed'), findsNothing);
       expect(find.text('Close'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Follow-ups Export/Print present with evidence:export; info count tone',
+    (WidgetTester tester) async {
+      await _pumpFollowUpsTab(
+        tester,
+        dischargeRepository: dischargeRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+
+      final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      final AppTabItem followUpsTab = strip.tabs.firstWhere(
+        (AppTabItem tab) => tab.id == 'followUps',
+      );
+      expect(followUpsTab.countTone, AppTabCountTone.info);
+      expect(followUpsTab.count, 1);
+
+      final AppListTable<ReceptionFollowUpEntry> table =
+          tester.widget<AppListTable<ReceptionFollowUpEntry>>(
+            find.byType(AppListTable<ReceptionFollowUpEntry>),
+          );
+      expect(table.enableExport, isTrue);
+      expect(table.canExport, isTrue);
+      expect(table.enablePrint, isTrue);
+      expect(table.canPrint, isTrue);
+      expect(table.printLabel, 'Print');
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'deep link section=follow_ups alias selects Follow-ups tab',
+    (WidgetTester tester) async {
+      await _pumpFollowUpsTab(
+        tester,
+        dischargeRepository: dischargeRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+        initialLocation: '/discharge?section=follow_ups',
+      );
+
+      expect(_tab('Follow-ups'), findsOneWidget);
+      expect(find.byType(FollowUpWorklistPanel), findsOneWidget);
+      expect(find.text('Follow Up Patient'), findsOneWidget);
     },
   );
 

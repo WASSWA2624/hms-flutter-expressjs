@@ -206,6 +206,33 @@ void main() {
     _stubQueue(repository);
   });
 
+  testWidgets('shows forbidden view when no desk tabs are allowed', (
+    WidgetTester tester,
+  ) async {
+    await _pumpDischargeWorkspace(
+      tester,
+      repository: repository,
+      policy: AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(roles: <String>['PATIENT']),
+          permissions: <AppPermission>{AppPermissions.patientRead},
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'inpatient-bed-management',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      ),
+    );
+
+    expect(find.byType(AppFailureStateView), findsOneWidget);
+    expect(find.byType(AppTabStrip), findsNothing);
+    expect(find.byType(AppListTable<IpdAdmissionSummary>), findsNothing);
+  });
+
   testWidgets('renders tab strip with section counts and all patients', (
     WidgetTester tester,
   ) async {
@@ -303,6 +330,37 @@ void main() {
     expect(find.text('Bob Pending'), findsNothing);
     expect(find.byTooltip('Print'), findsOneWidget);
     expect(find.byTooltip('Refresh'), findsNothing);
+    expect(_table(tester).columnVisibilityStorageKey, 'discharge_completed');
+    expect(_table(tester).columns.length, 5);
+    expect(_table(tester).enablePrint, isTrue);
+    expect(_table(tester).search?.enableDateFilter, isTrue);
+    expect(
+      _table(tester).columns.any(
+        (AppListTableColumn<IpdAdmissionSummary> column) =>
+            column.id == 'discharged_at',
+      ),
+      isTrue,
+    );
+  });
+
+  testWidgets('deep link section=discharged alias selects Completed tab', (
+    WidgetTester tester,
+  ) async {
+    await _pumpDischargeWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/discharge?section=discharged',
+      initialQuery: DischargeWorklistQuery.fromUri(
+        Uri.parse('/discharge?section=discharged'),
+      ),
+    );
+
+    expect(find.text('Carol Completed'), findsOneWidget);
+    expect(find.text('Alice Planned'), findsNothing);
+    expect(
+      _table(tester).columnVisibilityStorageKey,
+      'discharge_completed',
+    );
   });
 
   testWidgets('switching tabs filters rows and updates next-action labels', (
@@ -430,11 +488,44 @@ void main() {
     );
     expect(find.text(l10n.dischargeStatusColumnLabel), findsOneWidget);
     expect(find.text(l10n.dischargeNextActionColumnLabel), findsOneWidget);
+    expect(find.text('Bob Pending'), findsOneWidget);
+    expect(find.text('Alice Planned'), findsNothing);
+    expect(find.byTooltip('Start discharge plan'), findsOneWidget);
     expect(
       _table(tester).columnVisibilityStorageKey,
       'discharge_pendingClearance',
     );
     expect(_table(tester).columns.length, 5);
+    expect(_table(tester).enablePrint, isTrue);
+    expect(_table(tester).search?.enableDateFilter, isTrue);
+    expect(
+      _table(tester).columns.any(
+        (AppListTableColumn<IpdAdmissionSummary> column) =>
+            column.id == 'blocking_item',
+      ),
+      isTrue,
+    );
+  });
+
+  testWidgets('deep link section=pending-clearance alias selects tab', (
+    WidgetTester tester,
+  ) async {
+    await _pumpDischargeWorkspace(
+      tester,
+      repository: repository,
+      initialLocation: '/discharge?section=pending-clearance',
+      initialQuery: DischargeWorklistQuery.fromUri(
+        Uri.parse('/discharge?section=pending-clearance'),
+      ),
+    );
+
+    expect(find.text('Bob Pending'), findsOneWidget);
+    expect(find.text('Alice Planned'), findsNothing);
+    expect(find.text('Carol Completed'), findsNothing);
+    expect(
+      _table(tester).columnVisibilityStorageKey,
+      'discharge_pendingClearance',
+    );
   });
 
   testWidgets('advanced filters modal uses Advanced filters title', (

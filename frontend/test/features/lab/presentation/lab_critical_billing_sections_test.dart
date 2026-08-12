@@ -287,7 +287,9 @@ void main() {
     test('inline cashier settle/adjust atoms are not mounted', () {
       expect(LabCriticalBillingInventory.collectPayment.mounted, isFalse);
       expect(LabCriticalBillingInventory.adjustRefund.mounted, isFalse);
-      expect(LabCriticalBillingInventory.openBilling.mounted, isTrue);
+      expect(LabCriticalBillingInventory.openBilling.mounted, isFalse);
+      expect(LabCriticalBillingInventory.createAdditionalOrder.mounted, isFalse);
+      expect(LabCriticalBillingInventory.editOrder.mounted, isFalse);
       expect(LabCriticalBillingInventory.criticalNotify.mounted, isFalse);
       expect(LabCriticalBillingInventory.acknowledge.mounted, isFalse);
       expect(

@@ -302,6 +302,20 @@ void main() {
       );
       expect(
         identical(
+          LabAllAtomPermissions.export,
+          labWorkspaceExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabAllAtomPermissions.print,
+          labWorkspacePrintRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           LabAllAtomPermissions.configure,
           labConfigurationsWriteRequirement,
         ),
@@ -360,6 +374,20 @@ void main() {
         identical(
           LabAwaitingResultsAtomPermissions.create,
           labWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabAwaitingResultsAtomPermissions.export,
+          labWorkspaceExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabAwaitingResultsAtomPermissions.print,
+          labWorkspacePrintRequirement,
         ),
         isTrue,
       );
@@ -430,6 +458,20 @@ void main() {
         identical(
           LabCriticalAtomPermissions.create,
           labWorkspaceWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabCriticalAtomPermissions.export,
+          labWorkspaceExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabCriticalAtomPermissions.print,
+          labWorkspacePrintRequirement,
         ),
         isTrue,
       );
@@ -512,6 +554,20 @@ void main() {
       );
       expect(
         identical(
+          LabVerifiedAtomPermissions.export,
+          labWorkspaceExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabVerifiedAtomPermissions.print,
+          labWorkspacePrintRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           LabVerifiedAtomPermissions.configure,
           labConfigurationsWriteRequirement,
         ),
@@ -556,6 +612,55 @@ void main() {
         identical(
           labStripCreateRequirement(LabDeskSection.completed),
           LabVerifiedAtomPermissions.create,
+        ),
+        isTrue,
+      );
+    });
+
+    test('Follow-ups atom map reuses feature *Requirement helpers', () {
+      expect(
+        identical(LabFollowUpsAtomPermissions.tab, labFollowUpsRequirement),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabFollowUpsAtomPermissions.create,
+          labFollowUpsWriteRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabFollowUpsAtomPermissions.export,
+          labWorkspaceExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabFollowUpsAtomPermissions.print,
+          labWorkspacePrintRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          LabFollowUpsAtomPermissions.routeEntry,
+          labWorkspaceRouteEntryRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          labSectionTabRequirement(LabDeskSection.followUps),
+          LabFollowUpsAtomPermissions.tab,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          labStripCreateRequirement(LabDeskSection.followUps),
+          LabFollowUpsAtomPermissions.create,
         ),
         isTrue,
       );

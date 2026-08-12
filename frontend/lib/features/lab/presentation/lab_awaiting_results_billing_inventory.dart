@@ -133,6 +133,7 @@ abstract final class LabAwaitingResultsBillingInventory {
         requirement: LabAwaitingResultsAtomPermissions.createAdditionalOrder,
         billingPath:
             'ClinicalLabOrderActionDialog → persistLabOrderBilling',
+        mounted: false,
       );
 
   static const LabAwaitingResultsFinancialAtom editOrder =
@@ -143,6 +144,7 @@ abstract final class LabAwaitingResultsBillingInventory {
         requirement: LabAwaitingResultsAtomPermissions.editOrder,
         billingPath:
             'updateLabOrder → persistLabOrderBilling / reverse prior snapshot',
+        mounted: false,
       );
 
   static const LabAwaitingResultsFinancialAtom deleteOrder =

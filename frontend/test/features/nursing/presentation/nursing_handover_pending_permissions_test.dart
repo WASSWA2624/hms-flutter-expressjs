@@ -719,6 +719,87 @@ void main() {
 
   group('Handover pending UI authorization (AC2-AC5)', () {
     testWidgets(
+      'Handover pending chrome: ≤5 defaults, Filters/Settings/Print, warning tone',
+      (WidgetTester tester) async {
+        await _pumpHandoverPendingTab(
+          tester,
+          repository: repository,
+          accessPolicy: _writePolicy(),
+        );
+
+        final AppListTable<NursingWorkItem> table = tester
+            .widget<AppListTable<NursingWorkItem>>(
+              find.byType(AppListTable<NursingWorkItem>),
+            );
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem handover = strip.tabs.firstWhere(
+          (AppTabItem t) => t.id == 'handover-pending',
+        );
+
+        expect(table.columnVisibilityLabel, 'Settings');
+        expect(table.columnVisibilityTitle, 'Table Settings');
+        expect(table.search?.advancedFilterButtonLabel, 'Filters');
+        expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
+        expect(table.search?.advancedFilterResetLabel, 'Clear filters');
+        expect(table.search?.advancedFilterCloseLabel, 'Close');
+        expect(table.enablePrint, isTrue);
+        expect(table.printLabel, 'Print');
+        expect(table.canExport, isFalse);
+        expect(table.canPrint, isFalse);
+        expect(find.byTooltip('Export'), findsNothing);
+        expect(find.byTooltip('Print'), findsNothing);
+        expect(table.columns.length, lessThanOrEqualTo(5));
+        expect(
+          table.columns.map((AppListTableColumn<NursingWorkItem> c) => c.id),
+          contains('responsible_nurse'),
+        );
+        expect(table.columnChoices, isNotNull);
+        expect(
+          table.columnChoices!.length,
+          greaterThan(table.columns.length),
+        );
+        expect(handover.countTone, AppTabCountTone.warning);
+        expect(handover.count, isNotNull);
+        expect(find.textContaining('Handover pending'), findsWidgets);
+      },
+    );
+
+    testWidgets(
+      'Export/Print present on Handover pending when evidence:export granted',
+      (WidgetTester tester) async {
+        await _pumpHandoverPendingTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.nursingRead,
+              AppPermissions.clinicalRead,
+              AppPermissions.clinicalWrite,
+              AppPermissions.patientRead,
+              AppPermissions.patientWrite,
+              AppPermissions.evidenceExport,
+            },
+          ),
+        );
+
+        final AppListTable<NursingWorkItem> table = tester
+            .widget<AppListTable<NursingWorkItem>>(
+              find.byType(AppListTable<NursingWorkItem>),
+            );
+        expect(table.canExport, isTrue);
+        expect(table.canPrint, isTrue);
+        expect(table.search?.advancedFilterButtonLabel, 'Filters');
+        expect(table.columnVisibilityLabel, 'Settings');
+        expect(table.printLabel, 'Print');
+        expect(find.byTooltip('Settings'), findsOneWidget);
+        expect(find.byTooltip('Export'), findsOneWidget);
+        expect(find.byTooltip('Print'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
       'read-only: Handover pending list visible; Create handover / writes absent (∩ denial)',
       (WidgetTester tester) async {
         final AppAccessPolicy reader = _readPolicy();
@@ -737,6 +818,14 @@ void main() {
         await tester.tap(find.text('Handover Pending Patient'));
         await _pumpAfter(tester);
 
+        final AppLocalizations l10n = AppLocalizations.of(
+          tester.element(find.byType(AppDialog).first),
+        );
+        // dialogs.mdc: generic surface title; identity stays in body.
+        expect(
+          find.text(l10n.nursingPatientContextLabel.toUpperCase()),
+          findsOneWidget,
+        );
         expect(
           find.descendant(
             of: find.byType(AppQuickActions),

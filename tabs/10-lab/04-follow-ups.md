@@ -14,18 +14,21 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
+Order: **Filters → Settings → Export → Print → Create Lab Order**
+
 - Search: `receptionFollowUpsSearchHint`; Clear `receptionClearFiltersAction`
 - Filters: `commonFiltersActionLabel` / `commonAdvancedFiltersTitle`; Apply `opdApplyFiltersAction`; Reset `opdClearFiltersAction`; Close `commonCloseActionLabel`
 - Date: `labFollowUpDateFilterLabel`; From/To `opdDateFromLabel` / `opdDateToLabel`
-- Settings: panel-owned follow-up column dialog (`lab_follow_ups_cols`)
-- Export: gated `canExportLabWorkspace` (∩ `evidence:export`)
+- Settings: panel-owned follow-up column dialog (`lab_follow_ups_cols`) — not Lab desk settings
+- Export: gated `LabFollowUpsAtomPermissions.export` (∩ `evidence:export`)
 - Print: preview-first `printLabWorkspaceList` / `commonPrintActionLabel` when print ∩
 - Create: `labCreateAction` via `LabFollowUpsAtomPermissions.create`
 
 ## 3. Table
 
 - Row model: `ReceptionFollowUpEntry`
-- Columns (defaults): `opdPatientNameLabel`, `patientsPhoneLabel`, `patientsEmailLabel`, `opdFollowUpDateLabel`, `opdFollowUpTimeLabel`
+- Default columns (**5**; `patient` alwaysVisible): patient, phone, status, date, time
+- Column choices: patient ID, email, notes (Settings exposes all; Reset restores defaults)
 - Panel storage keys: `lab_follow_ups_cols` / `lab_follow_ups_cw`
 - Empty: `receptionFollowUpsEmptyTitle` / `receptionFollowUpsEmptyBody`
 
@@ -33,7 +36,7 @@
 
 - Group `follow_up_status`: `labFollowUpStatusFilterLabel` — Pending / Completed (`labFollowUpStatusPending` / `labFollowUpStatusCompleted`)
 - Search: `labPatientFilterLabel`, `labPatientIdFilterLabel`, `patientsPhoneLabel`
-- Date range on follow-up date
+- Date range on follow-up date (narrowed count syncs active badge)
 
 ## 5. Primary / secondary / row actions
 
@@ -73,5 +76,5 @@ Detail read + nested reschedule; create-order forms if Create used.
 | Tab / list / search / filters / settings / empty / loading / retry / detail / close | ∩ `lab:read` |
 | create / reschedule / markCompleted / saveFollowUp / write | ∩ `lab:write` |
 | createPatient | ∩ `patient:write` |
-| Export | ∩ `evidence:export` (`canExportLabWorkspace`) |
-| Print | n/a |
+| Export | ∩ `evidence:export` (`LabFollowUpsAtomPermissions.export`) |
+| Print | ∩ `evidence:export` (`LabFollowUpsAtomPermissions.print`) |

@@ -128,6 +128,7 @@ abstract final class LabCriticalBillingInventory {
         financialClass: LabCriticalFinancialClass.createCharge,
         requirement: LabCriticalAtomPermissions.createAdditionalOrder,
         billingPath: 'ClinicalLabOrderActionDialog → persistLabOrderBilling',
+        mounted: false,
       );
 
   static const LabCriticalFinancialAtom editOrder = LabCriticalFinancialAtom(
@@ -137,6 +138,7 @@ abstract final class LabCriticalBillingInventory {
     requirement: LabCriticalAtomPermissions.editOrder,
     billingPath:
         'updateLabOrder → persistLabOrderBilling / reverse prior snapshot',
+    mounted: false,
   );
 
   static const LabCriticalFinancialAtom deleteOrder = LabCriticalFinancialAtom(
@@ -261,8 +263,8 @@ abstract final class LabCriticalBillingInventory {
         auditCode: 'NOT_REQUIRED',
       );
 
-  /// Navigate-only; Billing workspace remains system of record.
-  /// Mounted from workflow when `billingGateBlocked` (Open billing CTA).
+  /// Navigate-only atom reserved for unpaid gates; **UI not mounted**
+  /// (Await payment text only — Billing desk owns settle).
   static const LabCriticalFinancialAtom openBilling = LabCriticalFinancialAtom(
     id: 'open_billing',
     label: 'Open billing (settle / invoice / waive / refund)',
@@ -270,6 +272,7 @@ abstract final class LabCriticalBillingInventory {
     requirement: labOpenBillingRequirement,
     billingPath: 'AppRoutes.billing?patient_id=… (Billing workspace)',
     auditCode: 'REQUIRES_BILLING',
+    mounted: false,
   );
 
   static const LabCriticalFinancialAtom collectPayment =

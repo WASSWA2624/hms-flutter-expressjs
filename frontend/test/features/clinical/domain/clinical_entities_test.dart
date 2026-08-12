@@ -356,6 +356,29 @@ void main() {
       expect(facets.completedToday, 1);
     });
 
+    test('assignedToMe facet ignores other providers under shared list', () {
+      final ClinicalWorklistFacetCounts facets = clinicalWorklistFacetCounts(
+        <ClinicalWorklistEntry>[
+          _entry(providerUserId: 'user-1', status: 'OPEN'),
+          _entry(
+            encounterId: 'other',
+            providerUserId: 'user-2',
+            status: 'OPEN',
+          ),
+          _entry(
+            encounterId: 'mine-urgent',
+            providerUserId: 'user-1',
+            status: 'OPEN',
+            isUrgent: true,
+          ),
+        ],
+        const <ClinicalWorklistEntry>[],
+        currentUserId: 'user-1',
+      );
+      expect(facets.assignedToMe, 2);
+      expect(facets.pending, 3);
+    });
+
     test('completedCount uses independent facet counts', () {
       final ClinicalWorkspaceState state = ClinicalWorkspaceState(
         query: const ClinicalWorklistQuery(),
@@ -433,6 +456,24 @@ void main() {
         Uri.parse('/clinical?section=assigned-to-me'),
       );
       expect(query.section, ClinicalWorkspaceSection.assignedToMe);
+    });
+
+    test('fromUri parses assigned-to-me aliases', () {
+      for (final String alias in <String>[
+        'assigned_to_me',
+        'assignedtome',
+        'mine',
+        'assigned',
+      ]) {
+        final ClinicalWorkspaceQuery query = ClinicalWorkspaceQuery.fromUri(
+          Uri.parse('/clinical?section=$alias'),
+        );
+        expect(
+          query.section,
+          ClinicalWorkspaceSection.assignedToMe,
+          reason: alias,
+        );
+      }
     });
 
     test('fromUri parses ?section=results-ready as resultsReady', () {

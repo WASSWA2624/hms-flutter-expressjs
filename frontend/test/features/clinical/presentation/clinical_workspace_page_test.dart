@@ -247,12 +247,251 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
+    expect(find.text('Results Patient'), findsOneWidget);
     expect(
       find.descendant(
         of: find.byType(AppListTableGrid),
         matching: find.text('Encounter type'),
       ),
       findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppListTableGrid),
+        matching: find.text('Doctor'),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets(
+    'Results ready shows Export Print and info count tone when allowed',
+    (tester) async {
+      await _pumpClinicalWorkspace(
+        tester,
+        encounters: <ClinicalWorklistEntry>[
+          ClinicalWorklistEntry(
+            id: 'encounter-results-chrome',
+            sourceQueue: 'OPD',
+            encounterId: 'encounter-results-chrome',
+            encounterPublicId: 'ENC000098',
+            patientDisplayName: 'Results Chrome Patient',
+            patientPublicId: 'PAT000098',
+            providerDisplayName: 'Dr Results',
+            encounterType: 'OUTPATIENT',
+            currentLocation: 'Clinic R',
+            status: 'OPEN',
+            stage: 'LAB_RESULTS_READY',
+            resultsReady: true,
+            updatedAt: DateTime.now(),
+          ),
+        ],
+      );
+
+      await tester.tap(_tab('Results ready'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Filters'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('Export'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+
+      final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      final AppTabItem resultsReady = strip.tabs.firstWhere(
+        (AppTabItem tab) => tab.label == 'Results ready',
+      );
+      expect(resultsReady.countTone, AppTabCountTone.info);
+      expect(find.text('Results Chrome Patient'), findsOneWidget);
+    },
+  );
+
+  testWidgets('Results ready omits Export Print without evidence:export', (
+    tester,
+  ) async {
+    await _pumpClinicalWorkspace(
+      tester,
+      accessPolicy: AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            roles: <String>['DOCTOR'],
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+          ),
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      ),
+    );
+
+    await tester.tap(_tab('Results ready'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Export'), findsNothing);
+    expect(find.text('Print'), findsNothing);
+  });
+
+  testWidgets('deep link section=results opens Results ready', (tester) async {
+    final _Harness harness = await _pumpClinicalWorkspace(
+      tester,
+      initialLocation: '/clinical?section=results',
+      initialQuery: ClinicalWorkspaceQuery.fromUri(
+        Uri.parse('/clinical?section=results'),
+      ),
+    );
+
+    expect(_tab('Results ready'), findsOneWidget);
+    expect(
+      harness.router.routeInformationProvider.value.uri.queryParameters,
+      containsPair('section', 'results-ready'),
+    );
+  });
+
+  testWidgets('Completed tab shows encounter type column by default', (
+    tester,
+  ) async {
+    await _pumpClinicalWorkspace(
+      tester,
+      encounters: <ClinicalWorklistEntry>[
+        ClinicalWorklistEntry(
+          id: 'encounter-completed',
+          sourceQueue: 'OPD',
+          encounterId: 'encounter-completed',
+          encounterPublicId: 'ENC000077',
+          patientDisplayName: 'Completed Patient',
+          patientPublicId: 'PAT000077',
+          providerDisplayName: 'Dr Done',
+          encounterType: 'OUTPATIENT',
+          currentLocation: 'Clinic C',
+          status: 'COMPLETED',
+          stage: 'COMPLETED',
+          updatedAt: DateTime.now(),
+        ),
+      ],
+    );
+
+    await tester.tap(_tab('Completed'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Completed Patient'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AppListTableGrid),
+        matching: find.text('Encounter type'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppListTableGrid),
+        matching: find.text('Doctor'),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets(
+    'Completed shows Export Print and info count tone when allowed',
+    (tester) async {
+      await _pumpClinicalWorkspace(
+        tester,
+        encounters: <ClinicalWorklistEntry>[
+          ClinicalWorklistEntry(
+            id: 'encounter-completed-chrome',
+            sourceQueue: 'OPD',
+            encounterId: 'encounter-completed-chrome',
+            encounterPublicId: 'ENC000076',
+            patientDisplayName: 'Completed Chrome Patient',
+            patientPublicId: 'PAT000076',
+            providerDisplayName: 'Dr Done',
+            encounterType: 'OUTPATIENT',
+            currentLocation: 'Clinic C',
+            status: 'COMPLETED',
+            stage: 'COMPLETED',
+            updatedAt: DateTime.now(),
+          ),
+        ],
+      );
+
+      await tester.tap(_tab('Completed'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Filters'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('Export'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+
+      final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      final AppTabItem completed = strip.tabs.firstWhere(
+        (AppTabItem tab) => tab.label == 'Completed',
+      );
+      expect(completed.countTone, AppTabCountTone.info);
+      expect(find.text('Completed Chrome Patient'), findsOneWidget);
+    },
+  );
+
+  testWidgets('Completed omits Export Print without evidence:export', (
+    tester,
+  ) async {
+    await _pumpClinicalWorkspace(
+      tester,
+      accessPolicy: AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            roles: <String>['DOCTOR'],
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+          ),
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      ),
+    );
+
+    await tester.tap(_tab('Completed'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Export'), findsNothing);
+    expect(find.text('Print'), findsNothing);
+  });
+
+  testWidgets('deep link section=done opens Completed', (tester) async {
+    final _Harness harness = await _pumpClinicalWorkspace(
+      tester,
+      initialLocation: '/clinical?section=done',
+      initialQuery: ClinicalWorkspaceQuery.fromUri(
+        Uri.parse('/clinical?section=done'),
+      ),
+    );
+
+    expect(_tab('Completed'), findsOneWidget);
+    expect(
+      harness.router.routeInformationProvider.value.uri.queryParameters,
+      containsPair('section', 'completed'),
     );
   });
 
@@ -272,6 +511,158 @@ void main() {
     expect(_tab('Assigned to me'), findsOneWidget);
     expect(find.text('Filters'), findsOneWidget);
     expect(find.text('Settings'), findsOneWidget);
+  });
+
+  testWidgets(
+    'Assigned to me shows Export Print and warning count tone when allowed',
+    (tester) async {
+      await _pumpClinicalWorkspace(tester);
+
+      await tester.tap(_tab('Assigned to me'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Filters'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('Export'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+
+      final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      final AppTabItem assigned = strip.tabs.firstWhere(
+        (AppTabItem tab) => tab.label == 'Assigned to me',
+      );
+      expect(assigned.countTone, AppTabCountTone.warning);
+    },
+  );
+
+  testWidgets('Assigned to me omits Export Print without evidence:export', (
+    tester,
+  ) async {
+    await _pumpClinicalWorkspace(
+      tester,
+      accessPolicy: AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            roles: <String>['DOCTOR'],
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+          ),
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      ),
+    );
+
+    await tester.tap(_tab('Assigned to me'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Export'), findsNothing);
+    expect(find.text('Print'), findsNothing);
+  });
+
+  testWidgets('deep link section=mine opens Assigned to me', (tester) async {
+    final _Harness harness = await _pumpClinicalWorkspace(
+      tester,
+      initialLocation: '/clinical?section=mine',
+      initialQuery: ClinicalWorkspaceQuery.fromUri(
+        Uri.parse('/clinical?section=mine'),
+      ),
+    );
+
+    expect(_tab('Assigned to me'), findsOneWidget);
+    expect(
+      harness.router.routeInformationProvider.value.uri.queryParameters,
+      containsPair('section', 'assigned-to-me'),
+    );
+  });
+
+  testWidgets(
+    'Urgent shows Export Print and danger count tone when allowed',
+    (tester) async {
+      await _pumpClinicalWorkspace(
+        tester,
+        encounters: <ClinicalWorklistEntry>[
+          ClinicalWorklistEntry(
+            id: 'encounter-urgent',
+            sourceQueue: 'OPD',
+            encounterId: 'encounter-urgent',
+            encounterPublicId: 'ENC000091',
+            patientDisplayName: 'Urgent Patient',
+            patientPublicId: 'PAT000091',
+            providerDisplayName: 'Dr Urgent',
+            encounterType: 'OUTPATIENT',
+            currentLocation: 'Clinic A',
+            status: 'OPEN',
+            stage: 'WAITING_DOCTOR_REVIEW',
+            isUrgent: true,
+            updatedAt: DateTime.now(),
+          ),
+        ],
+      );
+
+      await tester.tap(_tab('Urgent'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Filters'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
+      expect(find.text('Export'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+
+      final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      final AppTabItem urgent = strip.tabs.firstWhere(
+        (AppTabItem tab) => tab.label == 'Urgent',
+      );
+      expect(urgent.countTone, AppTabCountTone.danger);
+      expect(find.text('Urgent Patient'), findsOneWidget);
+    },
+  );
+
+  testWidgets('Urgent omits Export Print without evidence:export', (
+    tester,
+  ) async {
+    await _pumpClinicalWorkspace(
+      tester,
+      accessPolicy: AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            roles: <String>['DOCTOR'],
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+          ),
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'encounters-vitals',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      ),
+    );
+
+    await tester.tap(_tab('Urgent'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Export'), findsNothing);
+    expect(find.text('Print'), findsNothing);
   });
 
   testWidgets(

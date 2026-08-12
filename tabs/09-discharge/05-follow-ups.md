@@ -2,9 +2,9 @@
 
 ## 1. Tab strip
 
-- Label: `dischargeSectionFollowUps`
+- Label: `dischargeSectionFollowUps` (Discharge-owned; same product string as `opdFollowUpsTitle`)
 - Icon: `Icons.phone_callback_outlined`
-- Count source: `followUpTabCountProvider(FollowUpWorklistScope(encounterType: 'IPD'))`; active tab uses narrowed callback from panel (`onNarrowedCountChanged`)
+- Count source: `followUpTabCountProvider(FollowUpWorklistScope(encounterType: 'IPD'))`; active + search/filters → narrowed callback from panel (`onNarrowedCountChanged`); un-narrowed falls back to provider
 - Sibling tabs: dedicated unfiltered `DischargeSectionCounts` for queue sections; this tab uses follow-up provider + narrowed count
 - Count tone: `AppTabCountTone.info`
 - Deep-link `section`: `follow-ups` (aliases `follow_ups`, `followups`)
@@ -14,25 +14,34 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
+Order: **Filters → Settings → Export → Print**
+
 - Search: `receptionFollowUpsSearchHint`; Clear `receptionClearFiltersAction`
-- Filters: **on** (`commonFiltersActionLabel` → advanced filters; Apply/Reset/Close shared OPD/common labels)
+- Filters: **on** (`commonFiltersActionLabel` → Advanced filters; Apply/Reset/Close shared OPD/common labels)
 - Date filter: **on** (`dischargeDateFilterLabel` / From / To)
-- Settings: `commonTableSettings*` + `receptionApplyColumnsAction` / `receptionResetColumnsAction`
-- Export: enabled; gated ∩ `evidence:export` (`canExportDischargeWorkspace`)
-- Print: `commonPrintActionLabel` → preview-first `printDischargeWorkspaceList` (same export gate)
+- Settings: `commonTableSettings*` + `receptionApplyColumnsAction` / `receptionResetColumnsAction` / Close
+- Export: ∩ `evidence:export` (`DischargeFollowUpsAtomPermissions.export`)
+- Print: `commonPrintActionLabel` → preview-first `_printDischargeFollowUpsList` / `printDischargeWorkspaceList` (same export gate)
 - Plan / Clearance / pharmacy strip: **not mounted** (justified)
 
 ## 3. Table
 
 - Row model: `ReceptionFollowUpEntry`
 - Row select → **reused** follow-up detail
-- Default columns: patient, phone, email, follow-up date, follow-up time
+- Default columns (**5**):
+  1. Patient
+  2. Phone
+  3. Status
+  4. Follow-up date
+  5. Follow-up time
+- Column choices: patient id, email, notes (shared panel catalog)
 - Storage: `discharge_follow_ups_cols` / `discharge_follow_ups_cw`
+- Mobile: phone meta
 
 ## 4. Advanced filters / search fields
 
 - Advanced filters: **enabled** by Discharge host (`showAdvancedFilterButton: true`)
-- Date range: **on**
+- Date range: **on**; same panel filter model drives visible rows + active badge when narrowed
 
 ## 5. Primary / secondary / row actions
 
@@ -54,7 +63,7 @@ Detail read tiles + nested reschedule scheduled_at/notes.
 
 ## 9. Print / labels / preview
 
-- Table Print: preview-first `printDischargeWorkspaceList` (`Print` label; ∩ `evidence:export`)
+- Table Print: preview-first list print (`Print` label; ∩ `evidence:export`)
 - Detail: no print surface
 
 ## 10. Loading / empty / error / success
@@ -62,6 +71,7 @@ Detail read tiles + nested reschedule scheduled_at/notes.
 - Empty: `receptionFollowUpsEmptyTitle` / `receptionFollowUpsEmptyBody`
 - Hard failure: `errorUnexpectedTitle` / `errorUnexpectedMessage` + `commonRetryActionLabel`
 - Unauthorized empty desk (no tabs): `AppFailureStateView` forbidden (`AppRoutes` / entry ∩ `discharge:read`)
+- Mutations refresh list + Follow-ups badge (provider / narrowed)
 
 ## 11. RBAC / ABAC (omitted when unauthorized)
 

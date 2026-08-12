@@ -38,9 +38,10 @@ Order: **Filters → Settings → Export → Print → Create Lab Order**
 ## 4. Advanced filters / search fields
 
 - Groups: queue (`labScopeFilterLabel`), payment (`labPaymentColumnLabel`), status (`labEntryStatusColumnLabel`), result flag (`labResultFlagFilterLabel`: critical / abnormal / any flagged)
+- Footer: Clear filters (`opdClearFiltersAction`) → Apply filters (`opdApplyFiltersAction`) → Close (`commonCloseActionLabel`)
 - Search fields: `labPatientFilterLabel`, `labPatientIdFilterLabel`, `labTestFilterLabel`, `labOrderIdFilterLabel`
 - Queue values can switch section: `pending` | `critical` | `completed_today` | `all`
-- Date range on ordered date
+- Date range on ordered date (shares filter model with active tab badge via `labSectionTabCount`)
 
 ## 5. Primary / secondary / row actions
 
@@ -65,7 +66,7 @@ From result entry:
 1. Preview report (`labPreviewReportAction`) → preview ∪ `labReportPreviewRequirement`
 2. Save results (`labSaveResultsAction`) → ∩ `lab:write`
 3. Edit verified → reopen dialog
-4. Print from preview (`labPrintReportAction`) → `PrintDocumentTemplates.clinicalResult`
+4. Print from preview (`commonPrintActionLabel` → `Print`) → `PrintDocumentTemplates.clinicalResult`
 5. Collect / Receive / Reject / Reverse / Open billing / Create additional / Edit order / Critical notify — **not mounted**
 
 From create: register patient when ∩ `patient:write`.
@@ -95,6 +96,6 @@ From create: register patient when ∩ `patient:write`.
 | createPatient (nested) | ∩ `patient:write` |
 | previewReport | ∪ `lab:read` \| `lab:write` |
 | resultEntry / workflowMutate | ∩ `lab:write` |
-| Export | ∩ `evidence:export` (`canExportLabWorkspace`) |
+| Export | ∩ `evidence:export` (`LabAwaitingResultsAtomPermissions.export`) |
 | Collect / Open billing / criticalNotify chrome | documented / residual — **not mounted** |
-| Table Print | ∩ `evidence:export` (`canPrintLabWorkspace`) |
+| Table Print | ∩ `evidence:export` (`LabAwaitingResultsAtomPermissions.print`) |

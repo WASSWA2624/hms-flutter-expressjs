@@ -248,6 +248,9 @@ void main() {
     test('cashier settle/adjust atoms are unmounted on All tab', () {
       expect(LabAllBillingInventory.collectPayment.mounted, isFalse);
       expect(LabAllBillingInventory.adjustRefund.mounted, isFalse);
+      expect(LabAllBillingInventory.openBilling.mounted, isFalse);
+      expect(LabAllBillingInventory.createAdditional.mounted, isFalse);
+      expect(LabAllBillingInventory.editOrder.mounted, isFalse);
       expect(
         LabAllBillingInventory.createOrder.financialClass,
         LabAllFinancialClass.createCharge,

@@ -17,19 +17,22 @@
 Order: **Filters → Settings → Export → Print → Create Lab Order**
 
 - Same worklist chrome as Pending (Export/Print ∩ `evidence:export`)
+- Filters / Settings labels: `commonFiltersActionLabel` / `commonTableSettingsActionLabel`
+- Advanced filters footer: Clear filters → Apply filters → Close
 - Create: `LabCriticalAtomPermissions.create`
-- Print (toolbar): preview-first `printLabWorkspaceList`
+- Print (toolbar): preview-first `printLabWorkspaceList` / `commonPrintActionLabel`
 - Date filter: **enabled**
 
 ## 3. Table
 
-- Same patient-view columns as Pending
+- Same patient-view default columns as Pending (**5**; `next_action` alwaysVisible)
+- Column choices: same optional set as Pending (Settings exposes all)
 - Storage: `lab_critical` / `lab_cw_critical`
 - Row select → result entry
 
 ## 4. Advanced filters / search fields
 
-Same queue / payment / status / result-flag groups and text filters as Pending.
+Same queue / payment / status / result-flag groups and text filters as Pending; shares filter model with active tab badge via `labSectionTabCount`.
 
 ## 5. Primary / secondary / row actions
 
@@ -39,11 +42,11 @@ Same queue / payment / status / result-flag groups and text filters as Pending.
 
 ## 6. Dialogs from this tab
 
-Same Lab-owned / shared / reused set as Pending.
+Same Lab-owned / shared / reused set as Pending (generic titles; pinned footers on desk/report/create context).
 
 ## 7. Nested / follow-on
 
-Same result-entry preview / save / reopen / print chain. `LabCriticalAtomPermissions.criticalNotify` / `acknowledge` documented — **no dedicated notify chrome**.
+Same result-entry preview / save / reopen / print chain (`commonPrintActionLabel`). `LabCriticalAtomPermissions.criticalNotify` / `acknowledge` documented — **no dedicated notify chrome**.
 
 ## 8. Forms (summary)
 
@@ -52,7 +55,7 @@ Same create + result entry forms as Pending.
 ## 9. Print / labels / preview
 
 - Table Print: preview-first worklist print when ∩ `evidence:export`
-- Report preview → `PrintDocumentTemplates.clinicalResult`
+- Report preview → `PrintDocumentTemplates.clinicalResult` (Print trigger = `Print`)
 
 ## 10. Loading / empty / error / success
 
@@ -65,5 +68,5 @@ Shared Lab patterns.
 | Tab / chrome / rowSelect | `LabCriticalAtomPermissions.*` → ∩ `lab:read` |
 | Create / result mutations | ∩ `lab:write` |
 | criticalNotify | ∩ `lab:write` + `clinical:read` — **no chrome** |
-| Export | ∩ `evidence:export` (`canExportLabWorkspace`) |
-| Table Print | ∩ `evidence:export` (`canPrintLabWorkspace`) |
+| Export | ∩ `evidence:export` (`LabCriticalAtomPermissions.export`) |
+| Table Print | ∩ `evidence:export` (`LabCriticalAtomPermissions.print`) |
