@@ -76,6 +76,88 @@ void main() {
     expect(find.text('Change doctor'), findsOneWidget);
   });
 
+  testWidgets(
+    'Start encounter confirms and returns started flow for Flow Actions',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final _MockOpdRepository repository = _MockOpdRepository();
+      _stubWorkspaceLoad(repository);
+      const OpdFlowDetail started = OpdFlowDetail(
+        summary: OpdFlowSummary(
+          id: 'encounter-1',
+          publicId: 'ENC000001',
+          patientId: 'PAT000001',
+          patientDisplayName: 'Patient Example',
+          providerUserId: 'USR000001',
+          status: 'OPEN',
+          stage: 'WAITING_VITALS',
+          visitQueueId: 'QUE000001',
+        ),
+      );
+      when(
+        () => repository.startOpdFlow(
+          any(),
+          idempotencyKey: any(named: 'idempotencyKey'),
+        ),
+      ).thenAnswer((_) async => const Result<OpdFlowDetail>.success(started));
+
+      QueueActionsOutcome? outcome;
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appAccessPolicyProvider.overrideWithValue(_frontDeskPolicy()),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            opdRepositoryProvider.overrideWithValue(repository),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.light,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Scaffold(
+              body: Builder(
+                builder: (BuildContext context) {
+                  return AppButton.primary(
+                    label: 'Open queue',
+                    onPressed: () async {
+                      outcome = await showQueueActionsDialog(
+                        context: context,
+                        entry: entry,
+                        allowStartEncounter: true,
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open queue'));
+      await tester.pumpAndSettle();
+      expect(find.text('QUEUE ACTIONS'), findsOneWidget);
+
+      await tester.tap(find.text('Start encounter'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AppConfirmActionDialog), findsOneWidget);
+
+      await tester.tap(find.widgetWithText(TextButton, 'Start encounter').last);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppConfirmActionDialog), findsNothing);
+      expect(find.text('QUEUE ACTIONS'), findsNothing);
+      expect(outcome?.changed, isTrue);
+      expect(outcome?.startedFlow?.publicId, 'ENC000001');
+    },
+  );
+
   testWidgets('hides mutation actions after the queue entry is terminal', (
     WidgetTester tester,
   ) async {

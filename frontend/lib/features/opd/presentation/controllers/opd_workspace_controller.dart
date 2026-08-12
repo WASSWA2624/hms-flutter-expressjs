@@ -718,33 +718,44 @@ final class OpdWorkspaceController
     );
   }
 
-  Future<AppFailure?> startOpdFromQueue(OpdQueueEntry entry) async {
+  Future<Result<OpdFlowDetail>> startOpdFromQueue(OpdQueueEntry entry) async {
     final String key = createIdempotencyKey();
-    final AppFailure? failure = await _mutateFlow(
+    final String? patientId = entry.patientId?.trim();
+    final String? appointmentId = entry.appointmentId?.trim();
+    final String? providerUserId = entry.providerUserId?.trim();
+    final Result<OpdFlowDetail> result = await _mutateFlowDetail(
       () => _repository.startOpdFlow(<String, Object?>{
         'arrival_mode': 'WALK_IN',
         'visit_queue_id': entry.apiId,
-        'provider_user_id': entry.providerUserId,
+        if (patientId != null && patientId.isNotEmpty) 'patient_id': patientId,
+        if (appointmentId != null && appointmentId.isNotEmpty)
+          'appointment_id': appointmentId,
+        if (providerUserId != null && providerUserId.isNotEmpty)
+          'provider_user_id': providerUserId,
         'reuse_open_encounter': true,
       }, idempotencyKey: key),
     );
-    if (failure != null) {
-      return failure;
-    }
-    // Backend marks the linked visit queue IN_PROGRESS; patch local queue
-    // immediately so reception/OPD desks stay in sync without a full reload.
-    final OpdWorkspaceState? latest = _currentState;
-    if (latest != null) {
-      _emit(
-        latest.copyWith(
-          queueEntries: _upsertQueueEntry(
-            latest.queueEntries,
-            entry.copyWith(status: 'IN_PROGRESS'),
-          ),
-        ),
-      );
-    }
-    return null;
+    return result.when(
+      success: (OpdFlowDetail detail) {
+        // Backend marks the linked visit queue IN_PROGRESS; patch local queue
+        // immediately so reception/OPD desks stay in sync without a full reload.
+        final OpdWorkspaceState? latest = _currentState;
+        if (latest != null) {
+          _emit(
+            latest.copyWith(
+              queueEntries: _upsertQueueEntry(
+                latest.queueEntries,
+                entry.copyWith(status: 'IN_PROGRESS'),
+              ),
+              selectedFlow: detail.summary.isTerminal ? null : detail,
+              clearSelectedFlow: detail.summary.isTerminal,
+            ),
+          );
+        }
+        return Result<OpdFlowDetail>.success(detail);
+      },
+      failure: Result<OpdFlowDetail>.failure,
+    );
   }
 
   Future<AppFailure?> assignDoctor(

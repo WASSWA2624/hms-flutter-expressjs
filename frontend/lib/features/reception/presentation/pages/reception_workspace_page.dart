@@ -2578,12 +2578,12 @@ class _ReceptionWorkspaceContentState
           _section == ReceptionDeskSection.highPriority
           ? ReceptionHighPriorityAtomPermissions.frontDesk
           : ReceptionDeskQueueAtomPermissions.frontDesk;
-      final bool? changed = await showReceptionQueueActionsDialog(
+      final QueueActionsOutcome? outcome = await showReceptionQueueActionsDialog(
         context: context,
         entry: row.queueEntry!,
         actionRequirement: queueHubRequirement,
       );
-      if (changed == true && mounted) {
+      if (outcome != null && outcome.didChange && mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));

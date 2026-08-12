@@ -18,22 +18,35 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart'
-    show opdFrontDeskActionRequirement, showFlowActionsDialog;
+    show opdFrontDeskActionRequirement;
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
+
+/// Result of [showQueueActionsDialog].
+///
+/// When [startedFlow] is set, the caller should open Flow Actions with that
+/// summary (queue hub closes first so clinical actions are not nested under it).
+final class QueueActionsOutcome {
+  const QueueActionsOutcome({this.changed = false, this.startedFlow});
+
+  final bool changed;
+  final OpdFlowSummary? startedFlow;
+
+  bool get didChange => changed || startedFlow != null;
+}
 
 /// Shared queue status / doctor / prioritize actions for OPD and Reception.
 ///
 /// Set [allowStartEncounter] on OPD so staff can open the clinical Flow Actions
 /// hub (vitals, triage routing, doctor/nurse work) after starting the visit.
-Future<bool?> showQueueActionsDialog({
+Future<QueueActionsOutcome?> showQueueActionsDialog({
   required BuildContext context,
   required OpdQueueEntry entry,
   AccessRequirement actionRequirement = opdFrontDeskActionRequirement,
   AccessRequirement startEncounterRequirement = opdStartEncounterRequirement,
   bool allowStartEncounter = false,
 }) {
-  return showAppDialog<bool>(
+  return showAppDialog<QueueActionsOutcome>(
     context: context,
     barrierDismissible: false,
     builder: (_) => QueueActionsDialog(
@@ -178,7 +191,7 @@ class QueueActionsDialog extends ConsumerWidget {
         AppButton.close(
           label: l10n.commonCancelActionLabel,
           leadingIcon: AppActionIcons.cancel,
-          onPressed: () => Navigator.of(context).pop(false),
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ],
     );
@@ -186,6 +199,7 @@ class QueueActionsDialog extends ConsumerWidget {
 
   Future<void> _openStartEncounter(BuildContext context, WidgetRef ref) async {
     final AppLocalizations l10n = context.l10n;
+    OpdFlowDetail? startedDetail;
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -195,34 +209,43 @@ class QueueActionsDialog extends ConsumerWidget {
         submitLabel: l10n.opdStartEncounterAction,
         submitLeadingIcon: AppActionIcons.personAdd,
         icon: const Icon(AppActionIcons.personAdd),
-        onConfirm: () => ref
-            .read(opdWorkspaceControllerProvider.notifier)
-            .startOpdFromQueue(entry),
+        onConfirm: () async {
+          final Result<OpdFlowDetail> result = await ref
+              .read(opdWorkspaceControllerProvider.notifier)
+              .startOpdFromQueue(entry);
+          return result.when(
+            success: (OpdFlowDetail detail) {
+              startedDetail = detail;
+              return null;
+            },
+            failure: (AppFailure failure) => failure,
+          );
+        },
       ),
     );
     if (confirmed != true || !context.mounted) {
       return;
     }
 
-    final OpdFlowSummary? startedFlow = ref
-        .read(opdWorkspaceControllerProvider)
-        .asData
-        ?.value
-        .when(
-          success: (OpdWorkspaceState state) => state.selectedFlow?.summary,
-          failure: (_) => null,
-        );
+    // Prefer the mutation payload — selectedFlow can be missing after a silent
+    // workspace refresh, which previously made Start encounter look like a no-op.
+    final OpdFlowSummary? startedFlow =
+        startedDetail?.summary ??
+        ref
+            .read(opdWorkspaceControllerProvider)
+            .asData
+            ?.value
+            .when(
+              success: (OpdWorkspaceState state) => state.selectedFlow?.summary,
+              failure: (_) => null,
+            );
 
-    if (startedFlow != null && context.mounted) {
-      await showFlowActionsDialog(
-        context: context,
-        flow: startedFlow,
-        printActionLabel: l10n.commonPrintActionLabel,
-      );
+    if (!context.mounted) {
+      return;
     }
-    if (context.mounted) {
-      Navigator.of(context).pop(true);
-    }
+    Navigator.of(context).pop(
+      QueueActionsOutcome(changed: true, startedFlow: startedFlow),
+    );
   }
 
   Future<void> _openPrioritize(BuildContext context, WidgetRef ref) async {
@@ -244,7 +267,7 @@ class QueueActionsDialog extends ConsumerWidget {
       ),
     );
     if (changed == true && context.mounted) {
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop(const QueueActionsOutcome(changed: true));
     }
   }
 
@@ -255,7 +278,7 @@ class QueueActionsDialog extends ConsumerWidget {
       builder: (_) => _ChangeQueueStatusDialog(entry: entry),
     );
     if (changed == true && context.mounted) {
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop(const QueueActionsOutcome(changed: true));
     }
   }
 
@@ -266,7 +289,7 @@ class QueueActionsDialog extends ConsumerWidget {
       builder: (_) => _AssignQueueDoctorDialog(entry: entry),
     );
     if (changed == true && context.mounted) {
-      Navigator.of(context).pop(true);
+      Navigator.of(context).pop(const QueueActionsOutcome(changed: true));
     }
   }
 }

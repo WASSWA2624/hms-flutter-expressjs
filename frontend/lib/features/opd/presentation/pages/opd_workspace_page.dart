@@ -2855,16 +2855,31 @@ Future<void> _openOpdTableItemActions(
 
   final OpdQueueEntry? queueEntry = item.queueEntry;
   if (queueEntry != null) {
-    final bool? changed = await showQueueActionsDialog(
+    final QueueActionsOutcome? outcome = await showQueueActionsDialog(
       context: context,
       entry: queueEntry,
       allowStartEncounter: true,
     );
-    if (changed == true && context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+    if (!context.mounted || outcome == null || !outcome.didChange) {
+      return;
     }
+    final OpdFlowSummary? startedFlow = outcome.startedFlow;
+    if (startedFlow != null) {
+      final bool? flowChanged = await showFlowActionsDialog(
+        context: context,
+        flow: startedFlow,
+        printActionLabel: context.l10n.commonPrintActionLabel,
+      );
+      if (flowChanged == true && context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
+      }
+      return;
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(context.l10n.opdSavedMessage)));
     return;
   }
 

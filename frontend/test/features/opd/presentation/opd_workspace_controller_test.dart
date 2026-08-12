@@ -1730,11 +1730,11 @@ void main() {
         addTearDown(container.dispose);
         await container.read(opdWorkspaceControllerProvider.future);
 
-        final AppFailure? failure = await container
+        final Result<OpdFlowDetail> result = await container
             .read(opdWorkspaceControllerProvider.notifier)
             .startOpdFromQueue(queued);
 
-        expect(failure, isNull);
+        expect(result.isSuccess, isTrue);
         expect(submittedPayload, containsPair('arrival_mode', 'WALK_IN'));
         expect(submittedPayload, containsPair('visit_queue_id', 'QUE000001'));
         expect(submittedPayload, containsPair('provider_user_id', 'USR000001'));
@@ -1746,6 +1746,10 @@ void main() {
         expect(
           _workspaceState(container).flows.items,
           contains(detail.summary),
+        );
+        expect(
+          _workspaceState(container).selectedFlow?.summary.id,
+          detail.summary.id,
         );
       },
     );
@@ -1771,11 +1775,11 @@ void main() {
       addTearDown(container.dispose);
       await container.read(opdWorkspaceControllerProvider.future);
 
-      final AppFailure? failure = await container
+      final Result<OpdFlowDetail> result = await container
           .read(opdWorkspaceControllerProvider.notifier)
           .startOpdFromQueue(queued);
 
-      expect(failure, isNotNull);
+      expect(result.isFailure, isTrue);
       expect(
         _workspaceState(container).queueEntries.items.single,
         same(queued),

@@ -6,13 +6,13 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_queue_actions_dialog.dart';
 
 /// Opens reception queue actions through the shared OPD queue action hub.
-Future<bool?> showReceptionQueueActionsDialog({
+Future<QueueActionsOutcome?> showReceptionQueueActionsDialog({
   required BuildContext context,
   required OpdQueueEntry entry,
   AccessRequirement actionRequirement =
       ReceptionDeskQueueAtomPermissions.frontDesk,
 }) {
-  return showAppDialog<bool>(
+  return showAppDialog<QueueActionsOutcome>(
     context: context,
     barrierDismissible: false,
     builder: (_) => ReceptionQueueActionsDialog(
