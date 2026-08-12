@@ -54,6 +54,7 @@ class OpdWorkspacePage extends ConsumerWidget {
         loadingBody: l10n.opdLoadingBody,
         maxWidth: PageMaxWidth.dataHeavy,
         centerVertically: false,
+        scrollable: false,
         onRetry: () {
           ref.read(opdWorkspaceControllerProvider.notifier).refresh();
         },
@@ -153,55 +154,54 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
         spacing: Theme.of(context).spacing,
       ),
       maxWidth: PageMaxWidth.dataHeavy,
-      child: SizedBox(
-        width: double.infinity,
-        child: ValueListenableBuilder<_OpdTableFilter>(
-          valueListenable: _filterNotifier,
-          builder: (BuildContext context, _OpdTableFilter filter, _) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                AppTabStrip(
-                  tabs: <AppTabItem>[
-                    for (final OpdWorkspaceSection section in visibleSections)
-                      AppTabItem(
-                        id: section.name,
-                        icon: _opdSectionIcon(section),
-                        label: _opdSectionLabel(l10n, section),
-                        count: section == OpdWorkspaceSection.followUps
-                            ? (_section == OpdWorkspaceSection.followUps &&
-                                      _followUpsNarrowedCount != null
-                                  ? _followUpsNarrowedCount
-                                  : ref.watch(
-                                      followUpTabCountProvider(
-                                        const FollowUpWorklistScope(
-                                          encounterType: 'OPD',
-                                        ),
+      scrollable: false,
+      child: ValueListenableBuilder<_OpdTableFilter>(
+        valueListenable: _filterNotifier,
+        builder: (BuildContext context, _OpdTableFilter filter, _) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              AppTabStrip(
+                tabs: <AppTabItem>[
+                  for (final OpdWorkspaceSection section in visibleSections)
+                    AppTabItem(
+                      id: section.name,
+                      icon: _opdSectionIcon(section),
+                      label: _opdSectionLabel(l10n, section),
+                      count: section == OpdWorkspaceSection.followUps
+                          ? (_section == OpdWorkspaceSection.followUps &&
+                                    _followUpsNarrowedCount != null
+                                ? _followUpsNarrowedCount
+                                : ref.watch(
+                                    followUpTabCountProvider(
+                                      const FollowUpWorklistScope(
+                                        encounterType: 'OPD',
                                       ),
-                                    ))
-                            : _opdSectionCount(
-                                state,
-                                section,
-                                allItems,
-                                activeSection: _section,
-                                filter: filter,
-                              ),
-                        countTone: _opdSectionCountTone(section),
-                      ),
-                  ],
-                  selectedId: _section.name,
-                  onTabTapped: (String tabId) {
-                    for (final OpdWorkspaceSection section
-                        in visibleSections) {
-                      if (section.name == tabId) {
-                        _handleTabChanged(section);
-                        break;
-                      }
+                                    ),
+                                  ))
+                          : _opdSectionCount(
+                              state,
+                              section,
+                              allItems,
+                              activeSection: _section,
+                              filter: filter,
+                            ),
+                      countTone: _opdSectionCountTone(section),
+                    ),
+                ],
+                selectedId: _section.name,
+                onTabTapped: (String tabId) {
+                  for (final OpdWorkspaceSection section in visibleSections) {
+                    if (section.name == tabId) {
+                      _handleTabChanged(section);
+                      break;
                     }
-                  },
-                ),
-                SizedBox(height: theme.spacing.sm),
-                ValueListenableBuilder<AppPageRequest>(
+                  }
+                },
+              ),
+              SizedBox(height: theme.spacing.sm),
+              Expanded(
+                child: ValueListenableBuilder<AppPageRequest>(
                   valueListenable: _tablePageNotifier,
                   builder:
                       (
@@ -230,10 +230,10 @@ class _OpdWorkspaceContentState extends ConsumerState<_OpdWorkspaceContent> {
                         );
                       },
                 ),
-              ],
-            );
-          },
-        ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -2164,6 +2164,29 @@ String _opdSectionQueryValue(OpdWorkspaceSection section) {
   };
 }
 
+({String title, String body}) _opdSectionEmptyCopy(
+  AppLocalizations l10n,
+  OpdWorkspaceSection section,
+) {
+  return switch (section) {
+    OpdWorkspaceSection.arrivals => (
+      title: l10n.opdNoArrivalsTitle,
+      body: l10n.opdNoArrivalsBody,
+    ),
+    OpdWorkspaceSection.queue => (
+      title: l10n.opdNoQueueTitle,
+      body: l10n.opdNoQueueBody,
+    ),
+    OpdWorkspaceSection.all ||
+    OpdWorkspaceSection.triage ||
+    OpdWorkspaceSection.active ||
+    OpdWorkspaceSection.followUps => (
+      title: l10n.opdNoFlowsTitle,
+      body: l10n.opdNoFlowsBody,
+    ),
+  };
+}
+
 List<_OpdTableColumnId> _opdDefaultColumnsForSection(
   OpdWorkspaceSection section,
 ) {
@@ -2449,14 +2472,17 @@ class _OpdMainTable extends ConsumerWidget {
           },
         ),
         isLoading: isLoading,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-          title: l10n.opdNoFlowsTitle,
-          body: l10n.opdNoFlowsBody,
-          icon: Icons.medical_services_outlined,
-          minHeight: 260,
-        ),
+        emptyBuilder: (_) {
+          final ({String title, String body}) empty = _opdSectionEmptyCopy(
+            l10n,
+            section,
+          );
+          return AppWorkspaceStatePanel.empty(
+            title: empty.title,
+            body: empty.body,
+            icon: Icons.medical_services_outlined,
+          );
+        },
         columns: <AppListTableColumn<_OpdTableItem>>[
           for (final _OpdTableColumnId column in defaultColumns)
             _opdDataColumn(context, column, state: state),

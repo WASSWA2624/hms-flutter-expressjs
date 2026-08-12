@@ -658,6 +658,12 @@ void main() {
 
       expect(find.byType(AppTabStrip), findsOneWidget);
       expect(find.byType(AppWorkspaceStatePanel), findsOneWidget);
+      expect(find.text('No arrivals'), findsOneWidget);
+      expect(
+        find.text('Scheduled and checked-in patients will appear here.'),
+        findsOneWidget,
+      );
+      expect(find.text('No OPD encounters'), findsNothing);
     });
 
     testWidgets('authorized error/retry remains observable', (
@@ -865,6 +871,25 @@ void main() {
         await tester.tap(find.text('Close'));
         await tester.pumpAndSettle();
         expect(find.text('ADVANCED FILTERS'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'main-tab Arrivals table is bounded (no shrinkWrap) with pinned footer chrome',
+      (WidgetTester tester) async {
+        await _pumpArrivalsTab(
+          tester,
+          repository: repository,
+          accessPolicy: _readerPolicy(),
+        );
+
+        final Finder tableFinder = find.byWidgetPredicate(
+          (Widget widget) => widget is AppListTable,
+        );
+        expect(tableFinder, findsOneWidget);
+        final dynamic table = tester.widget(tableFinder);
+        expect(table.shrinkWrap, isFalse);
+        expect(find.textContaining('of'), findsWidgets);
       },
     );
 

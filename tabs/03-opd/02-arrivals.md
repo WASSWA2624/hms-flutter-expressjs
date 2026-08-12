@@ -26,6 +26,7 @@ Same board toolbar: **Filters → Settings → Export → Print → Start OPD**
 - Default columns (5): Patient name, Visit type, Arrival time, Status, Next action (Next action **omitted when unauthorized** via `opdBoardShowsNextActionColumn`)
 - Column choices: Arrival mode, Doctor (provider), Wait time, OPD encounter, Category
 - Mobile: arrival mode, waiting time, status; optional next-action trailing
+- Main-tab viewport (`tables.mdc`): bounded height under `Expanded` (desk `ResponsivePage` / `AsyncStateScaffold` `scrollable: false`); **no** `shrinkWrap` / `NeverScrollableScrollPhysics`; horizontal overflow scrolls; footer stays pinned; empty-row padding via `AppListTable` defaults
 
 ## 4. Advanced filters / search fields
 
@@ -61,7 +62,8 @@ Appointment schedule fields; encounter arrival/provider form; cancel reason.
 
 ## 10. Loading / empty / error / success
 
-Shared board empty/success/loading. Forbidden: `routeForbiddenTitle` when board read denied.
+- Empty: `opdNoArrivalsTitle` / `opdNoArrivalsBody` (not encounter empty copy)
+- Shared board success/loading. Forbidden: `routeForbiddenTitle` when board read denied.
 
 ## 11. RBAC / ABAC
 

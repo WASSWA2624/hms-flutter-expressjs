@@ -16,7 +16,8 @@ Make the Arrivals desk section fully compliant with `tabs.mdc`, `tables.mdc`, `d
 8. Preserve row-select → detail/actions hub with **generic titles**; keep nested mutations in-desk via shared dialogs/forms; omit unauthorized nested actions (`dialogs.mdc`, `forms.mdc`, `screens.mdc`). Inventoried dialogs to keep compliant: Appointment Actions; Encounter; Nested reschedule / cancel.
 9. Reuse shared form fields and validators; hide tenant/facility/session context the operator already knows; reset dependent fields when parents change (`forms.mdc`).
 10. Any print entry from this tab (toolbar or nested hub) must use trigger label `Print` and shared preview (`printing.mdc`).
-11. Cover empty, loading, error/retry, success, and validation feedback. Refresh table + all affected tab counts after mutations (`prompt.mdc`, `tabs.mdc`).
+11. Cover empty, loading, error/retry, success, and validation feedback. Empty copy must use Arrivals strings (`opdNoArrivalsTitle` / `opdNoArrivalsBody`), not encounter empty copy. Refresh table + all affected tab counts after mutations (`prompt.mdc`, `tabs.mdc`).
+12. Main-tab Arrivals list must follow `tables.mdc` viewport rules: bounded height under the strip (`Expanded` / desk `scrollable: false`), no `shrinkWrap` / page-nested vertical scroll for the main table, horizontal overflow scrolls, footer remains visible, empty-row padding via `AppListTable` defaults.
 
 ## Constraints
 
@@ -33,12 +34,14 @@ Make the Arrivals desk section fully compliant with `tabs.mdc`, `tables.mdc`, `d
 - [x] Advanced filters share the table/count model and include Close (`Requirement 7`).
 - [x] Unauthorized tab and actions are absent (not disabled).
 - [x] Dialogs/forms keep generic titles and shared field reuse.
+- [x] Empty state uses Arrivals copy (`Requirement 11`).
+- [x] Main-tab viewport satisfies Requirement 12 (bounded, non-shrinkWrap, pinned footer).
 - [x] `tabs/03-opd/02-arrivals.md` updated to match.
 
 ## Verification
 
-- Tests: tab omit gate; filtered/authoritative count; toolbar Print/Export presence matrix; omit-when-unauthorized for strip and row actions.
-- Manual: primary happy-path mutation(s) remain in-desk; light/dark + narrow viewport.
+- Tests: tab omit gate; filtered/authoritative count; toolbar Print/Export presence matrix; omit-when-unauthorized for strip and row actions; Arrivals empty copy; main-tab non-shrinkWrap table.
+- Manual: primary happy-path mutation(s) remain in-desk; light/dark + narrow viewport; short lists show empty-row padding with footer visible.
 
 ## Relevant Files
 
