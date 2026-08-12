@@ -14,6 +14,8 @@ void main() {
       expect(config.environment, AppEnvironment.development);
       expect(config.apiBaseUrl, Uri.parse('http://localhost:8080'));
       expect(config.apiTimeout, const Duration(seconds: 30));
+      expect(AppConfig.parseApiTimeoutSeconds('120'), 120);
+      expect(AppConfig.parseApiTimeoutSeconds(''), 30);
       expect(config.logLevel, AppLogLevel.debug);
       expect(config.appName, AppConfig.defaultAppName);
       expect(config.appLogoUrl, AppConfig.defaultAppLogoUrl);

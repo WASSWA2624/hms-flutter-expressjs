@@ -3,12 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/ai/ai_models.dart';
 import 'package:hosspi_hms/core/ai/ai_repository.dart';
 import 'package:hosspi_hms/core/ai/ai_repository_impl.dart';
+import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/shared/components/app_speech_ai.dart';
 
+final class AppClinicalNoteAiFormatResult {
+  const AppClinicalNoteAiFormatResult({this.text, this.failure});
+
+  final String? text;
+  final AppFailure? failure;
+}
+
 /// Formats a clinical note draft via backend `clinical_note_format`.
 typedef AppClinicalNoteAiFormatter =
-    Future<String?> Function({
+    Future<AppClinicalNoteAiFormatResult> Function({
       required String text,
       required AppSpeechAiAbort abort,
       String? locale,
@@ -32,29 +40,13 @@ AppClinicalNoteAiFormatter createAiClinicalNoteFormatter(
   }) async {
     final String trimmed = text.trim();
     if (trimmed.isEmpty) {
-      return null;
+      return const AppClinicalNoteAiFormatResult();
     }
 
     final CancelToken cancelToken = CancelToken();
     abort.attach(() {
       cancelToken.cancel();
     });
-
-    // Soft status gate: only skip when the backend explicitly reports disabled.
-    // A stale ready:false cache or a transient status failure must not block
-    // the actual format call (local models can take 30–90s).
-    repository.invalidateStatusCache();
-    final Result<AiStatus> statusResult = await repository.status(
-      cancelToken: cancelToken,
-      forceRefresh: true,
-    );
-    final bool explicitlyDisabled = statusResult.when(
-      success: (AiStatus status) => !status.enabled,
-      failure: (_) => false,
-    );
-    if (explicitlyDisabled || cancelToken.isCancelled) {
-      return null;
-    }
 
     final Result<AiTaskResult> taskResult = await repository.runTask(
       'clinical_note_format',
@@ -66,14 +58,23 @@ AppClinicalNoteAiFormatter createAiClinicalNoteFormatter(
       cancelToken: cancelToken,
     );
 
+    if (cancelToken.isCancelled) {
+      return const AppClinicalNoteAiFormatResult();
+    }
+
     return taskResult.when(
       success: (AiTaskResult result) {
         if (result.degraded) {
-          return null;
+          return const AppClinicalNoteAiFormatResult();
         }
-        return result.formattedText;
+        final String? formatted = result.formattedText;
+        if (formatted == null) {
+          return const AppClinicalNoteAiFormatResult();
+        }
+        return AppClinicalNoteAiFormatResult(text: formatted);
       },
-      failure: (_) => null,
+      failure: (AppFailure failure) =>
+          AppClinicalNoteAiFormatResult(failure: failure),
     );
   };
 }

@@ -43,6 +43,7 @@ const runTask = async (taskKey, rawInput, { signal, provider } = {}) => {
   }
 
   const activeProvider = provider || createAiProvider();
+  const startedAt = Date.now();
 
   try {
     const completion = await activeProvider.complete({
@@ -55,9 +56,18 @@ const runTask = async (taskKey, rawInput, { signal, provider } = {}) => {
     });
     const text = String(completion?.text || '').trim();
     if (!text) {
+      logger.warn('AI task empty completion', {
+        task_key: task.key,
+        elapsed_ms: Date.now() - startedAt,
+      });
       return degradedResult(task, input);
     }
 
+    logger.info('AI task completed', {
+      task_key: task.key,
+      elapsed_ms: Date.now() - startedAt,
+      degraded: false,
+    });
     return {
       task_key: task.key,
       output: task.outputParser(text, input),
@@ -68,6 +78,7 @@ const runTask = async (taskKey, rawInput, { signal, provider } = {}) => {
   } catch (error) {
     logger.warn('AI task failed open', {
       task_key: task.key,
+      elapsed_ms: Date.now() - startedAt,
       reason: error?.name === 'AbortError' ? 'timeout_or_cancelled' : 'provider_error',
     });
     return degradedResult(task, input);

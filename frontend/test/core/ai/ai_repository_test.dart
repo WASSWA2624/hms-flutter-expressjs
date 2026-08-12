@@ -179,13 +179,14 @@ void main() {
       AiRepositoryImpl(remoteDataSource: remote),
     );
 
-    final String? formatted = await formatter(
+    final AppClinicalNoteAiFormatResult formatted = await formatter(
       text: 'pt c/o fever since yesterday',
       abort: AppSpeechAiAbort(),
       hint: 'Clinical note',
     );
 
-    expect(formatted, 'The patient reports fever since yesterday.');
+    expect(formatted.text, 'The patient reports fever since yesterday.');
+    expect(formatted.failure, isNull);
     expect(remote.lastTaskKey, 'clinical_note_format');
     expect(remote.lastBody?['text'], 'pt c/o fever since yesterday');
     expect(remote.lastBody?['hint'], 'Clinical note');
@@ -215,23 +216,25 @@ void main() {
       AiRepositoryImpl(remoteDataSource: remote),
     );
 
-    final String? formatted = await formatter(
+    final AppClinicalNoteAiFormatResult formatted = await formatter(
       text: 'pt febrile',
       abort: AppSpeechAiAbort(),
     );
 
-    expect(formatted, 'Patient is febrile.');
+    expect(formatted.text, 'Patient is febrile.');
     expect(remote.taskCalls, 1);
+    expect(remote.statusCalls, 0);
   });
 
-  test('clinical note formatter skips when AI is disabled', () async {
+  test('clinical note formatter returns null when the task is degraded', () async {
     final _FakeAiRemoteDataSource remote = _FakeAiRemoteDataSource(
-      statusResult: const Result.success(
-        AiStatus(
-          enabled: false,
-          provider: 'ollama',
-          model: 'llama3.2:3b',
-          ready: false,
+      taskResult: const Result.success(
+        AiTaskResult(
+          taskKey: 'clinical_note_format',
+          output: <String, Object?>{
+            'formatted_text': 'pt febrile',
+          },
+          degraded: true,
         ),
       ),
     );
@@ -239,13 +242,14 @@ void main() {
       AiRepositoryImpl(remoteDataSource: remote),
     );
 
-    final String? formatted = await formatter(
+    final AppClinicalNoteAiFormatResult formatted = await formatter(
       text: 'pt febrile',
       abort: AppSpeechAiAbort(),
     );
 
-    expect(formatted, isNull);
-    expect(remote.taskCalls, 0);
+    expect(formatted.text, isNull);
+    expect(formatted.failure, isNull);
+    expect(remote.taskCalls, 1);
   });
 
   test('runTask rejects a blank task key', () async {

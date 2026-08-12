@@ -391,7 +391,7 @@ class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
       _aiFeedback = null;
     });
 
-    final String? formatted = await formatter(
+    final AppClinicalNoteAiFormatResult outcome = await formatter(
       text: source,
       abort: abort,
       hint: widget.aiFormatHint ?? widget.labelText,
@@ -409,9 +409,14 @@ class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
       }
     });
 
+    final String? formatted = outcome.text;
     if (!stillOwned || formatted == null || formatted.trim().isEmpty) {
-      if (stillOwned && formatted == null) {
-        setState(() => _aiFeedback = l10n.commonAiFormatUnavailableMessage);
+      if (stillOwned) {
+        setState(() {
+          _aiFeedback = outcome.failure != null
+              ? l10n.failureMessage(outcome.failure!)
+              : l10n.commonAiFormatUnavailableMessage;
+        });
       }
       return;
     }

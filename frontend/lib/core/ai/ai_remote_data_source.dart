@@ -35,6 +35,9 @@ final class DioAiRemoteDataSource implements AiRemoteDataSource {
         },
       ),
       cancelToken: cancelToken,
+      options: Options(
+        extra: const <String, Object?>{'cache_bypass': true},
+      ),
     );
   }
 
@@ -45,13 +48,13 @@ final class DioAiRemoteDataSource implements AiRemoteDataSource {
     CancelToken? cancelToken,
   }) {
     final bool longRunning = taskKey.trim() == 'clinical_note_format';
-    // Local small-model rewrites commonly take 30–60s; the app-wide API
-    // timeout is 30s in development, so this request must override it.
+    // Browser XHR aborts when connectTimeout elapses before response headers.
+    // The backend only writes headers after Ollama finishes (often 30–60s),
+    // so connect and receive must both be raised for this task.
     final Options? longRunningOptions = longRunning
         ? Options(
-            sendTimeout: const Duration(seconds: 120),
+            connectTimeout: const Duration(seconds: 120),
             receiveTimeout: const Duration(seconds: 120),
-            // Ensure Dio treats this as a distinct long-poll style call.
             extra: const <String, Object?>{'ai_long_running': true},
           )
         : null;

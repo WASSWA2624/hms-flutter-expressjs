@@ -14,6 +14,16 @@ final class AppConfig {
   });
 
   static const int defaultApiTimeoutSeconds = 30;
+
+  /// Parses `API_TIMEOUT_SECONDS` from dart-defines / JSON env files.
+  static int parseApiTimeoutSeconds(String raw) {
+    final int? parsed = int.tryParse(raw.trim());
+    if (parsed == null || parsed <= 0) {
+      return defaultApiTimeoutSeconds;
+    }
+    return parsed;
+  }
+
   static const String defaultAppName = 'HOSSPI Hospital Management System';
   static const String defaultAppLogoUrl = 'assets/logos/logo.png';
 
@@ -38,10 +48,10 @@ final class AppConfig {
   factory AppConfig.fromEnvironment() {
     const environmentName = String.fromEnvironment('APP_ENV');
     const apiBaseUrl = String.fromEnvironment('API_BASE_URL');
-    const apiTimeoutSeconds = int.fromEnvironment(
-      'API_TIMEOUT_SECONDS',
-      defaultValue: AppConfig.defaultApiTimeoutSeconds,
-    );
+    // dart-define-from-file JSON values are always strings, so
+    // int.fromEnvironment never sees a numeric define and would stay at 30s.
+    const apiTimeoutRaw = String.fromEnvironment('API_TIMEOUT_SECONDS');
+    final int apiTimeoutSeconds = parseApiTimeoutSeconds(apiTimeoutRaw);
     const logLevelName = String.fromEnvironment(
       'LOG_LEVEL',
       defaultValue: 'info',

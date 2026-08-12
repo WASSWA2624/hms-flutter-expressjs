@@ -658,7 +658,9 @@ void main() {
           }) async {
             formatCalls += 1;
             expect(text, 'pt c/o fever since yesterday');
-            return 'The patient reports fever since yesterday.';
+            return const AppClinicalNoteAiFormatResult(
+              text: 'The patient reports fever since yesterday.',
+            );
           },
     );
 
