@@ -135,4 +135,37 @@ void main() {
     );
     expect(billingPriceBookCountTone(), AppTabCountTone.info);
   });
+
+  test('price book badge uses active count unfiltered and filtered total when narrowed', () {
+    expect(
+      billingPriceBookTabCount(
+        hasActiveFilters: false,
+        filteredLength: 3,
+        pageItemLength: 3,
+        pageTotalItemCount: 3,
+        activeOnPage: 2,
+      ),
+      2,
+    );
+    expect(
+      billingPriceBookTabCount(
+        hasActiveFilters: true,
+        filteredLength: 1,
+        pageItemLength: 1,
+        pageTotalItemCount: 1,
+        activeOnPage: 2,
+      ),
+      1,
+    );
+    expect(
+      billingPriceBookTabCount(
+        hasActiveFilters: true,
+        filteredLength: 2,
+        pageItemLength: 5,
+        pageTotalItemCount: 5,
+        activeOnPage: 4,
+      ),
+      2,
+    );
+  });
 }

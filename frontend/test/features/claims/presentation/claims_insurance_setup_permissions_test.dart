@@ -186,6 +186,52 @@ void main() {
       expect(find.textContaining('Insurer API'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
       expect(find.byType(AppListTable<ClaimsQueueItem>), findsNothing);
+      // Catalog hub: omit count badge and queue table chrome.
+      final AppTabStrip strip = tester.widget<AppTabStrip>(
+        find.byType(AppTabStrip),
+      );
+      final AppTabItem setup = strip.tabs.firstWhere(
+        (AppTabItem tab) => tab.id == ClaimsDeskSection.insuranceSetup.name,
+      );
+      expect(setup.count, isNull);
+      expect(find.byTooltip('Export'), findsNothing);
+      expect(find.byTooltip('Print'), findsNothing);
+      expect(find.byTooltip('Filters'), findsNothing);
+      expect(find.byTooltip('Prepare claim'), findsNothing);
+      expect(find.byTooltip('Request authorization'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Insurance Setup catalog hub: no table chrome; create dialogs stay in-desk',
+    (WidgetTester tester) async {
+      await _pumpInsuranceSetupTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+          },
+        ),
+      );
+
+      expect(find.byType(AppListTable<ClaimsQueueItem>), findsNothing);
+      final AppTabStrip strip = tester.widget<AppTabStrip>(
+        find.byType(AppTabStrip),
+      );
+      final AppTabItem setup = strip.tabs.firstWhere(
+        (AppTabItem tab) => tab.id == ClaimsDeskSection.insuranceSetup.name,
+      );
+      expect(setup.count, isNull);
+      expect(find.byTooltip('Export'), findsNothing);
+      expect(find.byTooltip('Print'), findsNothing);
+
+      await tester.tap(find.textContaining('Add company'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
+      // Action/surface title — not a concrete company identity (dialogs.mdc).
+      expect(find.textContaining('ADD'), findsWidgets);
     },
   );
 

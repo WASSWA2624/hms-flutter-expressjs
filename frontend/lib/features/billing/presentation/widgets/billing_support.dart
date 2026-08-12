@@ -172,6 +172,25 @@ int billingQueueTabCount(
 /// Price book strip tone — non-urgent catalog scope (`tabs.mdc` info default).
 AppTabCountTone billingPriceBookCountTone() => AppTabCountTone.info;
 
+/// Price book strip badge: unfiltered = active catalog count on the loaded
+/// page; when search/filters narrow the tab, badge = filtered total (`tabs.mdc`).
+int billingPriceBookTabCount({
+  required bool hasActiveFilters,
+  required int filteredLength,
+  required int pageItemLength,
+  int? pageTotalItemCount,
+  required int activeOnPage,
+}) {
+  if (hasActiveFilters) {
+    final bool clientShrunk = filteredLength != pageItemLength;
+    if (clientShrunk) {
+      return filteredLength;
+    }
+    return pageTotalItemCount ?? filteredLength;
+  }
+  return activeOnPage;
+}
+
 String billingPatientName(BuildContext context, BillingWorkItem item) {
   final String name = item.patientDisplayName?.trim() ?? '';
   return name.isEmpty ? context.l10n.billingUnknownPatient : name;

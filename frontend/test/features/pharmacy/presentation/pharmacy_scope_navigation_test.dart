@@ -17,6 +17,7 @@ PharmacyWorkspaceState _state({
   int expiredRows = 2,
   int lowStockRows = 7,
   int outOfStockRows = 3,
+  int? inventoryTotalItemCount,
 }) {
   return PharmacyWorkspaceState(
     query: const PharmacyWorkbenchQuery(),
@@ -46,11 +47,12 @@ PharmacyWorkspaceState _state({
       request: AppPageRequest(),
     ),
     inventoryQuery: const PharmacyInventoryStockQuery(),
-    inventoryWorkbench: const PharmacyInventoryWorkbench(
-      summary: PharmacyInventoryStockSummary(),
+    inventoryWorkbench: PharmacyInventoryWorkbench(
+      summary: const PharmacyInventoryStockSummary(),
       stocks: AppPage<PharmacyInventoryStock>(
-        items: <PharmacyInventoryStock>[],
-        request: AppPageRequest(),
+        items: const <PharmacyInventoryStock>[],
+        request: const AppPageRequest(),
+        totalItemCount: inventoryTotalItemCount,
       ),
     ),
     suppliers: AppPage<PharmacySupplier>(
@@ -142,6 +144,35 @@ void main() {
           activeSection: PharmacyDeskSection.queue,
         ),
         3,
+      );
+    });
+
+    test('active stock-alert tab uses filtered inventory totalItemCount', () {
+      final PharmacyWorkspaceState state = _state(
+        expiringSoonRows: 6,
+        lowStockRows: 7,
+        inventoryTotalItemCount: 2,
+      );
+
+      expect(
+        pharmacySectionTabCount(
+          state,
+          PharmacyDeskSection.nearExpiry,
+          activeSection: PharmacyDeskSection.nearExpiry,
+        ),
+        2,
+      );
+      expect(
+        pharmacySectionTabCount(
+          state,
+          PharmacyDeskSection.lowStock,
+          activeSection: PharmacyDeskSection.nearExpiry,
+        ),
+        7,
+      );
+      expect(
+        pharmacySectionTabCount(state, PharmacyDeskSection.nearExpiry),
+        6,
       );
     });
   });

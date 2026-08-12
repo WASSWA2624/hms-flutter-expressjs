@@ -781,3 +781,117 @@ abstract final class PharmacyPendingPaymentAtomPermissions {
       pharmacyWorkspaceCatalogEntryRequirement;
   static const AccessRequirement read = pharmacyPendingPaymentReadRequirement;
 }
+
+/// Inventory: Catalog and stock desk (`PharmacyDeskSection.catalog`) with nested
+/// Drugs / Formulary / Inventory / Storage / Shelves sub-tabs. Management hub
+/// (no strip count). Nested selection pickers keep `enableExport: false`.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Catalog desk strip tab | navigate | browse ∩ `pharmacy:read` |
+/// | Nested sub-tab browse | read chrome | browse ∩ |
+/// | Search / Filters / Settings / pagination | read chrome | browse ∩ |
+/// | Export / Print (printable catalog tables) | export | ∩ `evidence:export` |
+/// | Empty / loading / error / retry | read chrome | browse ∩ |
+/// | Add / Edit / Delete / bulk | create / update / delete | catalog write ∪ |
+/// | Pharmacy price fields | update | ∩ `pricing:pharmacy_write` |
+/// | Facility price fields | update | ∩ `pricing:facility_write` (+ billing-payments) |
+/// | Route entry (deep link) | navigate | ∪ pharmacy\|operations read |
+abstract final class PharmacyCatalogAtomPermissions {
+  static const AccessRequirement tab = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement listChrome = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement search = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement filters = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement settings = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement export = pharmacyWorkspaceExportRequirement;
+  static const AccessRequirement print = pharmacyWorkspacePrintRequirement;
+  static const AccessRequirement pagination = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement empty = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement loading = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement retry = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement create = pharmacyCatalogWriteRequirement;
+  static const AccessRequirement update = pharmacyCatalogWriteRequirement;
+  static const AccessRequirement delete = pharmacyCatalogWriteRequirement;
+  static const AccessRequirement write = pharmacyCatalogWriteRequirement;
+  static const AccessRequirement browse = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement priceSource =
+      pharmacyPriceSourcePharmacyRequirement;
+  static const AccessRequirement priceSourceFacility =
+      pharmacyPriceSourceFacilityRequirement;
+  static const AccessRequirement routeEntry =
+      pharmacyWorkspaceRouteEntryRequirement;
+  static const AccessRequirement catalogEntry =
+      pharmacyWorkspaceCatalogEntryRequirement;
+}
+
+/// Inventory: Suppliers desk (`PharmacyDeskSection.suppliers`). Authoritative
+/// count from `state.suppliers.totalItemCount` (filtered query total).
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Suppliers strip tab / count | navigate | browse ∩ `pharmacy:read` |
+/// | Search / Filters / Settings / pagination | read chrome | browse ∩ |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
+/// | Empty / loading / error / retry | read chrome | browse ∩ |
+/// | Create / Edit / Delete | create / update / delete | catalog write ∪ |
+/// | Row select → supplier details | read / navigate | browse ∩ |
+/// | Route entry (deep link) | navigate | ∪ pharmacy\|operations read |
+abstract final class PharmacySuppliersAtomPermissions {
+  static const AccessRequirement tab = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement listChrome = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement search = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement filters = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement settings = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement export = pharmacyWorkspaceExportRequirement;
+  static const AccessRequirement print = pharmacyWorkspacePrintRequirement;
+  static const AccessRequirement pagination = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement empty = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement loading = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement retry = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement create = pharmacyCatalogWriteRequirement;
+  static const AccessRequirement update = pharmacyCatalogWriteRequirement;
+  static const AccessRequirement delete = pharmacyCatalogWriteRequirement;
+  static const AccessRequirement write = pharmacyCatalogWriteRequirement;
+  static const AccessRequirement browse = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement detail = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement routeEntry =
+      pharmacyWorkspaceRouteEntryRequirement;
+  static const AccessRequirement catalogEntry =
+      pharmacyWorkspaceCatalogEntryRequirement;
+}
+
+/// Inventory: Near expiry desk (`PharmacyDeskSection.nearExpiry`). Reuses
+/// Catalog → Inventory with `expiringWithinDays: 30`. Sibling count from
+/// `stockAlertSummary.expiringSoonRows`; active badge uses filtered inventory
+/// `stocks.totalItemCount`.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Near expiry strip tab / count | navigate | browse ∩ `pharmacy:read` |
+/// | Search / Filters / Settings / pagination | read chrome | browse ∩ |
+/// | Export / Print (inventory table) | export | ∩ `evidence:export` |
+/// | Empty / loading / error / retry | read chrome | browse ∩ |
+/// | Adjust / Clear stock | update / delete | catalog write ∪ |
+/// | Route entry (deep link) | navigate | ∪ pharmacy\|operations read |
+abstract final class PharmacyNearExpiryAtomPermissions {
+  static const AccessRequirement tab = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement listChrome = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement search = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement filters = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement settings = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement export = pharmacyWorkspaceExportRequirement;
+  static const AccessRequirement print = pharmacyWorkspacePrintRequirement;
+  static const AccessRequirement pagination = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement empty = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement loading = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement retry = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement create = pharmacyCatalogWriteRequirement;
+  static const AccessRequirement update = pharmacyCatalogWriteRequirement;
+  static const AccessRequirement delete = pharmacyCatalogWriteRequirement;
+  static const AccessRequirement write = pharmacyCatalogWriteRequirement;
+  static const AccessRequirement browse = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement routeEntry =
+      pharmacyWorkspaceRouteEntryRequirement;
+  static const AccessRequirement catalogEntry =
+      pharmacyWorkspaceCatalogEntryRequirement;
+}

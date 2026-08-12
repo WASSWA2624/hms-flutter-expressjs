@@ -10,3 +10,4 @@ Residual findings vs `prompts/.cursor/*.mdc` after shared-chrome / convention-ga
 
 - Date filter remains disabled on Claims queue tabs: `ClaimsQueueQuery` and the claims-workspace work-items API do not accept a date range (`enableDateFilter: false`; covered in `claims_workspace_page_test.dart`).
 - Insurance Setup omits tab count chrome (`count: null`) — catalog hub, not a countable worklist.
+- Insurance Setup has no Filters / Settings / Export / Print table toolbar — non-table catalog panel (`claims_insurance_setup_permissions_test.dart`).

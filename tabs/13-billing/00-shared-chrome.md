@@ -27,7 +27,7 @@
 - Desk queues from `BillingQueueType.values` where `canViewBillingQueue`
 - Extra tab: Price book (`id: prices`, `billingPriceBookTab`) when `canViewBillingPriceBook`
 - Counts: sibling model = dedicated unfiltered `summary.countFor(queue)`; active tab with search/advanced filters uses filtered `workItems.totalItemCount` via `billingQueueTabCount`
-- Price book uses `billingPriceBookActiveCountProvider` + `billingPriceBookCountTone` (`info`)
+- Price book uses `billingPriceBookActiveCountProvider` + `billingPriceBookCountTone` (`info`); when Price book is active and search/filters narrow, badge uses filtered total
 - Count tones: `warning` for issue/collect/claims/approvals; `info` for open work / price book; overdue enum would be `danger` but is not a tab
 - Icons via `billingQueueIcon`; tooltips via `billingQueueTooltip`
 

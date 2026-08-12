@@ -5,7 +5,7 @@
 - Label: `billingPriceBookTab`
 - Tooltip: `billingPriceBookTooltip`
 - Icon: `Icons.menu_book_outlined`
-- Count source: `billingPriceBookActiveCountProvider`
+- Count source: `billingPriceBookActiveCountProvider` — unfiltered = active catalog count; when search/filters narrow the Price book tab, badge = filtered page total (`tabs.mdc`)
 - Count tone: `AppTabCountTone.info` (`billingPriceBookCountTone`)
 - Deep-link / selection: price-book URL flag / tab id `prices` (not a `BillingQueueType`)
 - Tab gate: `BillingPriceBookAtomPermissions.tab` = ∩ `billing:read` + `billing-payments`
@@ -25,13 +25,17 @@ Order: **Filters → Settings → Export → Print → Add?**
 ## 3. Table
 
 - Row model: `BillingPriceBookEntry`
-- Default columns: Item, Mode, Price, Status (+ Actions when write)
+- Default columns: Item, Mode, Price, Status (**4** — justified exception to the usual 5; Actions mounts only with write as always-visible)
+- Settings choices also include Catalog, Scheme, Effective (+ Actions when write)
 - Row select / edit opens create-or-edit dialog when authorized
 - Export values wired on columns for print/export helpers
+- Settings key: `billing_prices_v1`
 
 ## 4. Advanced filters / search fields
 
-- Panel filter value (`_filterValue`) drives reload; mode/status/item style filters per price-book panel
+- Groups: Status, Catalog, Mode, Effective; text Scheme
+- Panel filter value (`_filterValue`) + search drive reload and active badge
+- Footer: Clear filters → Apply filters → Close
 
 ## 5. Primary / secondary / row actions
 
@@ -69,5 +73,5 @@ Similarity → proceed / use existing / cancel; edit form submit → refresh cou
 | --- | --- |
 | Tab / chrome / search / filters | price-book tab read ∩ |
 | Add / Edit / Deactivate | price-book write ∪ (`pricing:facility_write` \| `pricing:pharmacy_write` \| tenant/facility admin) ∩ `billing-payments` |
-| List Export / Print | ∩ `evidence:export` |
+| List Export / table Print | ∩ `evidence:export` (`BillingPriceBookAtomPermissions.export` / `.print`) |
 | Route entry | billing read ∪ write |

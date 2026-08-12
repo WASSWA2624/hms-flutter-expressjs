@@ -98,6 +98,11 @@ class _PharmacySuppliersCatalogTabState
       page: widget.state.suppliers,
       isLoading: isBusy,
       columnVisibilityStorageKey: 'pharmacy_catalog_suppliers',
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
       shrinkWrap: !widget.fillHeight,
       onPageChanged: controller.setSupplierPage,
       enableExport: true,
@@ -174,6 +179,7 @@ class _PharmacySuppliersCatalogTabState
         advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         enableDateFilter: false,
         allFieldsLabel: l10n.opdAllFieldsFilterLabel,
         textFilters: <AppSearchBarTextFilter>[
@@ -243,6 +249,7 @@ class _PharmacySuppliersCatalogTabState
           id: 'name',
           label: l10n.pharmacySupplierNameLabel,
           preferredWidth: 200,
+          alwaysVisible: true,
           cellBuilder: (_, PharmacySupplier item) => Text(
             item.primaryName.isEmpty ? '—' : item.primaryName,
           ),
@@ -252,6 +259,7 @@ class _PharmacySuppliersCatalogTabState
           id: 'location',
           label: l10n.pharmacySupplierLocationLabel,
           preferredWidth: 180,
+          alwaysVisible: true,
           cellBuilder: (_, PharmacySupplier item) {
             final String location = (item.location ?? '').trim();
             return Text(location.isEmpty ? '—' : location);
@@ -262,6 +270,7 @@ class _PharmacySuppliersCatalogTabState
           id: 'email',
           label: l10n.pharmacySupplierEmailLabel,
           preferredWidth: 200,
+          alwaysVisible: true,
           cellBuilder: (_, PharmacySupplier item) {
             final String email = (item.contactEmail ?? '').trim();
             return Text(email.isEmpty ? '—' : email);
@@ -272,6 +281,7 @@ class _PharmacySuppliersCatalogTabState
           id: 'phone',
           label: l10n.pharmacySupplierPhoneLabel,
           preferredWidth: 140,
+          alwaysVisible: true,
           cellBuilder: (_, PharmacySupplier item) {
             final String phone = (item.phone ?? '').trim();
             return Text(phone.isEmpty ? '—' : phone);
@@ -282,7 +292,7 @@ class _PharmacySuppliersCatalogTabState
           id: 'actions',
           label: l10n.pharmacyLineActionsColumnLabel,
           alwaysVisible: true,
-          fixedWidth: 220,
+          fixedWidth: 260,
           cellBuilder: (BuildContext context, PharmacySupplier item) {
             return AppAccessActionGate(
               requirement: widget.writeRequirement,

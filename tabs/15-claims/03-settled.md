@@ -49,7 +49,7 @@ Order: **Filters → Settings → Export → Print**
 
 ## 7. Nested / follow-on
 
-Detail Print when nested export ∪ allowed. Sync explicitly gated off Settled.
+Detail Print when ∩ `evidence:export` allowed (same desk gate as table Print). Sync explicitly gated off Settled.
 
 ## 8. Forms (summary)
 

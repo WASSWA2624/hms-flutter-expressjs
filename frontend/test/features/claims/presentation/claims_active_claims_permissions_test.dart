@@ -505,12 +505,83 @@ void main() {
       expect(find.text('Close as paid'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
 
+      // tables.mdc: prefer 5 defaults — Invoice fills the Next slot when omitted.
+      final AppListTable<ClaimsQueueItem> table =
+          tester.widget<AppListTable<ClaimsQueueItem>>(
+        find.byType(AppListTable<ClaimsQueueItem>),
+      );
+      expect(table.columns.length, 5);
+      expect(table.search?.showAdvancedFilterButton, isTrue);
+      expect(table.search?.advancedFilterButtonLabel, 'Filters');
+      expect(table.search?.advancedFilterCloseLabel, 'Close');
+      expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
+      expect(table.search?.advancedFilterResetLabel, 'Clear filters');
+      expect(table.canExport, isFalse);
+      expect(table.canPrint, isFalse);
+      expect(table.printLabel, 'Print');
+      expect(
+        find.descendant(
+          of: find.byType(AppListTableGrid),
+          matching: find.text('Invoice'),
+        ),
+        findsOneWidget,
+      );
+
       await tester.tap(find.text('CLM-SUB'));
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
       expect(find.text('Sync insurer status'), findsNothing);
-      expect(find.text('Print'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Print'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'Active Claims Filters sheet + Export/Print when evidence:export',
+    (WidgetTester tester) async {
+      await _pumpActiveClaimsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+
+      final AppListTable<ClaimsQueueItem> table =
+          tester.widget<AppListTable<ClaimsQueueItem>>(
+        find.byType(AppListTable<ClaimsQueueItem>),
+      );
+      expect(table.columns.length, 5);
+      expect(table.canExport, isTrue);
+      expect(table.canPrint, isTrue);
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+      expect(find.byTooltip('Prepare claim'), findsOneWidget);
+
+      final List<String> claimFilterLabels = table.search!.filterGroups
+          .expand((AppSearchBarFilterGroup group) => group.choices)
+          .map((AppSearchBarFilterChoice choice) => choice.label)
+          .toList(growable: false);
+      expect(claimFilterLabels, contains('Claim submitted'));
+      expect(claimFilterLabels, contains('Claim approved'));
+      expect(claimFilterLabels, contains('Claim partial'));
+      expect(claimFilterLabels, contains('Claim rejected'));
+
+      await tester.tap(find.textContaining('Filters').first);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Clear filters'), findsWidgets);
+      expect(find.textContaining('Apply filters'), findsWidgets);
+      expect(find.textContaining('Close'), findsWidgets);
     },
   );
 

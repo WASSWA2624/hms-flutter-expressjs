@@ -654,6 +654,11 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
       isLoading: isBusy,
       rowsVersion: _selectionTick.value,
       columnVisibilityStorageKey: 'pharmacy_catalog_formulary',
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
       shrinkWrap: !widget.fillHeight,
       onPageChanged: controller.changeFormularyPage,
       enableExport: true,
@@ -692,9 +697,10 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
         onClear: () => unawaited(controller.applyFormularySearch('')),
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
-        advancedFilterTitle: l10n.pharmacyFiltersSemanticLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         allFieldsLabel: l10n.opdAllFieldsFilterLabel,
         textFilters: <AppSearchBarTextFilter>[
           AppSearchBarTextFilter(
@@ -777,6 +783,7 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
           id: 'drug_name',
           label: l10n.pharmacyDrugGenericNameLabel,
           preferredWidth: 220,
+          alwaysVisible: true,
           cellBuilder: (_, PharmacyFormularyItem item) =>
               Text(item.drugNameLabel ?? '—'),
           exportValue: (PharmacyFormularyItem item) => item.drugNameLabel ?? '',
@@ -785,10 +792,50 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
           id: 'drug_code',
           label: l10n.pharmacyDrugCodeLabel,
           preferredWidth: 120,
+          alwaysVisible: true,
           cellBuilder: (_, PharmacyFormularyItem item) =>
               Text((item.drugCode ?? '').trim().isEmpty ? '—' : item.drugCode!),
           exportValue: (PharmacyFormularyItem item) => item.drugCode ?? '',
         ),
+        AppListTableColumn<PharmacyFormularyItem>(
+          id: 'is_active',
+          label: l10n.pharmacyFormularyActiveLabel,
+          alwaysVisible: true,
+          cellBuilder: (BuildContext context, PharmacyFormularyItem item) {
+            return AppWorkspaceStatusBadge(
+              status: AppWorkspaceStatus(
+                label: item.isActive ? l10n.commonYesLabel : l10n.commonNoLabel,
+                tone: item.isActive
+                    ? AppWorkspaceStatusTone.success
+                    : AppWorkspaceStatusTone.neutral,
+              ),
+            );
+          },
+          exportValue: (PharmacyFormularyItem item) =>
+              item.isActive ? l10n.commonYesLabel : l10n.commonNoLabel,
+        ),
+        AppListTableColumn<PharmacyFormularyItem>(
+          id: 'actions',
+          label: l10n.pharmacyLineActionsColumnLabel,
+          alwaysVisible: true,
+          fixedWidth: 240,
+          cellBuilder: (BuildContext context, PharmacyFormularyItem item) {
+            return _catalogRowActions(
+              context: context,
+              writeRequirement: widget.writeRequirement,
+              isBusy: isBusy,
+              editLabel: l10n.commonEditActionLabel,
+              deleteLabel: l10n.commonRemoveActionLabel,
+              editSemanticLabel: l10n.pharmacyEditFormularyAction,
+              deleteSemanticLabel: l10n.pharmacyDeleteFormularyAction,
+              onEdit: () => _openFormularyDialog(context, item: item),
+              onDelete: () => _confirmDeleteFormulary(context, item),
+              alignStart: true,
+            );
+          },
+        ),
+      ],
+      columnChoices: <AppListTableColumn<PharmacyFormularyItem>>[
         AppListTableColumn<PharmacyFormularyItem>(
           id: 'drug_form',
           label: l10n.pharmacyDrugFormLabel,
@@ -816,22 +863,6 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
               Text(item.displayId ?? item.id),
           exportValue: (PharmacyFormularyItem item) =>
               item.displayId ?? item.id,
-        ),
-        AppListTableColumn<PharmacyFormularyItem>(
-          id: 'is_active',
-          label: l10n.pharmacyFormularyActiveLabel,
-          cellBuilder: (BuildContext context, PharmacyFormularyItem item) {
-            return AppWorkspaceStatusBadge(
-              status: AppWorkspaceStatus(
-                label: item.isActive ? l10n.commonYesLabel : l10n.commonNoLabel,
-                tone: item.isActive
-                    ? AppWorkspaceStatusTone.success
-                    : AppWorkspaceStatusTone.neutral,
-              ),
-            );
-          },
-          exportValue: (PharmacyFormularyItem item) =>
-              item.isActive ? l10n.commonYesLabel : l10n.commonNoLabel,
         ),
         AppListTableColumn<PharmacyFormularyItem>(
           id: 'created_at',
@@ -867,28 +898,8 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
           },
           exportValue: (PharmacyFormularyItem item) => item.updatedAt,
         ),
-        AppListTableColumn<PharmacyFormularyItem>(
-          id: 'actions',
-          label: l10n.pharmacyLineActionsColumnLabel,
-          alwaysVisible: true,
-          fixedWidth: 240,
-          cellBuilder: (BuildContext context, PharmacyFormularyItem item) {
-            return _catalogRowActions(
-              context: context,
-              writeRequirement: widget.writeRequirement,
-              isBusy: isBusy,
-              editLabel: l10n.commonEditActionLabel,
-              deleteLabel: l10n.commonRemoveActionLabel,
-              editSemanticLabel: l10n.pharmacyEditFormularyAction,
-              deleteSemanticLabel: l10n.pharmacyDeleteFormularyAction,
-              onEdit: () => _openFormularyDialog(context, item: item),
-              onDelete: () => _confirmDeleteFormulary(context, item),
-              alignStart: true,
-            );
-          },
-        ),
       ],
-      mobileItemBuilder: (BuildContext context, PharmacyFormularyItem item) {
+            mobileItemBuilder: (BuildContext context, PharmacyFormularyItem item) {
         return AppListTableMobileItem(
           leading: Checkbox(
             value: _selectedFormularyIds.contains(item.id),
@@ -1413,6 +1424,9 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
       columnVisibilityStorageKey: 'pharmacy_catalog_inventory',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
       shrinkWrap: !widget.fillHeight,
       enableExport: true,
       canExport: canExport,
@@ -1450,9 +1464,10 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
         onClear: () => unawaited(controller.applyInventorySearch('')),
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
-        advancedFilterTitle: l10n.pharmacyInventoryFiltersSemanticLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         allFieldsLabel: l10n.opdAllFieldsFilterLabel,
         textFilters: <AppSearchBarTextFilter>[
           AppSearchBarTextFilter(
@@ -1554,6 +1569,42 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
           exportValue: (PharmacyInventoryStock item) => item.quantity,
         ),
         AppListTableColumn<PharmacyInventoryStock>(
+          id: 'stock_status',
+          label: l10n.pharmacyStockStatusFilterLabel,
+          preferredWidth: 130,
+          alwaysVisible: true,
+          cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
+            return AppWorkspaceStatusBadge(
+              status: _stockStatus(context, item.stockStatus),
+            );
+          },
+          exportValue: (PharmacyInventoryStock item) =>
+              _stockStatus(context, item.stockStatus).label,
+        ),
+        AppListTableColumn<PharmacyInventoryStock>(
+          id: 'actions',
+          label: l10n.pharmacyLineActionsColumnLabel,
+          alwaysVisible: true,
+          fixedWidth: 240,
+          cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
+            return _catalogRowActions(
+              context: context,
+              writeRequirement: widget.writeRequirement,
+              isBusy: isBusy,
+              alignStart: true,
+              editLabel: l10n.commonAdjustActionLabel,
+              deleteLabel: l10n.commonClearActionLabel,
+              editSemanticLabel: l10n.pharmacyAdjustStockAction,
+              deleteSemanticLabel: l10n.pharmacyDeleteInventoryStockAction,
+              editIcon: Icons.tune,
+              onEdit: () => _openAdjustDialog(context, item),
+              onDelete: () => _confirmClearInventoryStock(context, item),
+            );
+          },
+        ),
+      ],
+      columnChoices: <AppListTableColumn<PharmacyInventoryStock>>[
+        AppListTableColumn<PharmacyInventoryStock>(
           id: 'reorder_level',
           label: l10n.pharmacyReorderLevelColumnLabel,
           numeric: true,
@@ -1589,41 +1640,7 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
               Text(item.batchCount.toString()),
           exportValue: (PharmacyInventoryStock item) => item.batchCount,
         ),
-        AppListTableColumn<PharmacyInventoryStock>(
-          id: 'stock_status',
-          label: l10n.pharmacyStockStatusFilterLabel,
-          preferredWidth: 130,
-          cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
-            return AppWorkspaceStatusBadge(
-              status: _stockStatus(context, item.stockStatus),
-            );
-          },
-          exportValue: (PharmacyInventoryStock item) =>
-              _stockStatus(context, item.stockStatus).label,
-        ),
-        AppListTableColumn<PharmacyInventoryStock>(
-          id: 'actions',
-          label: l10n.pharmacyLineActionsColumnLabel,
-          alwaysVisible: true,
-          fixedWidth: 240,
-          cellBuilder: (BuildContext context, PharmacyInventoryStock item) {
-            return _catalogRowActions(
-              context: context,
-              writeRequirement: widget.writeRequirement,
-              isBusy: isBusy,
-              alignStart: true,
-              editLabel: l10n.commonAdjustActionLabel,
-              deleteLabel: l10n.commonClearActionLabel,
-              editSemanticLabel: l10n.pharmacyAdjustStockAction,
-              deleteSemanticLabel: l10n.pharmacyDeleteInventoryStockAction,
-              editIcon: Icons.tune,
-              onEdit: () => _openAdjustDialog(context, item),
-              onDelete: () => _confirmClearInventoryStock(context, item),
-            );
-          },
-        ),
-      ],
-      columnChoices: <AppListTableColumn<PharmacyInventoryStock>>[
+
         AppListTableColumn<PharmacyInventoryStock>(
           id: 'sku',
           label: l10n.pharmacyInventorySkuColumnLabel,
@@ -2238,6 +2255,11 @@ class _StorageLayoutCatalogTabState
       shrinkWrap: !widget.fillHeight,
       physics: widget.fillHeight ? null : const NeverScrollableScrollPhysics(),
       columnVisibilityStorageKey: 'pharmacy_catalog_storage_rooms',
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
       enableExport: true,
       canExport: canExport,
       exportLabel: l10n.commonTableExportActionLabel,
@@ -2309,6 +2331,10 @@ class _StorageLayoutCatalogTabState
         },
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         filterGroups: <AppSearchBarFilterGroup>[
           AppSearchBarFilterGroup(
             key: 'room_status',
@@ -2446,31 +2472,6 @@ class _StorageLayoutCatalogTabState
               : 'inactive',
         ),
         AppListTableColumn<PharmacyStorageRoom>(
-          id: 'created_at',
-          label: l10n.pharmacyStorageCreatedAtColumnLabel,
-          preferredWidth: 160,
-          cellBuilder: (BuildContext context, PharmacyStorageRoom item) {
-            if (item.createdAt == null) {
-              return const Align(
-                alignment: Alignment.centerLeft,
-                child: Text('—', textAlign: TextAlign.start),
-              );
-            }
-            return Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                AppFormatters.dateTime(
-                  item.createdAt!,
-                  Localizations.localeOf(context),
-                ),
-                textAlign: TextAlign.start,
-              ),
-            );
-          },
-          exportValue: (PharmacyStorageRoom item) =>
-              item.createdAt?.toIso8601String() ?? '',
-        ),
-        AppListTableColumn<PharmacyStorageRoom>(
           id: 'actions',
           label: l10n.pharmacyLineActionsColumnLabel,
           alwaysVisible: true,
@@ -2530,7 +2531,34 @@ class _StorageLayoutCatalogTabState
           },
         ),
       ],
-      onRowSelected: (PharmacyStorageRoom item) {
+      columnChoices: <AppListTableColumn<PharmacyStorageRoom>>[
+        AppListTableColumn<PharmacyStorageRoom>(
+          id: 'created_at',
+          label: l10n.pharmacyStorageCreatedAtColumnLabel,
+          preferredWidth: 160,
+          cellBuilder: (BuildContext context, PharmacyStorageRoom item) {
+            if (item.createdAt == null) {
+              return const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('—', textAlign: TextAlign.start),
+              );
+            }
+            return Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                AppFormatters.dateTime(
+                  item.createdAt!,
+                  Localizations.localeOf(context),
+                ),
+                textAlign: TextAlign.start,
+              ),
+            );
+          },
+          exportValue: (PharmacyStorageRoom item) =>
+              item.createdAt?.toIso8601String() ?? '',
+        ),
+      ],
+            onRowSelected: (PharmacyStorageRoom item) {
         unawaited(
           openPharmacyStorageRoomDetailsDialog(
             context,
@@ -2626,6 +2654,11 @@ class _ShelvesCatalogTabState extends ConsumerState<_ShelvesCatalogTab> {
       shrinkWrap: !widget.fillHeight,
       physics: widget.fillHeight ? null : const NeverScrollableScrollPhysics(),
       columnVisibilityStorageKey: 'pharmacy_catalog_shelves',
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
       enableExport: true,
       canExport: canExport,
       exportLabel: l10n.commonTableExportActionLabel,

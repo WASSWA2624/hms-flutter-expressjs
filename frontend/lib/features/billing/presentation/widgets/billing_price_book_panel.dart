@@ -145,32 +145,22 @@ class _BillingPriceBookPanelState extends ConsumerState<BillingPriceBookPanel> {
           );
           _loading = false;
         });
-        final bool countingActive =
-            !_hasActiveFilters ||
-            (activeFilter == 'true' &&
-                (_filterValue.option(_catalogFilterKey) ?? '').isEmpty &&
-                (_filterValue.option(_modeFilterKey) ?? '').isEmpty &&
-                (_filterValue.text(_schemeFilterKey) ?? '').trim().isEmpty &&
-                (_filterValue.option(_effectiveFilterKey) ?? '').isEmpty &&
-                _searchController.text.trim().isEmpty);
-        if (countingActive && activeFilter == 'true') {
-          ref
-                  .read<StateController<int?>>(
-                    billingPriceBookActiveCountProvider.notifier,
-                  )
-                  .state =
-              page.totalItemCount ?? filtered.length;
-        } else if (!_hasActiveFilters) {
-          final int activeCount = page.items
-              .where((BillingPriceBookEntry e) => e.isActive)
-              .length;
-          ref
-                  .read<StateController<int?>>(
-                    billingPriceBookActiveCountProvider.notifier,
-                  )
-                  .state =
-              activeCount;
-        }
+        // Sibling-style: unfiltered badge = active catalog count; when
+        // search/filters narrow this tab, badge = filtered total (tabs.mdc).
+        ref
+                .read<StateController<int?>>(
+                  billingPriceBookActiveCountProvider.notifier,
+                )
+                .state =
+            billingPriceBookTabCount(
+              hasActiveFilters: _hasActiveFilters,
+              filteredLength: filtered.length,
+              pageItemLength: page.items.length,
+              pageTotalItemCount: page.totalItemCount,
+              activeOnPage: page.items
+                  .where((BillingPriceBookEntry e) => e.isActive)
+                  .length,
+            );
       },
       failure: (AppFailure failure) {
         setState(() {

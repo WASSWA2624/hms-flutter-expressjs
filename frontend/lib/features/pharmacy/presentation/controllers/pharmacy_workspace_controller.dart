@@ -636,8 +636,9 @@ final class PharmacyWorkspaceController
 
   /// Loads Catalog → Inventory with the desk stock-alert filter applied.
   ///
-  /// Badge counts stay on [PharmacyWorkspaceState.stockAlertSummary]; the UI
-  /// reuses the Catalog Inventory table (Adjust / Clear / Filters).
+  /// Sibling badges stay on [PharmacyWorkspaceState.stockAlertSummary]; the
+  /// active stock-alert tab badge uses filtered inventory
+  /// `stocks.totalItemCount`. The UI reuses the Catalog Inventory table.
   Future<AppFailure?> applyDeskStockFilter(
     PharmacyInventoryStockQuery query,
   ) async {

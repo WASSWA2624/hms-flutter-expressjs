@@ -143,6 +143,7 @@ class _AccountsApprovalsPanelState extends ConsumerState<AccountsApprovalsPanel>
         advancedFilterTitle: context.l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: context.l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: AccountsStrings.clearFilters,
+        advancedFilterCloseLabel: context.l10n.commonCloseActionLabel,
         dateFilterLabel: 'Posted date',
         dateFromLabel: context.l10n.opdDateFromLabel,
         dateToLabel: context.l10n.opdDateToLabel,

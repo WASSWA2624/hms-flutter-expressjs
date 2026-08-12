@@ -2,43 +2,55 @@
 
 ## 1. Tab strip
 
-- Label: `pharmacyDeskSuppliersLabel`
+- Label: `pharmacyDeskSuppliersLabel` (`Suppliers`)
 - Icon: `Icons.local_shipping_outlined`
-- Count source: `state.suppliers.totalItemCount`
+- Count source: `state.suppliers.totalItemCount` (filtered query total via `pharmacySectionTabCount`)
 - Count tone: `AppTabCountTone.info`
 - Deep-link `section`: `suppliers` (prepares suppliers via `controller.prepareSuppliers`)
-- Tab gate: `pharmacyCatalogBrowseRequirement` = ∩ `pharmacy:read`
+- Tab gate: `PharmacySuppliersAtomPermissions.tab` = `pharmacyCatalogBrowseRequirement` ∩ `pharmacy:read` + `pharmacy-dispensing`
 - **Omitted when unauthorized**
 - Body: `PharmacySuppliersCatalogTab` / `pharmacy_suppliers_panel.dart` (not nested under Catalog icon bar)
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-- Search on suppliers table
-- Trailing **Add supplier** (`pharmacyAddSupplierAction`) when catalog write ∪ allows — omitted when denied
-- Export / Print: not a primary suppliers strip feature (panel-owned if any)
+Order: **Filters → Settings → Export → Print → Create?**
+
+- Search: `pharmacySupplierSearchHint`
+- Filters: `commonFiltersActionLabel` → `commonAdvancedFiltersTitle`; Close `commonCloseActionLabel`
+- Settings: `commonTableSettings*`; Apply/Reset columns; Close; storage `pharmacy_catalog_suppliers`
+- Export: `commonTableExportActionLabel` — omit without ∩ `evidence:export`
+- Print: `commonPrintActionLabel` — preview-first (`printPharmacyWorkspaceList`); same export gate
+- Trailing **Create** (`commonCreateActionLabel` / `pharmacyAddSupplierAction`) when catalog write ∪ — omitted when denied
 
 ## 3. Table
 
 - Row model: `PharmacySupplier`
-- Default columns (panel): name / contact / phone / status / related fields as defined in `pharmacy_suppliers_panel.dart` (name, code, contact, phone, status family)
+- Default columns (**5**):
+  1. Name (always visible)
+  2. Location (always visible)
+  3. Email (always visible)
+  4. Phone (always visible)
+  5. Actions (always visible)
 - Row select → supplier details / edit dialogs
-- Mobile meta uses contact/status chips
+- Mobile meta uses contact chips
 
 ## 4. Advanced filters / search fields
 
-- Panel search matcher; advanced groups if mounted on suppliers panel (name/status style) — browse chrome under catalog browse ∩
+Text filters: Name / Location / Email / Phone (same search model as table + active count).  
+Footer: Clear filters → Apply filters → Close.
 
 ## 5. Primary / secondary / row actions
 
-- Strip Add supplier (write ∪)
-- Row → details / edit / deactivate paths when authorized
+- Strip Create (write ∪)
+- Row Edit / Delete when write ∪ (omitted when denied)
+- Unauthorized actions omitted
 
 ## 6. Dialogs from this tab
 
 | Dialog | Owner |
 | --- | --- |
-| Supplier details | Pharmacy-owned `pharmacy_supplier_details_dialog.dart` |
-| Add / edit supplier | Pharmacy-owned (panel dialogs; title uses Add/Edit supplier keys) |
+| Supplier details | Pharmacy-owned `pharmacy_supplier_details_dialog.dart` (`pharmacySupplierDetailsTitle`) |
+| Add / edit supplier | Pharmacy-owned (`pharmacyAddSupplierAction` / `pharmacyEditSupplierAction`) |
 | Supplier similarity | Pharmacy-owned `pharmacy_supplier_similarity_dialog.dart` |
 
 ## 7. Nested / follow-on
@@ -47,11 +59,12 @@ Similarity → proceed / use existing; details may nest edit form.
 
 ## 8. Forms (summary)
 
-- Supplier identity, contacts, notes, active flag (summary)
+- Supplier identity, contacts (email/phone), location — no tenant/facility fields
 
 ## 9. Print / labels / preview
 
-- Absent as desk table Print/Export for suppliers
+- Table Export + Print gated by `canExportPharmacyWorkspace` / `canPrintPharmacyWorkspace`
+- Trigger label `Print`; preview-first helpers
 
 ## 10. Loading / empty / error / success
 
@@ -61,6 +74,7 @@ Similarity → proceed / use existing; details may nest edit form.
 
 | Atom | Gate |
 | --- | --- |
-| Tab / list | catalog browse ∩ `pharmacy:read` |
+| Tab / list | `PharmacySuppliersAtomPermissions` browse ∩ `pharmacy:read` |
+| Export / Print | ∩ `evidence:export` |
 | Add / Edit / Delete | catalog write ∪ |
 | Operations-only entry | suppliers omitted in fallback |

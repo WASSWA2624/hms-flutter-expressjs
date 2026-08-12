@@ -2,12 +2,12 @@
 
 ## 1. Tab strip (desk)
 
-- Label: `pharmacyDeskCatalogLabel`
+- Label: `pharmacyDeskCatalogLabel` (`Catalog and stock`)
 - Icon: `Icons.inventory_2_outlined`
-- Count source: **none** (`null` — management hub)
+- Count source: **none** (`null` — management hub; `pharmacyTabItems` omits count)
 - Count tone: `AppTabCountTone.info` (when count present; catalog omits count)
-- Deep-link `section`: `catalog` (aliases `inventory` / `stock` prepare Inventory sub-tab)
-- Tab gate: `pharmacyCatalogBrowseRequirement` = ∩ `pharmacy:read`
+- Deep-link `section`: `catalog` (aliases `inventory` / `stock` / `catalog-and-stock` prepare Inventory sub-tab)
+- Tab gate: `PharmacyCatalogAtomPermissions.tab` = `pharmacyCatalogBrowseRequirement` ∩ `pharmacy:read` + `pharmacy-dispensing`
 - **Omitted when unauthorized**
 - Body: `PharmacyCatalogPanel` with nested `PharmacyCatalogTab`
 
@@ -31,14 +31,19 @@ Component: `PharmacyCatalogIconTabBar` / `pharmacyCatalogTabDescriptors`. Select
 
 #### 2. Search / Filters / Settings / Export / Print / context
 
-- Filters / Settings on drugs table; trailing **Add drug** (`pharmacyAddDrugAction`) when catalog write ∪ allows
-- Bulk selection action may replace Add (destructive delete/selection label)
-- Export: formulary-adjacent flows set `enableExport: false`; drugs table follows panel (no desk Export strip)
+Order: **Filters → Settings → Export → Print → Create / bulk?**
+
+- Filters: `commonFiltersActionLabel` → `commonAdvancedFiltersTitle`; Close `commonCloseActionLabel`
+- Settings: `commonTableSettings*`; Apply/Reset columns; Close; storage `pharmacy_catalog_drugs`
+- Export / Print: omit without ∩ `evidence:export`; Print uses `commonPrintActionLabel` + preview-first (`printPharmacyWorkspaceList`)
+- Trailing **Create** (`commonCreateActionLabel` / `pharmacyAddDrugAction`) when catalog write ∪ allows
+- Bulk selection may replace Create (delete selected)
 
 #### 3. Table
 
-- Drug catalog rows; row → drug details / edit
-- Filters include stock status / name / code / form / strength text filters (`_drug*` keys)
+- Default columns (**5**): Selection / Code / Generic name / Brand name / Actions (always-visible keys as inventoried)
+- Optional (`columnChoices`): Form / Strength / prices / Storage / Reorder / Stock status
+- Row → drug details / edit
 
 #### 5–9. Actions / dialogs / forms / print
 
@@ -50,8 +55,8 @@ Component: `PharmacyCatalogIconTabBar` / `pharmacyCatalogTabDescriptors`. Select
 | Pack scan | Pharmacy-owned `pharmacy_drug_pack_scan_dialog.dart` |
 | Catalog dialog shell | `pharmacy_catalog_dialog.dart` |
 
-- Pricing fields gated: pharmacy retail ∩ `pricing:pharmacy_write`; facility tariff ∩ `pricing:facility_write` (+ billing-payments module on facility pricing requirement)
-- Print: not a primary drugs-list print; label/print helpers may appear from detail options
+- Pricing fields gated: pharmacy retail ∩ `pricing:pharmacy_write`; facility tariff ∩ `pricing:facility_write`
+- Print: list Print gated as above; label helpers may appear from detail options
 
 #### 11. RBAC
 
@@ -61,10 +66,11 @@ Component: `PharmacyCatalogIconTabBar` / `pharmacyCatalogTabDescriptors`. Select
 
 #### 2–5. Toolbar / table / actions
 
-- Filters include active (`_formularyActiveFilterKey`)
-- Trailing Add formulary (`pharmacyAddFormularyAction`) / add-selected formulary items when write
-- `enableExport: false` on formulary selection tables
-- Dialogs: add formulary (`pharmacyAddFormularyDialogTitle`), selection add (`pharmacyAddSelectedFormularyItemsAction`)
+- Same Filters/Settings/Export/Print label + gate pattern; storage `pharmacy_catalog_formulary`
+- Default columns (**5**): Selection / Drug name / Code / Active / Actions
+- Optional: Form / Strength / Formulary id / Created / Updated
+- Trailing Add formulary when write ∪
+- Nested drug-picker tables keep `enableExport: false`
 
 #### 11. RBAC
 
@@ -74,10 +80,10 @@ Component: `PharmacyCatalogIconTabBar` / `pharmacyCatalogTabDescriptors`. Select
 
 #### 2–5. Toolbar / table / actions
 
-- Stock status / item name / SKU / facility / pending stock filters
-- Trailing catalog write actions when authorized
+- Same Filters/Settings/Export/Print pattern; storage `pharmacy_catalog_inventory`
+- Default columns (**5**): Selection / Item / Quantity / Stock status / Actions
+- Optional: Reorder / Storage / Expiry / Batch / SKU / Unit / Facility / Room…
 - Stock-alert desk sections land here with preset `PharmacyInventoryStockQuery`
-- Row actions open stock/drug surfaces (details/edit)
 
 #### 11. RBAC
 
@@ -87,10 +93,10 @@ Component: `PharmacyCatalogIconTabBar` / `pharmacyCatalogTabDescriptors`. Select
 
 #### 2–5. Toolbar / table / actions
 
-- Room/shelf filter groups (`_storageRoomFilterKey` / `_storageShelfFilterKey`)
-- Trailing Add storage room (`pharmacyAddStorageRoomAction`) when write
-- Similarity: `pharmacy_storage_room_similarity_dialog.dart`
-- Panel: `pharmacy_storage_panel.dart`
+- Filters/Settings/Export/Print; storage `pharmacy_catalog_storage_rooms`
+- Default columns (**5**): Name / Code / Shelves count / Status / Actions
+- Optional: Created at
+- Trailing Add storage room when write ∪
 
 #### 11. RBAC
 
@@ -100,9 +106,9 @@ Component: `PharmacyCatalogIconTabBar` / `pharmacyCatalogTabDescriptors`. Select
 
 #### 2–5. Toolbar / table / actions
 
-- Trailing Add shelf (`pharmacyAddStorageShelfAction`) when write
-- Similarity: `pharmacy_storage_shelf_similarity_dialog.dart`
-- Room-scoped shelf filters when a room selected
+- Settings/Export/Print (no advanced Filters groups on this list); storage `pharmacy_catalog_shelves`
+- Default columns (**5**): Shelf code / Label / Room / Status / Actions
+- Trailing Add shelf when write ∪
 
 #### 11. RBAC
 
@@ -114,14 +120,15 @@ Component: `PharmacyCatalogIconTabBar` / `pharmacyCatalogTabDescriptors`. Select
 
 ### 6–8. Dialogs / nested / forms
 
-- Edit dialogs host field groups for identity, packing, storage location, pricing (summary level)
+- Edit dialogs host field groups for identity, packing, storage location, pricing
 - Similarity dialogs: proceed / use existing / cancel
 - Nested storage pickers from drug edit (`initialTab: PharmacyCatalogTab.storageLayout`)
 
 ### 9. Print / labels / preview
 
-- Desk Export/Print generally **absent** / `enableExport: false` on catalog selection tables
-- No registry list-print equivalent to Reception on catalog host
+- Printable catalog tables: Export + Print gated by `canExportPharmacyWorkspace` / `canPrintPharmacyWorkspace`
+- Nested formulary/selection / shelf-picker tables keep `enableExport: false`
+- Trigger label `commonPrintActionLabel` (`Print`); preview-first helpers
 
 ### 10. Loading / empty / error / success
 
@@ -132,8 +139,9 @@ Component: `PharmacyCatalogIconTabBar` / `pharmacyCatalogTabDescriptors`. Select
 
 | Atom | Gate |
 | --- | --- |
-| Catalog desk tab | ∩ `pharmacy:read` |
+| Catalog desk tab | ∩ `pharmacy:read` (`PharmacyCatalogAtomPermissions`) |
 | Nested sub-tabs browse | catalog browse ∩ |
+| Export / Print (printable tables) | ∩ `evidence:export` |
 | Add / Edit / Delete / bulk | catalog write ∪ `pharmacy:write` \| `operations:write` |
 | Pharmacy price fields | ∩ `pricing:pharmacy_write` |
 | Facility price fields | ∩ `pricing:facility_write` (+ billing-payments on requirement) |

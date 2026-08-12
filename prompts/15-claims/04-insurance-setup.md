@@ -7,16 +7,16 @@ Make the Insurance Setup desk section fully compliant with `tabs.mdc`, `tables.m
 ## Requirements
 
 1. Keep strip label `claimsSectionInsuranceSetup`, deep-link `insurance-setup`, and omit the tab when gate denies access (`ClaimsInsuranceSetupAtomPermissions.tab` = ∪ `billing:read` \| `facility:admin` \| `tenant:admin` ∩ `insurance-claims`) — never show a disabled placeholder (`tabs.mdc`). Align `ClaimsDeskSection` / query helpers with `tabs/15-claims/00-overview.md`.
-2. Badge count must be the authoritative total for this tab’s scope (always `0` (no queue badge)). When Filters/search/date narrow the active tab, the **active** badge must reflect the filtered total (`tabs.mdc`). Stop using painted-row length alone when a total is available or can be derived from the same filter model.
-3. Use `AppTabCountTone.info` as inventoried, or escalate to `danger` only when product policy requires (`tabs.mdc`).
-4. Toolbar order: **Filters → Settings → Export → Print → context** — normalize shared labels to `Filters`, `Settings`, `Export`, and `Print` when those controls apply (`tables.mdc`, `printing.mdc`).
-5. Mount table Print with preview-first shared printing and column/section options aligned to this tab’s exportable fields. Omit Print/Export/context actions when unauthorized (`printing.mdc`, `tables.mdc`).
-6. Keep default visible columns at **5** unless a justified exception is recorded (always-visible keys / regulatory minimums / explicit default set in code + test). Settings must list every available column; Reset restores the default set (`tables.mdc`).
-7. Advanced filters must be comprehensive for this tab’s domain and edit the **same** filter model as the table and active count. Footer actions: **Clear filters** → **Apply filters** → **Close** (`tabs.mdc`, `tables.mdc`, `dialogs.mdc`).
+2. **Omit** the tab count badge (`count: null`) — Insurance Setup is a catalog hub, not a countable worklist. Do **not** paint badge `0` (`tabs.mdc`). Recorded + tested in `tabs/15-claims/99-convention-gaps.md`.
+3. Count tone is unused while count is null; keep inventoried `AppTabCountTone.info` if a count is ever added (`tabs.mdc`).
+4. **No** Filters / Settings / Export / Print table toolbar on this tab (justified non-table catalog hub — same pattern as Pharmacy Catalog). Do not invent a queue table to satisfy template chrome (`tables.mdc`, `printing.mdc`).
+5. Table Print / Export / column Settings: **N/A** — no `AppListTable` on this surface.
+6. Default columns / Settings / Reset: **N/A** (no table).
+7. Advanced filters: **Absent** (no worklist filter model).
 8. Preserve in-desk actions for this surface via shared dialogs/forms; omit unauthorized actions (`dialogs.mdc`, `forms.mdc`, `screens.mdc`). Inventoried dialogs to keep compliant: Company / Scheme / Offer / Enrollment / Price book / Insurer integration.
 9. Reuse shared form fields and validators; hide tenant/facility/session context the operator already knows; reset dependent fields when parents change (`forms.mdc`).
-10. Any print entry from this tab (toolbar or nested hub) must use trigger label `Print` and shared preview (`printing.mdc`).
-11. Cover empty, loading, error/retry, success, and validation feedback. Refresh table + all affected tab counts after mutations (`prompt.mdc`, `tabs.mdc`).
+10. Print entry: **Absent** on this tab (justified — no printable worklist). Nested hub prints are out of scope for this catalog strip.
+11. Cover empty, loading, error/retry, success, and validation feedback. Catalog mutations refresh workspace reference data via controller `refresh` (`prompt.mdc`, `tabs.mdc`).
 
 ## Constraints
 
@@ -27,17 +27,15 @@ Make the Insurance Setup desk section fully compliant with `tabs.mdc`, `tables.m
 
 ## Acceptance Criteria
 
-- [ ] Tab count matches authoritative / filtered rules in Requirements 2–3.
-- [ ] Toolbar order and labels match Requirement 4; Print preview opens before print when Print applies.
-- [ ] Default column policy satisfies Requirement 6; Settings exposes all columns.
-- [ ] Advanced filters share the table/count model and include Close (`Requirement 7`).
-- [ ] Unauthorized tab and actions are absent (not disabled).
-- [ ] Dialogs/forms keep generic titles and shared field reuse.
-- [ ] `tabs/15-claims/04-insurance-setup.md` updated to match.
+- [x] Tab count omitted (`null`); no badge `0` (Requirements 2–3).
+- [x] No Filters / Settings / Export / Print table chrome (Requirements 4–7 justified N/A).
+- [x] Unauthorized tab and create actions are absent (not disabled).
+- [x] Create dialogs stay in-desk with generic titles and shared field reuse.
+- [x] `tabs/15-claims/04-insurance-setup.md` updated to match.
 
 ## Verification
 
-- Tests: tab omit gate; filtered/authoritative count; toolbar Print/Export presence matrix; omit-when-unauthorized for strip and row actions.
+- Tests: tab omit gate; `count: null`; no Export/Print tooltips on Insurance Setup; create strip omit-when-unauthorized; in-desk Add company dialog (`claims_insurance_setup_permissions_test.dart`).
 - Manual: primary happy-path mutation(s) remain in-desk; light/dark + narrow viewport.
 
 ## Relevant Files

@@ -503,10 +503,17 @@ void main() {
       expect(find.byTooltip('Export'), findsOneWidget);
       expect(find.byTooltip('Print'), findsOneWidget);
 
+      final List<String> authFilterLabels = table.search!.filterGroups
+          .expand((AppSearchBarFilterGroup group) => group.choices)
+          .map((AppSearchBarFilterChoice choice) => choice.label)
+          .toList(growable: false);
+      expect(authFilterLabels, contains('Authorization pending'));
+      expect(authFilterLabels, contains('Authorization approved'));
+      expect(authFilterLabels, contains('Authorization denied'));
+      expect(authFilterLabels, contains('Authorization expired'));
+
       await tester.tap(find.textContaining('Filters').first);
       await tester.pumpAndSettle();
-      expect(find.textContaining('Authorization pending'), findsWidgets);
-      expect(find.textContaining('Authorization approved'), findsWidgets);
       expect(find.textContaining('Clear filters'), findsWidgets);
       expect(find.textContaining('Apply filters'), findsWidgets);
       expect(find.textContaining('Close'), findsWidgets);

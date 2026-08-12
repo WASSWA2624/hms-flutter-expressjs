@@ -31,6 +31,7 @@ const String accountsApprovalsTableSettingsKey = 'accounts_approvals_v1';
 
 const List<String> accountsApprovalsDefaultColumnIds = <String>[
   accountsApprovalsJournalColumnId,
+  accountsApprovalsTypeColumnId,
   accountsApprovalsAmountColumnId,
   accountsApprovalsStatusColumnId,
   accountsApprovalsNextColumnId,
@@ -136,7 +137,6 @@ List<AppListTableColumn<AccountsWorkItem>> accountsApprovalsColumnChoices({
         onNextAction: onNextAction,
       );
   return <AppListTableColumn<AccountsWorkItem>>[
-    builders[accountsApprovalsTypeColumnId]!,
     builders[accountsApprovalsByColumnId]!,
     builders[accountsApprovalsReasonColumnId]!,
     builders[accountsApprovalsPeriodColumnId]!,
@@ -155,6 +155,7 @@ Map<String, AppListTableColumn<AccountsWorkItem>> _accountsApprovalsColumnBuilde
     accountsApprovalsJournalColumnId: AppListTableColumn<AccountsWorkItem>(
       id: accountsApprovalsJournalColumnId,
       label: AccountsStrings.journalColumn,
+      alwaysVisible: true,
       cellBuilder: (_, AccountsWorkItem item) => Text(
         accountsWorkItemPublicId(item),
         maxLines: 1,
@@ -189,6 +190,7 @@ Map<String, AppListTableColumn<AccountsWorkItem>> _accountsApprovalsColumnBuilde
       id: accountsApprovalsNextColumnId,
       label: AccountsStrings.nextColumn,
       alwaysVisible: true,
+      exportable: false,
       cellBuilder: (BuildContext context, AccountsWorkItem item) {
         return AccountsApprovalsNextButton(
           item: item,

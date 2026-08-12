@@ -73,7 +73,8 @@ PharmacyDeskSection? pharmacySectionFromQuery(String? raw) {
 }
 
 /// Sibling-count model: dedicated unfiltered workspace summary / stock totals.
-/// Active order tab with a list query uses [PharmacyWorkbench.orders.totalItemCount].
+/// Active order tab uses filtered [PharmacyWorkbench.orders.totalItemCount].
+/// Active stock-alert tab uses filtered inventory [AppPage.totalItemCount].
 int pharmacySectionTabCount(
   PharmacyWorkspaceState state,
   PharmacyDeskSection section, {
@@ -81,6 +82,13 @@ int pharmacySectionTabCount(
 }) {
   if (activeSection == section && section.isOrderSection) {
     final int? listTotal = state.workbench.orders.totalItemCount;
+    if (listTotal != null) {
+      return listTotal;
+    }
+  }
+  if (activeSection == section && section.isStockSection) {
+    final int? listTotal =
+        state.inventoryWorkbench.stocks.totalItemCount;
     if (listTotal != null) {
       return listTotal;
     }

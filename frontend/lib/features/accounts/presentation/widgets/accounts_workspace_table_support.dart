@@ -268,6 +268,10 @@ Map<String, AppListTableColumn<AccountsWorkItem>> _accountsColumnBuilders(
           overflow: TextOverflow.ellipsis,
         );
       },
+      exportValue: (AccountsWorkItem item) =>
+          (item.periodLabel ?? '').trim().isEmpty
+          ? AccountsStrings.unknownValue
+          : item.periodLabel!,
     ),
     accountsAccountColumnId: AppListTableColumn<AccountsWorkItem>(
       id: accountsAccountColumnId,
@@ -283,6 +287,9 @@ Map<String, AppListTableColumn<AccountsWorkItem>> _accountsColumnBuilders(
           overflow: TextOverflow.ellipsis,
         );
       },
+      exportValue: (AccountsWorkItem item) => item.accountLabel.isEmpty
+          ? AccountsStrings.unknownValue
+          : item.accountLabel,
     ),
     accountsPatientColumnId: AppListTableColumn<AccountsWorkItem>(
       id: accountsPatientColumnId,
@@ -298,6 +305,10 @@ Map<String, AppListTableColumn<AccountsWorkItem>> _accountsColumnBuilders(
           overflow: TextOverflow.ellipsis,
         );
       },
+      exportValue: (AccountsWorkItem item) =>
+          (item.patientDisplayName ?? '').trim().isEmpty
+          ? AccountsStrings.unknownValue
+          : item.patientDisplayName!,
     ),
     accountsNextActionColumnId: AppListTableColumn<AccountsWorkItem>(
       id: accountsNextActionColumnId,
