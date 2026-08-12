@@ -349,8 +349,10 @@ class _TheaterWorkspaceContentState
         spacing: Theme.of(context).spacing,
       ),
       maxWidth: PageMaxWidth.dataHeavy,
+      scrollable: false,
       child: SizedBox(
         width: double.infinity,
+        height: double.infinity,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -388,69 +390,73 @@ class _TheaterWorkspaceContentState
               },
             ),
             SizedBox(height: theme.spacing.sm),
-            if (_section.isFollowUps)
-              FollowUpWorklistPanel(
-                scope: const FollowUpWorklistScope(encounterType: 'THEATRE'),
-                storageKeyPrefix: 'theater_follow_ups',
-                readRequirement: TheaterFollowUpsAtomPermissions.tab,
-                writeRequirement: TheaterFollowUpsAtomPermissions.write,
-                showAdvancedFilterButton: true,
-                advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
-                advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
-                advancedFilterApplyLabel: l10n.theaterApplyFiltersAction,
-                advancedFilterResetLabel: l10n.theaterClearFiltersAction,
-                advancedFilterCloseLabel: l10n.commonCloseActionLabel,
-                enableDateFilter: true,
-                dateFilterLabel: l10n.opdFollowUpDateLabel,
-                dateFromLabel: l10n.opdDateFromLabel,
-                dateToLabel: l10n.opdDateToLabel,
-                filterGroups: <AppSearchBarFilterGroup>[
-                  AppSearchBarFilterGroup(
-                    key: 'follow_up_status',
-                    label: l10n.receptionStatusLabel,
-                    choices: <AppSearchBarFilterChoice>[
-                      AppSearchBarFilterChoice(
-                        value: 'pending',
-                        label: l10n.patientsActiveWorkStatusAppointmentScheduled,
+            Expanded(
+              child: _section.isFollowUps
+                  ? FollowUpWorklistPanel(
+                      scope: const FollowUpWorklistScope(
+                        encounterType: 'THEATRE',
                       ),
-                      AppSearchBarFilterChoice(
-                        value: 'completed',
-                        label: l10n.opdCompletedFlowSummaryLabel,
-                      ),
-                    ],
-                  ),
-                ],
-                canExport: canExportTheaterWorkspace(accessPolicy),
-                enablePrint: true,
-                canPrint: canPrintTheaterWorkspace(accessPolicy),
-                printLabel: l10n.commonPrintActionLabel,
-                onPrint: (List<ReceptionFollowUpEntry> entries) =>
-                    _printTheaterFollowUpsList(
-                      context,
-                      ref,
-                      entries: entries,
-                      l10n: l10n,
+                      storageKeyPrefix: 'theater_follow_ups',
+                      readRequirement: TheaterFollowUpsAtomPermissions.tab,
+                      writeRequirement: TheaterFollowUpsAtomPermissions.write,
+                      showAdvancedFilterButton: true,
+                      advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+                      advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+                      advancedFilterApplyLabel: l10n.theaterApplyFiltersAction,
+                      advancedFilterResetLabel: l10n.theaterClearFiltersAction,
+                      advancedFilterCloseLabel: l10n.commonCloseActionLabel,
+                      enableDateFilter: true,
+                      dateFilterLabel: l10n.opdFollowUpDateLabel,
+                      dateFromLabel: l10n.opdDateFromLabel,
+                      dateToLabel: l10n.opdDateToLabel,
+                      filterGroups: <AppSearchBarFilterGroup>[
+                        AppSearchBarFilterGroup(
+                          key: 'follow_up_status',
+                          label: l10n.receptionStatusLabel,
+                          choices: <AppSearchBarFilterChoice>[
+                            AppSearchBarFilterChoice(
+                              value: 'pending',
+                              label: l10n
+                                  .patientsActiveWorkStatusAppointmentScheduled,
+                            ),
+                            AppSearchBarFilterChoice(
+                              value: 'completed',
+                              label: l10n.opdCompletedFlowSummaryLabel,
+                            ),
+                          ],
+                        ),
+                      ],
+                      canExport: canExportTheaterWorkspace(accessPolicy),
+                      enablePrint: true,
+                      canPrint: canPrintTheaterWorkspace(accessPolicy),
+                      printLabel: l10n.commonPrintActionLabel,
+                      onPrint: (List<ReceptionFollowUpEntry> entries) =>
+                          _printTheaterFollowUpsList(
+                            context,
+                            ref,
+                            entries: entries,
+                            l10n: l10n,
+                          ),
+                      onNarrowedCountChanged: (int? narrowedCount) {
+                        if (_followUpsNarrowedCount == narrowedCount) {
+                          return;
+                        }
+                        setState(() {
+                          _followUpsNarrowedCount = narrowedCount;
+                        });
+                      },
+                    )
+                  : _TheaterCaseBoard(
+                      state: state,
+                      section: _section,
+                      canWrite: canWrite,
+                      showNextAction: showNextAction,
+                      searchController: _searchController,
+                      columnVisibilityController: _tableColumnController,
+                      onPageChanged: controller.changePage,
+                      initialQuery: widget.initialQuery,
                     ),
-                onNarrowedCountChanged: (int? narrowedCount) {
-                  if (_followUpsNarrowedCount == narrowedCount) {
-                    return;
-                  }
-                  setState(() {
-                    _followUpsNarrowedCount = narrowedCount;
-                  });
-                },
-              )
-            else
-              _TheaterCaseBoard(
-                state: state,
-                section: _section,
-                canWrite: canWrite,
-                showNextAction: showNextAction,
-                searchController: _searchController,
-                columnVisibilityController: _tableColumnController,
-                onPageChanged: controller.changePage,
-                initialQuery: widget.initialQuery,
-              ),
+            ),
           ],
         ),
       ),
@@ -527,7 +533,7 @@ class _TheaterCaseBoard extends ConsumerWidget {
       columnVisibilityStorageKey: 'theater_${section.name}',
       columnWidthStorageKey: 'theater_cw_${section.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-      columnVisibilityTitle: l10n.theaterTableSettingsTitle,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
       columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
       columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
       columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
@@ -542,12 +548,12 @@ class _TheaterCaseBoard extends ConsumerWidget {
         onClear: () => controller.applySearch(''),
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
-        advancedFilterTitle: l10n.theaterAdvancedFiltersTitle,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.theaterApplyFiltersAction,
         advancedFilterResetLabel: l10n.theaterClearFiltersAction,
         advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         dateFilterLabel: l10n.theaterScheduleDateFilterLabel,
-        dateFromLabel: l10n.theaterScheduleDateFilterLabel,
+        dateFromLabel: l10n.opdDateFromLabel,
         dateToLabel: l10n.opdDateToLabel,
         datePickerButtonLabel: l10n.theaterPickScheduleDateAction,
         invalidDateMessage: l10n.appDateInvalidMessage,
@@ -633,8 +639,6 @@ class _TheaterCaseBoard extends ConsumerWidget {
           }
         },
       ),
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
       itemKeyBuilder: (TheaterCase item) => ValueKey<String>(item.id),
       onRowSelected: (TheaterCase item) {
         unawaited(
@@ -681,10 +685,15 @@ class _TheaterCaseBoard extends ConsumerWidget {
         showNextAction: showNextAction,
         l10n: l10n,
       ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
       exportConfig: AppListTableExportConfig<TheaterCase>(
         fileNameStem: 'theater_${section.name}',
         dateOf: (TheaterCase item) => item.scheduledAt,
         sheetName: _theaterSectionExportSheetName(l10n, section),
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
       ),
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.theaterNoCasesTitle,
@@ -1344,42 +1353,6 @@ class _StatusLine extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _TwoLineCell extends StatelessWidget {
-  const _TwoLineCell({required this.title, required this.subtitle});
-
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: AppFontWeight.emphasis,
-          ),
-        ),
-        if (subtitle.trim().isNotEmpty)
-          Text(
-            subtitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-      ],
     );
   }
 }
@@ -2631,6 +2604,7 @@ String _theaterCasePrintCellValue(
     'readiness' =>
       '${item.checklistCompleted}/${item.checklistTotal}',
     'owner' => _responsibleRoleLabel(l10n, item),
+    'next_action' => theaterNextActionLabel(l10n, item),
     _ => '',
   };
 }

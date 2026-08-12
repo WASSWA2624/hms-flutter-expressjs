@@ -118,13 +118,11 @@ String nursingDueTimeLabel(BuildContext context, NursingPatientSummary item) {
 }
 
 String nursingAdmissionLabel(BuildContext context, NursingPatientSummary item) {
-  final String label = nursingJoinDisplay(<String?>[
-    item.displayId,
-    item.admissionStatus == null
-        ? null
-        : nursingApiLabel(item.admissionStatus!),
-  ]);
-  return label.trim().isEmpty ? context.l10n.profileUnknownValue : label;
+  final String? id = item.displayId?.trim();
+  if (id == null || id.isEmpty) {
+    return context.l10n.profileUnknownValue;
+  }
+  return id;
 }
 
 /// Synthetic responsible-nurse summary (tables.mdc product exception — no
@@ -147,8 +145,9 @@ String nursingLastObservationLabel(
   BuildContext context,
   NursingPatientSummary item,
 ) {
-  final String value = item.lastObservation?.trim() ?? '';
-  return value.isEmpty ? context.l10n.profileUnknownValue : value;
+  // Prefer an atomic timestamp in the table; full observation text belongs in
+  // the patient detail dialog.
+  return nursingDateTimeLabel(context, item.lastObservationAt);
 }
 
 int nursingPageTotal<T>(AppPage<T> page) =>
@@ -735,7 +734,8 @@ String _htmlEscape(String value) {
       .replaceAll("'", '&#39;');
 }
 
-const String nursingDocumentsTypeGroupLabel = 'Documents';
+String nursingDocumentsTypeGroupLabel(AppLocalizations l10n) =>
+    l10n.patientsDocumentsSectionTitle;
 
 NursingQueueScope nursingScopeFromFilterValue(String? value) {
   return switch (value) {

@@ -313,6 +313,36 @@
   "@commonAllRowsLoadedLabel": {
     "description": "Footer status when a list table has no further pages to load."
   },
+  "commonDurationMinutesShort": "{minutes}m",
+  "@commonDurationMinutesShort": {
+    "description": "Compact duration when under one hour (for example 45m).",
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "commonDurationHoursShort": "{hours}h",
+  "@commonDurationHoursShort": {
+    "description": "Compact whole-hour duration (for example 2h).",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "commonDurationHoursMinutesShort": "{hours}h {minutes}m",
+  "@commonDurationHoursMinutesShort": {
+    "description": "Compact hours-and-minutes duration (for example 1h 20m).",
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "commonPrintSectionsLabel": "Print sections",
   "@commonPrintSectionsLabel": {
     "description": "Section title for print-preview options that choose summary and row blocks."
@@ -5318,6 +5348,21 @@
   "receptionClearFiltersAction": "Clear filters",
   "@receptionClearFiltersAction": {
     "description": "Action to clear advanced filters on the reception desk table."
+  },
+  "receptionPageLabel": "{from}-{to} of {total}",
+  "@receptionPageLabel": {
+    "description": "Pagination / row-range label for reception desk tables.",
+    "placeholders": {
+      "from": {
+        "type": "int"
+      },
+      "to": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
   },
   "receptionApplyColumnsAction": "Apply columns",
   "@receptionApplyColumnsAction": {

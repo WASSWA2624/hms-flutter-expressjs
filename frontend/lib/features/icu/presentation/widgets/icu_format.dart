@@ -30,6 +30,14 @@ String joinDisplay(Iterable<String?> values) {
       .join(' | ');
 }
 
+String icuPatientLocationLabel(
+  AppLocalizations l10n,
+  IcuPatientSummary item,
+) {
+  final String location = item.locationLabel.trim();
+  return location.isEmpty ? l10n.icuBoardFilterNoBedLabel : location;
+}
+
 String dateLabel(BuildContext context, DateTime? value) {
   if (value == null) {
     return '';

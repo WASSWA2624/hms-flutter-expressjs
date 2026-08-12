@@ -56,7 +56,7 @@ int nursingScopeTabCount(
   if (!narrowed) {
     return scopeTotal;
   }
-  return state.worklist.totalItemCount ?? state.worklist.items.length;
+  return state.worklist.totalItemCount ?? scopeTotal;
 }
 
 AppTabCountTone nursingScopeCountTone(NursingQueueScope scope) {

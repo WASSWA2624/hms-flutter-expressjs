@@ -120,9 +120,39 @@ void main() {
     expect(page, 2);
   });
 
+  testWidgets(
+    'AppPrintPreviewToolbar hides coarse zoom on compact widths',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(390, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const Scaffold(
+            body: AppPrintPreviewToolbar(scale: 1, currentPage: 1, pageCount: 1),
+          ),
+        ),
+      );
+
+      expect(find.byTooltip('Zoom in'), findsOneWidget);
+      expect(find.byTooltip('Zoom out'), findsOneWidget);
+      expect(find.byTooltip('Increase size'), findsNothing);
+      expect(find.byTooltip('Decrease size'), findsNothing);
+    },
+  );
+
   testWidgets('AppPrintPreviewPaneModeBar uses AppTabStrip to switch modes', (
     WidgetTester tester,
   ) async {
+    tester.view.physicalSize = const Size(1280, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     var mode = AppPrintPreviewPaneMode.split;
 
     await tester.pumpWidget(
@@ -160,8 +190,54 @@ void main() {
   });
 
   testWidgets(
+    'AppPrintPreviewPaneModeBar is icon-only and hides Split when not allowed',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(390, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      var mode = AppPrintPreviewPaneMode.split;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (BuildContext context, StateSetter setState) {
+                return AppPrintPreviewPaneModeBar(
+                  mode: mode,
+                  allowSplit: false,
+                  onChanged: (AppPrintPreviewPaneMode next) {
+                    setState(() => mode = next);
+                  },
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(find.byTooltip('Split view'), findsNothing);
+      expect(find.byTooltip('Sections'), findsOneWidget);
+      expect(find.byTooltip('Preview'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Sections'));
+      await tester.pump();
+      expect(mode, AppPrintPreviewPaneMode.sections);
+    },
+  );
+
+  testWidgets(
     'AppPrintPreviewWorkspace keeps tabs and toolbar in the left column only',
     (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       var mode = AppPrintPreviewPaneMode.split;
       var scale = 1.0;
 
@@ -239,6 +315,66 @@ void main() {
       // Sections-only keeps tabs on the left; zoom toolbar hides (no preview).
       expect(find.byType(AppPrintPreviewToolbar), findsNothing);
       expect(find.byType(AppTabStrip), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'AppPrintPreviewWorkspace uses a single preview pane on narrow widths',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(390, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      var mode = AppPrintPreviewPaneMode.split;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SizedBox(
+              width: 360,
+              height: 520,
+              child: StatefulBuilder(
+                builder: (BuildContext context, StateSetter setState) {
+                  return AppPrintPreviewWorkspace(
+                    height: 520,
+                    paneMode: mode,
+                    onPaneModeChanged: (AppPrintPreviewPaneMode next) {
+                      setState(() => mode = next);
+                    },
+                    toolbar: const AppPrintPreviewToolbar(
+                      scale: 1,
+                      currentPage: 1,
+                      pageCount: 1,
+                    ),
+                    sectionPicker: const Text('Sections content'),
+                    preview: const AppPrintPreviewPanel(
+                      html: '<article class="print-template-page">a</article>',
+                      toolbarEnabled: false,
+                      fallbackChild: Text('Preview content'),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Split remaps to preview-only: document visible, sections hidden.
+      expect(find.text('Preview content'), findsOneWidget);
+      expect(find.text('Sections content'), findsNothing);
+      expect(find.byType(AppPrintPreviewToolbar), findsOneWidget);
+      expect(find.byTooltip('Split view'), findsNothing);
+
+      await tester.tap(find.byTooltip('Sections'));
+      await tester.pumpAndSettle();
+      expect(mode, AppPrintPreviewPaneMode.sections);
+      expect(find.text('Sections content'), findsOneWidget);
+      expect(find.text('Preview content'), findsNothing);
+      expect(find.byType(AppPrintPreviewToolbar), findsNothing);
     },
   );
 }

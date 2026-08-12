@@ -9,55 +9,127 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
+String icuBoardExportCellValue(
+  BuildContext context,
+  IcuPatientSummary item,
+  String columnId,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return switch (columnId) {
+    'patient' => item.displayTitle,
+    'patient_id' => item.displayId ?? l10n.profileUnknownValue,
+    'bed' => icuPatientLocationLabel(l10n, item),
+    'source' => item.sourceLabel.isEmpty
+        ? l10n.profileUnknownValue
+        : apiLabel(item.sourceLabel),
+    'alert' => alertStatus(l10n, item).label,
+    'status' => icuStatus(item).label,
+    'icu_start' => dateTimeLabel(context, item.boardIcuStartAt),
+    'transfer' => apiLabel(item.transferStatus ?? l10n.profileUnknownValue),
+    'admitted' => dateTimeLabel(context, item.admittedAt),
+    'encounter' =>
+      item.encounterId ?? item.displayId ?? l10n.profileUnknownValue,
+    'next_action' => () {
+      final IcuNextActionKind? kind = icuBoardNextActionKind(
+        item,
+        // Export next-action label does not depend on section-specific omit.
+        IcuWorkspaceSection.active,
+      );
+      return kind == null ? '' : icuNextActionLabel(l10n, kind);
+    }(),
+    _ => '',
+  };
+}
+
 List<AppListTableColumn<IcuPatientSummary>> icuColumnsForSection(
-  AppLocalizations l10n,
+  BuildContext context,
   IcuWorkspaceSection section, {
   required AccessRequirement writeRequirement,
   bool showNextAction = true,
 }) {
-  AppListTableColumn<IcuPatientSummary>? nextAction() {
-    if (!showNextAction) {
-      return null;
-    }
-    return icuNextActionColumn(
-      l10n,
-      section,
-      writeRequirement: writeRequirement,
+  final AppLocalizations l10n = context.l10n;
+  final List<AppListTableColumn<IcuPatientSummary>> defaults =
+      _icuBaseColumnsForSection(context, section);
+  if (showNextAction) {
+    defaults.add(
+      icuNextActionColumn(
+        l10n,
+        section,
+        writeRequirement: writeRequirement,
+      ),
     );
   }
+  if (defaults.length >= 5) {
+    return defaults;
+  }
+  final List<AppListTableColumn<IcuPatientSummary>> resolved =
+      List<AppListTableColumn<IcuPatientSummary>>.of(defaults);
+  final Set<String> resolvedIds = resolved
+      .map((AppListTableColumn<IcuPatientSummary> column) => column.key)
+      .toSet();
+  for (final AppListTableColumn<IcuPatientSummary> choice
+      in _icuOptionalColumnPool(context)) {
+    if (resolved.length >= 5) {
+      break;
+    }
+    if (resolvedIds.contains(choice.key)) {
+      continue;
+    }
+    resolved.add(choice);
+    resolvedIds.add(choice.key);
+  }
+  return resolved;
+}
 
+List<AppListTableColumn<IcuPatientSummary>> icuColumnChoicesForSection(
+  BuildContext context,
+  IcuWorkspaceSection section, {
+  required AccessRequirement writeRequirement,
+  bool showNextAction = true,
+}) {
+  final Set<String> defaultKeys = icuColumnsForSection(
+    context,
+    section,
+    writeRequirement: writeRequirement,
+    showNextAction: showNextAction,
+  ).map((AppListTableColumn<IcuPatientSummary> column) => column.key).toSet();
+
+  return <AppListTableColumn<IcuPatientSummary>>[
+    for (final AppListTableColumn<IcuPatientSummary> column
+        in _icuOptionalColumnPool(context))
+      if (!defaultKeys.contains(column.key)) column,
+  ];
+}
+
+List<AppListTableColumn<IcuPatientSummary>> _icuBaseColumnsForSection(
+  BuildContext context,
+  IcuWorkspaceSection section,
+) {
+  final AppLocalizations l10n = context.l10n;
   return switch (section) {
     IcuWorkspaceSection.critical => <AppListTableColumn<IcuPatientSummary>>[
       icuPatientColumn(l10n),
       icuBedColumn(l10n),
       icuAlertColumn(l10n),
       icuStatusColumn(l10n),
-      if (nextAction() case final AppListTableColumn<IcuPatientSummary> column)
-        column,
     ],
     IcuWorkspaceSection.transfers => <AppListTableColumn<IcuPatientSummary>>[
       icuPatientColumn(l10n),
       icuBedColumn(l10n),
       icuTransferColumn(l10n),
       icuStatusColumn(l10n),
-      if (nextAction() case final AppListTableColumn<IcuPatientSummary> column)
-        column,
     ],
     IcuWorkspaceSection.discharge => <AppListTableColumn<IcuPatientSummary>>[
       icuPatientColumn(l10n),
       icuBedColumn(l10n),
-      icuAdmittedColumn(l10n),
+      icuAdmittedColumn(context),
       icuStatusColumn(l10n),
-      if (nextAction() case final AppListTableColumn<IcuPatientSummary> column)
-        column,
     ],
     IcuWorkspaceSection.ended => <AppListTableColumn<IcuPatientSummary>>[
       icuPatientColumn(l10n),
       icuBedColumn(l10n),
-      icuIcuStartColumn(l10n),
+      icuIcuStartColumn(context),
       icuStatusColumn(l10n),
-      if (nextAction() case final AppListTableColumn<IcuPatientSummary> column)
-        column,
     ],
     IcuWorkspaceSection.active ||
     IcuWorkspaceSection.all ||
@@ -67,41 +139,23 @@ List<AppListTableColumn<IcuPatientSummary>> icuColumnsForSection(
       icuBedColumn(l10n),
       icuSourceColumn(l10n),
       icuStatusColumn(l10n),
-      if (nextAction() case final AppListTableColumn<IcuPatientSummary> column)
-        column,
     ],
   };
 }
 
-List<AppListTableColumn<IcuPatientSummary>> icuColumnChoicesForSection(
-  AppLocalizations l10n,
-  IcuWorkspaceSection section, {
-  required AccessRequirement writeRequirement,
-  bool showNextAction = true,
-}) {
-  final Set<String> defaultKeys = icuColumnsForSection(
-    l10n,
-    section,
-    writeRequirement: writeRequirement,
-    showNextAction: showNextAction,
-  ).map((AppListTableColumn<IcuPatientSummary> column) => column.key).toSet();
-
-  final List<AppListTableColumn<IcuPatientSummary>> choices =
-      <AppListTableColumn<IcuPatientSummary>>[];
-  void addIfHidden(AppListTableColumn<IcuPatientSummary> column) {
-    if (!defaultKeys.contains(column.key)) {
-      choices.add(column);
-    }
-  }
-
-  addIfHidden(icuAlertColumn(l10n));
-  addIfHidden(icuSourceColumn(l10n));
-  addIfHidden(icuIcuStartColumn(l10n));
-  addIfHidden(icuTransferColumn(l10n));
-  addIfHidden(icuAdmittedColumn(l10n));
-  addIfHidden(icuEncounterColumn(l10n));
-
-  return choices;
+List<AppListTableColumn<IcuPatientSummary>> _icuOptionalColumnPool(
+  BuildContext context,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return <AppListTableColumn<IcuPatientSummary>>[
+    icuAlertColumn(l10n),
+    icuSourceColumn(l10n),
+    icuIcuStartColumn(context),
+    icuTransferColumn(l10n),
+    icuAdmittedColumn(context),
+    icuEncounterColumn(l10n),
+    icuPatientIdColumn(l10n),
+  ];
 }
 
 List<Widget> icuMobilePriorityFields(
@@ -141,7 +195,12 @@ List<Widget> icuMobilePriorityFields(
     case IcuWorkspaceSection.all:
     case IcuWorkspaceSection.beds:
     case IcuWorkspaceSection.followUps:
-      fields.add(Text(item.locationLabel, style: theme.textTheme.bodySmall));
+      fields.add(
+        Text(
+          icuPatientLocationLabel(l10n, item),
+          style: theme.textTheme.bodySmall,
+        ),
+      );
       if (item.sourceLabel.isNotEmpty) {
         fields.add(
           Text(apiLabel(item.sourceLabel), style: theme.textTheme.bodySmall),
@@ -158,8 +217,29 @@ AppListTableColumn<IcuPatientSummary> icuPatientColumn(AppLocalizations l10n) {
     label: l10n.opdPatientColumnLabel,
     sortComparator: (IcuPatientSummary left, IcuPatientSummary right) =>
         appListTableCompareText(left.displayTitle, right.displayTitle),
+    exportValue: (IcuPatientSummary item) => item.displayTitle,
     cellBuilder: (BuildContext context, IcuPatientSummary item) {
       return IcuPatientCell(item: item);
+    },
+  );
+}
+
+AppListTableColumn<IcuPatientSummary> icuPatientIdColumn(
+  AppLocalizations l10n,
+) {
+  return AppListTableColumn<IcuPatientSummary>(
+    id: 'patient_id',
+    label: l10n.opdPatientIdLabel,
+    sortComparator: (IcuPatientSummary left, IcuPatientSummary right) =>
+        appListTableCompareText(left.displayId, right.displayId),
+    exportValue: (IcuPatientSummary item) =>
+        item.displayId ?? l10n.profileUnknownValue,
+    cellBuilder: (BuildContext context, IcuPatientSummary item) {
+      return Text(
+        item.displayId ?? context.l10n.profileUnknownValue,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
     },
   );
 }
@@ -170,8 +250,10 @@ AppListTableColumn<IcuPatientSummary> icuBedColumn(AppLocalizations l10n) {
     label: l10n.icuColumnBedLabel,
     sortComparator: (IcuPatientSummary left, IcuPatientSummary right) =>
         appListTableCompareText(left.locationLabel, right.locationLabel),
+    exportValue: (IcuPatientSummary item) =>
+        icuPatientLocationLabel(l10n, item),
     cellBuilder: (BuildContext context, IcuPatientSummary item) {
-      return Text(item.locationLabel);
+      return Text(icuPatientLocationLabel(context.l10n, item));
     },
   );
 }
@@ -182,6 +264,9 @@ AppListTableColumn<IcuPatientSummary> icuSourceColumn(AppLocalizations l10n) {
     label: l10n.icuColumnSourceLabel,
     sortComparator: (IcuPatientSummary left, IcuPatientSummary right) =>
         appListTableCompareText(left.sourceLabel, right.sourceLabel),
+    exportValue: (IcuPatientSummary item) => item.sourceLabel.isEmpty
+        ? l10n.profileUnknownValue
+        : apiLabel(item.sourceLabel),
     cellBuilder: (BuildContext context, IcuPatientSummary item) {
       final String label = item.sourceLabel;
       if (label.isEmpty) {
@@ -198,6 +283,7 @@ AppListTableColumn<IcuPatientSummary> icuAlertColumn(AppLocalizations l10n) {
     label: l10n.icuColumnAlertLabel,
     sortComparator: (IcuPatientSummary left, IcuPatientSummary right) =>
         appListTableCompareText(left.criticalSeverity, right.criticalSeverity),
+    exportValue: (IcuPatientSummary item) => alertStatus(l10n, item).label,
     cellBuilder: (BuildContext context, IcuPatientSummary item) {
       return AppWorkspaceStatusBadge(status: alertStatus(l10n, item));
     },
@@ -210,13 +296,15 @@ AppListTableColumn<IcuPatientSummary> icuStatusColumn(AppLocalizations l10n) {
     label: l10n.opdStatusColumnLabel,
     sortComparator: (IcuPatientSummary left, IcuPatientSummary right) =>
         appListTableCompareText(left.icuStatus, right.icuStatus),
+    exportValue: (IcuPatientSummary item) => icuStatus(item).label,
     cellBuilder: (BuildContext context, IcuPatientSummary item) {
       return AppWorkspaceStatusBadge(status: icuStatus(item));
     },
   );
 }
 
-AppListTableColumn<IcuPatientSummary> icuIcuStartColumn(AppLocalizations l10n) {
+AppListTableColumn<IcuPatientSummary> icuIcuStartColumn(BuildContext context) {
+  final AppLocalizations l10n = context.l10n;
   return AppListTableColumn<IcuPatientSummary>(
     id: 'icu_start',
     label: l10n.icuColumnStartLabel,
@@ -225,6 +313,8 @@ AppListTableColumn<IcuPatientSummary> icuIcuStartColumn(AppLocalizations l10n) {
           left.boardIcuStartAt,
           right.boardIcuStartAt,
         ),
+    exportValue: (IcuPatientSummary item) =>
+        dateTimeLabel(context, item.boardIcuStartAt),
     cellBuilder: (BuildContext context, IcuPatientSummary item) {
       return Text(dateTimeLabel(context, item.boardIcuStartAt));
     },
@@ -237,6 +327,8 @@ AppListTableColumn<IcuPatientSummary> icuTransferColumn(AppLocalizations l10n) {
     label: l10n.icuColumnTransferLabel,
     sortComparator: (IcuPatientSummary left, IcuPatientSummary right) =>
         appListTableCompareText(left.transferStatus, right.transferStatus),
+    exportValue: (IcuPatientSummary item) =>
+        apiLabel(item.transferStatus ?? l10n.profileUnknownValue),
     cellBuilder: (BuildContext context, IcuPatientSummary item) {
       final String? status = item.transferStatus;
       if (status == null || status.trim().isEmpty) {
@@ -247,12 +339,15 @@ AppListTableColumn<IcuPatientSummary> icuTransferColumn(AppLocalizations l10n) {
   );
 }
 
-AppListTableColumn<IcuPatientSummary> icuAdmittedColumn(AppLocalizations l10n) {
+AppListTableColumn<IcuPatientSummary> icuAdmittedColumn(BuildContext context) {
+  final AppLocalizations l10n = context.l10n;
   return AppListTableColumn<IcuPatientSummary>(
     id: 'admitted',
     label: l10n.icuAdmittedLabel,
     sortComparator: (IcuPatientSummary left, IcuPatientSummary right) =>
         appListTableCompareDateTime(left.admittedAt, right.admittedAt),
+    exportValue: (IcuPatientSummary item) =>
+        dateTimeLabel(context, item.admittedAt),
     cellBuilder: (BuildContext context, IcuPatientSummary item) {
       return Text(dateTimeLabel(context, item.admittedAt));
     },
@@ -270,6 +365,8 @@ AppListTableColumn<IcuPatientSummary> icuEncounterColumn(
           left.encounterId ?? left.displayId,
           right.encounterId ?? right.displayId,
         ),
+    exportValue: (IcuPatientSummary item) =>
+        item.encounterId ?? item.displayId ?? l10n.profileUnknownValue,
     cellBuilder: (BuildContext context, IcuPatientSummary item) {
       return Text(
         item.encounterId ?? item.displayId ?? l10n.profileUnknownValue,
@@ -289,6 +386,10 @@ AppListTableColumn<IcuPatientSummary> icuNextActionColumn(
     alwaysVisible: true,
     sortComparator: (IcuPatientSummary left, IcuPatientSummary right) =>
         appListTableCompareText(left.nextStep, right.nextStep),
+    exportValue: (IcuPatientSummary item) {
+      final IcuNextActionKind? kind = icuBoardNextActionKind(item, section);
+      return kind == null ? '' : icuNextActionLabel(l10n, kind);
+    },
     cellBuilder: (BuildContext context, IcuPatientSummary item) {
       return IcuNextActionButton(
         summary: item,

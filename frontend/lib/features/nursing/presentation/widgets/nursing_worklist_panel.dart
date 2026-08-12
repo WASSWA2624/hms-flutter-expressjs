@@ -86,6 +86,9 @@ class NursingWorklistPanel extends ConsumerWidget {
       exportSuccessMessage: l10n.commonTableExportSuccessMessage,
       exportFailureMessage: l10n.commonTableExportFailureMessage,
       exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
@@ -101,6 +104,8 @@ class NursingWorklistPanel extends ConsumerWidget {
         fileNameStem: 'nursing_${scope.name}',
         dateOf: (NursingWorkItem item) => item.dueReferenceAt ?? item.admittedAt,
         sheetName: _scopeLabel(l10n, scope),
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
       ),
       onRowSelected: (NursingWorkItem item) {
         openNursingPatientDetailDialog(
@@ -254,7 +259,12 @@ Future<void> _printNursingWorklist(
     for (final NursingWorkItem item in state.worklist.items)
       <String, String>{
         for (final AppListTableColumn<NursingWorkItem> column in columns)
-          column.key: _nursingWorklistPrintCellValue(context, item, column.key),
+          column.key: nursingWorklistExportCellValue(
+            context,
+            item,
+            column.key,
+            scope: scope,
+          ),
       },
   ];
   await printNursingWorkspaceList(
@@ -265,33 +275,6 @@ Future<void> _printNursingWorklist(
     rows: printRows,
     emptyText: l10n.nursingNoWorklistTitle,
   );
-}
-
-String _nursingWorklistPrintCellValue(
-  BuildContext context,
-  NursingWorkItem item,
-  String columnId,
-) {
-  return switch (columnId) {
-    'patient' => item.displayTitle,
-    'location' => item.locationLabel ?? context.l10n.profileUnknownValue,
-    'task_type' => nursingTaskTypeLabel(context, item),
-    'priority' => nursingPriorityStatus(context, item).label,
-    'status' => nursingSummaryStatus(item).label,
-    'admission' => nursingAdmissionLabel(context, item),
-    'due_time' => nursingDueTimeLabel(context, item),
-    // Product exception (tables.mdc): no assignee API field — synthetic summary.
-    'responsible_nurse' => nursingResponsibleNurseLabel(context, item),
-    'observations' => nursingLastObservationLabel(context, item),
-    'medication_due_count' => '${item.medicationDueCount}',
-    'transfer_status' => nursingApiLabel(
-      item.transferStatus ?? context.l10n.profileUnknownValue,
-    ),
-    'discharge_status' => nursingApiLabel(
-      item.dischargeStatus ?? context.l10n.profileUnknownValue,
-    ),
-    _ => '',
-  };
 }
 
 Future<void> openNursingPatientDetailDialog(

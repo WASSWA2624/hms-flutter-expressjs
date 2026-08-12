@@ -80,14 +80,16 @@ class _IpdBedBoardPanelState extends ConsumerState<IpdBedBoardPanel> {
       ipdWorkspaceControllerProvider.notifier,
     );
 
-    final List<AppListTableColumn<IpdBedBoardEntry>> defaultColumns =
-        _ipdBedBoardDefaultColumns(
-          context,
-          canManageBeds: widget.canManageBeds,
-          enabled: !state.isSaving,
-          onAction: (_BedAction action, IpdBedBoardEntry bed) =>
-              _runAction(context, controller, bed, action),
-        );
+    final ({
+      List<AppListTableColumn<IpdBedBoardEntry>> defaults,
+      List<AppListTableColumn<IpdBedBoardEntry>> choices,
+    }) columns = _ipdBedBoardColumns(
+      context,
+      canManageBeds: widget.canManageBeds,
+      enabled: !state.isSaving,
+      onAction: (_BedAction action, IpdBedBoardEntry bed) =>
+          _runAction(context, controller, bed, action),
+    );
     return AppListTable<IpdBedBoardEntry>(
       items: state.bedBoard,
       isLoading: state.isLoadingBedBoard,
@@ -100,9 +102,8 @@ class _IpdBedBoardPanelState extends ConsumerState<IpdBedBoardPanel> {
       columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
       columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
       columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
-      columns: defaultColumns,
-      // Defaults are the full set (5 + manage next-action). No optional extras.
-      columnChoices: const <AppListTableColumn<IpdBedBoardEntry>>[],
+      columns: columns.defaults,
+      columnChoices: columns.choices,
       onRowSelected: (IpdBedBoardEntry bed) {
         if (bed.occupantAdmissionId != null) {
           widget.onOpenAdmission(bed);
@@ -207,9 +208,14 @@ class _IpdBedBoardPanelState extends ConsumerState<IpdBedBoardPanel> {
         canManageBeds: widget.canManageBeds,
         l10n: l10n,
       ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
       exportConfig: AppListTableExportConfig<IpdBedBoardEntry>(
         fileNameStem: 'ipd_bed_board',
         sheetName: l10n.ipdBedBoardTab,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
       ),
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.ipdBedBoardEmptyTitle,
@@ -265,29 +271,10 @@ class _BedOccupantCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          bed.occupantPatientName ?? context.l10n.profileUnknownValue,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: AppFontWeight.emphasis,
-          ),
-        ),
-        if (bed.occupantAdmissionDisplayId != null)
-          Text(
-            bed.occupantAdmissionDisplayId!,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-      ],
+    return Text(
+      bed.occupantPatientName ?? context.l10n.profileUnknownValue,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }
@@ -307,6 +294,7 @@ class _BedActionMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
     final List<_BedAction> actions = _bedActionsFor(
       context,
       bed,
@@ -315,15 +303,14 @@ class _BedActionMenu extends StatelessWidget {
     if (actions.isEmpty) {
       return Text(
         context.l10n.ipdBedNoActionLabel,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
         ),
       );
     }
 
     if (actions.length == 1) {
       final _BedAction action = actions.first;
-      final ThemeData theme = Theme.of(context);
       return Semantics(
         button: true,
         enabled: enabled,
@@ -346,7 +333,6 @@ class _BedActionMenu extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.primary,
-                        fontWeight: AppFontWeight.emphasis,
                       ),
                     ),
                   ),
@@ -370,7 +356,7 @@ class _BedActionMenu extends StatelessWidget {
               child: Row(
                 children: <Widget>[
                   Icon(action.icon, size: 18),
-                  const SizedBox(width: 8),
+                  SizedBox(width: theme.spacing.sm),
                   Text(action.label),
                 ],
               ),
@@ -385,9 +371,8 @@ class _BedActionMenu extends StatelessWidget {
               actions.first.label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-                fontWeight: AppFontWeight.emphasis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.primary,
               ),
             ),
           ),
@@ -398,67 +383,137 @@ class _BedActionMenu extends StatelessWidget {
   }
 }
 
-
 const String _wardFilterKey = 'ward';
 const String _statusFilterKey = 'status';
 
-List<AppListTableColumn<IpdBedBoardEntry>> _ipdBedBoardDefaultColumns(
+({
+  List<AppListTableColumn<IpdBedBoardEntry>> defaults,
+  List<AppListTableColumn<IpdBedBoardEntry>> choices,
+})
+_ipdBedBoardColumns(
   BuildContext context, {
   required bool canManageBeds,
   required bool enabled,
   required void Function(_BedAction action, IpdBedBoardEntry bed) onAction,
 }) {
+  final AppListTableColumn<IpdBedBoardEntry> bed =
+      _ipdBedBoardColumn(context, 'bed');
+  final AppListTableColumn<IpdBedBoardEntry> ward =
+      _ipdBedBoardColumn(context, 'ward');
+  final AppListTableColumn<IpdBedBoardEntry> room =
+      _ipdBedBoardColumn(context, 'room');
+  final AppListTableColumn<IpdBedBoardEntry> patient =
+      _ipdBedBoardColumn(context, 'current_patient');
+  final AppListTableColumn<IpdBedBoardEntry> status =
+      _ipdBedBoardColumn(context, 'status');
+  final AppListTableColumn<IpdBedBoardEntry> admissionId =
+      _ipdBedBoardColumn(context, 'admission_id');
+  final AppListTableColumn<IpdBedBoardEntry>? nextAction = canManageBeds
+      ? _ipdBedBoardColumn(
+          context,
+          'next_action',
+          canManageBeds: canManageBeds,
+          enabled: enabled,
+          onAction: onAction,
+        )
+      : null;
+
+  // Prefer ~5 defaults: when next-action is present, Room moves to optional.
+  final List<AppListTableColumn<IpdBedBoardEntry>> defaults =
+      <AppListTableColumn<IpdBedBoardEntry>>[
+        bed,
+        ward,
+        if (nextAction == null) room,
+        patient,
+        status,
+        if (nextAction != null) nextAction,
+      ];
+  final Set<String> defaultIds = defaults
+      .map((AppListTableColumn<IpdBedBoardEntry> column) => column.key)
+      .toSet();
+  final List<AppListTableColumn<IpdBedBoardEntry>> choices =
+      <AppListTableColumn<IpdBedBoardEntry>>[
+        if (!defaultIds.contains(room.key)) room,
+        if (!defaultIds.contains(admissionId.key)) admissionId,
+      ];
+  return (defaults: defaults, choices: choices);
+}
+
+AppListTableColumn<IpdBedBoardEntry> _ipdBedBoardColumn(
+  BuildContext context,
+  String id, {
+  bool canManageBeds = false,
+  bool enabled = true,
+  void Function(_BedAction action, IpdBedBoardEntry bed)? onAction,
+}) {
   final AppLocalizations l10n = context.l10n;
-  return <AppListTableColumn<IpdBedBoardEntry>>[
-    AppListTableColumn<IpdBedBoardEntry>(
+  return switch (id) {
+    'bed' => AppListTableColumn<IpdBedBoardEntry>(
       id: 'bed',
       label: l10n.ipdBedColumnLabel,
       sortComparator: (IpdBedBoardEntry a, IpdBedBoardEntry b) =>
           appListTableCompareText(a.bedLabel, b.bedLabel),
+      exportValue: (IpdBedBoardEntry bed) =>
+          _ipdBedBoardPrintCellValue(context, bed, 'bed'),
       cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
         return Text(
           bed.bedLabel,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.emphasis),
         );
       },
     ),
-    AppListTableColumn<IpdBedBoardEntry>(
+    'ward' => AppListTableColumn<IpdBedBoardEntry>(
       id: 'ward',
       label: l10n.ipdWardColumnLabel,
       sortComparator: (IpdBedBoardEntry a, IpdBedBoardEntry b) =>
           appListTableCompareText(a.wardDisplayName, b.wardDisplayName),
+      exportValue: (IpdBedBoardEntry bed) =>
+          _ipdBedBoardPrintCellValue(context, bed, 'ward'),
       cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
         return Text(bed.wardDisplayName ?? context.l10n.profileUnknownValue);
       },
     ),
-    AppListTableColumn<IpdBedBoardEntry>(
+    'room' => AppListTableColumn<IpdBedBoardEntry>(
       id: 'room',
       label: l10n.ipdRoomColumnLabel,
+      exportValue: (IpdBedBoardEntry bed) =>
+          _ipdBedBoardPrintCellValue(context, bed, 'room'),
       cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
         return Text(bed.roomDisplayName ?? context.l10n.profileUnknownValue);
       },
     ),
-    AppListTableColumn<IpdBedBoardEntry>(
+    'current_patient' => AppListTableColumn<IpdBedBoardEntry>(
       id: 'current_patient',
       label: l10n.ipdCurrentPatientColumnLabel,
+      exportValue: (IpdBedBoardEntry bed) =>
+          _ipdBedBoardPrintCellValue(context, bed, 'current_patient'),
       cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
-        if (bed.occupantPatientName == null &&
-            bed.occupantAdmissionDisplayId == null) {
-          return const Text('—');
-        }
         return _BedOccupantCell(bed: bed);
       },
     ),
-    AppListTableColumn<IpdBedBoardEntry>(
+    'admission_id' => AppListTableColumn<IpdBedBoardEntry>(
+      id: 'admission_id',
+      label: l10n.ipdAdmissionIdLabel,
+      exportValue: (IpdBedBoardEntry bed) =>
+          _ipdBedBoardPrintCellValue(context, bed, 'admission_id'),
+      cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
+        return Text(
+          bed.occupantAdmissionDisplayId ??
+              context.l10n.profileUnknownValue,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
+      },
+    ),
+    'status' => AppListTableColumn<IpdBedBoardEntry>(
       id: 'status',
       label: l10n.opdStatusColumnLabel,
       alwaysVisible: true,
       sortComparator: (IpdBedBoardEntry a, IpdBedBoardEntry b) =>
           appListTableCompareText(a.status, b.status),
+      exportValue: (IpdBedBoardEntry bed) =>
+          _ipdBedBoardPrintCellValue(context, bed, 'status'),
       cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
         return AppWorkspaceStatusBadge(
           status: AppWorkspaceStatus(
@@ -468,21 +523,31 @@ List<AppListTableColumn<IpdBedBoardEntry>> _ipdBedBoardDefaultColumns(
         );
       },
     ),
-    if (canManageBeds)
-      AppListTableColumn<IpdBedBoardEntry>(
-        id: 'next_action',
-        label: l10n.ipdNextActionColumnLabel,
-        alwaysVisible: true,
-        cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
-          return _BedActionMenu(
-            bed: bed,
-            canManageBeds: canManageBeds,
-            enabled: enabled,
-            onAction: (_BedAction action) => onAction(action, bed),
-          );
-        },
-      ),
-  ];
+    'next_action' => AppListTableColumn<IpdBedBoardEntry>(
+      id: 'next_action',
+      label: l10n.ipdNextActionColumnLabel,
+      alwaysVisible: true,
+      exportValue: (IpdBedBoardEntry bed) {
+        final List<_BedAction> actions = _bedActionsFor(
+          context,
+          bed,
+          canManageBeds,
+        );
+        return actions.isEmpty
+            ? l10n.ipdBedNoActionLabel
+            : actions.first.label;
+      },
+      cellBuilder: (BuildContext context, IpdBedBoardEntry bed) {
+        return _BedActionMenu(
+          bed: bed,
+          canManageBeds: canManageBeds,
+          enabled: enabled,
+          onAction: (_BedAction action) => onAction!(action, bed),
+        );
+      },
+    ),
+    _ => throw ArgumentError.value(id, 'id', 'Unknown IPD bed board column'),
+  };
 }
 
 Future<void> _printIpdBedBoardList(
@@ -492,14 +557,22 @@ Future<void> _printIpdBedBoardList(
   required bool canManageBeds,
   required AppLocalizations l10n,
 }) async {
+  final ({
+    List<AppListTableColumn<IpdBedBoardEntry>> defaults,
+    List<AppListTableColumn<IpdBedBoardEntry>> choices,
+  }) resolved = _ipdBedBoardColumns(
+    context,
+    canManageBeds: canManageBeds,
+    enabled: false,
+    onAction: (_BedAction action, IpdBedBoardEntry bed) {},
+  );
   final List<AppListTableColumn<IpdBedBoardEntry>> columns =
-      _ipdBedBoardDefaultColumns(
-        context,
-        canManageBeds: canManageBeds,
-        enabled: false,
-        onAction: (_BedAction action, IpdBedBoardEntry bed) {},
-      ).where(
-        (AppListTableColumn<IpdBedBoardEntry> column) => column.includesInExport,
+      <AppListTableColumn<IpdBedBoardEntry>>[
+        ...resolved.defaults,
+        ...resolved.choices,
+      ].where(
+        (AppListTableColumn<IpdBedBoardEntry> column) =>
+            column.includesInExport,
       ).toList(growable: false);
   final List<IpdWorkspacePrintColumn> printColumns =
       <IpdWorkspacePrintColumn>[
@@ -532,7 +605,10 @@ String _ipdBedBoardPrintCellValue(
   return switch (columnId) {
     'bed' => bed.bedLabel,
     'ward' => bed.wardDisplayName ?? l10n.profileUnknownValue,
-    'current_patient' => bed.occupantPatientName ?? '—',
+    'current_patient' =>
+      bed.occupantPatientName ?? l10n.profileUnknownValue,
+    'admission_id' =>
+      bed.occupantAdmissionDisplayId ?? l10n.profileUnknownValue,
     'status' => bedStatusLabel(context, bed.status),
     'room' => bed.roomDisplayName ?? l10n.profileUnknownValue,
     _ => '',

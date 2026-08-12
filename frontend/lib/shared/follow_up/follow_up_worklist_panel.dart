@@ -315,10 +315,43 @@ class _FollowUpWorklistBody extends ConsumerWidget {
                   canExport: canExport,
                   enablePrint: enablePrint && onPrint != null,
                   canPrint: canPrint,
+                  exportLabel: l10n.commonTableExportActionLabel,
+                  exportDialogTitle: l10n.commonTableExportDialogTitle,
+                  exportCancelLabel: l10n.commonCancelActionLabel,
+                  exportColumnsSectionLabel:
+                      l10n.commonTableExportColumnsSectionLabel,
+                  exportFiltersSectionLabel:
+                      l10n.commonTableExportFiltersSectionLabel,
+                  exportEmptyColumnsMessage:
+                      l10n.commonTableExportEmptyColumnsMessage,
+                  exportEmptyRowsMessage:
+                      l10n.commonTableExportEmptyRowsMessage,
+                  exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+                  exportFailureMessage: l10n.commonTableExportFailureMessage,
                   printLabel: printLabel ?? l10n.commonPrintActionLabel,
                   onPrint: onPrint == null
                       ? null
                       : () => onPrint!(visibleEntries),
+                  goToTopLabel: l10n.commonGoToTopActionLabel,
+                  loadingMoreLabel: l10n.commonLoadingMoreLabel,
+                  allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
+                  exportConfig: AppListTableExportConfig<ReceptionFollowUpEntry>(
+                    fileNameStem: storageKeyPrefix,
+                    items: visibleEntries,
+                    dateOf: (ReceptionFollowUpEntry entry) => entry.scheduledAt,
+                    dateFromLabel: l10n.commonTableExportDateFromLabel,
+                    dateToLabel: l10n.commonTableExportDateToLabel,
+                    rowFilter:
+                        (
+                          ReceptionFollowUpEntry entry,
+                          AppSearchBarFilterValue filters,
+                        ) {
+                      return _filterFollowUpEntries(
+                        <ReceptionFollowUpEntry>[entry],
+                        filters,
+                      ).isNotEmpty;
+                    },
+                  ),
                   itemKeyBuilder: (ReceptionFollowUpEntry entry) =>
                       ValueKey<String>(entry.id),
                   onRowSelected: (ReceptionFollowUpEntry entry) {
@@ -452,7 +485,6 @@ List<AppListTableColumn<ReceptionFollowUpEntry>> _followUpDefaultColumns(
           title: entry.patientDisplayName?.trim().isNotEmpty == true
               ? entry.patientDisplayName!.trim()
               : l10n.profileUnknownValue,
-          subtitle: entry.patientIdentifier,
         );
       },
     ),
@@ -535,10 +567,9 @@ List<AppListTableColumn<ReceptionFollowUpEntry>> _followUpColumnChoices(
       label: l10n.opdNotesLabel,
       exportValue: (ReceptionFollowUpEntry entry) => entry.notes?.trim() ?? '',
       cellBuilder: (BuildContext context, ReceptionFollowUpEntry entry) {
+        final bool hasNotes = entry.notes?.trim().isNotEmpty == true;
         return Text(
-          entry.notes?.trim().isNotEmpty == true
-              ? entry.notes!.trim()
-              : l10n.profileUnknownValue,
+          hasNotes ? l10n.commonYesLabel : l10n.profileUnknownValue,
         );
       },
     ),

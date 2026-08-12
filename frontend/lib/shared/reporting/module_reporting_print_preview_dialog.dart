@@ -320,6 +320,7 @@ class _ModuleReportingPrintPreviewDialogState
       title: Text(l10n.printPreviewTitle),
       icon: const Icon(Icons.print_outlined),
       pinActionsToBottom: true,
+      stackActionsWhenCompact: false,
       scrollable: false,
       contentPadding: EdgeInsets.zero,
       maxWidth: 1180,

@@ -112,6 +112,8 @@ class _AppPrintHtmlPreviewWebState extends State<_AppPrintHtmlPreviewWeb> {
       margin: 0;
       padding: 0;
       background: #f3f4f6;
+      height: 100%;
+      overflow: auto;
     }
     body {
       zoom: $zoom;

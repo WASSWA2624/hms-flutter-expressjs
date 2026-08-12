@@ -29,6 +29,7 @@ import 'package:hosspi_hms/features/reception/presentation/widgets/reception_que
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
 import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
@@ -386,7 +387,13 @@ class _ReceptionWorkspaceContentState
                           ),
                         )
                       : AppListTable<_ReceptionDeskRow>(
-                          items: rows,
+                          page: AppPage<_ReceptionDeskRow>(
+                            items: rows,
+                            request: AppPageRequest(
+                              pageSize: rows.isEmpty ? 1 : rows.length,
+                            ),
+                            totalItemCount: rows.length,
+                          ),
                           columns: columns,
                           columnChoices: columnChoices,
                           columnVisibilityController:
@@ -431,6 +438,23 @@ class _ReceptionWorkspaceContentState
                           goToTopLabel: l10n.commonGoToTopActionLabel,
                           loadingMoreLabel: l10n.commonLoadingMoreLabel,
                           allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
+                          // Client-side desk lists already hold the full filtered
+                          // set; keep infinite chrome so the pinned footer can
+                          // show the row range and end-of-list status.
+                          onPageChanged: (_) {},
+                          pageLabelBuilder:
+                              (AppPage<_ReceptionDeskRow> page) {
+                            final int total =
+                                page.totalItemCount ?? page.items.length;
+                            if (total == 0) {
+                              return l10n.receptionPageLabel(0, 0, 0);
+                            }
+                            return l10n.receptionPageLabel(
+                              page.firstItemNumber,
+                              page.lastItemNumber,
+                              total,
+                            );
+                          },
                           exportConfig:
                               AppListTableExportConfig<_ReceptionDeskRow>(
                             fileNameStem: 'reception_${_section.name}',

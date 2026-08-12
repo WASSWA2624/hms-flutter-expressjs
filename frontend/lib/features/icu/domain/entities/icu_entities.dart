@@ -393,7 +393,7 @@ final class IcuPatientSummary {
   }
 
   String get locationLabel {
-    return _joinDisplay(<String?>[wardName, bedLabel]) ?? 'No bed';
+    return _joinDisplay(<String?>[wardName, bedLabel]) ?? '';
   }
 
   String get sourceLabel => (sourceKind ?? encounterType ?? '').trim();

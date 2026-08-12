@@ -61,7 +61,7 @@ class IcuBoardPanel extends ConsumerWidget {
         icuBoardShowsNextActionColumn(policy, section);
     final List<AppListTableColumn<IcuPatientSummary>> columns =
         icuColumnsForSection(
-          l10n,
+          context,
           section,
           writeRequirement: writeRequirement,
           showNextAction: includeNextAction,
@@ -103,9 +103,14 @@ class IcuBoardPanel extends ConsumerWidget {
         includeNextAction: includeNextAction,
         l10n: l10n,
       ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
       exportConfig: AppListTableExportConfig<IcuPatientSummary>(
         fileNameStem: 'icu_${section.name}',
         dateOf: (IcuPatientSummary item) => item.admittedAt,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
         sheetName: _sectionLabel(l10n, section),
       ),
       search: AppListTableSearch<IcuPatientSummary>(
@@ -164,7 +169,7 @@ class IcuBoardPanel extends ConsumerWidget {
       ),
       columns: columns,
       columnChoices: icuColumnChoicesForSection(
-        l10n,
+        context,
         section,
         writeRequirement: writeRequirement,
         showNextAction: includeNextAction,
@@ -264,13 +269,13 @@ Future<void> _printIcuBoardList(
   final List<AppListTableColumn<IcuPatientSummary>> columns =
       <AppListTableColumn<IcuPatientSummary>>[
         ...icuColumnsForSection(
-          l10n,
+          context,
           section,
           writeRequirement: writeRequirement,
           showNextAction: includeNextAction,
         ),
         ...icuColumnChoicesForSection(
-          l10n,
+          context,
           section,
           writeRequirement: writeRequirement,
           showNextAction: includeNextAction,
@@ -306,19 +311,5 @@ String _icuBoardPrintCellValue(
   IcuPatientSummary item,
   String columnId,
 ) {
-  final AppLocalizations l10n = context.l10n;
-  return switch (columnId) {
-    'patient' => item.displayTitle,
-    'bed' => item.locationLabel,
-    'source' => item.sourceLabel.isEmpty
-        ? l10n.profileUnknownValue
-        : apiLabel(item.sourceLabel),
-    'alert' => alertStatus(l10n, item).label,
-    'status' => icuStatus(item).label,
-    'icu_start' => dateTimeLabel(context, item.boardIcuStartAt),
-    'transfer' => apiLabel(item.transferStatus ?? l10n.profileUnknownValue),
-    'admitted' => dateTimeLabel(context, item.admittedAt),
-    'encounter' => item.encounterId ?? '',
-    _ => '',
-  };
+  return icuBoardExportCellValue(context, item, columnId);
 }

@@ -498,43 +498,20 @@ class _AppSearchBarState extends State<AppSearchBar> {
                           ),
                         ),
                       ),
-                      if (showFilters)
-                        _AttachedFilterButton(
-                          enabled: widget.enabled && !widget.isLoading,
-                          active:
-                              widget.hasActiveFilters ||
-                              widget.filterValue.isActive,
-                          activeCount: widget.filterValue.activeCount,
-                          label:
-                              widget.advancedFilterButtonLabel ??
-                              'Filter',
-                          showLabel: showActionLabels,
-                          onPressed: _openAdvancedFilters,
-                        ),
-                      for (final AppSearchBarAction action
-                          in inlineTrailingActions)
-                        _AttachedSearchBarActionButton(
-                          action: action,
-                          showLabel: showActionLabels,
-                          enabled:
-                              widget.enabled &&
-                              !widget.isLoading &&
-                              action.enabled &&
-                              action.onPressed != null,
-                        ),
-                      if (overflowTrailingActions.isNotEmpty)
-                        _AttachedSearchBarOverflowMenu(
-                          actions: overflowTrailingActions,
-                          label: widget.trailingActionsOverflowLabel,
-                          showLabel: showActionLabels,
-                          enabled: widget.enabled && !widget.isLoading,
-                        ),
-                      // End inset so the last chrome action is not flush against
-                      // the search bar border on any breakpoint.
                       if (showFilters ||
                           inlineTrailingActions.isNotEmpty ||
-                          overflowTrailingActions.isNotEmpty)
+                          overflowTrailingActions.isNotEmpty) ...<Widget>[
+                        ..._searchBarActionChrome(
+                          theme: theme,
+                          showFilters: showFilters,
+                          showActionLabels: showActionLabels,
+                          inlineTrailingActions: inlineTrailingActions,
+                          overflowTrailingActions: overflowTrailingActions,
+                        ),
+                        // End inset so the last chrome action is not flush against
+                        // the search bar border on any breakpoint.
                         SizedBox(width: theme.spacing.sm),
+                      ],
                     ],
                   ),
                 ),
@@ -544,6 +521,62 @@ class _AppSearchBarState extends State<AppSearchBar> {
         );
       },
     );
+  }
+
+  List<Widget> _searchBarActionChrome({
+    required ThemeData theme,
+    required bool showFilters,
+    required bool showActionLabels,
+    required List<AppSearchBarAction> inlineTrailingActions,
+    required List<AppSearchBarAction> overflowTrailingActions,
+  }) {
+    final List<Widget> actions = <Widget>[
+      if (showFilters)
+        _AttachedFilterButton(
+          enabled: widget.enabled && !widget.isLoading,
+          active:
+              widget.hasActiveFilters || widget.filterValue.isActive,
+          activeCount: widget.filterValue.activeCount,
+          label: widget.advancedFilterButtonLabel ?? 'Filter',
+          showLabel: showActionLabels,
+          onPressed: _openAdvancedFilters,
+        ),
+      for (final AppSearchBarAction action in inlineTrailingActions)
+        _AttachedSearchBarActionButton(
+          action: action,
+          showLabel: showActionLabels,
+          enabled:
+              widget.enabled &&
+              !widget.isLoading &&
+              action.enabled &&
+              action.onPressed != null,
+        ),
+      if (overflowTrailingActions.isNotEmpty)
+        _AttachedSearchBarOverflowMenu(
+          actions: overflowTrailingActions,
+          label: widget.trailingActionsOverflowLabel,
+          showLabel: showActionLabels,
+          enabled: widget.enabled && !widget.isLoading,
+        ),
+    ];
+
+    final List<Widget> chrome = <Widget>[];
+    for (int index = 0; index < actions.length; index += 1) {
+      if (index > 0) {
+        chrome.add(
+          SizedBox(
+            height: 20,
+            child: VerticalDivider(
+              width: theme.spacing.sm,
+              thickness: theme.appTokens.dividerThickness,
+              color: theme.borders.faint,
+            ),
+          ),
+        );
+      }
+      chrome.add(actions[index]);
+    }
+    return chrome;
   }
 
   Widget? _suffixIcon(String clearLabel, bool canClear) {
@@ -826,7 +859,8 @@ class _AttachedFilterButton extends StatelessWidget {
   }
 }
 
-/// Flat search-bar chrome action: icon (+ optional label), no fill or divider.
+/// Flat search-bar chrome action: icon (+ optional label), no fill.
+/// Adjacent actions are separated by a thin vertical rule in [AppSearchBar].
 class _AttachedSearchBarButton extends StatelessWidget {
   const _AttachedSearchBarButton({
     required this.enabled,

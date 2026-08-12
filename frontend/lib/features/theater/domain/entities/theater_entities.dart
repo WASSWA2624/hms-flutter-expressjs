@@ -673,7 +673,7 @@ int theaterSectionTabCount(
   if (!narrowed) {
     return scopeTotal;
   }
-  return state.cases.totalItemCount ?? state.cases.items.length;
+  return state.cases.totalItemCount ?? scopeTotal;
 }
 
 @immutable

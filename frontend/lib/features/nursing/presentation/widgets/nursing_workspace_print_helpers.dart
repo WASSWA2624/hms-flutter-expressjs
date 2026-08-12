@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -16,13 +17,6 @@ final class NursingWorkspacePrintColumn {
 
   final String id;
   final String label;
-}
-
-abstract final class NursingWorkspacePrintStrings {
-  static const String optionsSection = 'Print sections';
-  static const String summarySection = 'Summary';
-  static const String rowsSection = 'Rows';
-  static String rowCount(int count) => '$count rows';
 }
 
 final class NursingWorkspacePrintOptionsController extends ChangeNotifier {
@@ -93,11 +87,13 @@ Future<void> printNursingWorkspaceList({
   required List<Map<String, String>> rows,
   required String emptyText,
 }) async {
+  final AppLocalizations l10n = context.l10n;
   final NursingWorkspacePrintOptionsController options =
       NursingWorkspacePrintOptionsController(columns: columns);
 
   String buildBodyHtml() {
     return nursingWorkspaceListHtml(
+      l10n: l10n,
       rows: rows,
       options: options,
       emptyText: emptyText,
@@ -109,13 +105,13 @@ Future<void> printNursingWorkspaceList({
       ref: ref,
       context: context,
       title: title,
-      previewDialogTitle: context.l10n.printPreviewTitle,
+      previewDialogTitle: l10n.printPreviewTitle,
       subtitle: options.includeSummary
-          ? NursingWorkspacePrintStrings.rowCount(rows.length)
+          ? l10n.commonPrintRowCountLabel(rows.length)
           : null,
       recordReference: PrintFormContextReference(
         label: title,
-        value: NursingWorkspacePrintStrings.rowCount(rows.length),
+        value: l10n.commonPrintRowCountLabel(rows.length),
       ),
       bodyHtml: buildBodyHtml(),
       bodyHtmlBuilder: buildBodyHtml,
@@ -131,6 +127,7 @@ Future<void> printNursingWorkspaceList({
 }
 
 String nursingWorkspaceListHtml({
+  required AppLocalizations l10n,
   required List<Map<String, String>> rows,
   required NursingWorkspacePrintOptionsController options,
   required String emptyText,
@@ -140,9 +137,9 @@ String nursingWorkspaceListHtml({
   if (options.includeSummary) {
     buffer.write(
       PrintFormTemplate.section(
-        title: NursingWorkspacePrintStrings.summarySection,
+        title: l10n.commonPrintSummarySectionLabel,
         bodyHtml:
-            '<p>${PrintFormTemplate.escape(NursingWorkspacePrintStrings.rowCount(rows.length))}</p>',
+            '<p>${PrintFormTemplate.escape(l10n.commonPrintRowCountLabel(rows.length))}</p>',
       ),
     );
   }
@@ -163,7 +160,7 @@ String nursingWorkspaceListHtml({
     ];
     buffer.write(
       PrintFormTemplate.section(
-        title: NursingWorkspacePrintStrings.rowsSection,
+        title: l10n.commonPrintRowsSectionLabel,
         bodyHtml: PrintFormTemplate.table(
           headers: <String>[
             for (final NursingWorkspacePrintColumn column in selected)
@@ -190,25 +187,26 @@ class NursingWorkspacePrintOptionsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
 
     return ListenableBuilder(
       listenable: controller,
       builder: (BuildContext context, _) {
         return AppFormSection(
-          title: NursingWorkspacePrintStrings.optionsSection,
+          title: l10n.commonPrintSectionsLabel,
           density: AppFormSectionDensity.compact,
           children: <Widget>[
             AppReportSectionPicker(
               compact: true,
-              sections: const <AppReportSectionData>[
+              sections: <AppReportSectionData>[
                 AppReportSectionData(
                   id: 'summary',
-                  title: NursingWorkspacePrintStrings.summarySection,
+                  title: l10n.commonPrintSummarySectionLabel,
                   icon: Icons.summarize_outlined,
                 ),
                 AppReportSectionData(
                   id: 'rows',
-                  title: NursingWorkspacePrintStrings.rowsSection,
+                  title: l10n.commonPrintRowsSectionLabel,
                   icon: Icons.list_alt_outlined,
                 ),
               ],

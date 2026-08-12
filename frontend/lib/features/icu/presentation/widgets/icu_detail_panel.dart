@@ -98,7 +98,7 @@ class IcuStayDetailPanel extends ConsumerWidget {
             ),
             AppWorkspacePatientContextField(
               label: l10n.icuLocationLabel,
-              value: summary.locationLabel,
+              value: icuPatientLocationLabel(l10n, summary),
               icon: Icons.bed_outlined,
             ),
             if (detail.sourceContextLabel != null)

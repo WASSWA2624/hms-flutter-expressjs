@@ -2625,6 +2625,7 @@ class _PatientReportPrintPreviewDialogState
   AppPrintPreviewPaneMode _paneMode = AppPrintPreviewPaneMode.split;
   double _scale = 1;
   int _currentPage = 1;
+  bool _didAutoFitPreview = false;
 
   /// Keeps every available facility-header field selected until the user edits
   /// the facility checkboxes, so facility details that load after the dialog
@@ -2743,6 +2744,7 @@ class _PatientReportPrintPreviewDialogState
       icon: const Icon(Icons.preview_outlined),
       scrollable: false,
       pinActionsToBottom: true,
+      stackActionsWhenCompact: false,
       contentPadding: EdgeInsets.zero,
       maxWidth: 1120,
       closeEnabled: !_isPrinting,
@@ -2751,6 +2753,17 @@ class _PatientReportPrintPreviewDialogState
         paneModeEnabled: !_isPrinting,
         onPaneModeChanged: (AppPrintPreviewPaneMode next) {
           setState(() => _paneMode = next);
+        },
+        onPreviewPaneWidth: (double width) {
+          if (_didAutoFitPreview || !width.isFinite || width <= 0) {
+            return;
+          }
+          _didAutoFitPreview = true;
+          final double next = AppPrintPreviewZoom.fitPage(width);
+          if ((next - _scale).abs() < 0.01) {
+            return;
+          }
+          setState(() => _scale = next);
         },
         toolbar: AppPrintPreviewToolbar(
           scale: _scale,

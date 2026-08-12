@@ -730,7 +730,9 @@ void main() {
           },
         ),
       ),
-      size: const Size(400, 498),
+      // Settings is desktop-only (lg+); footer order still asserts Close trails
+      // Apply when actions share a row.
+      size: const Size(900, 600),
     );
 
     await tester.tap(find.byTooltip('Settings'));
@@ -752,6 +754,53 @@ void main() {
       isTrue,
     );
   });
+
+  testWidgets(
+    'AppListTable hides Settings and Print on mobile and tablet',
+    (WidgetTester tester) async {
+      final TextEditingController searchController = TextEditingController();
+      addTearDown(searchController.dispose);
+
+      Future<void> pumpAt(Size size) {
+        return pumpComponent(
+          tester,
+          SizedBox(
+            height: 420,
+            child: AppListTable<_RowItem>(
+              items: items,
+              columns: _columns,
+              enablePrint: true,
+              onPrint: () async {},
+              search: AppListTableSearch<_RowItem>(
+                controller: searchController,
+                semanticLabel: 'Search rows',
+                matcher: (_, _) => true,
+              ),
+              mobileItemBuilder: (BuildContext context, _RowItem item) {
+                return Text(item.title);
+              },
+            ),
+          ),
+          size: size,
+        );
+      }
+
+      await pumpAt(const Size(400, 600));
+      expect(find.byTooltip('Settings'), findsNothing);
+      expect(find.byTooltip('Print'), findsNothing);
+      expect(find.byTooltip('Export'), findsOneWidget);
+
+      await pumpAt(const Size(700, 600));
+      expect(find.byTooltip('Settings'), findsNothing);
+      expect(find.byTooltip('Print'), findsNothing);
+      expect(find.byTooltip('Export'), findsOneWidget);
+
+      await pumpAt(const Size(900, 600));
+      expect(find.byTooltip('Settings'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+      expect(find.byTooltip('Export'), findsOneWidget);
+    },
+  );
 
   testWidgets('AppListTable can hide row numbers and scroll surface header', (
     WidgetTester tester,
@@ -1073,16 +1122,15 @@ void main() {
         size: const Size(960, 600),
       );
 
-      expect(find.byType(AppLoadingIndicator), findsOneWidget);
-      expect(find.text('Loading more...'), findsOneWidget);
+      expect(find.byType(AppLoadingIndicator), findsNothing);
+      expect(find.bySemanticsLabel('Loading more...'), findsOneWidget);
       expect(find.text('Item 0'), findsOneWidget);
-      // Overlay sits on the table body, not as an extra footer row.
       expect(
-        find.ancestor(
-          of: find.byType(AppLoadingIndicator),
-          matching: find.byType(Stack),
+        find.descendant(
+          of: find.byType(AppListTable<_RowItem>),
+          matching: find.bySemanticsLabel('Loading more...'),
         ),
-        findsWidgets,
+        findsOneWidget,
       );
     },
   );
@@ -1411,7 +1459,7 @@ void main() {
   );
 
   testWidgets(
-    'AppListTable shows go-to-top after header scrolls away and returns to top',
+    'AppListTable keeps go-to-top in the footer and enables it after scroll',
     (WidgetTester tester) async {
       final List<_RowItem> manyItems = List<_RowItem>.generate(
         40,
@@ -1441,7 +1489,15 @@ void main() {
       );
 
       final Finder goToTop = find.byTooltip('Go to top');
-      expect(goToTop, findsNothing);
+      expect(goToTop, findsOneWidget);
+
+      TextButton goToTopButton() {
+        return tester.widget<TextButton>(
+          find.descendant(of: goToTop, matching: find.byType(TextButton)),
+        );
+      }
+
+      expect(goToTopButton().onPressed, isNull);
 
       final Finder verticalScroll = find.byType(CustomScrollView);
       expect(verticalScroll, findsOneWidget);
@@ -1449,12 +1505,12 @@ void main() {
       await tester.drag(verticalScroll, const Offset(0, -240));
       await tester.pumpAndSettle();
 
-      expect(goToTop, findsOneWidget);
+      expect(goToTopButton().onPressed, isNotNull);
 
       await tester.tap(goToTop);
       await tester.pumpAndSettle();
 
-      expect(goToTop, findsNothing);
+      expect(goToTopButton().onPressed, isNull);
       expect(find.text('Item 0'), findsOneWidget);
     },
   );

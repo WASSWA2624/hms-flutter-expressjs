@@ -169,6 +169,7 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
       icon: const Icon(Icons.print_outlined),
       scrollable: false,
       pinActionsToBottom: true,
+      stackActionsWhenCompact: false,
       contentPadding: EdgeInsets.zero,
       maxWidth: _dialogMaxWidth,
       closeEnabled: !_isPrinting,

@@ -526,6 +526,24 @@ abstract class AppLocalizations {
   /// **'All rows loaded'**
   String get commonAllRowsLoadedLabel;
 
+  /// Compact duration when under one hour (for example 45m).
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes}m'**
+  String commonDurationMinutesShort(int minutes);
+
+  /// Compact whole-hour duration (for example 2h).
+  ///
+  /// In en, this message translates to:
+  /// **'{hours}h'**
+  String commonDurationHoursShort(int hours);
+
+  /// Compact hours-and-minutes duration (for example 1h 20m).
+  ///
+  /// In en, this message translates to:
+  /// **'{hours}h {minutes}m'**
+  String commonDurationHoursMinutesShort(int hours, int minutes);
+
   /// Section title for print-preview options that choose summary and row blocks.
   ///
   /// In en, this message translates to:
@@ -7764,6 +7782,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear filters'**
   String get receptionClearFiltersAction;
+
+  /// Pagination / row-range label for reception desk tables.
+  ///
+  /// In en, this message translates to:
+  /// **'{from}-{to} of {total}'**
+  String receptionPageLabel(int from, int to, int total);
 
   /// Action to apply Reception table column visibility.
   ///

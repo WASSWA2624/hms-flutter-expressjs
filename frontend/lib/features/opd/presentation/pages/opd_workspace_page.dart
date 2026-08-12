@@ -1824,17 +1824,17 @@ final class _OpdDateRange {
   final DateTime to;
 }
 
-String _formatShortDuration(Duration duration) {
+String _formatShortDuration(AppLocalizations l10n, Duration duration) {
   final int minutes = duration.inMinutes;
   if (minutes < 60) {
-    return '${minutes}m';
+    return l10n.commonDurationMinutesShort(minutes);
   }
   final int hours = duration.inHours;
   final int remainingMinutes = minutes.remainder(60);
   if (remainingMinutes == 0) {
-    return '${hours}h';
+    return l10n.commonDurationHoursShort(hours);
   }
-  return '${hours}h ${remainingMinutes}m';
+  return l10n.commonDurationHoursMinutesShort(hours, remainingMinutes);
 }
 
 String _arrivalModeLabel(BuildContext context, _OpdTableItem item) {
@@ -1916,7 +1916,7 @@ AppListTableColumn<_OpdTableItem> _opdDataColumn(
     alwaysVisible: column == _OpdTableColumnId.nextAction,
     sortComparator: _opdSortComparator(column),
     exportValue: (_OpdTableItem item) =>
-        _opdExportCellValue(context, column, item),
+        _opdExportCellValue(context, column, item, state: state),
     cellBuilder: (BuildContext context, _OpdTableItem item) {
       return switch (column) {
         _OpdTableColumnId.patient => AppListItemText(
@@ -1968,8 +1968,9 @@ AppListTableColumn<_OpdTableItem> _opdDataColumn(
 String _opdExportCellValue(
   BuildContext context,
   _OpdTableColumnId column,
-  _OpdTableItem item,
-) {
+  _OpdTableItem item, {
+  required OpdWorkspaceState state,
+}) {
   return switch (column) {
     _OpdTableColumnId.patient => item.patientName ?? item.title,
     _OpdTableColumnId.category => _categoryLabel(context, item.category),
@@ -1984,14 +1985,46 @@ String _opdExportCellValue(
     _OpdTableColumnId.waitingTime =>
       _waitingTimeLabel(context, item, now: DateTime.now()),
     _OpdTableColumnId.arrivalTime => _formatDateTime(context, item.time),
-    _OpdTableColumnId.nextAction => item.nextStep?.trim().isNotEmpty == true
-        ? item.nextStep!.trim()
-        : '',
+    _OpdTableColumnId.nextAction =>
+      _opdNextActionExportValue(context, item, state: state),
     _OpdTableColumnId.encounter =>
       item.encounterId?.trim().isNotEmpty == true
           ? item.encounterId!.trim()
           : context.l10n.profileUnknownValue,
   };
+}
+
+String _opdNextActionExportValue(
+  BuildContext context,
+  _OpdTableItem item, {
+  required OpdWorkspaceState state,
+}) {
+  final OpdFlowSummary? flow = item.flow;
+  if (flow != null) {
+    final OpdBoardNextActionKind kind = opdBoardNextActionKindForFlow(flow);
+    if (kind == OpdBoardNextActionKind.none) {
+      return '';
+    }
+    return opdBoardNextActionLabel(context, kind, flow: flow);
+  }
+
+  final OpdAppointment? appointment = item.appointment;
+  if (appointment == null) {
+    return '';
+  }
+  final OpdFlowSummary? linkedFlow = findActiveOpdFlowForAppointment(
+    appointment: appointment,
+    flows: <OpdFlowSummary>[
+      ...state.flows.items,
+      ...state.triageQueue.items,
+    ],
+  );
+  final OpdAppointmentPrimaryAction primary =
+      resolveOpdAppointmentPrimaryAction(
+        appointment: appointment,
+        linkedFlow: linkedFlow,
+      );
+  return opdAppointmentPrimaryActionLabel(context.l10n, primary) ?? '';
 }
 
 AppListTableSortComparator<_OpdTableItem> _opdSortComparator(
@@ -2534,14 +2567,20 @@ class _OpdMainTable extends ConsumerWidget {
           context,
           ref,
           section: section,
+          state: state,
           items: exportItems,
           showNextAction: showNextAction,
           l10n: l10n,
         ),
+        goToTopLabel: l10n.commonGoToTopActionLabel,
+        loadingMoreLabel: l10n.commonLoadingMoreLabel,
+        allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
         exportConfig: AppListTableExportConfig<_OpdTableItem>(
           fileNameStem: 'opd_${section.name}',
           items: exportItems,
           dateOf: (_OpdTableItem item) => item.time,
+          dateFromLabel: l10n.commonTableExportDateFromLabel,
+          dateToLabel: l10n.commonTableExportDateToLabel,
           rowFilter: (_OpdTableItem item, AppSearchBarFilterValue filters) {
             return _OpdTableFilter.fromSearchBarValue(
               filters,
@@ -2743,6 +2782,7 @@ Future<void> _printOpdWorkspaceList(
   BuildContext context,
   WidgetRef ref, {
   required OpdWorkspaceSection section,
+  required OpdWorkspaceState state,
   required List<_OpdTableItem> items,
   required bool showNextAction,
   required AppLocalizations l10n,
@@ -2773,7 +2813,7 @@ Future<void> _printOpdWorkspaceList(
       <String, String>{
         for (final _OpdTableColumnId column in columnIds)
           _opdTableColumnStorageId(column):
-              _opdExportCellValue(context, column, item),
+              _opdExportCellValue(context, column, item, state: state),
       },
   ];
   final ({String title, String body}) empty = _opdSectionEmptyCopy(
@@ -3010,7 +3050,7 @@ String _waitingTimeLabel(
   if (duration.isNegative) {
     return context.l10n.profileUnknownValue;
   }
-  return _formatShortDuration(duration);
+  return _formatShortDuration(context.l10n, duration);
 }
 
 Color _opdTableRowColor(BuildContext context, _OpdTableItem item) {

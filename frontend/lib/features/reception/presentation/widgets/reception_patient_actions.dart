@@ -638,7 +638,23 @@ class _ReceptionPatientPickerDialogState
       columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
       columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
       columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
       onPageChanged: _onPageChanged,
+      pageLabelBuilder: (AppPage<Patient> page) {
+        final int total = page.totalItemCount ?? page.items.length;
+        if (total == 0) {
+          return l10n.patientsPageLabel(0, 0, 0);
+        }
+        return l10n.patientsPageLabel(
+          page.firstItemNumber,
+          page.lastItemNumber,
+          total,
+        );
+      },
+      previousPageLabel: l10n.patientsPreviousPageLabel,
+      nextPageLabel: l10n.patientsNextPageLabel,
       onRowSelected: _selectPatient,
       itemKeyBuilder: (Patient patient) =>
           ValueKey<String>(_patientOptionValue(patient) ?? patient.id),

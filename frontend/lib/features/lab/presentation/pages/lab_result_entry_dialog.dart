@@ -1857,6 +1857,7 @@ class _LabReportPreviewDialogState
       title: Text(l10n.labReportPreviewTitle),
       icon: const Icon(Icons.print_outlined),
       pinActionsToBottom: true,
+      stackActionsWhenCompact: false,
       contentPadding: EdgeInsets.zero,
       maxWidth: 1120,
       closeEnabled: !_isPrinting,

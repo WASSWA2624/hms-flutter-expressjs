@@ -70,10 +70,10 @@ class _IcuBedBoardPanelState extends ConsumerState<IcuBedBoardPanel> {
           _statusFilterKey: board.selectedStatus!,
       },
     );
-    final List<AppListTableColumn<IcuBed>> columns = _icuBedBoardColumns(
-      context,
-      policy: policy,
-    );
+    final ({
+      List<AppListTableColumn<IcuBed>> defaults,
+      List<AppListTableColumn<IcuBed>> choices,
+    }) columns = _icuBedBoardColumns(context, policy: policy);
     final bool canOpenIpd =
         IcuBedBoardAtomPermissions.openIpd.isAllowed(policy);
 
@@ -89,8 +89,8 @@ class _IcuBedBoardPanelState extends ConsumerState<IcuBedBoardPanel> {
       columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
       columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
       columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
-      columns: columns,
-      columnChoices: const <AppListTableColumn<IcuBed>>[],
+      columns: columns.defaults,
+      columnChoices: columns.choices,
       enableExport: true,
       canExport: canExportIcuWorkspace(policy),
       exportLabel: l10n.commonTableExportActionLabel,
@@ -109,12 +109,20 @@ class _IcuBedBoardPanelState extends ConsumerState<IcuBedBoardPanel> {
         context,
         ref,
         beds: beds,
-        columns: columns,
+        columns: <AppListTableColumn<IcuBed>>[
+          ...columns.defaults,
+          ...columns.choices,
+        ],
         l10n: l10n,
       ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
       exportConfig: AppListTableExportConfig<IcuBed>(
         fileNameStem: 'icu_bed_board',
         sheetName: l10n.icuViewBedBoard,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
       ),
       search: AppListTableSearch<IcuBed>(
         controller: _searchController,
@@ -184,7 +192,7 @@ class _IcuBedBoardPanelState extends ConsumerState<IcuBedBoardPanel> {
         return AppListTableMobileItem(
           title: bed.label ?? bed.id,
           caption: bed.isOccupied
-              ? joinDisplay(<String?>[bed.occupantName, bed.occupantDisplayId])
+              ? (bed.occupantName ?? l10n.profileUnknownValue)
               : l10n.icuBedVacantLabel,
           meta: <AppListTableMobileMeta>[
             AppListTableMobileMeta(label: bed.locationLabel),
@@ -214,82 +222,123 @@ const List<String> _icuBedStatuses = <String>[
   'BLOCKED',
 ];
 
-List<AppListTableColumn<IcuBed>> _icuBedBoardColumns(
+({
+  List<AppListTableColumn<IcuBed>> defaults,
+  List<AppListTableColumn<IcuBed>> choices,
+})
+_icuBedBoardColumns(
   BuildContext context, {
   required AppAccessPolicy policy,
 }) {
   final AppLocalizations l10n = context.l10n;
   final bool canOpenIpd = IcuBedBoardAtomPermissions.openIpd.isAllowed(policy);
-  return <AppListTableColumn<IcuBed>>[
-    AppListTableColumn<IcuBed>(
-      id: 'bed',
-      label: l10n.ipdBedColumnLabel,
-      sortComparator: (IcuBed a, IcuBed b) =>
-          appListTableCompareText(a.label ?? a.id, b.label ?? b.id),
-      cellBuilder: (BuildContext context, IcuBed bed) {
-        return Text(
-          bed.label ?? bed.id,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.bodyMedium,
-        );
-      },
-    ),
-    AppListTableColumn<IcuBed>(
-      id: 'location',
-      label: l10n.ipdWardColumnLabel,
-      sortComparator: (IcuBed a, IcuBed b) =>
-          appListTableCompareText(a.locationLabel, b.locationLabel),
-      cellBuilder: (BuildContext context, IcuBed bed) {
-        return Text(bed.locationLabel);
-      },
-    ),
-    AppListTableColumn<IcuBed>(
-      id: 'occupant',
-      label: l10n.ipdCurrentPatientColumnLabel,
-      cellBuilder: (BuildContext context, IcuBed bed) {
-        if (!bed.isOccupied) {
-          return Text(context.l10n.icuBedVacantLabel);
-        }
-        return Text(
-          joinDisplay(<String?>[bed.occupantName, bed.occupantDisplayId]),
-        );
-      },
-    ),
-    AppListTableColumn<IcuBed>(
-      id: 'status',
-      label: l10n.opdStatusColumnLabel,
-      alwaysVisible: true,
-      cellBuilder: (BuildContext context, IcuBed bed) {
-        return AppWorkspaceStatusBadge(
-          status: AppWorkspaceStatus(
-            label: apiLabel(bed.status ?? ''),
-            tone: bedStatusTone(bed.status),
-          ),
-        );
-      },
-    ),
-    if (canOpenIpd)
-      AppListTableColumn<IcuBed>(
-        id: 'next_action',
-        label: l10n.icuNextActionColumnLabel,
-        alwaysVisible: true,
-        exportable: false,
-        cellBuilder: (BuildContext context, IcuBed bed) {
-          if (!bed.isOccupied) {
-            return const SizedBox.shrink();
-          }
-          return AppButton(
-            iconOnly: true,
-            leadingIcon: Icons.open_in_new_outlined,
-            label: l10n.icuActionOpenIpd,
-            semanticLabel: l10n.icuActionOpenIpd,
-            tooltip: l10n.icuActionOpenIpd,
-            onPressed: () => _openIpd(context, bed),
-          );
-        },
-      ),
-  ];
+  final AppListTableColumn<IcuBed> bed = AppListTableColumn<IcuBed>(
+    id: 'bed',
+    label: l10n.ipdBedColumnLabel,
+    sortComparator: (IcuBed a, IcuBed b) =>
+        appListTableCompareText(a.label ?? a.id, b.label ?? b.id),
+    exportValue: (IcuBed item) => item.label ?? item.id,
+    cellBuilder: (BuildContext context, IcuBed bed) {
+      return Text(
+        bed.label ?? bed.id,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    },
+  );
+  final AppListTableColumn<IcuBed> location = AppListTableColumn<IcuBed>(
+    id: 'location',
+    label: l10n.ipdWardColumnLabel,
+    sortComparator: (IcuBed a, IcuBed b) =>
+        appListTableCompareText(a.locationLabel, b.locationLabel),
+    exportValue: (IcuBed item) => item.locationLabel,
+    cellBuilder: (BuildContext context, IcuBed bed) {
+      return Text(bed.locationLabel);
+    },
+  );
+  final AppListTableColumn<IcuBed> occupant = AppListTableColumn<IcuBed>(
+    id: 'occupant',
+    label: l10n.ipdCurrentPatientColumnLabel,
+    exportValue: (IcuBed item) => item.isOccupied
+        ? (item.occupantName ?? l10n.profileUnknownValue)
+        : l10n.icuBedVacantLabel,
+    cellBuilder: (BuildContext context, IcuBed bed) {
+      if (!bed.isOccupied) {
+        return Text(context.l10n.icuBedVacantLabel);
+      }
+      return Text(
+        bed.occupantName ?? context.l10n.profileUnknownValue,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    },
+  );
+  final AppListTableColumn<IcuBed> status = AppListTableColumn<IcuBed>(
+    id: 'status',
+    label: l10n.opdStatusColumnLabel,
+    alwaysVisible: true,
+    exportValue: (IcuBed item) => apiLabel(item.status ?? ''),
+    cellBuilder: (BuildContext context, IcuBed bed) {
+      return AppWorkspaceStatusBadge(
+        status: AppWorkspaceStatus(
+          label: apiLabel(bed.status ?? ''),
+          tone: bedStatusTone(bed.status),
+        ),
+      );
+    },
+  );
+  final AppListTableColumn<IcuBed> admissionId = AppListTableColumn<IcuBed>(
+    id: 'admission_id',
+    label: l10n.icuAdmissionLabel,
+    exportValue: (IcuBed item) =>
+        item.occupantDisplayId ?? l10n.profileUnknownValue,
+    cellBuilder: (BuildContext context, IcuBed bed) {
+      return Text(
+        bed.occupantDisplayId ?? context.l10n.profileUnknownValue,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    },
+  );
+  final AppListTableColumn<IcuBed>? nextAction = canOpenIpd
+      ? AppListTableColumn<IcuBed>(
+          id: 'next_action',
+          label: l10n.icuNextActionColumnLabel,
+          alwaysVisible: true,
+          exportable: false,
+          cellBuilder: (BuildContext context, IcuBed bed) {
+            if (!bed.isOccupied) {
+              return const SizedBox.shrink();
+            }
+            return AppButton(
+              iconOnly: true,
+              leadingIcon: Icons.open_in_new_outlined,
+              label: l10n.icuActionOpenIpd,
+              semanticLabel: l10n.icuActionOpenIpd,
+              tooltip: l10n.icuActionOpenIpd,
+              onPressed: () => _openIpd(context, bed),
+            );
+          },
+        )
+      : null;
+
+  // Prefer ~5 defaults: when next-action is present, admission id is optional.
+  final List<AppListTableColumn<IcuBed>> defaults =
+      <AppListTableColumn<IcuBed>>[
+        bed,
+        location,
+        occupant,
+        status,
+        if (nextAction != null) nextAction else admissionId,
+      ];
+  final Set<String> defaultIds = defaults
+      .map((AppListTableColumn<IcuBed> column) => column.key)
+      .toSet();
+  final List<AppListTableColumn<IcuBed>> choices =
+      <AppListTableColumn<IcuBed>>[
+        if (!defaultIds.contains(admissionId.key)) admissionId,
+      ];
+  return (defaults: defaults, choices: choices);
 }
 
 void _openIpd(BuildContext context, IcuBed bed) {
@@ -320,12 +369,8 @@ Future<void> _printIcuBedBoardList(
   final List<Map<String, String>> printRows = <Map<String, String>>[
     for (final IcuBed bed in beds)
       <String, String>{
-        'bed': bed.label ?? bed.id,
-        'location': bed.locationLabel,
-        'occupant': bed.isOccupied
-            ? joinDisplay(<String?>[bed.occupantName, bed.occupantDisplayId])
-            : l10n.icuBedVacantLabel,
-        'status': apiLabel(bed.status ?? ''),
+        for (final AppListTableColumn<IcuBed> column in exportColumns)
+          column.key: _icuBedBoardPrintCellValue(context, bed, column.key),
       },
   ];
   await printIcuWorkspaceList(
@@ -336,4 +381,22 @@ Future<void> _printIcuBedBoardList(
     rows: printRows,
     emptyText: l10n.icuBedNoBedsTitle,
   );
+}
+
+String _icuBedBoardPrintCellValue(
+  BuildContext context,
+  IcuBed bed,
+  String columnId,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return switch (columnId) {
+    'bed' => bed.label ?? bed.id,
+    'location' => bed.locationLabel,
+    'occupant' => bed.isOccupied
+        ? (bed.occupantName ?? l10n.profileUnknownValue)
+        : l10n.icuBedVacantLabel,
+    'admission_id' => bed.occupantDisplayId ?? l10n.profileUnknownValue,
+    'status' => apiLabel(bed.status ?? ''),
+    _ => '',
+  };
 }

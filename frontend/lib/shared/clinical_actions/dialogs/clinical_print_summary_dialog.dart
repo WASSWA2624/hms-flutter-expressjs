@@ -156,6 +156,7 @@ class _ClinicalPrintSummaryDialogState
       maxWidth: 1120,
       scrollable: false,
       pinActionsToBottom: true,
+      stackActionsWhenCompact: false,
       contentPadding: EdgeInsets.zero,
       closeEnabled: !_isBusy,
       content: Column(

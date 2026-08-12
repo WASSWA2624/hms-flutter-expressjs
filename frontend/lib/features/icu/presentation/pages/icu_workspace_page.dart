@@ -283,7 +283,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
     if (filter.isActive) {
       return filterIcuBoardItems(state.board.items, filter).length;
     }
-    return state.board.totalItemCount ?? state.board.items.length;
+    return state.board.totalItemCount ?? scopeTotal;
   }
 
   static int? _sectionScopeTotal(
@@ -366,6 +366,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
         spacing: Theme.of(context).spacing,
       ),
       maxWidth: PageMaxWidth.dataHeavy,
+      scrollable: false,
       child: SizedBox(
         width: double.infinity,
         child: Column(
@@ -428,74 +429,76 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
               },
             ),
             SizedBox(height: theme.spacing.sm),
-            if (isFollowUpsView)
-              FollowUpWorklistPanel(
-                scope: const FollowUpWorklistScope(encounterType: 'ICU'),
-                storageKeyPrefix: 'icu_follow_ups',
-                readRequirement: IcuFollowUpsAtomPermissions.tab,
-                writeRequirement: IcuFollowUpsAtomPermissions.write,
-                showAdvancedFilterButton: true,
-                advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
-                advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
-                advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-                advancedFilterResetLabel: l10n.opdClearFiltersAction,
-                advancedFilterCloseLabel: l10n.commonCloseActionLabel,
-                enableDateFilter: true,
-                dateFilterLabel: l10n.opdFollowUpDateLabel,
-                dateFromLabel: l10n.opdDateFromLabel,
-                dateToLabel: l10n.opdDateToLabel,
-                filterGroups: <AppSearchBarFilterGroup>[
-                  AppSearchBarFilterGroup(
-                    key: 'follow_up_status',
-                    label: l10n.receptionStatusLabel,
-                    choices: <AppSearchBarFilterChoice>[
-                      AppSearchBarFilterChoice(
-                        value: 'pending',
-                        label: l10n.patientsActiveWorkStatusAppointmentScheduled,
-                      ),
-                      AppSearchBarFilterChoice(
-                        value: 'completed',
-                        label: l10n.opdCompletedFlowSummaryLabel,
-                      ),
-                    ],
-                  ),
-                ],
-                canExport: canExportIcuWorkspace(accessPolicy),
-                enablePrint: true,
-                canPrint: canPrintIcuWorkspace(accessPolicy),
-                printLabel: l10n.commonPrintActionLabel,
-                onPrint: (List<ReceptionFollowUpEntry> entries) =>
-                    _printIcuFollowUpsList(
-                      context,
-                      ref,
-                      entries: entries,
-                      l10n: l10n,
+            Expanded(
+              child: isFollowUpsView
+                  ? FollowUpWorklistPanel(
+                      scope: const FollowUpWorklistScope(encounterType: 'ICU'),
+                      storageKeyPrefix: 'icu_follow_ups',
+                      readRequirement: IcuFollowUpsAtomPermissions.tab,
+                      writeRequirement: IcuFollowUpsAtomPermissions.write,
+                      showAdvancedFilterButton: true,
+                      advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+                      advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+                      advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                      advancedFilterResetLabel: l10n.opdClearFiltersAction,
+                      advancedFilterCloseLabel: l10n.commonCloseActionLabel,
+                      enableDateFilter: true,
+                      dateFilterLabel: l10n.opdFollowUpDateLabel,
+                      dateFromLabel: l10n.opdDateFromLabel,
+                      dateToLabel: l10n.opdDateToLabel,
+                      filterGroups: <AppSearchBarFilterGroup>[
+                        AppSearchBarFilterGroup(
+                          key: 'follow_up_status',
+                          label: l10n.receptionStatusLabel,
+                          choices: <AppSearchBarFilterChoice>[
+                            AppSearchBarFilterChoice(
+                              value: 'pending',
+                              label: l10n
+                                  .patientsActiveWorkStatusAppointmentScheduled,
+                            ),
+                            AppSearchBarFilterChoice(
+                              value: 'completed',
+                              label: l10n.opdCompletedFlowSummaryLabel,
+                            ),
+                          ],
+                        ),
+                      ],
+                      canExport: canExportIcuWorkspace(accessPolicy),
+                      enablePrint: true,
+                      canPrint: canPrintIcuWorkspace(accessPolicy),
+                      printLabel: l10n.commonPrintActionLabel,
+                      onPrint: (List<ReceptionFollowUpEntry> entries) =>
+                          _printIcuFollowUpsList(
+                            context,
+                            ref,
+                            entries: entries,
+                            l10n: l10n,
+                          ),
+                      onNarrowedCountChanged: (int? narrowedCount) {
+                        if (_followUpsNarrowedCount == narrowedCount) {
+                          return;
+                        }
+                        setState(() {
+                          _followUpsNarrowedCount = narrowedCount;
+                        });
+                      },
+                    )
+                  : isBedView
+                  ? IcuBedBoardPanel(state: state)
+                  : IcuBoardPanel(
+                      state: state,
+                      section: _section,
+                      writeRequirement: writeRequirement,
+                      readRequirement: icuDetailReadRequirement(_section),
+                      showNextAction: showNextAction,
+                      searchController: _searchController,
+                      columnVisibilityController: _columnVisibilityController,
+                      filterValue: _boardFilterValue,
+                      onFilterChanged: (AppSearchBarFilterValue value) {
+                        setState(() => _boardFilterValue = value);
+                      },
                     ),
-                onNarrowedCountChanged: (int? narrowedCount) {
-                  if (_followUpsNarrowedCount == narrowedCount) {
-                    return;
-                  }
-                  setState(() {
-                    _followUpsNarrowedCount = narrowedCount;
-                  });
-                },
-              )
-            else if (isBedView)
-              IcuBedBoardPanel(state: state)
-            else
-              IcuBoardPanel(
-                state: state,
-                section: _section,
-                writeRequirement: writeRequirement,
-                readRequirement: icuDetailReadRequirement(_section),
-                showNextAction: showNextAction,
-                searchController: _searchController,
-                columnVisibilityController: _columnVisibilityController,
-                filterValue: _boardFilterValue,
-                onFilterChanged: (AppSearchBarFilterValue value) {
-                  setState(() => _boardFilterValue = value);
-                },
-              ),
+            ),
           ],
         ),
       ),

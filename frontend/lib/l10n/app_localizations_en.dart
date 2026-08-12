@@ -243,6 +243,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonAllRowsLoadedLabel => 'All rows loaded';
 
   @override
+  String commonDurationMinutesShort(int minutes) {
+    return '${minutes}m';
+  }
+
+  @override
+  String commonDurationHoursShort(int hours) {
+    return '${hours}h';
+  }
+
+  @override
+  String commonDurationHoursMinutesShort(int hours, int minutes) {
+    return '${hours}h ${minutes}m';
+  }
+
+  @override
   String get commonPrintSectionsLabel => 'Print sections';
 
   @override
@@ -4101,6 +4116,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get receptionClearFiltersAction => 'Clear filters';
+
+  @override
+  String receptionPageLabel(int from, int to, int total) {
+    return '$from-$to of $total';
+  }
 
   @override
   String get receptionApplyColumnsAction => 'Apply columns';

@@ -352,6 +352,7 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
         spacing: Theme.of(context).spacing,
       ),
       maxWidth: PageMaxWidth.dataHeavy,
+      scrollable: false,
       child: SizedBox(
         width: double.infinity,
         child: Column(
@@ -397,87 +398,94 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
               secondaryActions: const <Widget>[],
             ),
             SizedBox(height: theme.spacing.sm),
-            if (_section.isFollowUps)
-              FollowUpWorklistPanel(
-                scope: const FollowUpWorklistScope(encounterType: 'IPD'),
-                storageKeyPrefix: 'ipd_follow_ups',
-                readRequirement: IpdFollowUpsAtomPermissions.tab,
-                writeRequirement: IpdFollowUpsAtomPermissions.write,
-                showAdvancedFilterButton: true,
-                advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
-                advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
-                advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-                advancedFilterResetLabel: l10n.opdClearFiltersAction,
-                advancedFilterCloseLabel: l10n.commonCloseActionLabel,
-                enableDateFilter: true,
-                dateFilterLabel: l10n.opdFollowUpDateLabel,
-                dateFromLabel: l10n.opdDateFromLabel,
-                dateToLabel: l10n.opdDateToLabel,
-                filterGroups: <AppSearchBarFilterGroup>[
-                  AppSearchBarFilterGroup(
-                    key: 'follow_up_status',
-                    label: l10n.receptionStatusLabel,
-                    choices: <AppSearchBarFilterChoice>[
-                      AppSearchBarFilterChoice(
-                        value: 'pending',
-                        label: l10n.patientsActiveWorkStatusAppointmentScheduled,
-                      ),
-                      AppSearchBarFilterChoice(
-                        value: 'completed',
-                        label: l10n.opdCompletedFlowSummaryLabel,
-                      ),
-                    ],
-                  ),
-                ],
-                canExport: canExportIpdWorkspace(policy),
-                enablePrint: true,
-                canPrint: canPrintIpdWorkspace(policy),
-                printLabel: l10n.commonPrintActionLabel,
-                onPrint: (List<ReceptionFollowUpEntry> entries) =>
-                    _printIpdFollowUpsList(
-                      context,
-                      ref,
-                      entries: entries,
-                      l10n: l10n,
+            Expanded(
+              child: _section.isFollowUps
+                  ? FollowUpWorklistPanel(
+                      scope: const FollowUpWorklistScope(encounterType: 'IPD'),
+                      storageKeyPrefix: 'ipd_follow_ups',
+                      readRequirement: IpdFollowUpsAtomPermissions.tab,
+                      writeRequirement: IpdFollowUpsAtomPermissions.write,
+                      showAdvancedFilterButton: true,
+                      advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+                      advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+                      advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                      advancedFilterResetLabel: l10n.opdClearFiltersAction,
+                      advancedFilterCloseLabel: l10n.commonCloseActionLabel,
+                      enableDateFilter: true,
+                      dateFilterLabel: l10n.opdFollowUpDateLabel,
+                      dateFromLabel: l10n.opdDateFromLabel,
+                      dateToLabel: l10n.opdDateToLabel,
+                      filterGroups: <AppSearchBarFilterGroup>[
+                        AppSearchBarFilterGroup(
+                          key: 'follow_up_status',
+                          label: l10n.receptionStatusLabel,
+                          choices: <AppSearchBarFilterChoice>[
+                            AppSearchBarFilterChoice(
+                              value: 'pending',
+                              label: l10n
+                                  .patientsActiveWorkStatusAppointmentScheduled,
+                            ),
+                            AppSearchBarFilterChoice(
+                              value: 'completed',
+                              label: l10n.opdCompletedFlowSummaryLabel,
+                            ),
+                          ],
+                        ),
+                      ],
+                      canExport: canExportIpdWorkspace(policy),
+                      enablePrint: true,
+                      canPrint: canPrintIpdWorkspace(policy),
+                      printLabel: l10n.commonPrintActionLabel,
+                      onPrint: (List<ReceptionFollowUpEntry> entries) =>
+                          _printIpdFollowUpsList(
+                            context,
+                            ref,
+                            entries: entries,
+                            l10n: l10n,
+                          ),
+                      onNarrowedCountChanged: (int? narrowedCount) {
+                        if (_followUpsNarrowedCount == narrowedCount) {
+                          return;
+                        }
+                        setState(() {
+                          _followUpsNarrowedCount = narrowedCount;
+                        });
+                      },
+                    )
+                  : _section.isBedBoard
+                  ? IpdBedBoardPanel(
+                      state: state,
+                      canManageBeds: canManageBeds,
+                      onStartAdmission: canStartIpdAdmission(policy, _section)
+                          ? () => unawaited(_openStartAdmissionDialog(context))
+                          : null,
+                      onOpenAdmission: (IpdBedBoardEntry bed) {
+                        final String? admissionId =
+                            bed.occupantAdmissionId ??
+                            bed.occupantAdmissionDisplayId;
+                        if (admissionId != null) {
+                          unawaited(
+                            _openIpdDetailDialogById(
+                              context,
+                              ref,
+                              admissionId,
+                            ),
+                          );
+                        }
+                      },
+                    )
+                  : _IpdBoardPanel(
+                      state: state,
+                      section: _section,
+                      searchController: _searchController,
+                      columnVisibilityController: _tableColumnController,
+                      showNextAction: showNextAction,
+                      onStartAdmission: canStartIpdAdmission(policy, _section)
+                          ? () => unawaited(_openStartAdmissionDialog(context))
+                          : null,
+                      onQueryRemembered: _rememberSectionQuery,
                     ),
-                onNarrowedCountChanged: (int? narrowedCount) {
-                  if (_followUpsNarrowedCount == narrowedCount) {
-                    return;
-                  }
-                  setState(() {
-                    _followUpsNarrowedCount = narrowedCount;
-                  });
-                },
-              )
-            else if (_section.isBedBoard)
-              IpdBedBoardPanel(
-                state: state,
-                canManageBeds: canManageBeds,
-                onStartAdmission: canStartIpdAdmission(policy, _section)
-                    ? () => unawaited(_openStartAdmissionDialog(context))
-                    : null,
-                onOpenAdmission: (IpdBedBoardEntry bed) {
-                  final String? admissionId =
-                      bed.occupantAdmissionId ?? bed.occupantAdmissionDisplayId;
-                  if (admissionId != null) {
-                    unawaited(
-                      _openIpdDetailDialogById(context, ref, admissionId),
-                    );
-                  }
-                },
-              )
-            else
-              _IpdBoardPanel(
-                state: state,
-                section: _section,
-                searchController: _searchController,
-                columnVisibilityController: _tableColumnController,
-                showNextAction: showNextAction,
-                onStartAdmission: canStartIpdAdmission(policy, _section)
-                    ? () => unawaited(_openStartAdmissionDialog(context))
-                    : null,
-                onQueryRemembered: _rememberSectionQuery,
-              ),
+            ),
           ],
         ),
       ),
@@ -522,7 +530,7 @@ class _IpdWorkspaceContentState extends ConsumerState<_IpdWorkspaceContent> {
       return scopeTotal;
     }
     // Active tab only — filtered membership from the current list query.
-    return state.admissions.totalItemCount ?? state.admissions.items.length;
+    return state.admissions.totalItemCount ?? scopeTotal;
   }
 
   static int? _sectionScopeTotal(
@@ -636,7 +644,7 @@ class _IpdBoardPanel extends ConsumerWidget {
           showNextAction: showNextAction,
         );
     final List<AppListTableColumn<IpdAdmissionSummary>> optionalColumns =
-        _ipdAdmissionOptionalColumns(context);
+        _ipdAdmissionOptionalColumns(context, defaults: defaultColumns);
     final AppSearchBarFilterValue filterValue = _ipdFilterValueFromQuery(
       state.query,
     );
@@ -675,9 +683,14 @@ class _IpdBoardPanel extends ConsumerWidget {
         showNextAction: showNextAction,
         l10n: l10n,
       ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
       exportConfig: AppListTableExportConfig<IpdAdmissionSummary>(
         fileNameStem: 'ipd_${section.name}',
         dateOf: (IpdAdmissionSummary item) => item.admittedAt,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
         sheetName: _sectionLabel(l10n, section),
       ),
       columns: defaultColumns,
@@ -810,14 +823,16 @@ Future<void> _printIpdAdmissionsList(
   required bool showNextAction,
   required AppLocalizations l10n,
 }) async {
+  final List<AppListTableColumn<IpdAdmissionSummary>> defaults =
+      _ipdAdmissionDefaultColumns(
+        context,
+        state,
+        showNextAction: showNextAction,
+      );
   final List<AppListTableColumn<IpdAdmissionSummary>> columns =
       <AppListTableColumn<IpdAdmissionSummary>>[
-        ..._ipdAdmissionDefaultColumns(
-          context,
-          state,
-          showNextAction: showNextAction,
-        ),
-        ..._ipdAdmissionOptionalColumns(context),
+        ...defaults,
+        ..._ipdAdmissionOptionalColumns(context, defaults: defaults),
       ].where(
         (AppListTableColumn<IpdAdmissionSummary> column) =>
             column.includesInExport,
@@ -898,10 +913,11 @@ String _ipdAdmissionPrintCellValue(
   final AppLocalizations l10n = context.l10n;
   return switch (columnId) {
     'patient' => item.displayTitle,
+    'admission_id' => item.displayId ?? l10n.profileUnknownValue,
     'location' => item.location ?? l10n.profileUnknownValue,
     'admitted_at' => _dateTimeLabel(context, item.admittedAt),
     'status' => _stageStatus(context, item.stage).label,
-    'next_action' => item.nextStep ?? '',
+    'next_action' => ipdBoardNextActionLabel(context, item),
     'owner_role' => _ipdOwnerRoleLabel(context, item.stage),
     'length_of_stay' => _lengthOfStayLabel(context, item),
     _ => '',
@@ -913,68 +929,141 @@ List<AppListTableColumn<IpdAdmissionSummary>> _ipdAdmissionDefaultColumns(
   IpdWorkspaceState state, {
   bool showNextAction = true,
 }) {
-  final AppLocalizations l10n = context.l10n;
+  final List<AppListTableColumn<IpdAdmissionSummary>> defaults =
+      <AppListTableColumn<IpdAdmissionSummary>>[
+        _ipdAdmissionColumn(context, 'patient', state: state),
+        _ipdAdmissionColumn(context, 'location', state: state),
+        _ipdAdmissionColumn(context, 'admitted_at', state: state),
+        _ipdAdmissionColumn(context, 'status', state: state),
+        if (showNextAction)
+          _ipdAdmissionColumn(context, 'next_action', state: state),
+      ];
+  if (defaults.length >= 5) {
+    return defaults;
+  }
+  final List<AppListTableColumn<IpdAdmissionSummary>> resolved =
+      List<AppListTableColumn<IpdAdmissionSummary>>.of(defaults);
+  final Set<String> resolvedIds = resolved
+      .map((AppListTableColumn<IpdAdmissionSummary> column) => column.key)
+      .toSet();
+  for (final String id in <String>[
+    'owner_role',
+    'length_of_stay',
+    'admission_id',
+  ]) {
+    if (resolved.length >= 5) {
+      break;
+    }
+    if (resolvedIds.contains(id)) {
+      continue;
+    }
+    resolved.add(_ipdAdmissionColumn(context, id, state: state));
+    resolvedIds.add(id);
+  }
+  return resolved;
+}
+
+List<AppListTableColumn<IpdAdmissionSummary>> _ipdAdmissionOptionalColumns(
+  BuildContext context, {
+  required List<AppListTableColumn<IpdAdmissionSummary>> defaults,
+}) {
+  final Set<String> defaultIds = defaults
+      .map((AppListTableColumn<IpdAdmissionSummary> column) => column.key)
+      .toSet();
   return <AppListTableColumn<IpdAdmissionSummary>>[
-    AppListTableColumn<IpdAdmissionSummary>(
+    for (final String id in <String>[
+      'owner_role',
+      'length_of_stay',
+      'admission_id',
+    ])
+      if (!defaultIds.contains(id))
+        _ipdAdmissionColumn(context, id, state: null),
+  ];
+}
+
+AppListTableColumn<IpdAdmissionSummary> _ipdAdmissionColumn(
+  BuildContext context,
+  String id, {
+  required IpdWorkspaceState? state,
+}) {
+  final AppLocalizations l10n = context.l10n;
+  return switch (id) {
+    'patient' => AppListTableColumn<IpdAdmissionSummary>(
       id: 'patient',
       label: l10n.opdPatientColumnLabel,
       alwaysVisible: true,
       sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
           appListTableCompareText(left.displayTitle, right.displayTitle),
+      exportValue: (IpdAdmissionSummary item) =>
+          _ipdAdmissionPrintCellValue(context, item, 'patient'),
       cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-        return _IpdPatientCell(admission: item);
+        return AppListItemText(title: item.displayTitle);
       },
     ),
-    AppListTableColumn<IpdAdmissionSummary>(
+    'admission_id' => AppListTableColumn<IpdAdmissionSummary>(
+      id: 'admission_id',
+      label: l10n.ipdAdmissionIdLabel,
+      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+          appListTableCompareText(left.displayId, right.displayId),
+      exportValue: (IpdAdmissionSummary item) =>
+          _ipdAdmissionPrintCellValue(context, item, 'admission_id'),
+      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+        return Text(
+          item.displayId ?? context.l10n.profileUnknownValue,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
+      },
+    ),
+    'location' => AppListTableColumn<IpdAdmissionSummary>(
       id: 'location',
       label: l10n.ipdLocationColumnLabel,
       sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
           appListTableCompareText(left.location, right.location),
+      exportValue: (IpdAdmissionSummary item) =>
+          _ipdAdmissionPrintCellValue(context, item, 'location'),
       cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
         return Text(item.location ?? context.l10n.profileUnknownValue);
       },
     ),
-    AppListTableColumn<IpdAdmissionSummary>(
+    'admitted_at' => AppListTableColumn<IpdAdmissionSummary>(
       id: 'admitted_at',
       label: l10n.ipdAdmittedAtColumnLabel,
       sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
           appListTableCompareDateTime(left.admittedAt, right.admittedAt),
+      exportValue: (IpdAdmissionSummary item) =>
+          _ipdAdmissionPrintCellValue(context, item, 'admitted_at'),
       cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
         return Text(_dateTimeLabel(context, item.admittedAt));
       },
     ),
-    AppListTableColumn<IpdAdmissionSummary>(
+    'status' => AppListTableColumn<IpdAdmissionSummary>(
       id: 'status',
       label: l10n.opdStatusColumnLabel,
       alwaysVisible: true,
       sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
           appListTableCompareText(left.stage, right.stage),
+      exportValue: (IpdAdmissionSummary item) =>
+          _ipdAdmissionPrintCellValue(context, item, 'status'),
       cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
         return AppWorkspaceStatusBadge(
           status: _stageStatus(context, item.stage),
         );
       },
     ),
-    if (showNextAction)
-      AppListTableColumn<IpdAdmissionSummary>(
-        id: 'next_action',
-        label: l10n.ipdNextActionColumnLabel,
-        alwaysVisible: true,
-        sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
-            appListTableCompareText(left.nextStep, right.nextStep),
-        cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
-          return IpdBoardNextActionCell(admission: item, state: state);
-        },
-      ),
-  ];
-}
-
-List<AppListTableColumn<IpdAdmissionSummary>> _ipdAdmissionOptionalColumns(
-  BuildContext context,
-) {
-  final AppLocalizations l10n = context.l10n;
-  return <AppListTableColumn<IpdAdmissionSummary>>[
-    AppListTableColumn<IpdAdmissionSummary>(
+    'next_action' => AppListTableColumn<IpdAdmissionSummary>(
+      id: 'next_action',
+      label: l10n.ipdNextActionColumnLabel,
+      alwaysVisible: true,
+      sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
+          appListTableCompareText(left.nextStep, right.nextStep),
+      exportValue: (IpdAdmissionSummary item) =>
+          _ipdAdmissionPrintCellValue(context, item, 'next_action'),
+      cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
+        return IpdBoardNextActionCell(admission: item, state: state!);
+      },
+    ),
+    'owner_role' => AppListTableColumn<IpdAdmissionSummary>(
       id: 'owner_role',
       label: l10n.settingsWorkspaceModuleRole,
       sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
@@ -982,20 +1071,25 @@ List<AppListTableColumn<IpdAdmissionSummary>> _ipdAdmissionOptionalColumns(
             _ipdOwnerRoleLabel(context, left.stage),
             _ipdOwnerRoleLabel(context, right.stage),
           ),
+      exportValue: (IpdAdmissionSummary item) =>
+          _ipdAdmissionPrintCellValue(context, item, 'owner_role'),
       cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
         return Text(_ipdOwnerRoleLabel(context, item.stage));
       },
     ),
-    AppListTableColumn<IpdAdmissionSummary>(
+    'length_of_stay' => AppListTableColumn<IpdAdmissionSummary>(
       id: 'length_of_stay',
       label: l10n.ipdLengthOfStayColumnLabel,
       sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
           appListTableCompareDateTime(left.admittedAt, right.admittedAt),
+      exportValue: (IpdAdmissionSummary item) =>
+          _ipdAdmissionPrintCellValue(context, item, 'length_of_stay'),
       cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
         return Text(_lengthOfStayLabel(context, item));
       },
     ),
-  ];
+    _ => throw ArgumentError.value(id, 'id', 'Unknown IPD admission column'),
+  };
 }
 
 bool _ipdAdmissionMatchesSearch(
@@ -1055,42 +1149,6 @@ bool _ipdAdmissionMatchesSearch(
     admission.criticalSeverity ?? '',
   ].any((String value) => value.toLowerCase().contains(needle));
 }
-
-class _IpdPatientCell extends StatelessWidget {
-  const _IpdPatientCell({required this.admission});
-
-  final IpdAdmissionSummary admission;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          admission.displayTitle,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: AppFontWeight.emphasis,
-          ),
-        ),
-        Text(
-          admission.displayId ?? context.l10n.profileUnknownValue,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-
 
 class _IpdDetailPanel extends ConsumerWidget {
   const _IpdDetailPanel({required this.state, this.omitNextActionKind});

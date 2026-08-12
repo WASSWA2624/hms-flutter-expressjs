@@ -192,6 +192,29 @@ bool canPrintClinicalWorkspace(AppAccessPolicy policy) {
   return clinicalWorkspacePrintRequirement.isAllowed(policy);
 }
 
+/// Whether the worklist Next-action column may mount for [section].
+bool clinicalBoardShowsNextActionColumn(
+  AppAccessPolicy policy,
+  ClinicalWorkspaceSection section,
+) {
+  if (section.isFollowUps) {
+    return false;
+  }
+  return switch (section) {
+    ClinicalWorkspaceSection.all =>
+      ClinicalAllAtomPermissions.nextActionReview.isAllowed(policy),
+    ClinicalWorkspaceSection.assignedToMe =>
+      ClinicalAssignedToMeAtomPermissions.nextActionReview.isAllowed(policy),
+    ClinicalWorkspaceSection.urgent =>
+      ClinicalUrgentAtomPermissions.nextActionReview.isAllowed(policy),
+    ClinicalWorkspaceSection.resultsReady =>
+      ClinicalResultsReadyAtomPermissions.nextActionReview.isAllowed(policy),
+    ClinicalWorkspaceSection.completed =>
+      ClinicalCompletedAtomPermissions.nextActionReview.isAllowed(policy),
+    ClinicalWorkspaceSection.followUps => false,
+  };
+}
+
 bool canViewClinicalSection(
   AppAccessPolicy policy,
   ClinicalWorkspaceSection section,

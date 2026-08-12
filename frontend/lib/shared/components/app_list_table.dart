@@ -49,7 +49,41 @@ const String _defaultGoToTopLabel = 'Go to top';
 const String _defaultLoadingMoreLabel = 'Loading more...';
 const String _defaultAllRowsLoadedLabel = 'All rows loaded';
 const Duration _goToTopAnimationDuration = Duration(milliseconds: 280);
-const double _goToTopButtonExtent = 48;
+
+/// Bridges scroll-to-top enablement from the table body to the pinned footer.
+final class _AppListTableGoToTopController {
+  final ValueNotifier<bool> canGoToTop = ValueNotifier<bool>(false);
+  Future<void> Function()? _scrollToTop;
+
+  void attach(Future<void> Function() scrollToTop) {
+    _scrollToTop = scrollToTop;
+  }
+
+  void detach() {
+    _scrollToTop = null;
+    canGoToTop.value = false;
+  }
+
+  void setCanGoToTop(bool value) {
+    if (canGoToTop.value == value) {
+      return;
+    }
+    canGoToTop.value = value;
+  }
+
+  Future<void> goToTop() async {
+    final Future<void> Function()? action = _scrollToTop;
+    if (action == null) {
+      return;
+    }
+    await action();
+  }
+
+  void dispose() {
+    canGoToTop.dispose();
+    _scrollToTop = null;
+  }
+}
 const double _defaultColumnWidth = 168;
 const double _defaultCompactColumnWidth = 144;
 const double _columnResizeHandleWidth = 8;
@@ -1218,6 +1252,8 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   bool? _cachedSortAscending;
   List<T>? _cachedSortedItems;
   int _lastSeenItemsLength = -1;
+  final _AppListTableGoToTopController _goToTopController =
+      _AppListTableGoToTopController();
 
   @override
   void initState() {
@@ -1306,6 +1342,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     widget.columnVisibilityController?.removeListener(
       _handleColumnVisibilityChanged,
     );
+    _goToTopController.dispose();
     super.dispose();
   }
 
@@ -1577,7 +1614,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
 
     final Widget searchBar = resolvedSearch.buildSearchBar(
       context,
-      trailingActions: _searchActions(),
+      trailingActions: _searchActions(context),
       maxTrailingActions: widget.maxTrailingActions,
       trailingActionsOverflowLabel: widget.trailingActionsOverflowLabel,
     );
@@ -1606,7 +1643,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       query,
       usesExternalSearchListenable: usesExternalSearchListenable,
     );
-    Widget content = _wrapIncrementalScroll(
+    final Widget content = _wrapIncrementalScroll(
       context,
       totalSortedCount: data.totalSortedCount,
       child: _buildForItems(
@@ -1617,53 +1654,12 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     );
     final ThemeData theme = Theme.of(context);
     final bool loadingMore = _isLoadingMore(data.items.length);
-    // The Stack stays mounted while only the overlay child toggles, so the
-    // table subtree (and its scroll position) survives load-more cycles.
-    content = Stack(
-      fit: StackFit.passthrough,
-      children: <Widget>[
-        content,
-        if (loadingMore)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: theme.spacing.sm,
-            child: IgnorePointer(
-              child: Center(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface.withValues(alpha: 0.88),
-                    borderRadius: BorderRadius.circular(theme.radius.md),
-                    border: theme.borders.all(),
-                    boxShadow: <BoxShadow>[
-                      BoxShadow(
-                        color: theme.colorScheme.shadow.withValues(alpha: 0.08),
-                        blurRadius: 10,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: theme.spacing.md,
-                      vertical: theme.spacing.sm,
-                    ),
-                    child: AppLoadingIndicator.compact(
-                      title: widget.loadingMoreLabel,
-                      expand: false,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-      ],
-    );
-    final Widget? footer = _footerForPage(
+    final Widget footer = _buildTableFooter(
       context,
       data.page,
       disablePagination: data.disablePagination,
       visibleItemCount: data.items.length,
+      loadingMore: loadingMore,
     );
     final Widget? toolbar = _buildToolbar(context, searchBar);
 
@@ -1678,10 +1674,9 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       return true;
     }());
 
-    // The Column/LayoutBuilder shell is kept even when the toolbar and footer
-    // are currently absent: infinite pagination grows a footer once the last
-    // page loads, and swapping the widget type at this slot would remount the
-    // table and reset its scroll position.
+    // The Column/LayoutBuilder shell is kept even when the toolbar is currently
+    // absent so swapping chrome at that slot does not remount the table body.
+    // The footer is always mounted (status / pagination + go-to-top).
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final bool canExpand =
@@ -1698,7 +1693,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
               if (toolbarGap > 0) SizedBox(height: toolbarGap),
             ],
             if (canExpand) Expanded(child: content) else content,
-            ?footer,
+            footer,
           ],
         );
       },
@@ -2073,7 +2068,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
             rowNumberOffset: rowNumberOffset,
             showRowNumbers: widget.showRowNumbers,
             surfaceHeader: widget.surfaceHeader,
-            goToTopLabel: widget.goToTopLabel,
+            goToTopController: _goToTopController,
           );
         }
 
@@ -2105,7 +2100,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
           scrollVertically: hasBoundedHeight,
           padEmptyRows: padEmptyRows,
           surfaceHeader: widget.surfaceHeader,
-          goToTopLabel: widget.goToTopLabel,
+          goToTopController: _goToTopController,
           columnWidthFor: (AppListTableColumn<T> column) {
             return resolvedWidths[column.key] ??
                 _columnWidthFor(column, compact: compact);
@@ -2118,7 +2113,29 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     );
   }
 
-  Widget? _footerForPage(
+  Widget _buildTableFooter(
+    BuildContext context,
+    AppPage<T>? visiblePage, {
+    required bool disablePagination,
+    required int visibleItemCount,
+    required bool loadingMore,
+  }) {
+    return _AppListTableFooterBar(
+      goToTopLabel: widget.goToTopLabel,
+      canGoToTopListenable: _goToTopController.canGoToTop,
+      onGoToTop: _goToTopController.goToTop,
+      loadingMore: loadingMore,
+      loadingMoreLabel: widget.loadingMoreLabel,
+      leading: _footerLeading(
+        context,
+        visiblePage,
+        disablePagination: disablePagination,
+        visibleItemCount: visibleItemCount,
+      ),
+    );
+  }
+
+  Widget? _footerLeading(
     BuildContext context,
     AppPage<T>? visiblePage, {
     required bool disablePagination,
@@ -2172,8 +2189,8 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     final bool reachedEnd =
         _usesInfinitePagination && !hasMore && visibleItemCount > 0;
 
-    // Load-more chrome is overlaid on the table body; footer only shows
-    // status / end-of-list copy so it does not look like an extra row.
+    // Load-more chrome is overlaid on the table body; footer status only shows
+    // range / end-of-list copy so it does not look like an extra row.
     if (statusLabel == null && !reachedEnd) {
       return null;
     }
@@ -2379,10 +2396,14 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     return searchBar;
   }
 
-  List<AppSearchBarAction> _searchActions() {
+  List<AppSearchBarAction> _searchActions(BuildContext context) {
     // Filters (in AppSearchBar) → Settings → Export → Print → caller trailing.
+    // Settings / Print are desktop-only (lg+); mobile and tablet keep Filters /
+    // Export and context actions so the compact search chrome stays usable.
+    final bool showDesktopChrome =
+        AppBreakpoints.of(context).index >= AppBreakpoint.lg.index;
     final List<AppSearchBarAction> actions = <AppSearchBarAction>[];
-    if (_availableColumns.length > 1) {
+    if (showDesktopChrome && _availableColumns.length > 1) {
       actions.add(
         AppSearchBarAction(
           icon: Icons.settings_outlined,
@@ -2403,7 +2424,10 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
         ),
       );
     }
-    if (widget.enablePrint && widget.canPrint && widget.onPrint != null) {
+    if (showDesktopChrome &&
+        widget.enablePrint &&
+        widget.canPrint &&
+        widget.onPrint != null) {
       actions.add(
         AppSearchBarAction(
           icon: AppActionIcons.print,
@@ -2980,18 +3004,15 @@ class _AppPaginationControls extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: <Widget>[
-          Flexible(
-            child: Text(
-              pageLabel,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodyMedium,
-            ),
+    return Row(
+      children: <Widget>[
+        Flexible(
+          child: Text(
+            pageLabel,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium,
           ),
+        ),
           SizedBox(width: theme.spacing.sm),
           AppButton(
             iconOnly: true,
@@ -3017,8 +3038,7 @@ class _AppPaginationControls extends StatelessWidget {
                   }
                 : null,
           ),
-        ],
-      ),
+      ],
     );
   }
 }
@@ -3039,31 +3059,183 @@ class _AppInfiniteScrollFooter extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
 
+    return Row(
+      children: <Widget>[
+        if (statusLabel != null)
+          Expanded(
+            child: Text(
+              statusLabel!,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: AppFontWeight.regular,
+              ),
+            ),
+          )
+        else
+          const Spacer(),
+        if (reachedEnd)
+          Text(
+            allRowsLoadedLabel,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _AppListTableFooterBar extends StatelessWidget {
+  const _AppListTableFooterBar({
+    required this.goToTopLabel,
+    required this.canGoToTopListenable,
+    required this.onGoToTop,
+    required this.loadingMore,
+    required this.loadingMoreLabel,
+    this.leading,
+  });
+
+  final String goToTopLabel;
+  final ValueListenable<bool> canGoToTopListenable;
+  final Future<void> Function() onGoToTop;
+  final bool loadingMore;
+  final String loadingMoreLabel;
+  final Widget? leading;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
     return Padding(
       padding: EdgeInsets.only(top: theme.spacing.xs, bottom: theme.spacing.sm),
-      child: Row(
+      child: Stack(
+        alignment: Alignment.center,
         children: <Widget>[
-          if (statusLabel != null)
-            Expanded(
-              child: Text(
-                statusLabel!,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontWeight: AppFontWeight.regular,
-                ),
+          Row(
+            children: <Widget>[
+              Expanded(child: leading ?? const SizedBox.shrink()),
+              SizedBox(width: theme.spacing.sm),
+              ValueListenableBuilder<bool>(
+                valueListenable: canGoToTopListenable,
+                builder: (BuildContext context, bool canGoToTop, _) {
+                  return AppButton(
+                    iconOnly: true,
+                    dense: true,
+                    leadingIcon: Icons.vertical_align_top,
+                    label: goToTopLabel,
+                    semanticLabel: goToTopLabel,
+                    tooltip: goToTopLabel,
+                    onPressed: canGoToTop
+                        ? () {
+                            unawaited(onGoToTop());
+                          }
+                        : null,
+                  );
+                },
               ),
-            )
-          else
-            const Spacer(),
-          if (reachedEnd)
-            Text(
-              allRowsLoadedLabel,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+            ],
+          ),
+          if (loadingMore)
+            IgnorePointer(
+              child: _AppListTableLoadingDots(
+                semanticLabel: loadingMoreLabel,
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// Compact three-dot pulse used only for infinite-scroll "load more" in the
+/// table footer. Initial / empty-body loads keep [AppLoadingIndicator].
+class _AppListTableLoadingDots extends StatefulWidget {
+  const _AppListTableLoadingDots({required this.semanticLabel});
+
+  final String semanticLabel;
+
+  @override
+  State<_AppListTableLoadingDots> createState() =>
+      _AppListTableLoadingDotsState();
+}
+
+class _AppListTableLoadingDotsState extends State<_AppListTableLoadingDots>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final Color base = theme.colorScheme.onSurfaceVariant;
+
+    return Semantics(
+      label: widget.semanticLabel,
+      liveRegion: true,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (BuildContext context, _) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              for (int index = 0; index < 3; index += 1) ...<Widget>[
+                if (index > 0) SizedBox(width: theme.spacing.xs),
+                _AppListTableLoadingDot(
+                  progress: _controller.value,
+                  phase: index / 3,
+                  color: base,
+                ),
+              ],
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _AppListTableLoadingDot extends StatelessWidget {
+  const _AppListTableLoadingDot({
+    required this.progress,
+    required this.phase,
+    required this.color,
+  });
+
+  final double progress;
+  final double phase;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final double wave = ((progress + phase) % 1.0);
+    final double t = wave < 0.5 ? wave * 2 : (1 - wave) * 2;
+    final double opacity = 0.28 + (0.72 * Curves.easeInOut.transform(t));
+    final double scale = 0.82 + (0.28 * Curves.easeInOut.transform(t));
+
+    return Transform.scale(
+      scale: scale,
+      child: Container(
+        width: 6,
+        height: 6,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: opacity),
+          shape: BoxShape.circle,
+        ),
       ),
     );
   }
@@ -3082,7 +3254,7 @@ class _MobileListTable<T> extends StatelessWidget {
     this.rowNumberOffset = 0,
     this.showRowNumbers = true,
     this.surfaceHeader,
-    this.goToTopLabel = _defaultGoToTopLabel,
+    required this.goToTopController,
   });
 
   final List<T> items;
@@ -3096,13 +3268,13 @@ class _MobileListTable<T> extends StatelessWidget {
   final int rowNumberOffset;
   final bool showRowNumbers;
   final Widget? surfaceHeader;
-  final String goToTopLabel;
+  final _AppListTableGoToTopController goToTopController;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     return _GoToTopHost(
-      label: goToTopLabel,
+      controller: goToTopController,
       headerExtent: 56,
       builder: (BuildContext context, Key headerKey) {
         return ListView.separated(
@@ -3384,7 +3556,7 @@ class _DesktopListTable<T> extends StatefulWidget {
     this.scrollVertically = false,
     this.padEmptyRows = true,
     this.surfaceHeader,
-    this.goToTopLabel = _defaultGoToTopLabel,
+    required this.goToTopController,
     required this.columnWidthFor,
     this.onColumnWidthChanged,
   });
@@ -3411,7 +3583,7 @@ class _DesktopListTable<T> extends StatefulWidget {
   /// When false, do not pad the table with blank numbered spacer rows.
   final bool padEmptyRows;
   final Widget? surfaceHeader;
-  final String goToTopLabel;
+  final _AppListTableGoToTopController goToTopController;
   final double Function(AppListTableColumn<T> column) columnWidthFor;
   final void Function(String columnKey, double width)? onColumnWidthChanged;
 
@@ -3518,7 +3690,7 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
         side: theme.borders.side(),
       ),
       child: _GoToTopHost(
-        label: widget.goToTopLabel,
+        controller: widget.goToTopController,
         headerExtent: _headingRowHeight,
         builder: (BuildContext context, Key headerKey) {
           final Widget? surfaceHeader = widget.surfaceHeader;
@@ -4633,12 +4805,12 @@ class _ColumnResizeHandleState extends State<_ColumnResizeHandle> {
 
 class _GoToTopHost extends StatefulWidget {
   const _GoToTopHost({
-    required this.label,
+    required this.controller,
     required this.headerExtent,
     required this.builder,
   });
 
-  final String label;
+  final _AppListTableGoToTopController controller;
   final double headerExtent;
   final Widget Function(BuildContext context, Key headerKey) builder;
 
@@ -4648,14 +4820,13 @@ class _GoToTopHost extends StatefulWidget {
 
 class _GoToTopHostState extends State<_GoToTopHost> {
   final GlobalKey _headerKey = GlobalKey(debugLabel: 'appListTableHeader');
-  OverlayEntry? _overlayEntry;
   ScrollPosition? _trackedPosition;
-  bool _headerHidden = false;
   bool _visibilityCheckScheduled = false;
 
   @override
   void initState() {
     super.initState();
+    widget.controller.attach(_goToTop);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _reattachScrollPosition();
@@ -4665,9 +4836,19 @@ class _GoToTopHostState extends State<_GoToTopHost> {
   }
 
   @override
+  void didUpdateWidget(covariant _GoToTopHost oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.controller, widget.controller)) {
+      oldWidget.controller.detach();
+      widget.controller.attach(_goToTop);
+      _scheduleVisibilityCheck();
+    }
+  }
+
+  @override
   void dispose() {
+    widget.controller.detach();
     _detachScrollPosition();
-    _removeOverlay();
     super.dispose();
   }
 
@@ -4747,60 +4928,8 @@ class _GoToTopHostState extends State<_GoToTopHost> {
     return position.pixels > widget.headerExtent;
   }
 
-  Rect? _viewportRectInOverlay(BuildContext overlayContext) {
-    final BuildContext? headerContext = _headerKey.currentContext;
-    RenderObject? viewportRender;
-    if (headerContext != null) {
-      viewportRender = Scrollable.maybeOf(
-        headerContext,
-      )?.context.findRenderObject();
-    } else if (mounted) {
-      // Header sliver culled by virtualization: the host wraps the scroll
-      // view directly, so its own render box matches the viewport bounds.
-      viewportRender = context.findRenderObject();
-    }
-    final RenderObject? overlayRender = overlayContext.findRenderObject();
-    if (viewportRender is! RenderBox ||
-        overlayRender is! RenderBox ||
-        !viewportRender.hasSize) {
-      return null;
-    }
-    final Offset topLeft = overlayRender.globalToLocal(
-      viewportRender.localToGlobal(Offset.zero),
-    );
-    return topLeft & viewportRender.size;
-  }
-
   void _syncVisibility() {
-    final bool nextHidden = _isHeaderHidden();
-    if (nextHidden == _headerHidden && _overlayEntry != null) {
-      _overlayEntry!.markNeedsBuild();
-      return;
-    }
-    _headerHidden = nextHidden;
-    if (!_headerHidden) {
-      _removeOverlay();
-      return;
-    }
-    _ensureOverlay();
-    _overlayEntry?.markNeedsBuild();
-  }
-
-  void _ensureOverlay() {
-    if (_overlayEntry != null) {
-      return;
-    }
-    final OverlayState? overlay = Overlay.maybeOf(context, rootOverlay: true);
-    if (overlay == null) {
-      return;
-    }
-    _overlayEntry = OverlayEntry(builder: _buildOverlay);
-    overlay.insert(_overlayEntry!);
-  }
-
-  void _removeOverlay() {
-    _overlayEntry?.remove();
-    _overlayEntry = null;
+    widget.controller.setCanGoToTop(_isHeaderHidden());
   }
 
   Future<void> _goToTop() async {
@@ -4822,48 +4951,6 @@ class _GoToTopHostState extends State<_GoToTopHost> {
       );
     }
     _scheduleVisibilityCheck();
-  }
-
-  Widget _buildOverlay(BuildContext overlayContext) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    if (!_headerHidden) {
-      return const SizedBox.shrink();
-    }
-
-    final Rect? viewportRect = _viewportRectInOverlay(overlayContext);
-    final Widget button = Material(
-      elevation: 3,
-      color: colorScheme.surfaceContainerHighest,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: IconButton(
-        tooltip: widget.label,
-        onPressed: _goToTop,
-        icon: Icon(
-          Icons.vertical_align_top,
-          color: colorScheme.onSurfaceVariant,
-        ),
-        style: IconButton.styleFrom(
-          backgroundColor: colorScheme.surfaceContainerHighest,
-          foregroundColor: colorScheme.onSurfaceVariant,
-        ),
-      ),
-    );
-
-    if (viewportRect == null) {
-      return Positioned(
-        right: theme.spacing.md,
-        bottom: theme.spacing.xl,
-        child: button,
-      );
-    }
-
-    return Positioned(
-      left: viewportRect.right - _goToTopButtonExtent - theme.spacing.md,
-      top: viewportRect.bottom - _goToTopButtonExtent - theme.spacing.xl,
-      child: button,
-    );
   }
 
   @override

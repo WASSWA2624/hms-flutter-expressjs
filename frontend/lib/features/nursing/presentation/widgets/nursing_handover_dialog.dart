@@ -153,10 +153,10 @@ class _NursingHandoverDialogState extends ConsumerState<NursingHandoverDialog> {
 
   Future<void> _chooseAttachments() async {
     final List<XFile> files = await openFiles(
-      acceptedTypeGroups: const <XTypeGroup>[
+      acceptedTypeGroups: <XTypeGroup>[
         XTypeGroup(
-          label: nursingDocumentsTypeGroupLabel,
-          extensions: <String>['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx'],
+          label: nursingDocumentsTypeGroupLabel(context.l10n),
+          extensions: const <String>['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx'],
         ),
       ],
     );

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -230,6 +231,9 @@ class AppPrintPreviewToolbar extends StatelessWidget {
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    // Coarse ± zoom duplicates fine zoom on phones/tablets; keep the denser set.
+    final bool compactChrome =
+        !AppBreakpoints.of(context).showsToolbarActionLabels;
     final String zoomLabel = l10n.printPreviewZoomPercentLabel(
       (scale * 100).round(),
     );
@@ -262,11 +266,12 @@ class AppPrintPreviewToolbar extends StatelessWidget {
           label: l10n.printPreviewZoomOutAction,
           onPressed: onZoomOut,
         ),
-        tool(
-          icon: Icons.remove,
-          label: l10n.printPreviewDecreaseAction,
-          onPressed: onZoomDecrease ?? onZoomOut,
-        ),
+        if (!compactChrome)
+          tool(
+            icon: Icons.remove,
+            label: l10n.printPreviewDecreaseAction,
+            onPressed: onZoomDecrease ?? onZoomOut,
+          ),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
           child: Text(
@@ -276,11 +281,12 @@ class AppPrintPreviewToolbar extends StatelessWidget {
             ),
           ),
         ),
-        tool(
-          icon: Icons.add,
-          label: l10n.printPreviewIncreaseAction,
-          onPressed: onZoomIncrease ?? onZoomIn,
-        ),
+        if (!compactChrome)
+          tool(
+            icon: Icons.add,
+            label: l10n.printPreviewIncreaseAction,
+            onPressed: onZoomIncrease ?? onZoomIn,
+          ),
         tool(
           icon: Icons.zoom_in,
           label: l10n.printPreviewZoomInAction,
@@ -324,6 +330,7 @@ class AppPrintPreviewPaneModeBar extends StatelessWidget {
     required this.mode,
     required this.onChanged,
     this.enabled = true,
+    this.allowSplit = true,
     super.key,
   });
 
@@ -331,46 +338,151 @@ class AppPrintPreviewPaneModeBar extends StatelessWidget {
   final ValueChanged<AppPrintPreviewPaneMode> onChanged;
   final bool enabled;
 
+  /// When false (narrow single-pane layouts), hide Split — it cannot show both
+  /// panes at once.
+  final bool allowSplit;
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final bool showLabels =
+        AppBreakpoints.of(context).showsToolbarActionLabels;
+    final AppPrintPreviewPaneMode displayMode =
+        !allowSplit && mode == AppPrintPreviewPaneMode.split
+        ? AppPrintPreviewPaneMode.preview
+        : mode;
 
-    final Widget strip = AppTabStrip(
-      variant: AppTabStripVariant.nested,
-      tabs: <AppTabItem>[
-        AppTabItem(
-          id: AppPrintPreviewPaneMode.split.name,
+    final List<({AppPrintPreviewPaneMode id, IconData icon, String label})>
+    tabs = <({AppPrintPreviewPaneMode id, IconData icon, String label})>[
+      if (allowSplit)
+        (
+          id: AppPrintPreviewPaneMode.split,
           icon: Icons.view_column_outlined,
           label: l10n.printPreviewSplitViewAction,
         ),
-        AppTabItem(
-          id: AppPrintPreviewPaneMode.sections.name,
-          icon: Icons.checklist_outlined,
-          label: l10n.printPreviewSectionsOnlyAction,
+      (
+        id: AppPrintPreviewPaneMode.sections,
+        icon: Icons.checklist_outlined,
+        label: l10n.printPreviewSectionsOnlyAction,
+      ),
+      (
+        id: AppPrintPreviewPaneMode.preview,
+        icon: Icons.article_outlined,
+        label: l10n.printPreviewPreviewOnlyAction,
+      ),
+    ];
+
+    void select(AppPrintPreviewPaneMode next) {
+      if (!enabled || next == mode) {
+        return;
+      }
+      onChanged(next);
+    }
+
+    final Widget strip;
+    if (showLabels) {
+      strip = AppTabStrip(
+        variant: AppTabStripVariant.nested,
+        tabs: <AppTabItem>[
+          for (final ({AppPrintPreviewPaneMode id, IconData icon, String label})
+              tab
+              in tabs)
+            AppTabItem(id: tab.id.name, icon: tab.icon, label: tab.label),
+        ],
+        selectedId: displayMode.name,
+        onTabTapped: (String id) {
+          select(AppPrintPreviewPaneMode.values.byName(id));
+        },
+      );
+    } else {
+      // Icon-only segmented strip: labels do not fit beside three modes on
+      // phone / tablet chrome widths.
+      strip = DecoratedBox(
+        decoration: BoxDecoration(
+          border: theme.borders.only(bottom: true, color: theme.borders.faint),
         ),
-        AppTabItem(
-          id: AppPrintPreviewPaneMode.preview.name,
-          icon: Icons.article_outlined,
-          label: l10n.printPreviewPreviewOnlyAction,
+        child: Row(
+          children: <Widget>[
+            for (final ({AppPrintPreviewPaneMode id, IconData icon, String label})
+                tab
+                in tabs)
+              Expanded(
+                child: _PrintPreviewPaneModeIconTab(
+                  icon: tab.icon,
+                  label: tab.label,
+                  selected: displayMode == tab.id,
+                  enabled: enabled,
+                  onPressed: () => select(tab.id),
+                ),
+              ),
+          ],
         ),
-      ],
-      selectedId: mode.name,
-      onTabTapped: (String id) {
-        if (!enabled) {
-          return;
-        }
-        final AppPrintPreviewPaneMode next = AppPrintPreviewPaneMode.values
-            .byName(id);
-        if (next != mode) {
-          onChanged(next);
-        }
-      },
-    );
+      );
+    }
 
     if (enabled) {
       return strip;
     }
     return Opacity(opacity: 0.6, child: strip);
+  }
+}
+
+class _PrintPreviewPaneModeIconTab extends StatelessWidget {
+  const _PrintPreviewPaneModeIconTab({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.enabled,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Color foreground = selected
+        ? colorScheme.primary
+        : colorScheme.onSurfaceVariant;
+
+    return Tooltip(
+      message: label,
+      child: Semantics(
+        button: true,
+        selected: selected,
+        enabled: enabled,
+        label: label,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: enabled ? onPressed : null,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                border: theme.borders.only(
+                  bottom: true,
+                  color: selected ? colorScheme.primary : Colors.transparent,
+                  width: selected
+                      ? theme.borders.thick + 0.5
+                      : theme.borders.thin,
+                ),
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 40),
+                child: Center(
+                  child: Icon(icon, size: 20, color: foreground),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -383,6 +495,10 @@ class AppPrintPreviewPaneModeBar extends StatelessWidget {
 /// Pane-mode tabs and optional [toolbar] sit in the left (sections) column
 /// only, so the preview document can use the full right-pane height.
 /// Preview-only mode keeps a compact tabs + toolbar strip above the document.
+///
+/// Below [sideBySideBreakpoint], split never stacks both panes (that halves
+/// height on phones); it falls back to a single preview pane. Use the mode
+/// tabs to switch between sections and preview.
 class AppPrintPreviewWorkspace extends StatelessWidget {
   const AppPrintPreviewWorkspace({
     required this.preview,
@@ -393,10 +509,11 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
     this.paneMode = AppPrintPreviewPaneMode.split,
     this.onPaneModeChanged,
     this.paneModeEnabled = true,
-    this.sideBySideBreakpoint = 720,
+    this.sideBySideBreakpoint = AppBreakpoints.lg,
     this.sectionsFlex = 2,
     this.previewFlex = 3,
     this.sectionsScrollable = true,
+    this.onPreviewPaneWidth,
     super.key,
   });
 
@@ -418,6 +535,9 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
 
   /// When false, the sections column fills height and lets its child scroll.
   final bool sectionsScrollable;
+
+  /// Fired with the preview pane's laid-out width (for fit-to-page auto zoom).
+  final ValueChanged<double>? onPreviewPaneWidth;
 
   @override
   Widget build(BuildContext context) {
@@ -446,30 +566,32 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
   Widget _buildBody(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
-    final bool showSections =
-        sectionPicker != null &&
-        (paneMode == AppPrintPreviewPaneMode.split ||
-            paneMode == AppPrintPreviewPaneMode.sections);
-    final bool showPreview =
-        paneMode == AppPrintPreviewPaneMode.split ||
-        paneMode == AppPrintPreviewPaneMode.preview;
-
-    Widget? modeStrip;
-    if (onPaneModeChanged != null) {
-      modeStrip = AppPrintPreviewPaneModeBar(
-        mode: paneMode,
-        enabled: paneModeEnabled,
-        onChanged: onPaneModeChanged!,
-      );
-    }
-    final bool showToolbar = toolbar != null && showPreview;
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final bool sideBySide =
-            constraints.maxWidth >= sideBySideBreakpoint &&
-            showSections &&
-            showPreview;
+        final bool sideBySide = constraints.maxWidth >= sideBySideBreakpoint;
+        final AppPrintPreviewPaneMode effectiveMode =
+            !sideBySide && paneMode == AppPrintPreviewPaneMode.split
+            ? AppPrintPreviewPaneMode.preview
+            : paneMode;
+        final bool showSections =
+            sectionPicker != null &&
+            (effectiveMode == AppPrintPreviewPaneMode.split ||
+                effectiveMode == AppPrintPreviewPaneMode.sections);
+        final bool showPreview =
+            effectiveMode == AppPrintPreviewPaneMode.split ||
+            effectiveMode == AppPrintPreviewPaneMode.preview;
+
+        Widget? modeStrip;
+        if (onPaneModeChanged != null) {
+          modeStrip = AppPrintPreviewPaneModeBar(
+            mode: paneMode,
+            enabled: paneModeEnabled,
+            allowSplit: sideBySide && sectionPicker != null,
+            onChanged: onPaneModeChanged!,
+          );
+        }
+        final bool showToolbar = toolbar != null && showPreview;
 
         final Widget? sectionsPane = showSections
             ? _buildSectionsColumn(
@@ -477,7 +599,7 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
                 theme: theme,
                 l10n: l10n,
                 modeStrip: modeStrip,
-                showToolbar: showToolbar,
+                showToolbar: showToolbar && sideBySide,
               )
             : null;
         final Widget? previewPane = showPreview
@@ -485,35 +607,31 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
                 context: context,
                 theme: theme,
                 l10n: l10n,
-                // Compact return path when sections are hidden.
-                modeStrip: showSections ? null : modeStrip,
-                showToolbar: showSections ? false : showToolbar,
+                // Compact return path when sections are hidden / single-pane.
+                modeStrip: (showSections && sideBySide) ? null : modeStrip,
+                showToolbar: (showSections && sideBySide) ? false : showToolbar,
               )
             : null;
 
-        if (sideBySide) {
-          return Row(
+        final Widget body;
+        if (sideBySide && sectionsPane != null && previewPane != null) {
+          body = Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Expanded(flex: sectionsFlex, child: sectionsPane!),
+              Expanded(flex: sectionsFlex, child: sectionsPane),
               SizedBox(width: theme.spacing.sm),
-              Expanded(flex: previewFlex, child: previewPane!),
+              Expanded(flex: previewFlex, child: previewPane),
             ],
           );
+        } else {
+          // Narrow: one pane only — never stack sections + preview.
+          body = sectionsPane ?? previewPane ?? const SizedBox.shrink();
         }
 
-        if (sectionsPane != null && previewPane != null) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              Expanded(flex: 2, child: sectionsPane),
-              SizedBox(height: theme.spacing.sm),
-              Expanded(flex: 3, child: previewPane),
-            ],
-          );
-        }
-
-        return sectionsPane ?? previewPane ?? const SizedBox.shrink();
+        return Padding(
+          padding: EdgeInsets.all(theme.spacing.sm),
+          child: body,
+        );
       },
     );
   }
@@ -557,6 +675,21 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
     required Widget? modeStrip,
     required bool showToolbar,
   }) {
+    Widget previewBody = preview;
+    if (onPreviewPaneWidth != null) {
+      previewBody = LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final double width = constraints.maxWidth;
+          if (width.isFinite && width > 0) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              onPreviewPaneWidth!(width);
+            });
+          }
+          return preview;
+        },
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
@@ -571,7 +704,7 @@ class AppPrintPreviewWorkspace extends StatelessWidget {
           child: Semantics(
             container: true,
             label: l10n.printPreviewPreviewPaneLabel,
-            child: preview,
+            child: previewBody,
           ),
         ),
       ],
@@ -594,7 +727,7 @@ class _ScrollPane extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final EdgeInsets resolvedPadding = EdgeInsets.all(theme.spacing.xs);
+    final EdgeInsets resolvedPadding = EdgeInsets.all(theme.spacing.sm);
 
     final Widget body = scrollable
         ? Scrollbar(
@@ -750,6 +883,7 @@ class _AppPrintPreviewDialogState extends State<_AppPrintPreviewDialog> {
   int _currentPage = 1;
   AppPrintPreviewPaneMode _paneMode = AppPrintPreviewPaneMode.split;
   late Set<Object> _selectedFacilitySections;
+  bool _didAutoFit = false;
 
   bool get _facilitySectionsEnabled =>
       widget.facilitySectionBranding != null &&
@@ -761,6 +895,18 @@ class _AppPrintPreviewDialogState extends State<_AppPrintPreviewDialog> {
 
   bool get _printAllowed =>
       !_isPrinting && (widget.isPrintEnabled?.call() ?? true);
+
+  void _autoFitToPreviewWidth(double width) {
+    if (_didAutoFit || !width.isFinite || width <= 0) {
+      return;
+    }
+    _didAutoFit = true;
+    final double next = AppPrintPreviewZoom.fitPage(width);
+    if ((next - _scale).abs() < 0.01) {
+      return;
+    }
+    setState(() => _scale = next);
+  }
 
   @override
   void initState() {
@@ -960,6 +1106,7 @@ class _AppPrintPreviewDialogState extends State<_AppPrintPreviewDialog> {
         onPaneModeChanged: (AppPrintPreviewPaneMode next) {
           setState(() => _paneMode = next);
         },
+        onPreviewPaneWidth: _autoFitToPreviewWidth,
         toolbar: toolbar,
         sectionPicker: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -969,7 +1116,7 @@ class _AppPrintPreviewDialogState extends State<_AppPrintPreviewDialog> {
       );
     } else {
       content = Padding(
-        padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
+        padding: EdgeInsets.all(theme.spacing.sm),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -999,7 +1146,19 @@ class _AppPrintPreviewDialogState extends State<_AppPrintPreviewDialog> {
               child: toolbar,
             ),
             SizedBox(height: theme.spacing.xs),
-            Expanded(child: previewPanel),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  final double width = constraints.maxWidth;
+                  if (width.isFinite && width > 0) {
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _autoFitToPreviewWidth(width);
+                    });
+                  }
+                  return previewPanel;
+                },
+              ),
+            ),
           ],
         ),
       );
@@ -1009,6 +1168,9 @@ class _AppPrintPreviewDialogState extends State<_AppPrintPreviewDialog> {
       title: Text(widget.title),
       icon: Icon(widget.icon),
       pinActionsToBottom: true,
+      // Keep Print + Close on one row on phones — stacked full-width actions
+      // steal too much preview height.
+      stackActionsWhenCompact: false,
       contentPadding: EdgeInsets.zero,
       maxWidth: dialogMaxWidth,
       closeEnabled: !_isPrinting,
