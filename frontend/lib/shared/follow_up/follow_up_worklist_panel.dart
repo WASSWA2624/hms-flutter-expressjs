@@ -294,15 +294,15 @@ class _FollowUpWorklistBody extends ConsumerWidget {
             final List<AppListTableColumn<ReceptionFollowUpEntry>> choices =
                 _followUpColumnChoices(l10n);
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                SizedBox(height: theme.spacing.sm),
-                AppListTable<ReceptionFollowUpEntry>(
+            return LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final bool boundedHeight = constraints.hasBoundedHeight;
+                final Widget table = AppListTable<ReceptionFollowUpEntry>(
                   items: advancedFiltered,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
+                  shrinkWrap: !boundedHeight,
+                  physics: boundedHeight
+                      ? null
+                      : const NeverScrollableScrollPhysics(),
                   columnVisibilityStorageKey: '${storageKeyPrefix}_cols',
                   columnWidthStorageKey: '${storageKeyPrefix}_cw',
                   columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
@@ -374,8 +374,27 @@ class _FollowUpWorklistBody extends ConsumerWidget {
                   ),
                   columns: columns,
                   columnChoices: choices,
-                ),
-              ],
+                );
+
+                if (boundedHeight) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      SizedBox(height: theme.spacing.sm),
+                      Expanded(child: table),
+                    ],
+                  );
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    SizedBox(height: theme.spacing.sm),
+                    table,
+                  ],
+                );
+              },
             );
           },
         );

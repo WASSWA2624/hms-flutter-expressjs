@@ -369,8 +369,86 @@ void main() {
     );
     expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
     expect(_table(tester).search?.advancedFilterTitle, 'Advanced filters');
+    expect(_table(tester).search?.advancedFilterCloseLabel, 'Close');
+    expect(_table(tester).columnVisibilityCloseLabel, 'Close');
     expect(_table(tester).columns.length, 5);
+    expect(_table(tester).enablePrint, isTrue);
+    expect(_table(tester).canExport, isFalse);
+    expect(_table(tester).canPrint, isFalse);
+    expect(find.byTooltip('Export'), findsNothing);
+    // Toolbar Print is omitted when canPrint is false; next-action may still
+    // expose Print for released rows (printing.mdc trigger label).
+    expect(_table(tester).onPrint, isNotNull);
+    final List<AppSearchBarAction> trailing =
+        _table(tester).search?.trailingActions ?? const <AppSearchBarAction>[];
+    expect(trailing, isNotEmpty);
+    expect(trailing.last.label, 'Request imaging');
+
+    final AppTabStrip strip = tester.widget<AppTabStrip>(
+      find.byType(AppTabStrip),
+    );
+    final AppTabItem worklist = strip.tabs.firstWhere(
+      (AppTabItem tab) => tab.label.contains('Worklist'),
+    );
+    final AppTabItem reporting = strip.tabs.firstWhere(
+      (AppTabItem tab) => tab.label.toLowerCase().contains('reporting'),
+    );
+    final AppTabItem allOrders = strip.tabs.firstWhere(
+      (AppTabItem tab) => tab.label.contains('Order history'),
+    );
+    expect(worklist.countTone, AppTabCountTone.warning);
+    expect(reporting.countTone, AppTabCountTone.warning);
+    expect(allOrders.countTone, AppTabCountTone.info);
   });
+
+  testWidgets(
+    'Export/Print omit without evidence:export; present when granted',
+    (WidgetTester tester) async {
+      await _pumpRadiologyWorkspace(tester, repository: repository);
+      expect(_table(tester).canExport, isFalse);
+      expect(_table(tester).canPrint, isFalse);
+      expect(find.byTooltip('Export'), findsNothing);
+
+      await _pumpRadiologyWorkspace(
+        tester,
+        repository: repository,
+        policy: AppAccessPolicy.fromSession(
+          AuthSession(
+            tokens: SessionTokens(accessToken: 'access-token'),
+            user: const AuthUserProfile(roles: <String>['RADIOLOGIST']),
+            permissions: <AppPermission>{
+              AppPermissions.clinicalRead,
+              AppPermissions.clinicalWrite,
+              AppPermissions.radiologyRead,
+              AppPermissions.radiologyWrite,
+              AppPermissions.evidenceExport,
+            },
+            moduleEntitlements: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: 'radiology-workflows',
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'encounters-vitals',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+          ),
+        ),
+      );
+      expect(_table(tester).canExport, isTrue);
+      expect(_table(tester).canPrint, isTrue);
+      expect(_table(tester).enablePrint, isTrue);
+      expect(_table(tester).printLabel, 'Print');
+      expect(_table(tester).exportLabel, 'Export');
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsWidgets);
+      final List<AppSearchBarAction> trailing =
+          _table(tester).search?.trailingActions ??
+          const <AppSearchBarAction>[];
+      expect(trailing.last.label, 'Request imaging');
+    },
+  );
 
   testWidgets('switching tabs applies stage filters and updates URL', (
     WidgetTester tester,
@@ -477,12 +555,13 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('View report').first);
+    await tester.ensureVisible(find.text('Print').first);
+    await tester.tap(find.text('Print').first);
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('PRINT RADIOLOGY REPORT'), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Print'), findsOneWidget);
-    expect(find.textContaining('Choose report sections'), findsOneWidget);
+    expect(find.textContaining('PRINT PREVIEW'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Print'), findsWidgets);
+    expect(find.byType(AppReportSectionPicker), findsWidgets);
     expect(find.text('Procedures'), findsNothing);
     expect(find.text('Procedure details'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Actions'), findsNothing);
@@ -582,6 +661,10 @@ void main() {
     expect(find.byWidgetPredicate((Widget w) => AppDialog.isShellKey(w.key)), findsOneWidget);
     expect(find.text(l10n.radiologyCancelOrderAction), findsOneWidget);
     expect(find.text(l10n.radiologyAssignAction), findsNothing);
+    expect(find.text(l10n.radiologyStartImagingAction), findsNothing);
+    // Product exception (tabs/11-radiology/99): Assign / Start imaging omitted
+    // from procedure workbench; Procedure done is the acquisition confirmation.
+    expect(find.text(l10n.radiologyMarkProcedureDoneAction), findsWidgets);
     verify(() => repository.getWorkflow(any())).called(greaterThan(0));
   });
 

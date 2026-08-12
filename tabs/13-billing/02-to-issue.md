@@ -5,7 +5,7 @@
 - Label: `billingNeedsIssue`
 - Tooltip: `billingNeedsIssueTooltip`
 - Icon: `Icons.receipt_long_outlined`
-- Count source: `summary.needsIssue`
+- Count source: `billingQueueTabCount` → `summary.needsIssue` / filtered `workItems.totalItemCount` when search/filters active
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `issue` (aliases `needs-issue`, `ready-to-issue`)
 - Tab gate: `BillingNeedsIssueAtomPermissions.tab` / entry requirement
@@ -13,23 +13,35 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Filters → Settings → Issue all**
+Order: **Filters → Settings → Export → Print → Issue all**
 
+- Filters: `commonFiltersActionLabel`; Clear `opdClearFiltersAction`; Close `commonCloseActionLabel`
 - Settings key: `billing_issue_v1`
-- Export / table Print: **absent**
-- Context: Issue all (`billingIssueAllAction`) — omitted without write ∩ or when no issuable rows
+- Export / table Print: present; omit without ∩ `evidence:export` (`BillingNeedsIssueAtomPermissions.export` / `print`)
+- Context: Issue all (`billingIssueAllAction`) — omitted without write ∩; disabled when no issuable rows / saving
 - Charge / Close shift·day: **not mounted**
 
 ## 3. Table
 
-- Default columns: Patient / Invoice / Encounter / Status / Next action (when shown)
-- Column choices: shared non-default set
-- Row select → detail (Issue primary)
+- Row model: `BillingWorkItem`
+- Row select → detail dialog (`billingInvoiceDetailTitle` — generic; identity in body)
+- Default columns (**5** when next-action mounts; **4** when read-only omits next-action — tested exception):
+  1. Patient
+  2. Invoice
+  3. Encounter
+  4. Status
+  5. Next action — only if `billingQueueShowsNextActionColumn`
+- Column choices (Settings): amount due, source, paid, updated (not age; not approval/claims-only ids)
+- Reset columns restores the default set via shared Table Settings
 
 ## 4. Advanced filters / search fields
 
-- Groups: Source, Status (needs-issue choices)
-- Text filters + issued date
+- Groups: Source (`billingSourceFilterLabel`), Status (needs-issue: DRAFT only)
+- Text filters: patient / invoice / encounter
+- Date range on issued date (`billingIssuedDateFilterLabel`)
+- Footer: Clear filters → Apply filters → Close
+- Overdue / Age groups: **not** on To issue (Collect owns them)
+- Same `BillingWorkspaceQuery` drives table rows + active tab badge via `billingQueueTabCount`
 
 ## 5. Primary / secondary / row actions
 
@@ -44,7 +56,7 @@ Order: **Filters → Settings → Issue all**
 | Detail | Billing-owned |
 | Issue / Issue all confirm | Billing-owned |
 | Adjust / Void / Send (if exposed) | Billing-owned |
-| Ledger / Print invoice | Billing-owned |
+| Ledger / Print | Billing-owned |
 
 ## 7. Nested / follow-on
 
@@ -56,8 +68,8 @@ Issue all confirm → batch issue; detail Issue → notes form; print/download f
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
-- Detail invoice Print/Download when document read ∩
+- Table Print: `commonPrintActionLabel` → preview-first `printBillingWorkspaceList`
+- Detail invoice `Print` / Download when document read ∩
 
 ## 10. Loading / empty / error / success
 
@@ -74,3 +86,4 @@ Issue all confirm → batch issue; detail Issue → notes form; print/download f
 | Approve nested | approve ∩ |
 | Claims strip / nested | claims pending / claims write |
 | Print/Download | document ∩ |
+| List Export / Print | ∩ `evidence:export` |

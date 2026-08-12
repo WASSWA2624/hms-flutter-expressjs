@@ -1,6 +1,6 @@
 # Radiology workspace UI inventory
 
-Source: `tabs-lister/11-radiology.md` · Code base date: 2026-08-11
+Source: `tabs-lister/11-radiology.md` · Code base date: 2026-08-12
 
 ## Context
 

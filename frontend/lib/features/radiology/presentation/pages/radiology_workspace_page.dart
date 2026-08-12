@@ -22,6 +22,9 @@ import 'package:hosspi_hms/features/radiology/domain/entities/radiology_entities
 import 'package:hosspi_hms/features/radiology/presentation/controllers/radiology_workspace_controller.dart';
 import 'package:hosspi_hms/features/radiology/presentation/radiology_access.dart';
 import 'package:hosspi_hms/features/radiology/presentation/widgets/radiology_next_action_cell.dart';
+import 'package:hosspi_hms/features/radiology/presentation/widgets/radiology_scope_navigation.dart';
+import 'package:hosspi_hms/features/radiology/presentation/widgets/radiology_workspace_print_helpers.dart';
+import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
@@ -37,6 +40,7 @@ import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/lab_catalog/lab_catalog.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 import 'package:hosspi_hms/shared/radiology_catalog/radiology_catalog_dialogs.dart';
 import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
@@ -99,6 +103,7 @@ class _RadiologyWorkspaceContentState
   Timer? _searchDebounce;
   String? _appliedRouteSignature;
   late RadiologyDeskSection _section;
+  int? _followUpsNarrowedCount;
 
   @override
   void initState() {
@@ -144,11 +149,15 @@ class _RadiologyWorkspaceContentState
 
   void _applySearchNow(String value) {
     _searchDebounce?.cancel();
-    unawaited(
-      ref
+    unawaited(() async {
+      final AppFailure? failure = await ref
           .read(radiologyWorkspaceControllerProvider.notifier)
-          .applySearch(value),
-    );
+          .applySearch(value);
+      if (!mounted) {
+        return;
+      }
+      _showFailureIfNeeded(context, failure);
+    }());
   }
 
   void _scheduleRouteQuery(RadiologyWorkspaceQuery? query) {
@@ -310,34 +319,6 @@ class _RadiologyWorkspaceContentState
     };
   }
 
-  int? _sectionCount(
-    RadiologyWorkspaceState state,
-    RadiologyDeskSection section,
-  ) {
-    if (section.isFollowUps) {
-      return null;
-    }
-    // Active tab always mirrors the table footer / current workbench total.
-    if (section == _section) {
-      return state.orders.totalItemCount;
-    }
-    return switch (section) {
-      RadiologyDeskSection.worklist => state.workloadCount,
-      RadiologyDeskSection.reporting => state.reportingCount,
-      RadiologyDeskSection.allOrders => state.historyCount,
-      RadiologyDeskSection.followUps => null,
-    };
-  }
-
-  static AppTabCountTone _sectionCountTone(RadiologyDeskSection section) {
-    return switch (section) {
-      RadiologyDeskSection.worklist ||
-      RadiologyDeskSection.reporting => AppTabCountTone.warning,
-      RadiologyDeskSection.allOrders ||
-      RadiologyDeskSection.followUps => AppTabCountTone.info,
-    };
-  }
-
   AppSearchBarAction? _buildRequestImagingSearchAction(
     AppLocalizations l10n,
     RadiologyWorkspaceState state, {
@@ -371,6 +352,8 @@ class _RadiologyWorkspaceContentState
     final RadiologyWorkspaceState state = widget.state;
     final controller = ref.read(radiologyWorkspaceControllerProvider.notifier);
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final bool canExport = canExportRadiologyWorkspace(accessPolicy);
+    final bool canPrint = canPrintRadiologyWorkspace(accessPolicy);
     final List<RadiologyDeskSection> allowedSections = radiologyAllowedSections(
       accessPolicy,
     );
@@ -429,8 +412,10 @@ class _RadiologyWorkspaceContentState
         spacing: Theme.of(context).spacing,
       ),
       maxWidth: PageMaxWidth.dataHeavy,
+      scrollable: false,
       child: SizedBox(
         width: double.infinity,
+        height: double.infinity,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -442,14 +427,19 @@ class _RadiologyWorkspaceContentState
                       id: section.name,
                       icon: _sectionIcon(section),
                       label: _sectionLabel(l10n, section),
-                      count: section == RadiologyDeskSection.followUps
-                          ? ref.watch(
-                              followUpTabCountProvider(
-                                const FollowUpWorklistScope(),
-                              ),
-                            )
-                          : _sectionCount(state, section),
-                      countTone: _sectionCountTone(section),
+                      count: section.isFollowUps
+                          ? (_followUpsNarrowedCount ??
+                                ref.watch(
+                                  followUpTabCountProvider(
+                                    const FollowUpWorklistScope(),
+                                  ),
+                                ))
+                          : radiologySectionTabCount(
+                              state,
+                              section,
+                              activeSection: effectiveSection,
+                            ),
+                      countTone: radiologySectionCountTone(section),
                     ),
                 ],
                 selectedId: effectiveSection.name,
@@ -466,33 +456,70 @@ class _RadiologyWorkspaceContentState
               ),
             SizedBox(height: theme.spacing.sm),
             if (allowedSections.isEmpty)
-              AppWorkspaceStatePanel.empty(
-                title: l10n.radiologyNoOrdersTitle,
-                body: l10n.radiologyNoOrdersBody,
-                icon: Icons.inbox_outlined,
+              Expanded(
+                child: AppWorkspaceStatePanel.empty(
+                  title: l10n.radiologyNoOrdersTitle,
+                  body: l10n.radiologyNoOrdersBody,
+                  icon: Icons.inbox_outlined,
+                ),
               ),
             if (allowedSections.isNotEmpty && effectiveSection.isFollowUps)
-              const FollowUpWorklistPanel(
-                scope: FollowUpWorklistScope(),
-                storageKeyPrefix: 'radiology_follow_ups',
-                readRequirement: RadiologyFollowUpsAtomPermissions.tab,
-                writeRequirement: RadiologyFollowUpsAtomPermissions.write,
+              Expanded(
+                child: FollowUpWorklistPanel(
+                  scope: const FollowUpWorklistScope(),
+                  storageKeyPrefix: 'radiology_follow_ups',
+                  readRequirement: RadiologyFollowUpsAtomPermissions.tab,
+                  writeRequirement: RadiologyFollowUpsAtomPermissions.write,
+                  showAdvancedFilterButton: true,
+                  advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+                  advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+                  advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                  advancedFilterResetLabel: l10n.radiologyClearFiltersAction,
+                  advancedFilterCloseLabel: l10n.commonCloseActionLabel,
+                  enableDateFilter: true,
+                  dateFilterLabel: l10n.opdFollowUpDateLabel,
+                  dateFromLabel: l10n.opdDateFromLabel,
+                  dateToLabel: l10n.opdDateToLabel,
+                  textFilters: _radiologyFollowUpTextFilters(l10n),
+                  filterGroups: _radiologyFollowUpFilterGroups(l10n),
+                  canExport: canExport,
+                  enablePrint: true,
+                  canPrint: canPrint,
+                  printLabel: l10n.commonPrintActionLabel,
+                  onPrint: (List<ReceptionFollowUpEntry> entries) =>
+                      _printRadiologyFollowUpsList(
+                        context,
+                        ref,
+                        entries: entries,
+                        l10n: l10n,
+                      ),
+                  onNarrowedCountChanged: (int? narrowedCount) {
+                    if (_followUpsNarrowedCount == narrowedCount) {
+                      return;
+                    }
+                    setState(() {
+                      _followUpsNarrowedCount = narrowedCount;
+                    });
+                  },
+                ),
               )
             else if (allowedSections.isNotEmpty)
-              _RadiologyOrderBoard(
-                section: effectiveSection,
-                state: state,
-                canWork: canWork,
-                canRequest: canRequest,
-                canViewBilling: canViewBilling,
-                searchController: _searchController,
-                columnVisibilityController: _tableColumnController,
-                onSearchChanged: _scheduleSearch,
-                onSearchSubmitted: _applySearchNow,
-                createAction: _buildRequestImagingSearchAction(
-                  l10n,
-                  state,
+              Expanded(
+                child: _RadiologyOrderBoard(
                   section: effectiveSection,
+                  state: state,
+                  canWork: canWork,
+                  canRequest: canRequest,
+                  canViewBilling: canViewBilling,
+                  searchController: _searchController,
+                  columnVisibilityController: _tableColumnController,
+                  onSearchChanged: _scheduleSearch,
+                  onSearchSubmitted: _applySearchNow,
+                  createAction: _buildRequestImagingSearchAction(
+                    l10n,
+                    state,
+                    section: effectiveSection,
+                  ),
                 ),
               ),
           ],
@@ -533,6 +560,9 @@ class _RadiologyOrderBoard extends ConsumerWidget {
     final AppLocalizations l10n = context.l10n;
     final controller = ref.read(radiologyWorkspaceControllerProvider.notifier);
     final String storageSuffix = '${section.name}_${state.query.view.name}';
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canExport = canExportRadiologyWorkspace(policy);
+    final bool canPrint = canPrintRadiologyWorkspace(policy);
 
     return AppListTable<RadiologyOrder>(
       page: state.orders,
@@ -544,6 +574,36 @@ class _RadiologyOrderBoard extends ConsumerWidget {
       columnWidthStorageKey: 'radiology_cw_$storageSuffix',
       columnVisibilityApplyLabel: l10n.radiologyApplyColumnsAction,
       columnVisibilityResetLabel: l10n.radiologyResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+      canExport: canExport,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.appDateInvalidMessage,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () => _printRadiologyWorklist(
+        context,
+        ref,
+        state: state,
+        section: section,
+        canWork: canWork,
+        canRequest: canRequest,
+        canViewBilling: canViewBilling,
+        l10n: l10n,
+      ),
+      exportConfig: AppListTableExportConfig<RadiologyOrder>(
+        fileNameStem: 'radiology_$storageSuffix',
+        dateOf: (RadiologyOrder item) => item.orderedAt,
+        sheetName: section.name,
+      ),
       search: AppListTableSearch<RadiologyOrder>(
         controller: searchController,
         semanticLabel: l10n.radiologySearchLabel,
@@ -560,8 +620,9 @@ class _RadiologyOrderBoard extends ConsumerWidget {
         advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.radiologyClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         dateFilterLabel: l10n.radiologyOrderDateFilterLabel,
-        dateFromLabel: l10n.radiologyOrderDateFilterLabel,
+        dateFromLabel: l10n.opdDateFromLabel,
         dateToLabel: l10n.opdDateToLabel,
         datePickerButtonLabel: l10n.radiologyPickOrderDateAction,
         invalidDateMessage: l10n.appDateInvalidMessage,
@@ -643,8 +704,7 @@ class _RadiologyOrderBoard extends ConsumerWidget {
           }
         },
       ),
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: false,
       itemKeyBuilder: (RadiologyOrder item) => ValueKey<String>(item.id),
       onRowSelected: (RadiologyOrder order) {
         unawaited(
@@ -1518,9 +1578,8 @@ class _ProcedureWorkbenchSectionState
                                           (BuildContext context, bool isAllowed) {
                                         return AppButton.primary(
                                           dense: true,
-                                          label: l10n.radiologyViewReportAction,
-                                          leadingIcon:
-                                              Icons.description_outlined,
+                                          label: l10n.commonPrintActionLabel,
+                                          leadingIcon: Icons.print_outlined,
                                           enabled:
                                               isAllowed && !state.isMutating,
                                           onPressed:
@@ -1764,7 +1823,7 @@ class _ProcedureDetailsDialog extends StatelessWidget {
             requirement: radiologyPrintReportRequirement,
             builder: (BuildContext context, bool isAllowed) {
               return AppButton.primary(
-                label: l10n.radiologyPrintReportAction,
+                label: l10n.commonPrintActionLabel,
                 leadingIcon: Icons.print_outlined,
                 enabled: isAllowed && !state.isMutating,
                 onPressed: !isAllowed || state.isMutating
@@ -2858,7 +2917,7 @@ class _ReportEditDialogState extends State<_ReportEditDialog> {
           requirement: radiologyPrintReportRequirement,
           builder: (BuildContext context, bool isAllowed) {
             return AppButton.tertiary(
-              label: l10n.radiologyPrintReportAction,
+              label: l10n.commonPrintActionLabel,
               leadingIcon: Icons.print_outlined,
               enabled: isAllowed && !busy && widget.onPrint != null,
               onPressed: !isAllowed || busy || widget.onPrint == null
@@ -3347,4 +3406,208 @@ AppListTableColumn<RadiologyOrder> _radiologyOrderIdentifierColumn(
       return _radiologyWorklistTextCell(context, item.effectiveDisplayId);
     },
   );
+}
+
+List<AppSearchBarTextFilter> _radiologyFollowUpTextFilters(
+  AppLocalizations l10n,
+) {
+  return <AppSearchBarTextFilter>[
+    AppSearchBarTextFilter(
+      key: 'patient',
+      label: l10n.labPatientFilterLabel,
+      icon: Icons.person_search_outlined,
+      textInputAction: TextInputAction.next,
+    ),
+    AppSearchBarTextFilter(
+      key: 'patient_id',
+      label: l10n.labPatientIdFilterLabel,
+      icon: Icons.badge_outlined,
+      textInputAction: TextInputAction.next,
+    ),
+    AppSearchBarTextFilter(
+      key: 'phone',
+      label: l10n.patientsPhoneLabel,
+      icon: Icons.phone_outlined,
+      keyboardType: TextInputType.phone,
+      textInputAction: TextInputAction.next,
+    ),
+  ];
+}
+
+List<AppSearchBarFilterGroup> _radiologyFollowUpFilterGroups(
+  AppLocalizations l10n,
+) {
+  return <AppSearchBarFilterGroup>[
+    AppSearchBarFilterGroup(
+      key: 'follow_up_status',
+      label: l10n.labFollowUpStatusFilterLabel,
+      allLabel: l10n.opdAllFieldsFilterLabel,
+      choices: <AppSearchBarFilterChoice>[
+        AppSearchBarFilterChoice(
+          value: 'pending',
+          label: l10n.labFollowUpStatusPending,
+        ),
+        AppSearchBarFilterChoice(
+          value: 'completed',
+          label: l10n.labFollowUpStatusCompleted,
+        ),
+      ],
+    ),
+  ];
+}
+
+Future<void> _printRadiologyWorklist(
+  BuildContext context,
+  WidgetRef ref, {
+  required RadiologyWorkspaceState state,
+  required RadiologyDeskSection section,
+  required bool canWork,
+  required bool canRequest,
+  required bool canViewBilling,
+  required AppLocalizations l10n,
+}) async {
+  final List<AppListTableColumn<RadiologyOrder>> columns =
+      <AppListTableColumn<RadiologyOrder>>[
+        ...(state.query.view == RadiologyWorkbenchView.patients
+            ? _patientViewWorklistColumns(
+                context,
+                state: state,
+                canWork: canWork,
+                canRequest: canRequest,
+                canViewBilling: canViewBilling,
+              )
+            : _orderViewWorklistColumns(
+                context,
+                state: state,
+                canWork: canWork,
+                canRequest: canRequest,
+                canViewBilling: canViewBilling,
+              )),
+        ..._optionalRadiologyWorklistColumns(
+          context,
+          canViewBilling: canViewBilling,
+        ),
+      ].where(
+        (AppListTableColumn<RadiologyOrder> column) => column.includesInExport,
+      ).toList(growable: false);
+  final List<RadiologyWorkspacePrintColumn> printColumns =
+      <RadiologyWorkspacePrintColumn>[
+        for (final AppListTableColumn<RadiologyOrder> column in columns)
+          RadiologyWorkspacePrintColumn(id: column.key, label: column.label),
+      ];
+  final List<Map<String, String>> printRows = <Map<String, String>>[
+    for (final RadiologyOrder item in state.orders.items)
+      <String, String>{
+        for (final AppListTableColumn<RadiologyOrder> column in columns)
+          column.key: _radiologyWorklistPrintCellValue(context, item, column.key),
+      },
+  ];
+  await printRadiologyWorkspaceList(
+    ref: ref,
+    context: context,
+    title: switch (section) {
+      RadiologyDeskSection.worklist => l10n.radiologyWorklistSummaryLabel,
+      RadiologyDeskSection.reporting => l10n.radiologyReportingSummaryLabel,
+      RadiologyDeskSection.allOrders => l10n.radiologyAllOrdersSummaryLabel,
+      RadiologyDeskSection.followUps => l10n.opdFollowUpsTitle,
+    },
+    columns: printColumns,
+    rows: printRows,
+    emptyText: state.query.view == RadiologyWorkbenchView.patients
+        ? l10n.radiologyNoPatientsTitle
+        : l10n.radiologyNoOrdersTitle,
+  );
+}
+
+Future<void> _printRadiologyFollowUpsList(
+  BuildContext context,
+  WidgetRef ref, {
+  required List<ReceptionFollowUpEntry> entries,
+  required AppLocalizations l10n,
+}) async {
+  final Locale locale = Localizations.localeOf(context);
+  final List<RadiologyWorkspacePrintColumn> printColumns =
+      <RadiologyWorkspacePrintColumn>[
+        RadiologyWorkspacePrintColumn(
+          id: 'patient',
+          label: l10n.opdPatientNameLabel,
+        ),
+        RadiologyWorkspacePrintColumn(
+          id: 'phone',
+          label: l10n.patientsPhoneIdentifierColumnLabel,
+        ),
+        RadiologyWorkspacePrintColumn(
+          id: 'status',
+          label: l10n.receptionStatusLabel,
+        ),
+        RadiologyWorkspacePrintColumn(
+          id: 'date',
+          label: l10n.opdFollowUpDateLabel,
+        ),
+        RadiologyWorkspacePrintColumn(
+          id: 'time',
+          label: l10n.opdFollowUpTimeLabel,
+        ),
+        RadiologyWorkspacePrintColumn(
+          id: 'patient_id',
+          label: l10n.opdPatientIdLabel,
+        ),
+        RadiologyWorkspacePrintColumn(id: 'email', label: l10n.patientsEmailLabel),
+        RadiologyWorkspacePrintColumn(id: 'notes', label: l10n.opdNotesLabel),
+      ];
+  final List<Map<String, String>> printRows = <Map<String, String>>[
+    for (final ReceptionFollowUpEntry entry in entries)
+      <String, String>{
+        'patient': entry.patientDisplayName?.trim().isNotEmpty == true
+            ? entry.patientDisplayName!.trim()
+            : l10n.profileUnknownValue,
+        'phone': entry.patientPhone?.trim() ?? '',
+        'status': opdStageDisplayLabel(l10n, entry.status),
+        'date': AppFormatters.shortDate(entry.scheduledAt.toLocal(), locale),
+        'time': AppFormatters.time(entry.scheduledAt.toLocal(), locale),
+        'patient_id': entry.patientIdentifier,
+        'email': entry.patientEmail?.trim() ?? '',
+        'notes': entry.notes?.trim() ?? '',
+      },
+  ];
+  await printRadiologyWorkspaceList(
+    ref: ref,
+    context: context,
+    title: l10n.opdFollowUpsTitle,
+    columns: printColumns,
+    rows: printRows,
+    emptyText: l10n.receptionFollowUpsEmptyTitle,
+  );
+}
+
+String _radiologyWorklistPrintCellValue(
+  BuildContext context,
+  RadiologyOrder item,
+  String columnId,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return switch (columnId) {
+    'patient' => item.patientDisplayName ?? l10n.profileUnknownValue,
+    'patient_id' => item.patientId?.trim() ?? '',
+    'study' => _radiologyStudyLabel(item, l10n),
+    'priority' =>
+      _radiologyPriorityDisplayLabel(l10n, item.priority) ?? '',
+    'status' => _orderStatus(context, item).label,
+    'next_action' => _nextActionLabel(context, item),
+    'modality' => item.modality?.trim() ?? '',
+    'body_region' => item.bodyRegion?.trim() ?? '',
+    'laterality' => item.laterality?.trim() ?? '',
+    'encounter' => item.encounterId?.trim() ?? '',
+    'billing' => _billingGateLabel(context, item),
+    'ordered_at' => _formatDateTimeOrNull(context, item.orderedAt) ?? '',
+    'orders' => item.isPatientGroup
+        ? _activeOrderCountLabel(
+            l10n,
+            item.activeOrderCount > 0
+                ? item.activeOrderCount
+                : item.orderCount,
+          )
+        : item.effectiveDisplayId,
+    _ => '',
+  };
 }

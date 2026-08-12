@@ -11,8 +11,10 @@ import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_access.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_supplier_details_dialog.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_supplier_similarity_dialog.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_workspace_print_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
@@ -88,6 +90,9 @@ class _PharmacySuppliersCatalogTabState
     );
     final bool isBusy = widget.state.isRefreshingSuppliers;
     final bool canWrite = widget.writeRequirement.allows(ref);
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canExport = canExportPharmacyWorkspace(policy);
+    final bool canPrint = canPrintPharmacyWorkspace(policy);
 
     return AppListTable<PharmacySupplier>(
       page: widget.state.suppliers,
@@ -95,6 +100,57 @@ class _PharmacySuppliersCatalogTabState
       columnVisibilityStorageKey: 'pharmacy_catalog_suppliers',
       shrinkWrap: !widget.fillHeight,
       onPageChanged: controller.setSupplierPage,
+      enableExport: true,
+      canExport: canExport,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () => printPharmacyWorkspaceList(
+        ref: ref,
+        context: context,
+        title: l10n.pharmacyDeskSuppliersLabel,
+        columns: <PharmacyWorkspacePrintColumn>[
+          PharmacyWorkspacePrintColumn(
+            id: 'name',
+            label: l10n.pharmacySupplierNameLabel,
+          ),
+          PharmacyWorkspacePrintColumn(
+            id: 'location',
+            label: l10n.pharmacySupplierLocationLabel,
+          ),
+          PharmacyWorkspacePrintColumn(
+            id: 'email',
+            label: l10n.pharmacySupplierEmailLabel,
+          ),
+          PharmacyWorkspacePrintColumn(
+            id: 'phone',
+            label: l10n.pharmacySupplierPhoneLabel,
+          ),
+        ],
+        rows: <Map<String, String>>[
+          for (final PharmacySupplier item in widget.state.suppliers.items)
+            <String, String>{
+              'name': item.primaryName,
+              'location': item.location ?? '',
+              'email': item.contactEmail ?? '',
+              'phone': item.phone ?? '',
+            },
+        ],
+        emptyText: l10n.pharmacySuppliersEmptyTitle,
+      ),
+      exportConfig: AppListTableExportConfig<PharmacySupplier>(
+        fileNameStem: 'pharmacy_suppliers',
+        dateOf: (PharmacySupplier item) => item.createdAt,
+      ),
       loadingMoreLabel: l10n.pharmacySuppliersLoadingTitle,
       loadingBuilder: (BuildContext context) {
         final ThemeData theme = Theme.of(context);
@@ -113,6 +169,55 @@ class _PharmacySuppliersCatalogTabState
         matcher: (_, _) => true,
         onSubmitted: controller.applySupplierSearch,
         onClear: () => unawaited(controller.applySupplierSearch('')),
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        enableDateFilter: false,
+        allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+        textFilters: <AppSearchBarTextFilter>[
+          AppSearchBarTextFilter(
+            key: 'name',
+            label: l10n.pharmacySupplierNameLabel,
+            hintText: l10n.pharmacySupplierNameLabel,
+            icon: Icons.local_shipping_outlined,
+          ),
+          AppSearchBarTextFilter(
+            key: 'location',
+            label: l10n.pharmacySupplierLocationLabel,
+            icon: Icons.place_outlined,
+          ),
+          AppSearchBarTextFilter(
+            key: 'email',
+            label: l10n.pharmacySupplierEmailLabel,
+            icon: Icons.email_outlined,
+          ),
+          AppSearchBarTextFilter(
+            key: 'phone',
+            label: l10n.pharmacySupplierPhoneLabel,
+            icon: Icons.phone_outlined,
+          ),
+        ],
+        filterValue: AppSearchBarFilterValue(
+          texts: <String, String>{
+            if (widget.state.supplierQuery.search.trim().isNotEmpty)
+              'name': widget.state.supplierQuery.search.trim(),
+          },
+        ),
+        hasActiveFilters: widget.state.supplierQuery.search.trim().isNotEmpty,
+        onFilterChanged: (AppSearchBarFilterValue value) {
+          final String search = <String?>[
+            value.text('name'),
+            value.text('location'),
+            value.text('email'),
+            value.text('phone'),
+          ]
+              .map((String? part) => (part ?? '').trim())
+              .where((String part) => part.isNotEmpty)
+              .join(' ');
+          unawaited(controller.applySupplierSearch(search));
+        },
         trailingActions: canWrite
             ? <AppSearchBarAction>[
                 AppSearchBarAction(

@@ -6,7 +6,7 @@
 - Tooltip: `billingPriceBookTooltip`
 - Icon: `Icons.menu_book_outlined`
 - Count source: `billingPriceBookActiveCountProvider`
-- Count tone: default (not queue `billingQueueCountTone`)
+- Count tone: `AppTabCountTone.info` (`billingPriceBookCountTone`)
 - Deep-link / selection: price-book URL flag / tab id `prices` (not a `BillingQueueType`)
 - Tab gate: `BillingPriceBookAtomPermissions.tab` = ∩ `billing:read` + `billing-payments`
 - **Omitted when unauthorized**
@@ -14,11 +14,12 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Filters → Settings → Print → Add?**
+Order: **Filters → Settings → Export → Print → Add?**
 
-- Filters: `commonFiltersActionLabel` → advanced filters; reset `billingClearFilters`
+- Filters: `commonFiltersActionLabel` → advanced filters; Clear `opdClearFiltersAction`; Close `commonCloseActionLabel`
 - Text filters for price-book fields (panel-owned)
-- Trailing: Print list (`billingPriceBookPrintAction`); Add (`commonAddActionLabel`) when price-book write ∪ allows
+- Export / Print via `AppListTable` `canExport` / `enablePrint` — omit without ∩ `evidence:export`
+- Trailing: Add (`commonAddActionLabel`) when price-book write ∪ allows
 - Queue Charge / Issue all / Close: **not mounted**
 
 ## 3. Table
@@ -34,7 +35,7 @@ Order: **Filters → Settings → Print → Add?**
 
 ## 5. Primary / secondary / row actions
 
-- Strip: Print list; Add
+- Strip: Add (Print/Export via table toolbar)
 - Row: Edit / Deactivate (write ∪) — omitted when unauthorized
 
 ## 6. Dialogs from this tab
@@ -54,7 +55,7 @@ Similarity → proceed / use existing / cancel; edit form submit → refresh cou
 
 ## 9. Print / labels / preview
 
-- List Print: `billingPriceBookPrintAction` → price-book print helpers / options
+- List Print: `commonPrintActionLabel` → preview-first `printBillingPriceBookList`
 - No queue invoice/receipt print on this tab
 
 ## 10. Loading / empty / error / success
@@ -68,5 +69,5 @@ Similarity → proceed / use existing / cancel; edit form submit → refresh cou
 | --- | --- |
 | Tab / chrome / search / filters | price-book tab read ∩ |
 | Add / Edit / Deactivate | price-book write ∪ (`pricing:facility_write` \| `pricing:pharmacy_write` \| tenant/facility admin) ∩ `billing-payments` |
-| Print list | available with panel (read chrome) |
+| List Export / Print | ∩ `evidence:export` |
 | Route entry | billing read ∪ write |

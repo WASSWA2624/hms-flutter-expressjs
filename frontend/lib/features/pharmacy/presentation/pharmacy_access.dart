@@ -119,6 +119,15 @@ const AccessRequirement pharmacyControlledDrugAuditRequirement =
 const AccessRequirement pharmacyPrintInstructionsRequirement =
     pharmacyWorkspaceReadRequirement;
 
+/// Worklist Export / Print — ∩ `evidence:export` (omit when unauthorized).
+const AccessRequirement pharmacyWorkspaceExportRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.evidenceExport],
+);
+
+/// Alias — table Print uses the same desk export gate.
+const AccessRequirement pharmacyWorkspacePrintRequirement =
+    pharmacyWorkspaceExportRequirement;
+
 /// Navigation catalog entry — ∩ `pharmacy:read`
 /// ([RouteAccessCatalog.pharmacyEntry]).
 const AccessRequirement pharmacyWorkspaceCatalogEntryRequirement =
@@ -211,6 +220,14 @@ bool canPrintPharmacyInvoice(AppAccessPolicy policy) {
   return pharmacyPrintInstructionsRequirement.isAllowed(policy);
 }
 
+bool canExportPharmacyWorkspace(AppAccessPolicy policy) {
+  return pharmacyWorkspaceExportRequirement.isAllowed(policy);
+}
+
+bool canPrintPharmacyWorkspace(AppAccessPolicy policy) {
+  return pharmacyWorkspacePrintRequirement.isAllowed(policy);
+}
+
 /// Open Reports filtered to pharmacy datasets (`reports:read` ∩ reporting module).
 bool canOpenPharmacyReportsAnalytics(AppAccessPolicy policy) {
   return canReadPharmacy(policy) &&
@@ -298,6 +315,7 @@ PharmacyDeskSection? pharmacyFallbackSection(AppAccessPolicy policy) {
 /// | Ready strip tab / count | navigate | read ∩ `pharmacy:read` |
 /// | Catalog and stock (search trailing) | navigate / read | browse ∩ `pharmacy:read` |
 /// | Search / Clear / Filters / Settings / pagination | read chrome | read ∩ |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Dispense progress column | read | read ∩ |
 /// | Empty / loading / error / retry | read chrome | read ∩ |
 /// | Success snackbar / validation (authorized) | visible feedback | write ∩ |
@@ -318,6 +336,8 @@ abstract final class PharmacyReadyAtomPermissions {
   static const AccessRequirement search = pharmacyWorkspaceReadRequirement;
   static const AccessRequirement filters = pharmacyWorkspaceReadRequirement;
   static const AccessRequirement settings = pharmacyWorkspaceReadRequirement;
+  static const AccessRequirement export = pharmacyWorkspaceExportRequirement;
+  static const AccessRequirement print = pharmacyWorkspacePrintRequirement;
   static const AccessRequirement pagination = pharmacyWorkspaceReadRequirement;
   static const AccessRequirement dispenseProgress =
       pharmacyWorkspaceReadRequirement;
@@ -389,6 +409,7 @@ bool canViewPharmacyReadyTab(AppAccessPolicy policy) {
 /// | All orders strip tab / count | navigate | read ∩ `pharmacy:read` |
 /// | Catalog and stock (search trailing) | navigate / read | browse ∩ `pharmacy:read` |
 /// | Search / Clear / Filters / Settings / pagination | read chrome | read ∩ |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Items / status columns | read | read ∩ |
 /// | Empty / loading / error / retry | read chrome | read ∩ |
 /// | Success snackbar / validation (authorized) | visible feedback | write ∩ |
@@ -409,6 +430,8 @@ abstract final class PharmacyAllOrdersAtomPermissions {
   static const AccessRequirement search = pharmacyWorkspaceReadRequirement;
   static const AccessRequirement filters = pharmacyWorkspaceReadRequirement;
   static const AccessRequirement settings = pharmacyWorkspaceReadRequirement;
+  static const AccessRequirement export = pharmacyWorkspaceExportRequirement;
+  static const AccessRequirement print = pharmacyWorkspacePrintRequirement;
   static const AccessRequirement pagination = pharmacyWorkspaceReadRequirement;
   /// Items column on All orders (status stays pharmacy-read).
   static const AccessRequirement items = pharmacyWorkspaceReadRequirement;
@@ -479,6 +502,7 @@ bool canViewPharmacyAllOrdersTab(AppAccessPolicy policy) {
 /// | Partial strip tab / count | navigate | read ∩ `pharmacy:read` |
 /// | Catalog and stock (search trailing) | navigate / read | browse ∩ `pharmacy:read` |
 /// | Search / Clear / Filters / Settings / pagination | read chrome | read ∩ |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Dispense progress column | read | read ∩ |
 /// | Empty / loading / error / retry | read chrome | read ∩ |
 /// | Success snackbar / validation (authorized) | visible feedback | write ∩ |
@@ -499,6 +523,8 @@ abstract final class PharmacyPartialAtomPermissions {
   static const AccessRequirement search = pharmacyWorkspaceReadRequirement;
   static const AccessRequirement filters = pharmacyWorkspaceReadRequirement;
   static const AccessRequirement settings = pharmacyWorkspaceReadRequirement;
+  static const AccessRequirement export = pharmacyWorkspaceExportRequirement;
+  static const AccessRequirement print = pharmacyWorkspacePrintRequirement;
   static const AccessRequirement pagination = pharmacyWorkspaceReadRequirement;
   static const AccessRequirement dispenseProgress =
       pharmacyWorkspaceReadRequirement;
@@ -572,6 +598,7 @@ bool canViewPharmacyPartialTab(AppAccessPolicy policy) {
 /// | Completed strip tab / count | navigate | read ∩ `pharmacy:read` |
 /// | Catalog and stock (search trailing) | navigate / read | browse ∩ `pharmacy:read` |
 /// | Search / Clear / Filters / Settings / pagination | read chrome | read ∩ |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Dispense progress column | read | read ∩ |
 /// | Empty / loading / error / retry | read chrome | read ∩ |
 /// | Success snackbar / validation (authorized) | visible feedback | write ∩ |
@@ -593,6 +620,8 @@ abstract final class PharmacyCompletedAtomPermissions {
   static const AccessRequirement search = pharmacyWorkspaceReadRequirement;
   static const AccessRequirement filters = pharmacyWorkspaceReadRequirement;
   static const AccessRequirement settings = pharmacyWorkspaceReadRequirement;
+  static const AccessRequirement export = pharmacyWorkspaceExportRequirement;
+  static const AccessRequirement print = pharmacyWorkspacePrintRequirement;
   static const AccessRequirement pagination = pharmacyWorkspaceReadRequirement;
   static const AccessRequirement dispenseProgress =
       pharmacyWorkspaceReadRequirement;
@@ -665,6 +694,7 @@ bool canViewPharmacyCompletedTab(AppAccessPolicy policy) {
 /// | Pending payment strip tab / count | navigate | read ∩ pharmacy:read + billing:read |
 /// | Catalog and stock (search trailing) | navigate / read | browse ∩ `pharmacy:read` |
 /// | Search / Clear / Filters / Settings / pagination | read chrome | tab read ∩ |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Payment status column | read | billing status ∩ `billing:read` |
 /// | Empty / loading / error / retry | read chrome | tab read ∩ |
 /// | Success snackbar (pharmacy mutate) | visible feedback | write ∩ |
@@ -690,6 +720,8 @@ abstract final class PharmacyPendingPaymentAtomPermissions {
   static const AccessRequirement filters = pharmacyPendingPaymentReadRequirement;
   static const AccessRequirement settings =
       pharmacyPendingPaymentReadRequirement;
+  static const AccessRequirement export = pharmacyWorkspaceExportRequirement;
+  static const AccessRequirement print = pharmacyWorkspacePrintRequirement;
   static const AccessRequirement pagination =
       pharmacyPendingPaymentReadRequirement;
   static const AccessRequirement empty = pharmacyPendingPaymentReadRequirement;

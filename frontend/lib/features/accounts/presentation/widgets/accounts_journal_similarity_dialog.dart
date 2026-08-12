@@ -42,10 +42,10 @@ Future<AccountsJournalSimilarityDialogResult> showAccountsJournalSimilarityDialo
       visibleMatches.isEmpty ? null : visibleMatches.first;
 
   final String dialogTitle = hasExact
-      ? 'Exact draft journal found'
+      ? AccountsStrings.journalExactSimilarDialogTitle
       : hasMatches
-      ? 'Similar draft journals'
-      : 'No similar drafts';
+      ? AccountsStrings.journalSimilarDialogTitle
+      : AccountsStrings.journalNoSimilarDialogTitle;
   final String bannerTitle = hasExact
       ? 'Exact match'
       : hasMatches

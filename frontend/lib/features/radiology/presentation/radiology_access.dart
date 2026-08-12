@@ -78,6 +78,24 @@ const AccessRequirement radiologyBillingHoldReadRequirement =
 const AccessRequirement radiologyPrintReportRequirement =
     radiologyWorkspaceReadRequirement;
 
+/// Worklist Export / desk list Print — ∩ `evidence:export` (omit when
+/// unauthorized).
+const AccessRequirement radiologyWorkspaceExportRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.evidenceExport],
+);
+
+/// Alias — desk list Print uses the same export gate.
+const AccessRequirement radiologyWorkspacePrintRequirement =
+    radiologyWorkspaceExportRequirement;
+
+bool canExportRadiologyWorkspace(AppAccessPolicy policy) {
+  return radiologyWorkspaceExportRequirement.isAllowed(policy);
+}
+
+bool canPrintRadiologyWorkspace(AppAccessPolicy policy) {
+  return radiologyWorkspacePrintRequirement.isAllowed(policy);
+}
+
 /// Navigation catalog entry — ∩ `radiology:read`
 /// ([RouteAccessCatalog.radiologyEntry]).
 const AccessRequirement radiologyWorkspaceCatalogEntryRequirement =
@@ -266,7 +284,8 @@ RadiologyDeskSection? radiologyFallbackSection(AppAccessPolicy policy) {
 /// | Detail payment field | data read | billing hold ∩ |
 /// | Detail Assign / Start / Perform study / Edit request | update | write ∩ |
 /// | Detail Draft / Release / Request+attest / Addendum / Cancel | update / delete | write ∩ |
-/// | Detail Print report | export / read | print ∩ `radiology:read` |
+/// | Desk Export / Print | export | ∩ `evidence:export` |
+/// | Detail Print | export / read | print ∩ `radiology:read` |
 /// | Nested configurations catalog enable | update | write ∩ |
 /// | Request-from-clinical (cross-module; not strip) | create | clinical radiology ∪ |
 /// | Route entry (deep link) | navigate | ∪ radiology\|clinical\|billing |
@@ -278,6 +297,8 @@ abstract final class RadiologyWorklistAtomPermissions {
   static const AccessRequirement billingFilter =
       radiologyBillingHoldReadRequirement;
   static const AccessRequirement settings = radiologyWorkspaceReadRequirement;
+  static const AccessRequirement export = radiologyWorkspaceExportRequirement;
+  static const AccessRequirement print = radiologyWorkspacePrintRequirement;
   static const AccessRequirement pagination = radiologyWorkspaceReadRequirement;
   static const AccessRequirement empty = radiologyWorkspaceReadRequirement;
   static const AccessRequirement loading = radiologyWorkspaceReadRequirement;
@@ -315,6 +336,7 @@ abstract final class RadiologyWorklistAtomPermissions {
   static const AccessRequirement cancelOrder =
       radiologyWorkspaceWriteRequirement;
   static const AccessRequirement printReport = radiologyPrintReportRequirement;
+  static const AccessRequirement printList = radiologyWorkspacePrintRequirement;
   static const AccessRequirement billingHold =
       radiologyBillingHoldReadRequirement;
   static const AccessRequirement billingColumn =
@@ -363,7 +385,8 @@ bool canViewRadiologyWorklistTab(AppAccessPolicy policy) {
 /// | Detail payment field | data read | billing hold ∩ |
 /// | Detail Assign / Start / Perform study / Edit request | update | write ∩ |
 /// | Detail Draft / Release / Request+attest / Addendum / Cancel | update / delete | write ∩ |
-/// | Detail Print report | export / read | print ∩ `radiology:read` |
+/// | Desk Export / Print | export | ∩ `evidence:export` |
+/// | Detail Print | export / read | print ∩ `radiology:read` |
 /// | Nested configurations catalog enable | update | write ∩ |
 /// | Request-from-clinical (cross-module; not strip) | create | clinical radiology ∪ |
 /// | Route entry (deep link) | navigate | ∪ radiology\|clinical\|billing |
@@ -375,6 +398,8 @@ abstract final class RadiologyAllOrdersAtomPermissions {
   static const AccessRequirement billingFilter =
       radiologyBillingHoldReadRequirement;
   static const AccessRequirement settings = radiologyWorkspaceReadRequirement;
+  static const AccessRequirement export = radiologyWorkspaceExportRequirement;
+  static const AccessRequirement print = radiologyWorkspacePrintRequirement;
   static const AccessRequirement pagination = radiologyWorkspaceReadRequirement;
   static const AccessRequirement empty = radiologyWorkspaceReadRequirement;
   static const AccessRequirement loading = radiologyWorkspaceReadRequirement;
@@ -412,6 +437,7 @@ abstract final class RadiologyAllOrdersAtomPermissions {
   static const AccessRequirement cancelOrder =
       radiologyWorkspaceWriteRequirement;
   static const AccessRequirement printReport = radiologyPrintReportRequirement;
+  static const AccessRequirement printList = radiologyWorkspacePrintRequirement;
   static const AccessRequirement billingHold =
       radiologyBillingHoldReadRequirement;
   static const AccessRequirement billingColumn =
@@ -461,7 +487,8 @@ bool canViewRadiologyAllOrdersTab(AppAccessPolicy policy) {
 /// | Detail payment field | data read | billing hold ∩ |
 /// | Detail Assign / Start / Perform study / Edit request | update | write ∩ |
 /// | Detail Draft / Release / Request+attest / Addendum / Cancel | update / delete | write ∩ |
-/// | Detail Print report | export / read | print ∩ `radiology:read` |
+/// | Desk Export / Print | export | ∩ `evidence:export` |
+/// | Detail Print | export / read | print ∩ `radiology:read` |
 /// | Nested configurations catalog enable | update | write ∩ |
 /// | Request-from-clinical (cross-module; not strip) | create | clinical radiology ∪ |
 /// | Route entry (deep link) | navigate | ∪ radiology\|clinical\|billing |
@@ -473,6 +500,8 @@ abstract final class RadiologyReportingAtomPermissions {
   static const AccessRequirement billingFilter =
       radiologyBillingHoldReadRequirement;
   static const AccessRequirement settings = radiologyWorkspaceReadRequirement;
+  static const AccessRequirement export = radiologyWorkspaceExportRequirement;
+  static const AccessRequirement print = radiologyWorkspacePrintRequirement;
   static const AccessRequirement pagination = radiologyWorkspaceReadRequirement;
   static const AccessRequirement empty = radiologyWorkspaceReadRequirement;
   static const AccessRequirement loading = radiologyWorkspaceReadRequirement;
@@ -510,6 +539,7 @@ abstract final class RadiologyReportingAtomPermissions {
   static const AccessRequirement cancelOrder =
       radiologyWorkspaceWriteRequirement;
   static const AccessRequirement printReport = radiologyPrintReportRequirement;
+  static const AccessRequirement printList = radiologyWorkspacePrintRequirement;
   static const AccessRequirement billingHold =
       radiologyBillingHoldReadRequirement;
   static const AccessRequirement billingColumn =
@@ -547,7 +577,8 @@ bool canViewRadiologyReportingTab(AppAccessPolicy policy) {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Follow-ups strip tab / count | navigate | read ∩ `radiology:read` |
-/// | Search / Clear / Settings (columns) | read chrome | read ∩ |
+/// | Search / Clear / Filters / Settings | read chrome | read ∩ |
+/// | Desk Export / Print | export | ∩ `evidence:export` |
 /// | Empty / loading / error / retry | read chrome | read ∩ |
 /// | Success snackbar / validation (authorized) | visible feedback | write ∩ |
 /// | Row select → detail | read / navigate | read ∩ |
@@ -562,7 +593,10 @@ abstract final class RadiologyFollowUpsAtomPermissions {
   static const AccessRequirement tab = radiologyFollowUpsRequirement;
   static const AccessRequirement listChrome = radiologyFollowUpsRequirement;
   static const AccessRequirement search = radiologyFollowUpsRequirement;
+  static const AccessRequirement filters = radiologyFollowUpsRequirement;
   static const AccessRequirement settings = radiologyFollowUpsRequirement;
+  static const AccessRequirement export = radiologyWorkspaceExportRequirement;
+  static const AccessRequirement print = radiologyWorkspacePrintRequirement;
   static const AccessRequirement empty = radiologyFollowUpsRequirement;
   static const AccessRequirement loading = radiologyFollowUpsRequirement;
   static const AccessRequirement retry = radiologyFollowUpsRequirement;

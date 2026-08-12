@@ -24,25 +24,28 @@
 
 ## Tab strip
 
-- `AppTabStrip` / `AppTabItem`; omitted when unauthorized — not disabled
+- `AppTabStrip` / `AppTabItem` via `pharmacyTabItems` (`pharmacy_scope_navigation.dart`); omitted when unauthorized — not disabled
+- Sibling-count model: dedicated unfiltered workspace summary / stock / supplier totals; active order tab uses filtered `workbench.orders.totalItemCount`
 - Counts:
-  - Orders: summary queues (`orderedQueue`, `partiallyDispensedQueue`, `pendingPaymentQueue`, `dispensedOrders`, `cancelledOrders`, `totalOrders`); active tab may use filtered membership via `_sectionCount`
+  - Orders: summary queues (`orderedQueue`, `partiallyDispensedQueue`, `pendingPaymentQueue`, `dispensedOrders`, `cancelledOrders`, `totalOrders`)
   - Suppliers: `state.suppliers.totalItemCount`
   - Stock: `stock.expiringSoonRows` / `expiredRows` / `lowStockRows` / `outOfStockRows`
   - Catalog: **null** (management hub, no worklist count)
 - Count tones: `warning` (queue, inProgress, pendingPayment, nearExpiry, lowStock); `danger` (cancelled, expired, outOfStock); `info` (completed, catalog, suppliers, allOrders)
 - Icons: medication_liquid / pending_actions / payments / done_all / cancel / receipt_long / inventory_2 / local_shipping / hourglass / event_busy / trending_down / remove_shopping_cart
+- Deep-link helpers: `pharmacySectionToQueryValue` / `pharmacySectionFromQuery` (aliases include `ready`, `inventory`/`stock`)
 
 ## Order-table toolbar pattern
 
-Order: **Filters → Settings → (no Export/Print) → Reports? → Walk-in order?**
+Order: **Filters → Settings → Export → Print → Reports? → Walk-in order?**
 
 | Control | Label / key | Notes |
 | --- | --- | --- |
 | Search | `pharmacySearchLabel` / `pharmacySearchHint` | |
-| Filters | `pharmacyQueueFilterLabel` → `commonAdvancedFiltersTitle` | Apply `opdApplyFiltersAction`; Clear `opdClearFiltersAction` |
+| Filters | `commonFiltersActionLabel` → `commonAdvancedFiltersTitle` | Apply `opdApplyFiltersAction`; Clear `opdClearFiltersAction` |
 | Settings | `commonTableSettings*` | storage `pharmacy_${section}` / `pharmacy_cw_${section}` |
-| Export / Print (table) | **absent** | not mounted on order `AppListTable` |
+| Export | `commonTableExportActionLabel` | omit without ∩ `evidence:export` (`canExportPharmacyWorkspace`) |
+| Print | `commonPrintActionLabel` | preview-first via `printPharmacyListTable` / `pharmacy_workspace_print_helpers`; same gate as Export |
 | Open reports | `pharmacyOpenReportsAction` | omitted without `reports:read` + `reporting-analytics` + pharmacy read |
 | Walk-in order | `pharmacyWalkInOrderAction` | omitted without ∩ `pharmacy:write` |
 
@@ -54,20 +57,22 @@ Filter groups (orders): Location, Priority, Partial stock (`pharmacyFilterPartia
 
 | Surface | Owner |
 | --- | --- |
-| Prescription / order detail dialog | Pharmacy-owned (`_openPharmacyDetailDialog`) |
+| Prescription / order detail dialog | Pharmacy-owned (`_openPharmacyDetailDialog`); title `pharmacyPrescriptionDetailTitle` (surface type) |
 | Dispense / Attest / Return / Cancel | Pharmacy-owned |
-| Walk-in order | Pharmacy-owned `showPharmacyWalkInOrderDialog` |
+| Walk-in order | Pharmacy-owned `showPharmacyWalkInOrderDialog`; title `Create order` |
 | Record payment | **reused** billing payment path via `pharmacy_billing_helpers` / billing write ∩ |
-| Print instructions / invoice / dispense batch | Pharmacy print helpers (`pharmacy_instructions_print_helpers`, `pharmacy_order_invoice_print_helpers`) |
+| Print instructions / invoice / dispense batch | Pharmacy print helpers; trigger label `commonPrintActionLabel` (`Print`) |
 | Drug / supplier / storage similarity dialogs | Pharmacy-owned |
 | Catalog CRUD dialogs | Pharmacy-owned (+ catalog write ∪ `pharmacy:write` \| `operations:write`) |
 
-## Catalog chrome (inside Catalog / stock desks)
+## Catalog / suppliers chrome
 
 - Nested icon tab bar: `PharmacyCatalogIconTabBar` + `pharmacyCatalogTabDescriptors`
 - Sub-tabs: Drugs, Formulary, Inventory, Storage (layout), Shelves
 - Trailing Add / bulk delete gated by `pharmacyCatalogWriteRequirement` (∪ `pharmacy:write` | `operations:write`)
-- Catalog tables set `enableExport: false` in formulary/selection flows
+- Printable catalog / suppliers / storage tables: Export + Print gated by `canExportPharmacyWorkspace` / `canPrintPharmacyWorkspace`
+- Suppliers: Filters (`commonFiltersActionLabel`) → Settings → Export → Print → Create?
+- Nested formulary/selection / shelf-picker tables keep `enableExport: false`
 
 ## Feedback patterns
 
@@ -75,3 +80,4 @@ Filter groups (orders): Location, Priority, Partial stock (`pharmacyFilterPartia
 - Empty orders: `pharmacyNoOrdersTitle` / `pharmacyNoOrdersBody`
 - Detail actions omit unauthorized writes (no disabled stubs)
 - Print instructions: ∩ `pharmacy:read` (`pharmacyPrintInstructionsRequirement`)
+- Table Export / Print: ∩ `evidence:export` (`pharmacyWorkspaceExportRequirement`)

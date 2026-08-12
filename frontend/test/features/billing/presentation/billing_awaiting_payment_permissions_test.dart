@@ -218,6 +218,14 @@ void main() {
         isTrue,
       );
       expect(
+        BillingAwaitingPaymentAtomPermissions.export.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.print.isAllowed(reader),
+        isFalse,
+      );
+      expect(
         BillingAwaitingPaymentAtomPermissions.receivePayment.isAllowed(reader),
         isFalse,
       );
@@ -264,6 +272,14 @@ void main() {
       expect(find.text('Open claims'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
 
+      final AppListTable<BillingWorkItem> table = tester
+          .widget<AppListTable<BillingWorkItem>>(
+            find.byType(AppListTable<BillingWorkItem>),
+          );
+      expect(table.enablePrint, isTrue);
+      expect(table.canExport, isFalse);
+      expect(table.canPrint, isFalse);
+
       await tester.tap(find.text('Ben Payment'));
       await tester.pumpAndSettle();
 
@@ -272,7 +288,7 @@ void main() {
       expect(find.text('Void'), findsNothing);
       expect(find.text('Send'), findsNothing);
       expect(find.text('Refund'), findsNothing);
-      expect(find.text('Print invoice'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
       expect(find.byTooltip('Download invoice PDF'), findsOneWidget);
       expect(find.text('View ledger'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
@@ -311,6 +327,30 @@ void main() {
         isTrue,
       );
       expect(BillingAwaitingPaymentAtomPermissions.close.isAllowed(writer), isTrue);
+      expect(
+        BillingAwaitingPaymentAtomPermissions.export.isAllowed(writer),
+        isFalse,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.print.isAllowed(writer),
+        isFalse,
+      );
+
+      final AppAccessPolicy withExport = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+          AppPermissions.evidenceExport,
+        },
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.export.isAllowed(withExport),
+        isTrue,
+      );
+      expect(
+        BillingAwaitingPaymentAtomPermissions.print.isAllowed(withExport),
+        isTrue,
+      );
 
       await _pumpAwaitingPaymentTab(
         tester,
@@ -331,7 +371,7 @@ void main() {
       expect(find.text('Adjust'), findsWidgets);
       expect(find.text('Send'), findsWidgets);
       expect(find.text('Void'), findsWidgets);
-      expect(find.text('Print invoice'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
       expect(find.byTooltip('Download invoice PDF'), findsOneWidget);
       expect(find.text('View ledger'), findsOneWidget);
       expect(find.text('Finalize financial clearance'), findsNothing);
@@ -982,7 +1022,7 @@ void main() {
       expect(find.text('Void'), findsWidgets);
       expect(find.text('Send'), findsWidgets);
       expect(find.text('View ledger'), findsOneWidget);
-      expect(find.text('Print invoice'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

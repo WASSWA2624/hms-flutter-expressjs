@@ -404,7 +404,7 @@ void main() {
       );
       expect(
         ClaimsAuthorizationsAtomPermissions.routeEntry.isAllowed(approver),
-        isTrue,
+        isFalse,
       );
       expect(
         ClaimsAuthorizationsAtomPermissions.tab.isAllowed(approver),
@@ -412,7 +412,7 @@ void main() {
       );
       expect(
         ClaimsAuthorizationsAtomPermissions.entry.isAllowed(approver),
-        isTrue,
+        isFalse,
       );
     });
   });
@@ -442,6 +442,20 @@ void main() {
       );
       expect(find.byTooltip('Update status'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
+      // tables.mdc: prefer 5 defaults — Approved amount fills the Next slot.
+      final AppListTable<ClaimsQueueItem> table =
+          tester.widget<AppListTable<ClaimsQueueItem>>(
+        find.byType(AppListTable<ClaimsQueueItem>),
+      );
+      expect(table.columns.length, 5);
+      expect(table.search?.showAdvancedFilterButton, isTrue);
+      expect(table.search?.advancedFilterButtonLabel, 'Filters');
+      expect(table.search?.advancedFilterCloseLabel, 'Close');
+      expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
+      expect(table.search?.advancedFilterResetLabel, 'Clear filters');
+      expect(table.canExport, isFalse);
+      expect(table.canPrint, isFalse);
+      expect(table.printLabel, 'Print');
 
       await tester.tap(find.text('AUTH-PENDING'));
       await tester.pumpAndSettle();
@@ -457,10 +471,45 @@ void main() {
       expect(
         find.descendant(
           of: find.byType(AppDialog),
-          matching: find.text('Print statement'),
+          matching: find.text('Print'),
         ),
         findsOneWidget,
       );
+    },
+  );
+
+  testWidgets(
+    'Authorizations Filters sheet lists auth statuses; Export/Print when evidence:export',
+    (WidgetTester tester) async {
+      await _pumpAuthorizationsTab(
+        tester,
+        repository: repository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+
+      final AppListTable<ClaimsQueueItem> table =
+          tester.widget<AppListTable<ClaimsQueueItem>>(
+        find.byType(AppListTable<ClaimsQueueItem>),
+      );
+      expect(table.columns.length, 5);
+      expect(table.canExport, isTrue);
+      expect(table.canPrint, isTrue);
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+
+      await tester.tap(find.textContaining('Filters').first);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Authorization pending'), findsWidgets);
+      expect(find.textContaining('Authorization approved'), findsWidgets);
+      expect(find.textContaining('Clear filters'), findsWidgets);
+      expect(find.textContaining('Apply filters'), findsWidgets);
+      expect(find.textContaining('Close'), findsWidgets);
     },
   );
 
@@ -507,7 +556,7 @@ void main() {
       );
       expect(
         ClaimsAuthorizationsAtomPermissions.routeEntry.isAllowed(writeOnly),
-        isTrue,
+        isFalse,
       );
       expect(
         ClaimsAuthorizationsAtomPermissions.tab.isAllowed(writeOnly),
@@ -534,7 +583,7 @@ void main() {
       );
       expect(
         ClaimsAuthorizationsAtomPermissions.routeEntry.isAllowed(approver),
-        isTrue,
+        isFalse,
       );
       expect(
         ClaimsAuthorizationsAtomPermissions.tab.isAllowed(approver),
@@ -686,7 +735,7 @@ void main() {
       );
       expect(
         ClaimsSettledAtomPermissions.export.isAllowed(reader),
-        isFalse,
+        isTrue,
       );
 
       await _pumpAuthorizationsTab(
@@ -698,7 +747,7 @@ void main() {
       await tester.tap(find.text('AUTH-PENDING'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Print statement'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
       expect(find.text('Update status'), findsNothing);
       expect(find.text('Sync insurer status'), findsNothing);
     },

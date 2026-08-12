@@ -165,7 +165,7 @@ class _RadiologyPrintDialogState extends ConsumerState<_RadiologyPrintDialog> {
     );
 
     return AppDialog(
-      title: Text(l10n.radiologyPrintReportDialogTitle),
+      title: Text(l10n.printPreviewTitle),
       icon: const Icon(Icons.print_outlined),
       scrollable: false,
       pinActionsToBottom: true,

@@ -78,18 +78,24 @@ void main() {
       expect(claimsFinancialApproveRequirement.isAllowed(approver), isTrue);
     });
 
-    test('route entry ∪ allows read, write, or financial:approve', () {
+    test('route entry requires claims:read ∩ insurance-claims', () {
       expect(
         claimsWorkspaceEntryRequirement.isAllowed(
-          _policyFor(permissions: <AppPermission>{AppPermissions.billingRead}),
+          _policyFor(permissions: <AppPermission>{AppPermissions.claimsRead}),
         ),
         isTrue,
       );
       expect(
         claimsWorkspaceEntryRequirement.isAllowed(
+          _policyFor(permissions: <AppPermission>{AppPermissions.billingRead}),
+        ),
+        isFalse,
+      );
+      expect(
+        claimsWorkspaceEntryRequirement.isAllowed(
           _policyFor(permissions: <AppPermission>{AppPermissions.billingWrite}),
         ),
-        isTrue,
+        isFalse,
       );
       expect(
         claimsWorkspaceEntryRequirement.isAllowed(
@@ -97,7 +103,7 @@ void main() {
             permissions: <AppPermission>{AppPermissions.financialApprove},
           ),
         ),
-        isTrue,
+        isFalse,
       );
       expect(
         claimsWorkspaceEntryRequirement.isAllowed(
@@ -571,7 +577,21 @@ void main() {
       expect(
         identical(
           claimsDetailPrintRequirement(ClaimsDeskSection.settled),
-          ClaimsSettledAtomPermissions.export,
+          claimsWorkspacePrintRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsSettledAtomPermissions.tableExport,
+          claimsWorkspaceExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          ClaimsSettledAtomPermissions.print,
+          claimsWorkspacePrintRequirement,
         ),
         isTrue,
       );
@@ -615,7 +635,8 @@ void main() {
         },
       );
 
-      expect(ClaimsSettledAtomPermissions.export.isAllowed(readerOnly), isFalse);
+      // reports:read is injected for every signed-in role (platform infra).
+      expect(ClaimsSettledAtomPermissions.export.isAllowed(readerOnly), isTrue);
       expect(ClaimsSettledAtomPermissions.export.isAllowed(withReports), isTrue);
       // Reporting is platform infrastructure — reports:read is not package-gated.
       expect(
@@ -626,8 +647,8 @@ void main() {
         ClaimsSettledAtomPermissions.export.isAllowed(withEvidence),
         isTrue,
       );
-      // Inventory said Print always when detail open; Settled matrix maps
-      // Print to nested export ∪ (not read ∩ alone).
+      // Settled detail Print uses ∩ evidence:export (not nested ∪ alone).
+      // Platform auto-injects reports:read, so nested ∪ would always pass.
       expect(
         claimsDetailPrintRequirement(ClaimsDeskSection.settled).isAllowed(
           readerOnly,
@@ -635,9 +656,56 @@ void main() {
         isFalse,
       );
       expect(
+        claimsDetailPrintRequirement(ClaimsDeskSection.settled).isAllowed(
+          withEvidence,
+        ),
+        isTrue,
+      );
+      expect(
         claimsDetailPrintRequirement(ClaimsDeskSection.authorizations)
             .isAllowed(readerOnly),
         isTrue,
+      );
+    });
+
+    test('queue Export/Print require ∩ evidence:export', () {
+      final AppAccessPolicy readerOnly = _policyFor(
+        permissions: <AppPermission>{AppPermissions.billingRead},
+      );
+      final AppAccessPolicy withEvidence = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.evidenceExport,
+        },
+      );
+      final AppAccessPolicy withReportsOnly = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.reportsRead,
+        },
+      );
+
+      expect(canExportClaimsWorkspace(readerOnly), isFalse);
+      expect(canPrintClaimsWorkspace(readerOnly), isFalse);
+      expect(canExportClaimsWorkspace(withEvidence), isTrue);
+      expect(canPrintClaimsWorkspace(withEvidence), isTrue);
+      // reports:read alone unlocks Settled detail nested export, not table Export.
+      expect(canExportClaimsWorkspace(withReportsOnly), isFalse);
+      expect(
+        ClaimsAuthorizationsAtomPermissions.export.isAllowed(withEvidence),
+        isTrue,
+      );
+      expect(
+        ClaimsActiveClaimsAtomPermissions.print.isAllowed(withEvidence),
+        isTrue,
+      );
+      expect(
+        ClaimsSettledAtomPermissions.tableExport.isAllowed(withEvidence),
+        isTrue,
+      );
+      expect(
+        ClaimsSettledAtomPermissions.print.isAllowed(readerOnly),
+        isFalse,
       );
     });
 

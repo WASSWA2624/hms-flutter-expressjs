@@ -330,7 +330,7 @@ void main() {
       );
       expect(
         ClaimsInsuranceSetupAtomPermissions.routeEntry.isAllowed(approveOnly),
-        isTrue,
+        isFalse,
       );
       expect(
         ClaimsInsuranceSetupAtomPermissions.tab.isAllowed(approveOnly),
@@ -361,7 +361,7 @@ void main() {
       );
       expect(
         ClaimsInsuranceSetupAtomPermissions.routeEntry.isAllowed(writeOnly),
-        isTrue,
+        isFalse,
       );
       expect(
         ClaimsInsuranceSetupAtomPermissions.tab.isAllowed(writeOnly),

@@ -270,6 +270,12 @@ Finder _actionLabel(String label) => find.descendant(
   matching: find.text(label),
 );
 
+AppListTable<PharmacyOrder> _pendingPaymentTable(WidgetTester tester) {
+  return tester.widget<AppListTable<PharmacyOrder>>(
+    find.byType(AppListTable<PharmacyOrder>),
+  );
+}
+
 Future<void> _pumpPendingPaymentTab(
   WidgetTester tester, {
   required _MockPharmacyRepository repository,
@@ -416,6 +422,20 @@ void main() {
       );
       expect(
         identical(
+          PharmacyPendingPaymentAtomPermissions.export,
+          pharmacyWorkspaceExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PharmacyPendingPaymentAtomPermissions.print,
+          pharmacyWorkspacePrintRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           pharmacySectionTabRequirement(PharmacyDeskSection.pendingPayment),
           PharmacyPendingPaymentAtomPermissions.tab,
         ),
@@ -443,6 +463,8 @@ void main() {
       expect(PharmacyPendingPaymentAtomPermissions.search, isNotNull);
       expect(PharmacyPendingPaymentAtomPermissions.filters, isNotNull);
       expect(PharmacyPendingPaymentAtomPermissions.settings, isNotNull);
+      expect(PharmacyPendingPaymentAtomPermissions.export, isNotNull);
+      expect(PharmacyPendingPaymentAtomPermissions.print, isNotNull);
       expect(PharmacyPendingPaymentAtomPermissions.pagination, isNotNull);
       expect(PharmacyPendingPaymentAtomPermissions.empty, isNotNull);
       expect(PharmacyPendingPaymentAtomPermissions.loading, isNotNull);
@@ -784,7 +806,7 @@ void main() {
             of: dialog,
             matching: find.text('Print'),
           ),
-          findsOneWidget,
+          findsAtLeastNWidgets(1),
         );
         expect(find.textContaining('no access'), findsNothing);
       },
@@ -936,6 +958,100 @@ void main() {
         ).called(1);
         expect(find.text('Pharmacy workflow updated.'), findsOneWidget);
         expect(find.text('Cathy Payment'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Pending payment toolbar: Filters/Settings/Close, ≤5 columns, warning tone, Export/Print gate',
+      (WidgetTester tester) async {
+        await _pumpPendingPaymentTab(
+          tester,
+          repository: repository,
+          accessPolicy: _pendingPaymentWriterPolicy(),
+        );
+
+        final AppListTable<PharmacyOrder> table = _pendingPaymentTable(tester);
+        expect(table.columnVisibilityLabel, 'Settings');
+        expect(table.columnVisibilityCloseLabel, 'Close');
+        expect(table.columnVisibilityApplyLabel, 'Apply columns');
+        expect(table.columnVisibilityResetLabel, 'Reset columns');
+        expect(table.search?.advancedFilterButtonLabel, 'Filters');
+        expect(table.search?.advancedFilterTitle, 'Advanced filters');
+        expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
+        expect(table.search?.advancedFilterResetLabel, 'Clear filters');
+        expect(table.search?.advancedFilterCloseLabel, 'Close');
+        expect(table.enablePrint, isTrue);
+        expect(table.canExport, isFalse);
+        expect(table.canPrint, isFalse);
+        expect(table.printLabel, 'Print');
+        expect(table.columns.length, 5);
+        expect(
+          table.columns.any(
+            (AppListTableColumn<PharmacyOrder> c) => c.id == 'billing',
+          ),
+          isTrue,
+        );
+        expect(
+          table.columns.any(
+            (AppListTableColumn<PharmacyOrder> c) =>
+                c.id == 'next_action' && c.alwaysVisible,
+          ),
+          isTrue,
+        );
+        expect(table.columnChoices, isNotEmpty);
+        expect(table.columnVisibilityStorageKey, 'pharmacy_pendingPayment');
+
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem pending = strip.tabs.firstWhere(
+          (AppTabItem tab) => tab.label == 'Pending payment',
+        );
+        expect(pending.countTone, AppTabCountTone.warning);
+        expect(pending.count, isNotNull);
+
+        final List<AppSearchBarAction> trailing =
+            table.search?.trailingActions ?? const <AppSearchBarAction>[];
+        expect(trailing.last.label, 'Walk-in order');
+        expect(find.byTooltip('Export'), findsNothing);
+        expect(find.byTooltip('Print'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Pending payment Export/Print present when evidence:export granted',
+      (WidgetTester tester) async {
+        await _pumpPendingPaymentTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.pharmacyRead,
+              AppPermissions.pharmacyWrite,
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+              AppPermissions.evidenceExport,
+            },
+            modules: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: pharmacyDispensingModule,
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: billingPaymentsModule,
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+          ),
+        );
+
+        final AppListTable<PharmacyOrder> table = _pendingPaymentTable(tester);
+        expect(table.canExport, isTrue);
+        expect(table.canPrint, isTrue);
+        expect(table.enablePrint, isTrue);
+        expect(table.printLabel, 'Print');
+        expect(find.byTooltip('Export'), findsOneWidget);
+        expect(find.byTooltip('Print'), findsOneWidget);
       },
     );
 

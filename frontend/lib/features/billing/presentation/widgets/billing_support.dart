@@ -149,6 +149,29 @@ AppTabCountTone billingQueueCountTone(BillingQueueType queue) {
   };
 }
 
+/// Sibling-count model: dedicated unfiltered [BillingSummary] scope totals.
+/// Active tab with search/advanced filters uses the filtered page total.
+int billingQueueTabCount(
+  BillingWorkspaceState state,
+  BillingQueueType queue, {
+  BillingQueueType? activeQueue,
+  bool priceBookActive = false,
+}) {
+  final int scopeTotal = state.overview.summary.countFor(queue);
+  if (priceBookActive || activeQueue == null || queue != activeQueue) {
+    return scopeTotal;
+  }
+  final bool narrowed =
+      state.query.search.trim().isNotEmpty || state.query.hasActiveFilters;
+  if (!narrowed) {
+    return scopeTotal;
+  }
+  return state.workItems.totalItemCount ?? state.workItems.items.length;
+}
+
+/// Price book strip tone — non-urgent catalog scope (`tabs.mdc` info default).
+AppTabCountTone billingPriceBookCountTone() => AppTabCountTone.info;
+
 String billingPatientName(BuildContext context, BillingWorkItem item) {
   final String name = item.patientDisplayName?.trim() ?? '';
   return name.isEmpty ? context.l10n.billingUnknownPatient : name;

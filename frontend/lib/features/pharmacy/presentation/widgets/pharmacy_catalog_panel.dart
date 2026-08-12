@@ -7,6 +7,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
@@ -17,6 +18,7 @@ import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_catal
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_drug_details_dialog.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_drug_edit_dialog.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_storage_panel.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_workspace_print_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
@@ -173,13 +175,45 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
     final PharmacyDrugQuery drugQuery = widget.state.drugQuery;
     final bool isBusy = widget.state.isRefreshingDrugs;
     final bool hasSelection = _selectedDrugIds.isNotEmpty;
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canExport = canExportPharmacyWorkspace(policy);
+    final bool canPrint = canPrintPharmacyWorkspace(policy);
 
     final Widget table = AppListTable<PharmacyDrug>(
       page: widget.state.drugs,
       isLoading: isBusy,
       rowsVersion: _selectionTick.value,
       columnVisibilityStorageKey: 'pharmacy_catalog_drugs',
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
       shrinkWrap: !widget.fillHeight,
+      enableExport: true,
+      canExport: canExport,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () => _printPharmacyDrugsList(
+        context,
+        ref,
+        l10n: l10n,
+        drugs: widget.state.drugs.items,
+      ),
+      exportConfig: AppListTableExportConfig<PharmacyDrug>(
+        fileNameStem: 'pharmacy_drugs',
+        dateOf: (PharmacyDrug item) => item.createdAt,
+      ),
       loadingMoreLabel: l10n.pharmacyDrugsLoadingMoreLabel,
       loadingBuilder: (BuildContext context) {
         final ThemeData theme = Theme.of(context);
@@ -199,10 +233,11 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
         onSubmitted: controller.applyDrugSearch,
         onClear: () => unawaited(controller.applyDrugSearch('')),
         showAdvancedFilterButton: true,
-        advancedFilterButtonLabel: l10n.pharmacyQueueFilterLabel,
-        advancedFilterTitle: l10n.pharmacyFiltersSemanticLabel,
+        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         enableDateFilter: false,
         allFieldsLabel: l10n.opdAllFieldsFilterLabel,
         textFilters: <AppSearchBarTextFilter>[
@@ -349,6 +384,8 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
             );
           },
         ),
+      ],
+      columnChoices: <AppListTableColumn<PharmacyDrug>>[
         AppListTableColumn<PharmacyDrug>(
           id: 'form',
           label: l10n.pharmacyDrugFormLabel,
@@ -608,6 +645,9 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
 
     final PharmacyFormularyQuery formularyQuery = widget.state.formularyQuery;
     final bool hasSelection = _selectedFormularyIds.isNotEmpty;
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canExport = canExportPharmacyWorkspace(policy);
+    final bool canPrint = canPrintPharmacyWorkspace(policy);
 
     final Widget table = AppListTable<PharmacyFormularyItem>(
       page: widget.state.formularyItems,
@@ -616,6 +656,26 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
       columnVisibilityStorageKey: 'pharmacy_catalog_formulary',
       shrinkWrap: !widget.fillHeight,
       onPageChanged: controller.changeFormularyPage,
+      enableExport: true,
+      canExport: canExport,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () => _printPharmacyFormularyList(
+        context,
+        ref,
+        l10n: l10n,
+        items: widget.state.formularyItems.items,
+      ),
       exportConfig: AppListTableExportConfig<PharmacyFormularyItem>(
         fileNameStem: 'pharmacy_formulary',
         dateOf: (PharmacyFormularyItem item) => item.createdAt,
@@ -631,7 +691,7 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
         onSubmitted: controller.applyFormularySearch,
         onClear: () => unawaited(controller.applyFormularySearch('')),
         showAdvancedFilterButton: true,
-        advancedFilterButtonLabel: l10n.pharmacyQueueFilterLabel,
+        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
         advancedFilterTitle: l10n.pharmacyFiltersSemanticLabel,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
@@ -1340,6 +1400,9 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
     final PharmacyInventoryStockQuery inventoryQuery =
         widget.state.inventoryQuery;
     final bool hasSelection = _selectedInventoryIds.isNotEmpty;
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canExport = canExportPharmacyWorkspace(policy);
+    final bool canPrint = canPrintPharmacyWorkspace(policy);
 
     return AppListTable<PharmacyInventoryStock>(
       page: widget.state.inventoryWorkbench.stocks,
@@ -1351,6 +1414,26 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
       shrinkWrap: !widget.fillHeight,
+      enableExport: true,
+      canExport: canExport,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () => _printPharmacyInventoryList(
+        context,
+        ref,
+        l10n: l10n,
+        stocks: widget.state.inventoryWorkbench.stocks.items,
+      ),
       exportConfig: AppListTableExportConfig<PharmacyInventoryStock>(
         fileNameStem: 'pharmacy_inventory',
         dateOf: (PharmacyInventoryStock item) => item.nextExpiry ?? item.createdAt,
@@ -1366,7 +1449,7 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
         onSubmitted: controller.applyInventorySearch,
         onClear: () => unawaited(controller.applyInventorySearch('')),
         showAdvancedFilterButton: true,
-        advancedFilterButtonLabel: l10n.pharmacyQueueFilterLabel,
+        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
         advancedFilterTitle: l10n.pharmacyInventoryFiltersSemanticLabel,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
@@ -2145,6 +2228,9 @@ class _StorageLayoutCatalogTabState
       request: AppPageRequest(pageSize: rooms.isEmpty ? 10 : rooms.length),
     );
     final bool isBusy = widget.state.isRefreshingStorage;
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canExport = canExportPharmacyWorkspace(policy);
+    final bool canPrint = canPrintPharmacyWorkspace(policy);
 
     return AppListTable<PharmacyStorageRoom>(
       page: page,
@@ -2152,6 +2238,26 @@ class _StorageLayoutCatalogTabState
       shrinkWrap: !widget.fillHeight,
       physics: widget.fillHeight ? null : const NeverScrollableScrollPhysics(),
       columnVisibilityStorageKey: 'pharmacy_catalog_storage_rooms',
+      enableExport: true,
+      canExport: canExport,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () => _printPharmacyStorageRoomsList(
+        context,
+        ref,
+        l10n: l10n,
+        rooms: rooms,
+      ),
       exportConfig: AppListTableExportConfig<PharmacyStorageRoom>(
         fileNameStem: 'pharmacy_storage_rooms',
         dateOf: (PharmacyStorageRoom item) => item.createdAt,
@@ -2202,6 +2308,7 @@ class _StorageLayoutCatalogTabState
               item.id.toLowerCase().contains(needle);
         },
         showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
         filterGroups: <AppSearchBarFilterGroup>[
           AppSearchBarFilterGroup(
             key: 'room_status',
@@ -2509,6 +2616,9 @@ class _ShelvesCatalogTabState extends ConsumerState<_ShelvesCatalogTab> {
     final List<PharmacyStorageRoom> activeRooms = _activeStorageRooms(
       widget.state.storageLayout,
     );
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
+    final bool canExport = canExportPharmacyWorkspace(policy);
+    final bool canPrint = canPrintPharmacyWorkspace(policy);
 
     return AppListTable<_ShelfRow>(
       page: page,
@@ -2516,6 +2626,30 @@ class _ShelvesCatalogTabState extends ConsumerState<_ShelvesCatalogTab> {
       shrinkWrap: !widget.fillHeight,
       physics: widget.fillHeight ? null : const NeverScrollableScrollPhysics(),
       columnVisibilityStorageKey: 'pharmacy_catalog_shelves',
+      enableExport: true,
+      canExport: canExport,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () => _printPharmacyShelvesList(
+        context,
+        ref,
+        l10n: l10n,
+        shelves: shelfRows,
+      ),
+      exportConfig: AppListTableExportConfig<_ShelfRow>(
+        fileNameStem: 'pharmacy_shelves',
+        dateOf: (_ShelfRow row) => row.room.createdAt,
+      ),
       search: AppListTableSearch<_ShelfRow>(
         controller: _searchController,
         semanticLabel: l10n.pharmacySearchLabel,
@@ -3762,4 +3896,198 @@ extension _CatalogAccessRequirement on AccessRequirement {
   bool allows(WidgetRef ref) {
     return isAllowed(ref.read(appAccessPolicyProvider));
   }
+}
+
+Future<void> _printPharmacyDrugsList(
+  BuildContext context,
+  WidgetRef ref, {
+  required AppLocalizations l10n,
+  required List<PharmacyDrug> drugs,
+}) {
+  return printPharmacyWorkspaceList(
+    ref: ref,
+    context: context,
+    title: l10n.pharmacyCatalogTabDrugs,
+    columns: <PharmacyWorkspacePrintColumn>[
+      PharmacyWorkspacePrintColumn(id: 'code', label: l10n.pharmacyDrugCodeLabel),
+      PharmacyWorkspacePrintColumn(
+        id: 'generic_name',
+        label: l10n.pharmacyDrugGenericNameLabel,
+      ),
+      PharmacyWorkspacePrintColumn(
+        id: 'brand_name',
+        label: l10n.pharmacyDrugBrandNameLabel,
+      ),
+      PharmacyWorkspacePrintColumn(id: 'form', label: l10n.pharmacyDrugFormLabel),
+      PharmacyWorkspacePrintColumn(
+        id: 'strength',
+        label: l10n.pharmacyDrugStrengthLabel,
+      ),
+    ],
+    rows: <Map<String, String>>[
+      for (final PharmacyDrug item in drugs)
+        <String, String>{
+          'code': item.code ?? '',
+          'generic_name': (item.genericName ?? '').trim().isNotEmpty
+              ? item.genericName!.trim()
+              : (item.name ?? ''),
+          'brand_name': item.brandName ?? '',
+          'form': item.form ?? '',
+          'strength': item.strength ?? '',
+        },
+    ],
+    emptyText: l10n.pharmacyNoDrugsTitle,
+  );
+}
+
+Future<void> _printPharmacyFormularyList(
+  BuildContext context,
+  WidgetRef ref, {
+  required AppLocalizations l10n,
+  required List<PharmacyFormularyItem> items,
+}) {
+  return printPharmacyWorkspaceList(
+    ref: ref,
+    context: context,
+    title: l10n.pharmacyCatalogTabFormulary,
+    columns: <PharmacyWorkspacePrintColumn>[
+      PharmacyWorkspacePrintColumn(
+        id: 'drug',
+        label: l10n.pharmacyFormularyDrugLabel,
+      ),
+      PharmacyWorkspacePrintColumn(id: 'code', label: l10n.pharmacyDrugCodeLabel),
+      PharmacyWorkspacePrintColumn(id: 'form', label: l10n.pharmacyDrugFormLabel),
+      PharmacyWorkspacePrintColumn(
+        id: 'strength',
+        label: l10n.pharmacyDrugStrengthLabel,
+      ),
+    ],
+    rows: <Map<String, String>>[
+      for (final PharmacyFormularyItem item in items)
+        <String, String>{
+          'drug': item.drugNameLabel ?? '',
+          'code': item.drugCode ?? '',
+          'form': item.drugForm ?? '',
+          'strength': item.drugStrength ?? '',
+        },
+    ],
+    emptyText: l10n.pharmacyNoFormularyTitle,
+  );
+}
+
+Future<void> _printPharmacyInventoryList(
+  BuildContext context,
+  WidgetRef ref, {
+  required AppLocalizations l10n,
+  required List<PharmacyInventoryStock> stocks,
+}) {
+  return printPharmacyWorkspaceList(
+    ref: ref,
+    context: context,
+    title: l10n.pharmacyCatalogTabInventory,
+    columns: <PharmacyWorkspacePrintColumn>[
+      PharmacyWorkspacePrintColumn(
+        id: 'item',
+        label: l10n.pharmacyInventoryItemLabel,
+      ),
+      PharmacyWorkspacePrintColumn(
+        id: 'sku',
+        label: l10n.pharmacyInventorySkuColumnLabel,
+      ),
+      PharmacyWorkspacePrintColumn(
+        id: 'quantity',
+        label: l10n.pharmacyInventoryQuantityColumnLabel,
+      ),
+      PharmacyWorkspacePrintColumn(
+        id: 'status',
+        label: l10n.pharmacyStockStatusFilterLabel,
+      ),
+    ],
+    rows: <Map<String, String>>[
+      for (final PharmacyInventoryStock item in stocks)
+        <String, String>{
+          'item': item.inventoryItem?.displayTitle ?? item.displayId ?? item.id,
+          'sku': item.inventoryItem?.sku ?? '',
+          'quantity': '${item.quantity}',
+          'status': item.stockStatus ?? '',
+        },
+    ],
+    emptyText: l10n.pharmacyNoInventoryTitle,
+  );
+}
+
+Future<void> _printPharmacyStorageRoomsList(
+  BuildContext context,
+  WidgetRef ref, {
+  required AppLocalizations l10n,
+  required List<PharmacyStorageRoom> rooms,
+}) {
+  return printPharmacyWorkspaceList(
+    ref: ref,
+    context: context,
+    title: l10n.pharmacyCatalogTabStorage,
+    columns: <PharmacyWorkspacePrintColumn>[
+      PharmacyWorkspacePrintColumn(
+        id: 'name',
+        label: l10n.pharmacyStorageRoomNameLabel,
+      ),
+      PharmacyWorkspacePrintColumn(
+        id: 'code',
+        label: l10n.pharmacyStorageRoomCodeLabel,
+      ),
+      PharmacyWorkspacePrintColumn(
+        id: 'status',
+        label: l10n.pharmacyStorageStatusColumnLabel,
+      ),
+    ],
+    rows: <Map<String, String>>[
+      for (final PharmacyStorageRoom item in rooms)
+        <String, String>{
+          'name': item.name ?? '',
+          'code': item.code ?? '',
+          'status': item.isSoftDeleted
+              ? l10n.pharmacyStorageDeletedLabel
+              : (item.isActive
+                    ? l10n.pharmacyStorageActiveLabel
+                    : l10n.pharmacyStorageInactiveLabel),
+        },
+    ],
+    emptyText: l10n.pharmacyNoStorageRoomsTitle,
+  );
+}
+
+Future<void> _printPharmacyShelvesList(
+  BuildContext context,
+  WidgetRef ref, {
+  required AppLocalizations l10n,
+  required List<_ShelfRow> shelves,
+}) {
+  return printPharmacyWorkspaceList(
+    ref: ref,
+    context: context,
+    title: l10n.pharmacyCatalogTabShelves,
+    columns: <PharmacyWorkspacePrintColumn>[
+      PharmacyWorkspacePrintColumn(
+        id: 'shelf',
+        label: l10n.pharmacyStorageShelfLabel,
+      ),
+      PharmacyWorkspacePrintColumn(
+        id: 'room',
+        label: l10n.pharmacyStorageRoomNameLabel,
+      ),
+      PharmacyWorkspacePrintColumn(
+        id: 'code',
+        label: l10n.pharmacyStorageShelfCodeLabel,
+      ),
+    ],
+    rows: <Map<String, String>>[
+      for (final _ShelfRow row in shelves)
+        <String, String>{
+          'shelf': row.shelf.displayLabel,
+          'room': row.room.name ?? '',
+          'code': row.shelf.shelfCode ?? '',
+        },
+    ],
+    emptyText: l10n.pharmacyNoStorageShelvesTitle,
+  );
 }

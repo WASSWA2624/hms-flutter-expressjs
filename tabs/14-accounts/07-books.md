@@ -4,7 +4,7 @@
 
 - Label: `Close books`
 - Icon: `Icons.menu_book_outlined`
-- Count source: `accountsOpenPeriodsCountProvider` ?? `openPeriods`
+- Count source: `accountsSectionTabCount` → `accountsOpenPeriodsCountProvider` ?? `openPeriods` (panel pushes filtered totals when filters active)
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `books` (aliases `periods`, `period-close`, `close`); may pass `periodId`/`id`, `action`, `search`
 - Tab gate: `AccountsCloseBooksAtomPermissions.tab` = entry
@@ -12,14 +12,15 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Settings → Open period → Close period** (plus Open / Overdue chips above table)
+Order: **Filters → Settings → Export → Print → Open period → Close period** (plus Open / Overdue chips above table)
 
 - Search hint: `Period, facility, status…`
-- Advanced Filters button: **intentionally omitted**
-- Quick filters: FilterChips `Open` / `Overdue close` (counts from current page membership)
+- Advanced Filters: present — Open / Overdue groups synced with FilterChips
+- Quick filters: FilterChips `Open` / `Overdue close` (counts from current page membership; mutually exclusive)
 - Settings: `accounts_books_v1`
-- Export / table Print: **absent**
+- Export / table Print: ∩ `evidence:export` — omit when unauthorized (`AccountsCloseBooksAtomPermissions.export` / `print`)
 - Context: `Open period`, `Close period` — omitted without ∩ `accounts:write`
+- Date filter: **omitted** (status chips / advanced Open–Overdue groups cover the queue)
 
 ## 3. Table
 
@@ -31,9 +32,9 @@ Order: **Settings → Open period → Close period** (plus Open / Overdue chips 
 
 ## 4. Advanced filters / search fields
 
-- No advanced filter sheet
+- Advanced Filters groups: Open only / Overdue only (synced with chips)
 - Chips: Open only / Overdue only (mutually exclusive)
-- Free-text search only
+- Free-text search
 
 ## 5. Primary / secondary / row actions
 
@@ -62,8 +63,8 @@ Open → similarity → select existing / continue open. Detail → View unposte
 
 ## 9. Print / labels / preview
 
-- Detail Print → `printAccountsBooksPacket` → `claimStatement` with books section options
-- Table Print: absent
+- Table Print: preview-first `printAccountsListTable`
+- Detail Print → `printAccountsBooksPacket` → `claimStatement` template reuse with books section options
 
 ## 10. Loading / empty / error / success
 
@@ -75,6 +76,7 @@ Open → similarity → select existing / continue open. Detail → View unposte
 
 | Atom | Gate |
 | --- | --- |
-| Tab / list / Books next | entry / read |
+| Tab / list / filters / settings / Books next | entry / read |
 | Open period / Close period / Close next | ∩ `accounts:write` |
 | Approve next | approval decision requirement |
+| List Export / Print | ∩ `evidence:export` |

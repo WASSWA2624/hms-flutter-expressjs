@@ -27,8 +27,10 @@ import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_cance
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_catalog_panel.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_print_history_options_section.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_print_options_section.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_scope_navigation.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_suppliers_panel.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_walk_in_order_dialog.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_workspace_print_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -99,7 +101,7 @@ class _PharmacyWorkspaceContentState
   void initState() {
     super.initState();
     _section =
-        _sectionFromQuery(widget.initialQuery?.section ?? '') ??
+        pharmacySectionFromQuery(widget.initialQuery?.section ?? '') ??
         PharmacyDeskSection.queue;
     _searchController = TextEditingController(text: widget.state.query.search);
     _tableColumnController =
@@ -164,7 +166,7 @@ class _PharmacyWorkspaceContentState
       );
       return;
     }
-    final PharmacyDeskSection? parsed = _sectionFromQuery(section);
+    final PharmacyDeskSection? parsed = pharmacySectionFromQuery(section);
     if (parsed != null) {
       _handledSectionDeepLink = true;
       if (parsed != _section) {
@@ -274,7 +276,9 @@ class _PharmacyWorkspaceContentState
         );
         _handledSectionDeepLink = true;
       } else {
-        final PharmacyDeskSection? parsed = _sectionFromQuery(query.section);
+        final PharmacyDeskSection? parsed = pharmacySectionFromQuery(
+          query.section,
+        );
         if (parsed != null) {
           if (parsed != _section) {
             setState(() => _section = parsed);
@@ -339,7 +343,7 @@ class _PharmacyWorkspaceContentState
     final PharmacyWorkspaceQuery? query = widget.initialQuery;
     if (query != null &&
         query.section.isNotEmpty &&
-        _sectionFromQuery(query.section) != null) {
+        pharmacySectionFromQuery(query.section) != null) {
       return;
     }
     final PharmacyWorkspaceController controller = ref.read(
@@ -385,78 +389,11 @@ class _PharmacyWorkspaceContentState
 
   void _updateUrlForSection(PharmacyDeskSection section) {
     if (!mounted) return;
-    final String tab = _sectionToQueryValue(section);
+    final String tab = pharmacySectionToQueryValue(section);
     final String location = AppRoutes.pharmacy.location(
       queryParameters: <String, String>{if (tab.isNotEmpty) 'section': tab},
     );
     syncWorkspaceLocation(context, location);
-  }
-
-  static String _sectionToQueryValue(PharmacyDeskSection section) {
-    return switch (section) {
-      PharmacyDeskSection.queue => 'queue',
-      PharmacyDeskSection.inProgress => 'in-progress',
-      PharmacyDeskSection.pendingPayment => 'pending-payment',
-      PharmacyDeskSection.completed => 'completed',
-      PharmacyDeskSection.cancelled => 'cancelled',
-      PharmacyDeskSection.allOrders => 'all',
-      PharmacyDeskSection.catalog => 'catalog',
-      PharmacyDeskSection.suppliers => 'suppliers',
-      PharmacyDeskSection.nearExpiry => 'near-expiry',
-      PharmacyDeskSection.expired => 'expired',
-      PharmacyDeskSection.lowStock => 'low-stock',
-      PharmacyDeskSection.outOfStock => 'out-of-stock',
-    };
-  }
-
-  static PharmacyDeskSection? _sectionFromQuery(String raw) {
-    switch (raw.trim().toLowerCase()) {
-      case 'queue':
-      case 'ready':
-      case 'new':
-      case 'new-orders':
-      case 'dispense':
-        return PharmacyDeskSection.queue;
-      case 'in-progress':
-      case 'partial':
-      case 'in_progress':
-        return PharmacyDeskSection.inProgress;
-      case 'pending-payment':
-      case 'payment':
-      case 'pending_payment':
-        return PharmacyDeskSection.pendingPayment;
-      case 'completed':
-      case 'dispensed':
-        return PharmacyDeskSection.completed;
-      case 'cancelled':
-      case 'canceled':
-        return PharmacyDeskSection.cancelled;
-      case 'all':
-      case 'all-orders':
-        return PharmacyDeskSection.allOrders;
-      case 'catalog':
-      case 'catalog-and-stock':
-      case 'inventory':
-      case 'stock':
-        return PharmacyDeskSection.catalog;
-      case 'suppliers':
-      case 'supplier':
-        return PharmacyDeskSection.suppliers;
-      case 'near-expiry':
-      case 'expiring':
-      case 'expiring-soon':
-        return PharmacyDeskSection.nearExpiry;
-      case 'expired':
-        return PharmacyDeskSection.expired;
-      case 'low-stock':
-      case 'low':
-        return PharmacyDeskSection.lowStock;
-      case 'out-of-stock':
-      case 'out':
-        return PharmacyDeskSection.outOfStock;
-      default:
-        return null;
-    }
   }
 
   static PharmacyOrderFilter _filterForSection(PharmacyDeskSection section) {
@@ -519,95 +456,6 @@ class _PharmacyWorkspaceContentState
     return controller.applyAdvancedFilters(filter);
   }
 
-  static int _sectionCount(
-    PharmacyWorkspaceState state,
-    PharmacyDeskSection section, {
-    PharmacyDeskSection? activeSection,
-  }) {
-    // Active order tab badge mirrors the list query total so search/advanced
-    // filters cannot leave the strip higher than the visible worklist.
-    if (activeSection == section && section.isOrderSection) {
-      final int? listTotal = state.workbench.orders.totalItemCount;
-      if (listTotal != null) {
-        return listTotal;
-      }
-    }
-
-    final PharmacyWorkbenchSummary summary = state.workbench.summary;
-    final PharmacyInventoryStockSummary stock = state.stockAlertSummary;
-    return switch (section) {
-      PharmacyDeskSection.queue => summary.orderedQueue,
-      PharmacyDeskSection.inProgress => summary.partiallyDispensedQueue,
-      PharmacyDeskSection.pendingPayment => summary.pendingPaymentQueue,
-      PharmacyDeskSection.completed => summary.dispensedOrders,
-      PharmacyDeskSection.cancelled => summary.cancelledOrders,
-      PharmacyDeskSection.allOrders => summary.totalOrders,
-      // Catalog is a management hub, not a counted worklist.
-      PharmacyDeskSection.catalog => 0,
-      PharmacyDeskSection.suppliers => state.suppliers.totalItemCount ?? 0,
-      PharmacyDeskSection.nearExpiry => stock.expiringSoonRows,
-      PharmacyDeskSection.expired => stock.expiredRows,
-      PharmacyDeskSection.lowStock => stock.lowStockRows,
-      PharmacyDeskSection.outOfStock => stock.outOfStockRows,
-    };
-  }
-
-  static AppTabCountTone _sectionCountTone(PharmacyDeskSection section) {
-    return switch (section) {
-      PharmacyDeskSection.queue ||
-      PharmacyDeskSection.inProgress ||
-      PharmacyDeskSection.pendingPayment ||
-      PharmacyDeskSection.nearExpiry ||
-      PharmacyDeskSection.lowStock => AppTabCountTone.warning,
-      PharmacyDeskSection.cancelled ||
-      PharmacyDeskSection.expired ||
-      PharmacyDeskSection.outOfStock => AppTabCountTone.danger,
-      PharmacyDeskSection.completed ||
-      PharmacyDeskSection.catalog ||
-      PharmacyDeskSection.suppliers ||
-      PharmacyDeskSection.allOrders => AppTabCountTone.info,
-    };
-  }
-
-  static IconData _sectionIcon(PharmacyDeskSection section) {
-    return switch (section) {
-      PharmacyDeskSection.queue => Icons.medication_liquid_outlined,
-      PharmacyDeskSection.inProgress => Icons.pending_actions_outlined,
-      PharmacyDeskSection.pendingPayment => Icons.payments_outlined,
-      PharmacyDeskSection.completed => Icons.done_all_outlined,
-      PharmacyDeskSection.cancelled => Icons.cancel_outlined,
-      PharmacyDeskSection.allOrders => Icons.receipt_long_outlined,
-      PharmacyDeskSection.catalog => Icons.inventory_2_outlined,
-      PharmacyDeskSection.suppliers => Icons.local_shipping_outlined,
-      PharmacyDeskSection.nearExpiry => Icons.hourglass_bottom_outlined,
-      PharmacyDeskSection.expired => Icons.event_busy_outlined,
-      PharmacyDeskSection.lowStock => Icons.trending_down_outlined,
-      PharmacyDeskSection.outOfStock => Icons.remove_shopping_cart_outlined,
-    };
-  }
-
-  static String _sectionLabel(
-    AppLocalizations l10n,
-    PharmacyDeskSection section,
-  ) {
-    return switch (section) {
-      PharmacyDeskSection.queue => l10n.pharmacyDeskNewOrdersLabel,
-      PharmacyDeskSection.inProgress => l10n.pharmacySummaryPartialLabel,
-      PharmacyDeskSection.pendingPayment => l10n.pharmacyFilterPendingPayment,
-      PharmacyDeskSection.completed => l10n.pharmacyDeskCompletedOrdersLabel,
-      PharmacyDeskSection.cancelled => l10n.pharmacyDeskCancelledOrdersLabel,
-      PharmacyDeskSection.allOrders => l10n.pharmacyFilterAll,
-      PharmacyDeskSection.catalog => l10n.pharmacyDeskCatalogLabel,
-      PharmacyDeskSection.suppliers => l10n.pharmacyDeskSuppliersLabel,
-      PharmacyDeskSection.nearExpiry => l10n.pharmacyDeskNearExpiryLabel,
-      PharmacyDeskSection.expired => l10n.pharmacyDeskExpiredLabel,
-      PharmacyDeskSection.lowStock => l10n.pharmacyDeskLowStockLabel,
-      PharmacyDeskSection.outOfStock => l10n.pharmacyDeskOutOfStockLabel,
-    };
-  }
-
-  // ─── End tab helpers ──────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
@@ -650,23 +498,12 @@ class _PharmacyWorkspaceContentState
           children: <Widget>[
             if (allowedSections.isNotEmpty)
               AppTabStrip(
-                tabs: <AppTabItem>[
-                  for (final PharmacyDeskSection section in allowedSections)
-                    AppTabItem(
-                      id: section.name,
-                      icon: _sectionIcon(section),
-                      label: _sectionLabel(l10n, section),
-                      // Catalog is a management hub with no worklist count.
-                      count: section.isCatalogSection
-                          ? null
-                          : _sectionCount(
-                              state,
-                              section,
-                              activeSection: effectiveSection,
-                            ),
-                      countTone: _sectionCountTone(section),
-                    ),
-                ],
+                tabs: pharmacyTabItems(
+                  l10n,
+                  state,
+                  policy: policy,
+                  activeSection: effectiveSection,
+                ),
                 selectedId: effectiveSection.name,
                 onTabTapped: (String tabId) {
                   for (final PharmacyDeskSection section in allowedSections) {
@@ -741,6 +578,21 @@ class _PharmacyQueuePanel extends ConsumerWidget {
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     final bool includeBillingStatus = canReadPharmacyBillingStatus(policy);
     final bool canCreateWalkIn = canWritePharmacy(policy);
+    final bool canExport = canExportPharmacyWorkspace(policy);
+    final bool canPrint = canPrintPharmacyWorkspace(policy);
+    final List<AppListTableColumn<PharmacyOrder>> visibleColumns =
+        _columnsForSection(
+          context,
+          section,
+          state: state,
+          writeRequirement: writeRequirement,
+          includeBillingStatus: includeBillingStatus,
+        );
+    final List<AppListTableColumn<PharmacyOrder>> columnChoices =
+        _optionalPharmacyWorklistColumns(
+          context,
+          includeBillingStatus: includeBillingStatus,
+        );
 
     return AppListTable<PharmacyOrder>(
       page: state.workbench.orders,
@@ -750,6 +602,40 @@ class _PharmacyQueuePanel extends ConsumerWidget {
       columnWidthStorageKey: 'pharmacy_cw_${section.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+      enableExport: true,
+      canExport: canExport,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () => printPharmacyListTable<PharmacyOrder>(
+        ref: ref,
+        context: context,
+        title: pharmacySectionLabel(l10n, section),
+        columns: <AppListTableColumn<PharmacyOrder>>[
+          ...visibleColumns,
+          ...columnChoices,
+        ],
+        items: state.workbench.orders.items,
+        emptyText: l10n.pharmacyNoOrdersTitle,
+      ),
+      exportConfig: AppListTableExportConfig<PharmacyOrder>(
+        fileNameStem: 'pharmacy_${section.name}',
+        dateOf: (PharmacyOrder item) => item.orderedAt,
+        sheetName: pharmacySectionLabel(l10n, section),
+      ),
       search: AppListTableSearch<PharmacyOrder>(
         controller: searchController,
         semanticLabel: l10n.pharmacySearchLabel,
@@ -758,10 +644,11 @@ class _PharmacyQueuePanel extends ConsumerWidget {
             pharmacyOrderSearchMatcher(context, item, query),
         onSubmitted: controller.applySearch,
         showAdvancedFilterButton: true,
-        advancedFilterButtonLabel: l10n.pharmacyQueueFilterLabel,
+        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
         advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         dateFilterLabel: l10n.pharmacyOrderDateFilterLabel,
         dateFromLabel: l10n.pharmacyOrderDateFilterLabel,
         dateToLabel: l10n.opdDateToLabel,
@@ -851,17 +738,8 @@ class _PharmacyQueuePanel extends ConsumerWidget {
         body: l10n.pharmacyNoOrdersBody,
         icon: Icons.medication_liquid_outlined,
       ),
-      columns: _columnsForSection(
-        context,
-        section,
-        state: state,
-        writeRequirement: writeRequirement,
-        includeBillingStatus: includeBillingStatus,
-      ),
-      columnChoices: _optionalPharmacyWorklistColumns(
-        context,
-        includeBillingStatus: includeBillingStatus,
-      ),
+      columns: visibleColumns,
+      columnChoices: columnChoices,
       mobileItemBuilder: (BuildContext context, PharmacyOrder item) {
         final AppWorkspaceStatus status = _orderStatus(context, item);
         return AppListTableMobileItem(
@@ -1227,7 +1105,7 @@ class _PharmacyActionPanel extends ConsumerWidget {
       extraActions: <Widget>[
         if (canPrint)
           AppReportActionButton.print(
-            label: l10n.pharmacyPrintInstructionsAction,
+            label: l10n.commonPrintActionLabel,
             variant: AppButtonVariant.secondary,
             onPressed: () => _openPrintInstructionsDialog(
               context,
@@ -1823,8 +1701,8 @@ class _DispenseHistoryPanelState extends ConsumerState<_DispenseHistoryPanel> {
             if (canPrint)
               AppSearchBarAction(
                 icon: Icons.print_outlined,
-                label: l10n.pharmacyPrintHistoryAction,
-                tooltip: l10n.pharmacyPrintHistoryAction,
+                label: l10n.commonPrintActionLabel,
+                tooltip: l10n.commonPrintActionLabel,
                 onPressed: () => _printDispenseHistory(
                   context,
                   ref,
@@ -2166,7 +2044,7 @@ Future<void> _openDispenseBatchDialog(
         actions: <Widget>[
           if (canPrint && lines.isNotEmpty)
             AppReportActionButton.print(
-              label: l10n.pharmacyDispenseBatchPrintAction,
+              label: l10n.commonPrintActionLabel,
               variant: AppButtonVariant.secondary,
               onPressed: () async {
                 await PrintDocumentTemplates.medicationInstructions(
@@ -3537,7 +3415,7 @@ Future<void> _printDispenseHistory(
       ref: ref,
       context: context,
       title: l10n.pharmacyTimelinePanelTitle,
-      previewDialogTitle: l10n.pharmacyPrintHistoryAction,
+      previewDialogTitle: l10n.printPreviewTitle,
       patientContext: buildPrintFormPatientContext(
         l10n,
         patientName: workflow.order.displayTitle,

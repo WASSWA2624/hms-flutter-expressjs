@@ -2,9 +2,9 @@
 
 ## 1. Tab strip
 
-- Label: `radiologyReportingSummaryLabel`
+- Label: `radiologyReportingSummaryLabel` → `For reporting`
 - Icon: `Icons.edit_note_outlined`
-- Count source: sibling `state.reportingCount`; when active, `state.orders.totalItemCount`
+- Count source: sibling `state.reportingCount` (unfiltered summary); when active + narrowed, `state.orders.totalItemCount` via `radiologySectionTabCount`
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `reporting` (aliases `reports`, `draft`)
 - Stage applied: `REPORTING`
@@ -13,54 +13,71 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Same order-board chrome as Worklist: **Filters → Settings → Request imaging**
+Order: **Filters → Settings → Export → Print → Request imaging**
 
-- Labels / date filter / missing Export+table Print: identical to [01-worklist.md](01-worklist.md)
+- Labels / date filter / Export+Print gates: identical to [01-worklist.md](01-worklist.md)
+  - Filters: `commonFiltersActionLabel`; Apply / Clear / Close shared footers
+  - Settings: `commonTableSettings*`; Close `commonCloseActionLabel`
+  - Export: ∩ `evidence:export` (`RadiologyReportingAtomPermissions.export`)
+  - Print: `commonPrintActionLabel` → preview-first `printRadiologyWorkspaceList`; same export gate
 - Request imaging omitted without ∩ `radiology:write`
+- Nested Print triggers use `commonPrintActionLabel` → `Print`
 
 ## 3. Table
 
-- Same `RadiologyOrder` board, columns, storage pattern, and billing-optional column as Worklist
+- Same `RadiologyOrder` board, **5** default columns, storage pattern, and billing-optional column as Worklist
 - Scoped to reporting stage membership via controller `applyStage('REPORTING')`
-- Row select / next-action → detail (often report composer when waiting-for-report)
+- Storage: `radiology_reporting_<view>` / `radiology_cw_…`
+- Row select / next-action → report composer when waiting-for-report (write); detail/print shortcuts by status
 
 ## 4. Advanced filters / search fields
 
-Same as Worklist (Stage / Status / Modality / Priority / optional Billing gate + ordered date).
+Same as Worklist (Stage / Status / Modality / Priority / optional Billing gate + ordered date). Footer: Clear filters → Apply filters → Close.
 
 ## 5. Primary / secondary / row actions
 
 - Strip: Request imaging
 - Primary path: open report composer / release for awaiting-report rows when write-authorized
-- Assign / Start imaging: **not mounted**
+- Assign / Start imaging: **not mounted** (tested product exception on composer hop)
 
 ## 6. Dialogs from this tab
 
-Same set as Worklist (detail, report composer, print, cancel, request imaging, configurations-not-strip). Owners unchanged.
+| Dialog | Owner |
+| --- | --- |
+| Report composer (`radiologyReportDialogTitle`) | Radiology-owned (primary hop) |
+| Print preview (`printPreviewTitle`) | Radiology-owned |
+| Order detail (`radiologyDetailTitle`) | Radiology-owned (alternate statuses) |
+| Cancel order | Radiology-owned |
+| Request imaging | **reused** clinical radiology order dialog |
+| Configurations (not strip) | Radiology-owned + **reused** catalog |
 
 ## 7. Nested / follow-on
 
-Same chains as Worklist; Release keeps draft→finalize path inside report dialog.
+Release keeps draft→finalize path inside report dialog. Print from composer/detail uses shared preview. Assign / Start imaging omitted.
 
 ## 8. Forms (summary)
 
-Same as Worklist — report narrative dominant on this section.
+Report narrative dominant: Findings / Impression / Recommendation / narrative; Draft / Release / Preview / Print.
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
-- Report preview + Print report → `PrintDocumentTemplates.clinicalResult`
+- Table Print: `commonPrintActionLabel` → preview-first list print (gated ∩ `evidence:export`)
+- Composer / detail Print: `commonPrintActionLabel` → `printPreviewTitle` → `PrintDocumentTemplates.clinicalResult`
+- Report preview: `radiologyReportPreviewAction` / `radiologyReportPreviewDialogTitle`
 - Reported-status row open may short-circuit to print dialog
 
 ## 10. Loading / empty / error / success
 
-Same workspace / empty / snackbar patterns as Worklist.
+Same workspace / empty / snackbar patterns as Worklist (scaffold retry; mutation snackbars; validation on empty findings).
 
 ## 11. RBAC / ABAC (omitted when unauthorized)
 
 | Atom | Gate |
 | --- | --- |
-| Tab / chrome | `RadiologyReportingAtomPermissions.*` read ∩ |
+| Tab / chrome / search / filters / settings | `RadiologyReportingAtomPermissions.*` read ∩ |
+| Desk Export / table Print | ∩ `evidence:export` |
 | Request imaging / report / cancel / configure | write ∩ `radiology:write` |
 | Billing filter/column | billing hold ∩ |
-| Print report | print ∩ `radiology:read` |
+| Print report (composer/detail) | print ∩ `radiology:read` |
+| Request-from-clinical | clinical radiology ∪ (not strip) |
+| Deep-link entry | ∪ radiology\|clinical\|billing |

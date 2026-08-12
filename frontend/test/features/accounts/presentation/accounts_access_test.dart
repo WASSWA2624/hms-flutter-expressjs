@@ -231,6 +231,34 @@ void main() {
       );
     });
 
+    test('export/print require evidence:export; omit otherwise', () {
+      final AppAccessPolicy reader = _policyFor(
+        permissions: <AppPermission>{AppPermissions.accountsRead},
+      );
+      final AppAccessPolicy withExport = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.accountsRead,
+          AppPermissions.evidenceExport,
+        },
+      );
+
+      expect(canExportAccountsWorkspace(reader), isFalse);
+      expect(canPrintAccountsWorkspace(reader), isFalse);
+      expect(AccountsOpenWorkAtomPermissions.export.isAllowed(reader), isFalse);
+      expect(AccountsOpenWorkAtomPermissions.print.isAllowed(reader), isFalse);
+
+      expect(canExportAccountsWorkspace(withExport), isTrue);
+      expect(canPrintAccountsWorkspace(withExport), isTrue);
+      expect(
+        AccountsOpenWorkAtomPermissions.export.isAllowed(withExport),
+        isTrue,
+      );
+      expect(
+        AccountsToPostAtomPermissions.print.isAllowed(withExport),
+        isTrue,
+      );
+    });
+
     test('billing cashier keys do not grant Accounts entry', () {
       final AppAccessPolicy billing = _policyFor(
         permissions: <AppPermission>{

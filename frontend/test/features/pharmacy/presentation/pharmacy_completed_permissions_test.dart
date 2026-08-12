@@ -199,6 +199,12 @@ void _stubPharmacyRepository(
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
 
+AppListTable<PharmacyOrder> _completedTable(WidgetTester tester) {
+  return tester.widget<AppListTable<PharmacyOrder>>(
+    find.byType(AppListTable<PharmacyOrder>),
+  );
+}
+
 /// Catalog browse is now the "Catalog and stock" desk tab (visible chip or
 /// overflow entry); assert against the strip's tab model to stay overflow-safe.
 Finder _catalogAction() => find.byWidgetPredicate(
@@ -341,6 +347,20 @@ void main() {
       );
       expect(
         identical(
+          PharmacyCompletedAtomPermissions.export,
+          pharmacyWorkspaceExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PharmacyCompletedAtomPermissions.print,
+          pharmacyWorkspacePrintRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           PharmacyCompletedAtomPermissions.dispenseProgress,
           pharmacyWorkspaceReadRequirement,
         ),
@@ -389,6 +409,8 @@ void main() {
       expect(PharmacyCompletedAtomPermissions.search, isNotNull);
       expect(PharmacyCompletedAtomPermissions.filters, isNotNull);
       expect(PharmacyCompletedAtomPermissions.settings, isNotNull);
+      expect(PharmacyCompletedAtomPermissions.export, isNotNull);
+      expect(PharmacyCompletedAtomPermissions.print, isNotNull);
       expect(PharmacyCompletedAtomPermissions.pagination, isNotNull);
       expect(PharmacyCompletedAtomPermissions.dispenseProgress, isNotNull);
       expect(PharmacyCompletedAtomPermissions.empty, isNotNull);
@@ -710,7 +732,7 @@ void main() {
             of: dialog,
             matching: find.text('Print'),
           ),
-          findsOneWidget,
+          findsAtLeastNWidgets(1),
         );
         expect(find.textContaining('no access'), findsNothing);
       },
@@ -752,7 +774,7 @@ void main() {
             of: dialog,
             matching: find.text('Print'),
           ),
-          findsOneWidget,
+          findsAtLeastNWidgets(1),
         );
         expect(find.textContaining('no access'), findsNothing);
       },
@@ -1119,6 +1141,87 @@ void main() {
         ).called(1);
         expect(find.text('Pharmacy workflow updated.'), findsOneWidget);
         expect(find.text('Dana Done'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Completed toolbar: Filters/Settings/Close, ≤5 columns, info tone, Export/Print gate',
+      (WidgetTester tester) async {
+        await _pumpCompletedTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.pharmacyRead,
+              AppPermissions.pharmacyWrite,
+            },
+          ),
+        );
+
+        final AppListTable<PharmacyOrder> table = _completedTable(tester);
+        expect(table.columnVisibilityLabel, 'Settings');
+        expect(table.columnVisibilityCloseLabel, 'Close');
+        expect(table.columnVisibilityApplyLabel, 'Apply columns');
+        expect(table.columnVisibilityResetLabel, 'Reset columns');
+        expect(table.search?.advancedFilterButtonLabel, 'Filters');
+        expect(table.search?.advancedFilterTitle, 'Advanced filters');
+        expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
+        expect(table.search?.advancedFilterResetLabel, 'Clear filters');
+        expect(table.search?.advancedFilterCloseLabel, 'Close');
+        expect(table.enablePrint, isTrue);
+        expect(table.canExport, isFalse);
+        expect(table.canPrint, isFalse);
+        expect(table.printLabel, 'Print');
+        expect(table.columns.length, 5);
+        expect(
+          table.columns.any(
+            (AppListTableColumn<PharmacyOrder> c) =>
+                c.id == 'next_action' && c.alwaysVisible,
+          ),
+          isTrue,
+        );
+        expect(table.columnChoices, isNotEmpty);
+        expect(table.columnVisibilityStorageKey, 'pharmacy_completed');
+
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem completed = strip.tabs.firstWhere(
+          (AppTabItem tab) => tab.label == 'Completed orders',
+        );
+        expect(completed.countTone, AppTabCountTone.info);
+        expect(completed.count, isNotNull);
+
+        final List<AppSearchBarAction> trailing =
+            table.search?.trailingActions ?? const <AppSearchBarAction>[];
+        expect(trailing.last.label, 'Walk-in order');
+        expect(find.byTooltip('Export'), findsNothing);
+        expect(find.byTooltip('Print'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Completed Export/Print present when evidence:export granted',
+      (WidgetTester tester) async {
+        await _pumpCompletedTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.pharmacyRead,
+              AppPermissions.pharmacyWrite,
+              AppPermissions.evidenceExport,
+            },
+          ),
+        );
+
+        final AppListTable<PharmacyOrder> table = _completedTable(tester);
+        expect(table.canExport, isTrue);
+        expect(table.canPrint, isTrue);
+        expect(table.enablePrint, isTrue);
+        expect(table.printLabel, 'Print');
+        expect(find.byTooltip('Export'), findsOneWidget);
+        expect(find.byTooltip('Print'), findsOneWidget);
       },
     );
 

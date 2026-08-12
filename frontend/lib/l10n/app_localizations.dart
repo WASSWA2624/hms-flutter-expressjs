@@ -46133,10 +46133,10 @@ abstract class AppLocalizations {
   /// **'Preview report'**
   String get labPreviewReportAction;
 
-  /// Action label for printing a lab report from the preview.
+  /// Print trigger on lab report preview; must resolve to Print (printing.mdc). Prefer commonPrintActionLabel.
   ///
   /// In en, this message translates to:
-  /// **'Print report'**
+  /// **'Print'**
   String get labPrintReportAction;
 
   /// Action label for resetting selected lab report items.

@@ -5,7 +5,7 @@
 - Label: `billingOpenWork`
 - Tooltip: `billingOpenWorkTooltip`
 - Icon: `Icons.inventory_2_outlined`
-- Count source: `summary.countFor(all)` / workload
+- Count source: `billingQueueTabCount` → `summary.countFor(all)` / filtered `workItems.totalItemCount` when search/filters active
 - Count tone: `AppTabCountTone.info`
 - Deep-link `section`: `work` (aliases `all`, `inbox`)
 - Tab gate: `BillingAllAtomPermissions.tab` / `billingWorkspaceEntryRequirement`
@@ -13,32 +13,35 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Filters → Settings → Charge**
+Order: **Filters → Settings → Export → Print → Charge**
 
-- Filters label: `billingFiltersLabel`; date: `billingIssuedDateFilterLabel`
+- Filters label: `commonFiltersActionLabel`; date: `billingIssuedDateFilterLabel`; Clear `opdClearFiltersAction`; Close `commonCloseActionLabel`
 - Settings: `billing_work_v1`
-- Export / table Print: **absent**
+- Export / table Print: present; omit without ∩ `evidence:export` (`BillingAllAtomPermissions.export` / `print`)
 - Context: Charge (`billingChargeAction` / `billingChargeTooltip`) — omitted without ∩ `billing:write`
 - Close shift/day / Issue all: **not mounted** here
 
 ## 3. Table
 
 - Row model: `BillingWorkItem`
-- Row select → detail dialog
-- Default columns:
+- Row select → detail dialog (`billingInvoiceDetailTitle` / claim / approval / pre-auth / item — generic titles, identity in body)
+- Default columns (**5** when next-action mounts; **4** when read-only omits next-action — tested exception):
   1. Patient
   2. Invoice
   3. Amount due
   4. Status
   5. Next action — only if `billingQueueShowsNextActionColumn` (write / approve / claims)
-- Column choices: non-default builders excluding approval-only / claims-only / next-action ids (encounter, source, paid, updated, age when applicable, …)
+- Column choices (Settings): encounter, source, paid, updated (not age; not approval/claims-only ids)
+- Reset columns restores the default set via shared Table Settings
 
 ## 4. Advanced filters / search fields
 
-- Groups: Source (`billingSourceFilterLabel`), Status (open-work choices)
+- Groups: Source (`billingSourceFilterLabel`), Status (open-work choices: DRAFT / ISSUED / PARTIAL / OVERDUE / PENDING / SUBMITTED)
 - Text filters: patient / invoice / encounter
-- Date range on issued date
+- Date range on issued date (`billingIssuedDateFilterLabel`; `enableDateFilter` default true)
+- Footer: Clear filters → Apply filters → Close
 - Overdue filter group: **not** on Open work (Collect owns it)
+- Same `BillingWorkspaceQuery` drives table rows + active tab badge via `billingQueueTabCount`
 
 ## 5. Primary / secondary / row actions
 
@@ -68,8 +71,8 @@ Detail → mutation dialogs → similarity where applicable → receipt print af
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
-- Detail: Print/Download invoice; claim/pre-auth statement; approval packet when kind matches + document read ∩
+- Table Print: `commonPrintActionLabel` → preview-first `printBillingWorkspaceList`
+- Detail: `commonPrintActionLabel` (`Print`) + invoice Download; claim/pre-auth / approval tooltips distinguish document type; document read ∩
 - After payment: `printBillingReceipt`
 
 ## 10. Loading / empty / error / success
@@ -87,4 +90,5 @@ Detail → mutation dialogs → similarity where applicable → receipt print af
 | Claim mutations | claims write ∩ |
 | Ledger | read / nested claims read by kind |
 | Print/Download | document read ∩ |
+| List Export / Print | ∩ `evidence:export` |
 | Claims pending strip | insurance-claims tab requirement |

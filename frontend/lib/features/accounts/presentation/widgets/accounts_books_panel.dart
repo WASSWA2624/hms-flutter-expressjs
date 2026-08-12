@@ -21,6 +21,7 @@ import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_perio
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_period_similarity.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_period_similarity_dialog.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_workspace_print_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -44,6 +45,9 @@ class AccountsBooksPanel extends ConsumerStatefulWidget {
 }
 
 class _AccountsBooksPanelState extends ConsumerState<AccountsBooksPanel> {
+  static const String _openOnlyFilterKey = 'open_only';
+  static const String _overdueOnlyFilterKey = 'overdue_only';
+
   final TextEditingController _searchController = TextEditingController();
   final AppListTableColumnVisibilityController<AccountsFiscalPeriod>
   _columnController =
@@ -138,11 +142,12 @@ class _AccountsBooksPanelState extends ConsumerState<AccountsBooksPanel> {
             }
           }
         });
-        if (!_hasActiveFilters) {
-          final int openCount = page.items
-              .where((AccountsFiscalPeriod p) => p.isOpen)
-              .length;
-          ref.read(accountsOpenPeriodsCountProvider.notifier).state = openCount;
+        if (_hasActiveFilters) {
+          ref.read(accountsOpenPeriodsCountProvider.notifier).state =
+              page.totalItemCount ?? page.items.length;
+        } else {
+          // Fall back to workspace summary — do not badge from painted page.
+          ref.read(accountsOpenPeriodsCountProvider.notifier).state = null;
         }
         if (openDeepLink) {
           unawaited(_maybeOpenDeepLink(page.items));
@@ -462,10 +467,14 @@ class _AccountsBooksPanelState extends ConsumerState<AccountsBooksPanel> {
     final ThemeData theme = Theme.of(context);
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
     final bool canWrite = canWriteAccounts(accessPolicy);
+    final bool canExport = canExportAccountsWorkspace(accessPolicy);
+    final bool canPrint = canPrintAccountsWorkspace(accessPolicy);
     final Color danger = workspaceStatusToneAccentColor(
       theme,
       AppWorkspaceStatusTone.error,
     );
+    final List<AppListTableColumn<AccountsFiscalPeriod>> columns =
+        _defaultColumns(accessPolicy);
 
     if (_failure != null && _page.items.isEmpty && !_loading) {
       return AppFailureStateView(
@@ -482,7 +491,20 @@ class _AccountsBooksPanelState extends ConsumerState<AccountsBooksPanel> {
       columnWidthStorageKey: '${accountsBooksTableSettingsKey}_cw',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
-      columns: _defaultColumns(accessPolicy),
+      enableExport: true,
+      canExport: canExport,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: AccountsStrings.printAction,
+      onPrint: () => printAccountsListTable<AccountsFiscalPeriod>(
+        ref: ref,
+        context: context,
+        title: AccountsStrings.closeBooksLabel,
+        columns: columns,
+        items: _page.items,
+        emptyText: AccountsStrings.booksEmpty,
+      ),
+      columns: columns,
       columnChoices: _optionalColumns(),
       search: AppListTableSearch<AccountsFiscalPeriod>(
         controller: _searchController,
@@ -505,6 +527,54 @@ class _AccountsBooksPanelState extends ConsumerState<AccountsBooksPanel> {
         onSubmitted: (_) => unawaited(_reload()),
         onClear: () {
           _searchController.clear();
+          setState(() {
+            _openOnly = false;
+            _overdueOnly = false;
+          });
+          unawaited(_reload());
+        },
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: AccountsStrings.filtersLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: AccountsStrings.clearFilters,
+        allFieldsLabel: AccountsStrings.allFields,
+        filterGroups: const <AppSearchBarFilterGroup>[
+          AppSearchBarFilterGroup(
+            key: _openOnlyFilterKey,
+            label: AccountsStrings.booksOpenFilter,
+            allLabel: AccountsStrings.allFields,
+            choices: <AppSearchBarFilterChoice>[
+              AppSearchBarFilterChoice(
+                value: 'true',
+                label: AccountsStrings.booksOpenFilter,
+              ),
+            ],
+          ),
+          AppSearchBarFilterGroup(
+            key: _overdueOnlyFilterKey,
+            label: AccountsStrings.booksOverdueFilter,
+            allLabel: AccountsStrings.allFields,
+            choices: <AppSearchBarFilterChoice>[
+              AppSearchBarFilterChoice(
+                value: 'true',
+                label: AccountsStrings.booksOverdueFilter,
+              ),
+            ],
+          ),
+        ],
+        filterValue: AppSearchBarFilterValue(
+          options: <String, String>{
+            if (_openOnly) _openOnlyFilterKey: 'true',
+            if (_overdueOnly) _overdueOnlyFilterKey: 'true',
+          },
+        ),
+        hasActiveFilters: _hasActiveFilters,
+        onFilterChanged: (AppSearchBarFilterValue value) {
+          setState(() {
+            _openOnly = value.option(_openOnlyFilterKey) == 'true';
+            _overdueOnly = value.option(_overdueOnlyFilterKey) == 'true';
+          });
           unawaited(_reload());
         },
         trailingActions: <AppSearchBarAction>[

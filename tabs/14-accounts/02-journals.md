@@ -4,7 +4,7 @@
 
 - Label: `To post`
 - Icon: `Icons.post_add_outlined`
-- Count source: `AccountsSummary.toPost`
+- Count source: `accountsSectionTabCount` → `AccountsSummary.toPost`; active + narrowed → `workItems.totalItemCount`
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `journals` (aliases `journal-entries`, `unposted`, `ready-to-post`)
 - Tab gate: `AccountsToPostAtomPermissions.tab` = entry requirement
@@ -13,11 +13,10 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Filters → Settings → Export → Post all**
+Order: **Filters → Settings → Export → Print → Post all**
 
 - Search / Filters / Settings: same pattern as Open work; key `accounts_journals_v1`
-- Export: `enableExport: true`
-- Print (toolbar): **absent**
+- Export / table Print: ∩ `evidence:export` — omit when unauthorized (`AccountsToPostAtomPermissions.export` / `print`)
 - Context: `Post all` — omitted without ∩ `accounts:write`; enabled only when page has postable drafts
 - Date filter: **enabled** — `Posted date`
 
@@ -62,8 +61,8 @@ Detail → Edit draft → journal dialog (+ similarity). Post → success snackb
 
 ## 9. Print / labels / preview
 
-- Detail Print → journal packet
-- Table Print: absent; Export present
+- Table Print: preview-first `printAccountsListTable`
+- Detail Print → journal packet (`PrintDocumentTemplates.claimStatement` template reuse)
 
 ## 10. Loading / empty / error / success
 
@@ -74,6 +73,7 @@ Detail → Edit draft → journal dialog (+ similarity). Post → success snackb
 
 | Atom | Gate |
 | --- | --- |
-| Tab / list / Export | entry / list chrome |
+| Tab / list / filters / settings | entry / list chrome |
 | Post / Post all / Edit / Next column | ∩ `accounts:write` (`AccountsToPostAtomPermissions.post` / `postAll`) |
 | Approve actions in detail | approval decision requirement |
+| List Export / Print | ∩ `evidence:export` |

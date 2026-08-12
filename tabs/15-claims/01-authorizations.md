@@ -4,7 +4,7 @@
 
 - Label: `claimsSectionAuthorizations`
 - Icon: `Icons.verified_user_outlined`
-- Count source: authorization-scope count from workspace state
+- Count source: authorization-scope summary total; active + narrowed → `queue.totalItemCount`
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `authorizations`
 - Tab gate: `ClaimsAuthorizationsAtomPermissions.tab` = ∩ `billing:read` + `insurance-claims`
@@ -12,27 +12,28 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Settings** (+ strip primary Request authorization)
+Order: **Filters → Settings → Export → Print** (+ strip primary Request authorization)
 
 - Search: claims search hint
-- Filters: **intentionally omitted** (summary chips act as status shortcuts)
+- Filters: present (status groups; summary chips remain shortcuts)
 - Settings: present
-- Export / table Print: **absent**
+- Export / table Print: ∩ `evidence:export` — omit when unauthorized
 - Strip primary: `claimsRequestAuthorizationAction` — omitted without ∩ `billing:write`
-- Date filter: **disabled**
+- Date filter: **disabled** (API/query have no date range)
 
 ## 3. Table
 
 - Row model: `ClaimsQueueItem` (authorization rows)
 - Row select: claims detail
-- Default columns: Reference, Patient, Coverage, Status, Next (when write)
-- Column choices: Approved amount, Requested at
+- Default columns (5): Reference, Patient, Coverage, Status, Next (when write ∩) **or** Amount/Approved amount when Next is omitted
+- Column choices: Approved amount (when not already default), Requested at
 - Next column omitted without write ∩
 - Mobile: trailing next when shown
 
 ## 4. Advanced filters / search fields
 
-- No advanced Filters sheet
+- Advanced Filters: authorization status choices (Pending / Approved / Denied / Expired)
+- Footer: Clear filters → Apply filters → Close
 - Summary chips (when count > 0): Auth pending / approved / Denied / Expired → apply queue filter
 
 ## 5. Primary / secondary / row actions
@@ -51,7 +52,7 @@ Order: **Settings** (+ strip primary Request authorization)
 
 ## 7. Nested / follow-on
 
-Detail Print statement when document read ∩. No Sync on this tab. No Settled export ∪.
+Detail Print when document read ∩. No Sync on this tab. No Settled nested export ∪.
 
 ## 8. Forms (summary)
 
@@ -59,9 +60,9 @@ Detail Print statement when document read ∩. No Sync on this tab. No Settled e
 
 ## 9. Print / labels / preview
 
-- Detail: `claimsPrintStatementAction` → `PrintDocumentTemplates.claimStatement` (authorization statement title)
+- Detail: label `Print` → `PrintDocumentTemplates.claimStatement`
 - Gate: `ClaimsAuthorizationsAtomPermissions.document` (read ∩)
-- Table Print: absent
+- Table Print: preview-first `printClaimsListTable`; gate ∩ `evidence:export`
 
 ## 10. Loading / empty / error / success
 
@@ -72,7 +73,8 @@ Detail Print statement when document read ∩. No Sync on this tab. No Settled e
 
 | Atom | Gate |
 | --- | --- |
-| Tab / list / search / settings / chips / detail | read ∩ |
+| Tab / list / search / filters / settings / chips / detail | read ∩ |
 | Request / Update / Next column | write ∩ |
-| Print statement | document read ∩ |
-| Approve / Sync / Settled export | **absent** on this tab |
+| Detail Print | document read ∩ |
+| Table Export / Print | ∩ `evidence:export` |
+| Approve / Sync / Settled nested export | **absent** on this tab |

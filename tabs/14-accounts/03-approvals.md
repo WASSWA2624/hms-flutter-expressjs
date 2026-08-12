@@ -4,7 +4,7 @@
 
 - Label: `Need approval`
 - Icon: `Icons.rule_outlined`
-- Count source: `AccountsSummary.needApproval`
+- Count source: `accountsSectionTabCount` → `AccountsSummary.needApproval`; active + narrowed → `workItems.totalItemCount`
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `approvals` (alias `approval-required`)
 - Tab gate: `AccountsNeedApprovalAtomPermissions.tab` = entry
@@ -12,13 +12,12 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Filters → Settings → Export**
+Order: **Filters → Settings → Export → Print**
 
 - Search hint: shared accounts hint
-- Filters: present; **no date filter** on this tab
+- Filters: present; date filter **enabled** — `Posted date`
 - Settings: `accounts_approvals_v1`
-- Export: `enableExport: true`
-- Print (toolbar): **absent**
+- Export / table Print: ∩ `evidence:export` — omit when unauthorized (`AccountsNeedApprovalAtomPermissions.export` / `print`)
 - Context trailing actions: **none**
 
 ## 3. Table
@@ -34,7 +33,7 @@ Order: **Filters → Settings → Export**
 
 - Text: Account, Journal, Period
 - Groups: Type (Journal post / Void / Reversal / Period close), Status (Pending)
-- Date filter: **intentionally omitted**
+- Date range on posted date
 
 ## 5. Primary / secondary / row actions
 
@@ -59,8 +58,8 @@ Approve/Reject → notes/reason → mutation snackbar. Print from detail → app
 
 ## 9. Print / labels / preview
 
-- Detail Print → `printAccountsApprovalPacket` (`PrintDocumentTemplates.claimStatement`)
-- Table Print: absent
+- Table Print: preview-first `printAccountsListTable`
+- Detail Print → `printAccountsApprovalPacket` (`PrintDocumentTemplates.claimStatement` template reuse)
 
 ## 10. Loading / empty / error / success
 
@@ -71,6 +70,7 @@ Approve/Reject → notes/reason → mutation snackbar. Print from detail → app
 
 | Atom | Gate |
 | --- | --- |
-| Tab / list / Export | entry |
+| Tab / list / filters / settings | entry |
 | Next Approve / Reject | `accountsApprovalDecisionRequirement` (∩ `accounts:write` + `financial:approve` + modules) |
 | Write-only mutations in detail | ∩ `accounts:write` when applicable |
+| List Export / Print | ∩ `evidence:export` |

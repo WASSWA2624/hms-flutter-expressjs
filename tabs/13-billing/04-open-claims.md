@@ -5,7 +5,7 @@
 - Label: `billingClaimsPending`
 - Tooltip: `billingClaimsPendingTooltip`
 - Icon: `Icons.health_and_safety_outlined`
-- Count source: `summary.claimsPending`
+- Count source: `billingQueueTabCount` → `summary.claimsPending` / filtered page total when active + narrowed
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `claims` (alias `claims-pending`)
 - Tab gate: `BillingClaimsPendingAtomPermissions.tab` / `billingClaimsPendingTabRequirement` — needs `insurance-claims`
@@ -13,10 +13,11 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Filters → Settings** (no Charge / Issue all / Close trailing)
+Order: **Filters → Settings → Export → Print** (no Charge / Issue all / Close trailing)
 
+- Filters: `commonFiltersActionLabel`; Clear `opdClearFiltersAction`; Close `commonCloseActionLabel`
 - Settings key: `billing_claims_v1`
-- Export / table Print: **absent**
+- Export / table Print: present; omit without ∩ `evidence:export`
 - Trailing context actions: **none** on this tab
 
 ## 3. Table
@@ -56,8 +57,8 @@ Claim mutation forms → success refresh; print claim/pre-auth statement from de
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
-- Detail: invoice PDF when invoice; claim/pre-auth statement print helpers
+- Table Print: `commonPrintActionLabel` → preview-first `printBillingWorkspaceList`
+- Detail: `Print` (claim/pre-auth statement tooltip); invoice PDF when invoice kind
 
 ## 10. Loading / empty / error / success
 
@@ -68,10 +69,11 @@ Claim mutation forms → success refresh; print claim/pre-auth statement from de
 | Atom | Gate |
 | --- | --- |
 | Tab / chrome / detail | claims pending tab ∩ (+ insurance-claims) |
+| List Export / table Print | ∩ `evidence:export` (`BillingClaimsPendingAtomPermissions.export` / `.print`) |
 | Submit / Reconcile / Pre-auth | claims write ∩ |
 | Next-action column mount | claims mutate allowed |
 | Close shift/day | write ∩ documented — **not mounted** |
 | Ledger | nested claims read ∩ |
-| Print/Download | document read ∩ |
+| Detail Print/Download | document read ∩ |
 | Approve nested (other kinds) | approve ∩ |
 | Route entry | billing read ∪ write |

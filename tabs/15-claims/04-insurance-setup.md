@@ -4,8 +4,8 @@
 
 - Label: `claimsSectionInsuranceSetup`
 - Icon: `Icons.business_outlined`
-- Count source: always `0` (no queue badge)
-- Count tone: `AppTabCountTone.info`
+- Count: **omitted** (`null` — catalog hub, not a worklist)
+- Count tone: `AppTabCountTone.info` (unused while count is null)
 - Deep-link `section`: `insurance-setup`
 - Tab gate: `ClaimsInsuranceSetupAtomPermissions.tab` = ∪ `billing:read` \| `facility:admin` \| `tenant:admin` ∩ `insurance-claims`
 - **Omitted when unauthorized**

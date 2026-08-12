@@ -146,11 +146,7 @@ class _AccountsPatientLedgerDialogState
         titleName != AccountsStrings.patientColumn && titleName != '—';
 
     return AppDialog(
-      title: Text(
-        titleHasPatient
-            ? '${AccountsStrings.patientLedgerTitle} · $titleName'
-            : AccountsStrings.patientLedgerTitle,
-      ),
+      title: const Text(AccountsStrings.patientLedgerTitle),
       icon: const Icon(Icons.account_balance_wallet_outlined),
       scrollable: true,
       maxWidth: 860,
@@ -169,6 +165,7 @@ class _AccountsPatientLedgerDialogState
                   return _AccountsPatientLedgerBody(
                     ledger: ledger,
                     currency: widget.currency,
+                    fallbackPatientLabel: titleHasPatient ? titleName : null,
                   );
                 },
                 failure: (AppFailure failure) {
@@ -222,19 +219,32 @@ class _AccountsPatientLedgerDialogState
 }
 
 class _AccountsPatientLedgerBody extends StatelessWidget {
-  const _AccountsPatientLedgerBody({required this.ledger, this.currency});
+  const _AccountsPatientLedgerBody({
+    required this.ledger,
+    this.currency,
+    this.fallbackPatientLabel,
+  });
 
   final AccountsPatientLedger ledger;
   final String? currency;
+  final String? fallbackPatientLabel;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AccountsPatientLedgerSummary summary = ledger.summary;
+    final String patientLabel =
+        accountsPatientPublicLabel(
+          patientDisplayName:
+              ledger.patientDisplayName ?? fallbackPatientLabel,
+          patientId: ledger.patientId,
+        );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
+        Text(patientLabel, style: theme.textTheme.titleMedium),
+        SizedBox(height: theme.spacing.sm),
         AppReportSummaryGrid(
           records: <AppReportSummaryItem>[
             AppReportSummaryItem(

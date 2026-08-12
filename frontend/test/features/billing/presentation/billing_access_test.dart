@@ -225,6 +225,20 @@ void main() {
       );
       expect(
         identical(
+          BillingAllAtomPermissions.export,
+          billingWorkspaceExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          BillingAllAtomPermissions.print,
+          billingWorkspacePrintRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           BillingAllAtomPermissions.write,
           billingWorkspaceWriteRequirement,
         ),

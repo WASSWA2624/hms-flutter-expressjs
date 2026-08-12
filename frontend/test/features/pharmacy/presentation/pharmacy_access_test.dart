@@ -419,6 +419,32 @@ void main() {
       expect(canWritePharmacy(reader), isFalse);
     });
 
+    test('Export / Print table toolbar requires evidence:export', () {
+      final AppAccessPolicy withoutExport = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.pharmacyRead,
+          AppPermissions.pharmacyWrite,
+        },
+      );
+      final AppAccessPolicy withExport = _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.pharmacyRead,
+          AppPermissions.evidenceExport,
+        },
+      );
+      expect(canExportPharmacyWorkspace(withoutExport), isFalse);
+      expect(canPrintPharmacyWorkspace(withoutExport), isFalse);
+      expect(canExportPharmacyWorkspace(withExport), isTrue);
+      expect(canPrintPharmacyWorkspace(withExport), isTrue);
+      expect(
+        identical(
+          pharmacyWorkspacePrintRequirement,
+          pharmacyWorkspaceExportRequirement,
+        ),
+        isTrue,
+      );
+    });
+
     test(
       'route entry ∪ allows pharmacy:read | operations:read '
       '(matrix view ∩ remains pharmacy:read)',
@@ -687,6 +713,20 @@ void main() {
         identical(
           PharmacyReadyAtomPermissions.printInstructions,
           pharmacyPrintInstructionsRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PharmacyReadyAtomPermissions.export,
+          pharmacyWorkspaceExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PharmacyReadyAtomPermissions.print,
+          pharmacyWorkspacePrintRequirement,
         ),
         isTrue,
       );

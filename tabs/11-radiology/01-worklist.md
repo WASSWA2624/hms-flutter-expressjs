@@ -4,7 +4,7 @@
 
 - Label: `radiologyWorklistSummaryLabel`
 - Icon: `Icons.pending_actions_outlined`
-- Count source: sibling `state.workloadCount`; when active, `state.orders.totalItemCount`
+- Count source: sibling `state.workloadCount` (unfiltered summary); when active + narrowed, `state.orders.totalItemCount` via `radiologySectionTabCount`
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `worklist` (alias `work`)
 - Stage applied: `WORKLIST`
@@ -13,13 +13,13 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Filters → Settings → Request imaging**
+Order: **Filters → Settings → Export → Print → Request imaging**
 
 - Search hint: `radiologySearchHint`
-- Filters: `commonFiltersActionLabel` → Advanced filters; Apply `opdApplyFiltersAction`; Reset `radiologyClearFiltersAction`
-- Settings: Table Settings (`commonTableSettings*`, Apply/Reset radiology column keys)
-- Export: **absent** on this table
-- Print (toolbar): **absent**; print from detail / reported shortcut
+- Filters: `commonFiltersActionLabel` → Advanced filters; Apply `opdApplyFiltersAction`; Reset `radiologyClearFiltersAction`; Close `commonCloseActionLabel`
+- Settings: Table Settings (`commonTableSettings*`, Apply/Reset radiology column keys, Close `commonCloseActionLabel`)
+- Export: `commonTableExportActionLabel` — ∩ `evidence:export` (`RadiologyWorklistAtomPermissions.export`); omitted when denied
+- Print (toolbar): `commonPrintActionLabel` → `Print` — preview-first `printRadiologyWorkspaceList`; same export gate; omitted when denied
 - Context: Request imaging (`radiologyRequestImagingAction`) — omitted without ∩ `radiology:write`
 - Date filter: **enabled** — `radiologyOrderDateFilterLabel` / pick `radiologyPickOrderDateAction`
 
@@ -62,16 +62,16 @@ Order: **Filters → Settings → Request imaging**
 
 | Dialog | Owner |
 | --- | --- |
-| Order detail (`radiologyDetailTitle`) | Radiology-owned |
+| Order detail (`radiologyDetailTitle` → Radiology workflow) | Radiology-owned |
 | Report composer (`radiologyReportDialogTitle`) | Radiology-owned |
-| Print report (`radiologyPrintReportDialogTitle`) | Radiology-owned |
+| Print preview (`printPreviewTitle`) | Radiology-owned |
 | Cancel order | Radiology-owned (`_showCancelDialog`) |
 | Request imaging | **reused** clinical radiology order dialog |
 | Configurations (not strip) | Radiology-owned + **reused** catalog / `LabDeleteReasonDialog` |
 
 ## 7. Nested / follow-on
 
-From detail procedure workbench: Mark done → confirm; Report → draft/release/preview; Print → `PrintDocumentTemplates.clinicalResult`; Undo; Cancel → reason confirm.
+From detail procedure workbench: Mark done → confirm; Report → draft/release/preview; Print (`commonPrintActionLabel`) → `PrintDocumentTemplates.clinicalResult`; Undo; Cancel → reason confirm. Assign / Start imaging omitted (tested product exception).
 
 From Request imaging: clinical request / billing state nested flows (**reused**).
 
@@ -87,9 +87,9 @@ From Configurations (if opened): Enable / Edit offering → radiology catalog di
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
-- Detail / reported shortcut: Print report → preview options → `PrintDocumentTemplates.clinicalResult`
-- Report composer: Preview (`radiologyReportPreviewAction` / `radiologyReportPreviewDialogTitle`)
+- Table Print: `commonPrintActionLabel` → preview-first `printRadiologyWorkspaceList` (gated ∩ `evidence:export`)
+- Detail / reported next-action: `Print` → preview (`printPreviewTitle`) → `PrintDocumentTemplates.clinicalResult`
+- Report composer: Preview (`radiologyReportPreviewAction` / `radiologyReportPreviewDialogTitle`); Print trigger `commonPrintActionLabel`
 - No label print on this tab
 
 ## 10. Loading / empty / error / success
@@ -97,7 +97,7 @@ From Configurations (if opened): Enable / Edit offering → radiology catalog di
 - Loading: workspace `radiologyLoadingTitle` / `radiologyLoadingBody`; table `isRefreshing`
 - Empty: `radiologyNoOrdersTitle` / `radiologyNoOrdersBody` (or patients variants)
 - Detail loading/empty: `radiologyDetailLoading*` / `radiologyNoSelection*`
-- Error: scaffold retry; mutation snackbars
+- Error: scaffold retry; mutation snackbars; search/filter failures via snackbar
 - Success: write-gated mutation feedback
 
 ## 11. RBAC / ABAC (omitted when unauthorized)
@@ -106,9 +106,10 @@ From Configurations (if opened): Enable / Edit offering → radiology catalog di
 | --- | --- |
 | Tab / list chrome / search / filters / settings / empty / loading / retry | ∩ `radiology:read` |
 | Billing gate filter / billing column / payment field | ∩ `billing:read` |
+| Desk Export / table Print | ∩ `evidence:export` |
 | Request imaging | ∩ `radiology:write` |
 | Detail mutations (done / report / cancel / undo) | ∩ `radiology:write` |
-| Print report | ∩ `radiology:read` |
+| Print report (detail/composer) | ∩ `radiology:read` |
 | Configurations nested | ∩ `radiology:write` |
 | Request-from-clinical (cross-module) | clinical radiology ∪ (not strip) |
 | Deep-link workspace entry | ∪ radiology\|clinical\|billing |

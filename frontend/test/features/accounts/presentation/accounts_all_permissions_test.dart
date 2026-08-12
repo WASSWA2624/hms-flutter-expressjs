@@ -21,6 +21,7 @@ import 'package:hosspi_hms/features/accounts/presentation/pages/accounts_workspa
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_form_dialogs.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_journal_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -211,6 +212,56 @@ void main() {
   setUp(() {
     repository = _MockAccountsRepository();
   });
+
+  testWidgets(
+    'Export/Print omit without evidence:export; present when granted',
+    (WidgetTester tester) async {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.accountsRead},
+      );
+      await _pumpOpenWork(
+        tester,
+        repository: repository,
+        accessPolicy: reader,
+      );
+      final AppListTable<AccountsWorkItem> withoutExport =
+          tester.widget<AppListTable<AccountsWorkItem>>(
+            find.byType(AppListTable<AccountsWorkItem>),
+          );
+      expect(withoutExport.enablePrint, isTrue);
+      expect(withoutExport.canExport, isFalse);
+      expect(withoutExport.canPrint, isFalse);
+      expect(withoutExport.printLabel, 'Print');
+      expect(
+        withoutExport.search?.advancedFilterButtonLabel,
+        'Filters',
+      );
+      expect(find.byTooltip('Export'), findsNothing);
+      expect(find.byTooltip('Print'), findsNothing);
+
+      final AppAccessPolicy exporter = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.accountsRead,
+          AppPermissions.evidenceExport,
+        },
+      );
+      await _pumpOpenWork(
+        tester,
+        repository: repository,
+        accessPolicy: exporter,
+      );
+      final AppListTable<AccountsWorkItem> withExport =
+          tester.widget<AppListTable<AccountsWorkItem>>(
+            find.byType(AppListTable<AccountsWorkItem>),
+          );
+      expect(withExport.canExport, isTrue);
+      expect(withExport.canPrint, isTrue);
+      expect(withExport.enablePrint, isTrue);
+      expect(withExport.printLabel, 'Print');
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+    },
+  );
 
   testWidgets(
     'read-only: Open work visible; Journal and Next absent; no no-access',

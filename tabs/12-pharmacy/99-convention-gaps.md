@@ -1,15 +1,13 @@
 # Pharmacy inventory — convention gaps
 
-Optional findings vs `prompts/.cursor/*.mdc` after code trace (2026-08-11). No UI changes in this inventory pass.
+Optional findings vs `prompts/.cursor/*.mdc` after shared-chrome remediation (2026-08-12).
 
 ## Residual / notes
 
-- Order desk `AppListTable` does **not** mount Export or table Print; print is detail/instructions/batch/invoice helper-driven.
-- Catalog formulary/selection tables explicitly set `enableExport: false`.
-- Filters button label on orders uses `pharmacyQueueFilterLabel` (not always `commonFiltersActionLabel`).
-- Suppliers is a **desk** tab (not a nested Catalog icon tab), while entity comments historically mentioned suppliers under catalog nesting.
-- Stock-alert desks reuse Catalog → Inventory rather than a separate alert-only table.
-- Controlled-drug audit requirement is documented in atom maps but has **no dedicated chrome** on Ready / All orders.
+- none (required Export/Print gating, Filters label key, and preview-first list Print are closed on order / catalog / suppliers desks).
+- Nested formulary/selection / shelf-picker tables intentionally keep `enableExport: false` (picker chrome, not printable desks).
+- Stock-alert desks still reuse Catalog → Inventory filtered views (tracked for per-tab prompts `09`–`12` if a dedicated alert table is required).
+- Controlled-drug audit requirement remains documented in atom maps with **no dedicated chrome** on Ready / All orders (product exception until audit panels mount).
 - Pending payment requires both pharmacy + billing read; route-only operations readers never see catalog/stock/suppliers.
 
 Per-tab inventory lives under this folder; source prompt: `tabs-lister/12-pharmacy.md`.

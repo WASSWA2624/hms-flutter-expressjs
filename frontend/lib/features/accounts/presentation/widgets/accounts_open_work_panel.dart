@@ -15,6 +15,7 @@ import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_journ
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_journal_similarity_dialog.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_work_actions.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_workspace_print_helpers.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_workspace_table_support.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -86,10 +87,21 @@ class _AccountsOpenWorkPanelState extends ConsumerState<AccountsOpenWorkPanel> {
     final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
     final bool canWrite = canWriteAccounts(accessPolicy);
     final bool canApprove = canApproveAccounts(accessPolicy);
+    final bool canExport = canExportAccountsWorkspace(accessPolicy);
+    final bool canPrint = canPrintAccountsWorkspace(accessPolicy);
     final AccountsWorkspaceController controller = ref.read(
       accountsWorkspaceControllerProvider.notifier,
     );
     const AccountsDeskSection section = AccountsDeskSection.work;
+    final List<AppListTableColumn<AccountsWorkItem>> columns =
+        accountsColumnsForSection(
+          context,
+          section,
+          ref: ref,
+          accessPolicy: accessPolicy,
+          isSaving: state.isSaving,
+          onNextAction: runAccountsNextAction,
+        );
 
     return AppListTable<AccountsWorkItem>(
       page: state.workItems,
@@ -106,6 +118,19 @@ class _AccountsOpenWorkPanelState extends ConsumerState<AccountsOpenWorkPanel> {
       columnWidthStorageKey: '${accountsTableSettingsKey(section)}_cw',
       columnVisibilityLabel: context.l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: context.l10n.commonTableSettingsTitle,
+      enableExport: true,
+      canExport: canExport,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: AccountsStrings.printAction,
+      onPrint: () => printAccountsListTable<AccountsWorkItem>(
+        ref: ref,
+        context: context,
+        title: AccountsStrings.openWorkLabel,
+        columns: columns,
+        items: state.workItems.items,
+        emptyText: AccountsStrings.openWorkEmpty,
+      ),
       search: AppListTableSearch<AccountsWorkItem>(
         controller: _searchController,
         semanticLabel: AccountsStrings.searchSemantic,
@@ -120,6 +145,7 @@ class _AccountsOpenWorkPanelState extends ConsumerState<AccountsOpenWorkPanel> {
         advancedFilterTitle: context.l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: context.l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: AccountsStrings.clearFilters,
+        advancedFilterCloseLabel: context.l10n.commonCloseActionLabel,
         dateFilterLabel: 'Posted date',
         dateFromLabel: context.l10n.opdDateFromLabel,
         dateToLabel: context.l10n.opdDateToLabel,
@@ -262,14 +288,7 @@ class _AccountsOpenWorkPanelState extends ConsumerState<AccountsOpenWorkPanel> {
         title: AccountsStrings.openWorkEmpty,
         body: '',
       ),
-      columns: accountsColumnsForSection(
-        context,
-        section,
-        ref: ref,
-        accessPolicy: accessPolicy,
-        isSaving: state.isSaving,
-        onNextAction: runAccountsNextAction,
-      ),
+      columns: columns,
       columnChoices: accountsColumnChoicesForSection(
         context,
         section,

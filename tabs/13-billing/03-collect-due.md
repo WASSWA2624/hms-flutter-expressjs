@@ -5,7 +5,7 @@
 - Label: `billingCollectDue`
 - Tooltip: `billingCollectDueTooltip`
 - Icon: `Icons.payments_outlined`
-- Count source: `summary.pendingPayment` (overview overdue count exists but is **not** a separate tab badge)
+- Count source: `billingQueueTabCount` → `summary.pendingPayment` / filtered page total when active + narrowed (overview overdue count exists but is **not** a separate tab badge)
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `collect` (aliases `pending-payment`, `awaiting-payment`)
 - Overdue: filter only — `?section=collect&overdue=yes` or slug `overdue` normalizes to Collect + `overdueOnly`
@@ -15,10 +15,11 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Filters → Settings → Close day → Close shift**
+Order: **Filters → Settings → Export → Print → Close day → Close shift**
 
+- Filters: `commonFiltersActionLabel`; Clear `opdClearFiltersAction`; Close `commonCloseActionLabel`
 - Settings key: `billing_collect_v1` (also used for overdue filter persistence)
-- Export / table Print: **absent**
+- Export / table Print: present; omit without ∩ `evidence:export`
 - Context: Close day (`billingCloseDay`), Close shift (`billingCloseShift`) — omitted without write ∩
 - Charge / Issue all: **not mounted**
 
@@ -64,8 +65,8 @@ Payment → optional receipt print; refund/adjust similarity; deep link `action=
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
-- Detail invoice Print/Download; post-payment receipt (`printBillingReceipt`)
+- Table Print: `commonPrintActionLabel` → preview-first `printBillingWorkspaceList`
+- Detail invoice `Print` / Download; post-payment receipt (`printBillingReceipt`)
 
 ## 10. Loading / empty / error / success
 
@@ -78,7 +79,8 @@ Payment → optional receipt print; refund/adjust similarity; deep link `action=
 | --- | --- |
 | Tab / chrome | awaiting-payment / entry read maps |
 | Overdue filter atoms | `BillingOverdueAtomPermissions` (filter, not tab) |
+| List Export / table Print | ∩ `evidence:export` (`BillingAwaitingPaymentAtomPermissions.export` / `.print`) |
 | Close day / shift / Pay / Refund / Adjust / Void / Send | write ∩ |
 | Approve nested | approve ∩ |
-| Ledger / Print | read / document ∩ |
+| Ledger / Detail Print | read / document ∩ |
 | Claims strip | claims pending tab |

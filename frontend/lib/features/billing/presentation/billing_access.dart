@@ -165,6 +165,23 @@ bool canReadBillingDocument(AppAccessPolicy policy) {
   return canReadBilling(policy);
 }
 
+/// Worklist Export / Print — ∩ `evidence:export` (omit when unauthorized).
+const AccessRequirement billingWorkspaceExportRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.evidenceExport],
+);
+
+/// Alias — list Print uses the same desk export gate.
+const AccessRequirement billingWorkspacePrintRequirement =
+    billingWorkspaceExportRequirement;
+
+bool canExportBillingWorkspace(AppAccessPolicy policy) {
+  return billingWorkspaceExportRequirement.isAllowed(policy);
+}
+
+bool canPrintBillingWorkspace(AppAccessPolicy policy) {
+  return billingWorkspacePrintRequirement.isAllowed(policy);
+}
+
 /// View ledger — invoices use billing read; claim / pre-auth use nested claims
 /// read (`billing:read` ∩ `insurance-claims`) per Claims pending inventory.
 bool canViewBillingLedger(AppAccessPolicy policy, BillingWorkItem item) {
@@ -227,6 +244,7 @@ bool billingQueueShowsNextActionColumn(
 /// | Claim / pre-auth mutations | nested write | claims write ([nestedWrite]) |
 /// | Claims pending tab (strip) | navigate | claims pending tab |
 /// | View ledger / Print / Download | read / export | document read ∩ |
+/// | List Export / table Print | export | ∩ `evidence:export` ([export]/[print]) |
 /// | Route entry (deep link) | navigate | read ∪ write ([routeEntry]) |
 ///
 /// Matrix nested cross-module rows are _(n/a)_; Claims pending strip still uses
@@ -253,6 +271,8 @@ abstract final class BillingAllAtomPermissions {
   static const AccessRequirement claimsPendingTab =
       billingClaimsPendingTabRequirement;
   static const AccessRequirement document = billingWorkspaceEntryRequirement;
+  static const AccessRequirement export = billingWorkspaceExportRequirement;
+  static const AccessRequirement print = billingWorkspacePrintRequirement;
   static const AccessRequirement entry = billingWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = billingWorkspaceEntryRequirement;
 }
@@ -297,6 +317,8 @@ abstract final class BillingApprovalRequiredAtomPermissions {
   static const AccessRequirement nestedWrite = billingClaimsWriteRequirement;
   static const AccessRequirement nestedRead = billingClaimsNestedReadRequirement;
   static const AccessRequirement document = billingWorkspaceReadRequirement;
+  static const AccessRequirement export = billingWorkspaceExportRequirement;
+  static const AccessRequirement print = billingWorkspacePrintRequirement;
   static const AccessRequirement claimsPendingTab =
       billingClaimsPendingTabRequirement;
   static const AccessRequirement routeEntry = billingWorkspaceEntryRequirement;
@@ -346,6 +368,8 @@ abstract final class BillingAwaitingPaymentAtomPermissions {
   static const AccessRequirement nestedWrite = billingClaimsWriteRequirement;
   static const AccessRequirement nestedRead = billingClaimsNestedReadRequirement;
   static const AccessRequirement document = billingWorkspaceReadRequirement;
+  static const AccessRequirement export = billingWorkspaceExportRequirement;
+  static const AccessRequirement print = billingWorkspacePrintRequirement;
   static const AccessRequirement claimsPendingTab =
       billingClaimsPendingTabRequirement;
   static const AccessRequirement routeEntry = billingWorkspaceEntryRequirement;
@@ -395,6 +419,8 @@ abstract final class BillingOverdueAtomPermissions {
   static const AccessRequirement nestedWrite = billingClaimsWriteRequirement;
   static const AccessRequirement nestedRead = billingClaimsNestedReadRequirement;
   static const AccessRequirement document = billingWorkspaceReadRequirement;
+  static const AccessRequirement export = billingWorkspaceExportRequirement;
+  static const AccessRequirement print = billingWorkspacePrintRequirement;
   static const AccessRequirement claimsPendingTab =
       billingClaimsPendingTabRequirement;
   static const AccessRequirement routeEntry = billingWorkspaceEntryRequirement;
@@ -439,6 +465,8 @@ abstract final class BillingNeedsIssueAtomPermissions {
   static const AccessRequirement nestedWrite = billingClaimsWriteRequirement;
   static const AccessRequirement nestedRead = billingClaimsNestedReadRequirement;
   static const AccessRequirement document = billingWorkspaceEntryRequirement;
+  static const AccessRequirement export = billingWorkspaceExportRequirement;
+  static const AccessRequirement print = billingWorkspacePrintRequirement;
   static const AccessRequirement claimsPendingTab =
       billingClaimsPendingTabRequirement;
   static const AccessRequirement routeEntry = billingWorkspaceEntryRequirement;
@@ -493,6 +521,8 @@ abstract final class BillingClaimsPendingAtomPermissions {
   static const AccessRequirement nestedWrite = billingClaimsWriteRequirement;
   static const AccessRequirement nestedRead = billingClaimsNestedReadRequirement;
   static const AccessRequirement document = billingWorkspaceReadRequirement;
+  static const AccessRequirement export = billingWorkspaceExportRequirement;
+  static const AccessRequirement print = billingWorkspacePrintRequirement;
   static const AccessRequirement routeEntry = billingWorkspaceEntryRequirement;
 }
 
@@ -525,7 +555,8 @@ bool canWriteBillingPriceBook(AppAccessPolicy policy) {
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
 /// | Price book tab | navigate | read ∩ `billing:read` ∩ `billing-payments` |
-/// | Search / filters / columns / export | read chrome | tab read ∩ |
+/// | Search / filters / columns | read chrome | tab read ∩ |
+/// | List Export / table Print | export | ∩ `evidence:export` ([export]/[print]) |
 /// | Empty / error / retry | read chrome | tab read ∩ |
 /// | Row select → edit dialog | read / update | tab read ∩; mutations need write |
 /// | Trailing Add | create | pricing / admin write ∩ |
@@ -539,5 +570,7 @@ abstract final class BillingPriceBookAtomPermissions {
   static const AccessRequirement update = billingPriceBookWriteRequirement;
   static const AccessRequirement delete = billingPriceBookWriteRequirement;
   static const AccessRequirement write = billingPriceBookWriteRequirement;
+  static const AccessRequirement export = billingWorkspaceExportRequirement;
+  static const AccessRequirement print = billingWorkspacePrintRequirement;
   static const AccessRequirement routeEntry = billingWorkspaceEntryRequirement;
 }

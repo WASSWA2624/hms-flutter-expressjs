@@ -464,7 +464,7 @@ String _nextActionLabel(BuildContext context, RadiologyOrder order) {
     return l10n.radiologyNextActionConfirmBilling;
   }
   if (order.hasFinalResult || order.normalizedStatus == 'COMPLETED') {
-    return l10n.radiologyViewReportAction;
+    return l10n.commonPrintActionLabel;
   }
   if (order.normalizedStatus == 'AWAITING_REPORT' ||
       order.hasDraftResult ||

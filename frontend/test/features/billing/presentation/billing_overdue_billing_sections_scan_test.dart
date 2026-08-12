@@ -216,12 +216,11 @@ Future<void> _waitForWorkItem(WidgetTester tester) async {
 }
 
 Future<void> _submitReceivePayment(WidgetTester tester) async {
-  final Finder filledSubmit =
-      find.widgetWithText(FilledButton, 'Receive payment');
+  final Finder filledSubmit = find.widgetWithText(FilledButton, 'Pay');
   if (filledSubmit.evaluate().isNotEmpty) {
     await tester.tap(filledSubmit.last);
   } else {
-    await tester.tap(find.text('Receive payment').last);
+    await tester.tap(find.text('Pay').last);
   }
   await tester.pumpAndSettle();
 }
@@ -353,10 +352,10 @@ void main() {
         );
         await _waitForWorkItem(tester);
 
-        await tester.tap(find.byTooltip('Receive payment').first);
+        await tester.tap(find.byTooltip('Receive payment toward the balance due').first);
         await tester.pumpAndSettle();
 
-        expect(find.text('Receive payment'), findsWidgets);
+        expect(find.text('Pay'), findsWidgets);
         await _submitReceivePayment(tester);
 
         verify(
@@ -403,7 +402,7 @@ void main() {
         );
         await _waitForWorkItem(tester);
 
-        expect(find.byTooltip('Receive payment'), findsNothing);
+        expect(find.byTooltip('Receive payment toward the balance due'), findsNothing);
         verifyNever(
           () => repository.receivePayment(
             any(),
@@ -464,7 +463,7 @@ void main() {
         );
         await _waitForWorkItem(tester);
 
-        await tester.tap(find.byTooltip('Receive payment').first);
+        await tester.tap(find.byTooltip('Receive payment toward the balance due').first);
         await tester.pumpAndSettle();
 
         expect(find.byType(AppDialog), findsWidgets);

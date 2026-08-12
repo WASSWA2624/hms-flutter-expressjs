@@ -15,7 +15,7 @@
   - Loading: `radiologyLoadingTitle` / `radiologyLoadingBody`
   - Retry → controller `refresh()`
   - `keepPreviousDataDuringRefresh: true`
-- Body: `ResponsivePage` + `AppTabStrip` + order board `AppListTable<RadiologyOrder>` (or **reused** `FollowUpWorklistPanel`)
+- Body: `ResponsivePage` (`scrollable: false`) + `AppTabStrip` + order board `AppListTable<RadiologyOrder>` (or **reused** `FollowUpWorklistPanel`)
 - In-desk URL: `syncWorkspaceLocation` with `?section=<query>`
 - Deep-link: section (+ order/patient deep-open handled in page content)
 
@@ -23,29 +23,27 @@
 
 - Component: `AppTabStrip` / `AppTabItem` (standard variant)
 - Tabs omitted when unauthorized (`radiologySectionTabRequirement` / `radiologyAllowedSections`) — not disabled
-- Counts:
-  - Active non–follow-ups tab: `state.orders.totalItemCount` (table footer mirror)
-  - Sibling worklist / reporting / all: `workloadCount` / `reportingCount` / `historyCount`
-  - Follow-ups: `followUpTabCountProvider(FollowUpWorklistScope())`
-- Count tones (`AppTabCountTone`): `warning` for Worklist + Reporting; `info` for All orders + Follow-ups
+- Sibling-count model: dedicated unfiltered `RadiologySummary` scope totals (`workloadCount` / `reportingCount` / `historyCount`); active tab with search/date/advanced filters uses `orders.totalItemCount` (`radiologySectionTabCount`)
+- Follow-ups: `followUpTabCountProvider(FollowUpWorklistScope())`, overridden by `onNarrowedCountChanged` when Filters/search narrow the panel
+- Count tones (`AppTabCountTone` via `radiologySectionCountTone`): `warning` for Worklist + Reporting; `info` for All orders + Follow-ups
 - Icons: pending_actions / edit_note / assignment / phone_callback
 
 ## Table toolbar (order-board pattern)
 
-Order on search bar: **Filters → Settings → (no Export/Print on table) → Request imaging**
+Order on search bar: **Filters → Settings → Export → Print → Request imaging**
 
 | Control | Label / key | Notes |
 | --- | --- | --- |
 | Search | `radiologySearchLabel` / `radiologySearchHint` | mic via `AppSearchBar` default |
 | Clear / reset filters | `radiologyClearFiltersAction` | advanced filter reset |
-| Filters | `commonFiltersActionLabel` → `commonAdvancedFiltersTitle` | Apply `opdApplyFiltersAction` |
-| Settings | `commonTableSettings*` | Apply `radiologyApplyColumnsAction`, Reset `radiologyResetColumnsAction` |
-| Export | **absent** on desk `AppListTable` | not mounted (`enableExport` unused) |
-| Print (table) | **absent** on desk table | print lives on detail / reported shortcut |
+| Filters | `commonFiltersActionLabel` → `commonAdvancedFiltersTitle` | Apply `opdApplyFiltersAction`; Close `commonCloseActionLabel` |
+| Settings | `commonTableSettings*` | Apply `radiologyApplyColumnsAction`, Reset `radiologyResetColumnsAction`, Close `commonCloseActionLabel` |
+| Export | `commonTableExportActionLabel` | gated ∩ `evidence:export` (`canExportRadiologyWorkspace`); omitted when denied |
+| Print (table) | `commonPrintActionLabel` → `Print` | preview-first via `printRadiologyWorkspaceList` / `PrintDocumentTemplates.registry`; gated same as Export |
 | Request imaging | `radiologyRequestImagingAction` | omitted without strip create ∩ `radiology:write`; **not mounted** on Follow-ups |
 
 Column visibility storage: `radiology_${section.name}_${view.name}` / widths `radiology_cw_…`.  
-Default view query: `RadiologyWorkbenchView.patients` (orders view columns exist; **no strip toggle currently mounted** — see convention gaps).
+Default view query: `RadiologyWorkbenchView.patients` (orders view columns exist; **no strip toggle currently mounted**).
 
 ## Shared strip / dialogs
 
@@ -65,17 +63,21 @@ Default view query: `RadiologyWorkbenchView.patients` (orders view columns exist
 
 - `_openRadiologyDetailDialog` → `AppDialog` (`radiologyDetailTitle`) + `_RadiologyOrderDetail`
 - Shortcuts: reported → print dialog; waiting-for-report + write → report composer
-- Procedure workbench: Mark done / Report / Print / Undo / Cancel (Assign + Start imaging **intentionally omitted**)
+- Procedure workbench: Mark done / Report / Print / Undo / Cancel (Assign + Start imaging **intentionally omitted** — tested product exception)
 - Billing gate column/filter/payment: ∩ `billing:read` (`radiologyBillingHoldReadRequirement`)
 
 ### Print report — Radiology-owned
 
-- `_showRadiologyPrintDialog` / `_RadiologyPrintDialog` → `PrintDocumentTemplates.clinicalResult`
+- `_showRadiologyPrintDialog` / `_RadiologyPrintDialog` → `PrintDocumentTemplates.clinicalResult` + embedded preview
+- Dialog title: `printPreviewTitle` → `Print preview` (generic)
+- Document title / body identity: `radiologyPrintReportTitle` → `Radiology report`
+- Trigger label: `commonPrintActionLabel` → `Print` (not content-specific)
 - Gate: ∩ `radiology:read` (`radiologyPrintReportRequirement`)
 
 ### Follow-ups — **reused**
 
 - `FollowUpWorklistPanel` with `storageKeyPrefix: 'radiology_follow_ups'`
+- Filters / Export / Print wired like Lab host; Request imaging omitted
 - Read/write: `RadiologyFollowUpsAtomPermissions`
 
 ## Feedback patterns (cross-tab)

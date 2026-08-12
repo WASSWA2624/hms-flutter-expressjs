@@ -3,7 +3,7 @@
 ## Shell entry
 
 - Route: `AppRoutes.claims`
-- Workspace gate: `claimsWorkspaceEntryRequirement` (`RouteAccessCatalog.claimsEntry` — claims read ∪ write ∪ financial approve family)
+- Workspace gate: `claimsWorkspaceEntryRequirement` (`RouteAccessCatalog.claimsEntry` — ∩ `claims:read` + `insurance-claims`)
 - Module: `insurance-claims`
 - If no desk tabs allowed: `SizedBox.shrink()` (no disabled placeholders)
 
@@ -17,21 +17,26 @@
 ## Tab strip
 
 - Tabs omitted when `canViewClaimsDeskSection` fails — not disabled
-- Counts: authorizations pending-scope / active claims scope / settled paid-closed; insurance setup count **0** (no badge pressure)
-- Count tones: `warning` authorizations + activeClaims; `info` settled + insuranceSetup
+- Sibling counts: dedicated unfiltered summary scope totals (`claimsSectionTabCount` / `claims_scope_navigation.dart`)
+- Active queue tab with search / advanced filters: filtered `queue.totalItemCount`
+- Insurance Setup: **count omitted** (`null` — catalog hub, not a worklist)
+- Count tones: `warning` authorizations + activeClaims; `info` settled (+ insuranceSetup when counted)
 - Icons: verified_user / receipt_long / task_alt / business
 - Primary action on strip (not Refresh): Request authorization | Prepare claim — Settled / Insurance Setup primaries **absent**
 
 ## Queue table toolbar (authorizations / active / settled)
 
+Order: **Filters → Settings → Export → Print**
+
 | Control | Notes |
 | --- | --- |
 | Search | `claimsSearchHint` / semantic label |
 | Clear | controller clear search |
-| Filters | **Settled only** (`showAdvancedFilterButton`) |
+| Filters | all queue tabs (`commonFiltersActionLabel`) |
 | Settings | `claims_${section.name}` / `claims_cw_${section.name}` |
-| Export / table Print | **not** on `AppListTable` |
-| Date filter | **disabled** (`enableDateFilter: false`) |
+| Export | ∩ `evidence:export` (`canExportClaimsWorkspace`) — omit when denied |
+| Print | after Export; label `commonPrintActionLabel` (`Print`); preview-first via `printClaimsListTable` |
+| Date filter | **disabled** (justified: `ClaimsQueueQuery` / work-items API have no date range) |
 
 ## Shared dialogs
 
@@ -43,7 +48,8 @@
 | Sync insurer status | Claims-owned (Active Claims detail) |
 | Collect patient share | **reused** Billing receive-payment when invoice collectible |
 | Insurance catalog dialogs | Claims-owned (`claims_insurance_config_dialogs.dart`) |
-| Print statement | `PrintDocumentTemplates.claimStatement` |
+| Detail Print | label `Print`; `PrintDocumentTemplates.claimStatement` (Settled: ∩ `evidence:export`; others: read ∩) |
+| Table Print | `claims_workspace_print_helpers.dart` → `PrintDocumentTemplates.registry` |
 
 ## Feedback
 

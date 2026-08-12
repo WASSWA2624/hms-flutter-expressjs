@@ -31,6 +31,7 @@ import 'package:hosspi_hms/features/billing/presentation/widgets/billing_receive
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_refund_similarity.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_refund_similarity_dialog.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_support.dart';
+import 'package:hosspi_hms/features/billing/presentation/widgets/billing_workspace_print_helpers.dart';
 import 'package:hosspi_hms/features/billing/presentation/widgets/billing_workspace_table_support.dart';
 import 'package:hosspi_hms/features/billing/data/repositories/billing_repository_impl.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -378,7 +379,12 @@ class _BillingWorkspaceContentState
                     icon: billingQueueIcon(queue),
                     label: billingQueueLabel(context, queue),
                     tooltip: billingQueueTooltip(context, queue),
-                    count: state.overview.summary.countFor(queue),
+                    count: billingQueueTabCount(
+                      state,
+                      queue,
+                      activeQueue: _priceBook ? null : _section,
+                      priceBookActive: _priceBook,
+                    ),
                     countTone: billingQueueCountTone(queue),
                   ),
                 if (showPriceBook)
@@ -388,6 +394,7 @@ class _BillingWorkspaceContentState
                     label: context.l10n.billingPriceBookTab,
                     tooltip: context.l10n.billingPriceBookTooltip,
                     count: ref.watch(billingPriceBookActiveCountProvider),
+                    countTone: billingPriceBookCountTone(),
                   ),
               ],
               selectedId: _priceBook ? 'prices' : _section.name,
@@ -445,6 +452,30 @@ class _BillingQueuePanel extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
     final controller = ref.read(billingWorkspaceControllerProvider.notifier);
+    final bool canExport = canExportBillingWorkspace(accessPolicy);
+    final bool canPrint = canPrintBillingWorkspace(accessPolicy);
+    final List<AppListTableColumn<BillingWorkItem>> columns =
+        billingColumnsForQueue(
+          context,
+          l10n,
+          activeQueue,
+          ref: ref,
+          accessPolicy: accessPolicy,
+          canWrite: canWrite,
+          isSaving: state.isSaving,
+          onNextAction: _runBillingNextAction,
+        );
+    final List<AppListTableColumn<BillingWorkItem>> columnChoices =
+        billingColumnChoicesForQueue(
+          context,
+          l10n,
+          activeQueue,
+          ref: ref,
+          accessPolicy: accessPolicy,
+          canWrite: canWrite,
+          isSaving: state.isSaving,
+          onNextAction: _runBillingNextAction,
+        );
 
     final AppListTable<BillingWorkItem> table = AppListTable<BillingWorkItem>(
       page: state.workItems,
@@ -456,6 +487,40 @@ class _BillingQueuePanel extends ConsumerWidget {
       columnWidthStorageKey: '${billingTableSettingsKey(activeQueue)}_cw',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+      enableExport: true,
+      canExport: canExport,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () => _printBillingWorklist(
+        context,
+        ref,
+        rows: state.workItems.items,
+        columns: <AppListTableColumn<BillingWorkItem>>[
+          ...columns,
+          ...columnChoices,
+        ],
+        queue: activeQueue,
+        l10n: l10n,
+      ),
+      exportConfig: AppListTableExportConfig<BillingWorkItem>(
+        fileNameStem: 'billing_${activeQueue.sectionQueryValue}',
+        dateOf: (BillingWorkItem item) => item.timelineAt,
+        sheetName: billingQueueLabel(context, activeQueue),
+      ),
       search: AppListTableSearch<BillingWorkItem>(
         controller: searchController,
         semanticLabel: l10n.billingSearchSemanticLabel,
@@ -466,10 +531,11 @@ class _BillingQueuePanel extends ConsumerWidget {
         onSubmitted: controller.applySearch,
         onClear: () => controller.applySearch(''),
         showAdvancedFilterButton: true,
-        advancedFilterButtonLabel: l10n.billingFiltersLabel,
+        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
         advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-        advancedFilterResetLabel: l10n.billingClearFilters,
+        advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         dateFilterLabel: l10n.billingIssuedDateFilterLabel,
         dateFromLabel: l10n.opdDateFromLabel,
         dateToLabel: l10n.opdDateToLabel,
@@ -531,26 +597,8 @@ class _BillingQueuePanel extends ConsumerWidget {
           body: shortEmptyCopy ? '' : emptyBody,
         );
       },
-      columns: billingColumnsForQueue(
-        context,
-        l10n,
-        activeQueue,
-        ref: ref,
-        accessPolicy: accessPolicy,
-        canWrite: canWrite,
-        isSaving: state.isSaving,
-        onNextAction: _runBillingNextAction,
-      ),
-      columnChoices: billingColumnChoicesForQueue(
-        context,
-        l10n,
-        activeQueue,
-        ref: ref,
-        accessPolicy: accessPolicy,
-        canWrite: canWrite,
-        isSaving: state.isSaving,
-        onNextAction: _runBillingNextAction,
-      ),
+      columns: columns,
+      columnChoices: columnChoices,
       mobileItemBuilder: (BuildContext context, BillingWorkItem item) {
         return AppListTableMobileItem(
           title: billingPatientName(context, item),
@@ -571,6 +619,57 @@ class _BillingQueuePanel extends ConsumerWidget {
 
     return table;
   }
+}
+
+Future<void> _printBillingWorklist(
+  BuildContext context,
+  WidgetRef ref, {
+  required List<BillingWorkItem> rows,
+  required List<AppListTableColumn<BillingWorkItem>> columns,
+  required BillingQueueType queue,
+  required AppLocalizations l10n,
+}) async {
+  final List<AppListTableColumn<BillingWorkItem>> exportColumns = columns
+      .where(
+        (AppListTableColumn<BillingWorkItem> column) => column.includesInExport,
+      )
+      .toList(growable: false);
+  final List<BillingWorkspacePrintColumn> printColumns =
+      <BillingWorkspacePrintColumn>[
+        for (final AppListTableColumn<BillingWorkItem> column in exportColumns)
+          BillingWorkspacePrintColumn(id: column.key, label: column.label),
+      ];
+  final List<Map<String, String>> printRows = <Map<String, String>>[
+    for (final BillingWorkItem item in rows)
+      <String, String>{
+        for (final AppListTableColumn<BillingWorkItem> column in exportColumns)
+          column.key: _billingWorklistPrintCellValue(context, item, column),
+      },
+  ];
+  await printBillingWorkspaceList(
+    ref: ref,
+    context: context,
+    title: billingQueueLabel(context, queue),
+    columns: printColumns,
+    rows: printRows,
+    emptyText: l10n.billingEmptyTitle,
+  );
+}
+
+String _billingWorklistPrintCellValue(
+  BuildContext context,
+  BillingWorkItem item,
+  AppListTableColumn<BillingWorkItem> column,
+) {
+  final Object? resolved = appListTableResolveSortKey<BillingWorkItem>(
+    column: column,
+    item: item,
+    context: context,
+  );
+  if (resolved == null) {
+    return '';
+  }
+  return resolved.toString();
 }
 
 Future<void> _runBillingNextAction(
@@ -763,12 +862,12 @@ class _BillingLiveDetailDialogState
             ? () => showBillingLedgerDialog(context, ref, item: item)
             : null,
       ),
-      // Inventory: invoice Print/Download; claim/pre-auth statement;
-      // approval packet — omit when unauthorized (no disabled stubs).
+      // Inventory: invoice Print/Download; claim/pre-auth; approval —
+      // trigger label is Print (printing.mdc); omit when unauthorized.
       actions: <Widget>[
         if (canDocument && item.isInvoice) ...<Widget>[
           AppReportActionButton.print(
-            label: l10n.billingPrintInvoiceAction,
+            label: l10n.commonPrintActionLabel,
             tooltip: l10n.billingPrintInvoiceTooltip,
             onPressed: () => printBillingInvoice(
               ref: ref,
@@ -785,7 +884,7 @@ class _BillingLiveDetailDialogState
         if (canDocument &&
             (item.isClaim || item.isPreAuthorization))
           AppReportActionButton.print(
-            label: l10n.billingPrintClaimAction,
+            label: l10n.commonPrintActionLabel,
             tooltip: l10n.billingPrintClaimTooltip,
             onPressed: () => printBillingClaimOrPreAuth(
               ref: ref,
@@ -795,7 +894,7 @@ class _BillingLiveDetailDialogState
           ),
         if (canDocument && item.isApproval)
           AppReportActionButton.print(
-            label: l10n.billingPrintApprovalAction,
+            label: l10n.commonPrintActionLabel,
             tooltip: l10n.billingPrintApprovalTooltip,
             onPressed: () => printBillingApprovalPacket(
               ref: ref,

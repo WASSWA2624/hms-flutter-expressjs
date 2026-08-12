@@ -241,6 +241,12 @@ void _stubPharmacyRepository(
 Finder _tab(String label) =>
     find.descendant(of: find.byType(AppTabStrip), matching: find.text(label));
 
+AppListTable<PharmacyOrder> _allOrdersTable(WidgetTester tester) {
+  return tester.widget<AppListTable<PharmacyOrder>>(
+    find.byType(AppListTable<PharmacyOrder>),
+  );
+}
+
 /// Catalog browse is now the "Catalog and stock" desk tab (visible chip or
 /// overflow entry); assert against the strip's tab model to stay overflow-safe.
 Finder _catalogAction() => find.byWidgetPredicate(
@@ -388,6 +394,20 @@ void main() {
       );
       expect(
         identical(
+          PharmacyAllOrdersAtomPermissions.export,
+          pharmacyWorkspaceExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PharmacyAllOrdersAtomPermissions.print,
+          pharmacyWorkspacePrintRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           PharmacyAllOrdersAtomPermissions.items,
           pharmacyWorkspaceReadRequirement,
         ),
@@ -445,6 +465,8 @@ void main() {
       expect(PharmacyAllOrdersAtomPermissions.recordPayment, isNotNull);
       expect(PharmacyAllOrdersAtomPermissions.billingStatus, isNotNull);
       expect(PharmacyAllOrdersAtomPermissions.printInstructions, isNotNull);
+      expect(PharmacyAllOrdersAtomPermissions.export, isNotNull);
+      expect(PharmacyAllOrdersAtomPermissions.print, isNotNull);
       expect(PharmacyAllOrdersAtomPermissions.controlledDrugAudit, isNotNull);
       expect(PharmacyAllOrdersAtomPermissions.catalogBrowse, isNotNull);
       expect(PharmacyAllOrdersAtomPermissions.catalogWrite, isNotNull);
@@ -723,9 +745,96 @@ void main() {
             of: dialog,
             matching: find.text('Print'),
           ),
-          findsOneWidget,
+          findsAtLeastNWidgets(1),
         );
         expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'All orders toolbar: Filters/Settings/Close, ≤5 columns, info tone, Export/Print gate',
+      (WidgetTester tester) async {
+        await _pumpAllOrdersTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.pharmacyRead,
+              AppPermissions.pharmacyWrite,
+            },
+          ),
+        );
+
+        final AppListTable<PharmacyOrder> table = _allOrdersTable(tester);
+        expect(table.columnVisibilityLabel, 'Settings');
+        expect(table.columnVisibilityCloseLabel, 'Close');
+        expect(table.columnVisibilityApplyLabel, 'Apply columns');
+        expect(table.columnVisibilityResetLabel, 'Reset columns');
+        expect(table.search?.advancedFilterButtonLabel, 'Filters');
+        expect(table.search?.advancedFilterTitle, 'Advanced filters');
+        expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
+        expect(table.search?.advancedFilterResetLabel, 'Clear filters');
+        expect(table.search?.advancedFilterCloseLabel, 'Close');
+        expect(table.enablePrint, isTrue);
+        expect(table.canExport, isFalse);
+        expect(table.canPrint, isFalse);
+        expect(table.printLabel, 'Print');
+        expect(table.columns.length, 5);
+        expect(
+          table.columns.any(
+            (AppListTableColumn<PharmacyOrder> c) => c.id == 'items',
+          ),
+          isTrue,
+        );
+        expect(
+          table.columns.any(
+            (AppListTableColumn<PharmacyOrder> c) =>
+                c.id == 'next_action' && c.alwaysVisible,
+          ),
+          isTrue,
+        );
+        expect(table.columnChoices, isNotEmpty);
+        expect(table.columnVisibilityStorageKey, 'pharmacy_allOrders');
+
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem allOrders = strip.tabs.firstWhere(
+          (AppTabItem tab) => tab.label == 'All orders',
+        );
+        expect(allOrders.countTone, AppTabCountTone.info);
+        expect(allOrders.count, isNotNull);
+
+        final List<AppSearchBarAction> trailing =
+            table.search?.trailingActions ?? const <AppSearchBarAction>[];
+        expect(trailing.last.label, 'Walk-in order');
+        expect(find.byTooltip('Export'), findsNothing);
+        expect(find.byTooltip('Print'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'All orders Export/Print present when evidence:export granted',
+      (WidgetTester tester) async {
+        await _pumpAllOrdersTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.pharmacyRead,
+              AppPermissions.pharmacyWrite,
+              AppPermissions.evidenceExport,
+            },
+          ),
+        );
+
+        final AppListTable<PharmacyOrder> table = _allOrdersTable(tester);
+        expect(table.canExport, isTrue);
+        expect(table.canPrint, isTrue);
+        expect(table.enablePrint, isTrue);
+        expect(table.printLabel, 'Print');
+        expect(find.byTooltip('Export'), findsOneWidget);
+        expect(find.byTooltip('Print'), findsOneWidget);
       },
     );
 
@@ -765,7 +874,7 @@ void main() {
             of: dialog,
             matching: find.text('Print'),
           ),
-          findsOneWidget,
+          findsAtLeastNWidgets(1),
         );
         expect(find.textContaining('no access'), findsNothing);
       },
@@ -912,23 +1021,25 @@ void main() {
         await tester.tap(_actionLabel('Dispense').first);
         await tester.pumpAndSettle();
 
-        expect(find.text('Prepare dispense'), findsAtLeastNWidgets(1));
+        final Finder dialog = find.byType(AppDialog);
+        expect(dialog, findsOneWidget);
+        expect(
+          find.descendant(of: dialog, matching: find.text('Dispense')),
+          findsAtLeastNWidgets(1),
+        );
 
         final Finder qtyField = find.descendant(
-          of: find.byType(AppDialog),
+          of: dialog,
           matching: find.byType(TextField),
         );
-        // Quantity is the last text field in the dispense form.
+        // Quantity defaults to 0 ("do not dispense"); submit must stay open.
         await tester.enterText(qtyField.last, '0');
         await tester.tap(
-          find.descendant(
-            of: find.byType(AppDialog),
-            matching: find.text('Prepare dispense'),
-          ),
+          find.descendant(of: dialog, matching: _actionLabel('Dispense')),
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Prepare dispense'), findsAtLeastNWidgets(1));
+        expect(find.byType(AppDialog), findsOneWidget);
         verifyNever(
           () => repository.prepareDispense(
             orderId: any(named: 'orderId'),
@@ -958,13 +1069,16 @@ void main() {
         await tester.tap(_actionLabel('Dispense').first);
         await tester.pumpAndSettle();
 
-        expect(find.text('Prepare dispense'), findsAtLeastNWidgets(1));
+        final Finder dialog = find.byType(AppDialog);
+        expect(dialog, findsOneWidget);
 
+        final Finder qtyField = find.descendant(
+          of: dialog,
+          matching: find.byType(TextField),
+        );
+        await tester.enterText(qtyField.last, '24');
         await tester.tap(
-          find.descendant(
-            of: find.byType(AppDialog),
-            matching: find.text('Prepare dispense'),
-          ),
+          find.descendant(of: dialog, matching: _actionLabel('Dispense')),
         );
         await tester.pumpAndSettle();
 

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
@@ -310,9 +311,10 @@ class _BillingPriceBookPanelState extends ConsumerState<BillingPriceBookPanel> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final bool canWrite = canWriteBillingPriceBook(
-      ref.watch(appAccessPolicyProvider),
-    );
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final bool canWrite = canWriteBillingPriceBook(accessPolicy);
+    final bool canExport = canExportBillingWorkspace(accessPolicy);
+    final bool canPrint = canPrintBillingWorkspace(accessPolicy);
 
     return AppListTable<BillingPriceBookEntry>(
       page: _page,
@@ -325,6 +327,30 @@ class _BillingPriceBookPanelState extends ConsumerState<BillingPriceBookPanel> {
       columnWidthStorageKey: 'billing_prices_cw_v1',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+      enableExport: true,
+      canExport: canExport,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: _printList,
+      exportConfig: AppListTableExportConfig<BillingPriceBookEntry>(
+        fileNameStem: 'billing_price_book',
+        dateOf: (BillingPriceBookEntry item) => item.effectiveFrom,
+        sheetName: l10n.billingPriceBookTab,
+      ),
       onRowSelected: canWrite
           ? (BillingPriceBookEntry item) =>
                 unawaited(_openCreateOrEdit(editing: item))
@@ -365,7 +391,8 @@ class _BillingPriceBookPanelState extends ConsumerState<BillingPriceBookPanel> {
         advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
         advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-        advancedFilterResetLabel: l10n.billingClearFilters,
+        advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         allFieldsLabel: l10n.opdAllFieldsFilterLabel,
         textFilters: <AppSearchBarTextFilter>[
           AppSearchBarTextFilter(
@@ -462,11 +489,6 @@ class _BillingPriceBookPanelState extends ConsumerState<BillingPriceBookPanel> {
           unawaited(_reload());
         },
         trailingActions: <AppSearchBarAction>[
-          AppSearchBarAction(
-            label: l10n.billingPriceBookPrintAction,
-            icon: Icons.print_outlined,
-            onPressed: () => unawaited(_printList()),
-          ),
           if (canWrite)
             AppSearchBarAction(
               label: l10n.commonAddActionLabel,

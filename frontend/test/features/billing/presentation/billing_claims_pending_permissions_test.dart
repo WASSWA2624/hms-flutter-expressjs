@@ -258,6 +258,14 @@ void main() {
         isTrue,
       );
       expect(
+        BillingClaimsPendingAtomPermissions.export.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.print.isAllowed(reader),
+        isFalse,
+      );
+      expect(
         BillingClaimsPendingAtomPermissions.claimWrite.isAllowed(reader),
         isFalse,
       );
@@ -302,14 +310,29 @@ void main() {
       );
       expect(find.textContaining('no access'), findsNothing);
 
+      final AppListTable<BillingWorkItem> table = tester
+          .widget<AppListTable<BillingWorkItem>>(
+            find.byType(AppListTable<BillingWorkItem>),
+          );
+      expect(table.enablePrint, isTrue);
+      expect(table.canExport, isFalse);
+      expect(table.canPrint, isFalse);
+
       await tester.tap(find.text('Cara Claim'));
       await tester.pumpAndSettle();
 
       expect(find.text('Submit claim'), findsNothing);
       expect(find.text('Record insurer response'), findsNothing);
       expect(find.text('View ledger'), findsOneWidget);
-      expect(find.text('Print invoice'), findsNothing);
-      expect(find.text('Print statement'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+      expect(
+        find.byTooltip('Print claim or pre-authorization statement'),
+        findsOneWidget,
+      );
+      expect(
+        find.byTooltip('Print invoice with line items and payments'),
+        findsNothing,
+      );
       expect(find.byTooltip('Download invoice PDF'), findsNothing);
     },
   );
@@ -364,6 +387,30 @@ void main() {
       expect(BillingClaimsPendingAtomPermissions.preAuth.isAllowed(writer), isTrue);
       expect(BillingClaimsPendingAtomPermissions.close.isAllowed(writer), isTrue);
       expect(BillingClaimsPendingAtomPermissions.delete.isAllowed(writer), isTrue);
+      expect(
+        BillingClaimsPendingAtomPermissions.export.isAllowed(writer),
+        isFalse,
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.print.isAllowed(writer),
+        isFalse,
+      );
+
+      final AppAccessPolicy withExport = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+          AppPermissions.evidenceExport,
+        },
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.export.isAllowed(withExport),
+        isTrue,
+      );
+      expect(
+        BillingClaimsPendingAtomPermissions.print.isAllowed(withExport),
+        isTrue,
+      );
 
       await _pumpClaimsPendingTab(
         tester,
@@ -381,8 +428,15 @@ void main() {
 
       expect(find.text('Submit claim'), findsWidgets);
       expect(find.text('View ledger'), findsOneWidget);
-      expect(find.text('Print invoice'), findsNothing);
-      expect(find.text('Print statement'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+      expect(
+        find.byTooltip('Print claim or pre-authorization statement'),
+        findsOneWidget,
+      );
+      expect(
+        find.byTooltip('Print invoice with line items and payments'),
+        findsNothing,
+      );
       expect(find.text('Finalize financial clearance'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },

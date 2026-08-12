@@ -66,6 +66,24 @@ const AccessRequirement accountsChartWriteRequirement = AccessRequirement(
 const AccessRequirement accountsPayDeepLinkRequirement =
     billingWorkspaceWriteRequirement;
 
+/// Worklist Export / desk list Print — ∩ `evidence:export` (omit when
+/// unauthorized).
+const AccessRequirement accountsWorkspaceExportRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.evidenceExport],
+);
+
+/// Alias — desk list Print uses the same export gate.
+const AccessRequirement accountsWorkspacePrintRequirement =
+    accountsWorkspaceExportRequirement;
+
+bool canExportAccountsWorkspace(AppAccessPolicy policy) {
+  return accountsWorkspaceExportRequirement.isAllowed(policy);
+}
+
+bool canPrintAccountsWorkspace(AppAccessPolicy policy) {
+  return accountsWorkspacePrintRequirement.isAllowed(policy);
+}
+
 AccessRequirement accountsSectionTabRequirement(AccountsDeskSection section) {
   return switch (section) {
     AccountsDeskSection.ledgers => accountsPatientLedgersReadRequirement,
@@ -245,6 +263,10 @@ abstract final class AccountsOpenWorkAtomPermissions {
   static const AccessRequirement tab = accountsWorkspaceEntryRequirement;
   static const AccessRequirement listChrome = accountsWorkspaceEntryRequirement;
   static const AccessRequirement detail = accountsWorkspaceEntryRequirement;
+  static const AccessRequirement filters = accountsWorkspaceEntryRequirement;
+  static const AccessRequirement settings = accountsWorkspaceEntryRequirement;
+  static const AccessRequirement export = accountsWorkspaceExportRequirement;
+  static const AccessRequirement print = accountsWorkspacePrintRequirement;
   static const AccessRequirement journal = accountsWorkspaceWriteRequirement;
   static const AccessRequirement post = accountsWorkspaceWriteRequirement;
   static const AccessRequirement reverse = accountsWorkspaceWriteRequirement;
@@ -261,6 +283,10 @@ abstract final class AccountsToPostAtomPermissions {
   static const AccessRequirement tab = accountsWorkspaceEntryRequirement;
   static const AccessRequirement listChrome = accountsWorkspaceEntryRequirement;
   static const AccessRequirement detail = accountsWorkspaceEntryRequirement;
+  static const AccessRequirement filters = accountsWorkspaceEntryRequirement;
+  static const AccessRequirement settings = accountsWorkspaceEntryRequirement;
+  static const AccessRequirement export = accountsWorkspaceExportRequirement;
+  static const AccessRequirement print = accountsWorkspacePrintRequirement;
   static const AccessRequirement post = accountsWorkspaceWriteRequirement;
   static const AccessRequirement postAll = accountsWorkspaceWriteRequirement;
   static const AccessRequirement write = accountsWorkspaceWriteRequirement;
@@ -272,6 +298,10 @@ abstract final class AccountsNeedApprovalAtomPermissions {
   static const AccessRequirement tab = accountsWorkspaceEntryRequirement;
   static const AccessRequirement listChrome = accountsWorkspaceEntryRequirement;
   static const AccessRequirement detail = accountsWorkspaceEntryRequirement;
+  static const AccessRequirement filters = accountsWorkspaceEntryRequirement;
+  static const AccessRequirement settings = accountsWorkspaceEntryRequirement;
+  static const AccessRequirement export = accountsWorkspaceExportRequirement;
+  static const AccessRequirement print = accountsWorkspacePrintRequirement;
   static const AccessRequirement approve = accountsApprovalDecisionRequirement;
   static const AccessRequirement reject = accountsApprovalDecisionRequirement;
   static const AccessRequirement write = accountsWorkspaceWriteRequirement;
@@ -282,6 +312,10 @@ abstract final class AccountsGeneralLedgerAtomPermissions {
   static const AccessRequirement tab = accountsWorkspaceEntryRequirement;
   static const AccessRequirement listChrome = accountsWorkspaceEntryRequirement;
   static const AccessRequirement detail = accountsWorkspaceEntryRequirement;
+  static const AccessRequirement filters = accountsWorkspaceEntryRequirement;
+  static const AccessRequirement settings = accountsWorkspaceEntryRequirement;
+  static const AccessRequirement export = accountsWorkspaceExportRequirement;
+  static const AccessRequirement print = accountsWorkspacePrintRequirement;
   static const AccessRequirement journal = accountsWorkspaceWriteRequirement;
   static const AccessRequirement write = accountsWorkspaceWriteRequirement;
   static const AccessRequirement routeEntry = accountsWorkspaceEntryRequirement;
@@ -292,6 +326,10 @@ abstract final class AccountsPatientLedgersAtomPermissions {
   static const AccessRequirement listChrome =
       accountsPatientLedgersReadRequirement;
   static const AccessRequirement detail = accountsPatientLedgersReadRequirement;
+  static const AccessRequirement filters = accountsPatientLedgersReadRequirement;
+  static const AccessRequirement settings = accountsPatientLedgersReadRequirement;
+  static const AccessRequirement export = accountsWorkspaceExportRequirement;
+  static const AccessRequirement print = accountsWorkspacePrintRequirement;
   static const AccessRequirement ledger = accountsPatientLedgersReadRequirement;
   static const AccessRequirement pay = accountsPayDeepLinkRequirement;
   static const AccessRequirement routeEntry = accountsWorkspaceEntryRequirement;
@@ -301,6 +339,10 @@ abstract final class AccountsChartAtomPermissions {
   static const AccessRequirement tab = accountsWorkspaceEntryRequirement;
   static const AccessRequirement listChrome = accountsWorkspaceEntryRequirement;
   static const AccessRequirement detail = accountsWorkspaceEntryRequirement;
+  static const AccessRequirement filters = accountsWorkspaceEntryRequirement;
+  static const AccessRequirement settings = accountsWorkspaceEntryRequirement;
+  static const AccessRequirement export = accountsWorkspaceExportRequirement;
+  static const AccessRequirement print = accountsWorkspacePrintRequirement;
   static const AccessRequirement create = accountsChartWriteRequirement;
   static const AccessRequirement update = accountsChartWriteRequirement;
   static const AccessRequirement deactivate = accountsChartWriteRequirement;
@@ -312,6 +354,10 @@ abstract final class AccountsCloseBooksAtomPermissions {
   static const AccessRequirement tab = accountsWorkspaceEntryRequirement;
   static const AccessRequirement listChrome = accountsWorkspaceEntryRequirement;
   static const AccessRequirement detail = accountsWorkspaceEntryRequirement;
+  static const AccessRequirement filters = accountsWorkspaceEntryRequirement;
+  static const AccessRequirement settings = accountsWorkspaceEntryRequirement;
+  static const AccessRequirement export = accountsWorkspaceExportRequirement;
+  static const AccessRequirement print = accountsWorkspacePrintRequirement;
   static const AccessRequirement openPeriod = accountsWorkspaceWriteRequirement;
   static const AccessRequirement closePeriod = accountsWorkspaceWriteRequirement;
   static const AccessRequirement write = accountsWorkspaceWriteRequirement;

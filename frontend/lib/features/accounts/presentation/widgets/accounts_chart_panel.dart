@@ -14,8 +14,8 @@ import 'package:hosspi_hms/features/accounts/domain/entities/accounts_chart_acco
 import 'package:hosspi_hms/features/accounts/presentation/accounts_access.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_chart_dialogs.dart';
-import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_chart_print_helpers.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_workspace_print_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
@@ -151,22 +151,20 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
           _loading = false;
         });
         if (!_hasActiveFilters) {
-          final int activeCount = page.items
-              .where((AccountsChartAccount e) => e.isActive)
-              .length;
+          // Fall back to workspace summary — do not badge from painted page.
           ref
                   .read<StateController<int?>>(
                     accountsChartActiveCountProvider.notifier,
                   )
                   .state =
-              activeCount;
-        } else if (activeFilter == 'true') {
+              null;
+        } else {
           ref
                   .read<StateController<int?>>(
                     accountsChartActiveCountProvider.notifier,
                   )
                   .state =
-              page.totalItemCount ?? filtered.length;
+              filtered.length;
         }
       },
       failure: (AppFailure failure) {
@@ -233,14 +231,6 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
           }
       }
     }
-  }
-
-  Future<void> _printList() async {
-    await printAccountsChartList(
-      ref: ref,
-      context: context,
-      accounts: _page.items,
-    );
   }
 
   Future<void> _deactivate(AccountsChartAccount entry) async {
@@ -313,9 +303,81 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final bool canWrite = canWriteAccountsChart(
-      ref.watch(appAccessPolicyProvider),
-    );
+    final accessPolicy = ref.watch(appAccessPolicyProvider);
+    final bool canWrite = canWriteAccountsChart(accessPolicy);
+    final bool canExport = canExportAccountsWorkspace(accessPolicy);
+    final bool canPrint = canPrintAccountsWorkspace(accessPolicy);
+    final List<AppListTableColumn<AccountsChartAccount>> columns =
+        <AppListTableColumn<AccountsChartAccount>>[
+          AppListTableColumn<AccountsChartAccount>(
+            id: 'account',
+            label: AccountsStrings.accountColumn,
+            alwaysVisible: true,
+            preferredWidth: 220,
+            cellBuilder: (_, AccountsChartAccount item) => Text(
+              item.accountLabel,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            sortComparator: (AccountsChartAccount a, AccountsChartAccount b) =>
+                a.accountLabel.compareTo(b.accountLabel),
+            exportValue: (AccountsChartAccount item) => item.accountLabel,
+          ),
+          AppListTableColumn<AccountsChartAccount>(
+            id: 'type',
+            label: AccountsStrings.typeColumn,
+            preferredWidth: 120,
+            cellBuilder: (_, AccountsChartAccount item) =>
+                Text(accountsChartTypeLabel(item.accountType)),
+            sortComparator: (AccountsChartAccount a, AccountsChartAccount b) =>
+                a.accountType.compareTo(b.accountType),
+            exportValue: (AccountsChartAccount item) =>
+                accountsChartTypeLabel(item.accountType),
+          ),
+          AppListTableColumn<AccountsChartAccount>(
+            id: 'code',
+            label: AccountsStrings.chartCodeColumn,
+            preferredWidth: 120,
+            cellBuilder: (_, AccountsChartAccount item) => Text(
+              accountsPublicLabel(item.code) ?? AccountsStrings.unknownValue,
+            ),
+            sortComparator: (AccountsChartAccount a, AccountsChartAccount b) =>
+                a.code.compareTo(b.code),
+            exportValue: (AccountsChartAccount item) =>
+                accountsPublicLabel(item.code) ?? '',
+          ),
+          AppListTableColumn<AccountsChartAccount>(
+            id: 'status',
+            label: AccountsStrings.statusColumn,
+            preferredWidth: 110,
+            cellBuilder: (_, AccountsChartAccount item) => AppStatusBadge(
+              label: item.isActive
+                  ? AccountsStrings.chartStatusActive
+                  : AccountsStrings.chartStatusInactive,
+              tone: item.isActive
+                  ? AppWorkspaceStatusTone.success
+                  : AppWorkspaceStatusTone.neutral,
+              icon: item.isActive
+                  ? Icons.check_circle_outline
+                  : Icons.pause_circle_outline,
+            ),
+            sortComparator: (AccountsChartAccount a, AccountsChartAccount b) =>
+                (a.isActive == b.isActive) ? 0 : (a.isActive ? -1 : 1),
+            exportValue: (AccountsChartAccount item) => item.isActive
+                ? AccountsStrings.chartStatusActive
+                : AccountsStrings.chartStatusInactive,
+          ),
+          if (canWrite)
+            AppListTableColumn<AccountsChartAccount>(
+              id: 'actions',
+              label: AccountsStrings.chartActionsColumn,
+              alwaysVisible: true,
+              preferredWidth: 200,
+              cellBuilder: (BuildContext context, AccountsChartAccount item) =>
+                  _actionsCell(context, item),
+              exportValue: (_) => '',
+            ),
+        ];
 
     return AppListTable<AccountsChartAccount>(
       page: _page,
@@ -326,6 +388,19 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
       columnWidthStorageKey: accountsChartColumnWidthKey,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      enableExport: true,
+      canExport: canExport,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: AccountsStrings.printAction,
+      onPrint: () => printAccountsListTable<AccountsChartAccount>(
+        ref: ref,
+        context: context,
+        title: AccountsStrings.accountChartLabel,
+        columns: columns,
+        items: _page.items,
+        emptyText: AccountsStrings.chartEmpty,
+      ),
       onRowSelected: canWrite
           ? (AccountsChartAccount item) =>
                 unawaited(_openCreateOrEdit(editing: item))
@@ -443,90 +518,17 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
           setState(() => _filterValue = value);
           unawaited(_reload());
         },
-        trailingActions: <AppSearchBarAction>[
-          AppSearchBarAction(
-            label: AccountsStrings.chartPrintAction,
-            icon: Icons.print_outlined,
-            onPressed: () => unawaited(_printList()),
-          ),
-          if (canWrite)
-            AppSearchBarAction(
-              label: l10n.commonAddActionLabel,
-              icon: Icons.add_outlined,
-              onPressed: () => unawaited(_openCreateOrEdit()),
-            ),
-        ],
+        trailingActions: canWrite
+            ? <AppSearchBarAction>[
+                AppSearchBarAction(
+                  label: l10n.commonAddActionLabel,
+                  icon: Icons.add_outlined,
+                  onPressed: () => unawaited(_openCreateOrEdit()),
+                ),
+              ]
+            : const <AppSearchBarAction>[],
       ),
-      columns: <AppListTableColumn<AccountsChartAccount>>[
-        AppListTableColumn<AccountsChartAccount>(
-          id: 'account',
-          label: AccountsStrings.accountColumn,
-          alwaysVisible: true,
-          preferredWidth: 220,
-          cellBuilder: (_, AccountsChartAccount item) => Text(
-            item.accountLabel,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          sortComparator: (AccountsChartAccount a, AccountsChartAccount b) =>
-              a.accountLabel.compareTo(b.accountLabel),
-          exportValue: (AccountsChartAccount item) => item.accountLabel,
-        ),
-        AppListTableColumn<AccountsChartAccount>(
-          id: 'type',
-          label: AccountsStrings.typeColumn,
-          preferredWidth: 120,
-          cellBuilder: (_, AccountsChartAccount item) =>
-              Text(accountsChartTypeLabel(item.accountType)),
-          sortComparator: (AccountsChartAccount a, AccountsChartAccount b) =>
-              a.accountType.compareTo(b.accountType),
-          exportValue: (AccountsChartAccount item) =>
-              accountsChartTypeLabel(item.accountType),
-        ),
-        AppListTableColumn<AccountsChartAccount>(
-          id: 'code',
-          label: AccountsStrings.chartCodeColumn,
-          preferredWidth: 120,
-          cellBuilder: (_, AccountsChartAccount item) => Text(
-            accountsPublicLabel(item.code) ?? AccountsStrings.unknownValue,
-          ),
-          sortComparator: (AccountsChartAccount a, AccountsChartAccount b) =>
-              a.code.compareTo(b.code),
-          exportValue: (AccountsChartAccount item) =>
-              accountsPublicLabel(item.code) ?? '',
-        ),
-        AppListTableColumn<AccountsChartAccount>(
-          id: 'status',
-          label: AccountsStrings.statusColumn,
-          preferredWidth: 110,
-          cellBuilder: (_, AccountsChartAccount item) => AppStatusBadge(
-            label: item.isActive
-                ? AccountsStrings.chartStatusActive
-                : AccountsStrings.chartStatusInactive,
-            tone: item.isActive
-                ? AppWorkspaceStatusTone.success
-                : AppWorkspaceStatusTone.neutral,
-            icon: item.isActive
-                ? Icons.check_circle_outline
-                : Icons.pause_circle_outline,
-          ),
-          sortComparator: (AccountsChartAccount a, AccountsChartAccount b) =>
-              (a.isActive == b.isActive) ? 0 : (a.isActive ? -1 : 1),
-          exportValue: (AccountsChartAccount item) => item.isActive
-              ? AccountsStrings.chartStatusActive
-              : AccountsStrings.chartStatusInactive,
-        ),
-        if (canWrite)
-          AppListTableColumn<AccountsChartAccount>(
-            id: 'actions',
-            label: AccountsStrings.chartActionsColumn,
-            alwaysVisible: true,
-            preferredWidth: 200,
-            cellBuilder: (BuildContext context, AccountsChartAccount item) =>
-                _actionsCell(context, item),
-            exportValue: (_) => '',
-          ),
-      ],
+      columns: columns,
       columnChoices: <AppListTableColumn<AccountsChartAccount>>[
         AppListTableColumn<AccountsChartAccount>(
           id: 'account',

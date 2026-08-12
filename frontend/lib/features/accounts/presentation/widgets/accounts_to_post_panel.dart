@@ -11,6 +11,7 @@ import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart'
 import 'package:hosspi_hms/features/accounts/presentation/controllers/accounts_workspace_controller.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_work_actions.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_workspace_print_helpers.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_workspace_table_support.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -171,11 +172,25 @@ class _AccountsToPostPanelState extends ConsumerState<AccountsToPostPanel> {
     final bool canWrite = canWriteAccounts(accessPolicy);
     final bool canApprove = canDecideAccountsApproval(accessPolicy);
     final bool canEnter = canEnterAccounts(accessPolicy);
+    final bool canExport = canExportAccountsWorkspace(accessPolicy);
+    final bool canPrint = canPrintAccountsWorkspace(accessPolicy);
     final AccountsWorkspaceController controller = ref.read(
       accountsWorkspaceControllerProvider.notifier,
     );
     const AccountsDeskSection section = AccountsDeskSection.journals;
     final Object? failure = state.lastFailure;
+    final List<AppListTableColumn<AccountsWorkItem>> columns =
+        accountsColumnsForSection(
+          context,
+          section,
+          ref: ref,
+          accessPolicy: accessPolicy,
+          isSaving: state.isSaving,
+          onNextAction:
+              (BuildContext _, WidgetRef actionRef, AccountsWorkItem item) {
+            return runAccountsNextAction(context, actionRef, item);
+          },
+        );
 
     return AppListTable<AccountsWorkItem>(
       page: state.workItems,
@@ -189,6 +204,18 @@ class _AccountsToPostPanelState extends ConsumerState<AccountsToPostPanel> {
       columnVisibilityLabel: context.l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: context.l10n.commonTableSettingsTitle,
       enableExport: true,
+      canExport: canExport,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: AccountsStrings.printAction,
+      onPrint: () => printAccountsListTable<AccountsWorkItem>(
+        ref: ref,
+        context: context,
+        title: AccountsStrings.toPostLabel,
+        columns: columns,
+        items: state.workItems.items,
+        emptyText: AccountsStrings.toPostEmpty,
+      ),
       search: AppListTableSearch<AccountsWorkItem>(
         controller: _searchController,
         semanticLabel: AccountsStrings.searchSemantic,
@@ -332,17 +359,7 @@ class _AccountsToPostPanelState extends ConsumerState<AccountsToPostPanel> {
         title: AccountsStrings.toPostEmpty,
         body: '',
       ),
-      columns: accountsColumnsForSection(
-        context,
-        section,
-        ref: ref,
-        accessPolicy: accessPolicy,
-        isSaving: state.isSaving,
-        onNextAction:
-            (BuildContext _, WidgetRef actionRef, AccountsWorkItem item) {
-          return runAccountsNextAction(context, actionRef, item);
-        },
-      ),
+      columns: columns,
       columnChoices: accountsColumnChoicesForSection(
         context,
         section,

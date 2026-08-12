@@ -106,7 +106,7 @@ bool canReadClaimsDocument(AppAccessPolicy policy) {
   return canReadClaims(policy);
 }
 
-/// Nested cross-module export / print on Settled (matrix ∪):
+/// Nested cross-module export / print on Settled detail (matrix ∪):
 /// `reports:read` | `evidence:export`.
 ///
 /// Inventory says Print is always when detail is open; Settled matrix maps
@@ -119,7 +119,7 @@ const AccessRequirement claimsNestedExportRequirement = AccessRequirement(
   activeModules: <String>[claimsInsuranceClaimsModule],
 );
 
-/// Alias used by Settled atom map / prompts.
+/// Alias used by Settled atom map / prompts (detail Print / nested export).
 const AccessRequirement claimsSettledExportRequirement =
     claimsNestedExportRequirement;
 
@@ -127,13 +127,32 @@ bool canExportClaimsSettledDocument(AppAccessPolicy policy) {
   return claimsNestedExportRequirement.isAllowed(policy);
 }
 
+/// Queue table Export / Print — ∩ `evidence:export` (omit when unauthorized).
+const AccessRequirement claimsWorkspaceExportRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.evidenceExport],
+);
+
+/// Alias — list Print uses the same desk export gate.
+const AccessRequirement claimsWorkspacePrintRequirement =
+    claimsWorkspaceExportRequirement;
+
+bool canExportClaimsWorkspace(AppAccessPolicy policy) {
+  return claimsWorkspaceExportRequirement.isAllowed(policy);
+}
+
+bool canPrintClaimsWorkspace(AppAccessPolicy policy) {
+  return claimsWorkspacePrintRequirement.isAllowed(policy);
+}
+
 /// Print gate for the detail dialog opened from [section].
 ///
 /// Authorizations / Active Claims reuse the tab [document] read ∩ helper.
-/// Settled uses nested export ∪ ([ClaimsSettledAtomPermissions.export]).
+/// Settled detail Print uses ∩ `evidence:export` (same desk gate as table
+/// Export/Print) so omit-when-unauthorized stays meaningful after platform
+/// auto-injection of `reports:read`.
 AccessRequirement claimsDetailPrintRequirement(ClaimsDeskSection section) {
   return switch (section) {
-    ClaimsDeskSection.settled => ClaimsSettledAtomPermissions.export,
+    ClaimsDeskSection.settled => claimsWorkspacePrintRequirement,
     ClaimsDeskSection.authorizations =>
       ClaimsAuthorizationsAtomPermissions.document,
     ClaimsDeskSection.activeClaims =>
@@ -194,20 +213,22 @@ bool claimsSectionShowsNextActionColumn(
 /// | Authorizations tab | navigate | read ∩ `billing:read` |
 /// | Request authorization (strip primary) | create | write ∩ `billing:write` |
 /// | Summary chips (Auth pending / approved / Denied / Expired) | read chrome | read ∩ |
-/// | Search / Clear / Settings (columns) | read chrome | read ∩ |
+/// | Search / Clear / Filters / Settings (columns) | read chrome | read ∩ |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Empty / error / retry / loading | read chrome | read ∩ |
 /// | Row select → detail | read | read ∩ |
-/// | Print statement | export / read | document read ∩ |
+/// | Detail Print | export / read | document read ∩ |
 /// | Next action Update status | update | write ∩ |
 /// | Next-action column chrome | progressive disclosure | write ∩ |
 /// | Nested Request authorization dialog | create | write ∩ |
 /// | Nested Update authorization dialog | update | write ∩ |
 /// | Deep link `action=preauth` | create | write ∩ |
 /// | Route entry (deep link) | navigate | read ∪ write ∪ financial:approve |
-/// | Approve / Sync / Settled export | _(absent on this tab)_ | — |
+/// | Approve / Sync / Settled nested export | _(absent on this tab)_ | — |
 ///
-/// Nested cross-module matrix rows are _(n/a)_ for this tab — Print stays
-/// [document] read ∩ (not Settled export ∪). Settlement / close-as-paid and
+/// Nested cross-module matrix rows are _(n/a)_ for this tab — detail Print stays
+/// [document] read ∩ (not Settled export ∪). Table Export/Print use
+/// [export]/[print] (∩ `evidence:export`). Settlement / close-as-paid and
 /// Sync live on Active Claims. Column chrome uses [nextActionColumn] (write ∩);
 /// per-row buttons use [nextAction] / [claimsNextActionRequirement].
 abstract final class ClaimsAuthorizationsAtomPermissions {
@@ -225,6 +246,8 @@ abstract final class ClaimsAuthorizationsAtomPermissions {
       claimsWorkspaceWriteRequirement;
   static const AccessRequirement approve = claimsFinancialApproveRequirement;
   static const AccessRequirement document = claimsWorkspaceReadRequirement;
+  static const AccessRequirement export = claimsWorkspaceExportRequirement;
+  static const AccessRequirement print = claimsWorkspacePrintRequirement;
   static const AccessRequirement entry = claimsWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = claimsWorkspaceEntryRequirement;
 }
@@ -235,14 +258,15 @@ abstract final class ClaimsAuthorizationsAtomPermissions {
 /// | --- | --- | --- |
 /// | Active Claims tab | navigate | read ∩ `billing:read` |
 /// | Summary chips (Submitted / Approved / Partial / Rejected) | read chrome | read ∩ |
-/// | Search / Clear / column Settings | read chrome | read ∩ |
+/// | Search / Clear / Filters / column Settings | read chrome | read ∩ |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Empty / error / retry | read chrome | read ∩ |
 /// | Row select → detail | read | read ∩ |
 /// | Prepare claim (tab-strip primary) | create | write ∩ `billing:write` |
 /// | Next action Submit / Resubmit / Record response | update | write ∩ |
 /// | Next action Close as paid | approve | financial:approve ∩ |
 /// | Detail Sync insurer status | update | write ∩ |
-/// | Print statement | export / read | read ∩ |
+/// | Detail Print | export / read | read ∩ |
 /// | Nested prepare / submit / record dialogs | create / update | write ∩ |
 /// | Nested close-as-paid dialog | approve | financial:approve ∩ |
 /// | Collect patient share (residual) | settle | Billing write ∩ |
@@ -250,7 +274,8 @@ abstract final class ClaimsAuthorizationsAtomPermissions {
 /// | Next-action column chrome | progressive disclosure | write ∪ approve |
 ///
 /// Nested cross-module matrix rows are _(n/a)_ — no Settled-style export ∪
-/// on this tab. Settlement uses [claimsFinancialApproveRequirement] (source
+/// on this tab. Table Export/Print use [export]/[print] (∩ `evidence:export`).
+/// Settlement uses [claimsFinancialApproveRequirement] (source
 /// inventory), not write alone. Column chrome uses
 /// [claimsActiveClaimsNextActionColumnRequirement] (∪); per-row buttons still
 /// use [claimsNextActionRequirement]. Residual co-pay opens Billing
@@ -275,6 +300,8 @@ abstract final class ClaimsActiveClaimsAtomPermissions {
   static const AccessRequirement nextActionColumn =
       claimsActiveClaimsNextActionColumnRequirement;
   static const AccessRequirement document = claimsWorkspaceReadRequirement;
+  static const AccessRequirement export = claimsWorkspaceExportRequirement;
+  static const AccessRequirement print = claimsWorkspacePrintRequirement;
   static const AccessRequirement entry = claimsWorkspaceEntryRequirement;
   static const AccessRequirement routeEntry = claimsWorkspaceEntryRequirement;
 }
@@ -288,18 +315,20 @@ abstract final class ClaimsActiveClaimsAtomPermissions {
 /// | Summary chips | _(absent on Settled)_ | — |
 /// | Search / Clear / column Settings | read chrome | read ∩ |
 /// | Advanced Filters (Paid / Cancelled) | read chrome | read ∩ |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` |
 /// | Empty / error / retry / loading | read chrome | read ∩ |
 /// | Row select → detail | read | read ∩ |
 /// | Next action / Sync / Prepare / Request auth | _(absent)_ | — |
-/// | Print statement | export | nested ∪ `reports:read` \| `evidence:export` |
+/// | Detail Print | export | nested ∪ `reports:read` \| `evidence:export` |
 /// | Create / update / delete (matrix verbs) | mutate | write ∩ (no Settled entry) |
 /// | Approve / close-as-paid | approve | financial:approve ∩ (Active Claims) |
 /// | Route entry (deep link) | navigate | read ∪ write ∪ financial:approve |
 ///
-/// Inventory documents Print as always when detail is open; Settled matrix
-/// maps nested cross-module read/export to [export] (∪). Write/approve atoms
-/// reuse feature helpers for matrix completeness — Settled UI does not mount them.
-/// Detail Sync is section-gated off Settled even if status were non-terminal.
+/// Detail Print maps nested cross-module read/export to [document] / [nestedExport]
+/// (∪). Table toolbar Export/Print use [tableExport]/[print] (∩ `evidence:export`).
+/// Write/approve atoms reuse feature helpers for matrix completeness — Settled UI
+/// does not mount them. Detail Sync is section-gated off Settled even if status
+/// were non-terminal.
 abstract final class ClaimsSettledAtomPermissions {
   static const AccessRequirement tab = claimsWorkspaceReadRequirement;
   static const AccessRequirement listChrome = claimsWorkspaceReadRequirement;
@@ -310,6 +339,9 @@ abstract final class ClaimsSettledAtomPermissions {
   static const AccessRequirement write = claimsWorkspaceWriteRequirement;
   static const AccessRequirement approve = claimsFinancialApproveRequirement;
   static const AccessRequirement export = claimsNestedExportRequirement;
+  static const AccessRequirement nestedExport = claimsNestedExportRequirement;
+  static const AccessRequirement tableExport = claimsWorkspaceExportRequirement;
+  static const AccessRequirement print = claimsWorkspacePrintRequirement;
   static const AccessRequirement document = claimsNestedExportRequirement;
   static const AccessRequirement nestedRead = claimsNestedExportRequirement;
   static const AccessRequirement routeEntry = claimsWorkspaceEntryRequirement;

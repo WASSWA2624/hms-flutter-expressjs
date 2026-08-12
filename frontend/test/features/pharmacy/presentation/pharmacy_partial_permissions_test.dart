@@ -259,6 +259,12 @@ Finder _actionLabel(String label) => find.descendant(
   matching: find.text(label),
 );
 
+AppListTable<PharmacyOrder> _partialTable(WidgetTester tester) {
+  return tester.widget<AppListTable<PharmacyOrder>>(
+    find.byType(AppListTable<PharmacyOrder>),
+  );
+}
+
 Future<void> _pumpPartialTab(
   WidgetTester tester, {
   required _MockPharmacyRepository repository,
@@ -392,6 +398,20 @@ void main() {
       );
       expect(
         identical(
+          PharmacyPartialAtomPermissions.export,
+          pharmacyWorkspaceExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          PharmacyPartialAtomPermissions.print,
+          pharmacyWorkspacePrintRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           PharmacyPartialAtomPermissions.dispenseProgress,
           pharmacyWorkspaceReadRequirement,
         ),
@@ -433,6 +453,8 @@ void main() {
       expect(PharmacyPartialAtomPermissions.search, isNotNull);
       expect(PharmacyPartialAtomPermissions.filters, isNotNull);
       expect(PharmacyPartialAtomPermissions.settings, isNotNull);
+      expect(PharmacyPartialAtomPermissions.export, isNotNull);
+      expect(PharmacyPartialAtomPermissions.print, isNotNull);
       expect(PharmacyPartialAtomPermissions.pagination, isNotNull);
       expect(PharmacyPartialAtomPermissions.dispenseProgress, isNotNull);
       expect(PharmacyPartialAtomPermissions.empty, isNotNull);
@@ -729,7 +751,7 @@ void main() {
             of: dialog,
             matching: find.text('Print'),
           ),
-          findsOneWidget,
+          findsAtLeastNWidgets(1),
         );
         expect(find.textContaining('no access'), findsNothing);
       },
@@ -771,7 +793,7 @@ void main() {
             of: dialog,
             matching: find.text('Print'),
           ),
-          findsOneWidget,
+          findsAtLeastNWidgets(1),
         );
         expect(find.textContaining('no access'), findsNothing);
       },
@@ -985,6 +1007,87 @@ void main() {
         ).called(1);
         expect(find.text('Pharmacy workflow updated.'), findsOneWidget);
         expect(find.text('Amina Partial'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'In Progress toolbar: Filters/Settings/Close, ≤5 columns, warning tone, Export/Print gate',
+      (WidgetTester tester) async {
+        await _pumpPartialTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.pharmacyRead,
+              AppPermissions.pharmacyWrite,
+            },
+          ),
+        );
+
+        final AppListTable<PharmacyOrder> table = _partialTable(tester);
+        expect(table.columnVisibilityLabel, 'Settings');
+        expect(table.columnVisibilityCloseLabel, 'Close');
+        expect(table.columnVisibilityApplyLabel, 'Apply columns');
+        expect(table.columnVisibilityResetLabel, 'Reset columns');
+        expect(table.search?.advancedFilterButtonLabel, 'Filters');
+        expect(table.search?.advancedFilterTitle, 'Advanced filters');
+        expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
+        expect(table.search?.advancedFilterResetLabel, 'Clear filters');
+        expect(table.search?.advancedFilterCloseLabel, 'Close');
+        expect(table.enablePrint, isTrue);
+        expect(table.canExport, isFalse);
+        expect(table.canPrint, isFalse);
+        expect(table.printLabel, 'Print');
+        expect(table.columns.length, 5);
+        expect(
+          table.columns.any(
+            (AppListTableColumn<PharmacyOrder> c) =>
+                c.id == 'next_action' && c.alwaysVisible,
+          ),
+          isTrue,
+        );
+        expect(table.columnChoices, isNotEmpty);
+        expect(table.columnVisibilityStorageKey, 'pharmacy_inProgress');
+
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem partial = strip.tabs.firstWhere(
+          (AppTabItem tab) => tab.label == 'Partial',
+        );
+        expect(partial.countTone, AppTabCountTone.warning);
+        expect(partial.count, isNotNull);
+
+        final List<AppSearchBarAction> trailing =
+            table.search?.trailingActions ?? const <AppSearchBarAction>[];
+        expect(trailing.last.label, 'Walk-in order');
+        expect(find.byTooltip('Export'), findsNothing);
+        expect(find.byTooltip('Print'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'In Progress Export/Print present when evidence:export granted',
+      (WidgetTester tester) async {
+        await _pumpPartialTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.pharmacyRead,
+              AppPermissions.pharmacyWrite,
+              AppPermissions.evidenceExport,
+            },
+          ),
+        );
+
+        final AppListTable<PharmacyOrder> table = _partialTable(tester);
+        expect(table.canExport, isTrue);
+        expect(table.canPrint, isTrue);
+        expect(table.enablePrint, isTrue);
+        expect(table.printLabel, 'Print');
+        expect(find.byTooltip('Export'), findsOneWidget);
+        expect(find.byTooltip('Print'), findsOneWidget);
       },
     );
 

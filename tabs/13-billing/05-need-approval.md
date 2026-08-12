@@ -5,7 +5,7 @@
 - Label: `billingApprovalRequired`
 - Tooltip: `billingApprovalRequiredTooltip`
 - Icon: `Icons.rule_outlined`
-- Count source: `summary.approvalRequired`
+- Count source: `billingQueueTabCount` → `summary.approvalRequired` / filtered page total when active + narrowed
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `approvals` (alias `approval-required`)
 - Tab gate: `BillingApprovalRequiredAtomPermissions.tab` / entry requirement
@@ -13,10 +13,11 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Filters → Settings** (no Charge / Issue all / Close trailing)
+Order: **Filters → Settings → Export → Print** (no Charge / Issue all / Close trailing)
 
+- Filters: `commonFiltersActionLabel`; Clear `opdClearFiltersAction`; Close `commonCloseActionLabel`
 - Settings key: `billing_approvals_v1`
-- Export / table Print: **absent**
+- Export / table Print: present; omit without ∩ `evidence:export`
 - Trailing context: **none**
 
 ## 3. Table
@@ -55,8 +56,8 @@ Approve/Reject notes dialogs → refresh; print approval packet from detail when
 
 ## 9. Print / labels / preview
 
-- Table Print: **absent**
-- Detail: Print/Download approval packet (`printBillingApprovalPacket`) when document read ∩
+- Table Print: `commonPrintActionLabel` → preview-first `printBillingWorkspaceList`
+- Detail: `Print` (`printBillingApprovalPacket`, approval tooltip) when document read ∩
 
 ## 10. Loading / empty / error / success
 
@@ -67,7 +68,8 @@ Approve/Reject notes dialogs → refresh; print approval packet from detail when
 | Atom | Gate |
 | --- | --- |
 | Tab / chrome / detail | entry / ApprovalRequired atom |
+| List Export / table Print | ∩ `evidence:export` (`BillingApprovalRequiredAtomPermissions.export` / `.print`) |
 | Approve / Reject / next-action column | write ∩ financial:approve |
 | Close shift/day | write ∩ documented — **not mounted** |
 | Nested claims | claims write / claims pending tab |
-| Ledger / Print | read / document ∩ |
+| Ledger / Detail Print | read / document ∩ |

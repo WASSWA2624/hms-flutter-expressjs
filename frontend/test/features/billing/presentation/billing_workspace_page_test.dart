@@ -422,8 +422,650 @@ void main() {
     expect(_table(tester).columnVisibilityTitle, 'Table Settings');
     expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
     expect(_table(tester).search?.advancedFilterTitle, 'Advanced filters');
+    expect(_table(tester).search?.advancedFilterResetLabel, 'Clear filters');
+    expect(_table(tester).search?.advancedFilterCloseLabel, 'Close');
+    expect(_table(tester).enablePrint, isTrue);
+    expect(_table(tester).canExport, isFalse);
+    expect(_table(tester).printLabel, 'Print');
     expect(_table(tester).displayMode, AppListTableDisplayMode.adaptive);
     expect(_table(tester).columns.length, 5);
+  });
+
+  testWidgets('export/print toolbar present when evidence:export granted', (
+    WidgetTester tester,
+  ) async {
+    await _pumpBillingWorkspace(
+      tester,
+      repository: repository,
+      accessPolicy: AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            roles: <String>['BILLING'],
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+          ),
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+            AppPermissions.evidenceExport,
+          },
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'billing-payments',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'insurance-claims',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      ),
+    );
+
+    expect(_table(tester).canExport, isTrue);
+    expect(_table(tester).enablePrint, isTrue);
+    expect(_table(tester).canPrint, isTrue);
+    expect(find.byTooltip('Export'), findsOneWidget);
+    expect(find.byTooltip('Print'), findsOneWidget);
+  });
+
+  testWidgets(
+    'Open work: Filters→Settings→Export→Print→Charge; filters footer labels',
+    (WidgetTester tester) async {
+      await _pumpBillingWorkspace(
+        tester,
+        repository: repository,
+        accessPolicy: AppAccessPolicy.fromSession(
+          AuthSession(
+            tokens: SessionTokens(accessToken: 'access-token'),
+            user: const AuthUserProfile(
+              roles: <String>['BILLING'],
+              tenantId: 'tenant-1',
+              facilityId: 'facility-1',
+            ),
+            permissions: <AppPermission>{
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+              AppPermissions.evidenceExport,
+            },
+            moduleEntitlements: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: 'billing-payments',
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'insurance-claims',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+            isAuthorizationHydrated: true,
+          ),
+        ),
+      );
+
+      final AppListTable<BillingWorkItem> table = _table(tester);
+      expect(table.search?.advancedFilterButtonLabel, 'Filters');
+      expect(table.columnVisibilityLabel, 'Settings');
+      expect(table.canExport, isTrue);
+      expect(table.enablePrint, isTrue);
+      expect(table.printLabel, 'Print');
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+      expect(find.text('Charge'), findsOneWidget);
+      expect(_searchBarAction('Issue all'), findsNothing);
+      expect(_searchBarAction('Close day'), findsNothing);
+      expect(_searchBarAction('Close shift'), findsNothing);
+
+      expect(table.columns.map((c) => c.id).toList(), <String>[
+        'patient',
+        'invoice',
+        'amount_due',
+        'status',
+        'next_action',
+      ]);
+      final Set<String> choiceIds = table.columnChoices!
+          .map((AppListTableColumn<BillingWorkItem> c) => c.id!)
+          .toSet();
+      expect(choiceIds.contains('encounter'), isTrue);
+      expect(choiceIds.contains('source'), isTrue);
+      expect(choiceIds.contains('amount_paid'), isTrue);
+      expect(choiceIds.contains('updated'), isTrue);
+      expect(choiceIds.contains('age'), isFalse);
+
+      final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      expect(
+        strip.tabs
+            .firstWhere((AppTabItem tab) => tab.id == BillingQueueType.all.name)
+            .countTone,
+        AppTabCountTone.info,
+      );
+
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+      expect(find.text('ADVANCED FILTERS'), findsOneWidget);
+      expect(find.text('Clear filters'), findsOneWidget);
+      expect(find.text('Apply filters'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
+      expect(find.text('Source'), findsWidgets);
+      expect(find.text('Status'), findsWidgets);
+      // Collect-owned Age group must not mount on Open work.
+      expect(find.text('Age'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Open work omits Charge without write; keeps Filters/Settings',
+    (WidgetTester tester) async {
+      await _pumpBillingWorkspace(
+        tester,
+        repository: repository,
+        accessPolicy: _billingReadOnlyPolicy(),
+      );
+
+      expect(find.text('Charge'), findsNothing);
+      expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
+      expect(_table(tester).columnVisibilityLabel, 'Settings');
+      expect(_table(tester).canExport, isFalse);
+      expect(_table(tester).canPrint, isFalse);
+      // Next action omitted without write/approve/claims → 4 defaults.
+      expect(_table(tester).columns.length, 4);
+    },
+  );
+
+  testWidgets(
+    'To issue: Filters→Settings→Export→Print→Issue all; filters footer labels',
+    (WidgetTester tester) async {
+      await _pumpBillingWorkspace(
+        tester,
+        repository: repository,
+        initialLocation: '/billing?section=issue',
+        initialQuery: BillingWorkspaceQuery.fromUri(
+          Uri.parse('/billing?section=issue'),
+        ),
+        accessPolicy: AppAccessPolicy.fromSession(
+          AuthSession(
+            tokens: SessionTokens(accessToken: 'access-token'),
+            user: const AuthUserProfile(
+              roles: <String>['BILLING'],
+              tenantId: 'tenant-1',
+              facilityId: 'facility-1',
+            ),
+            permissions: <AppPermission>{
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+              AppPermissions.evidenceExport,
+            },
+            moduleEntitlements: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: 'billing-payments',
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'insurance-claims',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+            isAuthorizationHydrated: true,
+          ),
+        ),
+      );
+
+      final AppListTable<BillingWorkItem> table = _table(tester);
+      expect(table.search?.advancedFilterButtonLabel, 'Filters');
+      expect(table.columnVisibilityLabel, 'Settings');
+      expect(table.columnVisibilityStorageKey, 'billing_issue_v1');
+      expect(table.canExport, isTrue);
+      expect(table.enablePrint, isTrue);
+      expect(table.printLabel, 'Print');
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+      expect(find.text('Issue all'), findsOneWidget);
+      expect(find.text('Charge'), findsNothing);
+      expect(_searchBarAction('Close day'), findsNothing);
+      expect(_searchBarAction('Close shift'), findsNothing);
+
+      expect(table.columns.map((c) => c.id).toList(), <String>[
+        'patient',
+        'invoice',
+        'encounter',
+        'status',
+        'next_action',
+      ]);
+      final Set<String> choiceIds = table.columnChoices!
+          .map((AppListTableColumn<BillingWorkItem> c) => c.id!)
+          .toSet();
+      expect(choiceIds.contains('amount_due'), isTrue);
+      expect(choiceIds.contains('source'), isTrue);
+      expect(choiceIds.contains('updated'), isTrue);
+      expect(choiceIds.contains('age'), isFalse);
+
+      final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      expect(
+        strip.tabs
+            .firstWhere(
+              (AppTabItem tab) => tab.id == BillingQueueType.needsIssue.name,
+            )
+            .countTone,
+        AppTabCountTone.warning,
+      );
+
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+      expect(find.text('ADVANCED FILTERS'), findsOneWidget);
+      expect(find.text('Clear filters'), findsOneWidget);
+      expect(find.text('Apply filters'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
+      expect(find.text('Source'), findsWidgets);
+      expect(find.text('Status'), findsWidgets);
+      expect(find.text('Age'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'To issue omits Issue all without write; keeps Filters/Settings',
+    (WidgetTester tester) async {
+      await _pumpBillingWorkspace(
+        tester,
+        repository: repository,
+        initialLocation: '/billing?section=issue',
+        initialQuery: BillingWorkspaceQuery.fromUri(
+          Uri.parse('/billing?section=issue'),
+        ),
+        accessPolicy: _billingReadOnlyPolicy(),
+      );
+
+      expect(find.text('Issue all'), findsNothing);
+      expect(find.text('Charge'), findsNothing);
+      expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
+      expect(_table(tester).columnVisibilityLabel, 'Settings');
+      expect(_table(tester).canExport, isFalse);
+      expect(_table(tester).canPrint, isFalse);
+      expect(_table(tester).columns.length, 4);
+    },
+  );
+
+  testWidgets(
+    'Collect due: Filters→Settings→Export→Print→Close day→Close shift',
+    (WidgetTester tester) async {
+      await _pumpBillingWorkspace(
+        tester,
+        repository: repository,
+        initialLocation: '/billing?section=collect',
+        initialQuery: BillingWorkspaceQuery.fromUri(
+          Uri.parse('/billing?section=collect'),
+        ),
+        accessPolicy: AppAccessPolicy.fromSession(
+          AuthSession(
+            tokens: SessionTokens(accessToken: 'access-token'),
+            user: const AuthUserProfile(
+              roles: <String>['BILLING'],
+              tenantId: 'tenant-1',
+              facilityId: 'facility-1',
+            ),
+            permissions: <AppPermission>{
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+              AppPermissions.evidenceExport,
+            },
+            moduleEntitlements: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: 'billing-payments',
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'insurance-claims',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+            isAuthorizationHydrated: true,
+          ),
+        ),
+      );
+
+      final AppListTable<BillingWorkItem> table = _table(tester);
+      expect(table.search?.advancedFilterButtonLabel, 'Filters');
+      expect(table.columnVisibilityLabel, 'Settings');
+      expect(table.columnVisibilityStorageKey, 'billing_collect_v1');
+      expect(table.canExport, isTrue);
+      expect(table.enablePrint, isTrue);
+      expect(table.printLabel, 'Print');
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+      _expectCollectDueCloseSearchActions(tester);
+      expect(find.text('Charge'), findsNothing);
+      expect(find.text('Issue all'), findsNothing);
+
+      expect(table.columns.map((c) => c.id).toList(), <String>[
+        'patient',
+        'invoice',
+        'amount_due',
+        'status',
+        'next_action',
+      ]);
+      final Set<String> choiceIds = table.columnChoices!
+          .map((AppListTableColumn<BillingWorkItem> c) => c.id!)
+          .toSet();
+      expect(choiceIds.contains('age'), isTrue);
+      expect(choiceIds.contains('encounter'), isTrue);
+      expect(choiceIds.contains('source'), isTrue);
+      expect(choiceIds.contains('updated'), isTrue);
+
+      final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      expect(
+        strip.tabs
+            .firstWhere(
+              (AppTabItem tab) =>
+                  tab.id == BillingQueueType.pendingPayment.name,
+            )
+            .countTone,
+        AppTabCountTone.warning,
+      );
+      expect(
+        strip.tabs.any((AppTabItem tab) => tab.id == 'overdue'),
+        isFalse,
+      );
+
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+      expect(find.text('ADVANCED FILTERS'), findsOneWidget);
+      expect(find.text('Clear filters'), findsOneWidget);
+      expect(find.text('Apply filters'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
+      expect(find.text('Source'), findsWidgets);
+      expect(find.text('Status'), findsWidgets);
+      expect(find.text('Overdue'), findsWidgets);
+      expect(find.text('Age'), findsWidgets);
+    },
+  );
+
+  testWidgets(
+    'Collect due omits Close day/shift without write; keeps Filters/Settings',
+    (WidgetTester tester) async {
+      await _pumpBillingWorkspace(
+        tester,
+        repository: repository,
+        initialLocation: '/billing?section=collect',
+        initialQuery: BillingWorkspaceQuery.fromUri(
+          Uri.parse('/billing?section=collect'),
+        ),
+        accessPolicy: _billingReadOnlyPolicy(),
+      );
+
+      expect(find.text('Close day'), findsNothing);
+      expect(find.text('Close shift'), findsNothing);
+      expect(find.text('Charge'), findsNothing);
+      expect(find.text('Issue all'), findsNothing);
+      expect(_searchBarAction('Close day'), findsNothing);
+      expect(_searchBarAction('Close shift'), findsNothing);
+      expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
+      expect(_table(tester).columnVisibilityLabel, 'Settings');
+      expect(_table(tester).canExport, isFalse);
+      expect(_table(tester).canPrint, isFalse);
+      expect(_table(tester).columns.length, 4);
+    },
+  );
+
+  testWidgets(
+    'Open claims: Filters→Settings→Export→Print; no owned trailing',
+    (WidgetTester tester) async {
+      await _pumpBillingWorkspace(
+        tester,
+        repository: repository,
+        initialLocation: '/billing?section=claims',
+        initialQuery: BillingWorkspaceQuery.fromUri(
+          Uri.parse('/billing?section=claims'),
+        ),
+        accessPolicy: AppAccessPolicy.fromSession(
+          AuthSession(
+            tokens: SessionTokens(accessToken: 'access-token'),
+            user: const AuthUserProfile(
+              roles: <String>['BILLING'],
+              tenantId: 'tenant-1',
+              facilityId: 'facility-1',
+            ),
+            permissions: <AppPermission>{
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+              AppPermissions.evidenceExport,
+            },
+            moduleEntitlements: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: 'billing-payments',
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'insurance-claims',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+            isAuthorizationHydrated: true,
+          ),
+        ),
+      );
+
+      final AppListTable<BillingWorkItem> table = _table(tester);
+      expect(table.search?.advancedFilterButtonLabel, 'Filters');
+      expect(table.columnVisibilityLabel, 'Settings');
+      expect(table.columnVisibilityStorageKey, 'billing_claims_v1');
+      expect(table.canExport, isTrue);
+      expect(table.enablePrint, isTrue);
+      expect(table.printLabel, 'Print');
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+      _expectNoOwnedTrailingActions(tester);
+      expect(find.text('Charge'), findsNothing);
+      expect(find.text('Issue all'), findsNothing);
+
+      expect(table.columns.map((c) => c.id).toList(), <String>[
+        'patient',
+        'invoice',
+        'encounter',
+        'status',
+        'next_action',
+      ]);
+      final Set<String> choiceIds = table.columnChoices!
+          .map((AppListTableColumn<BillingWorkItem> c) => c.id!)
+          .toSet();
+      expect(choiceIds.contains('insurer'), isTrue);
+      expect(choiceIds.contains('scheme'), isTrue);
+      expect(choiceIds.contains('patient_share'), isTrue);
+      expect(choiceIds.contains('insurer_share'), isTrue);
+      expect(choiceIds.contains('age'), isFalse);
+
+      final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      expect(
+        strip.tabs
+            .firstWhere(
+              (AppTabItem tab) =>
+                  tab.id == BillingQueueType.claimsPending.name,
+            )
+            .countTone,
+        AppTabCountTone.warning,
+      );
+
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+      expect(find.text('ADVANCED FILTERS'), findsOneWidget);
+      expect(find.text('Clear filters'), findsOneWidget);
+      expect(find.text('Apply filters'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
+      expect(find.text('Source'), findsWidgets);
+      expect(find.text('Status'), findsWidgets);
+      expect(find.text('Overdue'), findsNothing);
+      expect(find.text('Age'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Open claims omits Export/Print without evidence:export; keeps Filters/Settings',
+    (WidgetTester tester) async {
+      await _pumpBillingWorkspace(
+        tester,
+        repository: repository,
+        initialLocation: '/billing?section=claims',
+        initialQuery: BillingWorkspaceQuery.fromUri(
+          Uri.parse('/billing?section=claims'),
+        ),
+        accessPolicy: _billingReadOnlyPolicy(),
+      );
+
+      expect(find.text('Charge'), findsNothing);
+      expect(find.text('Issue all'), findsNothing);
+      expect(find.text('Close day'), findsNothing);
+      expect(find.text('Close shift'), findsNothing);
+      _expectNoOwnedTrailingActions(tester);
+      expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
+      expect(_table(tester).columnVisibilityLabel, 'Settings');
+      expect(_table(tester).canExport, isFalse);
+      expect(_table(tester).canPrint, isFalse);
+      // Next action omitted without claims mutate → 4 defaults.
+      expect(_table(tester).columns.length, 4);
+    },
+  );
+
+  testWidgets(
+    'Need approval: Filters→Settings→Export→Print; no owned trailing',
+    (WidgetTester tester) async {
+      await _pumpBillingWorkspace(
+        tester,
+        repository: repository,
+        initialLocation: '/billing?section=approvals',
+        initialQuery: BillingWorkspaceQuery.fromUri(
+          Uri.parse('/billing?section=approvals'),
+        ),
+        accessPolicy: AppAccessPolicy.fromSession(
+          AuthSession(
+            tokens: SessionTokens(accessToken: 'access-token'),
+            user: const AuthUserProfile(
+              roles: <String>['BILLING'],
+              tenantId: 'tenant-1',
+              facilityId: 'facility-1',
+            ),
+            permissions: <AppPermission>{
+              AppPermissions.billingRead,
+              AppPermissions.billingWrite,
+              AppPermissions.financialApprove,
+              AppPermissions.evidenceExport,
+            },
+            moduleEntitlements: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: 'billing-payments',
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'insurance-claims',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+            isAuthorizationHydrated: true,
+          ),
+        ),
+      );
+
+      final AppListTable<BillingWorkItem> table = _table(tester);
+      expect(table.search?.advancedFilterButtonLabel, 'Filters');
+      expect(table.columnVisibilityLabel, 'Settings');
+      expect(table.columnVisibilityStorageKey, 'billing_approvals_v1');
+      expect(table.canExport, isTrue);
+      expect(table.enablePrint, isTrue);
+      expect(table.printLabel, 'Print');
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+      _expectNoOwnedTrailingActions(tester);
+      expect(find.text('Charge'), findsNothing);
+      expect(find.text('Issue all'), findsNothing);
+
+      expect(table.columns.map((c) => c.id).toList(), <String>[
+        'patient',
+        'invoice',
+        'amount_due',
+        'status',
+        'next_action',
+      ]);
+      final Set<String> choiceIds = table.columnChoices!
+          .map((AppListTableColumn<BillingWorkItem> c) => c.id!)
+          .toSet();
+      expect(choiceIds.contains('type'), isTrue);
+      expect(choiceIds.contains('by'), isTrue);
+      expect(choiceIds.contains('reason'), isTrue);
+      expect(choiceIds.contains('age'), isFalse);
+      expect(choiceIds.contains('insurer'), isFalse);
+
+      final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      expect(
+        strip.tabs
+            .firstWhere(
+              (AppTabItem tab) =>
+                  tab.id == BillingQueueType.approvalRequired.name,
+            )
+            .countTone,
+        AppTabCountTone.warning,
+      );
+
+      await tester.tap(find.byTooltip('Filters'));
+      await tester.pumpAndSettle();
+      expect(find.text('ADVANCED FILTERS'), findsOneWidget);
+      expect(find.text('Clear filters'), findsOneWidget);
+      expect(find.text('Apply filters'), findsOneWidget);
+      expect(find.text('Close'), findsOneWidget);
+      expect(find.text('Type'), findsWidgets);
+      expect(find.text('Status'), findsWidgets);
+      expect(find.text('Source'), findsNothing);
+      expect(find.text('Overdue'), findsNothing);
+      expect(find.text('Age'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Need approval omits Export/Print without evidence:export; keeps Filters/Settings',
+    (WidgetTester tester) async {
+      await _pumpBillingWorkspace(
+        tester,
+        repository: repository,
+        initialLocation: '/billing?section=approvals',
+        initialQuery: BillingWorkspaceQuery.fromUri(
+          Uri.parse('/billing?section=approvals'),
+        ),
+        accessPolicy: _billingReadOnlyPolicy(),
+      );
+
+      expect(find.text('Charge'), findsNothing);
+      expect(find.text('Issue all'), findsNothing);
+      expect(find.text('Close day'), findsNothing);
+      expect(find.text('Close shift'), findsNothing);
+      _expectNoOwnedTrailingActions(tester);
+      expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
+      expect(_table(tester).columnVisibilityLabel, 'Settings');
+      expect(_table(tester).canExport, isFalse);
+      expect(_table(tester).canPrint, isFalse);
+      // Next action omitted without approve ∩ → 4 defaults.
+      expect(_table(tester).columns.length, 4);
+    },
+  );
+
+  testWidgets('active tab count uses filtered total when search narrows', (
+    WidgetTester tester,
+  ) async {
+    await _pumpBillingWorkspace(tester, repository: repository);
+
+    final AppTabStrip stripBefore = tester.widget(find.byType(AppTabStrip));
+    final int? openWorkBefore = stripBefore.tabs
+        .firstWhere((AppTabItem tab) => tab.id == BillingQueueType.all.name)
+        .count;
+    expect(openWorkBefore, isNotNull);
+
+    await tester.enterText(find.byType(TextField).first, 'Ada');
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    final AppTabStrip stripAfter = tester.widget(find.byType(AppTabStrip));
+    final int? openWorkAfter = stripAfter.tabs
+        .firstWhere((AppTabItem tab) => tab.id == BillingQueueType.all.name)
+        .count;
+    expect(openWorkAfter, 1);
   });
 
   testWidgets('does not paint a dedicated billing title header', (

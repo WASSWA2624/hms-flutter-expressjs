@@ -11,19 +11,17 @@ import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/accounts/data/repositories/accounts_repository_impl.dart';
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.dart';
+import 'package:hosspi_hms/features/accounts/presentation/accounts_access.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
+import 'package:hosspi_hms/features/accounts/presentation/controllers/accounts_workspace_controller.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_ledgers_table_support.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_patient_ledger_dialog.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_workspace_print_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
-
-/// Count of patients with outstanding balance (strip badge).
-final accountsPatientLedgersBalanceCountProvider = StateProvider<int?>(
-  (Ref ref) => null,
-);
 
 /// Patient ledgers table for `/accounts?section=ledgers`.
 class AccountsLedgersPanel extends ConsumerStatefulWidget {
@@ -136,14 +134,17 @@ class _AccountsLedgersPanelState extends ConsumerState<AccountsLedgersPanel> {
           _page = page;
           _loading = false;
         });
-        if (!_hasActiveFilters) {
-          final int withBalance = page.items
-              .where((AccountsPatientBalance row) => row.hasBalance)
-              .length;
+        if (_hasActiveFilters) {
           ref
                   .read(accountsPatientLedgersBalanceCountProvider.notifier)
                   .state =
-              withBalance;
+              page.totalItemCount ?? page.items.length;
+        } else {
+          // Fall back to workspace summary — do not badge from painted page.
+          ref
+                  .read(accountsPatientLedgersBalanceCountProvider.notifier)
+                  .state =
+              null;
         }
         if (openDeepLink) {
           unawaited(_maybeOpenDeepLink(page.items));
@@ -219,6 +220,23 @@ class _AccountsLedgersPanelState extends ConsumerState<AccountsLedgersPanel> {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final accessPolicy = ref.watch(appAccessPolicyProvider);
+    final bool canExport = canExportAccountsWorkspace(accessPolicy);
+    final bool canPrint = canPrintAccountsWorkspace(accessPolicy);
+    final List<AppListTableColumn<AccountsPatientBalance>> columns =
+        accountsLedgersColumns(
+          context: context,
+          policy: accessPolicy,
+          onOpenLedger: (AccountsPatientBalance row) {
+            unawaited(
+              _openLedger(
+                patientId: row.patientId,
+                displayName: row.patientDisplayName,
+                currency: row.currency,
+              ),
+            );
+          },
+          onPay: _pay,
+        );
 
     return AppListTable<AccountsPatientBalance>(
       page: _page,
@@ -230,20 +248,19 @@ class _AccountsLedgersPanelState extends ConsumerState<AccountsLedgersPanel> {
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
       enableExport: true,
-      columns: accountsLedgersColumns(
+      canExport: canExport,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: AccountsStrings.printAction,
+      onPrint: () => printAccountsListTable<AccountsPatientBalance>(
+        ref: ref,
         context: context,
-        policy: accessPolicy,
-        onOpenLedger: (AccountsPatientBalance row) {
-          unawaited(
-            _openLedger(
-              patientId: row.patientId,
-              displayName: row.patientDisplayName,
-              currency: row.currency,
-            ),
-          );
-        },
-        onPay: _pay,
+        title: AccountsStrings.patientLedgersLabel,
+        columns: columns,
+        items: _page.items,
+        emptyText: AccountsStrings.patientLedgersEmpty,
       ),
+      columns: columns,
       columnChoices: accountsLedgersColumnChoices(
         context: context,
         policy: accessPolicy,

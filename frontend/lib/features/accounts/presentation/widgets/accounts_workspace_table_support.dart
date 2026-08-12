@@ -209,6 +209,7 @@ Map<String, AppListTableColumn<AccountsWorkItem>> _accountsColumnBuilders(
           overflow: TextOverflow.ellipsis,
         );
       },
+      exportValue: (AccountsWorkItem item) => item.effectiveDisplayId,
     ),
     accountsSourceColumnId: AppListTableColumn<AccountsWorkItem>(
       id: accountsSourceColumnId,
@@ -222,6 +223,8 @@ Map<String, AppListTableColumn<AccountsWorkItem>> _accountsColumnBuilders(
           overflow: TextOverflow.ellipsis,
         );
       },
+      exportValue: (AccountsWorkItem item) =>
+          item.source.isEmpty ? AccountsStrings.unknownValue : item.source,
     ),
     accountsAmountColumnId: AppListTableColumn<AccountsWorkItem>(
       id: accountsAmountColumnId,
@@ -239,6 +242,7 @@ Map<String, AppListTableColumn<AccountsWorkItem>> _accountsColumnBuilders(
           ),
         );
       },
+      exportValue: (AccountsWorkItem item) => item.amount,
     ),
     accountsStatusColumnId: AppListTableColumn<AccountsWorkItem>(
       id: accountsStatusColumnId,
@@ -248,6 +252,7 @@ Map<String, AppListTableColumn<AccountsWorkItem>> _accountsColumnBuilders(
       cellBuilder: (BuildContext context, AccountsWorkItem item) {
         return Text(accountsStatusLabel(item.status));
       },
+      exportValue: (AccountsWorkItem item) => accountsStatusLabel(item.status),
     ),
     accountsPeriodColumnId: AppListTableColumn<AccountsWorkItem>(
       id: accountsPeriodColumnId,

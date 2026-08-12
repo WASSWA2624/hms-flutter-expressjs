@@ -203,7 +203,27 @@ void main() {
     expect(find.text(AccountsStrings.chartDeactivateAction), findsNothing);
     expect(find.text(AccountsStrings.nextColumn), findsNothing);
     expect(find.text(_sampleAccount.id), findsNothing);
-    expect(find.byTooltip(AccountsStrings.chartPrintAction), findsOneWidget);
+    // Print lives in AppListTable toolbar; omitted without evidence:export.
+    expect(find.byTooltip(AccountsStrings.chartPrintAction), findsNothing);
+    expect(find.byTooltip('Print'), findsNothing);
+  });
+
+  testWidgets('Account chart Export/Print present with evidence:export', (
+    WidgetTester tester,
+  ) async {
+    final Set<AppPermission> permissions = <AppPermission>{
+      AppPermissions.accountsRead,
+      AppPermissions.evidenceExport,
+    };
+    await _pumpChart(
+      tester,
+      accessPolicy: _policyFor(permissions: permissions),
+      chartItems: <AccountsChartAccount>[_sampleAccount],
+    );
+
+    expect(find.byTooltip('Export'), findsOneWidget);
+    expect(find.byTooltip('Print'), findsOneWidget);
+    expect(find.byTooltip('Add'), findsNothing);
   });
 
   testWidgets('Account chart aliases select section=chart body', (

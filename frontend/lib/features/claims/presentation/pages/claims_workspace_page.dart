@@ -17,6 +17,8 @@ import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart'
 import 'package:hosspi_hms/features/claims/presentation/claims_access.dart';
 import 'package:hosspi_hms/features/claims/presentation/controllers/claims_workspace_controller.dart';
 import 'package:hosspi_hms/features/claims/presentation/widgets/claims_insurance_config_dialogs.dart';
+import 'package:hosspi_hms/features/claims/presentation/widgets/claims_scope_navigation.dart';
+import 'package:hosspi_hms/features/claims/presentation/widgets/claims_workspace_print_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -218,13 +220,7 @@ class _ClaimsWorkspaceContentState
   }
 
   static ClaimsQueueFilter _defaultFilterForSection(ClaimsDeskSection section) {
-    return switch (section) {
-      ClaimsDeskSection.authorizations =>
-        ClaimsQueueFilter.authorizationPending,
-      ClaimsDeskSection.activeClaims => ClaimsQueueFilter.claimSubmitted,
-      ClaimsDeskSection.settled => ClaimsQueueFilter.claimPaid,
-      ClaimsDeskSection.insuranceSetup => ClaimsQueueFilter.all,
-    };
+    return claimsDefaultFilterForSection(section);
   }
 
   static IconData _sectionIcon(ClaimsDeskSection section) {
@@ -242,29 +238,6 @@ class _ClaimsWorkspaceContentState
       ClaimsDeskSection.activeClaims => l10n.claimsSectionActiveClaims,
       ClaimsDeskSection.settled => l10n.claimsSectionSettled,
       ClaimsDeskSection.insuranceSetup => l10n.claimsSectionInsuranceSetup,
-    };
-  }
-
-  int _sectionCount(ClaimsWorkspaceState state, ClaimsDeskSection section) {
-    return switch (section) {
-      ClaimsDeskSection.authorizations =>
-        state.authorizationPendingCount + state.authorizationApprovedCount,
-      ClaimsDeskSection.activeClaims =>
-        state.submittedClaimsCount +
-            state.approvedClaimsCount +
-            state.partialClaimsCount +
-            state.rejectedResubmissionCount,
-      ClaimsDeskSection.settled => state.paidClosedCount,
-      ClaimsDeskSection.insuranceSetup => 0,
-    };
-  }
-
-  static AppTabCountTone _sectionCountTone(ClaimsDeskSection section) {
-    return switch (section) {
-      ClaimsDeskSection.authorizations ||
-      ClaimsDeskSection.activeClaims => AppTabCountTone.warning,
-      ClaimsDeskSection.settled ||
-      ClaimsDeskSection.insuranceSetup => AppTabCountTone.info,
     };
   }
 
@@ -318,8 +291,13 @@ class _ClaimsWorkspaceContentState
             id: section.name,
             icon: _sectionIcon(section),
             label: _sectionLabel(l10n, section),
-            count: _sectionCount(state, section),
-            countTone: _sectionCountTone(section),
+            // Insurance Setup is a catalog hub — omit count chrome (`tabs.mdc`).
+            count: claimsSectionTabCount(
+              state,
+              section,
+              activeSection: effectiveSection,
+            ),
+            countTone: claimsSectionCountTone(section),
           ),
       ],
       selectedId: effectiveSection.name,
@@ -735,6 +713,23 @@ class _ClaimsQueuePanel extends ConsumerWidget {
       accessPolicy,
       section,
     );
+    final bool canExport = canExportClaimsWorkspace(accessPolicy);
+    final bool canPrint = canPrintClaimsWorkspace(accessPolicy);
+    final List<AppListTableColumn<ClaimsQueueItem>> columns =
+        _defaultColumnsForSection(
+          context,
+          ref,
+          l10n,
+          section,
+          showNextAction: showNextAction,
+        );
+    final List<AppListTableColumn<ClaimsQueueItem>> columnChoices =
+        _columnChoicesForSection(
+          context,
+          l10n,
+          section,
+          showNextAction: showNextAction,
+        );
 
     return AppListTable<ClaimsQueueItem>(
       page: state.queue,
@@ -744,6 +739,50 @@ class _ClaimsQueuePanel extends ConsumerWidget {
       columnWidthStorageKey: 'claims_cw_${section.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+      enableExport: true,
+      canExport: canExport,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () => printClaimsListTable<ClaimsQueueItem>(
+        ref: ref,
+        context: context,
+        title: switch (section) {
+          ClaimsDeskSection.authorizations => l10n.claimsSectionAuthorizations,
+          ClaimsDeskSection.activeClaims => l10n.claimsSectionActiveClaims,
+          ClaimsDeskSection.settled => l10n.claimsSectionSettled,
+          ClaimsDeskSection.insuranceSetup => l10n.claimsSectionInsuranceSetup,
+        },
+        columns: <AppListTableColumn<ClaimsQueueItem>>[
+          ...columns,
+          ...columnChoices,
+        ],
+        items: state.queue.items,
+        emptyText: l10n.claimsEmptyQueueTitle,
+      ),
+      exportConfig: AppListTableExportConfig<ClaimsQueueItem>(
+        fileNameStem: 'claims_${section.name}',
+        dateOf: (ClaimsQueueItem item) => item.timelineAt,
+        sheetName: switch (section) {
+          ClaimsDeskSection.authorizations => l10n.claimsSectionAuthorizations,
+          ClaimsDeskSection.activeClaims => l10n.claimsSectionActiveClaims,
+          ClaimsDeskSection.settled => l10n.claimsSectionSettled,
+          ClaimsDeskSection.insuranceSetup => l10n.claimsSectionInsuranceSetup,
+        },
+      ),
       search: AppListTableSearch<ClaimsQueueItem>(
         controller: searchController,
         semanticLabel: l10n.claimsSearchSemanticLabel,
@@ -762,38 +801,36 @@ class _ClaimsQueuePanel extends ConsumerWidget {
             _showFailureIfNeeded(context, failure);
           }
         },
-        showAdvancedFilterButton: section == ClaimsDeskSection.settled,
+        showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
         advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
+        // Product exception (tabs/15-claims/99): ClaimsQueueQuery has no date
+        // range; work-items API does not accept date_from/date_to.
         enableDateFilter: false,
         allFieldsLabel: l10n.claimsFilterAll,
-        filterGroups: section == ClaimsDeskSection.settled
-            ? <AppSearchBarFilterGroup>[
-                AppSearchBarFilterGroup(
-                  key: _claimsQueueFilterKey,
-                  label: l10n.claimsQueueFilterLabel,
-                  allLabel: l10n.claimsFilterAll,
-                  choices: _claimsFilterChoicesForSection(l10n, section),
-                ),
-              ]
-            : const <AppSearchBarFilterGroup>[],
-        filterValue: section == ClaimsDeskSection.settled
-            ? _claimsFilterValue(state.query)
-            : AppSearchBarFilterValue.empty,
-        hasActiveFilters: section == ClaimsDeskSection.settled &&
+        filterGroups: <AppSearchBarFilterGroup>[
+          AppSearchBarFilterGroup(
+            key: _claimsQueueFilterKey,
+            label: l10n.claimsQueueFilterLabel,
+            allLabel: l10n.claimsFilterAll,
+            choices: _claimsFilterChoicesForSection(l10n, section),
+          ),
+        ],
+        filterValue: _claimsFilterValue(state.query),
+        hasActiveFilters:
+            claimsQueueQueryNarrowed(state.query, section) ||
             state.query.filter != ClaimsQueueFilter.all,
-        onFilterChanged: section == ClaimsDeskSection.settled
-            ? (AppSearchBarFilterValue value) async {
-                final AppFailure? failure = await controller.applyFilter(
-                  _claimsFilterFromValue(value.option(_claimsQueueFilterKey)),
-                );
-                if (context.mounted) {
-                  _showFailureIfNeeded(context, failure);
-                }
-              }
-            : null,
+        onFilterChanged: (AppSearchBarFilterValue value) async {
+          final AppFailure? failure = await controller.applyFilter(
+            _claimsFilterFromValue(value.option(_claimsQueueFilterKey)),
+          );
+          if (context.mounted) {
+            _showFailureIfNeeded(context, failure);
+          }
+        },
       ),
       previousPageLabel: l10n.claimsPreviousPageLabel,
       nextPageLabel: l10n.claimsNextPageLabel,
@@ -823,14 +860,8 @@ class _ClaimsQueuePanel extends ConsumerWidget {
         body: l10n.claimsEmptyQueueBody,
         icon: Icons.inbox_outlined,
       ),
-      columns: _defaultColumnsForSection(
-        context,
-        ref,
-        l10n,
-        section,
-        showNextAction: showNextAction,
-      ),
-      columnChoices: _columnChoicesForSection(context, l10n, section),
+      columns: columns,
+      columnChoices: columnChoices,
       mobileItemBuilder: (BuildContext context, ClaimsQueueItem item) {
         return AppListTableMobileItem(
           title: item.displayId,
@@ -869,19 +900,27 @@ List<AppListTableColumn<ClaimsQueueItem>> _defaultColumnsForSection(
   required bool showNextAction,
 }) {
   return switch (section) {
+    // Prefer 5 defaults (tables.mdc). When Next is omitted, promote the first
+    // optional fact column so read-only queues still ship five visible columns.
     ClaimsDeskSection.authorizations => <AppListTableColumn<ClaimsQueueItem>>[
       _claimsReferenceColumn(l10n, id: 'auth_reference'),
       _claimsPatientColumn(l10n, id: 'auth_patient'),
       _claimsCoverageColumn(l10n, id: 'auth_coverage'),
       _claimsStatusColumn(l10n),
-      if (showNextAction) _claimsNextActionColumn(context, ref, section),
+      if (showNextAction)
+        _claimsNextActionColumn(context, ref, section)
+      else
+        _claimsApprovedAmountColumn(l10n, id: 'auth_approved_amount'),
     ],
     ClaimsDeskSection.activeClaims => <AppListTableColumn<ClaimsQueueItem>>[
       _claimsReferenceColumn(l10n, id: 'claim_reference'),
       _claimsPatientColumn(l10n, id: 'claim_patient'),
       _claimsCoverageColumn(l10n, id: 'claim_coverage'),
       _claimsStatusColumn(l10n),
-      if (showNextAction) _claimsNextActionColumn(context, ref, section),
+      if (showNextAction)
+        _claimsNextActionColumn(context, ref, section)
+      else
+        _claimsInvoiceColumn(l10n, id: 'claim_invoice'),
     ],
     ClaimsDeskSection.settled => <AppListTableColumn<ClaimsQueueItem>>[
       _claimsReferenceColumn(l10n, id: 'settled_reference'),
@@ -898,15 +937,17 @@ List<AppListTableColumn<ClaimsQueueItem>> _defaultColumnsForSection(
 List<AppListTableColumn<ClaimsQueueItem>> _columnChoicesForSection(
   BuildContext context,
   AppLocalizations l10n,
-  ClaimsDeskSection section,
-) {
+  ClaimsDeskSection section, {
+  required bool showNextAction,
+}) {
   return switch (section) {
     ClaimsDeskSection.authorizations => <AppListTableColumn<ClaimsQueueItem>>[
-      _claimsApprovedAmountColumn(l10n, id: 'auth_approved_amount'),
+      if (showNextAction)
+        _claimsApprovedAmountColumn(l10n, id: 'auth_approved_amount'),
       _claimsRequestedAtColumn(l10n, id: 'auth_requested_at'),
     ],
     ClaimsDeskSection.activeClaims => <AppListTableColumn<ClaimsQueueItem>>[
-      _claimsInvoiceColumn(l10n, id: 'claim_invoice'),
+      if (showNextAction) _claimsInvoiceColumn(l10n, id: 'claim_invoice'),
       _claimsClaimAmountColumn(l10n, id: 'claim_amount'),
       _claimsSubmittedAtColumn(l10n, id: 'claim_submitted_at'),
     ],
@@ -972,6 +1013,7 @@ AppListTableColumn<ClaimsQueueItem> _claimsStatusColumn(AppLocalizations l10n) {
     label: l10n.claimsStatusColumnLabel,
     sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
         appListTableCompareText(a.status, b.status),
+    exportValue: (ClaimsQueueItem item) => item.status,
     cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
         AppWorkspaceStatusBadge(status: _statusFor(context, item)),
   );
@@ -1320,11 +1362,7 @@ Future<void> _openClaimsDetailDialog(
   }
   final AppLocalizations l10n = context.l10n;
   final AppAccessPolicy accessPolicy = ref.read(appAccessPolicyProvider);
-  // Settled Print → [ClaimsSettledAtomPermissions.export] (nested ∪);
-  // Authorizations / Active Claims → document/read ∩ (atom maps + helper).
-  final AccessRequirement printRequirement = section == ClaimsDeskSection.settled
-      ? ClaimsSettledAtomPermissions.export
-      : claimsDetailPrintRequirement(section);
+  final AccessRequirement printRequirement = claimsDetailPrintRequirement(section);
   final bool canPrint = printRequirement.isAllowed(accessPolicy);
 
   await showAppDialog<void>(
@@ -1340,11 +1378,11 @@ Future<void> _openClaimsDetailDialog(
         section: section,
       ),
       actions: <Widget>[
-        // Settled: nested export ∪ ([ClaimsSettledAtomPermissions.export]);
-        // other sections: read ∩ (inventory). Unauthorized Print does not mount.
+        // Detail Print — [claimsDetailPrintRequirement] (Settled ∩ evidence:export;
+        // other sections: document read ∩). Unauthorized Print does not mount.
         if (canPrint)
           AppReportActionButton.print(
-            label: l10n.claimsPrintStatementAction,
+            label: l10n.commonPrintActionLabel,
             onPressed: () async {
               final String title = detail.isAuthorization
                   ? l10n.claimsAuthorizationStatementTitle

@@ -510,7 +510,7 @@ void main() {
 
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
       expect(find.text('Sync insurer status'), findsNothing);
-      expect(find.text('Print statement'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
     },
   );
 
@@ -569,7 +569,7 @@ void main() {
       );
       expect(
         ClaimsActiveClaimsAtomPermissions.routeEntry.isAllowed(approveOnly),
-        isTrue,
+        isFalse,
       );
       expect(
         ClaimsActiveClaimsAtomPermissions.tab.isAllowed(approveOnly),
@@ -905,7 +905,7 @@ void main() {
       );
       expect(
         ClaimsSettledAtomPermissions.export.isAllowed(reader),
-        isFalse,
+        isTrue,
       );
 
       await _pumpActiveClaimsTab(
@@ -916,7 +916,7 @@ void main() {
 
       await tester.tap(find.text('CLM-SUB'));
       await tester.pumpAndSettle();
-      expect(find.text('Print statement'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
       expect(find.text('Sync insurer status'), findsNothing);
     },
   );
@@ -1407,7 +1407,7 @@ void main() {
       );
       expect(
         ClaimsActiveClaimsAtomPermissions.routeEntry.isAllowed(writeOnly),
-        isTrue,
+        isFalse,
       );
       expect(
         ClaimsActiveClaimsAtomPermissions.tab.isAllowed(writeOnly),

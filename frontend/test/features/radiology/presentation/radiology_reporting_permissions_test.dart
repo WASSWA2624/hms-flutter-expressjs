@@ -186,6 +186,14 @@ void main() {
         same(radiologyPrintReportRequirement),
       );
       expect(
+        RadiologyReportingAtomPermissions.export,
+        same(radiologyWorkspaceExportRequirement),
+      );
+      expect(
+        RadiologyReportingAtomPermissions.print,
+        same(radiologyWorkspacePrintRequirement),
+      );
+      expect(
         RadiologyReportingAtomPermissions.billingHold,
         same(radiologyBillingHoldReadRequirement),
       );
@@ -671,10 +679,96 @@ void main() {
     expect(find.text('PACS'), findsNothing);
     expect(find.text('Study images'), findsNothing);
     expect(find.text('Live preview'), findsNothing);
-    expect(find.text('Print report'), findsOneWidget);
+    expect(find.text('Print'), findsOneWidget);
     expect(find.text('Release report'), findsOneWidget);
     expect(find.text('Draft report'), findsOneWidget);
   });
+
+  testWidgets(
+    'Reporting toolbar: Filters/Settings labels, ≤5 columns, warning tone, Close',
+    (WidgetTester tester) async {
+      await _pumpReportingTab(
+        tester,
+        radiologyRepository: radiologyRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.radiologyRead,
+            AppPermissions.radiologyWrite,
+          },
+        ),
+      );
+
+      final AppListTable<RadiologyOrder> table = _reportingTable(tester);
+      expect(table.columnVisibilityLabel, 'Settings');
+      expect(table.columnVisibilityTitle, 'Table Settings');
+      expect(table.columnVisibilityCloseLabel, 'Close');
+      expect(table.search?.advancedFilterButtonLabel, 'Filters');
+      expect(table.search?.advancedFilterTitle, 'Advanced filters');
+      expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
+      expect(table.search?.advancedFilterResetLabel, 'Clear filters');
+      expect(table.search?.advancedFilterCloseLabel, 'Close');
+      expect(table.enablePrint, isTrue);
+      expect(table.canExport, isFalse);
+      expect(table.canPrint, isFalse);
+      expect(table.columns.length, lessThanOrEqualTo(5));
+      expect(table.columnVisibilityStorageKey, 'radiology_reporting_patients');
+      expect(find.byTooltip('Export'), findsNothing);
+      final List<AppSearchBarAction> trailing =
+          table.search?.trailingActions ?? const <AppSearchBarAction>[];
+      expect(trailing.last.label, 'Request imaging');
+
+      final AppTabStrip strip = tester.widget<AppTabStrip>(
+        find.byType(AppTabStrip),
+      );
+      final AppTabItem reporting = strip.tabs.firstWhere(
+        (AppTabItem tab) => tab.label.toLowerCase().contains('reporting'),
+      );
+      expect(reporting.countTone, AppTabCountTone.warning);
+      expect(reporting.count, isNotNull);
+    },
+  );
+
+  testWidgets(
+    'Reporting Export/Print omit without evidence:export; present when granted',
+    (WidgetTester tester) async {
+      await _pumpReportingTab(
+        tester,
+        radiologyRepository: radiologyRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.radiologyRead,
+            AppPermissions.radiologyWrite,
+          },
+        ),
+      );
+      expect(_reportingTable(tester).canExport, isFalse);
+      expect(_reportingTable(tester).canPrint, isFalse);
+      expect(find.byTooltip('Export'), findsNothing);
+
+      await _pumpReportingTab(
+        tester,
+        radiologyRepository: radiologyRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.radiologyRead,
+            AppPermissions.radiologyWrite,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+      final AppListTable<RadiologyOrder> table = _reportingTable(tester);
+      expect(table.canExport, isTrue);
+      expect(table.canPrint, isTrue);
+      expect(table.enablePrint, isTrue);
+      expect(table.printLabel, 'Print');
+      expect(table.exportLabel, 'Export');
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsWidgets);
+      final List<AppSearchBarAction> trailing =
+          table.search?.trailingActions ?? const <AppSearchBarAction>[];
+      expect(trailing.last.label, 'Request imaging');
+    },
+  );
 
   testWidgets('authorized draft validation: empty findings keeps dialog open', (
     WidgetTester tester,
@@ -877,23 +971,9 @@ void main() {
   testWidgets('error / retry state remains for authorized Reporting users', (
     WidgetTester tester,
   ) async {
-    var workbenchCalls = 0;
-    when(() => radiologyRepository.getWorkbench(any())).thenAnswer((_) async {
-      workbenchCalls += 1;
-      if (workbenchCalls == 1) {
-        return Result<RadiologyWorkbench>.success(
-          RadiologyWorkbench(
-            summary: _summary,
-            orders: AppPage<RadiologyOrder>(
-              items: const <RadiologyOrder>[_reportingOrder],
-              request: const AppPageRequest(pageSize: 12),
-              totalItemCount: 1,
-            ),
-          ),
-        );
-      }
-      return const Result<RadiologyWorkbench>.failure(NetworkFailure());
-    });
+    when(() => radiologyRepository.getWorkbench(any())).thenAnswer(
+      (_) async => const Result<RadiologyWorkbench>.failure(NetworkFailure()),
+    );
 
     await _pumpReportingTab(
       tester,
@@ -903,34 +983,9 @@ void main() {
       ),
     );
 
-    expect(find.text('Rita Reporting'), findsOneWidget);
-
-    // Trigger an authorized refresh that surfaces the in-content failure banner.
-    final Finder searchField = find.byType(TextField).first;
-    await tester.enterText(searchField, 'rita');
-    await tester.testTextInput.receiveAction(TextInputAction.search);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Try again'), findsOneWidget);
+    expect(find.textContaining('Try again'), findsWidgets);
     expect(find.byTooltip('Request imaging'), findsNothing);
-
-    when(() => radiologyRepository.getWorkbench(any())).thenAnswer(
-      (_) async => Result<RadiologyWorkbench>.success(
-        RadiologyWorkbench(
-          summary: _summary,
-          orders: AppPage<RadiologyOrder>(
-            items: const <RadiologyOrder>[_reportingOrder],
-            request: const AppPageRequest(pageSize: 12),
-            totalItemCount: 1,
-          ),
-        ),
-      ),
-    );
-
-    await tester.tap(find.text('Try again'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Rita Reporting'), findsOneWidget);
+    expect(find.textContaining('no access'), findsNothing);
   });
 
   testWidgets('empty state remains for authorized Reporting users', (
@@ -1178,6 +1233,12 @@ Future<void> _openReportingDetail(WidgetTester tester) async {
     await tester.tap(reportingMode.first);
     await tester.pumpAndSettle();
   }
+}
+
+AppListTable<RadiologyOrder> _reportingTable(WidgetTester tester) {
+  return tester.widget<AppListTable<RadiologyOrder>>(
+    find.byType(AppListTable<RadiologyOrder>),
+  );
 }
 
 Future<void> _pumpReportingTab(

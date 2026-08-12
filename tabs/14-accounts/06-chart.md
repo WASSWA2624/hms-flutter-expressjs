@@ -4,7 +4,7 @@
 
 - Label: `Account chart`
 - Icon: `Icons.list_alt_outlined`
-- Count source: `AccountsSummary.chartActive`
+- Count source: `accountsSectionTabCount` → `accountsChartActiveCountProvider` ?? `AccountsSummary.chartActive` (panel pushes filtered / scope totals; strip wired to chart count provider)
 - Count tone: `AppTabCountTone.info`
 - Deep-link `section`: `chart` (aliases `chart-of-accounts`, `coa`)
 - Tab gate: `AccountsChartAtomPermissions.tab` = entry
@@ -13,13 +13,12 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Filters → Settings → Print → Add**
+Order: **Filters → Settings → Export → Print → Add**
 
 - Search hint: chart-specific (`AccountsStrings.chartSearchHint`)
 - Filters: present; **no date filter**
 - Settings: `accounts_chart_v1`
-- Export: **absent**
-- Print (toolbar): `Print` (`chartPrintAction`) → `printAccountsChartList` / `PrintDocumentTemplates.registry`
+- Export / table Print: ∩ `evidence:export` — omit when unauthorized (`AccountsChartAtomPermissions.export` / `print`); Print lives in the table toolbar slot (not a trailing search action)
 - Context: `commonAddActionLabel` — omitted without chart write
 
 ## 3. Table
@@ -59,7 +58,7 @@ Create/edit → similarity review → proceed / use existing / cancel
 
 ## 9. Print / labels / preview
 
-- Table Print → `printAccountsChartList` → `PrintDocumentTemplates.registry` (preview-first options)
+- Table Print → `printAccountsListTable` → `PrintDocumentTemplates.registry` (preview-first; toolbar slot)
 - No label print
 
 ## 10. Loading / empty / error / success
@@ -71,5 +70,6 @@ Create/edit → similarity review → proceed / use existing / cancel
 
 | Atom | Gate |
 | --- | --- |
-| Tab / list / Print | entry |
+| Tab / list / filters / settings | entry |
 | Add / Edit / Deactivate / row select edit | `accountsChartWriteRequirement` (∪ `accounts:write` \| tenant/facility admin ∩ module) |
+| List Export / Print | ∩ `evidence:export` |

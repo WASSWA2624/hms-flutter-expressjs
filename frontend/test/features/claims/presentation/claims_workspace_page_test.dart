@@ -350,8 +350,16 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(_table(tester).search?.showAdvancedFilterButton, isFalse);
+    expect(_table(tester).search?.showAdvancedFilterButton, isTrue);
+    expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
     expect(_table(tester).columnVisibilityTitle, 'Table Settings');
+    expect(_table(tester).columnVisibilityLabel, 'Settings');
+    expect(_table(tester).enableExport, isTrue);
+    expect(_table(tester).canExport, isFalse);
+    expect(_table(tester).enablePrint, isTrue);
+    expect(_table(tester).canPrint, isFalse);
+    expect(_table(tester).printLabel, 'Print');
+    expect(_table(tester).search?.enableDateFilter, isFalse);
     expect(_table(tester).columns.length, 5);
   });
 
@@ -529,26 +537,106 @@ void main() {
   });
 
   testWidgets(
-    'Authorizations and Active Claims omit advanced filters and Refresh',
+    'Authorizations and Active Claims expose Filters and omit Refresh',
     (WidgetTester tester) async {
       await _pumpClaimsWorkspace(tester, repository: repository);
 
       expect(find.byTooltip('Refresh'), findsNothing);
-      expect(find.textContaining('Filters'), findsNothing);
-      expect(_table(tester).search?.showAdvancedFilterButton, isFalse);
+      expect(_table(tester).search?.showAdvancedFilterButton, isTrue);
+      expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
+      // Product exception: ClaimsQueueQuery / work-items API have no date range.
+      expect(_table(tester).search?.enableDateFilter, isFalse);
 
       await tester.tap(find.textContaining('Active Claims').first);
       await tester.pumpAndSettle();
 
       expect(find.byTooltip('Refresh'), findsNothing);
-      expect(find.textContaining('Filters'), findsNothing);
-      expect(_table(tester).search?.showAdvancedFilterButton, isFalse);
+      expect(_table(tester).search?.showAdvancedFilterButton, isTrue);
+      expect(_table(tester).search?.enableDateFilter, isFalse);
       // Redundant workload chips that duplicated Submitted / Approved are gone.
       expect(find.textContaining('Claims to submit'), findsNothing);
       expect(find.textContaining('Ready to settle'), findsNothing);
       expect(find.textContaining('Eligibility pending'), findsNothing);
     },
   );
+
+  testWidgets('export/print toolbar present when evidence:export granted', (
+    WidgetTester tester,
+  ) async {
+    await _pumpClaimsWorkspace(
+      tester,
+      repository: repository,
+      accessPolicy: AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(roles: <String>['BILLING']),
+          permissions: <AppPermission>{
+            AppPermissions.billingRead,
+            AppPermissions.billingWrite,
+            AppPermissions.financialApprove,
+            AppPermissions.evidenceExport,
+          },
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'insurance-claims',
+              licenseStatus: 'ACTIVE',
+            ),
+            AppModuleEntitlement(
+              code: 'billing-payments',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+        ),
+      ),
+    );
+
+    expect(_table(tester).canExport, isTrue);
+    expect(_table(tester).enablePrint, isTrue);
+    expect(_table(tester).canPrint, isTrue);
+    expect(_table(tester).printLabel, 'Print');
+    expect(find.byTooltip('Export'), findsOneWidget);
+    expect(find.byTooltip('Print'), findsOneWidget);
+  });
+
+  testWidgets('active tab badge uses filtered total when search narrows', (
+    WidgetTester tester,
+  ) async {
+    await _pumpClaimsWorkspace(tester, repository: repository);
+
+    final AppTabStrip stripBefore = tester.widget<AppTabStrip>(
+      find.byType(AppTabStrip),
+    );
+    final AppTabItem authBefore = stripBefore.tabs.firstWhere(
+      (AppTabItem tab) => tab.id == ClaimsDeskSection.authorizations.name,
+    );
+    expect(authBefore.count, 2);
+
+    await tester.enterText(find.byType(TextField).first, 'AUTH-PENDING');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+
+    final AppTabStrip stripAfter = tester.widget<AppTabStrip>(
+      find.byType(AppTabStrip),
+    );
+    final AppTabItem authAfter = stripAfter.tabs.firstWhere(
+      (AppTabItem tab) => tab.id == ClaimsDeskSection.authorizations.name,
+    );
+    expect(authAfter.count, 1);
+  });
+
+  testWidgets('Insurance Setup omits tab count chrome', (
+    WidgetTester tester,
+  ) async {
+    await _pumpClaimsWorkspace(tester, repository: repository);
+
+    final AppTabStrip strip = tester.widget<AppTabStrip>(
+      find.byType(AppTabStrip),
+    );
+    final AppTabItem setup = strip.tabs.firstWhere(
+      (AppTabItem tab) => tab.id == ClaimsDeskSection.insuranceSetup.name,
+    );
+    expect(setup.count, isNull);
+  });
 
   testWidgets('summary bar is hidden on Settled and Insurance Setup', (
     WidgetTester tester,
@@ -675,7 +763,7 @@ void main() {
       expect(
         find.descendant(
           of: find.byType(AppDialog),
-          matching: find.text('Print statement'),
+          matching: find.text('Print'),
         ),
         findsOneWidget,
       );

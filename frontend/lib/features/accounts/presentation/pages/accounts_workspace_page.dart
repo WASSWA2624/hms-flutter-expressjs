@@ -13,10 +13,12 @@ import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart'
 import 'package:hosspi_hms/features/accounts/presentation/controllers/accounts_workspace_controller.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_approvals_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_books_panel.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_chart_dialogs.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_chart_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_gl_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_ledgers_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_open_work_panel.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_scope_navigation.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_to_post_panel.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -210,19 +212,18 @@ class _AccountsWorkspaceContentState
     _updateUrlForSection(section);
   }
 
-  int? _sectionCount(AccountsDeskSection section) {
-    final AccountsSummary summary = widget.state.overview.summary;
-    return switch (section) {
-      AccountsDeskSection.gl =>
-        ref.watch(accountsGlActivityCountProvider) ?? summary.countFor(section),
-      AccountsDeskSection.books =>
-        ref.watch(accountsOpenPeriodsCountProvider) ??
-            summary.countFor(section),
-      AccountsDeskSection.ledgers =>
-        ref.watch(accountsPatientLedgersBalanceCountProvider) ??
-            summary.countFor(section),
-      _ => summary.countFor(section),
-    };
+  int _sectionCount(AccountsDeskSection section) {
+    return accountsSectionTabCount(
+      widget.state,
+      section,
+      activeSection: _section,
+      glActivityOverride: ref.watch(accountsGlActivityCountProvider),
+      openPeriodsOverride: ref.watch(accountsOpenPeriodsCountProvider),
+      ledgersBalanceOverride: ref.watch(
+        accountsPatientLedgersBalanceCountProvider,
+      ),
+      chartActiveOverride: ref.watch(accountsChartActiveCountProvider),
+    );
   }
 
   @override

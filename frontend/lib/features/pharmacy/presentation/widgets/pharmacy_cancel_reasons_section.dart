@@ -40,41 +40,44 @@ class PharmacyCancelReasonsSection extends StatelessWidget {
       description: l10n.pharmacyCancelReasonsSectionBody,
       density: AppFormSectionDensity.compact,
       children: <Widget>[
-        CheckboxListTile(
-          tristate: true,
-          contentPadding: EdgeInsets.zero,
-          controlAffinity: ListTileControlAffinity.leading,
-          secondary: Icon(
-            Icons.checklist_outlined,
-            color: theme.colorScheme.onSurfaceVariant,
+        Material(
+          color: Colors.transparent,
+          child: CheckboxListTile(
+            tristate: true,
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            secondary: Icon(
+              Icons.checklist_outlined,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            value: selectedCount == 0
+                ? false
+                : selectedCount == totalCount
+                ? true
+                : null,
+            title: Text(
+              selectedCount == totalCount && totalCount > 0
+                  ? l10n.commonDeselectAllActionLabel
+                  : l10n.commonSelectAllActionLabel,
+            ),
+            subtitle: selectedCount > 0 && selectedCount < totalCount
+                ? Text(
+                    l10n.pharmacyCancelReasonsSelectedCountLabel(
+                      selectedCount,
+                      totalCount,
+                    ),
+                  )
+                : null,
+            onChanged: enabled
+                ? (bool? checked) {
+                    onChanged(
+                      checked == true
+                          ? reasons.toSet()
+                          : <PharmacyCancelReason>{},
+                    );
+                  }
+                : null,
           ),
-          value: selectedCount == 0
-              ? false
-              : selectedCount == totalCount
-              ? true
-              : null,
-          title: Text(
-            selectedCount == totalCount && totalCount > 0
-                ? l10n.commonDeselectAllActionLabel
-                : l10n.commonSelectAllActionLabel,
-          ),
-          subtitle: selectedCount > 0 && selectedCount < totalCount
-              ? Text(
-                  l10n.pharmacyCancelReasonsSelectedCountLabel(
-                    selectedCount,
-                    totalCount,
-                  ),
-                )
-              : null,
-          onChanged: enabled
-              ? (bool? checked) {
-                  onChanged(
-                    checked == true
-                        ? reasons.toSet()
-                        : <PharmacyCancelReason>{},
-                  );
-                }
-              : null,
         ),
         ...reasons.map((PharmacyCancelReason reason) {
           final bool selected = selectedReasons.contains(reason);

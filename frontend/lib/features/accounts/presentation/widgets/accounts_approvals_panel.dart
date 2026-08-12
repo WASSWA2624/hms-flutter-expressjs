@@ -12,6 +12,7 @@ import 'package:hosspi_hms/features/accounts/presentation/controllers/accounts_w
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_approvals_table_support.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_work_actions.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_workspace_print_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -91,8 +92,18 @@ class _AccountsApprovalsPanelState extends ConsumerState<AccountsApprovalsPanel>
     );
     final bool canApprove = canDecideAccountsApproval(accessPolicy);
     final bool canWrite = canWriteAccounts(accessPolicy);
+    final bool canExport = canExportAccountsWorkspace(accessPolicy);
+    final bool canPrint = canPrintAccountsWorkspace(accessPolicy);
     final Object? failure = state.lastFailure;
     const AccountsDeskSection section = AccountsDeskSection.approvals;
+    final List<AppListTableColumn<AccountsWorkItem>> columns =
+        accountsApprovalsColumns(
+          context: context,
+          ref: ref,
+          accessPolicy: accessPolicy,
+          isSaving: state.isSaving,
+          onNextAction: _runApprove,
+        );
 
     return AppListTable<AccountsWorkItem>(
       page: state.workItems,
@@ -106,6 +117,18 @@ class _AccountsApprovalsPanelState extends ConsumerState<AccountsApprovalsPanel>
       columnVisibilityLabel: context.l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: context.l10n.commonTableSettingsTitle,
       enableExport: true,
+      canExport: canExport,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: AccountsStrings.printAction,
+      onPrint: () => printAccountsListTable<AccountsWorkItem>(
+        ref: ref,
+        context: context,
+        title: AccountsStrings.needApprovalLabel,
+        columns: columns,
+        items: state.workItems.items,
+        emptyText: AccountsStrings.needApprovalEmpty,
+      ),
       search: AppListTableSearch<AccountsWorkItem>(
         controller: _searchController,
         semanticLabel: AccountsStrings.searchSemantic,
@@ -120,6 +143,9 @@ class _AccountsApprovalsPanelState extends ConsumerState<AccountsApprovalsPanel>
         advancedFilterTitle: context.l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: context.l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: AccountsStrings.clearFilters,
+        dateFilterLabel: 'Posted date',
+        dateFromLabel: context.l10n.opdDateFromLabel,
+        dateToLabel: context.l10n.opdDateToLabel,
         allFieldsLabel: AccountsStrings.allFields,
         textFilters: const <AppSearchBarTextFilter>[
           AppSearchBarTextFilter(
@@ -189,6 +215,8 @@ class _AccountsApprovalsPanelState extends ConsumerState<AccountsApprovalsPanel>
             if (state.query.source.trim().isNotEmpty)
               'approval_type': state.query.source.trim(),
           },
+          dateFrom: state.query.from,
+          dateTo: state.query.to,
         ),
         hasActiveFilters: state.query.hasActiveFilters,
         onFilterChanged: (AppSearchBarFilterValue value) {
@@ -205,6 +233,10 @@ class _AccountsApprovalsPanelState extends ConsumerState<AccountsApprovalsPanel>
                 id: value.text('journal') ?? '',
                 status: value.option('status') ?? '',
                 source: value.option('approval_type') ?? '',
+                from: value.dateFrom,
+                to: value.dateTo,
+                clearFrom: value.dateFrom == null,
+                clearTo: value.dateTo == null,
                 clearAccountId: (value.text('accountId') ?? '').isEmpty,
                 clearPeriodId: (value.text('periodId') ?? '').isEmpty,
                 clearId: (value.text('journal') ?? '').isEmpty,
@@ -241,13 +273,7 @@ class _AccountsApprovalsPanelState extends ConsumerState<AccountsApprovalsPanel>
         title: AccountsStrings.needApprovalEmpty,
         body: '',
       ),
-      columns: accountsApprovalsColumns(
-        context: context,
-        ref: ref,
-        accessPolicy: accessPolicy,
-        isSaving: state.isSaving,
-        onNextAction: _runApprove,
-      ),
+      columns: columns,
       columnChoices: accountsApprovalsColumnChoices(
         context: context,
         ref: ref,

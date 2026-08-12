@@ -223,7 +223,13 @@ void main() {
         permissions: <AppPermission>{AppPermissions.billingRead},
       );
       expect(ClaimsSettledAtomPermissions.tab.isAllowed(reader), isTrue);
-      expect(ClaimsSettledAtomPermissions.export.isAllowed(reader), isFalse);
+      // Nested ∪ still passes via platform auto reports:read; detail Print uses
+      // ∩ evidence:export and must stay omitted for read-only.
+      expect(ClaimsSettledAtomPermissions.export.isAllowed(reader), isTrue);
+      expect(
+        claimsDetailPrintRequirement(ClaimsDeskSection.settled).isAllowed(reader),
+        isFalse,
+      );
       expect(ClaimsSettledAtomPermissions.write.isAllowed(reader), isFalse);
 
       await _pumpSettledTab(
@@ -250,14 +256,14 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
-      expect(find.text('Print statement'), findsNothing);
+      expect(find.text('Print'), findsNothing);
       expect(find.text('Sync insurer status'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'nested export ∪ reports:read: Print mounts; write chrome still absent',
+    'reports:read alone does not mount Settled detail Print (needs ∩ evidence:export)',
     (WidgetTester tester) async {
       final AppAccessPolicy exporter = _policy(
         permissions: <AppPermission>{
@@ -274,6 +280,12 @@ void main() {
         ],
       );
       expect(ClaimsSettledAtomPermissions.export.isAllowed(exporter), isTrue);
+      expect(
+        claimsDetailPrintRequirement(ClaimsDeskSection.settled).isAllowed(
+          exporter,
+        ),
+        isFalse,
+      );
       expect(ClaimsSettledAtomPermissions.write.isAllowed(exporter), isFalse);
 
       await _pumpSettledTab(
@@ -286,14 +298,14 @@ void main() {
       await tester.tap(find.text('CLM-PAID'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Print statement'), findsOneWidget);
+      expect(find.text('Print'), findsNothing);
       expect(find.text('Sync insurer status'), findsNothing);
       expect(find.byTooltip('Prepare claim'), findsNothing);
     },
   );
 
   testWidgets(
-    'reports:read without reporting-analytics module still shows Print',
+    'reports:read without reporting-analytics module still omits Settled detail Print',
     (WidgetTester tester) async {
       final AppAccessPolicy reportsNoModule = _policy(
         permissions: <AppPermission>{
@@ -306,6 +318,12 @@ void main() {
         ClaimsSettledAtomPermissions.export.isAllowed(reportsNoModule),
         isTrue,
       );
+      expect(
+        claimsDetailPrintRequirement(ClaimsDeskSection.settled).isAllowed(
+          reportsNoModule,
+        ),
+        isFalse,
+      );
 
       await _pumpSettledTab(
         tester,
@@ -315,12 +333,12 @@ void main() {
 
       await tester.tap(find.text('CLM-PAID'));
       await tester.pumpAndSettle();
-      expect(find.text('Print statement'), findsOneWidget);
+      expect(find.text('Print'), findsNothing);
     },
   );
 
   testWidgets(
-    'nested export ∪ evidence:export alone (with read ∩) shows Print',
+    '∩ evidence:export (with read ∩) shows Settled detail Print',
     (WidgetTester tester) async {
       final AppAccessPolicy exporter = _policy(
         permissions: <AppPermission>{
@@ -329,6 +347,12 @@ void main() {
         },
       );
       expect(ClaimsSettledAtomPermissions.export.isAllowed(exporter), isTrue);
+      expect(
+        claimsDetailPrintRequirement(ClaimsDeskSection.settled).isAllowed(
+          exporter,
+        ),
+        isTrue,
+      );
 
       await _pumpSettledTab(
         tester,
@@ -338,12 +362,18 @@ void main() {
 
       await tester.tap(find.text('CLM-PAID'));
       await tester.pumpAndSettle();
-      expect(find.text('Print statement'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Print'),
+        ),
+        findsOneWidget,
+      );
     },
   );
 
   testWidgets(
-    'write ∩ without export ∪: mutate chrome absent; Print still absent',
+    'write ∩ without ∩ evidence:export: mutate chrome absent; Print still absent',
     (WidgetTester tester) async {
       final AppAccessPolicy writer = _policy(
         permissions: <AppPermission>{
@@ -352,7 +382,14 @@ void main() {
         },
       );
       expect(ClaimsSettledAtomPermissions.write.isAllowed(writer), isTrue);
-      expect(ClaimsSettledAtomPermissions.export.isAllowed(writer), isFalse);
+      // Nested ∪ passes via auto reports:read; detail Print needs evidence:export.
+      expect(ClaimsSettledAtomPermissions.export.isAllowed(writer), isTrue);
+      expect(
+        claimsDetailPrintRequirement(ClaimsDeskSection.settled).isAllowed(
+          writer,
+        ),
+        isFalse,
+      );
 
       await _pumpSettledTab(
         tester,
@@ -373,7 +410,7 @@ void main() {
 
       await tester.tap(find.text('CLM-PAID'));
       await tester.pumpAndSettle();
-      expect(find.text('Print statement'), findsNothing);
+      expect(find.text('Print'), findsNothing);
       expect(find.text('Sync insurer status'), findsNothing);
     },
   );
@@ -386,7 +423,7 @@ void main() {
       );
       expect(
         ClaimsSettledAtomPermissions.routeEntry.isAllowed(approveOnly),
-        isTrue,
+        isFalse,
       );
       expect(ClaimsSettledAtomPermissions.tab.isAllowed(approveOnly), isFalse);
 
@@ -769,7 +806,13 @@ void main() {
 
     await tester.tap(find.text('CLM-PAID'));
     await tester.pumpAndSettle();
-    expect(find.text('Print statement'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.text('Print'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('light theme: read-only Settled detail omits Print', (
@@ -786,7 +829,13 @@ void main() {
 
     await tester.tap(find.text('CLM-PAID'));
     await tester.pumpAndSettle();
-    expect(find.text('Print statement'), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(AppDialog),
+        matching: find.text('Print'),
+      ),
+      findsNothing,
+    );
   });
 
   testWidgets(
@@ -907,7 +956,13 @@ void main() {
 
       await tester.tap(find.text('CLM-PAID'));
       await tester.pumpAndSettle();
-      expect(find.text('Print statement'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AppDialog),
+          matching: find.text('Print'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Sync insurer status'), findsNothing);
       // Settled has no nested write forms → no client validation chrome here.
       expect(find.textContaining('required'), findsNothing);

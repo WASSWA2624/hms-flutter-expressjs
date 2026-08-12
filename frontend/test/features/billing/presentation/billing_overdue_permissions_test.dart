@@ -255,7 +255,7 @@ void main() {
       expect(find.text('Adjust'), findsNothing);
       expect(find.text('Void'), findsNothing);
       expect(find.text('Send'), findsNothing);
-      expect(find.text('Print invoice'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
       expect(find.byTooltip('Download invoice PDF'), findsOneWidget);
       expect(find.text('View ledger'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
@@ -305,7 +305,7 @@ void main() {
       expect(find.text('Adjust'), findsWidgets);
       expect(find.text('Send'), findsWidgets);
       expect(find.text('Void'), findsWidgets);
-      expect(find.text('Print invoice'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
       expect(find.byTooltip('Download invoice PDF'), findsOneWidget);
       expect(find.text('View ledger'), findsOneWidget);
       expect(find.text('Finalize financial clearance'), findsNothing);

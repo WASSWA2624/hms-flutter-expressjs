@@ -191,16 +191,6 @@ IconData accountsSectionIcon(AccountsDeskSection section) {
   };
 }
 
-AppTabCountTone accountsSectionCountTone(AccountsDeskSection section) {
-  return switch (section) {
-    AccountsDeskSection.work => AppTabCountTone.info,
-    AccountsDeskSection.journals ||
-    AccountsDeskSection.approvals ||
-    AccountsDeskSection.books => AppTabCountTone.warning,
-    _ => AppTabCountTone.info,
-  };
-}
-
 String accountsEmptyBody(AccountsDeskSection section) {
   return switch (section) {
     AccountsDeskSection.work => AccountsStrings.openWorkEmpty,

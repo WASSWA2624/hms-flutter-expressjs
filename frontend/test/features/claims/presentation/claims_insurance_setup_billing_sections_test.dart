@@ -398,13 +398,15 @@ void main() {
 
       await tester.tap(find.textContaining('Add scheme'));
       await tester.pumpAndSettle();
+      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
       expectFlatSections(tester);
 
-      await tester.tap(find.textContaining('Cancel').last);
+      Navigator.of(tester.element(find.byType(AppDialog).last)).pop();
       await tester.pumpAndSettle();
 
       await tester.tap(find.textContaining('Add price'));
       await tester.pumpAndSettle();
+      expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
       expect(find.textContaining('Payment method'), findsNothing);
       expectFlatSections(tester);
     });

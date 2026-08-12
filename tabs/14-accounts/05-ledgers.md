@@ -4,7 +4,7 @@
 
 - Label: `Patient ledgers`
 - Icon: `Icons.person_outline`
-- Count source: `accountsPatientLedgersBalanceCountProvider` ?? `ledgersWithBalance`
+- Count source: `accountsSectionTabCount` → `accountsPatientLedgersBalanceCountProvider` ?? `ledgersWithBalance` (panel pushes filtered totals when filters active)
 - Count tone: `AppTabCountTone.info`
 - Deep-link `section`: `ledgers` (alias `patient-ledgers`); may pass `patientId`, `search`
 - Tab gate: `AccountsPatientLedgersAtomPermissions.tab` = ∩ `accounts:read` + `facility-accounts`
@@ -12,13 +12,12 @@
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-Order: **Filters → Settings → Export**
+Order: **Filters → Settings → Export → Print**
 
 - Search hint: `Patient…`
 - Filters: present; **no date filter**
 - Settings: `accounts_ledgers_v1`
-- Export: `enableExport: true`
-- Print (toolbar): **absent** (print in patient ledger dialog)
+- Export / table Print: ∩ `evidence:export` — omit when unauthorized (`AccountsPatientLedgersAtomPermissions.export` / `print`)
 - Context trailing: none
 
 ## 3. Table
@@ -58,8 +57,8 @@ Ledger dialog → Print packet options. Pay leaves Accounts for Billing.
 
 ## 9. Print / labels / preview
 
-- Dialog Print → `printAccountsPatientLedgerPacket` → `claimStatement`
-- Table Print: absent
+- Table Print: preview-first `printAccountsListTable`
+- Dialog Print → `printAccountsPatientLedgerPacket` → `claimStatement` template reuse
 
 ## 10. Loading / empty / error / success
 
@@ -70,6 +69,6 @@ Ledger dialog → Print packet options. Pay leaves Accounts for Billing.
 
 | Atom | Gate |
 | --- | --- |
-| Tab / list / Ledger | `accountsPatientLedgersReadRequirement` |
+| Tab / list / filters / settings / Ledger | `accountsPatientLedgersReadRequirement` |
 | Pay | `accountsPayDeepLinkRequirement` (billing write ∩ `billing-payments`) |
-| Export | mounted with table (entry already required to see desk) |
+| List Export / Print | ∩ `evidence:export` |

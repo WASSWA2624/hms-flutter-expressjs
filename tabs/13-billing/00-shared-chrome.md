@@ -9,6 +9,7 @@
 - Approvals decide: ∩ `billing:write` + `financial:approve`
 - Claims pending tab: (`billing:read` ∪ `billing:write`) ∩ `billing-payments` ∩ `insurance-claims`
 - Claims mutations: `billingClaimsWriteRequirement` (claims write vocabulary)
+- List Export / table Print: ∩ `evidence:export` (`billingWorkspaceExportRequirement` / `canExportBillingWorkspace` / `canPrintBillingWorkspace`)
 - `BillingQueueType.overdue` is **not** a desk tab (`isDeskSection == false` / `canViewBillingQueue` returns false)
 
 ## Page chrome
@@ -25,20 +26,22 @@
 
 - Desk queues from `BillingQueueType.values` where `canViewBillingQueue`
 - Extra tab: Price book (`id: prices`, `billingPriceBookTab`) when `canViewBillingPriceBook`
-- Counts: `state.overview.summary.countFor(queue)`; price book uses `billingPriceBookActiveCountProvider`
-- Count tones: `warning` for issue/collect/claims/approvals; `info` for open work; overdue enum would be `danger` but is not a tab
+- Counts: sibling model = dedicated unfiltered `summary.countFor(queue)`; active tab with search/advanced filters uses filtered `workItems.totalItemCount` via `billingQueueTabCount`
+- Price book uses `billingPriceBookActiveCountProvider` + `billingPriceBookCountTone` (`info`)
+- Count tones: `warning` for issue/collect/claims/approvals; `info` for open work / price book; overdue enum would be `danger` but is not a tab
 - Icons via `billingQueueIcon`; tooltips via `billingQueueTooltip`
 
 ## Queue table toolbar pattern
 
-Order: **Filters → Settings → context trailing (owner-tab only)**
+Order: **Filters → Settings → Export → Print → context trailing (owner-tab only)**
 
 | Control | Label / key | Notes |
 | --- | --- | --- |
 | Search | `billingSearchSemanticLabel` / `billingSearchHint` | Clear `billingClearSearch` |
-| Filters | `billingFiltersLabel` → `commonAdvancedFiltersTitle` | Apply `opdApplyFiltersAction`; Reset `billingClearFilters` |
+| Filters | `commonFiltersActionLabel` → `commonAdvancedFiltersTitle` | Apply `opdApplyFiltersAction`; Reset `opdClearFiltersAction`; Close `commonCloseActionLabel` |
 | Settings | `commonTableSettings*` | keys `billing_<section>_v1` via `billingTableSettingsKey` |
-| Export / Print (table) | **absent** on queue `AppListTable` | print from detail / price book |
+| Export | `commonTableExportActionLabel` | omitted without ∩ `evidence:export` |
+| Print | `commonPrintActionLabel` | preview-first via `printBillingWorkspaceList`; omitted without ∩ `evidence:export` |
 | Charge | `billingChargeAction` | **Open work only**; write ∩ |
 | Issue all | `billingIssueAllAction` | **To issue only**; write ∩ |
 | Close day / Close shift | `billingCloseDay` / `billingCloseShift` | **Collect due only**; write ∩ |
@@ -60,10 +63,13 @@ Text filters: patient / invoice / encounter helpers (`_billingTextFilters`).
 | Claim submit / reconcile / pre-auth | Billing-owned (claims write ∩) |
 | Ledger | Billing-owned `showBillingLedgerDialog` (**reused** accounts-facing ledger UI) |
 | Price book create/edit | Billing-owned price book dialogs |
-| Print invoice / receipt / claim / approval / price book | Billing print helpers |
+| Print invoice / receipt / claim / approval / price book / worklist | Billing print helpers |
+
+Detail Print triggers use `commonPrintActionLabel` (`Print`); document-specific meaning stays in tooltips (`billingPrintInvoiceTooltip` / claim / approval).
 
 ## Feedback patterns
 
 - Empty: queue-specific bodies (`billingEmptyReadyToIssueBody`, `billingEmptyCollectDueBody`, …); short-copy queues use body as title
 - Mutations: `_showMutationResult` snackbars
 - Detail Print/Download omitted when unauthorized (no disabled stubs)
+- List Export / Print omitted when unauthorized (no disabled stubs)

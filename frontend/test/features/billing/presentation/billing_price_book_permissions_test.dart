@@ -167,7 +167,37 @@ void main() {
     expect(find.byType(BillingPriceBookPanel), findsOneWidget);
     expect(find.text('No prices match.'), findsOneWidget);
     expect(find.byTooltip('Add'), findsNothing);
-    expect(find.text('Print'), findsOneWidget);
+    final AppListTable<BillingPriceBookEntry> table = tester
+        .widget<AppListTable<BillingPriceBookEntry>>(
+          find.byType(AppListTable<BillingPriceBookEntry>),
+        );
+    expect(table.enablePrint, isTrue);
+    expect(table.canExport, isFalse);
+    expect(table.canPrint, isFalse);
+    expect(find.byTooltip('Print'), findsNothing);
+  });
+
+  testWidgets('Price book export/print mount with evidence:export', (
+    WidgetTester tester,
+  ) async {
+    await _pumpPriceBook(
+      tester,
+      accessPolicy: _policyFor(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.evidenceExport,
+        },
+      ),
+    );
+
+    final AppListTable<BillingPriceBookEntry> table = tester
+        .widget<AppListTable<BillingPriceBookEntry>>(
+          find.byType(AppListTable<BillingPriceBookEntry>),
+        );
+    expect(table.canExport, isTrue);
+    expect(table.canPrint, isTrue);
+    expect(find.byTooltip('Export'), findsOneWidget);
+    expect(find.byTooltip('Print'), findsOneWidget);
   });
 
   testWidgets('Price book alias price-book selects section=prices body', (

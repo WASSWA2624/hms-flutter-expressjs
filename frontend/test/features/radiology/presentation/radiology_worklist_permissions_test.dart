@@ -418,6 +418,20 @@ void main() {
       );
       expect(
         identical(
+          RadiologyWorklistAtomPermissions.export,
+          radiologyWorkspaceExportRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
+          RadiologyWorklistAtomPermissions.print,
+          radiologyWorkspacePrintRequirement,
+        ),
+        isTrue,
+      );
+      expect(
+        identical(
           RadiologyWorklistAtomPermissions.assign,
           radiologyWorkspaceWriteRequirement,
         ),
@@ -524,6 +538,33 @@ void main() {
         expect(find.byTooltip('Orders view'), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
 
+        expect(_table(tester).enablePrint, isTrue);
+        expect(_table(tester).canExport, isFalse);
+        expect(_table(tester).canPrint, isFalse);
+        expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
+        expect(_table(tester).search?.advancedFilterTitle, 'Advanced filters');
+        expect(_table(tester).search?.advancedFilterApplyLabel, 'Apply filters');
+        expect(_table(tester).search?.advancedFilterResetLabel, 'Clear filters');
+        expect(_table(tester).search?.advancedFilterCloseLabel, 'Close');
+        expect(_table(tester).columnVisibilityLabel, 'Settings');
+        expect(_table(tester).columnVisibilityTitle, 'Table Settings');
+        expect(_table(tester).columnVisibilityCloseLabel, 'Close');
+        expect(_table(tester).columns.length, lessThanOrEqualTo(5));
+        expect(find.byTooltip('Export'), findsNothing);
+        final List<AppSearchBarAction> trailing =
+            _table(tester).search?.trailingActions ??
+            const <AppSearchBarAction>[];
+        expect(trailing.last.label, 'Request imaging');
+
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem worklist = strip.tabs.firstWhere(
+          (AppTabItem tab) => tab.label.contains('Worklist'),
+        );
+        expect(worklist.countTone, AppTabCountTone.warning);
+        expect(worklist.count, isNotNull);
+
         final bool hasBillingChoice =
             (_table(tester).columnChoices ??
                     const <AppListTableColumn<RadiologyOrder>>[])
@@ -550,6 +591,50 @@ void main() {
           isTrue,
         );
         expect(find.textContaining('no access'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Worklist Export/Print omit without evidence:export; present when granted',
+      (WidgetTester tester) async {
+        await _pumpWorklistTab(tester, repository: repository);
+        expect(_table(tester).canExport, isFalse);
+        expect(_table(tester).canPrint, isFalse);
+        expect(find.byTooltip('Export'), findsNothing);
+
+        await _pumpWorklistTab(
+          tester,
+          repository: repository,
+          policy: _policyFor(
+            permissions: <AppPermission>{
+              AppPermissions.radiologyRead,
+              AppPermissions.radiologyWrite,
+              AppPermissions.billingRead,
+              AppPermissions.evidenceExport,
+            },
+            modules: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: radiologyWorkflowsModule,
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'billing-payments',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+          ),
+        );
+        expect(_table(tester).canExport, isTrue);
+        expect(_table(tester).canPrint, isTrue);
+        expect(_table(tester).enablePrint, isTrue);
+        expect(_table(tester).printLabel, 'Print');
+        expect(_table(tester).exportLabel, 'Export');
+        expect(find.byTooltip('Export'), findsOneWidget);
+        expect(find.byTooltip('Print'), findsWidgets);
+        final List<AppSearchBarAction> trailing =
+            _table(tester).search?.trailingActions ??
+            const <AppSearchBarAction>[];
+        expect(trailing.last.label, 'Request imaging');
       },
     );
 

@@ -204,6 +204,8 @@ void main() {
       );
       expect(BillingNeedsIssueAtomPermissions.tab.isAllowed(reader), isTrue);
       expect(BillingNeedsIssueAtomPermissions.document.isAllowed(reader), isTrue);
+      expect(BillingNeedsIssueAtomPermissions.export.isAllowed(reader), isFalse);
+      expect(BillingNeedsIssueAtomPermissions.print.isAllowed(reader), isFalse);
       expect(BillingNeedsIssueAtomPermissions.issue.isAllowed(reader), isFalse);
       expect(BillingNeedsIssueAtomPermissions.create.isAllowed(reader), isFalse);
       expect(BillingNeedsIssueAtomPermissions.update.isAllowed(reader), isFalse);
@@ -231,11 +233,19 @@ void main() {
       expect(find.text('Open claims'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
 
+      final AppListTable<BillingWorkItem> table = tester
+          .widget<AppListTable<BillingWorkItem>>(
+            find.byType(AppListTable<BillingWorkItem>),
+          );
+      expect(table.enablePrint, isTrue);
+      expect(table.canExport, isFalse);
+      expect(table.canPrint, isFalse);
+
       await tester.tap(find.text('Ada Draft'));
       await tester.pumpAndSettle();
 
       expect(find.text('Issue'), findsNothing);
-      expect(find.text('Print invoice'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
       expect(find.byTooltip('Download invoice PDF'), findsOneWidget);
       expect(find.text('View ledger'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
@@ -274,6 +284,18 @@ void main() {
       expect(BillingNeedsIssueAtomPermissions.update.isAllowed(writer), isTrue);
       expect(BillingNeedsIssueAtomPermissions.delete.isAllowed(writer), isTrue);
       expect(BillingNeedsIssueAtomPermissions.close.isAllowed(writer), isTrue);
+      expect(BillingNeedsIssueAtomPermissions.export.isAllowed(writer), isFalse);
+      expect(BillingNeedsIssueAtomPermissions.print.isAllowed(writer), isFalse);
+
+      final AppAccessPolicy withExport = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+          AppPermissions.evidenceExport,
+        },
+      );
+      expect(BillingNeedsIssueAtomPermissions.export.isAllowed(withExport), isTrue);
+      expect(BillingNeedsIssueAtomPermissions.print.isAllowed(withExport), isTrue);
 
       await _pumpNeedsIssueTab(
         tester,
@@ -291,7 +313,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Issue'), findsWidgets);
-      expect(find.text('Print invoice'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
       expect(find.text('Finalize financial clearance'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -754,7 +776,7 @@ void main() {
       expect(find.text('Void'), findsWidgets);
       expect(find.text('Send'), findsWidgets);
       expect(find.text('View ledger'), findsOneWidget);
-      expect(find.text('Print invoice'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
       expect(find.text('Charge'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },

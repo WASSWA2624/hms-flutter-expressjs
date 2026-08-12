@@ -246,6 +246,8 @@ void main() {
       );
       expect(BillingAllAtomPermissions.tab.isAllowed(reader), isTrue);
       expect(BillingAllAtomPermissions.document.isAllowed(reader), isTrue);
+      expect(BillingAllAtomPermissions.export.isAllowed(reader), isFalse);
+      expect(BillingAllAtomPermissions.print.isAllowed(reader), isFalse);
       expect(BillingAllAtomPermissions.issue.isAllowed(reader), isFalse);
       expect(BillingAllAtomPermissions.create.isAllowed(reader), isFalse);
       expect(BillingAllAtomPermissions.update.isAllowed(reader), isFalse);
@@ -277,6 +279,14 @@ void main() {
       expect(find.byType(AppSearchBar), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
 
+      final AppListTable<BillingWorkItem> table = tester
+          .widget<AppListTable<BillingWorkItem>>(
+            find.byType(AppListTable<BillingWorkItem>),
+          );
+      expect(table.enablePrint, isTrue);
+      expect(table.canExport, isFalse);
+      expect(table.canPrint, isFalse);
+
       await tester.tap(find.text('All Queue Patient'));
       await tester.pumpAndSettle();
 
@@ -285,7 +295,7 @@ void main() {
       expect(find.text('Adjust'), findsNothing);
       expect(find.text('Void'), findsNothing);
       expect(find.text('Send'), findsNothing);
-      expect(find.text('Print invoice'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
       expect(find.byTooltip('Download invoice PDF'), findsOneWidget);
       expect(find.text('View ledger'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
@@ -302,6 +312,8 @@ void main() {
         },
       );
       expect(BillingAllAtomPermissions.issue.isAllowed(writer), isTrue);
+      expect(BillingAllAtomPermissions.export.isAllowed(writer), isFalse);
+      expect(BillingAllAtomPermissions.print.isAllowed(writer), isFalse);
       expect(BillingAllAtomPermissions.create.isAllowed(writer), isTrue);
       expect(BillingAllAtomPermissions.update.isAllowed(writer), isTrue);
       expect(BillingAllAtomPermissions.delete.isAllowed(writer), isTrue);
@@ -311,6 +323,16 @@ void main() {
       expect(BillingAllAtomPermissions.voidInvoice.isAllowed(writer), isTrue);
       expect(BillingAllAtomPermissions.send.isAllowed(writer), isTrue);
       expect(BillingAllAtomPermissions.close.isAllowed(writer), isTrue);
+
+      final AppAccessPolicy withExport = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+          AppPermissions.evidenceExport,
+        },
+      );
+      expect(BillingAllAtomPermissions.export.isAllowed(withExport), isTrue);
+      expect(BillingAllAtomPermissions.print.isAllowed(withExport), isTrue);
 
       await _pumpAllTab(
         tester,
@@ -328,7 +350,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Issue'), findsWidgets);
-      expect(find.text('Print invoice'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
       expect(find.byTooltip('Download invoice PDF'), findsOneWidget);
       expect(find.text('View ledger'), findsOneWidget);
       expect(find.text('Finalize financial clearance'), findsNothing);
@@ -360,7 +382,7 @@ void main() {
       expect(find.text('Adjust'), findsWidgets);
       expect(find.text('Send'), findsWidgets);
       expect(find.text('Void'), findsWidgets);
-      expect(find.text('Print invoice'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
       expect(find.byTooltip('Download invoice PDF'), findsOneWidget);
       expect(find.text('View ledger'), findsOneWidget);
       expect(find.text('Finalize financial clearance'), findsNothing);
@@ -664,8 +686,12 @@ void main() {
       expect(find.text('Approve'), findsWidgets);
       expect(find.text('Reject'), findsWidgets);
       expect(find.text('View ledger'), findsOneWidget);
-      // Approval items are not invoices — document actions must not mount.
-      expect(find.text('Print invoice'), findsNothing);
+      // Approval items are not invoices — invoice download must not mount.
+      expect(find.text('Print'), findsOneWidget);
+      expect(
+        find.byTooltip('Print approval request packet'),
+        findsOneWidget,
+      );
       expect(find.byTooltip('Download invoice PDF'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },

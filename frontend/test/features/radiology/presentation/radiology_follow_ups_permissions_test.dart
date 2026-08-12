@@ -131,6 +131,14 @@ void main() {
         same(radiologyWorkspaceWriteRequirement),
       );
       expect(
+        RadiologyFollowUpsAtomPermissions.export,
+        same(radiologyWorkspaceExportRequirement),
+      );
+      expect(
+        RadiologyFollowUpsAtomPermissions.print,
+        same(radiologyWorkspacePrintRequirement),
+      );
+      expect(
         RadiologyFollowUpsAtomPermissions.success,
         same(radiologyFollowUpsWriteRequirement),
       );
@@ -497,6 +505,95 @@ void main() {
       expect(find.text('Mark completed'), findsNothing);
       expect(find.text('Close'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Follow-ups toolbar: Filters/Settings, ≤5 columns, info tone, Close',
+    (WidgetTester tester) async {
+      await _pumpFollowUpsTab(
+        tester,
+        radiologyRepository: radiologyRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.radiologyRead,
+            AppPermissions.radiologyWrite,
+          },
+        ),
+      );
+
+      final AppListTable<ReceptionFollowUpEntry> table =
+          tester.widget<AppListTable<ReceptionFollowUpEntry>>(
+            find.byType(AppListTable<ReceptionFollowUpEntry>),
+          );
+      expect(table.columnVisibilityLabel, 'Settings');
+      expect(table.search?.advancedFilterButtonLabel, 'Filters');
+      expect(table.search?.advancedFilterTitle, 'Advanced filters');
+      expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
+      expect(table.search?.advancedFilterResetLabel, 'Clear filters');
+      expect(table.search?.advancedFilterCloseLabel, 'Close');
+      expect(table.enablePrint, isTrue);
+      expect(table.canExport, isFalse);
+      expect(table.canPrint, isFalse);
+      expect(table.columns.length, lessThanOrEqualTo(5));
+      expect(table.columnChoices, isNotEmpty);
+      expect(table.columnVisibilityStorageKey, 'radiology_follow_ups_cols');
+      expect(find.byTooltip('Export'), findsNothing);
+      expect(find.byTooltip('Request imaging'), findsNothing);
+      expect(find.byTooltip('Configurations'), findsNothing);
+
+      final AppTabStrip strip = tester.widget<AppTabStrip>(
+        find.byType(AppTabStrip),
+      );
+      final AppTabItem followUps = strip.tabs.firstWhere(
+        (AppTabItem tab) => tab.label.contains('Follow-ups'),
+      );
+      expect(followUps.countTone, AppTabCountTone.info);
+      expect(followUps.count, isNotNull);
+    },
+  );
+
+  testWidgets(
+    'Follow-ups Export/Print omit without evidence:export; present when granted',
+    (WidgetTester tester) async {
+      await _pumpFollowUpsTab(
+        tester,
+        radiologyRepository: radiologyRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.radiologyRead,
+            AppPermissions.radiologyWrite,
+          },
+        ),
+      );
+      expect(find.byTooltip('Export'), findsNothing);
+      expect(find.byTooltip('Print'), findsNothing);
+
+      await _pumpFollowUpsTab(
+        tester,
+        radiologyRepository: radiologyRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.radiologyRead,
+            AppPermissions.radiologyWrite,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+      final AppListTable<ReceptionFollowUpEntry> table =
+          tester.widget<AppListTable<ReceptionFollowUpEntry>>(
+            find.byType(AppListTable<ReceptionFollowUpEntry>),
+          );
+      expect(table.canExport, isTrue);
+      expect(table.canPrint, isTrue);
+      expect(table.enablePrint, isTrue);
+      expect(table.printLabel, 'Print');
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+      expect(find.byTooltip('Request imaging'), findsNothing);
     },
   );
 

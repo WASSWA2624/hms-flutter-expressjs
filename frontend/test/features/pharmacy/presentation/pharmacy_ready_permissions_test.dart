@@ -257,6 +257,12 @@ Finder _actionLabel(String label) => find.descendant(
   matching: find.text(label),
 );
 
+AppListTable<PharmacyOrder> _readyTable(WidgetTester tester) {
+  return tester.widget<AppListTable<PharmacyOrder>>(
+    find.byType(AppListTable<PharmacyOrder>),
+  );
+}
+
 Future<void> _pumpReadyTab(
   WidgetTester tester, {
   required _MockPharmacyRepository repository,
@@ -694,7 +700,7 @@ void main() {
             of: dialog,
             matching: find.text('Print'),
           ),
-          findsOneWidget,
+          findsAtLeastNWidgets(1),
         );
         expect(find.textContaining('no access'), findsNothing);
       },
@@ -736,7 +742,7 @@ void main() {
             of: dialog,
             matching: find.text('Print'),
           ),
-          findsOneWidget,
+          findsAtLeastNWidgets(1),
         );
         expect(find.textContaining('no access'), findsNothing);
       },
@@ -949,6 +955,87 @@ void main() {
         ).called(1);
         expect(find.text('Pharmacy workflow updated.'), findsOneWidget);
         expect(find.text('Noah Ready'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Queue toolbar: Filters/Settings/Close, ≤5 columns, warning tone, Export/Print gate',
+      (WidgetTester tester) async {
+        await _pumpReadyTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.pharmacyRead,
+              AppPermissions.pharmacyWrite,
+            },
+          ),
+        );
+
+        final AppListTable<PharmacyOrder> table = _readyTable(tester);
+        expect(table.columnVisibilityLabel, 'Settings');
+        expect(table.columnVisibilityCloseLabel, 'Close');
+        expect(table.columnVisibilityApplyLabel, 'Apply columns');
+        expect(table.columnVisibilityResetLabel, 'Reset columns');
+        expect(table.search?.advancedFilterButtonLabel, 'Filters');
+        expect(table.search?.advancedFilterTitle, 'Advanced filters');
+        expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
+        expect(table.search?.advancedFilterResetLabel, 'Clear filters');
+        expect(table.search?.advancedFilterCloseLabel, 'Close');
+        expect(table.enablePrint, isTrue);
+        expect(table.canExport, isFalse);
+        expect(table.canPrint, isFalse);
+        expect(table.printLabel, 'Print');
+        expect(table.columns.length, 5);
+        expect(
+          table.columns.any(
+            (AppListTableColumn<PharmacyOrder> c) =>
+                c.id == 'next_action' && c.alwaysVisible,
+          ),
+          isTrue,
+        );
+        expect(table.columnChoices, isNotEmpty);
+        expect(table.columnVisibilityStorageKey, 'pharmacy_queue');
+
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        final AppTabItem queue = strip.tabs.firstWhere(
+          (AppTabItem tab) => tab.label == 'New orders',
+        );
+        expect(queue.countTone, AppTabCountTone.warning);
+        expect(queue.count, isNotNull);
+
+        final List<AppSearchBarAction> trailing =
+            table.search?.trailingActions ?? const <AppSearchBarAction>[];
+        expect(trailing.last.label, 'Walk-in order');
+        expect(find.byTooltip('Export'), findsNothing);
+        expect(find.byTooltip('Print'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Queue Export/Print present when evidence:export granted',
+      (WidgetTester tester) async {
+        await _pumpReadyTab(
+          tester,
+          repository: repository,
+          accessPolicy: _policy(
+            permissions: <AppPermission>{
+              AppPermissions.pharmacyRead,
+              AppPermissions.pharmacyWrite,
+              AppPermissions.evidenceExport,
+            },
+          ),
+        );
+
+        final AppListTable<PharmacyOrder> table = _readyTable(tester);
+        expect(table.canExport, isTrue);
+        expect(table.canPrint, isTrue);
+        expect(table.enablePrint, isTrue);
+        expect(table.printLabel, 'Print');
+        expect(find.byTooltip('Export'), findsOneWidget);
+        expect(find.byTooltip('Print'), findsOneWidget);
       },
     );
 

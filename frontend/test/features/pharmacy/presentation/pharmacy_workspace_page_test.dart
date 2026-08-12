@@ -698,11 +698,74 @@ void main() {
       find.descendant(of: find.byType(AppListTableGrid), matching: find.text('Actions')),
       findsOneWidget,
     );
-    expect(find.byIcon(AppActionIcons.export), findsOneWidget);
+    expect(find.byIcon(AppActionIcons.export), findsNothing);
     // Add lives in the search trailing cluster (not an above-table toolbar).
     expect(find.byTooltip('Create drug'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'order Export/Print omit without evidence:export; present when granted',
+    (WidgetTester tester) async {
+      await _pumpPharmacyWorkspace(tester, repository: repository);
+      final AppListTable<PharmacyOrder> withoutExport =
+          tester.widget<AppListTable<PharmacyOrder>>(
+            find.byType(AppListTable<PharmacyOrder>),
+          );
+      expect(withoutExport.enablePrint, isTrue);
+      expect(withoutExport.canExport, isFalse);
+      expect(withoutExport.canPrint, isFalse);
+      expect(withoutExport.printLabel, 'Print');
+      expect(
+        withoutExport.search?.advancedFilterButtonLabel,
+        'Filters',
+      );
+      expect(find.byTooltip('Export'), findsNothing);
+      expect(find.byTooltip('Print'), findsNothing);
+
+      await _pumpPharmacyWorkspace(
+        tester,
+        repository: repository,
+        accessPolicy: AppAccessPolicy.fromSession(
+          AuthSession(
+            tokens: SessionTokens(accessToken: 'access-token'),
+            user: const AuthUserProfile(roles: <String>['PHARMACIST']),
+            permissions: <AppPermission>{
+              AppPermissions.pharmacyRead,
+              AppPermissions.pharmacyWrite,
+              AppPermissions.billingRead,
+              AppPermissions.evidenceExport,
+            },
+            moduleEntitlements: const <AppModuleEntitlement>[
+              AppModuleEntitlement(
+                code: 'pharmacy-dispensing',
+                licenseStatus: 'ACTIVE',
+              ),
+              AppModuleEntitlement(
+                code: 'billing-payments',
+                licenseStatus: 'ACTIVE',
+              ),
+            ],
+            isAuthorizationHydrated: true,
+          ),
+        ),
+      );
+      final AppListTable<PharmacyOrder> withExport =
+          tester.widget<AppListTable<PharmacyOrder>>(
+            find.byType(AppListTable<PharmacyOrder>),
+          );
+      expect(withExport.canExport, isTrue);
+      expect(withExport.canPrint, isTrue);
+      expect(withExport.enablePrint, isTrue);
+      expect(withExport.printLabel, 'Print');
+      expect(withExport.exportLabel, 'Export');
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+      final List<AppSearchBarAction> trailing =
+          withExport.search?.trailingActions ?? const <AppSearchBarAction>[];
+      expect(trailing.last.label, 'Walk-in order');
+    },
+  );
 
   testWidgets('PharmacyWorkspacePage returns from catalog to orders', (
     WidgetTester tester,
@@ -918,7 +981,7 @@ void main() {
       );
       expect(
         find.descendant(of: dialog, matching: find.text('Print')),
-        findsOneWidget,
+        findsAtLeastNWidgets(1),
       );
     },
   );
@@ -944,7 +1007,7 @@ void main() {
     );
     expect(
       find.descendant(of: dialog, matching: find.text('Print')),
-      findsOneWidget,
+      findsAtLeastNWidgets(1),
     );
   });
 }

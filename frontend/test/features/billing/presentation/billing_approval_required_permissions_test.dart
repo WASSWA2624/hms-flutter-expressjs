@@ -203,6 +203,14 @@ void main() {
       );
       expect(BillingApprovalRequiredAtomPermissions.tab.isAllowed(reader), isTrue);
       expect(
+        BillingApprovalRequiredAtomPermissions.export.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        BillingApprovalRequiredAtomPermissions.print.isAllowed(reader),
+        isFalse,
+      );
+      expect(
         BillingApprovalRequiredAtomPermissions.approve.isAllowed(reader),
         isFalse,
       );
@@ -236,14 +244,29 @@ void main() {
       expect(find.text('Open claims'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
 
+      final AppListTable<BillingWorkItem> table = tester
+          .widget<AppListTable<BillingWorkItem>>(
+            find.byType(AppListTable<BillingWorkItem>),
+          );
+      expect(table.enablePrint, isTrue);
+      expect(table.canExport, isFalse);
+      expect(table.canPrint, isFalse);
+
       await tester.tap(find.text('Dana Approval'));
       await tester.pumpAndSettle();
 
       expect(find.text('View ledger'), findsOneWidget);
       expect(find.text('Approve'), findsNothing);
       expect(find.text('Reject'), findsNothing);
-      expect(find.text('Print invoice'), findsNothing);
-      expect(find.text('Print packet'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+      expect(
+        find.byTooltip('Print approval request packet'),
+        findsOneWidget,
+      );
+      expect(
+        find.byTooltip('Print invoice with line items and payments'),
+        findsNothing,
+      );
       expect(find.byTooltip('Download invoice PDF'), findsNothing);
     },
   );
@@ -345,6 +368,31 @@ void main() {
         BillingApprovalRequiredAtomPermissions.document.isAllowed(approver),
         isTrue,
       );
+      expect(
+        BillingApprovalRequiredAtomPermissions.export.isAllowed(approver),
+        isFalse,
+      );
+      expect(
+        BillingApprovalRequiredAtomPermissions.print.isAllowed(approver),
+        isFalse,
+      );
+
+      final AppAccessPolicy withExport = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+          AppPermissions.financialApprove,
+          AppPermissions.evidenceExport,
+        },
+      );
+      expect(
+        BillingApprovalRequiredAtomPermissions.export.isAllowed(withExport),
+        isTrue,
+      );
+      expect(
+        BillingApprovalRequiredAtomPermissions.print.isAllowed(withExport),
+        isTrue,
+      );
 
       await _pumpApprovalTab(
         tester,
@@ -368,8 +416,16 @@ void main() {
       expect(find.text('Reject'), findsWidgets);
       expect(find.text('View ledger'), findsOneWidget);
       // Approval items are not invoices — invoice document actions must not mount.
-      expect(find.text('Print invoice'), findsNothing);
-      expect(find.text('Print packet'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
+      expect(
+        find.byTooltip('Print approval request packet'),
+        findsOneWidget,
+      );
+      expect(
+        find.byTooltip('Print invoice with line items and payments'),
+        findsNothing,
+      );
+      expect(find.byTooltip('Download invoice PDF'), findsNothing);
       expect(find.byTooltip('Download invoice PDF'), findsNothing);
       expect(find.text('Finalize financial clearance'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);

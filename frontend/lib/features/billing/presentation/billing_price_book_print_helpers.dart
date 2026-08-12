@@ -36,7 +36,7 @@ Future<void> printBillingPriceBookList({
       ref: ref,
       context: context,
       title: l10n.billingPriceBookPrintTitle,
-      previewDialogTitle: l10n.billingPriceBookPrintTitle,
+      previewDialogTitle: l10n.printPreviewTitle,
       subtitle: buildSubtitle(),
       recordReference: PrintFormContextReference(
         label: l10n.billingPriceBookTab,

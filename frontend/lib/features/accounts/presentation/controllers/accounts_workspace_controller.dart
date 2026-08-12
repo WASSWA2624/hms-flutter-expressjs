@@ -14,6 +14,7 @@ import 'package:hosspi_hms/features/accounts/data/repositories/accounts_reposito
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.dart';
 import 'package:hosspi_hms/features/accounts/presentation/controllers/accounts_workspace_mutation_applier.dart';
 import 'package:hosspi_hms/features/accounts/domain/repositories/accounts_repository.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_chart_dialogs.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
 final accountsWorkspaceControllerProvider =
@@ -27,6 +28,11 @@ final accountsGlActivityCountProvider = StateProvider<int?>((Ref ref) => null);
 
 /// Live count of open fiscal periods (Close books strip).
 final accountsOpenPeriodsCountProvider = StateProvider<int?>((Ref ref) => null);
+
+/// Live count of patient ledgers with balance (panel may override while filtered).
+final accountsPatientLedgersBalanceCountProvider = StateProvider<int?>(
+  (Ref ref) => null,
+);
 
 final class AccountsWorkspaceController
     extends AsyncNotifier<Result<AccountsWorkspaceState>> {
@@ -96,6 +102,12 @@ final class AccountsWorkspaceController
       success: (AccountsWorkspaceOverview overview) async {
         ref.read(accountsGlActivityCountProvider.notifier).state =
             overview.summary.glWithActivityCount;
+        ref.read(accountsOpenPeriodsCountProvider.notifier).state =
+            overview.summary.openPeriodsCount;
+        ref.read(accountsPatientLedgersBalanceCountProvider.notifier).state =
+            overview.summary.patientLedgersCount;
+        ref.read(accountsChartActiveCountProvider.notifier).state =
+            overview.summary.chartActiveCount;
         final Result<AppPage<AccountsWorkItem>> itemsResult = await _repository
             .listWorkItems(query);
         return itemsResult.when(

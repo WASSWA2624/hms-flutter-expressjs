@@ -328,11 +328,16 @@ void main() {
     );
 
     testWidgets(
-      'AC4: unauthorized financial controls absent; Print needs export ∪',
+      'AC4: unauthorized financial controls absent; Print needs ∩ evidence:export',
       (WidgetTester tester) async {
+        final AppAccessPolicy reader = _policy(
+          permissions: <AppPermission>{AppPermissions.billingRead},
+        );
+        // Nested ∪ passes via platform auto reports:read; detail Print does not.
+        expect(ClaimsSettledAtomPermissions.export.isAllowed(reader), isTrue);
         expect(
-          ClaimsSettledAtomPermissions.export.isAllowed(
-            _policy(permissions: <AppPermission>{AppPermissions.billingRead}),
+          claimsDetailPrintRequirement(ClaimsDeskSection.settled).isAllowed(
+            reader,
           ),
           isFalse,
         );
@@ -340,14 +345,12 @@ void main() {
         await _pumpSettledTab(
           tester,
           repository: repository,
-          accessPolicy: _policy(
-            permissions: <AppPermission>{AppPermissions.billingRead},
-          ),
+          accessPolicy: reader,
         );
 
         await tester.tap(find.text('CLM-PAID'));
         await tester.pumpAndSettle();
-        expect(find.text('Print statement'), findsNothing);
+        expect(find.text('Print'), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
       },
     );

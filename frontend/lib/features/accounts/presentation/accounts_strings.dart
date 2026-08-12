@@ -11,11 +11,16 @@ abstract final class AccountsStrings {
   static const String clearSearch = 'Clear search';
   static const String filtersLabel = 'Filters';
   static const String clearFilters = 'Clear filters';
+  static const String applyFilters = 'Apply filters';
   static const String allFields = 'All';
   static const String notesLabel = 'Notes';
   static const String reasonLabel = 'Reason';
   static const String reasonValidation = 'Reason is required.';
   static const String unknownValue = '—';
+
+  static const String journalExactSimilarDialogTitle = 'Exact draft journal found';
+  static const String journalSimilarDialogTitle = 'Similar draft journals';
+  static const String journalNoSimilarDialogTitle = 'No similar drafts';
 
   static const String openWorkLabel = 'Open work';
   static const String openWorkTooltip =

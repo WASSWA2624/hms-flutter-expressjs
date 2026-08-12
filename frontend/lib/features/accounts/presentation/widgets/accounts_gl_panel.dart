@@ -14,6 +14,7 @@ import 'package:hosspi_hms/features/accounts/presentation/controllers/accounts_w
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_gl_dialog.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_gl_table_support.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_workspace_print_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -93,7 +94,39 @@ class _AccountsGlPanelState extends ConsumerState<AccountsGlPanel> {
     return (_filterValue.option(_typeFilterKey) ?? '').isNotEmpty ||
         (_filterValue.text(_periodFilterKey) ?? '').trim().isNotEmpty ||
         (_filterValue.option(_activityFilterKey) ?? '').isNotEmpty ||
+        _filterValue.dateFrom != null ||
+        _filterValue.dateTo != null ||
         _searchController.text.trim().isNotEmpty;
+  }
+
+  List<AccountsGlAccount> _applyLocalDateFilters(
+    List<AccountsGlAccount> items,
+  ) {
+    final DateTime? from = _filterValue.dateFrom;
+    final DateTime? to = _filterValue.dateTo;
+    if (from == null && to == null) {
+      return items;
+    }
+    return items.where((AccountsGlAccount item) {
+      final DateTime? updated = item.updatedAt;
+      if (updated == null) {
+        return false;
+      }
+      final DateTime day = DateTime(updated.year, updated.month, updated.day);
+      if (from != null) {
+        final DateTime fromDay = DateTime(from.year, from.month, from.day);
+        if (day.isBefore(fromDay)) {
+          return false;
+        }
+      }
+      if (to != null) {
+        final DateTime toDay = DateTime(to.year, to.month, to.day);
+        if (day.isAfter(toDay)) {
+          return false;
+        }
+      }
+      return true;
+    }).toList(growable: false);
   }
 
   Future<void> _reload({bool openDeepLink = false}) async {
@@ -124,19 +157,26 @@ class _AccountsGlPanelState extends ConsumerState<AccountsGlPanel> {
 
     result.when(
       success: (AppPage<AccountsGlAccount> page) {
+        final List<AccountsGlAccount> filtered = _applyLocalDateFilters(
+          page.items,
+        );
         setState(() {
-          _page = page;
+          _page = AppPage<AccountsGlAccount>(
+            items: filtered,
+            request: page.request,
+            totalItemCount: filtered.length,
+          );
           _loading = false;
         });
-        if (!_hasActiveFilters) {
-          final int withActivity = page.items
-              .where((AccountsGlAccount a) => a.hasActivity)
-              .length;
+        if (_hasActiveFilters) {
           ref.read(accountsGlActivityCountProvider.notifier).state =
-              withActivity;
+              page.totalItemCount ?? filtered.length;
+        } else {
+          // Fall back to workspace summary — do not badge from painted page.
+          ref.read(accountsGlActivityCountProvider.notifier).state = null;
         }
         if (openDeepLink) {
-          unawaited(_maybeOpenDeepLink(page.items));
+          unawaited(_maybeOpenDeepLink(filtered));
         }
       },
       failure: (AppFailure failure) {
@@ -187,6 +227,16 @@ class _AccountsGlPanelState extends ConsumerState<AccountsGlPanel> {
   Widget build(BuildContext context) {
     final accessPolicy = ref.watch(appAccessPolicyProvider);
     final l10n = context.l10n;
+    final bool canExport = canExportAccountsWorkspace(accessPolicy);
+    final bool canPrint = canPrintAccountsWorkspace(accessPolicy);
+    final List<AppListTableColumn<AccountsGlAccount>> columns =
+        accountsGlDefaultColumns(
+          context: context,
+          showNext: (AccountsGlAccount account) =>
+              canOpenAccountsGlNext(accessPolicy, account),
+          onOpenGl: (AccountsGlAccount account) =>
+              unawaited(_openLedger(account)),
+        );
 
     return AppListTable<AccountsGlAccount>(
       page: _page,
@@ -203,6 +253,18 @@ class _AccountsGlPanelState extends ConsumerState<AccountsGlPanel> {
         body: '',
       ),
       enableExport: true,
+      canExport: canExport,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: AccountsStrings.printAction,
+      onPrint: () => printAccountsListTable<AccountsGlAccount>(
+        ref: ref,
+        context: context,
+        title: AccountsStrings.generalLedgerLabel,
+        columns: columns,
+        items: _page.items,
+        emptyText: AccountsStrings.glEmpty,
+      ),
       search: AppListTableSearch<AccountsGlAccount>(
         controller: _searchController,
         semanticLabel: AccountsStrings.searchHint,
@@ -233,6 +295,9 @@ class _AccountsGlPanelState extends ConsumerState<AccountsGlPanel> {
         advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: AccountsStrings.clearFilters,
+        dateFilterLabel: 'Updated date',
+        dateFromLabel: l10n.opdDateFromLabel,
+        dateToLabel: l10n.opdDateToLabel,
         allFieldsLabel: AccountsStrings.allFields,
         textFilters: <AppSearchBarTextFilter>[
           AppSearchBarTextFilter(
@@ -279,13 +344,7 @@ class _AccountsGlPanelState extends ConsumerState<AccountsGlPanel> {
         },
         trailingActions: const <AppSearchBarAction>[],
       ),
-      columns: accountsGlDefaultColumns(
-        context: context,
-        showNext: (AccountsGlAccount account) =>
-            canOpenAccountsGlNext(accessPolicy, account),
-        onOpenGl: (AccountsGlAccount account) =>
-            unawaited(_openLedger(account)),
-      ),
+      columns: columns,
       columnChoices: accountsGlOptionalColumns(context),
       mobileItemBuilder: (BuildContext context, AccountsGlAccount item) {
         final bool showNext = canOpenAccountsGlNext(accessPolicy, item);
