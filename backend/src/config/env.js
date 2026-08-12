@@ -94,7 +94,7 @@ const {
   AI_DEFAULT_TIMEOUT_MS,
   AI_DEFAULT_MAX_INPUT_CHARS,
   AI_DEFAULT_TEMPERATURE,
-} = require('@config/constants');
+} = require('./constants');
 
 const validateAiProvider = (provider) => {
   if (!AI_PROVIDER_ALLOWLIST.includes(provider)) {
