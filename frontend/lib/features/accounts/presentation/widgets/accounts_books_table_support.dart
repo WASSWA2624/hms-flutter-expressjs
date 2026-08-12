@@ -7,3 +7,11 @@ const String accountsBooksClosedColumnId = 'closed';
 const String accountsBooksNextColumnId = 'next';
 const String accountsBooksFacilityColumnId = 'facility';
 const String accountsBooksByColumnId = 'by';
+
+const List<String> accountsBooksDefaultColumnIds = <String>[
+  accountsBooksPeriodColumnId,
+  accountsBooksStatusColumnId,
+  accountsBooksOpenedColumnId,
+  accountsBooksClosedColumnId,
+  accountsBooksNextColumnId,
+];

@@ -26,6 +26,24 @@ import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 const String accountsChartTableSettingsKey = 'accounts_chart_v1';
 const String accountsChartColumnWidthKey = 'accounts_chart_cw_v1';
 
+const String accountsChartAccountColumnId = 'account';
+const String accountsChartTypeColumnId = 'type';
+const String accountsChartCodeColumnId = 'code';
+const String accountsChartStatusColumnId = 'status';
+const String accountsChartActionsColumnId = 'actions';
+const String accountsChartParentColumnId = 'parent';
+const String accountsChartCurrencyColumnId = 'currency';
+const String accountsChartEffectiveColumnId = 'effective';
+
+/// Defaults when chart write is allowed (Actions present). Without write → 4.
+const List<String> accountsChartDefaultColumnIds = <String>[
+  accountsChartAccountColumnId,
+  accountsChartTypeColumnId,
+  accountsChartCodeColumnId,
+  accountsChartStatusColumnId,
+  accountsChartActionsColumnId,
+];
+
 /// Account chart CRUD table embedded in the Accounts workspace (`?section=chart`).
 class AccountsChartPanel extends ConsumerStatefulWidget {
   const AccountsChartPanel({super.key});
@@ -100,6 +118,11 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
         _searchController.text.trim().isNotEmpty;
   }
 
+  bool get _hasLocalFilters {
+    return (_filterValue.text(_parentFilterKey) ?? '').trim().isNotEmpty ||
+        (_filterValue.option(_effectiveFilterKey) ?? '').isNotEmpty;
+  }
+
   Future<void> _reload() async {
     final String? tenantId = _tenantId;
     if (tenantId == null || tenantId.isEmpty) {
@@ -141,12 +164,16 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
         final List<AccountsChartAccount> filtered = _applyLocalFilters(
           page.items,
         );
+        // Parent / Effective are client-side; otherwise prefer API total.
+        final int totalItemCount = _hasLocalFilters
+            ? filtered.length
+            : (page.totalItemCount ?? filtered.length);
         setState(() {
           _allForParents = page.items;
           _page = AppPage<AccountsChartAccount>(
             items: filtered,
             request: page.request,
-            totalItemCount: filtered.length,
+            totalItemCount: totalItemCount,
           );
           _loading = false;
         });
@@ -164,7 +191,7 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
                     accountsChartActiveCountProvider.notifier,
                   )
                   .state =
-              filtered.length;
+              totalItemCount;
         }
       },
       failure: (AppFailure failure) {
@@ -310,7 +337,7 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
     final List<AppListTableColumn<AccountsChartAccount>> columns =
         <AppListTableColumn<AccountsChartAccount>>[
           AppListTableColumn<AccountsChartAccount>(
-            id: 'account',
+            id: accountsChartAccountColumnId,
             label: AccountsStrings.accountColumn,
             alwaysVisible: true,
             preferredWidth: 220,
@@ -324,7 +351,7 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
             exportValue: (AccountsChartAccount item) => item.accountLabel,
           ),
           AppListTableColumn<AccountsChartAccount>(
-            id: 'type',
+            id: accountsChartTypeColumnId,
             label: AccountsStrings.typeColumn,
             preferredWidth: 120,
             cellBuilder: (_, AccountsChartAccount item) =>
@@ -335,7 +362,7 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
                 accountsChartTypeLabel(item.accountType),
           ),
           AppListTableColumn<AccountsChartAccount>(
-            id: 'code',
+            id: accountsChartCodeColumnId,
             label: AccountsStrings.chartCodeColumn,
             preferredWidth: 120,
             cellBuilder: (_, AccountsChartAccount item) => Text(
@@ -347,7 +374,7 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
                 accountsPublicLabel(item.code) ?? '',
           ),
           AppListTableColumn<AccountsChartAccount>(
-            id: 'status',
+            id: accountsChartStatusColumnId,
             label: AccountsStrings.statusColumn,
             preferredWidth: 110,
             cellBuilder: (_, AccountsChartAccount item) => AppStatusBadge(
@@ -369,13 +396,13 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
           ),
           if (canWrite)
             AppListTableColumn<AccountsChartAccount>(
-              id: 'actions',
+              id: accountsChartActionsColumnId,
               label: AccountsStrings.chartActionsColumn,
               alwaysVisible: true,
+              exportable: false,
               preferredWidth: 200,
               cellBuilder: (BuildContext context, AccountsChartAccount item) =>
                   _actionsCell(context, item),
-              exportValue: (_) => '',
             ),
         ];
 
@@ -436,6 +463,7 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
         advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: AccountsStrings.clearFilters,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         allFieldsLabel: AccountsStrings.allFields,
         textFilters: <AppSearchBarTextFilter>[
           AppSearchBarTextFilter(
@@ -531,67 +559,7 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
       columns: columns,
       columnChoices: <AppListTableColumn<AccountsChartAccount>>[
         AppListTableColumn<AccountsChartAccount>(
-          id: 'account',
-          label: AccountsStrings.accountColumn,
-          alwaysVisible: true,
-          preferredWidth: 220,
-          cellBuilder: (_, AccountsChartAccount item) => Text(
-            item.accountLabel,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          exportValue: (AccountsChartAccount item) => item.accountLabel,
-        ),
-        AppListTableColumn<AccountsChartAccount>(
-          id: 'type',
-          label: AccountsStrings.typeColumn,
-          preferredWidth: 120,
-          cellBuilder: (_, AccountsChartAccount item) =>
-              Text(accountsChartTypeLabel(item.accountType)),
-          exportValue: (AccountsChartAccount item) =>
-              accountsChartTypeLabel(item.accountType),
-        ),
-        AppListTableColumn<AccountsChartAccount>(
-          id: 'code',
-          label: AccountsStrings.chartCodeColumn,
-          preferredWidth: 120,
-          cellBuilder: (_, AccountsChartAccount item) => Text(
-            accountsPublicLabel(item.code) ?? AccountsStrings.unknownValue,
-          ),
-          exportValue: (AccountsChartAccount item) =>
-              accountsPublicLabel(item.code) ?? '',
-        ),
-        AppListTableColumn<AccountsChartAccount>(
-          id: 'status',
-          label: AccountsStrings.statusColumn,
-          preferredWidth: 110,
-          cellBuilder: (_, AccountsChartAccount item) => AppStatusBadge(
-            label: item.isActive
-                ? AccountsStrings.chartStatusActive
-                : AccountsStrings.chartStatusInactive,
-            tone: item.isActive
-                ? AppWorkspaceStatusTone.success
-                : AppWorkspaceStatusTone.neutral,
-            icon: item.isActive
-                ? Icons.check_circle_outline
-                : Icons.pause_circle_outline,
-          ),
-          exportValue: (AccountsChartAccount item) => item.isActive
-              ? AccountsStrings.chartStatusActive
-              : AccountsStrings.chartStatusInactive,
-        ),
-        if (canWrite)
-          AppListTableColumn<AccountsChartAccount>(
-            id: 'actions',
-            label: AccountsStrings.chartActionsColumn,
-            alwaysVisible: true,
-            preferredWidth: 200,
-            cellBuilder: (BuildContext context, AccountsChartAccount item) =>
-                _actionsCell(context, item),
-            exportValue: (_) => '',
-          ),
-        AppListTableColumn<AccountsChartAccount>(
-          id: 'parent',
+          id: accountsChartParentColumnId,
           label: AccountsStrings.chartParentColumn,
           preferredWidth: 160,
           cellBuilder: (_, AccountsChartAccount item) {
@@ -601,7 +569,7 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
           exportValue: (AccountsChartAccount item) => item.parentLabel,
         ),
         AppListTableColumn<AccountsChartAccount>(
-          id: 'currency',
+          id: accountsChartCurrencyColumnId,
           label: AccountsStrings.chartCurrencyColumn,
           preferredWidth: 100,
           cellBuilder: (_, AccountsChartAccount item) => Text(
@@ -611,7 +579,7 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
               accountsPublicLabel(item.currency) ?? '',
         ),
         AppListTableColumn<AccountsChartAccount>(
-          id: 'effective',
+          id: accountsChartEffectiveColumnId,
           label: AccountsStrings.chartEffectiveColumn,
           preferredWidth: 140,
           cellBuilder: (BuildContext context, AccountsChartAccount item) {

@@ -2191,10 +2191,11 @@ class _DispenseDialogState extends ConsumerState<_DispenseDialog> {
                   return haystack.contains(query.trim().toLowerCase());
                 },
                 showAdvancedFilterButton: true,
-                advancedFilterButtonLabel: l10n.pharmacyQueueFilterLabel,
+                advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
                 advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
                 advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
                 advancedFilterResetLabel: l10n.opdClearFiltersAction,
+                advancedFilterCloseLabel: l10n.commonCloseActionLabel,
                 enableDateFilter: false,
               ),
               emptyBuilder: (_) => AppWorkspaceStatePanel.state(

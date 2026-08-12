@@ -931,3 +931,75 @@ abstract final class PharmacyExpiredAtomPermissions {
   static const AccessRequirement catalogEntry =
       pharmacyWorkspaceCatalogEntryRequirement;
 }
+
+/// Inventory: Low stock desk (`PharmacyDeskSection.lowStock`). Reuses Catalog →
+/// Inventory with `stockStatus: 'LOW_STOCK'`. Sibling count from
+/// `stockAlertSummary.lowStockRows`; active badge uses filtered inventory
+/// `stocks.totalItemCount`.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Low stock strip tab / count | navigate | browse ∩ `pharmacy:read` |
+/// | Search / Filters / Settings / pagination | read chrome | browse ∩ |
+/// | Export / Print (inventory table) | export | ∩ `evidence:export` |
+/// | Empty / loading / error / retry | read chrome | browse ∩ |
+/// | Adjust / Clear stock | update / delete | catalog write ∪ |
+/// | Route entry (deep link) | navigate | ∪ pharmacy\|operations read |
+abstract final class PharmacyLowStockAtomPermissions {
+  static const AccessRequirement tab = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement listChrome = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement search = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement filters = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement settings = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement export = pharmacyWorkspaceExportRequirement;
+  static const AccessRequirement print = pharmacyWorkspacePrintRequirement;
+  static const AccessRequirement pagination = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement empty = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement loading = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement retry = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement create = pharmacyCatalogWriteRequirement;
+  static const AccessRequirement update = pharmacyCatalogWriteRequirement;
+  static const AccessRequirement delete = pharmacyCatalogWriteRequirement;
+  static const AccessRequirement write = pharmacyCatalogWriteRequirement;
+  static const AccessRequirement browse = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement routeEntry =
+      pharmacyWorkspaceRouteEntryRequirement;
+  static const AccessRequirement catalogEntry =
+      pharmacyWorkspaceCatalogEntryRequirement;
+}
+
+/// Inventory: Out of stock desk (`PharmacyDeskSection.outOfStock`). Reuses
+/// Catalog → Inventory with `stockStatus: 'OUT_OF_STOCK'`. Sibling count from
+/// `stockAlertSummary.outOfStockRows`; active badge uses filtered inventory
+/// `stocks.totalItemCount`.
+///
+/// | Atom | Kind | Gate |
+/// | --- | --- | --- |
+/// | Out of stock strip tab / count | navigate | browse ∩ `pharmacy:read` |
+/// | Search / Filters / Settings / pagination | read chrome | browse ∩ |
+/// | Export / Print (inventory table) | export | ∩ `evidence:export` |
+/// | Empty / loading / error / retry | read chrome | browse ∩ |
+/// | Adjust / Clear stock | update / delete | catalog write ∪ |
+/// | Route entry (deep link) | navigate | ∪ pharmacy\|operations read |
+abstract final class PharmacyOutOfStockAtomPermissions {
+  static const AccessRequirement tab = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement listChrome = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement search = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement filters = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement settings = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement export = pharmacyWorkspaceExportRequirement;
+  static const AccessRequirement print = pharmacyWorkspacePrintRequirement;
+  static const AccessRequirement pagination = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement empty = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement loading = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement retry = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement create = pharmacyCatalogWriteRequirement;
+  static const AccessRequirement update = pharmacyCatalogWriteRequirement;
+  static const AccessRequirement delete = pharmacyCatalogWriteRequirement;
+  static const AccessRequirement write = pharmacyCatalogWriteRequirement;
+  static const AccessRequirement browse = pharmacyCatalogBrowseRequirement;
+  static const AccessRequirement routeEntry =
+      pharmacyWorkspaceRouteEntryRequirement;
+  static const AccessRequirement catalogEntry =
+      pharmacyWorkspaceCatalogEntryRequirement;
+}

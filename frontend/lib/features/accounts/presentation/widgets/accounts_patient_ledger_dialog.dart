@@ -237,6 +237,7 @@ class _AccountsPatientLedgerBody extends StatelessWidget {
         accountsPatientPublicLabel(
           patientDisplayName:
               ledger.patientDisplayName ?? fallbackPatientLabel,
+          patientDisplayId: ledger.patientDisplayId,
           patientId: ledger.patientId,
         );
 

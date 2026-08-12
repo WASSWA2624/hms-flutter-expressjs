@@ -9,7 +9,7 @@ Make the Chart desk section fully compliant with `tabs.mdc`, `tables.mdc`, `dial
 1. Keep strip label `Account chart`, deep-link `chart` (aliases `chart-of-accounts`, `coa`), and omit the tab when gate denies access (`AccountsChartAtomPermissions.tab` = entry) — never show a disabled placeholder (`tabs.mdc`). Align `AccountsDeskSection` / query helpers with `tabs/14-accounts/00-overview.md`.
 2. Badge count must be the authoritative total for this tab’s scope (`AccountsSummary.chartActive`). When Filters/search/date narrow the active tab, the **active** badge must reflect the filtered total (`tabs.mdc`). Stop using painted-row length alone when a total is available or can be derived from the same filter model.
 3. Use `AppTabCountTone.info` as inventoried, or escalate to `danger` only when product policy requires (`tabs.mdc`).
-4. Toolbar order: **Filters → Settings → Print → Add** — normalize shared labels to `Filters`, `Settings`, `Export`, and `Print` when those controls apply (`tables.mdc`, `printing.mdc`).
+4. Toolbar order: **Filters → Settings → Export → Print → Add** — normalize shared labels to `Filters`, `Settings`, `Export`, and `Print` when those controls apply; keep inventoried context actions after Print (`tables.mdc`, `printing.mdc`).
 5. Mount table Print with preview-first shared printing and column/section options aligned to this tab’s exportable fields. Omit Print/Export/context actions when unauthorized (`printing.mdc`, `tables.mdc`).
 6. Keep default visible columns at **5** unless a justified exception is recorded (always-visible keys / regulatory minimums / explicit default set in code + test). Settings must list every available column; Reset restores the default set (`tables.mdc`).
 7. Advanced filters must be comprehensive for this tab’s domain and edit the **same** filter model as the table and active count. Footer actions: **Clear filters** → **Apply filters** → **Close** (`tabs.mdc`, `tables.mdc`, `dialogs.mdc`).
@@ -27,13 +27,13 @@ Make the Chart desk section fully compliant with `tabs.mdc`, `tables.mdc`, `dial
 
 ## Acceptance Criteria
 
-- [ ] Tab count matches authoritative / filtered rules in Requirements 2–3.
-- [ ] Toolbar order and labels match Requirement 4; Print preview opens before print when Print applies.
-- [ ] Default column policy satisfies Requirement 6; Settings exposes all columns.
-- [ ] Advanced filters share the table/count model and include Close (`Requirement 7`).
-- [ ] Unauthorized tab and actions are absent (not disabled).
-- [ ] Dialogs/forms keep generic titles and shared field reuse.
-- [ ] `tabs/14-accounts/06-chart.md` updated to match.
+- [x] Tab count matches authoritative / filtered rules in Requirements 2–3.
+- [x] Toolbar order and labels match Requirement 4; Print preview opens before print when Print applies.
+- [x] Default column policy satisfies Requirement 6; Settings exposes all columns.
+- [x] Advanced filters share the table/count model and include Close (`Requirement 7`).
+- [x] Unauthorized tab and actions are absent (not disabled).
+- [x] Dialogs/forms keep generic titles and shared field reuse.
+- [x] `tabs/14-accounts/06-chart.md` updated to match.
 
 ## Verification
 
