@@ -6,44 +6,44 @@ Close every compliance gap listed in `tabs/03-opd/99-convention-gaps.md` against
 
 ## Requirements
 
-### Inventory residual gaps
+### Inventory residual gaps (closed)
 
-1. Close this inventory gap: Table Print absent (`tables.mdc` / `printing.mdc`) — board tabs Export without preview-first Print after Export.
-2. Close this inventory gap: All-tab count authority (`tabs.mdc`) — All badge uses client `allItems.length`, not server/`totalItemCount` authoritative total.
-3. Close this inventory gap: Follow-ups Filters omitted (`tabs.mdc` / `tables.mdc`) — `FollowUpWorklistPanel` hosted with `showAdvancedFilterButton: false` (no Filters / date filter), unlike remediated Reception Follow-ups.
-4. Close this inventory gap: Export RBAC (`tables.mdc`) — Export mounts with board tables; no explicit ∩ `evidence:export` atom in `opd_access.dart`.
-5. Close this inventory gap: Empty unauthorized workspace — when no board tabs pass, page returns `SizedBox.shrink()` rather than an explicit forbidden empty state (route catalog may still block entry).
+1. ~~Table Print absent~~ — board + Follow-ups mount preview-first Print after Export (`enablePrint` / `printOpdWorkspaceList`).
+2. ~~All-tab count authority~~ — All badge uses `summaryCounts.allOpdPatients` (fallback combined length); filtered when active + narrowed.
+3. ~~Follow-ups Filters omitted~~ — `FollowUpWorklistPanel` hosted with `showAdvancedFilterButton: true` + date filter + Close parity.
+4. ~~Export RBAC~~ — `opdWorkspaceExportRequirement` ∩ `evidence:export`; `canExportOpdWorkspace` omits when denied.
+5. ~~Empty unauthorized workspace~~ — no board tabs → forbidden `AppStateView` (not `SizedBox.shrink()`).
 
 ### tabs.mdc
 
-6. Replace client `items.length` / painted-page badge sources with authoritative totals (workspace summary / server `totalItemCount` / controller totals) wherever a total is available.
-7. Define one sibling-count model for this desk and apply it on every tab: either (a) each tab’s scope total under the **same** shared filter/search context, or (b) each tab’s dedicated unfiltered scope total from a workspace summary. Do not mix filtered page length on one tab with raw loaded length on another.
-8. When the active tab’s filters/search change, refresh that tab’s badge to the filtered total and refresh any sibling badges required by the chosen model (`tabs.mdc` sync rules).
-9. Set count tones explicitly: `warning`/`danger` only for attention queues; other tabs default to `info` unless a test-documented exception applies.
+6. Authoritative totals from workspace summary / page `totalItemCount` / follow-up provider (not painted-page length alone).
+7. Sibling-count model: dedicated unfiltered scope totals; active tab uses filtered membership when search/advanced filters narrow.
+8. Active-tab filter/search changes refresh that badge; siblings keep scope totals.
+9. Count tones: `warning` for Arrivals/Queue/Triage/Active; `info` for All/Follow-ups.
 
 ### tables.mdc
 
-10. Extend shared `AppListTable` / search trailing actions so **Print** can mount after Export when printing is allowed. Wire this desk’s printable tables to that API.
-11. Ensure trailing order is exactly Filters → Settings → Export → Print → context actions on every printable table.
-12. Add Export authorization via `canExport` (omit when denied); prefer an explicit ∩ `evidence:export` (or documented export atom) in the feature access map.
-13. Normalize default visible column counts to prefer **5**, or record justified exceptions per tab in tests.
-14. Confirm Advanced filters footers/labels and Table Settings footers match shared copy (`Filters` / `Advanced filters`; `Clear filters` / `Apply filters` / `Close`; `Reset columns` / `Apply columns` / `Close`).
+10. Shared `AppListTable` Print API wired for board + Follow-ups.
+11. Trailing order Filters → Settings → Export → Print → context (Start OPD on board; absent on Follow-ups).
+12. Export via `canExport` + ∩ `evidence:export`.
+13. Default visible columns prefer **5** (Queue Next action unmounted by design).
+14. Advanced filters / Settings footers use shared Clear/Apply/Close (and column Reset/Apply/Close) copy.
 
 ### printing.mdc
 
-15. Every Print trigger (table toolbar and nested hubs opened from this desk) must use the label **`Print`**, not content-specific strings.
-16. Every Print path must open shared preview before device print, with selectable sections/columns/fields and live preview updates; disable final Print when selection yields an empty document.
-17. Prefer `showAppPrintPreviewDialog` / `AppPrintPreview*` / `PrintDocumentTemplates` — extend shared preview helpers rather than forking.
+15. Print triggers use `commonPrintActionLabel` → `Print` (table + Flow Actions).
+16. Preview-first shared flow; empty selection disables final Print.
+17. `printOpdWorkspaceList` / clinical summary via shared preview templates.
 
 ### dialogs.mdc / forms.mdc / screens.mdc
 
-18. Audit feature-owned and wrapper dialogs for generic titles, flat layout, no nested `AppCollapsibleSection`, maximized defaults, and shared field reuse; fix any violations found during remediation.
-19. Keep flows in-desk; no nested feature routes for desk tasks; only allowed ownership handoffs per `screens.mdc`.
+18. Shared hubs keep generic titles, flat layout, pinned footers, maximized defaults.
+19. Flows stay in-desk; no nested feature routes for desk tasks.
 
 ### Program hygiene
 
-20. After fixes, rewrite `tabs/03-opd/99-convention-gaps.md` to an empty residual list (or “none”) and refresh each tab inventory file to match shipped behavior.
-21. Add tests that fail if gaps regress (count authority, tone policy, toolbar order, Print label, Export omit, filter/footer labels).
+20. `tabs/03-opd/99-convention-gaps.md` residual is **None**; per-tab inventories refreshed.
+21. Regression tests under `frontend/test/features/opd/` cover count authority, tones, Export/Print omit, prefer-5, filter footers.
 
 ## Constraints
 
@@ -53,13 +53,13 @@ Close every compliance gap listed in `tabs/03-opd/99-convention-gaps.md` against
 
 ## Acceptance Criteria
 
-- [ ] Every residual gap listed in Requirements (Inventory residual gaps) is closed or recorded as a justified, tested product exception.
-- [ ] tabs.mdc count/tone/sync requirements verified.
-- [ ] tables.mdc Print/Export/column/filter-footer requirements verified.
-- [ ] printing.mdc Print label + preview-first + shared templates verified.
-- [ ] dialog/form/screen boundaries hold.
-- [ ] `tabs/03-opd/99-convention-gaps.md` shows no open required gaps.
-- [ ] Regression tests listed in Program hygiene exist and pass.
+- [x] Every residual gap listed in Requirements (Inventory residual gaps) is closed or recorded as a justified, tested product exception.
+- [x] tabs.mdc count/tone/sync requirements verified.
+- [x] tables.mdc Print/Export/column/filter-footer requirements verified.
+- [x] printing.mdc Print label + preview-first + shared templates verified.
+- [x] dialog/form/screen boundaries hold.
+- [x] `tabs/03-opd/99-convention-gaps.md` shows no open required gaps.
+- [x] Regression tests listed in Program hygiene exist and pass.
 
 ## Verification
 

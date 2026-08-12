@@ -418,7 +418,7 @@ void main() {
       );
       expect(
         IcuCriticalAtomPermissions.routeEntry.isAllowed(opsReader),
-        isTrue,
+        isFalse,
       );
       expect(canViewIcuCritical(opsReader), isFalse);
       expect(
@@ -494,7 +494,7 @@ void main() {
       expect(find.text('Acknowledge alert'), findsNothing);
       expect(find.text('Critical alert'), findsNothing);
       expect(find.text('End ICU stay'), findsNothing);
-      expect(find.text('Print summary'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -525,7 +525,7 @@ void main() {
 
       // Row next-action Acknowledge omitted from detail Quick Actions.
       expect(find.text('Critical alert'), findsWidgets);
-      expect(find.text('Print summary'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

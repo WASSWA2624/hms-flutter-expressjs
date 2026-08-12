@@ -141,6 +141,7 @@ void main() {
       () => patientRepository.createPatient(any()),
     ).thenAnswer((_) async => const Result<Patient>.success(createdPatient));
 
+    await _setLabeledDialogSurface(tester);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -476,8 +477,7 @@ void main() {
         () => patientRepository.listPatients(any()),
       ).thenAnswer((_) => patientLoad.future);
 
-      await tester.binding.setSurfaceSize(const Size(800, 720));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setLabeledDialogSurface(tester);
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -886,6 +886,7 @@ void main() {
       ),
     );
 
+    await _setLabeledDialogSurface(tester);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -1359,16 +1360,26 @@ void _stubStartDialogLookups({
   );
 }
 
+Future<void> _setLabeledDialogSurface(
+  WidgetTester tester, {
+  Size size = const Size(1440, 900),
+}) async {
+  // Dialog footers show action labels only at lg+ (`showsToolbarActionLabels`).
+  tester.view.physicalSize = size;
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+}
+
 Future<void> _pumpStartDialog(
   WidgetTester tester, {
   required _MockPatientRepository patientRepository,
   required _MockOpdRepository opdRepository,
   required OpdEncounterDialog dialog,
-  Size size = const Size(800, 720),
+  Size size = const Size(1440, 900),
   bool canRegisterPatient = true,
 }) async {
-  await tester.binding.setSurfaceSize(size);
-  addTearDown(() => tester.binding.setSurfaceSize(null));
+  await _setLabeledDialogSurface(tester, size: size);
   await tester.pumpWidget(
     ProviderScope(
       overrides: [

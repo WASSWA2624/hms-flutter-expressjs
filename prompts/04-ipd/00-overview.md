@@ -36,11 +36,11 @@ Inventory baseline (do not reinvent atoms): `tabs/04-ipd/`. Per-surface remediat
 
 ## Acceptance Criteria
 
-- [ ] Every desk section in `tabs/04-ipd/00-overview.md` has a completed remediation prompt under `prompts/04-ipd/` and a matching updated inventory under `tabs/04-ipd/`.
-- [ ] Shared chrome and convention-gap prompts are implemented before claiming per-tab completion for Print, Export gating, authoritative counts, and count tones.
-- [ ] No mid-flow navigation to another feature page except allowed ownership handoffs (`screens.mdc`).
-- [ ] Tests prove unauthorized UI is absent and authorized UI remains for representative roles.
-- [ ] No new markdown inventories under `screens/`.
+- [x] Every desk section in `tabs/04-ipd/00-overview.md` has a completed remediation prompt under `prompts/04-ipd/` and a matching updated inventory under `tabs/04-ipd/`.
+- [x] Shared chrome and convention-gap prompts are implemented before claiming per-tab completion for Print, Export gating, authoritative counts, and count tones.
+- [x] No mid-flow navigation to another feature page except allowed ownership handoffs (`screens.mdc`).
+- [x] Tests prove unauthorized UI is absent and authorized UI remains for representative roles.
+- [x] No new markdown inventories under `screens/`.
 
 ## Verification
 

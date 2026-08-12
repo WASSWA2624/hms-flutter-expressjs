@@ -227,24 +227,21 @@ void main() {
   testWidgets('remains usable on a compact dark high-text-scale surface', (
     WidgetTester tester,
   ) async {
-    tester.view.physicalSize = const Size(320, 568);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
     final _MockIpdRepository repository = _MockIpdRepository();
     await _pumpDialog(
       tester,
       repository: repository,
       dark: true,
       textScaler: const TextScaler.linear(1.8),
+      compactViewport: true,
     );
 
     expect(tester.takeException(), isNull);
     expect(find.byType(AppTransferRequestDialog), findsOneWidget);
     expect(find.text('REQUEST TRANSFER'), findsOneWidget);
-    expect(find.text('Close'), findsOneWidget);
-    expect(find.text('Request transfer'), findsOneWidget);
+    // Compact footers are icon-only; labels stay on tooltips.
+    expect(find.byTooltip('Close'), findsWidgets);
+    expect(find.byTooltip('Request transfer'), findsOneWidget);
   });
 }
 
@@ -254,8 +251,19 @@ Future<void> _pumpDialog(
   ValueChanged<bool?>? onResult,
   bool dark = false,
   TextScaler textScaler = TextScaler.noScaling,
+  bool compactViewport = false,
 }) async {
   _stubWorkspaceLoad(repository as _MockIpdRepository);
+
+  if (compactViewport) {
+    tester.view.physicalSize = const Size(320, 568);
+  } else {
+    // lg+ so dialog footer shows icon + label (not icon-only).
+    tester.view.physicalSize = const Size(1280, 800);
+  }
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
 
   await tester.pumpWidget(
     ProviderScope(

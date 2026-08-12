@@ -495,7 +495,7 @@ void main() {
       );
       expect(
         IcuTransfersAtomPermissions.routeEntry.isAllowed(opsReader),
-        isTrue,
+        isFalse,
       );
       expect(canViewIcuTransfers(opsReader), isFalse);
       expect(icuAllowedBoardSections(opsReader), isEmpty);
@@ -535,7 +535,7 @@ void main() {
         expect(IcuTransfersAtomPermissions.write.isAllowed(noFacility), isTrue);
         expect(
           IcuTransfersAtomPermissions.routeEntry.isAllowed(noFacility),
-          isTrue,
+          isFalse,
         );
       },
     );
@@ -613,7 +613,7 @@ void main() {
       expect(find.text('Request transfer'), findsNothing);
       expect(find.text('End ICU stay'), findsNothing);
       expect(find.text('Critical alert'), findsNothing);
-      expect(find.text('Print summary'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
       expect(find.text('Open billing'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -658,7 +658,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('Print summary'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -937,7 +937,7 @@ void main() {
       expect(find.text('ICU STAY'), findsOneWidget);
       expect(find.text('REQUEST TRANSFER'), findsNothing);
       expect(find.text('Manage transfer'), findsNothing);
-      expect(find.text('Print summary'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

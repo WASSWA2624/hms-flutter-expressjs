@@ -427,21 +427,27 @@ void main() {
       expect(IcuAllAtomPermissions.create.isAllowed(emergencyWriter), isTrue);
     });
 
-    test('∪ allowance: route entry accepts operations:read; All tab still ∪ read',
+    test('∪ allowance: icu:read satisfies route entry; All tab still ∪ read',
         () {
       final AppAccessPolicy opsReadOnly = _policy(
         permissions: <AppPermission>{AppPermissions.operationsRead},
       );
-      expect(IcuAllAtomPermissions.routeEntry.isAllowed(opsReadOnly), isTrue);
+      expect(IcuAllAtomPermissions.routeEntry.isAllowed(opsReadOnly), isFalse);
       expect(
         IcuAllAtomPermissions.routeEntryUnion.isAllowed(opsReadOnly),
-        isTrue,
+        isFalse,
       );
-      expect(IcuAllAtomPermissions.catalogEntry.isAllowed(opsReadOnly), isTrue);
+      expect(IcuAllAtomPermissions.catalogEntry.isAllowed(opsReadOnly), isFalse);
       // All tab content requires clinical:read | emergency:read.
       expect(IcuAllAtomPermissions.tab.isAllowed(opsReadOnly), isFalse);
       expect(canViewIcuAll(opsReadOnly), isFalse);
       expect(icuAllowedBoardSections(opsReadOnly), isEmpty);
+
+      final AppAccessPolicy icuReader = _policy(
+        permissions: <AppPermission>{AppPermissions.icuRead},
+      );
+      expect(IcuAllAtomPermissions.routeEntry.isAllowed(icuReader), isTrue);
+      expect(IcuAllAtomPermissions.catalogEntry.isAllowed(icuReader), isTrue);
     });
 
     test('subscription strip: icu-critical-care required for All tab', () {

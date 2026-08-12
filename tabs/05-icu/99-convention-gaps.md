@@ -1,16 +1,24 @@
 # ICU inventory — convention gaps
 
-Required compliance gaps vs `prompts/.cursor/*.mdc` after inventory of presentation code (2026-08-11).
+Required compliance gaps vs `prompts/.cursor/*.mdc` after shared-chrome + per-tab remediation.
 
 ## Residual
 
-1. **Counts not authoritative totals** — active / critical / transfers / discharge / ended derive from current page `board.items`, not dedicated server scope totals / filtered query totals (`tabs.mdc` counts).
-2. **Filters are client-only on the current page** — Apply does not reload scope / refresh sibling tab counts (`tabs.mdc` tab↔table↔filters sync).
-3. **No date filters** on ICU board Advanced filters (`tables.mdc`).
-4. **No table Export** on patient boards (`tables.mdc` toolbar).
-5. **No table Print** — print only inside stay detail (`tables.mdc` / `printing.mdc`).
-6. **Follow-ups Filters omitted** on ICU host (`showAdvancedFilterButton: false`).
-7. **Bed board** has no Filters / Settings / Export / Print; count is all-beds length (not ward-filtered).
-8. **Shared column storage** `'icu_board'` across all patient sections.
-9. **URL sync on tab change** drops search / `id` / `panel` (only `section`).
-10. **Route entry mismatch** — `AppRoutes.icu` ∪ clinical|emergency|operations:read vs `RouteAccessCatalog.icuEntry` ∩ `icu:read`.
+none
+
+## Closed (2026-08-12)
+
+Shared chrome and desk tabs closed the former residual list:
+
+1. Authoritative counts via `IcuScopeCounts` / server `totalItemCount` (not page `items.length` alone)
+2. Sibling model = dedicated unfiltered scope totals; active tab badge uses filtered membership when narrowed
+3. Patient-board Advanced filters include admitted-at date range
+4. Table Export on patient / bed / follow-ups boards (`canExport` ∩ `evidence:export`)
+5. Table Print after Export (preview-first); stay-detail Print label `Print`
+6. Follow-ups Filters enabled on ICU host (`showAdvancedFilterButton: true`)
+7. Bed board Filters / Settings / Export / Print; badge tracks `visibleBeds`
+8. Per-section column storage `icu_${section.name}` / `icu_cw_${section.name}` (beds / follow-ups keyed separately)
+9. URL sync preserves `search` / `id` / `panel` with `section`
+10. Route entry aligned: `AppRoutes.icu` + `RouteAccessCatalog.icuEntry` ∩ `icu:read` + module
+
+Regression coverage: `frontend/test/features/icu/presentation/icu_workspace_page_test.dart`, per-tab permissions/chrome tests, `icuRouteEntryMatchesAppRoutes()`.

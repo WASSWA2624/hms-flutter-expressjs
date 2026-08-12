@@ -301,11 +301,6 @@ void main() {
   testWidgets('remains usable on a compact dark high-text-scale surface', (
     WidgetTester tester,
   ) async {
-    tester.view.physicalSize = const Size(320, 568);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
     final _MockIpdRepository repository = _MockIpdRepository();
     _stubWorkspaceLoad(repository);
 
@@ -314,13 +309,14 @@ void main() {
       repository: repository,
       dark: true,
       textScaler: const TextScaler.linear(1.8),
+      compactViewport: true,
     );
 
     expect(tester.takeException(), isNull);
     expect(find.byType(AppTransferUpdateDialog), findsOneWidget);
     expect(find.text('MANAGE TRANSFER'), findsOneWidget);
-    expect(find.text('Close'), findsOneWidget);
-    expect(find.text('Edit'), findsOneWidget);
+    expect(find.byTooltip('Close'), findsWidgets);
+    expect(find.byTooltip('Edit'), findsOneWidget);
   });
 }
 
@@ -370,7 +366,18 @@ Future<void> _pumpDialog(
   ValueChanged<bool?>? onResult,
   bool dark = false,
   TextScaler textScaler = TextScaler.noScaling,
+  bool compactViewport = false,
 }) async {
+  if (compactViewport) {
+    tester.view.physicalSize = const Size(320, 568);
+  } else {
+    // lg+ so dialog footer shows icon + label (not icon-only).
+    tester.view.physicalSize = const Size(1280, 800);
+  }
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
   await tester.pumpWidget(
     ProviderScope(
       overrides: [

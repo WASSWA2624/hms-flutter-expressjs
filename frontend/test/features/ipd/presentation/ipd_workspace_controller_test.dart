@@ -68,6 +68,24 @@ void main() {
       ),
     );
     when(() => repo.getSummaryCounts()).thenAnswer((_) async => const Result<IpdFlowAggregateCounts>.success(IpdFlowAggregateCounts.empty));
+    when(() => repo.getAdmission(any())).thenAnswer(
+      (Invocation invocation) async {
+        final String id = invocation.positionalArguments.single as String;
+        IpdAdmissionSummary? matched;
+        for (final IpdAdmissionSummary item in admissions) {
+          if (item.id == id) {
+            matched = item;
+            break;
+          }
+        }
+        final IpdAdmissionSummary summary =
+            matched ??
+            (admissions.isNotEmpty ? admissions.first : _summary(id: id));
+        return Result<IpdAdmissionDetail>.success(
+          IpdAdmissionDetail(summary: summary),
+        );
+      },
+    );
     when(() => repo.listWards(search: any(named: 'search'))).thenAnswer(
       (_) async => const Result<List<IpdWardOption>>.success(<IpdWardOption>[]),
     );
@@ -520,6 +538,13 @@ void main() {
       Invocation invocation,
     ) async {
       payload = invocation.positionalArguments[1] as Map<String, Object?>;
+      final IpdAdmissionDetail detail = IpdAdmissionDetail(
+        summary: transferred,
+        openTransferRequest: const IpdTransferRequest(
+          id: 'tr-1',
+          status: 'REQUESTED',
+        ),
+      );
       when(() => repo.listAdmissions(any())).thenAnswer(
         (Invocation listInvocation) async =>
             Result<AppPage<IpdAdmissionSummary>>.success(
@@ -533,16 +558,15 @@ void main() {
               ),
             ),
       );
-      when(() => repo.getSummaryCounts()).thenAnswer((_) async => const Result<IpdFlowAggregateCounts>.success(IpdFlowAggregateCounts.empty));
-      return Result<IpdAdmissionDetail>.success(
-        IpdAdmissionDetail(
-          summary: transferred,
-          openTransferRequest: const IpdTransferRequest(
-            id: 'tr-1',
-            status: 'REQUESTED',
-          ),
+      when(() => repo.getSummaryCounts()).thenAnswer(
+        (_) async => const Result<IpdFlowAggregateCounts>.success(
+          IpdFlowAggregateCounts(transferPending: 1),
         ),
       );
+      when(() => repo.getAdmission(any())).thenAnswer(
+        (_) async => Result<IpdAdmissionDetail>.success(detail),
+      );
+      return Result<IpdAdmissionDetail>.success(detail);
     });
 
     await container.read(ipdWorkspaceControllerProvider.future);
@@ -632,6 +656,13 @@ void main() {
       Invocation invocation,
     ) async {
       payload = invocation.positionalArguments[1] as Map<String, Object?>;
+      final IpdAdmissionDetail detail = IpdAdmissionDetail(
+        summary: approved,
+        openTransferRequest: const IpdTransferRequest(
+          id: 'tr-1',
+          status: 'APPROVED',
+        ),
+      );
       when(() => repo.listAdmissions(any())).thenAnswer(
         (Invocation listInvocation) async =>
             Result<AppPage<IpdAdmissionSummary>>.success(
@@ -645,16 +676,15 @@ void main() {
               ),
             ),
       );
-      when(() => repo.getSummaryCounts()).thenAnswer((_) async => const Result<IpdFlowAggregateCounts>.success(IpdFlowAggregateCounts.empty));
-      return Result<IpdAdmissionDetail>.success(
-        IpdAdmissionDetail(
-          summary: approved,
-          openTransferRequest: const IpdTransferRequest(
-            id: 'tr-1',
-            status: 'APPROVED',
-          ),
+      when(() => repo.getSummaryCounts()).thenAnswer(
+        (_) async => const Result<IpdFlowAggregateCounts>.success(
+          IpdFlowAggregateCounts(transferPending: 1),
         ),
       );
+      when(() => repo.getAdmission(any())).thenAnswer(
+        (_) async => Result<IpdAdmissionDetail>.success(detail),
+      );
+      return Result<IpdAdmissionDetail>.success(detail);
     });
 
     await container.read(ipdWorkspaceControllerProvider.future);
@@ -718,7 +748,7 @@ void main() {
     expect(state.admissions.items.first.transferStatus, 'REQUESTED');
   });
 
-  test('admissionQueueCount includes requested and pending bed stages', () {
+  test('admissionQueueCount reads authoritative summaryCounts', () {
     final IpdWorkspaceState state = IpdWorkspaceState(
       query: const IpdAdmissionQuery(),
       admissions: AppPage<IpdAdmissionSummary>(
@@ -730,6 +760,7 @@ void main() {
         request: const AppPageRequest(),
         totalItemCount: 3,
       ),
+      summaryCounts: const IpdFlowAggregateCounts(admissionQueue: 2),
     );
 
     expect(state.admissionQueueCount, 2);

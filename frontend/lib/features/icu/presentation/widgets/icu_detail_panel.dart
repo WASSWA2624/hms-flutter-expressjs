@@ -64,23 +64,28 @@ class IcuStayDetailPanel extends ConsumerWidget {
               : apiLabel(detail.patientGender!),
           showAvatar: false,
           status: icuStatus(summary),
-          alerts: <AppWorkspaceStatus>[
-            if (summary.hasCriticalAlert) alertStatus(l10n, summary),
-            if (summary.showsBillingDeferredBadge)
-              AppWorkspaceStatus(
-                label: l10n.icuBillingDeferredLabel,
-                tone: AppWorkspaceStatusTone.warning,
-              ),
-            if (summary.hasOpenTransfer)
-              AppWorkspaceStatus(
-                label: l10n.icuTransferPendingLabel,
-                tone: AppWorkspaceStatusTone.warning,
-              ),
-            if (summary.isDischargePlanned)
-              AppWorkspaceStatus(
-                label: l10n.icuDischargeReadyLabel,
-                tone: AppWorkspaceStatusTone.success,
-              ),
+          // Keep attention badges in the header so they remain visible while
+          // AppPatientDetails is collapsed by default.
+          actions: <Widget>[
+            for (final AppWorkspaceStatus alert in <AppWorkspaceStatus>[
+              if (summary.hasCriticalAlert) alertStatus(l10n, summary),
+              if (summary.showsBillingDeferredBadge)
+                AppWorkspaceStatus(
+                  label: l10n.icuBillingDeferredLabel,
+                  tone: AppWorkspaceStatusTone.warning,
+                ),
+              if (summary.hasOpenTransfer)
+                AppWorkspaceStatus(
+                  label: l10n.icuTransferPendingLabel,
+                  tone: AppWorkspaceStatusTone.warning,
+                ),
+              if (summary.isDischargePlanned)
+                AppWorkspaceStatus(
+                  label: l10n.icuDischargeReadyLabel,
+                  tone: AppWorkspaceStatusTone.success,
+                ),
+            ])
+              AppWorkspaceStatusBadge(status: alert),
           ],
           expandedFields: <AppWorkspacePatientContextField>[
             AppWorkspacePatientContextField(
@@ -321,7 +326,7 @@ class IcuActionPanel extends ConsumerWidget {
               return const SizedBox.shrink();
             }
             return AppReportActionButton.print(
-              label: l10n.icuPrintSummaryLabel,
+              label: l10n.commonPrintActionLabel,
               onPressed: () async {
                 await PrintDocumentTemplates.clinicalSummary(
                   ref: ref,

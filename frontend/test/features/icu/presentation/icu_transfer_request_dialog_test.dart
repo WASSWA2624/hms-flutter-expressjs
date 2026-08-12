@@ -59,8 +59,8 @@ void main() {
       expect(find.byType(AppTransferRequestDialog), findsOneWidget);
       expect(find.byType(AppDialog), findsOneWidget);
       expect(find.text('REQUEST TRANSFER'), findsOneWidget);
-      expect(find.text('Close'), findsOneWidget);
-      expect(find.text('Request transfer'), findsOneWidget);
+      expect(find.byTooltip('Close'), findsWidgets);
+      expect(find.byTooltip('Request transfer'), findsWidgets);
       expect(find.byIcon(AppActionIcons.transfer), findsWidgets);
       expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
       expect(find.text('PATIENT EXAMPLE'), findsNothing);
@@ -82,7 +82,7 @@ void main() {
     final _MockIcuRepository repository = _MockIcuRepository();
     await _pumpOpenTransfer(tester, repository: repository);
 
-    await tester.tap(find.widgetWithText(AppButton, 'Close'));
+    await tester.tap(find.byTooltip('Close').last);
     await tester.pumpAndSettle();
 
     verifyNever(
@@ -117,7 +117,7 @@ void main() {
     field.onChanged?.call('ward-b');
     await tester.pump();
 
-    await tester.tap(find.widgetWithText(AppButton, 'Request transfer'));
+    await tester.tap(find.byTooltip('Request transfer').last);
     await tester.pumpAndSettle();
 
     expect(find.byType(AppDialog), findsOneWidget);
@@ -183,7 +183,7 @@ void main() {
     field.onChanged?.call('ward-b');
     await tester.pump();
 
-    await tester.tap(find.widgetWithText(AppButton, 'Request transfer'));
+    await tester.tap(find.byTooltip('Request transfer').last);
     await tester.pumpAndSettle();
 
     expect(find.byType(AppDialog), findsNothing);
@@ -205,6 +205,11 @@ Future<void> _pumpOpenTransfer(
   when(() => repository.loadIcuDetail(any())).thenAnswer(
     (_) async => const Result<IcuPatientDetail>.success(_detail),
   );
+
+  tester.view.physicalSize = const Size(1440, 900);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
 
   await tester.pumpWidget(
     ProviderScope(

@@ -566,7 +566,7 @@ void main() {
     verify(() => repository.getAdmission('adm-queue')).called(1);
   });
 
-  testWidgets('bed board shows four default columns without manage rights', (
+  testWidgets('bed board shows five default columns without manage rights', (
     WidgetTester tester,
   ) async {
     await _pumpIpdWorkspace(
@@ -581,6 +581,7 @@ void main() {
     for (final String label in <String>[
       'Bed',
       'Ward',
+      'Room',
       'Current patient',
       'Status',
     ]) {
@@ -594,10 +595,6 @@ void main() {
         of: find.byType(AppListTableGrid),
         matching: find.text('Next action'),
       ),
-      findsNothing,
-    );
-    expect(
-      find.descendant(of: find.byType(AppListTableGrid), matching: find.text('Room')),
       findsNothing,
     );
     expect(find.text('Settings'), findsOneWidget);

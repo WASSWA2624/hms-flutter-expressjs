@@ -129,11 +129,17 @@ final class ReceptionFollowUpController
   }
 
   Future<AppFailure?> _runRefresh() async {
+    if (!ref.mounted) {
+      return null;
+    }
     final ReceptionFollowUpState? current = _currentState;
     if (current != null) {
       _emit(current.copyWith(isRefreshing: true, clearLastFailure: true));
     }
     final Result<ReceptionFollowUpState> result = await _load();
+    if (!ref.mounted) {
+      return null;
+    }
     AppFailure? failure;
     result.when(
       success: _emit,

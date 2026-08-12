@@ -396,17 +396,17 @@ void main() {
     });
 
     test(
-      '∪ allowance: operations:read satisfies route entry but not Bed board tab',
+      '∪ allowance: icu:read satisfies route entry; operations:read alone does not open Bed board',
       () {
         final AppAccessPolicy opsReader = _policy(
           permissions: <AppPermission>{AppPermissions.operationsRead},
         );
         expect(
           IcuBedBoardAtomPermissions.routeEntry.isAllowed(opsReader),
-          isTrue,
+          isFalse,
         );
         expect(canViewIcuBedBoard(opsReader), isFalse);
-        expect(canEnterIcuWorkspace(opsReader), isTrue);
+        expect(canEnterIcuWorkspace(opsReader), isFalse);
       },
     );
 
@@ -551,9 +551,9 @@ void main() {
 
       expect(find.byType(IcuBedBoardPanel), findsOneWidget);
       expect(find.textContaining('Bed board'), findsWidgets);
-      expect(find.textContaining('All ICU wards'), findsOneWidget);
-      expect(find.textContaining('available'), findsOneWidget);
-      expect(find.textContaining('occupied'), findsOneWidget);
+      expect(find.byType(AppListTable<IcuBed>), findsOneWidget);
+      expect(find.byTooltip('Filters'), findsOneWidget);
+      expect(find.byTooltip('Settings'), findsOneWidget);
       expect(find.textContaining('Ada Occupant'), findsOneWidget);
       expect(find.byTooltip('Open in IPD'), findsOneWidget);
       expect(find.byTooltip('Manage beds'), findsNothing);
@@ -821,7 +821,7 @@ void main() {
   });
 
   testWidgets(
-    'mobile viewport: Bed board chips and Open IPD remain reachable',
+    'mobile viewport: Bed board table Filters and Open IPD remain reachable',
     (WidgetTester tester) async {
       await _pumpBedBoard(
         tester,
@@ -833,8 +833,10 @@ void main() {
       );
 
       expect(find.byType(IcuBedBoardPanel), findsOneWidget);
-      expect(find.textContaining('All ICU wards'), findsOneWidget);
-      expect(find.byTooltip('Open in IPD'), findsOneWidget);
+      expect(find.byType(AppListTable<IcuBed>), findsOneWidget);
+      expect(find.textContaining('Ada Occupant'), findsOneWidget);
+      // Narrow layout may icon-only the Open IPD action; tooltip remains.
+      expect(find.byTooltip('Open in IPD'), findsWidgets);
       expect(tester.takeException(), isNull);
     },
   );
@@ -873,7 +875,8 @@ void main() {
       );
 
       expect(find.byType(IcuBedBoardPanel), findsOneWidget);
-      expect(find.textContaining('All ICU wards'), findsOneWidget);
+      expect(find.byType(AppListTable<IcuBed>), findsOneWidget);
+      expect(find.byTooltip('Filters'), findsOneWidget);
       expect(find.byTooltip('Open in IPD'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },

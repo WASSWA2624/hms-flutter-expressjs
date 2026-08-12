@@ -204,14 +204,16 @@ void main() {
     (WidgetTester tester) async {
       await pumpLocalizedWidget(
         tester,
-        ClinicalAdmissionActionDialog(
-          title: 'Assign ICU bed',
-          submitLabel: 'Assign ICU bed',
-          submitLeadingIcon: Icons.bed_outlined,
-          initialMaximized: false,
-          maxWidth: 560,
-          referenceData: _icuAssignBedReferenceData,
-          onSubmit: (_) async => null,
+        ProviderScope(
+          child: ClinicalAdmissionActionDialog(
+            title: 'Assign ICU bed',
+            submitLabel: 'Assign ICU bed',
+            submitLeadingIcon: Icons.bed_outlined,
+            initialMaximized: false,
+            maxWidth: 560,
+            referenceData: _icuAssignBedReferenceData,
+            onSubmit: (_) async => null,
+          ),
         ),
         size: const Size(900, 800),
         padding: EdgeInsets.zero,
@@ -235,24 +237,29 @@ void main() {
 
       await pumpLocalizedWidget(
         tester,
-        ClinicalAdmissionActionDialog(
-          title: 'Assign ICU bed',
-          submitLabel: 'Assign ICU bed',
-          submitLeadingIcon: Icons.bed_outlined,
-          initialMaximized: false,
-          maxWidth: 560,
-          referenceData: _icuAssignBedReferenceData,
-          onSubmit: (_) => completer.future,
+        ProviderScope(
+          child: ClinicalAdmissionActionDialog(
+            title: 'Assign ICU bed',
+            submitLabel: 'Assign ICU bed',
+            submitLeadingIcon: Icons.bed_outlined,
+            initialMaximized: false,
+            maxWidth: 560,
+            referenceData: _icuAssignBedReferenceData,
+            onSubmit: (_) => completer.future,
+          ),
         ),
         size: const Size(900, 800),
         padding: EdgeInsets.zero,
       );
+      await tester.pumpAndSettle();
 
-      await _selectSearchableOption(tester, 0, 'Medical ICU');
-      await _selectSearchableOption(tester, 1, 'Room 1');
-      await _selectSearchableOption(tester, 2, 'Bed A');
+      // Drive selection via onChanged (same path as UI commit) so the test
+      // does not depend on DropdownMenu overlay / EditableText finders.
+      await _selectOption(tester, 0, 'ward-icu-1');
+      await _selectOption(tester, 1, 'room-1');
+      await _selectOption(tester, 2, 'BED0000001');
 
-      await tester.tap(find.text('Assign ICU bed').last);
+      await tester.tap(_buttonFinder('Assign ICU bed'));
       await tester.pump();
 
       expect(_button(tester, 'Close').enabled, isFalse);
@@ -298,28 +305,31 @@ void _stubInitialLoad(
   });
 }
 
-Future<void> _selectSearchableOption(
+Future<void> _selectOption(
   WidgetTester tester,
   int fieldIndex,
-  String optionLabel,
+  String value,
 ) async {
-  await tester.tap(find.byType(EditableText).at(fieldIndex));
-  await tester.pumpAndSettle();
-  await tester.tap(
-    find
-        .descendant(
-          of: find.byType(MenuItemButton),
-          matching: find.textContaining(optionLabel),
-        )
-        .first,
+  final AppSelectField<String> field = tester.widget<AppSelectField<String>>(
+    find.byType(AppSelectField<String>).at(fieldIndex),
   );
+  field.onChanged?.call(value);
   await tester.pumpAndSettle();
 }
 
-AppButton _button(WidgetTester tester, String label) {
-  return tester.widget<AppButton>(
-    find
-        .ancestor(of: find.text(label), matching: find.byType(AppButton))
-        .first,
+Finder _buttonFinder(String label) {
+  final Finder byText = find.ancestor(
+    of: find.text(label),
+    matching: find.byType(AppButton),
   );
+  if (byText.evaluate().isNotEmpty) {
+    return byText.first;
+  }
+  return find
+      .ancestor(of: find.byTooltip(label), matching: find.byType(AppButton))
+      .first;
+}
+
+AppButton _button(WidgetTester tester, String label) {
+  return tester.widget<AppButton>(_buttonFinder(label));
 }

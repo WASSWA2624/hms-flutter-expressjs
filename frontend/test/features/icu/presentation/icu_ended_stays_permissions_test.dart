@@ -444,7 +444,7 @@ void main() {
       );
     });
 
-    test('∪ allowance: operations:read satisfies route entry, not tab read', () {
+    test('∪ allowance: icu:read satisfies route entry; operations:read alone does not', () {
       final AppAccessPolicy opsReader = _policy(
         permissions: <AppPermission>{AppPermissions.operationsRead},
         modules: const <AppModuleEntitlement>[
@@ -460,9 +460,9 @@ void main() {
       );
       expect(
         IcuEndedStaysAtomPermissions.routeEntry.isAllowed(opsReader),
-        isTrue,
+        isFalse,
       );
-      expect(canEnterIcuWorkspace(opsReader), isTrue);
+      expect(canEnterIcuWorkspace(opsReader), isFalse);
       expect(canViewIcuEndedStays(opsReader), isFalse);
       expect(canReadIcu(opsReader), isFalse);
       expect(icuAllowedSections(opsReader), isEmpty);
@@ -560,7 +560,7 @@ void main() {
         );
         expect(
           IcuEndedStaysAtomPermissions.routeEntry.isAllowed(noFacility),
-          isTrue,
+          isFalse,
         );
       },
     );
@@ -652,7 +652,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
 
-      expect(find.text('Print summary'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
       expect(find.text('Open billing'), findsNothing);
       // Open IPD is the row next-action — omitted from detail Quick Actions.
       expect(
@@ -737,7 +737,7 @@ void main() {
         ),
         findsNothing,
       );
-      expect(find.text('Print summary'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
     },
   );
 
@@ -908,7 +908,7 @@ void main() {
 
       expect(find.text('ICU STAY'), findsOneWidget);
       expect(find.text('MARK DISCHARGE READINESS'), findsNothing);
-      expect(find.text('Print summary'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );

@@ -19,9 +19,7 @@ class IcuPatientCell extends StatelessWidget {
           item.displayTitle,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: AppFontWeight.emphasis,
-          ),
+          style: theme.textTheme.bodyMedium,
         ),
         SizedBox(height: theme.spacing.xs),
         Text(

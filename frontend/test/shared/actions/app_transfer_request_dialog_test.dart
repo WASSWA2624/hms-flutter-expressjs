@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
+import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -106,43 +109,56 @@ Future<void> _pumpOpener(
   ValueChanged<bool?>? onResult,
   Future<AppFailure?> Function(String toWardId)? onSubmit,
 }) async {
+  // lg+ so dialog footer shows icon + label (not icon-only).
+  tester.view.physicalSize = const Size(1280, 800);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
   await tester.pumpWidget(
-    MaterialApp(
-      theme: AppTheme.light,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: Scaffold(
-        body: Builder(
-          builder: (BuildContext context) {
-            return Center(
-              child: AppButton.primary(
-                label: 'Open',
-                leadingIcon: AppActionIcons.transfer,
-                onPressed: () async {
-                  final bool? value = await showAppTransferRequestDialog(
-                    context: context,
-                    title: 'Request transfer',
-                    wardLabel: 'Target ward',
-                    wardHint: 'Select a ward',
-                    submitLabel: 'Request transfer',
-                    requiredMessage: 'Required',
-                    wardOptions: const <AppSelectOption<String>>[
-                      AppSelectOption<String>(
-                        value: 'ward-1',
-                        label: 'Ward 1',
-                      ),
-                      AppSelectOption<String>(
-                        value: 'ward-2',
-                        label: 'Ward 2',
-                      ),
-                    ],
-                    onSubmit: onSubmit ?? (_) async => null,
-                  );
-                  onResult?.call(value);
-                },
-              ),
-            );
-          },
+    ProviderScope(
+      overrides: [
+        initialSessionStateProvider.overrideWithValue(
+          const SessionState.ready(),
+        ),
+      ],
+      child: MaterialApp(
+        theme: AppTheme.light,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Builder(
+            builder: (BuildContext context) {
+              return Center(
+                child: AppButton.primary(
+                  label: 'Open',
+                  leadingIcon: AppActionIcons.transfer,
+                  onPressed: () async {
+                    final bool? value = await showAppTransferRequestDialog(
+                      context: context,
+                      title: 'Request transfer',
+                      wardLabel: 'Target ward',
+                      wardHint: 'Select a ward',
+                      submitLabel: 'Request transfer',
+                      requiredMessage: 'Required',
+                      wardOptions: const <AppSelectOption<String>>[
+                        AppSelectOption<String>(
+                          value: 'ward-1',
+                          label: 'Ward 1',
+                        ),
+                        AppSelectOption<String>(
+                          value: 'ward-2',
+                          label: 'Ward 2',
+                        ),
+                      ],
+                      onSubmit: onSubmit ?? (_) async => null,
+                    );
+                    onResult?.call(value);
+                  },
+                ),
+              );
+            },
+          ),
         ),
       ),
     ),

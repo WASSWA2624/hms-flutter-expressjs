@@ -248,6 +248,35 @@ final class IcuWorkspaceController
     );
   }
 
+  void selectBedStatus(String? status) {
+    final IcuWorkspaceState? current = _currentState;
+    if (current == null) {
+      return;
+    }
+    _emit(
+      current.copyWith(
+        bedBoard: current.bedBoard.copyWith(
+          selectedStatus: status,
+          clearSelectedStatus: status == null,
+        ),
+      ),
+    );
+  }
+
+  void applyBedSearch(String search) {
+    final IcuWorkspaceState? current = _currentState;
+    if (current == null) {
+      return;
+    }
+    final String next = search.trim();
+    if (current.bedBoard.search == next) {
+      return;
+    }
+    _emit(
+      current.copyWith(bedBoard: current.bedBoard.copyWith(search: next)),
+    );
+  }
+
   Future<AppFailure?> loadBedBoard() async {
     final IcuWorkspaceState? current = _currentState;
     if (current == null) {
@@ -263,6 +292,8 @@ final class IcuWorkspaceController
             latest.copyWith(
               bedBoard: board.copyWith(
                 selectedWardId: latest.bedBoard.selectedWardId,
+                selectedStatus: latest.bedBoard.selectedStatus,
+                search: latest.bedBoard.search,
               ),
               isRefreshingBeds: false,
             ),
@@ -551,13 +582,77 @@ final class IcuWorkspaceController
     }
 
     final IcuReferenceData referenceData = await _referenceData();
-    return Result<IcuWorkspaceState>.success(
-      IcuWorkspaceState(
-        query: query,
-        board: board,
-        referenceData: referenceData,
-      ),
+    final IcuScopeCounts seed = IcuScopeCounts.empty.withScope(
+      query.scope,
+      board.totalItemCount ?? board.items.length,
     );
+    final IcuWorkspaceState initial = IcuWorkspaceState(
+      query: query,
+      board: board,
+      referenceData: referenceData,
+      scopeCounts: seed,
+    );
+    // Warm sibling counts after the first frame so the desk paints quickly.
+    Future<void>.microtask(() async {
+      final IcuScopeCounts counts = await _loadScopeCounts(
+        seed: seed,
+        currentScope: query.scope,
+      );
+      final IcuWorkspaceState? latest = _currentState;
+      if (latest != null) {
+        _emit(latest.copyWith(scopeCounts: counts));
+      }
+    });
+    return Result<IcuWorkspaceState>.success(initial);
+  }
+
+  Future<IcuScopeCounts> _loadScopeCounts({
+    required IcuScopeCounts seed,
+    IcuBoardScope? currentScope,
+  }) async {
+    IcuScopeCounts counts = seed;
+    final List<IcuBoardScope> scopes = IcuBoardScope.values
+        .where((IcuBoardScope scope) => scope != currentScope)
+        .toList(growable: false);
+    final List<Result<AppPage<IcuPatientSummary>>> results =
+        await Future.wait(<Future<Result<AppPage<IcuPatientSummary>>>>[
+          for (final IcuBoardScope scope in scopes)
+            _repository.listIcuBoard(
+              IcuBoardQuery(
+                scope: scope,
+                pageRequest: const AppPageRequest(pageSize: 1),
+              ),
+            ),
+        ]);
+    for (var i = 0; i < scopes.length; i += 1) {
+      final AppPage<IcuPatientSummary>? page = _successOrNull(results[i]);
+      if (page == null) {
+        continue;
+      }
+      counts = counts.withScope(
+        scopes[i],
+        page.totalItemCount ?? page.items.length,
+      );
+    }
+    return counts;
+  }
+
+  Future<void> _refreshScopeCounts({IcuBoardScope? preferScope}) async {
+    final IcuWorkspaceState? current = _currentState;
+    if (current == null) {
+      return;
+    }
+    final IcuBoardScope scope = preferScope ?? current.query.scope;
+    final int currentTotal =
+        current.board.totalItemCount ?? current.board.items.length;
+    final IcuScopeCounts next = await _loadScopeCounts(
+      seed: current.scopeCounts.withScope(scope, currentTotal),
+      currentScope: scope,
+    );
+    final IcuWorkspaceState? latest = _currentState;
+    if (latest != null) {
+      _emit(latest.copyWith(scopeCounts: next));
+    }
   }
 
   void _startAdaptivePolling() {
@@ -612,6 +707,9 @@ final class IcuWorkspaceController
         if (failure != null) {
           return failure;
         }
+        if (showLoading) {
+          unawaited(_refreshScopeCounts());
+        }
       }
 
       if (refreshRefs) {
@@ -660,9 +758,14 @@ final class IcuWorkspaceController
       success: (AppPage<IcuPatientSummary> page) {
         final IcuWorkspaceState? latest = _currentState;
         if (latest != null) {
+          final IcuScopeCounts nextCounts = latest.scopeCounts.withScope(
+            latest.query.scope,
+            page.totalItemCount ?? page.items.length,
+          );
           _emit(
             latest.copyWith(
               board: page,
+              scopeCounts: nextCounts,
               selectedDetail: _selectedAfterBoardRefresh(
                 page,
                 latest.selectedDetail,
@@ -724,7 +827,10 @@ final class IcuWorkspaceController
           );
         }
         if (refreshBoardAfter) {
-          unawaited(_refreshBoard(showLoading: false));
+          unawaited(() async {
+            await _refreshBoard(showLoading: false);
+            await _refreshScopeCounts();
+          }());
         }
         return null;
       },

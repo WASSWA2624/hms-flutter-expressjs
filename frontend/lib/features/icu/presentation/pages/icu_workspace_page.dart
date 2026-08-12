@@ -10,20 +10,24 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
 import 'package:hosspi_hms/features/icu/presentation/controllers/icu_workspace_controller.dart';
 import 'package:hosspi_hms/features/icu/presentation/icu_access.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_action_dialogs.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_bed_board_panel.dart';
+import 'package:hosspi_hms/features/icu/presentation/widgets/icu_board_filters.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_board_panel.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_next_action_button.dart';
+import 'package:hosspi_hms/features/icu/presentation/widgets/icu_workspace_print_helpers.dart';
+import 'package:hosspi_hms/features/reception/domain/entities/reception_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
-import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/follow_up/follow_up_worklist_panel.dart';
 import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 class IcuWorkspacePage extends ConsumerStatefulWidget {
@@ -164,6 +168,7 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
   late final AppListTableColumnVisibilityController<IcuPatientSummary>
   _columnVisibilityController;
   AppSearchBarFilterValue _boardFilterValue = AppSearchBarFilterValue.empty;
+  int? _followUpsNarrowedCount;
 
   @override
   void initState() {
@@ -206,9 +211,13 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
 
   void _updateUrlForSection(IcuWorkspaceSection section) {
     if (!mounted) return;
-    final String tab = section.queryValue;
+    final Map<String, String> params = icuWorkspaceSectionQueryParams(
+      current: GoRouterState.of(context).uri.queryParameters,
+      section: section,
+      search: widget.state.query.search,
+    );
     final String location = AppRoutes.icu.location(
-      queryParameters: <String, String>{if (tab != 'active') 'section': tab},
+      queryParameters: params,
     );
     syncWorkspaceLocation(context, location);
   }
@@ -239,20 +248,55 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
     };
   }
 
-  int? _sectionCount(IcuWorkspaceState state, IcuWorkspaceSection section) {
+  /// Sibling-count model: dedicated unfiltered scope totals from [scopeCounts].
+  /// Active patient tab with search/advanced filters uses the filtered
+  /// membership length for that tab only.
+  int? _sectionCount(
+    IcuWorkspaceState state,
+    IcuWorkspaceSection section, {
+    required IcuWorkspaceSection activeSection,
+    required AppSearchBarFilterValue filter,
+    int? followUpsNarrowedCount,
+  }) {
     if (section.isFollowUps) {
+      return followUpsNarrowedCount;
+    }
+    final int? scopeTotal = _sectionScopeTotal(state, section);
+    if (scopeTotal == null) {
       return null;
     }
+    if (section != activeSection) {
+      return scopeTotal;
+    }
+    if (section.isBedBoard) {
+      // When Beds is active, badge tracks the same ward/status/search model as
+      // the table (`visibleBeds`). Sibling badge stays the unfiltered catalog.
+      if (section == activeSection) {
+        return state.bedBoard.visibleBeds.length;
+      }
+      return scopeTotal;
+    }
+    final bool hasSearch = state.query.search.trim().isNotEmpty;
+    if (!filter.isActive && !hasSearch) {
+      return scopeTotal;
+    }
+    if (filter.isActive) {
+      return filterIcuBoardItems(state.board.items, filter).length;
+    }
+    return state.board.totalItemCount ?? state.board.items.length;
+  }
+
+  static int? _sectionScopeTotal(
+    IcuWorkspaceState state,
+    IcuWorkspaceSection section,
+  ) {
     return switch (section) {
       IcuWorkspaceSection.active => state.activeCount,
       IcuWorkspaceSection.critical => state.criticalCount,
       IcuWorkspaceSection.transfers => state.transferCount,
       IcuWorkspaceSection.discharge => state.dischargeReadyCount,
-      IcuWorkspaceSection.ended =>
-        state.board.items
-            .where((IcuPatientSummary item) => item.isEndedIcu)
-            .length,
-      IcuWorkspaceSection.all => _pageTotal(state.board),
+      IcuWorkspaceSection.ended => state.endedCount,
+      IcuWorkspaceSection.all => state.allCount,
       IcuWorkspaceSection.beds => state.bedBoard.beds.length,
       IcuWorkspaceSection.followUps => null,
     };
@@ -263,11 +307,11 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
       IcuWorkspaceSection.critical => AppTabCountTone.danger,
       IcuWorkspaceSection.active ||
       IcuWorkspaceSection.transfers ||
-      IcuWorkspaceSection.discharge => AppTabCountTone.warning,
+      IcuWorkspaceSection.discharge ||
+      IcuWorkspaceSection.followUps => AppTabCountTone.warning,
       IcuWorkspaceSection.ended ||
       IcuWorkspaceSection.all ||
-      IcuWorkspaceSection.beds ||
-      IcuWorkspaceSection.followUps => AppTabCountTone.info,
+      IcuWorkspaceSection.beds => AppTabCountTone.info,
     };
   }
 
@@ -335,14 +379,21 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
                     icon: _sectionIcon(section),
                     label: _sectionLabel(l10n, section),
                     count: section.isFollowUps
-                        ? ref.watch(
-                            followUpTabCountProvider(
-                              const FollowUpWorklistScope(
-                                encounterType: 'ICU',
+                        ? (_followUpsNarrowedCount ??
+                            ref.watch(
+                              followUpTabCountProvider(
+                                const FollowUpWorklistScope(
+                                  encounterType: 'ICU',
+                                ),
                               ),
-                            ),
-                          )
-                        : _sectionCount(state, section),
+                            ))
+                        : _sectionCount(
+                            state,
+                            section,
+                            activeSection: _section,
+                            filter: _boardFilterValue,
+                            followUpsNarrowedCount: _followUpsNarrowedCount,
+                          ),
                     countTone: _sectionCountTone(section),
                   ),
               ],
@@ -378,11 +429,56 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
             ),
             SizedBox(height: theme.spacing.sm),
             if (isFollowUpsView)
-              const FollowUpWorklistPanel(
-                scope: FollowUpWorklistScope(encounterType: 'ICU'),
+              FollowUpWorklistPanel(
+                scope: const FollowUpWorklistScope(encounterType: 'ICU'),
                 storageKeyPrefix: 'icu_follow_ups',
                 readRequirement: IcuFollowUpsAtomPermissions.tab,
                 writeRequirement: IcuFollowUpsAtomPermissions.write,
+                showAdvancedFilterButton: true,
+                advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+                advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+                advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                advancedFilterResetLabel: l10n.opdClearFiltersAction,
+                advancedFilterCloseLabel: l10n.commonCloseActionLabel,
+                enableDateFilter: true,
+                dateFilterLabel: l10n.opdFollowUpDateLabel,
+                dateFromLabel: l10n.opdDateFromLabel,
+                dateToLabel: l10n.opdDateToLabel,
+                filterGroups: <AppSearchBarFilterGroup>[
+                  AppSearchBarFilterGroup(
+                    key: 'follow_up_status',
+                    label: l10n.receptionStatusLabel,
+                    choices: <AppSearchBarFilterChoice>[
+                      AppSearchBarFilterChoice(
+                        value: 'pending',
+                        label: l10n.patientsActiveWorkStatusAppointmentScheduled,
+                      ),
+                      AppSearchBarFilterChoice(
+                        value: 'completed',
+                        label: l10n.opdCompletedFlowSummaryLabel,
+                      ),
+                    ],
+                  ),
+                ],
+                canExport: canExportIcuWorkspace(accessPolicy),
+                enablePrint: true,
+                canPrint: canPrintIcuWorkspace(accessPolicy),
+                printLabel: l10n.commonPrintActionLabel,
+                onPrint: (List<ReceptionFollowUpEntry> entries) =>
+                    _printIcuFollowUpsList(
+                      context,
+                      ref,
+                      entries: entries,
+                      l10n: l10n,
+                    ),
+                onNarrowedCountChanged: (int? narrowedCount) {
+                  if (_followUpsNarrowedCount == narrowedCount) {
+                    return;
+                  }
+                  setState(() {
+                    _followUpsNarrowedCount = narrowedCount;
+                  });
+                },
               )
             else if (isBedView)
               IcuBedBoardPanel(state: state)
@@ -407,4 +503,76 @@ class _IcuWorkspaceContentState extends ConsumerState<_IcuWorkspaceContent> {
   }
 }
 
-int _pageTotal<T>(AppPage<T> page) => page.totalItemCount ?? page.items.length;
+/// Builds ICU in-desk query params for a tab change.
+///
+/// Preserves existing `id` / `panel` (and other) keys while syncing `section`
+/// and `search` (convention gap #9 / screens.mdc URL sync).
+@visibleForTesting
+Map<String, String> icuWorkspaceSectionQueryParams({
+  required Map<String, String> current,
+  required IcuWorkspaceSection section,
+  required String search,
+}) {
+  final Map<String, String> params = <String, String>{...current};
+  final String tab = section.queryValue;
+  if (tab == 'active') {
+    params.remove('section');
+  } else {
+    params['section'] = tab;
+  }
+  final String trimmedSearch = search.trim();
+  if (trimmedSearch.isNotEmpty) {
+    params['search'] = trimmedSearch;
+    params.remove('q');
+  } else {
+    params.remove('search');
+    params.remove('q');
+  }
+  return params;
+}
+
+Future<void> _printIcuFollowUpsList(
+  BuildContext context,
+  WidgetRef ref, {
+  required List<ReceptionFollowUpEntry> entries,
+  required AppLocalizations l10n,
+}) async {
+  final Locale locale = Localizations.localeOf(context);
+  final List<IcuWorkspacePrintColumn> printColumns =
+      <IcuWorkspacePrintColumn>[
+        IcuWorkspacePrintColumn(id: 'patient', label: l10n.opdPatientNameLabel),
+        IcuWorkspacePrintColumn(
+          id: 'phone',
+          label: l10n.patientsPhoneIdentifierColumnLabel,
+        ),
+        IcuWorkspacePrintColumn(id: 'status', label: l10n.receptionStatusLabel),
+        IcuWorkspacePrintColumn(id: 'date', label: l10n.opdFollowUpDateLabel),
+        IcuWorkspacePrintColumn(id: 'time', label: l10n.opdFollowUpTimeLabel),
+        IcuWorkspacePrintColumn(id: 'patient_id', label: l10n.opdPatientIdLabel),
+        IcuWorkspacePrintColumn(id: 'email', label: l10n.patientsEmailLabel),
+        IcuWorkspacePrintColumn(id: 'notes', label: l10n.opdNotesLabel),
+      ];
+  final List<Map<String, String>> printRows = <Map<String, String>>[
+    for (final ReceptionFollowUpEntry entry in entries)
+      <String, String>{
+        'patient': entry.patientDisplayName?.trim().isNotEmpty == true
+            ? entry.patientDisplayName!.trim()
+            : l10n.profileUnknownValue,
+        'phone': entry.patientPhone?.trim() ?? '',
+        'status': opdStageDisplayLabel(l10n, entry.status),
+        'date': AppFormatters.shortDate(entry.scheduledAt.toLocal(), locale),
+        'time': AppFormatters.time(entry.scheduledAt.toLocal(), locale),
+        'patient_id': entry.patientIdentifier,
+        'email': entry.patientEmail?.trim() ?? '',
+        'notes': entry.notes?.trim() ?? '',
+      },
+  ];
+  await printIcuWorkspaceList(
+    ref: ref,
+    context: context,
+    title: l10n.receptionSectionFollowUps,
+    columns: printColumns,
+    rows: printRows,
+    emptyText: l10n.receptionFollowUpsEmptyTitle,
+  );
+}

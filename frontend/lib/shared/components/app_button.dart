@@ -218,7 +218,10 @@ class AppButton extends StatelessWidget {
       child: sizedButton,
     );
 
-    final String? resolvedTooltip = tooltip;
+    // Icon-only chrome (compact toolbars / dialog footers) still exposes the
+    // action name via tooltip when callers omit an explicit [tooltip].
+    final String? resolvedTooltip = tooltip ??
+        (compactIconOnly && resolvedLabel.isNotEmpty ? resolvedLabel : null);
     if (resolvedTooltip == null) {
       return semanticButton;
     }

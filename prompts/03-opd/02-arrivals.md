@@ -7,10 +7,10 @@ Make the Arrivals desk section fully compliant with `tabs.mdc`, `tables.mdc`, `d
 ## Requirements
 
 1. Keep strip label `opdSectionArrivalsLabel`, deep-link `arrivals` (alias `appointments`), and omit the tab when gate denies access (`OpdArrivalsAtomPermissions.tab`) — never show a disabled placeholder (`tabs.mdc`). Align `OpdWorkspaceSection` / query helpers with `tabs/03-opd/00-overview.md`.
-2. Badge count must be the authoritative total for this tab’s scope (`state.arrivalCount`). When Filters/search/date narrow the active tab, the **active** badge must reflect the filtered total (`tabs.mdc`). Stop using painted-row length alone when a total is available or can be derived from the same filter model.
+2. Badge count must be the authoritative total for this tab’s scope (`appointments.totalItemCount`; fallback `arrivalCount`). When Filters/search/date narrow the active tab, the **active** badge must reflect the filtered total (`tabs.mdc`). Stop using painted-row length alone when a total is available or can be derived from the same filter model.
 3. Use `AppTabCountTone.warning` as inventoried, or escalate to `danger` only when product policy requires (`tabs.mdc`).
-4. Target trailing order Filters → Settings → Export → Print → context actions. Inventory today: **Filters → Settings → Export → Start OPD**. Normalize shared labels to `Filters`, `Settings`, `Export`, and `Print` when those controls apply; keep inventoried context actions after Print (`tables.mdc`, `printing.mdc`).
-5. Inventory shows table Print **absent**. Add preview-first Print after Export on this list table (or record a justified tested product exception if Print must stay off). Omit Print/Export when unauthorized (`printing.mdc`, `tables.mdc`).
+4. Target trailing order Filters → Settings → Export → Print → context actions. Inventory: **Filters → Settings → Export → Print → Start OPD**. Normalize shared labels to `Filters`, `Settings`, `Export`, and `Print` when those controls apply; keep inventoried context actions after Print (`tables.mdc`, `printing.mdc`).
+5. Table Print is present: preview-first Print after Export on this list table. Omit Print/Export when unauthorized (`printing.mdc`, `tables.mdc`).
 6. Keep default visible columns at **5** unless a justified exception is recorded (always-visible keys / regulatory minimums / explicit default set in code + test). Settings must list every available column; Reset restores the default set (`tables.mdc`).
 7. Advanced filters must be comprehensive for this tab’s domain and edit the **same** filter model as the table and active count. Footer actions: **Clear filters** → **Apply filters** → **Close** (`tabs.mdc`, `tables.mdc`, `dialogs.mdc`).
 8. Preserve row-select → detail/actions hub with **generic titles**; keep nested mutations in-desk via shared dialogs/forms; omit unauthorized nested actions (`dialogs.mdc`, `forms.mdc`, `screens.mdc`). Inventoried dialogs to keep compliant: Appointment Actions; Encounter; Nested reschedule / cancel.
@@ -27,13 +27,13 @@ Make the Arrivals desk section fully compliant with `tabs.mdc`, `tables.mdc`, `d
 
 ## Acceptance Criteria
 
-- [ ] Tab count matches authoritative / filtered rules in Requirements 2–3.
-- [ ] Toolbar order and labels match Requirement 4; Print preview opens before print when Print applies.
-- [ ] Default column policy satisfies Requirement 6; Settings exposes all columns.
-- [ ] Advanced filters share the table/count model and include Close (`Requirement 7`).
-- [ ] Unauthorized tab and actions are absent (not disabled).
-- [ ] Dialogs/forms keep generic titles and shared field reuse.
-- [ ] `tabs/03-opd/02-arrivals.md` updated to match.
+- [x] Tab count matches authoritative / filtered rules in Requirements 2–3.
+- [x] Toolbar order and labels match Requirement 4; Print preview opens before print when Print applies.
+- [x] Default column policy satisfies Requirement 6; Settings exposes all columns.
+- [x] Advanced filters share the table/count model and include Close (`Requirement 7`).
+- [x] Unauthorized tab and actions are absent (not disabled).
+- [x] Dialogs/forms keep generic titles and shared field reuse.
+- [x] `tabs/03-opd/02-arrivals.md` updated to match.
 
 ## Verification
 

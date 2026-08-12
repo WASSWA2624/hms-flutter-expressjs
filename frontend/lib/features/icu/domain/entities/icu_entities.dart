@@ -218,6 +218,24 @@ final class IcuBed {
 
   String get locationLabel =>
       _joinDisplay(<String?>[wardName, roomName, label]) ?? (label ?? id);
+
+  bool matchesSearch(String search) {
+    final String needle = search.trim().toLowerCase();
+    if (needle.isEmpty) {
+      return true;
+    }
+    return <String?>[
+      label,
+      id,
+      wardName,
+      roomName,
+      occupantName,
+      occupantDisplayId,
+      status,
+    ].whereType<String>().any(
+      (String value) => value.toLowerCase().contains(needle),
+    );
+  }
 }
 
 @immutable
@@ -226,19 +244,32 @@ final class IcuBedBoard {
     this.wards = const <IcuBedWard>[],
     this.beds = const <IcuBed>[],
     this.selectedWardId,
+    this.selectedStatus,
+    this.search = '',
   });
 
   final List<IcuBedWard> wards;
   final List<IcuBed> beds;
   final String? selectedWardId;
+  final String? selectedStatus;
+  final String search;
 
   List<IcuBed> get visibleBeds {
-    if (selectedWardId == null || selectedWardId!.isEmpty) {
-      return beds;
+    Iterable<IcuBed> result = beds;
+    if (selectedWardId != null && selectedWardId!.isNotEmpty) {
+      result = result.where((IcuBed bed) => bed.wardId == selectedWardId);
     }
-    return beds
-        .where((IcuBed bed) => bed.wardId == selectedWardId)
-        .toList(growable: false);
+    if (selectedStatus != null && selectedStatus!.isNotEmpty) {
+      final String status = selectedStatus!.toUpperCase();
+      result = result.where(
+        (IcuBed bed) => (bed.status ?? '').toUpperCase() == status,
+      );
+    }
+    final String needle = search.trim().toLowerCase();
+    if (needle.isNotEmpty) {
+      result = result.where((IcuBed bed) => bed.matchesSearch(needle));
+    }
+    return result.toList(growable: false);
   }
 
   int get availableCount =>
@@ -251,7 +282,10 @@ final class IcuBedBoard {
     List<IcuBedWard>? wards,
     List<IcuBed>? beds,
     String? selectedWardId,
+    String? selectedStatus,
+    String? search,
     bool clearSelectedWard = false,
+    bool clearSelectedStatus = false,
   }) {
     return IcuBedBoard(
       wards: wards ?? this.wards,
@@ -259,6 +293,10 @@ final class IcuBedBoard {
       selectedWardId: clearSelectedWard
           ? null
           : selectedWardId ?? this.selectedWardId,
+      selectedStatus: clearSelectedStatus
+          ? null
+          : selectedStatus ?? this.selectedStatus,
+      search: search ?? this.search,
     );
   }
 }
@@ -852,12 +890,74 @@ final class IcuVitalsInput {
 }
 
 @immutable
+final class IcuScopeCounts {
+  const IcuScopeCounts({
+    this.active = 0,
+    this.critical = 0,
+    this.transfers = 0,
+    this.discharge = 0,
+    this.ended = 0,
+    this.all = 0,
+  });
+
+  static const IcuScopeCounts empty = IcuScopeCounts();
+
+  final int active;
+  final int critical;
+  final int transfers;
+  final int discharge;
+  final int ended;
+  final int all;
+
+  int forScope(IcuBoardScope scope) {
+    return switch (scope) {
+      IcuBoardScope.active => active,
+      IcuBoardScope.critical => critical,
+      IcuBoardScope.transfer => transfers,
+      IcuBoardScope.discharge => discharge,
+      IcuBoardScope.ended => ended,
+      IcuBoardScope.all => all,
+    };
+  }
+
+  IcuScopeCounts copyWith({
+    int? active,
+    int? critical,
+    int? transfers,
+    int? discharge,
+    int? ended,
+    int? all,
+  }) {
+    return IcuScopeCounts(
+      active: active ?? this.active,
+      critical: critical ?? this.critical,
+      transfers: transfers ?? this.transfers,
+      discharge: discharge ?? this.discharge,
+      ended: ended ?? this.ended,
+      all: all ?? this.all,
+    );
+  }
+
+  IcuScopeCounts withScope(IcuBoardScope scope, int total) {
+    return switch (scope) {
+      IcuBoardScope.active => copyWith(active: total),
+      IcuBoardScope.critical => copyWith(critical: total),
+      IcuBoardScope.transfer => copyWith(transfers: total),
+      IcuBoardScope.discharge => copyWith(discharge: total),
+      IcuBoardScope.ended => copyWith(ended: total),
+      IcuBoardScope.all => copyWith(all: total),
+    };
+  }
+}
+
+@immutable
 final class IcuWorkspaceState {
   const IcuWorkspaceState({
     required this.query,
     required this.board,
     this.referenceData = const IcuReferenceData(),
     this.bedBoard = const IcuBedBoard(),
+    this.scopeCounts = IcuScopeCounts.empty,
     this.view = IcuBoardView.patientBoard,
     this.selectedDetail,
     this.lastFailure,
@@ -871,6 +971,7 @@ final class IcuWorkspaceState {
   final AppPage<IcuPatientSummary> board;
   final IcuReferenceData referenceData;
   final IcuBedBoard bedBoard;
+  final IcuScopeCounts scopeCounts;
   final IcuBoardView view;
   final IcuPatientDetail? selectedDetail;
   final Object? lastFailure;
@@ -879,35 +980,24 @@ final class IcuWorkspaceState {
   final bool isRefreshingBeds;
   final bool isSaving;
 
-  int get activeCount {
-    return board.items
-        .where((IcuPatientSummary item) => item.isActiveIcu)
-        .length;
-  }
+  int get activeCount => scopeCounts.active;
 
-  int get criticalCount {
-    return board.items
-        .where((IcuPatientSummary item) => item.hasCriticalAlert)
-        .length;
-  }
+  int get criticalCount => scopeCounts.critical;
 
-  int get transferCount {
-    return board.items
-        .where((IcuPatientSummary item) => item.hasOpenTransfer)
-        .length;
-  }
+  int get transferCount => scopeCounts.transfers;
 
-  int get dischargeReadyCount {
-    return board.items
-        .where((IcuPatientSummary item) => item.isDischargePlanned)
-        .length;
-  }
+  int get dischargeReadyCount => scopeCounts.discharge;
+
+  int get endedCount => scopeCounts.ended;
+
+  int get allCount => scopeCounts.all;
 
   IcuWorkspaceState copyWith({
     IcuBoardQuery? query,
     AppPage<IcuPatientSummary>? board,
     IcuReferenceData? referenceData,
     IcuBedBoard? bedBoard,
+    IcuScopeCounts? scopeCounts,
     IcuBoardView? view,
     IcuPatientDetail? selectedDetail,
     Object? lastFailure,
@@ -923,6 +1013,7 @@ final class IcuWorkspaceState {
       board: board ?? this.board,
       referenceData: referenceData ?? this.referenceData,
       bedBoard: bedBoard ?? this.bedBoard,
+      scopeCounts: scopeCounts ?? this.scopeCounts,
       view: view ?? this.view,
       selectedDetail: clearSelectedDetail
           ? null

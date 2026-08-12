@@ -360,11 +360,8 @@ abstract final class AppRoutes {
     name: 'icu',
     path: '/icu',
     access: AppRouteAccess.authenticated,
-    requiredAnyPermissions: <AppPermission>[
-      AppPermissions.clinicalRead,
-      AppPermissions.emergencyRead,
-      AppPermissions.operationsRead,
-    ],
+    // Live gate is RouteAccessCatalog.icuEntry (∩ icu:read + module).
+    requiredPermissions: <AppPermission>[AppPermissions.icuRead],
     requiredAnyRoles: icuWorkspaceRoles,
     requiredActiveModules: <String>['icu-critical-care'],
   );

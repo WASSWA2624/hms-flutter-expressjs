@@ -411,7 +411,7 @@ void main() {
         expect(find.textContaining('Receive payment'), findsNothing);
         expect(find.textContaining('Refund'), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
-        expect(find.text('Print summary'), findsOneWidget);
+        expect(find.text('Print'), findsOneWidget);
         expectFlatSections(tester);
       },
     );

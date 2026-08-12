@@ -171,10 +171,19 @@ void main() {
       final Result<IcuWorkspaceState> result = await container.read(
         icuWorkspaceControllerProvider.future,
       );
-      final IcuWorkspaceState state = result.when(
-        success: (IcuWorkspaceState value) => value,
-        failure: (AppFailure failure) => fail(failure.code),
-      );
+      expect(result.isSuccess, isTrue);
+
+      // Sibling scope counts warm on a microtask after the first board paint.
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      final IcuWorkspaceState state = container
+          .read(icuWorkspaceControllerProvider)
+          .requireValue
+          .when(
+            success: (IcuWorkspaceState value) => value,
+            failure: (AppFailure failure) => fail(failure.code),
+          );
 
       expect(state.query.scope, IcuBoardScope.active);
       expect(state.board.items.single.displayId, 'ADM0001');

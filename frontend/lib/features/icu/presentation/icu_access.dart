@@ -23,10 +23,7 @@ const AccessRequirement icuWorkspaceReadRequirement = AccessRequirement(
 const AccessRequirement icuReadRequirement = icuWorkspaceReadRequirement;
 
 /// Route entry — unique atom from [RouteAccessCatalog.icu]
-/// (∪ `clinical:read` | `emergency:read` | `operations:read` + module).
-///
-/// Matches [AppRoutes.icu] `requiredAnyPermissions`. Matrix view chrome still
-/// uses [icuWorkspaceReadRequirement] (no `operations:read` alone for Active).
+/// (∩ `icu:read` + module). Matches [AppRoutes.icu] catalog-backed gate.
 const AccessRequirement icuWorkspaceEntryRequirement =
     RouteAccessCatalog.icuEntry;
 
@@ -211,6 +208,25 @@ bool canManageIcuBedBoard(AppAccessPolicy policy) {
   return IcuBedBoardAtomPermissions.manageBeds.isAllowed(policy);
 }
 
+/// ICU board list Export / Print (worklist Excel + preview print).
+///
+/// Uses ∩ `evidence:export` (same atom as Reception / Patients / OPD / IPD).
+const AccessRequirement icuWorkspaceExportRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.evidenceExport],
+);
+
+/// Alias — Print uses the same desk export gate.
+const AccessRequirement icuWorkspacePrintRequirement =
+    icuWorkspaceExportRequirement;
+
+bool canExportIcuWorkspace(AppAccessPolicy policy) {
+  return icuWorkspaceExportRequirement.isAllowed(policy);
+}
+
+bool canPrintIcuWorkspace(AppAccessPolicy policy) {
+  return icuWorkspacePrintRequirement.isAllowed(policy);
+}
+
 /// Case detail / print / Open-IPD chrome for the active board section.
 AccessRequirement icuDetailReadRequirement(IcuWorkspaceSection section) {
   return switch (section) {
@@ -322,6 +338,7 @@ IcuWorkspaceSection? icuFallbackSection(AppAccessPolicy policy) {
 /// | Detail Open billing / Open IPD / clearance | navigate | [navigation] |
 /// | Nested mutation dialogs / `panel=` deep link | create / update | write ∪ ([panelDeepLink]) |
 /// | Print summary | export / read | read ∪ ([printSummary]) |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` ([export] / [print]) |
 /// | Route entry (deep link) | navigate | clinical \| emergency \| operations:read ([routeEntry]) |
 abstract final class IcuActiveIcuAtomPermissions {
   static const AccessRequirement tab = icuWorkspaceReadRequirement;
@@ -380,6 +397,8 @@ abstract final class IcuActiveIcuAtomPermissions {
       icuNavigationRequirement;
   static const AccessRequirement navigation = icuNavigationRequirement;
   static const AccessRequirement printSummary = icuWorkspaceReadRequirement;
+  static const AccessRequirement export = icuWorkspaceExportRequirement;
+  static const AccessRequirement print = icuWorkspacePrintRequirement;
   /// Nested cross-module — matrix _(n/a)_; reuses ICU write ∪ / read ∪ only.
   static const AccessRequirement nestedWrite = icuWorkspaceWriteRequirement;
   static const AccessRequirement nestedRead = icuWorkspaceReadRequirement;
@@ -418,7 +437,10 @@ abstract final class IcuFollowUpsAtomPermissions {
   static const AccessRequirement tab = icuFollowUpsRequirement;
   static const AccessRequirement listChrome = icuFollowUpsRequirement;
   static const AccessRequirement search = icuFollowUpsRequirement;
+  static const AccessRequirement filters = icuFollowUpsRequirement;
   static const AccessRequirement settings = icuFollowUpsRequirement;
+  static const AccessRequirement export = icuWorkspaceExportRequirement;
+  static const AccessRequirement print = icuWorkspacePrintRequirement;
   static const AccessRequirement empty = icuFollowUpsRequirement;
   static const AccessRequirement loading = icuFollowUpsRequirement;
   static const AccessRequirement retry = icuFollowUpsRequirement;
@@ -473,7 +495,7 @@ abstract final class IcuFollowUpsAtomPermissions {
 /// | Detail Open billing | navigate | billing:read ([openBilling]) |
 /// | Start stay / round billing panel | nested read | billing:read ([billingPanel]) |
 /// | Detail Open IPD / clearance | navigate | [navigation] |
-/// | Detail Print summary | export / read | read ∪ ([printSummary]) |
+/// | Detail Print | export / read | read ∪ ([printSummary]) |
 /// | Nested mutation dialogs | create / update | write ∪ |
 /// | Panel deep link `?panel=` | create / update | write ∪ ([panelDeepLink]) |
 /// | Hard delete / void | delete | write ∪ ([delete]) — not mounted |
@@ -492,6 +514,8 @@ abstract final class IcuAllAtomPermissions {
   static const AccessRequirement rowSelect = icuWorkspaceReadRequirement;
   static const AccessRequirement detail = icuWorkspaceReadRequirement;
   static const AccessRequirement printSummary = icuWorkspaceReadRequirement;
+  static const AccessRequirement export = icuWorkspaceExportRequirement;
+  static const AccessRequirement print = icuWorkspacePrintRequirement;
   static const AccessRequirement create = icuWorkspaceWriteRequirement;
   static const AccessRequirement update = icuWorkspaceWriteRequirement;
   static const AccessRequirement delete = icuWorkspaceDeleteRequirement;
@@ -572,7 +596,7 @@ abstract final class IcuAllAtomPermissions {
 /// | Detail Mark readiness (when not row next-action) | update | write ∪ ([markReadiness]) |
 /// | Detail Open clearance / Open IPD | navigate | [navigate] |
 /// | Detail Open billing | navigate | billing:read ([openBilling]) |
-/// | Detail Print summary | export / read | read ∪ ([printSummary]) |
+/// | Detail Print | export / read | read ∪ ([printSummary]) |
 /// | Nested readiness / mutation dialogs | create / update | write ∪ |
 /// | Deep link `?panel=discharge` | update | write ∪ ([panelDeepLink]) |
 /// | Hard delete / void | delete | write ∪ ([delete]) — not mounted |
@@ -616,6 +640,8 @@ abstract final class IcuDischargeReadyAtomPermissions {
   static const AccessRequirement manageTransfer = icuWorkspaceWriteRequirement;
   static const AccessRequirement endStay = icuWorkspaceWriteRequirement;
   static const AccessRequirement printSummary = icuWorkspaceReadRequirement;
+  static const AccessRequirement export = icuWorkspaceExportRequirement;
+  static const AccessRequirement print = icuWorkspacePrintRequirement;
   static const AccessRequirement navigate = icuNavigationRequirement;
   static const AccessRequirement navigation = icuNavigationRequirement;
   static const AccessRequirement openIpd = icuNavigationRequirement;
@@ -657,7 +683,7 @@ abstract final class IcuDischargeReadyAtomPermissions {
 /// | Detail complementary writes (when eligible) | create / update | write ∪ |
 /// | Detail Open billing | navigate | billing:read ([openBilling]) |
 /// | Detail Open IPD / clearance | navigate | [navigate] |
-/// | Detail Print summary | export / read | read ∪ ([printSummary]) |
+/// | Detail Print | export / read | read ∪ ([printSummary]) |
 /// | Nested mutation dialogs / `?panel=` | create / update | write ∪ ([panelDeepLink]) |
 /// | Hard delete / void | delete | write ∪ ([delete]) — not mounted |
 /// | Route entry (deep link) | navigate | AppRoutes ∪ ([routeEntry]) |
@@ -697,6 +723,8 @@ abstract final class IcuEndedStaysAtomPermissions {
   static const AccessRequirement markReadiness = icuWorkspaceWriteRequirement;
   static const AccessRequirement endStay = icuWorkspaceWriteRequirement;
   static const AccessRequirement printSummary = icuWorkspaceReadRequirement;
+  static const AccessRequirement export = icuWorkspaceExportRequirement;
+  static const AccessRequirement print = icuWorkspacePrintRequirement;
   static const AccessRequirement navigate = icuNavigationRequirement;
   static const AccessRequirement navigation = icuNavigationRequirement;
   static const AccessRequirement openIpd = icuNavigationRequirement;
@@ -737,7 +765,8 @@ abstract final class IcuEndedStaysAtomPermissions {
 /// | Detail End stay | update / delete-like | write ∪ ([endStay]) |
 /// | Nested mutation dialogs (vitals / alert / …) | create / update | write ∪ |
 /// | Deep link `panel=` | create / update | write ∪ ([panelDeepLink]) |
-/// | Print summary | export / read | read ∪ ([printSummary]) |
+/// | Detail Print | export / read | read ∪ ([printSummary]) |
+/// | Export / Print (table toolbar) | export | ∩ `evidence:export` ([export] / [print]) |
 /// | Open IPD / billing / discharge clearance | navigate | [navigate] |
 /// | Hard delete / void | delete | write ∪ ([delete]) — not mounted |
 /// | Route entry (deep link) | navigate | AppRoutes ∪ ([routeEntry]) |
@@ -779,6 +808,8 @@ abstract final class IcuCriticalAtomPermissions {
   static const AccessRequirement endStay = icuWorkspaceWriteRequirement;
   static const AccessRequirement startStay = icuWorkspaceWriteRequirement;
   static const AccessRequirement printSummary = icuWorkspaceReadRequirement;
+  static const AccessRequirement export = icuWorkspaceExportRequirement;
+  static const AccessRequirement print = icuWorkspacePrintRequirement;
   static const AccessRequirement navigate = icuNavigationRequirement;
   static const AccessRequirement navigation = icuNavigationRequirement;
   static const AccessRequirement openIpd = icuNavigationRequirement;
@@ -824,7 +855,7 @@ abstract final class IcuCriticalAtomPermissions {
 /// | Detail Manage / Request transfer (when not row next-action) | create / update | write ∪ |
 /// | Detail Open billing | navigate | billing:read ([openBilling]) |
 /// | Detail Open IPD / clearance | navigate | [navigate] |
-/// | Detail Print summary | export / read | read ∪ ([printSummary]) |
+/// | Detail Print | export / read | read ∪ ([printSummary]) |
 /// | Nested transfer / mutation dialogs | create / update | write ∪ |
 /// | Deep link `?panel=transfer` | create / update | write ∪ ([panelDeepLink]) |
 /// | Hard delete / void | delete | write ∪ ([delete]) — not mounted |
@@ -868,6 +899,8 @@ abstract final class IcuTransfersAtomPermissions {
   static const AccessRequirement markReadiness = icuWorkspaceWriteRequirement;
   static const AccessRequirement endStay = icuWorkspaceWriteRequirement;
   static const AccessRequirement printSummary = icuWorkspaceReadRequirement;
+  static const AccessRequirement export = icuWorkspaceExportRequirement;
+  static const AccessRequirement print = icuWorkspacePrintRequirement;
   static const AccessRequirement navigate = icuNavigationRequirement;
   static const AccessRequirement navigation = icuNavigationRequirement;
   static const AccessRequirement openIpd = icuNavigationRequirement;
@@ -911,6 +944,11 @@ abstract final class IcuTransfersAtomPermissions {
 abstract final class IcuBedBoardAtomPermissions {
   static const AccessRequirement tab = icuWorkspaceReadRequirement;
   static const AccessRequirement listChrome = icuWorkspaceReadRequirement;
+  static const AccessRequirement search = icuWorkspaceReadRequirement;
+  static const AccessRequirement filters = icuWorkspaceReadRequirement;
+  static const AccessRequirement settings = icuWorkspaceReadRequirement;
+  static const AccessRequirement export = icuWorkspaceExportRequirement;
+  static const AccessRequirement print = icuWorkspacePrintRequirement;
   static const AccessRequirement wardFilters = icuWorkspaceReadRequirement;
   static const AccessRequirement summaryChips = icuWorkspaceReadRequirement;
   static const AccessRequirement empty = icuWorkspaceReadRequirement;
@@ -942,9 +980,14 @@ abstract final class IcuBedBoardAtomPermissions {
 
 /// Verifies AppRoutes ICU entry keys stay aligned with [routeEntry].
 bool icuRouteEntryMatchesAppRoutes() {
-  final Set<AppPermission> routeKeys = AppRoutes.icu.requiredAnyPermissions
-      .toSet();
-  final Set<AppPermission> atomKeys =
-      IcuActiveIcuAtomPermissions.routeEntry.anyPermissions.toSet();
-  return routeKeys.containsAll(atomKeys) && atomKeys.containsAll(routeKeys);
+  final AccessRequirement route = AppRoutes.icu.accessRequirement;
+  final AccessRequirement atom = IcuActiveIcuAtomPermissions.routeEntry;
+  final Set<AppPermission> routeAll = route.allPermissions.toSet();
+  final Set<AppPermission> atomAll = atom.allPermissions.toSet();
+  final Set<AppPermission> routeAny = route.anyPermissions.toSet();
+  final Set<AppPermission> atomAny = atom.anyPermissions.toSet();
+  return routeAll.containsAll(atomAll) &&
+      atomAll.containsAll(routeAll) &&
+      routeAny.containsAll(atomAny) &&
+      atomAny.containsAll(routeAny);
 }

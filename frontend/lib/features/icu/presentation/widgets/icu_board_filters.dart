@@ -82,6 +82,8 @@ List<IcuPatientSummary> filterIcuBoardItems(
   final String? alert = filterValue.option(icuBoardAlertFilterKey);
   final String? bed = filterValue.option(icuBoardBedFilterKey);
   final String? source = filterValue.option(icuBoardSourceFilterKey);
+  final DateTime? dateFrom = filterValue.dateFrom;
+  final DateTime? dateTo = filterValue.dateTo;
 
   return items
       .where((IcuPatientSummary item) {
@@ -104,6 +106,37 @@ List<IcuPatientSummary> filterIcuBoardItems(
         if (source == icuBoardSourceOtherValue &&
             item.sourceLabel.toUpperCase().contains('EMERGENCY')) {
           return false;
+        }
+        if (dateFrom != null || dateTo != null) {
+          final DateTime? admittedAt = item.admittedAt?.toLocal();
+          if (admittedAt == null) {
+            return false;
+          }
+          final DateTime day = DateTime(
+            admittedAt.year,
+            admittedAt.month,
+            admittedAt.day,
+          );
+          if (dateFrom != null) {
+            final DateTime from = DateTime(
+              dateFrom.year,
+              dateFrom.month,
+              dateFrom.day,
+            );
+            if (day.isBefore(from)) {
+              return false;
+            }
+          }
+          if (dateTo != null) {
+            final DateTime to = DateTime(
+              dateTo.year,
+              dateTo.month,
+              dateTo.day,
+            );
+            if (day.isAfter(to)) {
+              return false;
+            }
+          }
         }
         return true;
       })

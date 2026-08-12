@@ -31,10 +31,13 @@ List<Widget> clinicalActionDialogActions(
   final bool canInteract = enabled && !isSaving;
   final ThemeData theme = Theme.of(context);
   final ColorScheme colorScheme = theme.colorScheme;
+  final String resolvedCancelLabel =
+      cancelLabel ?? context.l10n.commonCancelActionLabel;
   final Widget? cancelButton = showCancel
       ? AppButton.close(
-          label: cancelLabel ?? context.l10n.commonCancelActionLabel,
+          label: resolvedCancelLabel,
           leadingIcon: AppActionIcons.cancel,
+          tooltip: resolvedCancelLabel,
           enabled: canInteract,
           borderRadius: borderRadius,
           onPressed: canInteract
@@ -46,6 +49,7 @@ List<Widget> clinicalActionDialogActions(
     label: submitLabel,
     leadingIcon:
         submitLeadingIcon ?? (destructive ? AppActionIcons.delete : null),
+    tooltip: submitLabel,
     color: destructive ? colorScheme.error : null,
     isLoading: isSaving,
     enabled: canInteract && onSubmit != null,

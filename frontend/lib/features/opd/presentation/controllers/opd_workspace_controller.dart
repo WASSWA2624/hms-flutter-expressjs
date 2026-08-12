@@ -937,7 +937,11 @@ final class OpdWorkspaceController
     );
     if (failure == null) {
       ref.invalidate(scopedFollowUpControllerProvider);
-      unawaited(ref.read(receptionFollowUpControllerProvider.notifier).refresh());
+      // Refresh Reception's list only when it is already mounted; do not cold-start
+      // a network-backed provider from an OPD mutation (tests and idle desks).
+      if (ref.mounted && ref.exists(receptionFollowUpControllerProvider)) {
+        await ref.read(receptionFollowUpControllerProvider.notifier).refresh();
+      }
     }
     return failure;
   }

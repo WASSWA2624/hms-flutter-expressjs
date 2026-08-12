@@ -246,7 +246,7 @@ void main() {
     });
 
     test(
-      'route entry ∪: operations:read satisfies entry, not Follow-ups tab',
+      'route entry ∩ icu:read; operations:read alone does not open Follow-ups',
       () {
         final AppAccessPolicy entryOnly = _policy(
           permissions: <AppPermission>{AppPermissions.operationsRead},
@@ -254,10 +254,18 @@ void main() {
         );
         expect(
           IcuFollowUpsAtomPermissions.routeEntry.isAllowed(entryOnly),
-          isTrue,
+          isFalse,
         );
         expect(IcuFollowUpsAtomPermissions.tab.isAllowed(entryOnly), isFalse);
         expect(canViewIcuFollowUps(entryOnly), isFalse);
+
+        final AppAccessPolicy icuReader = _policy(
+          permissions: <AppPermission>{AppPermissions.icuRead},
+        );
+        expect(
+          IcuFollowUpsAtomPermissions.routeEntry.isAllowed(icuReader),
+          isTrue,
+        );
       },
     );
 
@@ -298,7 +306,7 @@ void main() {
         expect(IcuFollowUpsAtomPermissions.write.isAllowed(noFacility), isTrue);
         expect(
           IcuFollowUpsAtomPermissions.routeEntry.isAllowed(noFacility),
-          isTrue,
+          isFalse,
         );
       },
     );
@@ -745,6 +753,133 @@ void main() {
     expect(find.byType(FollowUpWorklistPanel), findsOneWidget);
     expect(find.textContaining('Follow Up'), findsWidgets);
   });
+
+  testWidgets(
+    'deep link section=follow-ups: Filters→Settings→Export→Print chrome',
+    (WidgetTester tester) async {
+      await _pumpFollowUpsTab(
+        tester,
+        icuRepository: icuRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+            AppPermissions.evidenceExport,
+          },
+        ),
+      );
+
+      expect(find.byType(FollowUpWorklistPanel), findsOneWidget);
+      expect(find.text('Follow Up Patient'), findsOneWidget);
+
+      final AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      final AppTabItem followUpsTab = strip.tabs.firstWhere(
+        (AppTabItem t) => t.id == 'followUps',
+      );
+      expect(followUpsTab.countTone, AppTabCountTone.warning);
+      expect(followUpsTab.count, 1);
+
+      final AppListTable<ReceptionFollowUpEntry> table =
+          tester.widget<AppListTable<ReceptionFollowUpEntry>>(
+        find.byType(AppListTable<ReceptionFollowUpEntry>),
+      );
+      expect(table.columnVisibilityStorageKey, 'icu_follow_ups_cols');
+      expect(table.columnWidthStorageKey, 'icu_follow_ups_cw');
+      expect(table.columnVisibilityLabel, 'Settings');
+      expect(table.columnVisibilityTitle, 'Table Settings');
+      expect(table.columnVisibilityResetLabel, 'Reset columns');
+      expect(table.columnVisibilityApplyLabel, 'Apply columns');
+      expect(table.columnVisibilityCloseLabel, 'Close');
+      expect(table.columns.length, lessThanOrEqualTo(5));
+      expect(
+        table.columns.map((AppListTableColumn<ReceptionFollowUpEntry> c) => c.key),
+        containsAll(<String>['patient', 'phone', 'status', 'date', 'time']),
+      );
+      expect(
+        table.columnChoices?.map(
+          (AppListTableColumn<ReceptionFollowUpEntry> c) => c.key,
+        ),
+        containsAll(<String>['patient_id', 'email', 'notes']),
+      );
+      expect(table.enableExport, isTrue);
+      expect(table.canExport, isTrue);
+      expect(table.enablePrint, isTrue);
+      expect(table.canPrint, isTrue);
+      expect(table.printLabel, 'Print');
+      expect(table.search?.advancedFilterButtonLabel, 'Filters');
+      expect(table.search?.advancedFilterTitle, 'Advanced filters');
+      expect(table.search?.advancedFilterApplyLabel, 'Apply filters');
+      expect(table.search?.advancedFilterResetLabel, 'Clear filters');
+      expect(table.search?.advancedFilterCloseLabel, 'Close');
+      expect(table.search?.enableDateFilter, isTrue);
+
+      expect(find.byTooltip('Filters'), findsOneWidget);
+      expect(find.byTooltip('Settings'), findsOneWidget);
+      expect(find.byTooltip('Export'), findsOneWidget);
+      expect(find.byTooltip('Print'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Follow-ups Export/Print omitted without evidence:export',
+    (WidgetTester tester) async {
+      await _pumpFollowUpsTab(
+        tester,
+        icuRepository: icuRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{
+            AppPermissions.clinicalRead,
+            AppPermissions.clinicalWrite,
+          },
+        ),
+      );
+
+      final AppListTable<ReceptionFollowUpEntry> table =
+          tester.widget<AppListTable<ReceptionFollowUpEntry>>(
+        find.byType(AppListTable<ReceptionFollowUpEntry>),
+      );
+      expect(table.canExport, isFalse);
+      expect(table.canPrint, isFalse);
+      expect(find.byTooltip('Export'), findsNothing);
+      expect(find.byTooltip('Print'), findsNothing);
+      expect(find.byTooltip('Filters'), findsOneWidget);
+      expect(find.byTooltip('Settings'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Follow-ups search narrowing updates active badge membership',
+    (WidgetTester tester) async {
+      await _pumpFollowUpsTab(
+        tester,
+        icuRepository: icuRepository,
+        followUpRepository: followUpRepository,
+        accessPolicy: _policy(
+          permissions: <AppPermission>{AppPermissions.clinicalRead},
+        ),
+      );
+
+      AppTabStrip strip = tester.widget(find.byType(AppTabStrip));
+      expect(
+        strip.tabs.firstWhere((AppTabItem t) => t.id == 'followUps').count,
+        1,
+      );
+
+      await tester.enterText(find.byType(TextField).first, 'zzz-no-match');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpAndSettle();
+
+      strip = tester.widget(find.byType(AppTabStrip));
+      expect(
+        strip.tabs.firstWhere((AppTabItem t) => t.id == 'followUps').count,
+        0,
+      );
+      expect(find.text('Follow Up Patient'), findsNothing);
+    },
+  );
 
   testWidgets('desktop viewport: authorized Follow-ups chrome remains', (
     WidgetTester tester,

@@ -331,7 +331,6 @@ class _IcuCompactActionButton extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: primaryColor,
-                        fontWeight: AppFontWeight.emphasis,
                       ),
                     ),
                   ),

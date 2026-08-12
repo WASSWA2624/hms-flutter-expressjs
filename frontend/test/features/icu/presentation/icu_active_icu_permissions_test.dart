@@ -402,15 +402,15 @@ void main() {
       );
     });
 
-    test('∪ allowance: operations:read satisfies route entry, not tab read', () {
+    test('∪ allowance: icu:read satisfies route entry; operations:read alone does not', () {
       final AppAccessPolicy opsReader = _policy(
         permissions: <AppPermission>{AppPermissions.operationsRead},
       );
       expect(
         IcuActiveIcuAtomPermissions.routeEntry.isAllowed(opsReader),
-        isTrue,
+        isFalse,
       );
-      expect(canEnterIcuWorkspace(opsReader), isTrue);
+      expect(canEnterIcuWorkspace(opsReader), isFalse);
       expect(canViewIcuActive(opsReader), isFalse);
       expect(canReadIcu(opsReader), isFalse);
       expect(icuAllowedSections(opsReader), isEmpty);
@@ -450,7 +450,7 @@ void main() {
         expect(IcuActiveIcuAtomPermissions.write.isAllowed(noFacility), isTrue);
         expect(
           IcuActiveIcuAtomPermissions.routeEntry.isAllowed(noFacility),
-          isTrue,
+          isFalse,
         );
       },
     );
@@ -835,7 +835,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pumpAndSettle();
 
-    expect(find.text('Print summary'), findsOneWidget);
+    expect(find.text('Print'), findsOneWidget);
     expect(
       find.descendant(
         of: find.byType(AppQuickActions),
@@ -880,7 +880,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       await tester.pumpAndSettle();
 
-      expect(find.text('Print summary'), findsOneWidget);
+      expect(find.text('Print'), findsOneWidget);
       // Row next-action was Assign bed — omitted from detail Quick Actions.
       expect(
         find.descendant(

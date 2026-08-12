@@ -4,65 +4,79 @@
 
 - Label: `icuViewBedBoard`
 - Icon: `Icons.bed_outlined`
-- Count source: `state.bedBoard.beds.length`
+- Count source: sibling = `state.bedBoard.beds.length`; when Beds is active, badge = `visibleBeds.length` (ward / status / search — same model as the table)
+- Sibling tabs: dedicated unfiltered scope totals (`IcuScopeCounts` for patient tabs)
 - Count tone: `AppTabCountTone.info`
 - Deep-link `section`: `beds`
 - Tab gate: `IcuBedBoardAtomPermissions.tab` = `icuWorkspaceReadRequirement`
 - **Omitted when unauthorized**
-- Loads `loadBedBoard` when empty
+- Loads `loadBedBoard` when empty; preserves ward/status/search on reload
+- Strip primary: Manage beds (`ipdBedBoardManageBedsAction`) → `AppRoutes.roomsBeds` when `canManageIcuBedBoard`
 
 ## 2. Search / Filters / Settings / Export / Print / context
 
-- **No** `AppListTable` search / Filters / Settings / Export / Print
-- Strip primary: Manage beds (`ipdBedBoardManageBedsAction`, `Icons.open_in_new`) → `AppRoutes.roomsBeds` when `IcuBedBoardAtomPermissions.manageBeds` / `canManageIcuBedBoard`
-- Ward chips: `icuBedBoardAllWards` + ward titles (not Advanced filters dialog)
+Order: **Filters → Settings → Export → Print** (unauthorized Export/Print omitted)
+
+- Search: `ipdBedBoardSearchHint` → `IcuWorkspaceController.applyBedSearch` (shared with `visibleBeds` / badge)
+- Filters: ward + status groups; Apply `opdApplyFiltersAction`; Clear `opdClearFiltersAction`; Close `commonCloseActionLabel`; no date filter (bed domain)
+- Settings: `commonTableSettingsActionLabel` → `commonTableSettingsTitle`; Reset/Apply/Close = Reset columns / Apply columns / Close
+- Export: `commonTableExportActionLabel` gated by `canExportIcuWorkspace` (∩ `evidence:export`)
+- Print: `commonPrintActionLabel` gated by `canPrintIcuWorkspace`; preview-first `printIcuWorkspaceList`
+- Strip context after Print: none (Manage beds is strip **primary**)
 
 ## 3. Table / board
 
-- Custom list `_IcuBedRow` (`IcuBed`) — not patient board table
-- Cells: location, occupant / vacant (`icuBedVacantLabel`), status badge
-- Summary chips: `icuBedAvailableLabel` / `icuBedOccupiedLabel`
-- Occupied row → Open IPD (`icuActionOpenIpd`) with `AppRoutes.ipd?id=admissionId`
+- `AppListTable<IcuBed>` (`IcuBedBoardPanel`)
+- Default columns (≤5): Bed, Location (ward), Occupant, Status, Next action (Open IPD when occupied + authorized; omitted when navigate denied)
+- Column choices: none beyond defaults (all catalog columns are the default set)
+- Storage keys: `'icu_bed_board'` / `'icu_bed_board_cw'`
+- Cell style: no bold/emphasis in row cells (`tables.mdc`)
 
 ## 4. Advanced filters / search fields
 
-- Ward `ChoiceChips` only; no Advanced filters / date
+- Groups: ward (`ipdWardFilterLabel`) + status (`ipdBedStatusFilterLabel` / AVAILABLE…BLOCKED)
+- Search fields: bed label/id, ward, room, occupant name/id, status
+- Badge tracks `visibleBeds` while Beds is selected
 
 ## 5. Primary / secondary / row actions
 
-- Open IPD (occupied)
-- Manage beds (strip) → rooms-beds admin
+- Strip primary: Manage beds → rooms-beds (manage gate)
+- Row next-action: Open IPD (occupied beds only) via `IcuBedBoardAtomPermissions.openIpd`
+- No stay mutate chrome on this tab
 
 ## 6. Dialogs from this tab
 
-| Dialog | Owner |
+| Dialog / handoff | Owner |
 | --- | --- |
-| Stay mutation dialogs | **not opened from this tab** |
-| Rooms & beds navigation | cross-module route |
+| Rooms & beds navigation | cross-module `AppRoutes.roomsBeds` |
+| Open IPD (occupied) | cross-module `AppRoutes.ipd` |
+| Stay mutation dialogs | **not mounted** on Beds (use patient tabs) |
 
 ## 7. Nested / follow-on
 
-- Rooms & beds admin surface only
+- Manage beds → Facility rooms-beds
+- Open IPD → IPD workspace with admission `id` when present
 
 ## 8. Forms (summary)
 
-- N/A on this tab
+- Filter selects only on this tab; bed CRUD stays on rooms-beds
 
 ## 9. Print / labels / preview
 
-- **Absent** on bed board
+- Table Print: `commonPrintActionLabel` → preview-first `printIcuWorkspaceList` (bed / location / occupant / status)
 
 ## 10. Loading / empty / error / success
 
-- Loading: `LinearProgressIndicator` when `isRefreshingBeds && beds.isEmpty`
 - Empty: `icuBedNoBedsTitle` / `icuBedNoBedsBody`
-- Error / success: scaffold / snackbars via shared ICU helpers when applicable
+- Refreshing: `isRefreshingBeds`
+- Workspace load/retry via scaffold; bed reload via `loadBedBoard`
 
-## 11. RBAC / ABAC (omitted when unauthorized)
+## 11. RBAC / ABAC
 
 | Atom | Gate |
 | --- | --- |
-| Tab / listChrome / wardFilters / summaryChips / empty / loading / retry / rowSelect / detail / nestedRead | read |
-| openIpd / navigate | `icuNavigationRequirement` |
-| manageBeds / nestedWrite | `icuBedBoardManageRequirement` |
-| create / update / delete / write | write (not mounted on bed-board UI) |
+| Tab / Filters / Settings / search | `icuWorkspaceReadRequirement` |
+| Export / Print | ∩ `evidence:export` |
+| Open IPD | `icuNavigationRequirement` |
+| Manage beds | `icuBedBoardManageRequirement` (admin / rooms-beds) |
+| Route entry | catalog ∩ `icu:read` + module |

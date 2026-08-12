@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/icu/domain/entities/icu_entities.dart';
@@ -12,6 +13,7 @@ import 'package:hosspi_hms/features/icu/presentation/widgets/icu_board_columns.d
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_board_filters.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_format.dart';
 import 'package:hosspi_hms/features/icu/presentation/widgets/icu_next_action_button.dart';
+import 'package:hosspi_hms/features/icu/presentation/widgets/icu_workspace_print_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -46,6 +48,7 @@ class IcuBoardPanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     final IcuWorkspaceController controller = ref.read(
       icuWorkspaceControllerProvider.notifier,
     );
@@ -55,19 +58,56 @@ class IcuBoardPanel extends ConsumerWidget {
     );
     final bool includeNextAction =
         showNextAction ??
-        icuBoardShowsNextActionColumn(
-          ref.watch(appAccessPolicyProvider),
+        icuBoardShowsNextActionColumn(policy, section);
+    final List<AppListTableColumn<IcuPatientSummary>> columns =
+        icuColumnsForSection(
+          l10n,
           section,
+          writeRequirement: writeRequirement,
+          showNextAction: includeNextAction,
         );
 
     return AppListTable<IcuPatientSummary>(
       page: displayPage,
       isLoading: state.isRefreshingBoard,
       columnVisibilityController: columnVisibilityController,
-      columnVisibilityStorageKey: 'icu_board',
-      columnWidthStorageKey: 'icu_cw_board',
+      columnVisibilityStorageKey: 'icu_${section.name}',
+      columnWidthStorageKey: 'icu_cw_${section.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-      columnVisibilityTitle: l10n.icuTableSettingsTitle,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+      enableExport: true,
+      canExport: canExportIcuWorkspace(policy),
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrintIcuWorkspace(policy),
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () => _printIcuBoardList(
+        context,
+        ref,
+        state: state,
+        section: section,
+        displayPage: displayPage,
+        writeRequirement: writeRequirement,
+        includeNextAction: includeNextAction,
+        l10n: l10n,
+      ),
+      exportConfig: AppListTableExportConfig<IcuPatientSummary>(
+        fileNameStem: 'icu_${section.name}',
+        dateOf: (IcuPatientSummary item) => item.admittedAt,
+        sheetName: _sectionLabel(l10n, section),
+      ),
       search: AppListTableSearch<IcuPatientSummary>(
         controller: searchController,
         semanticLabel: l10n.icuSearchHint,
@@ -77,10 +117,20 @@ class IcuBoardPanel extends ConsumerWidget {
         onSubmitted: controller.applySearch,
         onClear: () => controller.applySearch(''),
         showAdvancedFilterButton: true,
-        advancedFilterButtonLabel: l10n.icuAdvancedFiltersLabel,
-        advancedFilterTitle: l10n.icuAdvancedFiltersTitle,
-        advancedFilterApplyLabel: l10n.icuApplyFiltersLabel,
-        advancedFilterResetLabel: l10n.icuResetFiltersLabel,
+        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
+        enableDateFilter: true,
+        dateFilterLabel: l10n.ipdAdmittedAtColumnLabel,
+        dateFromLabel: l10n.opdDateFromLabel,
+        dateToLabel: l10n.opdDateToLabel,
+        datePickerButtonLabel: l10n.opdDatePickerButtonLabel,
+        invalidDateMessage: l10n.opdInvalidDateMessage,
+        firstDate: DateTime(DateTime.now().year - 10),
+        lastDate: DateTime(DateTime.now().year + 1, 12, 31),
+        currentDate: DateTime.now(),
         filterGroups: icuBoardFilterGroups(l10n),
         filterValue: filterValue,
         hasActiveFilters: filterValue.isActive,
@@ -112,12 +162,7 @@ class IcuBoardPanel extends ConsumerWidget {
         body: l10n.icuNoPatientsBody,
         icon: Icons.bed_outlined,
       ),
-      columns: icuColumnsForSection(
-        l10n,
-        section,
-        writeRequirement: writeRequirement,
-        showNextAction: includeNextAction,
-      ),
+      columns: columns,
       columnChoices: icuColumnChoicesForSection(
         l10n,
         section,
@@ -191,4 +236,89 @@ String icuBoardPageLabel(
   final int from = page.request.pageIndex * page.request.pageSize + 1;
   final int to = (from + page.items.length - 1).clamp(from, total);
   return context.l10n.opdPageLabel(from, to, total);
+}
+
+String _sectionLabel(AppLocalizations l10n, IcuWorkspaceSection section) {
+  return switch (section) {
+    IcuWorkspaceSection.active => l10n.icuActiveIcuLabel,
+    IcuWorkspaceSection.critical => l10n.icuCriticalAlertsLabel,
+    IcuWorkspaceSection.transfers => l10n.icuTransfersLabel,
+    IcuWorkspaceSection.discharge => l10n.icuDischargeReadyLabel,
+    IcuWorkspaceSection.ended => l10n.icuEndedStaysLabel,
+    IcuWorkspaceSection.all => l10n.icuAllIcuLabel,
+    IcuWorkspaceSection.beds => l10n.icuViewBedBoard,
+    IcuWorkspaceSection.followUps => l10n.opdFollowUpsTitle,
+  };
+}
+
+Future<void> _printIcuBoardList(
+  BuildContext context,
+  WidgetRef ref, {
+  required IcuWorkspaceState state,
+  required IcuWorkspaceSection section,
+  required AppPage<IcuPatientSummary> displayPage,
+  required AccessRequirement writeRequirement,
+  required bool includeNextAction,
+  required AppLocalizations l10n,
+}) async {
+  final List<AppListTableColumn<IcuPatientSummary>> columns =
+      <AppListTableColumn<IcuPatientSummary>>[
+        ...icuColumnsForSection(
+          l10n,
+          section,
+          writeRequirement: writeRequirement,
+          showNextAction: includeNextAction,
+        ),
+        ...icuColumnChoicesForSection(
+          l10n,
+          section,
+          writeRequirement: writeRequirement,
+          showNextAction: includeNextAction,
+        ),
+      ].where(
+        (AppListTableColumn<IcuPatientSummary> column) =>
+            column.includesInExport,
+      ).toList(growable: false);
+  final List<IcuWorkspacePrintColumn> printColumns =
+      <IcuWorkspacePrintColumn>[
+        for (final AppListTableColumn<IcuPatientSummary> column in columns)
+          IcuWorkspacePrintColumn(id: column.key, label: column.label),
+      ];
+  final List<Map<String, String>> printRows = <Map<String, String>>[
+    for (final IcuPatientSummary item in displayPage.items)
+      <String, String>{
+        for (final AppListTableColumn<IcuPatientSummary> column in columns)
+          column.key: _icuBoardPrintCellValue(context, item, column.key),
+      },
+  ];
+  await printIcuWorkspaceList(
+    ref: ref,
+    context: context,
+    title: _sectionLabel(l10n, section),
+    columns: printColumns,
+    rows: printRows,
+    emptyText: l10n.icuNoPatientsTitle,
+  );
+}
+
+String _icuBoardPrintCellValue(
+  BuildContext context,
+  IcuPatientSummary item,
+  String columnId,
+) {
+  final AppLocalizations l10n = context.l10n;
+  return switch (columnId) {
+    'patient' => item.displayTitle,
+    'bed' => item.locationLabel,
+    'source' => item.sourceLabel.isEmpty
+        ? l10n.profileUnknownValue
+        : apiLabel(item.sourceLabel),
+    'alert' => alertStatus(l10n, item).label,
+    'status' => icuStatus(item).label,
+    'icu_start' => dateTimeLabel(context, item.boardIcuStartAt),
+    'transfer' => apiLabel(item.transferStatus ?? l10n.profileUnknownValue),
+    'admitted' => dateTimeLabel(context, item.admittedAt),
+    'encounter' => item.encounterId ?? '',
+    _ => '',
+  };
 }
