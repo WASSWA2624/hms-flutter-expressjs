@@ -13,7 +13,7 @@
 - `AsyncStateScaffold<PatientRegistryState>` over `patientRegistryControllerProvider`
   - Loading: `patientsLoadingTitle` / `patientsLoadingBody`
   - Retry: controller `refresh()`
-- Body: `ResponsivePage` + `AppTabStrip` + `AppListTable<Patient>`
+- Body: `ResponsivePage(scrollable: false)` + `AppTabStrip` + `Expanded` + `AppListTable<Patient>` (bounded main-tab viewport: horizontal scroll, pinned footer, empty-row padding; no `shrinkWrap`)
 - In-desk URL: `syncWorkspaceLocation` with `?section=<query>` (omitted for All)
 - Deep-link query (`PatientListQuery.fromUri`): `section`/`tab`, `search`/`q`, `patientId`, `contact`/`phone`, outstanding-balance / active-admission flags
 
@@ -26,7 +26,7 @@
   - Active → `overview.activePatients`
   - Admitted → `overview.activeAdmissions`
   - Balance due → `overview.unpaidInvoices`
-  - **Active tab** with search or user advanced filters: filtered membership via `page.totalItemCount` (section-imposed scope flags ignored for “narrowing”)
+  - **Active tab** with search or user advanced filters: filtered membership via `page.totalItemCount` (falls back to scope total — never painted `items.length`)
 - Count tones: `warning` for Balance due; `info` for All / Active / Admitted
 - Icons: people / how_to_reg / local_hospital / payments
 - Strip secondary: Duplicate review (`patientsDuplicateSummaryLabel`) when `overview.duplicates` non-empty — **omitted when unauthorized** (`patientRegistryDuplicateReviewAtom` ∩ `patient:write`)
@@ -40,13 +40,15 @@ Order on search bar: **Filters → Settings → Export → Print → Register pa
 | Search | `patientsSearchHint` / `patientsSearchLabel` | mic via `AppSearchBar` default |
 | Clear | `opdClearFiltersAction` (`Clear filters`) | |
 | Filters | `commonFiltersActionLabel` → title `commonAdvancedFiltersTitle` | Patients-owned `_PatientAdvancedFiltersDialog` |
-| Settings | `commonTableSettingsActionLabel` → `commonTableSettingsTitle` | Close `commonCloseActionLabel` |
-| Export | `commonTableExportActionLabel` | Excel via `AppListTable`; gated by `patientRegistryExportRequirement` (∩ `evidence:export`); omitted when denied; `enableDateFilter: false` in export config |
-| Print (table) | `commonPrintActionLabel` → `Print` | `enablePrint` + `canPrint`; opens `printPatientRegistryList` → `PrintDocumentTemplates.registry` preview-first |
+| Settings | `commonTableSettingsActionLabel` → `commonTableSettingsTitle` | Apply `receptionApplyColumnsAction`, Reset `receptionResetColumnsAction`, Close `commonCloseActionLabel` |
+| Export | `commonTableExportActionLabel` | Excel via `AppListTable` + `exportValue`; gated by `patientRegistryExportRequirement` (∩ `evidence:export`); omitted when denied; `enableDateFilter: false` in export config |
+| Print (table) | `commonPrintActionLabel` → `Print` | `enablePrint` + `canPrint`; opens `printPatientRegistryList` → `PrintDocumentTemplates.registry` preview-first; section labels via `commonPrint*` |
 | Register | `patientsRegisterPatientAction` | omitted without ∩ `patient:write` |
+| Footer | `commonGoToTopActionLabel` / `commonLoadingMoreLabel` / `commonAllRowsLoadedLabel` | |
 
 Column visibility storage: `patients_${section.name}` / widths `patients_cw_${section.name}`.  
-Default visible columns prefer **5** data columns (Patient alwaysVisible; Status + Next action alwaysVisible).
+Default visible columns prefer **5** data columns (Patient alwaysVisible; Status + Next action alwaysVisible). When Admitted Visit is RBAC-omitted, promote Alerts (then Patient number / Age) so defaults stay at five.  
+Patient cell = name only (identifier via optional `patient_number`); Visit cell = single atomic title (or date fallback); no bold in next-action row text.
 
 ## Shared strip / register → dialogs
 

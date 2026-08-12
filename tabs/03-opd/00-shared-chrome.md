@@ -14,11 +14,13 @@
 - `AsyncStateScaffold<OpdWorkspaceState>` over `opdWorkspaceControllerProvider`
   - Loading: `opdLoadingTitle` / `opdLoadingBody`
   - Retry: controller `refresh()`
-- Body: `ResponsivePage` + `AppTabStrip` + section body (`AppListTable<_OpdTableItem>` or Follow-ups panel)
+  - `scrollable: false` (bounded desk height for main-tab tables)
+- Body: `ResponsivePage(scrollable: false)` + `AppTabStrip` + `Expanded` section body (`AppListTable<_OpdTableItem>` or Follow-ups panel)
+- Main-tab tables: no `shrinkWrap` / page-nested vertical scroll; horizontal overflow scrolls; footer pinned; empty-row padding via `AppListTable` defaults (`tables.mdc`)
 - In-desk URL: `syncWorkspaceLocation` with `?section=<query>` (omitted for All)
 - Deep-link (`OpdWorkspaceQuery`): `section`/`tab`, `id`/`flowId`/`encounter`, `panel`/`stage`/`filter`, `search`/`q`/`patient`
   - `flowId` + `panel` → stage next-action when `opdFocusedPanelRequirement` allows; else Flow Actions when detail allowed
-  - `panel` alone can seed worklist filters via `_opdFilterForPanel`
+  - `panel` alone can seed worklist filters via `_opdFilterForPanel` (multi-status sets preserved unless Advanced filters picks a single status)
 
 ## Tab strip (all visible sections)
 
@@ -48,13 +50,14 @@ Order on search bar: **Filters → Settings → Export → Print → Start OPD**
 | Search | board `opdSearchHint` / Follow-ups `receptionFollowUpsSearchHint` | field-scoped on board via `searchFields` |
 | Clear | board `opdClearFiltersAction` / Follow-ups `receptionClearFiltersAction` | |
 | Filters | `commonFiltersActionLabel` → `commonAdvancedFiltersTitle` | Apply/Clear/Close common labels; Follow-ups date + status group |
-| Settings | `commonTableSettings*` | board storage `opd_${section.name}`; Follow-ups `opd_follow_ups_*`; Close `commonCloseActionLabel` |
-| Export | `commonTableExportActionLabel` | gated by `opdWorkspaceExportRequirement` (∩ `evidence:export`); omitted when denied |
-| Print (table) | `commonPrintActionLabel` → `Print` | board `printOpdWorkspaceList`; Follow-ups same helper with follow-up columns; preview-first |
+| Settings | `commonTableSettings*` | Apply `receptionApplyColumnsAction` / Reset `receptionResetColumnsAction` / Close `commonCloseActionLabel`; board storage `opd_${section.name}`; Follow-ups `opd_follow_ups_*` |
+| Export | `commonTableExportActionLabel` | gated by `opdWorkspaceExportRequirement` (∩ `evidence:export`); **full filtered membership** (not page slice); omitted when denied |
+| Print (table) | `commonPrintActionLabel` → `Print` | board `printOpdWorkspaceList` over filtered membership; Follow-ups same helper; preview-first; section empty titles for empty docs |
 | Start OPD | `opdStartWalkInAction` / tooltip `opdStartEncounterTooltip` | board only; omitted without `opdStartEncounterRequirementForSection` |
 
 Date filter: **enabled** — board/Follow-ups label `opdArrivalDateFilterLabel`; From/To `opdDateFromLabel` / `opdDateToLabel`.  
-Default visible columns prefer **5** data columns. Follow-ups active badge uses narrowed membership via panel `onNarrowedCountChanged`.
+Default visible columns prefer **5** data columns (when Next action is unauthorized, board promotes from column choices so defaults stay at 5). Follow-ups active badge uses narrowed membership via panel `onNarrowedCountChanged`.  
+Patient name cells are **atomic** (name only); identifier stays on mobile caption / search, not as a subtitle in the name cell.
 
 ## Shared row hubs (owner notes)
 
@@ -71,7 +74,7 @@ Default visible columns prefer **5** data columns. Follow-ups active badge uses 
 ## Feedback patterns (cross-tab)
 
 - Success: `opdSavedMessage` snackbar after hub / next-action mutations
-- Empty board: `opdNoFlowsTitle` / `opdNoFlowsBody`
+- Empty board by section: Arrivals `opdNoArrivals*`; Queue `opdNoQueue*`; Triage `opdNoTriage*`; Active `opdNoActive*`; All `opdNoFlows*`
 - Follow-ups empty: `receptionFollowUpsEmptyTitle` / `receptionFollowUpsEmptyBody`
 - Loading / retry: scaffold
 - Forbidden: `routeForbiddenTitle` / `routeForbiddenBody` when board read denied or no tabs

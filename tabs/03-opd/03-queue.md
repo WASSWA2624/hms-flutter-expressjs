@@ -25,7 +25,10 @@ Order: **Filters → Settings → Export → Print → Start OPD**
 - Default columns (5): Patient name, Doctor (provider), Wait time, Status, Visit type
 - Next action column **not mounted** (`opdBoardShowsNextActionColumn` is false for Queue — row select is the sole hub entry)
 - Column choices: Arrival time, Arrival mode, OPD encounter
+- Patient name cell: name only (atomic)
 - Mobile: arrival mode, waiting time, status; no next-action trailing
+- Main-tab viewport: bounded, non-shrinkWrap, pinned footer, empty-row padding
+- Export/Print: full filtered Queue membership
 
 ## 4. Advanced filters / search fields
 
@@ -65,7 +68,8 @@ Prioritize optional reason; queue status; provider select; encounter form from S
 
 ## 10. Loading / empty / error / success
 
-Shared board feedback; success `opdSavedMessage` after hub mutations. Forbidden: `routeForbiddenTitle` when board read denied.
+- Empty: `opdNoQueueTitle` / `opdNoQueueBody`
+- Shared board success `opdSavedMessage` after hub mutations. Forbidden: `routeForbiddenTitle` when board read denied.
 
 ## 11. RBAC / ABAC
 

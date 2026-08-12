@@ -31,13 +31,13 @@ Order: **Filters → Settings → Export → Print → Schedule → Register**
   - No linked flow → Queue Actions (`ReceptionHighPriorityAtomPermissions.frontDesk`)
 - Default columns (prefer **5** data columns; next-action is read-only guidance):
   1. Patient (alwaysVisible) — name + identifier subtitle only (atomic)
-  2. Phone
-  3. Queued at (`receptionQueuedAtLabel`)
-  4. Current step (`receptionCurrentStepLabel`)
-  5. Provider / Doctor
+  2. Priority flag (`receptionHighPriorityBadgeLabel`) — single atomic badge: Emergency when nested emergency read + `isReceptionEmergencyFlow`, otherwise High priority when prioritized
+  3. Phone
+  4. Queued at (`receptionQueuedAtLabel`)
+  5. Current step (`receptionCurrentStepLabel`)
   6. Next action label — if allowed (`nextActionLabel`); **read-only text**
 - Mobile compact row may still show emergency / priority meta chips when nested emergency read allows
-- Column choices (Settings): Patient ID, Queue ID, Payment status, Reason
+- Column choices (Settings): Provider / Doctor, Patient ID, Queue ID, Payment status, Reason
 - Reset restores the five defaults (+ next-action when readable)
 
 ## 4. Advanced filters / search fields

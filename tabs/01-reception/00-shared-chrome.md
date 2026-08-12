@@ -27,7 +27,7 @@
 - Component: `AppTabStrip` / `AppTabItem` (standard variant)
 - Tabs omitted when unauthorized (`receptionDeskSectionRequirement(section)`) — not disabled
 - Every visible tab shows authoritative `count`:
-  - Sibling model: dedicated unfiltered scope totals (Follow-ups / Payment gate prefer controller `totalCount`; Active visits prefers `summaryCounts.activeOpd` when > 0)
+  - Sibling model: dedicated unfiltered scope totals (Follow-ups / Payment gate prefer controller `totalCount`; Appointments / Queue / High priority / Active visits use in-scope board membership)
   - Active tab with search/advanced filters: filtered membership total for that query
 - Count tones (`AppTabCountTone`): `warning` for Desk queue, High priority, Active visits (in-facility turnaround pressure), and Payment gate (outstanding clearance pressure); `info` for Appointments and Follow-ups
 - Icons per section (leading): event / queue / priority / pending / phone / payments

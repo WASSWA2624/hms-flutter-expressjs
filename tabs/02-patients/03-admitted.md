@@ -19,9 +19,10 @@ Same toolbar order as All: **Filters → Settings → Export → Print → Regis
 
 - Row model: admitted-scope `Patient`
 - Row select → detail (`registrySection: admitted`)
-- Default columns: Patient, Contact, Visit, Status, Next action
+- Default columns: Patient (name only), Contact, Visit (atomic title), Status, Next action
   - Visit column **omitted when unauthorized** (`PatientAdmittedAtomPermissions.visitColumn` = ∪ `clinical:read` \| `billing:read`)
-- Column choices: Alerts, Patient number, Age, Gender (Visit omitted from choices under same nested-read gate)
+  - When Visit omitted, promote Alerts (then Patient number / Age) so defaults stay at **5**
+- Column choices: Alerts, Patient number, Age, Gender (excluding any already promoted into defaults; Visit omitted from choices under same nested-read gate)
 - Status badge: when nested admission status allowed, shows visit admission status; else active/inactive / incomplete
 
 ## 4. Advanced filters / search fields

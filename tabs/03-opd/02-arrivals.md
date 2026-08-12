@@ -23,10 +23,12 @@ Same board toolbar: **Filters → Settings → Export → Print → Start OPD**
 
 - Row model: arrival-category `_OpdTableItem` (appointments / check-in)
 - Row select → Appointment Actions (`omitPrimaryAction: true`)
-- Default columns (5): Patient name, Visit type, Arrival time, Status, Next action (Next action **omitted when unauthorized** via `opdBoardShowsNextActionColumn`)
-- Column choices: Arrival mode, Doctor (provider), Wait time, OPD encounter, Category
+- Default columns (5): Patient name, Visit type, Arrival time, Status, Next action (when Next action unauthorized, promote from choices so defaults stay at **5**)
+- Column choices: Arrival mode, Doctor (provider), Wait time, OPD encounter, Category (minus any promoted into defaults)
+- Patient name cell: name only (atomic)
 - Mobile: arrival mode, waiting time, status; optional next-action trailing
 - Main-tab viewport (`tables.mdc`): bounded height under `Expanded` (desk `ResponsivePage` / `AsyncStateScaffold` `scrollable: false`); **no** `shrinkWrap` / `NeverScrollableScrollPhysics`; horizontal overflow scrolls; footer stays pinned; empty-row padding via `AppListTable` defaults
+- Export/Print: full filtered Arrivals membership
 
 ## 4. Advanced filters / search fields
 

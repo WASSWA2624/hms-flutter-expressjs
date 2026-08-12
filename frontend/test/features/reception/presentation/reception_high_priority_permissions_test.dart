@@ -684,15 +684,16 @@ void main() {
         expect(find.text('Victor VIP'), findsOneWidget);
         expect(find.text('Nora Normal'), findsNothing);
         expect(find.text('Patient name'), findsWidgets);
+        expect(find.text('High priority'), findsWidgets);
         expect(find.text('Phone'), findsWidgets);
         expect(find.text('Queued at'), findsWidgets);
         expect(find.text('Current step'), findsWidgets);
-        expect(find.text('Doctor'), findsWidgets);
         expect(find.text('Next action'), findsWidgets);
 
         await tester.tap(find.byTooltip('Settings'));
         await tester.pumpAndSettle();
         expect(find.text('TABLE SETTINGS'), findsOneWidget);
+        expect(find.text('Doctor'), findsWidgets);
         expect(find.text('Queue ID'), findsOneWidget);
         expect(find.text('Payment status'), findsOneWidget);
         expect(find.text('Reason'), findsOneWidget);

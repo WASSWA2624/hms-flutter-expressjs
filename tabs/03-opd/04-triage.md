@@ -23,10 +23,13 @@ Order: **Filters → Settings → Export → Print → Start OPD**
 
 - Row model: triage-category `_OpdTableItem`
 - Row select → Flow Actions
-- Default columns (5): Patient name, Wait time, Doctor (provider), Status, Next action (Next action **omitted when unauthorized** via `opdBoardShowsNextActionColumn`)
-- Column choices: Visit type, Arrival mode, Arrival time, OPD encounter
+- Default columns (5): Patient name, Wait time, Doctor (provider), Status, Next action (when Next action unauthorized, promote from choices so defaults stay at **5**)
+- Column choices: Visit type, Arrival mode, Arrival time, OPD encounter (minus any promoted into defaults)
+- Patient name cell: name only (atomic)
 - Status badge uses triage tone for triage category
 - Mobile: arrival mode, waiting time, status; optional next-action trailing
+- Main-tab viewport: bounded, non-shrinkWrap, pinned footer, empty-row padding
+- Export/Print: full filtered Triage membership
 
 ## 4. Advanced filters / search fields
 
@@ -61,7 +64,8 @@ Vitals fields; provider assignment; stage correction; encounter start form.
 
 ## 10. Loading / empty / error / success
 
-Shared board feedback; success after hub/vitals mutations. Forbidden: `routeForbiddenTitle` when board read denied.
+- Empty: `opdNoTriageTitle` / `opdNoTriageBody`
+- Shared board success after hub/vitals mutations. Forbidden: `routeForbiddenTitle` when board read denied.
 
 ## 11. RBAC / ABAC
 

@@ -22,8 +22,9 @@ Same shared order as All: **Filters → Settings → Export → Print → Regist
 
 - Row model: `Patient` with active filter applied
 - Row select → detail (`registrySection: active`)
-- Default columns (5): Patient, Contact, Visit (`patientsVisitColumnLabel`), Status, Next action
+- Default columns (5): Patient (name only), Contact, Visit (atomic title), Status, Next action
 - Column choices: Alerts, Patient number, Age, Gender
+- When Visit omitted by RBAC: promote Alerts into defaults so five columns remain
 
 ## 4. Advanced filters / search fields
 

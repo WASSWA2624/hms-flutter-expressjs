@@ -29,7 +29,7 @@ Order: **Filters → Settings → Export → Print → Register patient**
 - Row model: `Patient` page from registry controller
 - Row select → `showPatientDetailDialog` (`registrySection: all`)
 - Default columns (5):
-  1. Patient (`patientsPatientColumnLabel`, alwaysVisible) — subtitle identifier
+  1. Patient (`patientsPatientColumnLabel`, alwaysVisible) — name only (identifier via optional Patient number)
   2. Contact (`patientsPhoneIdentifierColumnLabel`)
   3. Alerts (`patientsAlertColumnLabel`)
   4. Status (`patientsStatusColumnLabel`, alwaysVisible)

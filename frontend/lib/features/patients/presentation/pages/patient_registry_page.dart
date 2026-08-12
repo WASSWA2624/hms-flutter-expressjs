@@ -179,6 +179,7 @@ class _PatientRegistryContentState
         spacing: Theme.of(context).spacing,
       ),
       maxWidth: PageMaxWidth.dataHeavy,
+      scrollable: false,
       child: SizedBox(
         width: double.infinity,
         child: Column(
@@ -211,11 +212,13 @@ class _PatientRegistryContentState
               secondaryActions: _buildSecondaryActions(l10n),
             ),
             SizedBox(height: theme.spacing.sm),
-            _PatientList(
-              state: widget.state,
-              section: _section,
-              searchController: _tableSearchController,
-              columnVisibilityController: _tableColumnController,
+            Expanded(
+              child: _PatientList(
+                state: widget.state,
+                section: _section,
+                searchController: _tableSearchController,
+                columnVisibilityController: _tableColumnController,
+              ),
             ),
           ],
         ),
@@ -364,7 +367,8 @@ class _PatientRegistryContentState
       return scopeTotal;
     }
     // Active tab only — filtered membership from the current list query.
-    return state.page.totalItemCount ?? state.page.items.length;
+    // Prefer server totalItemCount; never fall back to painted page length.
+    return state.page.totalItemCount ?? scopeTotal;
   }
 
   static int _sectionScopeTotal(
@@ -1021,6 +1025,8 @@ class _PatientList extends ConsumerWidget {
       columnWidthStorageKey: 'patients_cw_${section.name}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
       columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
       exportLabel: l10n.commonTableExportActionLabel,
       exportDialogTitle: l10n.commonTableExportDialogTitle,
@@ -1037,6 +1043,9 @@ class _PatientList extends ConsumerWidget {
       printLabel: l10n.commonPrintActionLabel,
       onPrint: () =>
           _printPatientRegistryList(context, ref, state, section, l10n),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
       exportConfig: AppListTableExportConfig<Patient>(
         fileNameStem: 'patients_${section.name}',
         enableDateFilter: false,
@@ -1097,8 +1106,6 @@ class _PatientList extends ConsumerWidget {
         ],
       ),
       isLoading: state.isRefreshingList,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
       columns: _defaultPatientColumns(context, ref, section, l10n),
       columnChoices: _optionalPatientColumns(context, ref, section, l10n),
       mobileItemBuilder: (BuildContext context, Patient patient) {
@@ -1245,7 +1252,7 @@ List<AppListTableColumn<Patient>> _defaultPatientColumns(
   final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
   final Map<String, AppListTableColumn<Patient>> columns =
       _patientColumnDefinitions(context, ref, section, l10n);
-  final List<String> ids = switch (section) {
+  final List<String> preferredIds = switch (section) {
     PatientRegistrySection.all => <String>[
       'patient',
       'contact',
@@ -1263,17 +1270,44 @@ List<AppListTableColumn<Patient>> _defaultPatientColumns(
       'next_action',
     ],
   };
-  return ids
-      .where((String id) {
-        if (id == 'visit' &&
-            section == PatientRegistrySection.admitted &&
-            !PatientAdmittedAtomPermissions.visitColumn.isAllowed(policy)) {
-          return false;
-        }
-        return true;
-      })
-      .map((String id) => columns[id]!)
-      .toList(growable: false);
+  final List<String> promotionIds = switch (section) {
+    PatientRegistrySection.all => <String>['visit', 'patient_number', 'age'],
+    PatientRegistrySection.active ||
+    PatientRegistrySection.admitted ||
+    PatientRegistrySection.balanceDue => <String>[
+      'alerts',
+      'patient_number',
+      'age',
+    ],
+  };
+
+  bool isAllowed(String id) {
+    if (id == 'visit' &&
+        section == PatientRegistrySection.admitted &&
+        !PatientAdmittedAtomPermissions.visitColumn.isAllowed(policy)) {
+      return false;
+    }
+    return columns.containsKey(id);
+  }
+
+  final List<String> ids = preferredIds.where(isAllowed).toList(growable: true);
+  // Prefer five defaults (tables.mdc); promote from choices when RBAC omits Visit.
+  for (final String id in promotionIds) {
+    if (ids.length >= 5) {
+      break;
+    }
+    if (!ids.contains(id) && isAllowed(id)) {
+      // Insert before always-visible trailing chrome when present.
+      final int statusIndex = ids.indexOf('status');
+      if (statusIndex >= 0) {
+        ids.insert(statusIndex, id);
+      } else {
+        ids.add(id);
+      }
+    }
+  }
+
+  return ids.map((String id) => columns[id]!).toList(growable: false);
 }
 
 List<AppListTableColumn<Patient>> _optionalPatientColumns(
@@ -1285,6 +1319,12 @@ List<AppListTableColumn<Patient>> _optionalPatientColumns(
   final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
   final Map<String, AppListTableColumn<Patient>> columns =
       _patientColumnDefinitions(context, ref, section, l10n);
+  final Set<String> defaultIds = _defaultPatientColumns(
+    context,
+    ref,
+    section,
+    l10n,
+  ).map((AppListTableColumn<Patient> column) => column.key).toSet();
   final List<String> ids = switch (section) {
     PatientRegistrySection.all => <String>[
       'visit',
@@ -1303,6 +1343,9 @@ List<AppListTableColumn<Patient>> _optionalPatientColumns(
   };
   return ids
       .where((String id) {
+        if (defaultIds.contains(id)) {
+          return false;
+        }
         if (id == 'visit' &&
             section == PatientRegistrySection.admitted &&
             !PatientAdmittedAtomPermissions.visitColumn.isAllowed(policy)) {
@@ -1330,12 +1373,10 @@ Map<String, AppListTableColumn<Patient>> _patientColumnDefinitions(
         right.effectiveDisplayName,
       ),
       exportValue: (Patient patient) => patient.effectiveDisplayName,
-      cellBuilder: (_, Patient patient) => AppListItemText(
-        title: patient.effectiveDisplayName,
-        subtitle:
-            patient.effectiveIdentifier ??
-            patient.publicId ??
-            l10n.profileUnknownValue,
+      cellBuilder: (_, Patient patient) => Text(
+        patient.effectiveDisplayName,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     ),
     'contact': AppListTableColumn<Patient>(
@@ -1354,10 +1395,11 @@ Map<String, AppListTableColumn<Patient>> _patientColumnDefinitions(
       id: 'alerts',
       label: l10n.patientsAlertColumnLabel,
       sortComparator: (Patient left, Patient right) => appListTableCompareText(
-        _patientAlertSortValue(left),
-        _patientAlertSortValue(right),
+        _patientAlertSortValue(context, left),
+        _patientAlertSortValue(context, right),
       ),
-      exportValue: (Patient patient) => _patientAlertSortValue(patient),
+      exportValue: (Patient patient) =>
+          _patientAlertSortValue(context, patient),
       cellBuilder: (_, Patient patient) => _PatientAlertCell(patient: patient),
     ),
     'visit': AppListTableColumn<Patient>(
@@ -1368,8 +1410,15 @@ Map<String, AppListTableColumn<Patient>> _patientColumnDefinitions(
             left.currentVisit?.occurredAt,
             right.currentVisit?.occurredAt,
           ),
-      exportValue: (Patient patient) =>
-          patient.currentVisit?.occurredAt?.toIso8601String() ?? '',
+      exportValue: (Patient patient) {
+        final PatientVisitContext? visit = patient.currentVisit;
+        if (visit == null) {
+          return '';
+        }
+        return _visitTitleLine(visit) ??
+            visit.occurredAt?.toIso8601String() ??
+            '';
+      },
       cellBuilder: (_, Patient patient) => _VisitContextCell(patient: patient),
     ),
     'status': AppListTableColumn<Patient>(
@@ -1390,7 +1439,8 @@ Map<String, AppListTableColumn<Patient>> _patientColumnDefinitions(
       id: 'next_action',
       label: l10n.patientsNextActionColumnLabel,
       alwaysVisible: true,
-      exportValue: (_) => '',
+      exportValue: (Patient patient) =>
+          _patientNextActionLabel(l10n, patient),
       cellBuilder: (BuildContext context, Patient patient) => _NextActionCell(
         patient: patient,
         section: section,
@@ -1550,9 +1600,18 @@ String _patientNextActionLabel(AppLocalizations l10n, Patient patient) {
 }
 
 String? _visitTitleLine(PatientVisitContext visit) {
+  return visit.title?.trim().isNotEmpty == true ? visit.title!.trim() : null;
+}
+
+String _patientAlertSortValue(BuildContext context, Patient patient) {
+  final AppLocalizations l10n = context.l10n;
   return _joinDisplay(<String?>[
-    visit.title,
-    visit.status == null ? null : _apiLabel(visit.status!),
+    patient.hasAllergyAlert
+        ? patient.allergyAlertLabel ?? l10n.patientsAllergyAlertLabel
+        : null,
+    patient.requiresCompletion
+        ? l10n.patientsRegistrationIncompleteValue
+        : null,
   ]);
 }
 
@@ -1632,13 +1691,6 @@ class _PatientAlertCell extends StatelessWidget {
   }
 }
 
-String _patientAlertSortValue(Patient patient) {
-  return _joinDisplay(<String?>[
-    patient.hasAllergyAlert ? patient.allergyAlertLabel ?? 'allergy' : null,
-    patient.requiresCompletion ? 'incomplete' : null,
-  ]);
-}
-
 class _VisitContextCell extends StatelessWidget {
   const _VisitContextCell({required this.patient});
 
@@ -1658,27 +1710,18 @@ class _VisitContextCell extends StatelessWidget {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Text(
-          _joinDisplay(<String?>[
-            visit.title,
-            visit.status == null ? null : _apiLabel(visit.status!),
-          ]),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        Text(
-          _formatOptionalDate(context, visit.occurredAt),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
+    final String title = _visitTitleLine(visit) ?? '';
+    if (title.isEmpty) {
+      return Text(
+        _formatOptionalDate(context, visit.occurredAt),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+    return Text(
+      title,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }
@@ -1763,7 +1806,6 @@ class _NextActionCell extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.labelLarge?.copyWith(
                             color: primaryColor,
-                            fontWeight: AppFontWeight.emphasis,
                           ),
                         ),
                       ),
@@ -3115,7 +3157,7 @@ class _PatientReportPreviewPage extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         border: theme.borders.all(),
         boxShadow: <BoxShadow>[
           BoxShadow(
@@ -3189,14 +3231,14 @@ class _PatientReportPageHeader extends StatelessWidget {
                   Text(
                     document.hospitalName,
                     style: theme.textTheme.titleMedium?.copyWith(
-                      color: Colors.black,
+                      color: theme.colorScheme.onSurface,
                       fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
                   Text(
                     document.title,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.black87,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -3213,7 +3255,7 @@ class _PatientReportPageHeader extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.end,
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: Colors.black,
+                      color: theme.colorScheme.onSurface,
                       fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
@@ -3223,7 +3265,7 @@ class _PatientReportPageHeader extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.end,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.black87,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                   Text(
@@ -3232,7 +3274,7 @@ class _PatientReportPageHeader extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.end,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.black87,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -3260,7 +3302,7 @@ class _PatientReportBlockPreview extends StatelessWidget {
         Text(
           block.title,
           style: theme.textTheme.titleSmall?.copyWith(
-            color: Colors.black,
+            color: theme.colorScheme.onSurface,
             fontWeight: AppFontWeight.emphasis,
           ),
         ),
@@ -3275,7 +3317,7 @@ class _PatientReportBlockPreview extends StatelessWidget {
                   child: Text(
                     block.emptyText,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: Colors.black87,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 )
@@ -3307,14 +3349,14 @@ class _PatientReportRowPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final TextStyle? labelStyle = theme.textTheme.bodySmall?.copyWith(
-      color: Colors.black87,
+      color: theme.colorScheme.onSurfaceVariant,
       fontWeight: AppFontWeight.emphasis,
     );
     final TextStyle? valueStyle = theme.textTheme.bodySmall?.copyWith(
-      color: Colors.black,
+      color: theme.colorScheme.onSurface,
     );
     final TextStyle? detailStyle = theme.textTheme.bodySmall?.copyWith(
-      color: Colors.black87,
+      color: theme.colorScheme.onSurfaceVariant,
     );
 
     return DecoratedBox(

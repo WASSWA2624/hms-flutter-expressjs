@@ -4,7 +4,7 @@
 
 - Label: `opdSectionActiveLabel`
 - Icon: `Icons.medical_services_outlined`
-- Count source: `summaryCounts.activeOpd` (fallback `activeFlowCount`); filtered when active + narrowed
+- Count source: `summaryCounts.activeOpd` (fallback board ACTIVE membership); filtered when active + narrowed
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `active` (aliases `active_flow`, `encounters`, `flows`)
 - Tab gate: `OpdActiveAtomPermissions.tab`
@@ -22,9 +22,13 @@ Order: **Filters → Settings → Export → Print → Start OPD**
 
 - Row model: active-flow-category `_OpdTableItem`
 - Row select → Flow Actions (`OpdActiveAtomPermissions.rowSelect`)
-- Default columns (5): Patient name, Doctor (provider), Visit type, Status, Next action (Next action **omitted when unauthorized** via `opdBoardShowsNextActionColumn`)
-- Column choices: OPD encounter, Wait time, Arrival time, Arrival mode
+- Default columns (5): Patient name, Doctor (provider), Visit type, Status, Next action (when Next action unauthorized, promote from choices so defaults stay at **5**)
+- Column choices: OPD encounter, Wait time, Arrival time, Arrival mode (minus any promoted into defaults)
+- Patient name cell: name only (atomic)
 - Mobile: arrival mode, waiting time, status; optional next-action trailing
+- Main-tab viewport: bounded, non-shrinkWrap, pinned footer, empty-row padding
+- Export/Print: full filtered Active membership
+- `panel=` multi-status filters preserved across Advanced filters unless a single status is applied
 
 ## 4. Advanced filters / search fields
 
@@ -60,7 +64,8 @@ Vitals, consultation payment, disposition, admission handoff, doctor assignment,
 
 ## 10. Loading / empty / error / success
 
-Shared board feedback; `opdSavedMessage` after mutations. Forbidden: `routeForbiddenTitle` when board read denied.
+- Empty: `opdNoActiveTitle` / `opdNoActiveBody`
+- Shared board success `opdSavedMessage` after mutations. Forbidden: `routeForbiddenTitle` when board read denied.
 
 ## 11. RBAC / ABAC
 

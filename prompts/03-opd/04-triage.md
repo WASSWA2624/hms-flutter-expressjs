@@ -7,7 +7,7 @@ Make the Triage desk section fully compliant with `tabs.mdc`, `tables.mdc`, `dia
 ## Requirements
 
 1. Keep strip label `opdSectionTriageLabel`, deep-link `triage`, and omit the tab when gate denies access (`OpdTriageAtomPermissions.tab`) — never show a disabled placeholder (`tabs.mdc`). Align `OpdWorkspaceSection` / query helpers with `tabs/03-opd/00-overview.md`.
-2. Badge count must be the authoritative total for this tab’s scope (`triageQueue.totalItemCount`; fallback `triageQueueCount`). When Filters/search/date narrow the active tab, the **active** badge must reflect the filtered total (`tabs.mdc`). Stop using painted-row length alone when a total is available or can be derived from the same filter model.
+2. Badge count must match this tab’s **board membership** (same TRIAGE rows the table shows). Do not badge from raw triage `totalItemCount` when that total includes terminal/out-of-scope records the desk filters out. When Filters/search/date narrow the active tab, the **active** badge must reflect the filtered total (`tabs.mdc`).
 3. Use `AppTabCountTone.warning` as inventoried, or escalate to `danger` only when product policy requires (`tabs.mdc`).
 4. Target trailing order Filters → Settings → Export → Print → context actions. Inventory: **Filters → Settings → Export → Print → Start OPD**. Normalize shared labels to `Filters`, `Settings`, `Export`, and `Print` when those controls apply; keep inventoried context actions after Print (`tables.mdc`, `printing.mdc`).
 5. Table Print is present: preview-first Print after Export on this list table. Omit Print/Export when unauthorized (`printing.mdc`, `tables.mdc`).

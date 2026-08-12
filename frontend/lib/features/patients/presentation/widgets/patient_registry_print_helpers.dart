@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -16,13 +17,6 @@ final class PatientRegistryPrintColumn {
 
   final String id;
   final String label;
-}
-
-abstract final class PatientRegistryPrintStrings {
-  static const String optionsSection = 'Print sections';
-  static const String summarySection = 'Summary';
-  static const String rowsSection = 'Rows';
-  static String rowCount(int count) => '$count rows';
 }
 
 final class PatientRegistryPrintOptionsController extends ChangeNotifier {
@@ -93,6 +87,7 @@ Future<void> printPatientRegistryList({
   required List<Map<String, String>> rows,
   required String emptyText,
 }) async {
+  final AppLocalizations l10n = context.l10n;
   final PatientRegistryPrintOptionsController options =
       PatientRegistryPrintOptionsController(columns: columns);
 
@@ -101,6 +96,7 @@ Future<void> printPatientRegistryList({
       rows: rows,
       options: options,
       emptyText: emptyText,
+      l10n: l10n,
     );
   }
 
@@ -109,13 +105,13 @@ Future<void> printPatientRegistryList({
       ref: ref,
       context: context,
       title: title,
-      previewDialogTitle: context.l10n.printPreviewTitle,
+      previewDialogTitle: l10n.printPreviewTitle,
       subtitle: options.includeSummary
-          ? PatientRegistryPrintStrings.rowCount(rows.length)
+          ? l10n.commonPrintRowCountLabel(rows.length)
           : null,
       recordReference: PrintFormContextReference(
         label: title,
-        value: PatientRegistryPrintStrings.rowCount(rows.length),
+        value: l10n.commonPrintRowCountLabel(rows.length),
       ),
       bodyHtml: buildBodyHtml(),
       bodyHtmlBuilder: buildBodyHtml,
@@ -134,15 +130,16 @@ String patientRegistryListHtml({
   required List<Map<String, String>> rows,
   required PatientRegistryPrintOptionsController options,
   required String emptyText,
+  required AppLocalizations l10n,
 }) {
   final StringBuffer buffer = StringBuffer();
 
   if (options.includeSummary) {
     buffer.write(
       PrintFormTemplate.section(
-        title: PatientRegistryPrintStrings.summarySection,
+        title: l10n.commonPrintSummarySectionLabel,
         bodyHtml:
-            '<p>${PrintFormTemplate.escape(PatientRegistryPrintStrings.rowCount(rows.length))}</p>',
+            '<p>${PrintFormTemplate.escape(l10n.commonPrintRowCountLabel(rows.length))}</p>',
       ),
     );
   }
@@ -163,7 +160,7 @@ String patientRegistryListHtml({
     ];
     buffer.write(
       PrintFormTemplate.section(
-        title: PatientRegistryPrintStrings.rowsSection,
+        title: l10n.commonPrintRowsSectionLabel,
         bodyHtml: PrintFormTemplate.table(
           headers: <String>[
             for (final PatientRegistryPrintColumn column in selected)
@@ -190,25 +187,26 @@ class PatientRegistryPrintOptionsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
 
     return ListenableBuilder(
       listenable: controller,
       builder: (BuildContext context, _) {
         return AppFormSection(
-          title: PatientRegistryPrintStrings.optionsSection,
+          title: l10n.commonPrintSectionsLabel,
           density: AppFormSectionDensity.compact,
           children: <Widget>[
             AppReportSectionPicker(
               compact: true,
-              sections: const <AppReportSectionData>[
+              sections: <AppReportSectionData>[
                 AppReportSectionData(
                   id: 'summary',
-                  title: PatientRegistryPrintStrings.summarySection,
+                  title: l10n.commonPrintSummarySectionLabel,
                   icon: Icons.summarize_outlined,
                 ),
                 AppReportSectionData(
                   id: 'rows',
-                  title: PatientRegistryPrintStrings.rowsSection,
+                  title: l10n.commonPrintRowsSectionLabel,
                   icon: Icons.list_alt_outlined,
                 ),
               ],

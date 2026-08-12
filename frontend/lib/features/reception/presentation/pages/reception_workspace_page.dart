@@ -931,13 +931,14 @@ class _ReceptionWorkspaceContentState
             _receptionQueueNextActionColumn(l10n),
         ];
       case ReceptionDeskSection.highPriority:
-        // Prefer five data columns (tables.mdc); next-action is read-only guidance.
+        // Prefer five data columns; priority flag is the triage-scan exception
+        // instead of nesting badges in the patient cell (tables.mdc).
         return <AppListTableColumn<_ReceptionDeskRow>>[
           _receptionPatientColumn(l10n),
+          _receptionPriorityFlagColumn(l10n),
           _receptionPatientPhoneColumn(l10n),
           _receptionQueuedAtColumn(l10n, locale),
           _receptionQueueCurrentStepColumn(l10n),
-          _receptionProviderColumn(l10n, queueProvider: true),
           if (_canShowHighPriorityNextAction)
             _receptionQueueNextActionColumn(l10n),
         ];
@@ -990,6 +991,8 @@ class _ReceptionWorkspaceContentState
         return <AppListTableColumn<_ReceptionDeskRow>>[
           _receptionPatientIdColumn(l10n),
           _receptionQueueIdColumn(l10n),
+          if (_section == ReceptionDeskSection.highPriority)
+            _receptionProviderColumn(l10n, queueProvider: true),
           _receptionQueuePaymentStatusColumn(l10n),
           _receptionReasonColumn(l10n, queueReason: true),
         ];
@@ -1064,6 +1067,53 @@ class _ReceptionWorkspaceContentState
           a.patientName(context),
           b.patientName(context),
         );
+      },
+    );
+  }
+
+  AppListTableColumn<_ReceptionDeskRow> _receptionPriorityFlagColumn(
+    AppLocalizations l10n,
+  ) {
+    return AppListTableColumn<_ReceptionDeskRow>(
+      id: 'priority_flag',
+      label: l10n.receptionHighPriorityBadgeLabel,
+      cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
+        final bool showEmergency =
+            _canShowHighPriorityEmergencyNested &&
+            row.flow != null &&
+            isReceptionEmergencyFlow(row.flow!);
+        if (showEmergency) {
+          return AppWorkspaceStatusBadge(
+            status: AppWorkspaceStatus(
+              label: l10n.opdTriageScopeEmergency,
+              tone: AppWorkspaceStatusTone.error,
+            ),
+          );
+        }
+        if (row.queueEntry?.isPrioritized == true) {
+          return AppWorkspaceStatusBadge(
+            status: AppWorkspaceStatus(
+              label: l10n.receptionHighPriorityBadgeLabel,
+              tone: AppWorkspaceStatusTone.warning,
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      },
+      sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) {
+        final bool aEmergency =
+            a.flow != null && isReceptionEmergencyFlow(a.flow!);
+        final bool bEmergency =
+            b.flow != null && isReceptionEmergencyFlow(b.flow!);
+        if (aEmergency != bEmergency) {
+          return aEmergency ? -1 : 1;
+        }
+        final bool aPriority = a.queueEntry?.isPrioritized == true;
+        final bool bPriority = b.queueEntry?.isPrioritized == true;
+        if (aPriority != bPriority) {
+          return aPriority ? -1 : 1;
+        }
+        return 0;
       },
     );
   }
@@ -1957,13 +2007,9 @@ class _ReceptionWorkspaceContentState
             )
             .length;
       case ReceptionDeskSection.activeVisits:
-        // Prefer workspace summary when available (same pattern as OPD Active);
-        // otherwise board membership for in-scope loaded flows.
-        final int membership = state.flows.items
-            .where(isReceptionActiveVisit)
-            .length;
-        final int summary = state.summaryCounts.activeOpd;
-        return summary > 0 ? summary : membership;
+        // Board membership for in-scope loaded flows (same rationale as OPD
+        // Arrivals/Queue — raw aggregates can include out-of-desk rows).
+        return state.flows.items.where(isReceptionActiveVisit).length;
       case ReceptionDeskSection.paymentGate:
         return paymentGateTotal ?? paymentGateEntries.length;
       case ReceptionDeskSection.followUps:
@@ -2048,6 +2094,19 @@ class _ReceptionWorkspaceContentState
     return switch (columnId) {
       'patient' => row.patientName(context),
       'patient_id' => row.patientId ?? row.patientIdentifier ?? '',
+      'priority_flag' => (() {
+        final bool showEmergency =
+            _canShowHighPriorityEmergencyNested &&
+            row.flow != null &&
+            isReceptionEmergencyFlow(row.flow!);
+        if (showEmergency) {
+          return l10n.opdTriageScopeEmergency;
+        }
+        if (row.queueEntry?.isPrioritized == true) {
+          return l10n.receptionHighPriorityBadgeLabel;
+        }
+        return '';
+      })(),
       'patient_phone' => row.patientPhone ?? '',
       'scheduled_time' => row.time == null
           ? ''

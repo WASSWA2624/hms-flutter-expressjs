@@ -23,9 +23,12 @@ Order: **Filters → Settings → Export → Print → Start OPD**
 
 - Row model: `_OpdTableItem` (appointments + queue + triage + active flows)
 - Row select → Flow / Queue / Appointment Actions by payload (`_openOpdTableItemActions`)
-- Default columns (5): Patient name, Category, Doctor (provider), Status, Next action (Next action **omitted when unauthorized** via `opdBoardShowsNextActionColumn`)
-- Column choices: Arrival mode, Visit type, Wait time, Arrival time, OPD encounter
+- Default columns (5): Patient name, Category, Doctor (provider), Status, Next action (when Next action unauthorized, promote from choices so defaults stay at **5**)
+- Column choices: Arrival mode, Visit type, Wait time, Arrival time, OPD encounter (minus any promoted into defaults)
+- Patient name cell: name only (atomic); identifier on mobile caption / search
 - Mobile: arrival mode, waiting time, status; optional next-action trailing
+- Main-tab viewport: bounded, non-shrinkWrap, pinned footer, empty-row padding
+- Export/Print: full filtered membership for this tab
 
 ## 4. Advanced filters / search fields
 

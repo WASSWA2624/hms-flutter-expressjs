@@ -4,7 +4,7 @@
 
 - Label: `receptionSectionActiveVisits`
 - Icon: `Icons.pending_actions_outlined`
-- Count source: prefer `OpdWorkspaceState.summaryCounts.activeOpd` when > 0; otherwise board membership (`isReceptionActiveVisit` on loaded flows). When this tab is active and stage/next-action/provider/payment/date/search narrow the list, badge uses the filtered membership total
+- Count source: authoritative active-visit board membership (`isReceptionActiveVisit` on loaded flows — not raw OPD `summaryCounts.activeOpd`, which can include out-of-desk rows). When this tab is active and stage/next-action/provider/payment/date/search narrow the list, badge uses the filtered membership total
 - Sibling tabs: dedicated unfiltered scope totals (shared chrome sibling model)
 - Count tone: `AppTabCountTone.warning` — product-justified in-facility turnaround pressure (documented in Active visits permission tests)
 - Deep-link `section`: `active` (aliases `active-visits`, `active_visits`, `visits`, `in-progress`, `turnaround_pressure`)
