@@ -160,7 +160,12 @@ void main() {
       final _MockPatientRepository repository = _MockPatientRepository();
       _stubPatientLookups(repository, patients: const <Patient>[_patient]);
 
-      await _pumpOpenPicker(tester, repository: repository);
+      // Settings/Print appear only from lg (840+) in AppListTable search actions.
+      await _pumpOpenPicker(
+        tester,
+        repository: repository,
+        surfaceSize: const Size(1200, 800),
+      );
 
       expect(find.byType(AppDialog), findsOneWidget);
       expect(find.byType(Checkbox), findsWidgets);
@@ -368,7 +373,14 @@ Future<void> _pumpOpenPicker(
   WidgetTester tester, {
   required _MockPatientRepository repository,
   ValueChanged<Patient?>? onSelected,
+  Size? surfaceSize,
 }) async {
+  if (surfaceSize != null) {
+    await tester.binding.setSurfaceSize(surfaceSize);
+    addTearDown(() async {
+      await tester.binding.setSurfaceSize(null);
+    });
+  }
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
@@ -381,6 +393,14 @@ Future<void> _pumpOpenPicker(
         theme: AppTheme.light,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
+        builder: surfaceSize == null
+            ? null
+            : (BuildContext context, Widget? child) {
+                return MediaQuery(
+                  data: MediaQuery.of(context).copyWith(size: surfaceSize),
+                  child: child!,
+                );
+              },
         home: Scaffold(
           body: Consumer(
             builder: (BuildContext context, WidgetRef ref, Widget? child) {

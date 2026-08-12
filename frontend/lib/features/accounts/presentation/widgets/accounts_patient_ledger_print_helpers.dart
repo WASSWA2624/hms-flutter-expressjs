@@ -4,6 +4,7 @@ import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.d
 import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_patient_ledger_print_options.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 String accountsPatientPublicLabel({
@@ -121,7 +122,7 @@ String accountsPatientLedgerHtml(
   if (includeSummary) {
     buffer.write(
       PrintFormTemplate.section(
-        title: 'Summary',
+        title: context.l10n.commonPrintSummarySectionLabel,
         bodyHtml: PrintFormTemplate.table(
           headers: <String>[
             AccountsStrings.invoicedColumn,

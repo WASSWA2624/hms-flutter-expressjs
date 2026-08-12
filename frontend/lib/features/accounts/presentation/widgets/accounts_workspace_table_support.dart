@@ -422,7 +422,6 @@ class AccountsNextActionButton extends StatelessWidget {
                 label,
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: primaryColor,
-                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),

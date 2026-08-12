@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 
@@ -67,7 +68,7 @@ class AccountsBooksPrintOptionsSection extends StatelessWidget {
       listenable: controller,
       builder: (BuildContext context, _) {
         return AppFormSection(
-          title: AccountsStrings.booksPrintOptionsSection,
+          title: context.l10n.commonPrintSectionsLabel,
           density: AppFormSectionDensity.compact,
           children: <Widget>[
             AppReportSectionPicker(

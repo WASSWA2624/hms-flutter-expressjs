@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -16,13 +17,6 @@ final class BillingWorkspacePrintColumn {
 
   final String id;
   final String label;
-}
-
-abstract final class BillingWorkspacePrintStrings {
-  static const String optionsSection = 'Print sections';
-  static const String summarySection = 'Summary';
-  static const String rowsSection = 'Rows';
-  static String rowCount(int count) => '$count rows';
 }
 
 final class BillingWorkspacePrintOptionsController extends ChangeNotifier {
@@ -93,11 +87,13 @@ Future<void> printBillingWorkspaceList({
   required List<Map<String, String>> rows,
   required String emptyText,
 }) async {
+  final AppLocalizations l10n = context.l10n;
   final BillingWorkspacePrintOptionsController options =
       BillingWorkspacePrintOptionsController(columns: columns);
 
   String buildBodyHtml() {
     return billingWorkspaceListHtml(
+      l10n: l10n,
       rows: rows,
       options: options,
       emptyText: emptyText,
@@ -109,13 +105,13 @@ Future<void> printBillingWorkspaceList({
       ref: ref,
       context: context,
       title: title,
-      previewDialogTitle: context.l10n.printPreviewTitle,
+      previewDialogTitle: l10n.printPreviewTitle,
       subtitle: options.includeSummary
-          ? BillingWorkspacePrintStrings.rowCount(rows.length)
+          ? l10n.commonPrintRowCountLabel(rows.length)
           : null,
       recordReference: PrintFormContextReference(
         label: title,
-        value: BillingWorkspacePrintStrings.rowCount(rows.length),
+        value: l10n.commonPrintRowCountLabel(rows.length),
       ),
       bodyHtml: buildBodyHtml(),
       bodyHtmlBuilder: buildBodyHtml,
@@ -131,6 +127,7 @@ Future<void> printBillingWorkspaceList({
 }
 
 String billingWorkspaceListHtml({
+  required AppLocalizations l10n,
   required List<Map<String, String>> rows,
   required BillingWorkspacePrintOptionsController options,
   required String emptyText,
@@ -140,9 +137,9 @@ String billingWorkspaceListHtml({
   if (options.includeSummary) {
     buffer.write(
       PrintFormTemplate.section(
-        title: BillingWorkspacePrintStrings.summarySection,
+        title: l10n.commonPrintSummarySectionLabel,
         bodyHtml:
-            '<p>${PrintFormTemplate.escape(BillingWorkspacePrintStrings.rowCount(rows.length))}</p>',
+            '<p>${PrintFormTemplate.escape(l10n.commonPrintRowCountLabel(rows.length))}</p>',
       ),
     );
   }
@@ -163,7 +160,7 @@ String billingWorkspaceListHtml({
     ];
     buffer.write(
       PrintFormTemplate.section(
-        title: BillingWorkspacePrintStrings.rowsSection,
+        title: l10n.commonPrintRowsSectionLabel,
         bodyHtml: PrintFormTemplate.table(
           headers: <String>[
             for (final BillingWorkspacePrintColumn column in selected)
@@ -190,25 +187,26 @@ class BillingWorkspacePrintOptionsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
 
     return ListenableBuilder(
       listenable: controller,
       builder: (BuildContext context, _) {
         return AppFormSection(
-          title: BillingWorkspacePrintStrings.optionsSection,
+          title: l10n.commonPrintSectionsLabel,
           density: AppFormSectionDensity.compact,
           children: <Widget>[
             AppReportSectionPicker(
               compact: true,
-              sections: const <AppReportSectionData>[
+              sections: <AppReportSectionData>[
                 AppReportSectionData(
                   id: 'summary',
-                  title: BillingWorkspacePrintStrings.summarySection,
+                  title: l10n.commonPrintSummarySectionLabel,
                   icon: Icons.summarize_outlined,
                 ),
                 AppReportSectionData(
                   id: 'rows',
-                  title: BillingWorkspacePrintStrings.rowsSection,
+                  title: l10n.commonPrintRowsSectionLabel,
                   icon: Icons.list_alt_outlined,
                 ),
               ],

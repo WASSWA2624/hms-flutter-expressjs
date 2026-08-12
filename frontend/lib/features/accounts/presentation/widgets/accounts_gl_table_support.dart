@@ -38,7 +38,7 @@ List<AppListTableColumn<AccountsGlAccount>> accountsGlDefaultColumns({
       preferredWidth: 220,
       cellBuilder: (_, AccountsGlAccount item) => Text(
         item.accountLabel,
-        maxLines: 2,
+        maxLines: 1,
         overflow: TextOverflow.ellipsis,
       ),
       exportValue: (AccountsGlAccount item) => item.accountLabel,
@@ -94,7 +94,6 @@ List<AppListTableColumn<AccountsGlAccount>> accountsGlDefaultColumns({
                   AccountsStrings.nextGl,
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                     color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),

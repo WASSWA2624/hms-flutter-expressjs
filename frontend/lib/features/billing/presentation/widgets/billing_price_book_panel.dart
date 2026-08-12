@@ -310,8 +310,7 @@ class _BillingPriceBookPanelState extends ConsumerState<BillingPriceBookPanel> {
       page: _page,
       isLoading: _loading,
       error: _failure == null ? null : l10n.failureMessage(_failure!),
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: false,
       columnVisibilityController: _columnController,
       columnVisibilityStorageKey: 'billing_prices_v1',
       columnWidthStorageKey: 'billing_prices_cw_v1',
@@ -336,10 +335,15 @@ class _BillingPriceBookPanelState extends ConsumerState<BillingPriceBookPanel> {
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
       onPrint: _printList,
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
       exportConfig: AppListTableExportConfig<BillingPriceBookEntry>(
         fileNameStem: 'billing_price_book',
         dateOf: (BillingPriceBookEntry item) => item.effectiveFrom,
         sheetName: l10n.billingPriceBookTab,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
       ),
       onRowSelected: canWrite
           ? (BillingPriceBookEntry item) =>

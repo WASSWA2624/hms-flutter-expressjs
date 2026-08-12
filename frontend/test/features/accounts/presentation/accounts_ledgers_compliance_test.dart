@@ -258,7 +258,13 @@ void main() {
         table.columns.map((AppListTableColumn<AccountsPatientBalance> c) => c.id),
         containsAll(accountsLedgersDefaultColumnIds),
       );
-      expect(table.columnChoices?.length, 2);
+      expect(table.columnChoices?.length, 3);
+      expect(
+        table.columnChoices?.map(
+          (AppListTableColumn<AccountsPatientBalance> c) => c.id,
+        ),
+        contains(accountsLedgersPatientIdColumnId),
+      );
       expect(
         table.search?.trailingActions ?? const <AppSearchBarAction>[],
         isEmpty,
@@ -353,7 +359,7 @@ void main() {
       location: '/accounts?section=patient-ledgers',
     );
     expect(find.text(AccountsStrings.patientLedgersLabel), findsWidgets);
-    expect(find.text(_balanced.displayLabel), findsOneWidget);
+    expect(find.text('Ada'), findsOneWidget);
   });
 
   testWidgets('row opens Patient ledger with generic title', (
@@ -367,7 +373,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text(_balanced.displayLabel));
+    await tester.tap(find.text('Ada'));
     await tester.pumpAndSettle();
     expect(find.text('PATIENT LEDGER'), findsWidgets);
     expect(find.textContaining('p-1'), findsNothing);

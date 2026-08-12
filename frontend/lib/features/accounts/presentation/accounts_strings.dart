@@ -12,6 +12,8 @@ abstract final class AccountsStrings {
   static const String filtersLabel = 'Filters';
   static const String clearFilters = 'Clear filters';
   static const String applyFilters = 'Apply filters';
+  static const String postedDateFilterLabel = 'Posted date';
+  static const String updatedDateFilterLabel = 'Updated date';
   static const String allFields = 'All';
   static const String notesLabel = 'Notes';
   static const String reasonLabel = 'Reason';
@@ -55,6 +57,7 @@ abstract final class AccountsStrings {
   static const String patientLedgersSearchHint = 'Patient…';
   static const String patientLedgersSearchSemantic = 'Search patient ledgers';
   static const String patientColumn = 'Patient';
+  static const String patientIdColumn = 'Patient ID';
   static const String invoicedColumn = 'Invoiced';
   static const String paidColumn = 'Paid';
   static const String clearanceColumn = 'Clearance';

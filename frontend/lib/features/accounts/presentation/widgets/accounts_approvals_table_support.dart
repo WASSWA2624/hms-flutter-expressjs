@@ -295,7 +295,6 @@ class AccountsApprovalsNextButton extends StatelessWidget {
                 label,
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: color,
-                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),

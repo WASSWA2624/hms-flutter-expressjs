@@ -321,6 +321,7 @@ Map<String, AppListTableColumn<BillingWorkItem>> _billingColumnBuilders(
     billingPatientShareColumnId: billingPatientShareColumn(l10n),
     billingInsurerShareColumnId: billingInsurerShareColumn(l10n),
     billingNextActionColumnId: billingNextActionColumn(
+      context: context,
       l10n: l10n,
       canWrite: canWrite,
       canApprove: canApprove,
@@ -344,10 +345,15 @@ AppListTableColumn<BillingWorkItem> billingPatientColumn(
           left.effectivePatientName,
           right.effectivePatientName,
         ),
+    exportValue: (BillingWorkItem item) {
+      final String name = item.patientDisplayName?.trim() ?? '';
+      return name.isEmpty ? l10n.billingUnknownPatient : name;
+    },
     cellBuilder: (BuildContext context, BillingWorkItem item) {
-      return AppListItemText(
-        title: billingPatientName(context, item),
-        subtitle: billingPatientPublicNumber(item) ?? l10n.profileUnknownValue,
+      return Text(
+        billingPatientName(context, item),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       );
     },
   );
@@ -368,6 +374,10 @@ AppListTableColumn<BillingWorkItem> billingInvoiceColumn(
               billingPublicLabel(right.invoiceDisplayId) ??
               right.id,
         ),
+    exportValue: (BillingWorkItem item) =>
+        billingPublicLabel(item.displayId) ??
+        billingPublicLabel(item.invoiceDisplayId) ??
+        item.id,
     cellBuilder: (BuildContext context, BillingWorkItem item) {
       return Text(
         billingWorkItemPublicId(context, item),
@@ -389,6 +399,8 @@ AppListTableColumn<BillingWorkItem> billingEncounterColumn(
           billingPublicLabel(left.encounterDisplayId),
           billingPublicLabel(right.encounterDisplayId),
         ),
+    exportValue: (BillingWorkItem item) =>
+        billingPublicLabel(item.encounterDisplayId) ?? l10n.profileUnknownValue,
     cellBuilder: (BuildContext context, BillingWorkItem item) {
       return Text(
         billingPublicLabel(item.encounterDisplayId) ??
@@ -407,6 +419,13 @@ AppListTableColumn<BillingWorkItem> billingSourceColumn(AppLocalizations l10n) {
           left.invoiceSourceSummary,
           right.invoiceSourceSummary,
         ),
+    exportValue: (BillingWorkItem item) {
+      final String? summary = item.invoiceSourceSummary;
+      if (summary == null || summary.trim().isEmpty) {
+        return l10n.profileUnknownValue;
+      }
+      return summary;
+    },
     cellBuilder: (BuildContext context, BillingWorkItem item) {
       return Text(
         billingInvoiceSourceLabel(context, item),
@@ -426,6 +445,7 @@ AppListTableColumn<BillingWorkItem> billingAmountDueColumn(
     numeric: true,
     sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
         appListTableCompareNumber(left.balanceDue, right.balanceDue),
+    exportValue: (BillingWorkItem item) => item.balanceDue,
     cellBuilder: (BuildContext context, BillingWorkItem item) {
       return Text(billingMoney(context, item.balanceDue, item.currency));
     },
@@ -441,6 +461,7 @@ AppListTableColumn<BillingWorkItem> billingAmountPaidColumn(
     numeric: true,
     sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
         appListTableCompareNumber(left.paidAmount, right.paidAmount),
+    exportValue: (BillingWorkItem item) => item.paidAmount,
     cellBuilder: (BuildContext context, BillingWorkItem item) {
       return Text(billingMoney(context, item.paidAmount, item.currency));
     },
@@ -455,6 +476,7 @@ AppListTableColumn<BillingWorkItem> billingUpdatedColumn(
     label: l10n.billingUpdatedColumn,
     sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
         appListTableCompareDateTime(left.timelineAt, right.timelineAt),
+    exportValue: (BillingWorkItem item) => item.timelineAt?.toIso8601String() ?? '',
     cellBuilder: (BuildContext context, BillingWorkItem item) {
       return Text(billingDateTime(context, item.timelineAt));
     },
@@ -486,6 +508,10 @@ AppListTableColumn<BillingWorkItem> billingAgeColumn(AppLocalizations l10n) {
           billingInvoiceAgeDays(left) ?? -1,
           billingInvoiceAgeDays(right) ?? -1,
         ),
+    exportValue: (BillingWorkItem item) {
+      final int? days = billingInvoiceAgeDays(item);
+      return days == null ? '' : '$days';
+    },
     cellBuilder: (BuildContext context, BillingWorkItem item) {
       final int? days = billingInvoiceAgeDays(item);
       if (days == null) {
@@ -505,6 +531,8 @@ AppListTableColumn<BillingWorkItem> billingStatusColumn(AppLocalizations l10n) {
           left.billingStatus ?? left.status,
           right.billingStatus ?? right.status,
         ),
+    exportValue: (BillingWorkItem item) =>
+        item.billingStatus ?? item.status ?? '',
     cellBuilder: (BuildContext context, BillingWorkItem item) {
       return AppWorkspaceStatusBadge(
         status: AppWorkspaceStatus(
@@ -525,6 +553,7 @@ AppListTableColumn<BillingWorkItem> billingApprovalTypeColumn(
     label: l10n.billingTypeColumn,
     sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
         appListTableCompareText(left.approvalType, right.approvalType),
+    exportValue: (BillingWorkItem item) => item.approvalType ?? '',
     cellBuilder: (BuildContext context, BillingWorkItem item) {
       return Text(
         billingApiLabel(context, item.approvalType),
@@ -546,6 +575,8 @@ AppListTableColumn<BillingWorkItem> billingApprovalByColumn(
           left.requestedByDisplayId,
           right.requestedByDisplayId,
         ),
+    exportValue: (BillingWorkItem item) =>
+        billingPublicLabel(item.requestedByDisplayId) ?? '',
     cellBuilder: (BuildContext context, BillingWorkItem item) {
       return Text(
         billingPublicLabel(item.requestedByDisplayId) ??
@@ -565,12 +596,13 @@ AppListTableColumn<BillingWorkItem> billingApprovalReasonColumn(
     label: l10n.billingReasonLabel,
     sortComparator: (BillingWorkItem left, BillingWorkItem right) =>
         appListTableCompareText(left.requestReason, right.requestReason),
+    exportValue: (BillingWorkItem item) => item.requestReason?.trim() ?? '',
     cellBuilder: (BuildContext context, BillingWorkItem item) {
       return Text(
         item.requestReason?.trim().isNotEmpty == true
             ? item.requestReason!
             : l10n.billingNotRecorded,
-        maxLines: 2,
+        maxLines: 1,
         overflow: TextOverflow.ellipsis,
       );
     },
@@ -588,6 +620,7 @@ AppListTableColumn<BillingWorkItem> billingInsurerColumn(
           left.insurerDisplayName,
           right.insurerDisplayName,
         ),
+    exportValue: (BillingWorkItem item) => item.insurerDisplayName ?? '',
     cellBuilder: (BuildContext context, BillingWorkItem item) {
       return Text(
         item.insurerDisplayName ?? l10n.billingNotRecorded,
@@ -609,6 +642,7 @@ AppListTableColumn<BillingWorkItem> billingSchemeColumn(
           left.schemeDisplayName,
           right.schemeDisplayName,
         ),
+    exportValue: (BillingWorkItem item) => item.schemeDisplayName ?? '',
     cellBuilder: (BuildContext context, BillingWorkItem item) {
       return Text(
         item.schemeDisplayName ?? l10n.billingNotRecorded,
@@ -631,6 +665,7 @@ AppListTableColumn<BillingWorkItem> billingPatientShareColumn(
           left.totalPatientShare,
           right.totalPatientShare,
         ),
+    exportValue: (BillingWorkItem item) => item.totalPatientShare,
     cellBuilder: (BuildContext context, BillingWorkItem item) {
       return Text(
         billingMoney(context, item.totalPatientShare, item.currency),
@@ -651,6 +686,7 @@ AppListTableColumn<BillingWorkItem> billingInsurerShareColumn(
           left.totalInsurerShare,
           right.totalInsurerShare,
         ),
+    exportValue: (BillingWorkItem item) => item.totalInsurerShare,
     cellBuilder: (BuildContext context, BillingWorkItem item) {
       return Text(
         billingMoney(context, item.totalInsurerShare, item.currency),
@@ -694,6 +730,7 @@ int _billingNextActionSortKey(BillingWorkItem item) {
 }
 
 AppListTableColumn<BillingWorkItem> billingNextActionColumn({
+  required BuildContext context,
   required AppLocalizations l10n,
   required bool canWrite,
   required bool canApprove,
@@ -711,6 +748,15 @@ AppListTableColumn<BillingWorkItem> billingNextActionColumn({
           _billingNextActionSortKey(left),
           _billingNextActionSortKey(right),
         ),
+    exportValue: (BillingWorkItem item) =>
+        billingNextActionLabel(
+          context,
+          item,
+          canWrite: canWrite,
+          canApprove: canApprove,
+          canMutateClaims: canMutateClaims,
+        ) ??
+        '',
     cellBuilder: (BuildContext context, BillingWorkItem item) {
       return BillingNextActionButton(
         item: item,
@@ -822,7 +868,6 @@ class BillingNextActionButton extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: primaryColor,
-                        fontWeight: AppFontWeight.emphasis,
                         decoration: enabled ? TextDecoration.underline : null,
                         decorationColor: primaryColor.withValues(alpha: 0.4),
                       ),

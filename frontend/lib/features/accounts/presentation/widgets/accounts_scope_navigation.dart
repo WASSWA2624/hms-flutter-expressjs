@@ -46,7 +46,7 @@ int accountsSectionTabCount(
   if (!_accountsWorkQueueNarrowed(state.query)) {
     return scopeTotal;
   }
-  return state.workItems.totalItemCount ?? state.workItems.items.length;
+  return state.workItems.totalItemCount ?? scopeTotal;
 }
 
 bool _accountsWorkQueueNarrowed(AccountsWorkspaceQuery query) {

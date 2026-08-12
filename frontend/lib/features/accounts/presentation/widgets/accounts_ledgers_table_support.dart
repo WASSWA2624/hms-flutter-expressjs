@@ -9,6 +9,7 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 
 const String accountsLedgersTableSettingsKey = 'accounts_ledgers_v1';
 const String accountsLedgersPatientColumnId = 'patient';
+const String accountsLedgersPatientIdColumnId = 'patient_id';
 const String accountsLedgersInvoicedColumnId = 'invoiced';
 const String accountsLedgersPaidColumnId = 'paid';
 const String accountsLedgersBalanceColumnId = 'balance';
@@ -69,8 +70,26 @@ _accountsLedgersColumnBuilders({
       id: accountsLedgersPatientColumnId,
       label: AccountsStrings.patientColumn,
       alwaysVisible: true,
-      cellBuilder: (_, AccountsPatientBalance row) => Text(row.displayLabel),
-      exportValue: (AccountsPatientBalance row) => row.displayLabel,
+      cellBuilder: (_, AccountsPatientBalance row) => Text(
+        accountsPublicLabel(row.patientDisplayName) ??
+            accountsPublicLabel(row.patientDisplayId) ??
+            AccountsStrings.unknownValue,
+      ),
+      exportValue: (AccountsPatientBalance row) =>
+          accountsPublicLabel(row.patientDisplayName) ??
+          accountsPublicLabel(row.patientDisplayId) ??
+          AccountsStrings.unknownValue,
+    ),
+    accountsLedgersPatientIdColumnId: AppListTableColumn<AccountsPatientBalance>(
+      id: accountsLedgersPatientIdColumnId,
+      label: AccountsStrings.patientIdColumn,
+      cellBuilder: (_, AccountsPatientBalance row) => Text(
+        accountsPublicLabel(row.patientDisplayId) ??
+            AccountsStrings.unknownValue,
+      ),
+      exportValue: (AccountsPatientBalance row) =>
+          accountsPublicLabel(row.patientDisplayId) ??
+          AccountsStrings.unknownValue,
     ),
     accountsLedgersInvoicedColumnId: AppListTableColumn<AccountsPatientBalance>(
       id: accountsLedgersInvoicedColumnId,
@@ -185,6 +204,7 @@ List<AppListTableColumn<AccountsPatientBalance>> accountsLedgersColumnChoices({
         onPay: onPay,
       );
   return <AppListTableColumn<AccountsPatientBalance>>[
+    columns[accountsLedgersPatientIdColumnId]!,
     columns[accountsLedgersClearanceColumnId]!,
     columns[accountsLedgersUpdatedColumnId]!,
   ];

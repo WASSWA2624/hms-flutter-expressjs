@@ -366,8 +366,10 @@ class _BillingWorkspaceContentState
         spacing: Theme.of(context).spacing,
       ),
       maxWidth: PageMaxWidth.dataHeavy,
+      scrollable: false,
       child: SizedBox(
         width: double.infinity,
+        height: double.infinity,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -412,17 +414,18 @@ class _BillingWorkspaceContentState
               },
             ),
             SizedBox(height: theme.spacing.md),
-            if (_priceBook)
-              const BillingPriceBookPanel()
-            else
-              _BillingQueuePanel(
-                state: state,
-                accessPolicy: accessPolicy,
-                canWrite: canWrite,
-                searchController: _searchController,
-                columnVisibilityController: _tableColumnController,
-                activeQueue: _section,
-              ),
+            Expanded(
+              child: _priceBook
+                  ? const BillingPriceBookPanel()
+                  : _BillingQueuePanel(
+                      state: state,
+                      accessPolicy: accessPolicy,
+                      canWrite: canWrite,
+                      searchController: _searchController,
+                      columnVisibilityController: _tableColumnController,
+                      activeQueue: _section,
+                    ),
+            ),
           ],
         ),
       ),
@@ -480,8 +483,7 @@ class _BillingQueuePanel extends ConsumerWidget {
     final AppListTable<BillingWorkItem> table = AppListTable<BillingWorkItem>(
       page: state.workItems,
       isLoading: state.isRefreshing,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: false,
       columnVisibilityController: columnVisibilityController,
       columnVisibilityStorageKey: billingTableSettingsKey(activeQueue),
       columnWidthStorageKey: '${billingTableSettingsKey(activeQueue)}_cw',
@@ -516,10 +518,15 @@ class _BillingQueuePanel extends ConsumerWidget {
         queue: activeQueue,
         l10n: l10n,
       ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
       exportConfig: AppListTableExportConfig<BillingWorkItem>(
         fileNameStem: 'billing_${activeQueue.sectionQueryValue}',
         dateOf: (BillingWorkItem item) => item.timelineAt,
         sheetName: billingQueueLabel(context, activeQueue),
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
       ),
       search: AppListTableSearch<BillingWorkItem>(
         controller: searchController,
@@ -536,6 +543,7 @@ class _BillingQueuePanel extends ConsumerWidget {
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
         advancedFilterCloseLabel: l10n.commonCloseActionLabel,
+        enableDateFilter: true,
         dateFilterLabel: l10n.billingIssuedDateFilterLabel,
         dateFromLabel: l10n.opdDateFromLabel,
         dateToLabel: l10n.opdDateToLabel,
@@ -661,7 +669,7 @@ String _billingWorklistPrintCellValue(
   BillingWorkItem item,
   AppListTableColumn<BillingWorkItem> column,
 ) {
-  final Object? resolved = appListTableResolveSortKey<BillingWorkItem>(
+  final Object? resolved = resolveAppListTableExportValue<BillingWorkItem>(
     column: column,
     item: item,
     context: context,

@@ -5,6 +5,7 @@ import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart'
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_chart_dialogs.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_chart_print_options.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
 Future<void> printAccountsChartList({
@@ -24,6 +25,7 @@ Future<void> printAccountsChartList({
 
   String buildBodyHtml() {
     return accountsChartListHtml(
+      context: context,
       accounts: accounts,
       options: options,
     );
@@ -57,6 +59,7 @@ Future<void> printAccountsChartList({
 String accountsChartListHtml({
   required List<AccountsChartAccount> accounts,
   AccountsChartPrintOptionsController? options,
+  BuildContext? context,
 }) {
   final bool includeSummary = options?.includeSummary ?? true;
   final bool includeRows = options?.includeRows ?? true;
@@ -66,7 +69,8 @@ String accountsChartListHtml({
   if (includeSummary) {
     buffer.write(
       PrintFormTemplate.section(
-        title: AccountsStrings.chartPrintSectionSummary,
+        title: context?.l10n.commonPrintSummarySectionLabel ??
+            AccountsStrings.chartPrintSectionSummary,
         bodyHtml:
             '<p>${PrintFormTemplate.escape(AccountsStrings.chartPrintRowCount(accounts.length))}</p>',
       ),

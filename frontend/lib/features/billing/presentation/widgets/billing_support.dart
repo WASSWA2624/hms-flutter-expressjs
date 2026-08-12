@@ -166,7 +166,7 @@ int billingQueueTabCount(
   if (!narrowed) {
     return scopeTotal;
   }
-  return state.workItems.totalItemCount ?? state.workItems.items.length;
+  return state.workItems.totalItemCount ?? scopeTotal;
 }
 
 /// Price book strip tone — non-urgent catalog scope (`tabs.mdc` info default).
