@@ -7,9 +7,13 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
+import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/tenant_facility_setup_access.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_print_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
@@ -292,7 +296,9 @@ class _ManageSubscriptionApprovalsPanelState
         label: l10n.tenantFacilitySubscriptionApprovalsAdminColumn,
         sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
             appListTableCompareText(left.title, right.title),
-        cellBuilder: (_, AccessAdminItem item) => Text(
+        exportValue: (AccessAdminItem item) =>
+            item.title.isEmpty ? '—' : item.title,
+        cellBuilder: (_, AccessAdminItem item) => tenantFacilitySetupAtomicCell(
           item.title.isEmpty ? '—' : item.title,
         ),
       ),
@@ -304,7 +310,9 @@ class _ManageSubscriptionApprovalsPanelState
               left.facilityName ?? left.subtitle,
               right.facilityName ?? right.subtitle,
             ),
-        cellBuilder: (_, AccessAdminItem item) => Text(
+        exportValue: (AccessAdminItem item) =>
+            item.facilityName ?? item.subtitle ?? item.tenantName ?? '—',
+        cellBuilder: (_, AccessAdminItem item) => tenantFacilitySetupAtomicCell(
           item.facilityName ?? item.subtitle ?? item.tenantName ?? '—',
         ),
       ),
@@ -313,19 +321,24 @@ class _ManageSubscriptionApprovalsPanelState
         label: l10n.accessAdminEmailLabel,
         sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
             appListTableCompareText(left.email, right.email),
-        cellBuilder: (_, AccessAdminItem item) => Text(item.email ?? '—'),
+        exportValue: (AccessAdminItem item) => item.email ?? '—',
+        cellBuilder: (_, AccessAdminItem item) =>
+            tenantFacilitySetupAtomicCell(item.email ?? '—'),
       ),
       AppListTableColumn<AccessAdminItem>(
         id: 'phone',
         label: l10n.accessAdminPhoneLabel,
         sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
             appListTableCompareText(left.phone, right.phone),
-        cellBuilder: (_, AccessAdminItem item) => Text(item.phone ?? '—'),
+        exportValue: (AccessAdminItem item) => item.phone ?? '—',
+        cellBuilder: (_, AccessAdminItem item) =>
+            tenantFacilitySetupAtomicCell(item.phone ?? '—'),
       ),
       AppListTableColumn<AccessAdminItem>(
         id: 'actions',
         label: l10n.tenantFacilitySubscriptionApprovalsActionsColumn,
         alwaysVisible: true,
+        exportable: false,
         cellBuilder: (BuildContext context, AccessAdminItem item) {
           return AppButton.tertiary(
             label: l10n.accessAdminApproveRegistrationAction,
@@ -333,6 +346,34 @@ class _ManageSubscriptionApprovalsPanelState
             onPressed: _mutating ? null : () => unawaited(_approve(item)),
           );
         },
+      ),
+    ];
+  }
+
+  List<AppListTableColumn<AccessAdminItem>> _optionalColumns(
+    AppLocalizations l10n,
+  ) {
+    return <AppListTableColumn<AccessAdminItem>>[
+      AppListTableColumn<AccessAdminItem>(
+        id: 'tenant',
+        label: l10n.tenantFacilitySetupTabTenant,
+        exportValue: (AccessAdminItem item) => item.tenantName ?? '—',
+        cellBuilder: (_, AccessAdminItem item) =>
+            tenantFacilitySetupAtomicCell(item.tenantName ?? '—'),
+      ),
+      AppListTableColumn<AccessAdminItem>(
+        id: 'status',
+        label: l10n.accessAdminColumnStatus,
+        exportValue: (AccessAdminItem item) => item.status ?? '—',
+        cellBuilder: (_, AccessAdminItem item) =>
+            tenantFacilitySetupAtomicCell(item.status ?? '—'),
+      ),
+      AppListTableColumn<AccessAdminItem>(
+        id: 'id',
+        label: l10n.accessAdminColumnId,
+        exportValue: (AccessAdminItem item) => item.effectiveDisplayId,
+        cellBuilder: (_, AccessAdminItem item) =>
+            tenantFacilitySetupAtomicCell(item.effectiveDisplayId),
       ),
     ];
   }
@@ -345,13 +386,6 @@ class _ManageSubscriptionApprovalsPanelState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppSearchBar(
-          controller: _searchController,
-          semanticLabel: l10n.tenantFacilitySubscriptionApprovalsSearchHint,
-          hintText: l10n.tenantFacilitySubscriptionApprovalsSearchHint,
-          enabled: !_mutating,
-        ),
-        SizedBox(height: theme.spacing.sm),
         Text(
           l10n.tenantFacilitySubscriptionApprovalsIntro,
           style: theme.textTheme.bodyMedium?.copyWith(
@@ -394,8 +428,64 @@ class _ManageSubscriptionApprovalsPanelState
               body: l10n.tenantFacilitySubscriptionApprovalsEmpty,
             ),
             columns: _columns(l10n),
+            columnChoices: _optionalColumns(l10n),
             columnVisibilityStorageKey:
-                'setup_subscription_approvals_columns_v1',
+                'setup_subscription_approvals_columns_v2',
+            columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+            columnVisibilityTitle: l10n.commonTableSettingsTitle,
+            columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+            columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+            columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+            canExport: canExportTenantFacilitySetup(
+              ref.watch(appAccessPolicyProvider),
+            ),
+            exportLabel: l10n.commonTableExportActionLabel,
+            exportDialogTitle: l10n.commonTableExportDialogTitle,
+            exportCancelLabel: l10n.commonCancelActionLabel,
+            exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+            exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+            exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+            exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+            exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+            exportFailureMessage: l10n.commonTableExportFailureMessage,
+            exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+            enablePrint: true,
+            canPrint: canPrintTenantFacilitySetup(
+              ref.watch(appAccessPolicyProvider),
+            ),
+            printLabel: l10n.commonPrintActionLabel,
+            onPrint: (List<AccessAdminItem> matching) =>
+                printTenantFacilitySetupListTable<AccessAdminItem>(
+              ref: ref,
+              context: context,
+              title: l10n.tenantFacilitySubscriptionApprovalsAdminColumn,
+              columns: <AppListTableColumn<AccessAdminItem>>[
+                ..._columns(l10n),
+                ..._optionalColumns(l10n),
+              ],
+              items: matching,
+              emptyText: l10n.tenantFacilitySubscriptionApprovalsEmpty,
+            ),
+            goToTopLabel: l10n.commonGoToTopActionLabel,
+            loadingMoreLabel: l10n.commonLoadingMoreLabel,
+            allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
+            exportConfig: AppListTableExportConfig<AccessAdminItem>(
+              fileNameStem: 'setup_subscription_approvals',
+              dateOf: (_) => null,
+              sheetName: l10n.tenantFacilitySubscriptionApprovalsAdminColumn,
+              enableDateFilter: false,
+              dateFromLabel: l10n.commonTableExportDateFromLabel,
+              dateToLabel: l10n.commonTableExportDateToLabel,
+            ),
+            search: AppListTableSearch<AccessAdminItem>(
+              controller: _searchController,
+              semanticLabel: l10n.tenantFacilitySubscriptionApprovalsSearchHint,
+              hintText: l10n.tenantFacilitySubscriptionApprovalsSearchHint,
+              matcher: (_, _) => true,
+              onSubmitted: (_) => unawaited(_reload(resetPage: true)),
+              onClear: () => unawaited(_reload(resetPage: true)),
+              enableDateFilter: false,
+            ),
             mobileItemBuilder: (BuildContext context, AccessAdminItem item) {
               return AppListTableMobileItem(
                 title: item.title.isEmpty

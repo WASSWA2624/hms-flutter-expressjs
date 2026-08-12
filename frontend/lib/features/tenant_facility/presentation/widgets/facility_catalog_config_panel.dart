@@ -546,26 +546,6 @@ class _FacilityCatalogConfigPanelState
     };
   }
 
-  String _labUnitRangeOrTestCount(
-    AppLocalizations l10n,
-    LabCatalogItem item,
-  ) {
-    if (item.type == LabCatalogItemType.panel) {
-      return l10n.clinicalLabOrderItemCount(item.testCount);
-    }
-    final int rangeCount = item.referenceRangeCount > 0
-        ? item.referenceRangeCount
-        : item.referenceRanges.length;
-    final List<String> parts = <String>[
-      if ((item.unit ?? '').trim().isNotEmpty) item.unit!.trim(),
-      if (rangeCount > 0)
-        l10n.labReferenceRangeCount(rangeCount)
-      else if ((item.referenceRange ?? '').trim().isNotEmpty)
-        item.referenceRange!.trim(),
-    ];
-    return parts.isEmpty ? '—' : parts.join(' · ');
-  }
-
   List<AppListTableColumn<RadiologyCatalogProcedure>> _radiologyColumnChoices(
     AppLocalizations l10n,
   ) {
@@ -893,6 +873,89 @@ class _FacilityCatalogConfigPanelState
     );
   }
 
+  List<AppListTableColumn<LabCatalogItem>> _labDefaultColumns(
+    AppLocalizations l10n, {
+    required bool canMutate,
+  }) {
+    return <AppListTableColumn<LabCatalogItem>>[
+      _catalogColumn<LabCatalogItem>(
+        id: 'name',
+        label: l10n.accessAdminColumnName,
+        valueOf: (LabCatalogItem item) => item.displayTitle,
+      ),
+      _catalogColumn<LabCatalogItem>(
+        id: 'type',
+        label: l10n.clinicalRequestSelectedTypeColumnLabel,
+        valueOf: (LabCatalogItem item) => _labTypeLabel(l10n, item),
+      ),
+      _catalogColumn<LabCatalogItem>(
+        id: 'code',
+        label: l10n.labTestCodeLabel,
+        valueOf: (LabCatalogItem item) => _dashOr(item.code),
+      ),
+      _catalogColumn<LabCatalogItem>(
+        id: 'category',
+        label: l10n.labCategoryLabel,
+        valueOf: (LabCatalogItem item) => _dashOr(item.category),
+      ),
+      if (canMutate)
+        AppListTableColumn<LabCatalogItem>(
+          id: 'actions',
+          label: l10n.accessAdminColumnActions,
+          alwaysVisible: true,
+          exportable: false,
+          cellBuilder: (BuildContext context, LabCatalogItem item) =>
+              _CatalogRowActions(
+                editLabel: l10n.clinicalLabRequestEditSelectionAction,
+                deleteLabel: l10n.tenantFacilityDeleteAction,
+                onEdit: item.isStandard
+                    ? null
+                    : () => unawaited(_openLabEditDialog(item)),
+                onDelete: item.isStandard
+                    ? null
+                    : () => unawaited(_openLabDeleteDialog(item)),
+              ),
+        ),
+    ];
+  }
+
+  List<AppListTableColumn<ClinicalCatalogOption>> _diagnosisDefaultColumns(
+    AppLocalizations l10n, {
+    required bool canMutate,
+  }) {
+    return <AppListTableColumn<ClinicalCatalogOption>>[
+      _catalogColumn<ClinicalCatalogOption>(
+        id: 'name',
+        label: l10n.accessAdminColumnName,
+        valueOf: (ClinicalCatalogOption item) => item.displayTitle,
+      ),
+      _catalogColumn<ClinicalCatalogOption>(
+        id: 'code',
+        label: l10n.labTestCodeLabel,
+        valueOf: (ClinicalCatalogOption item) => _dashOr(item.code),
+      ),
+      _catalogColumn<ClinicalCatalogOption>(
+        id: 'category',
+        label: l10n.labCategoryLabel,
+        valueOf: (ClinicalCatalogOption item) => _dashOr(item.category),
+      ),
+      if (canMutate)
+        AppListTableColumn<ClinicalCatalogOption>(
+          id: 'actions',
+          label: l10n.accessAdminColumnActions,
+          alwaysVisible: true,
+          exportable: false,
+          cellBuilder: (BuildContext context, ClinicalCatalogOption item) =>
+              _CatalogRowActions(
+                editLabel: l10n.clinicalLabRequestEditSelectionAction,
+                deleteLabel: l10n.tenantFacilityDeleteAction,
+                onEdit: () => unawaited(_openDiagnosisEditDialog(item)),
+                onDelete: () => unawaited(_openDiagnosisDeleteDialog(item)),
+              ),
+        ),
+    ];
+  }
+
   Widget _buildLabTable(AppLocalizations l10n) {
     final bool canMutateLab = labCatalogMutateControlsVisible(
       panelEnabled: widget.enabled,
@@ -904,11 +967,47 @@ class _FacilityCatalogConfigPanelState
       isLoading: _labLoading && _labItems.isEmpty,
       tableHorizontalMargin: 0,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
       columnVisibilityStorageKey: 'admin_catalog_lab',
+      canExport: canExportTenantFacilitySetup(ref.watch(appAccessPolicyProvider)),
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrintTenantFacilitySetup(ref.watch(appAccessPolicyProvider)),
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: (List<LabCatalogItem> matching) =>
+          printTenantFacilitySetupListTable<LabCatalogItem>(
+        ref: ref,
+        context: context,
+        title: l10n.tenantFacilityCatalogTabLab,
+        columns: <AppListTableColumn<LabCatalogItem>>[
+          ..._labDefaultColumns(l10n, canMutate: canMutateLab),
+          ..._labColumnChoices(l10n),
+        ],
+        items: matching,
+        emptyText: l10n.tenantFacilityCatalogEmptyCatalog,
+      ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
       columnChoices: _labColumnChoices(l10n),
       exportConfig: AppListTableExportConfig<LabCatalogItem>(
         fileNameStem: 'lab_catalog',
+        dateOf: (_) => null,
         enableDateFilter: false,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
         rowFilter: (LabCatalogItem item, AppSearchBarFilterValue filters) {
           final String? type = filters.option(_labTypeFilterKey);
           final String? category = filters.option(_labCategoryFilterKey);
@@ -953,9 +1052,10 @@ class _FacilityCatalogConfigPanelState
         matcher: _labDeskSearchMatches,
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
-        advancedFilterTitle: l10n.labFiltersLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         enableDateFilter: false,
         filterGroups: <AppSearchBarFilterGroup>[
           AppSearchBarFilterGroup(
@@ -1065,67 +1165,7 @@ class _FacilityCatalogConfigPanelState
               )
             : null,
       ),
-      columns: <AppListTableColumn<LabCatalogItem>>[
-        AppListTableColumn<LabCatalogItem>(
-          id: 'name',
-          label: l10n.accessAdminColumnName,
-          sortComparator: (LabCatalogItem a, LabCatalogItem b) => a.displayTitle
-              .toLowerCase()
-              .compareTo(b.displayTitle.toLowerCase()),
-          cellBuilder: (_, LabCatalogItem item) =>
-              _wrappedCellText(item.displayTitle),
-        ),
-        AppListTableColumn<LabCatalogItem>(
-          id: 'type',
-          label: l10n.clinicalRequestSelectedTypeColumnLabel,
-          sortComparator: (LabCatalogItem a, LabCatalogItem b) =>
-              a.type.name.compareTo(b.type.name),
-          cellBuilder: (_, LabCatalogItem item) => _wrappedCellText(
-            item.type == LabCatalogItemType.panel
-                ? l10n.clinicalLabRequestPanelTypeLabel
-                : l10n.clinicalLabRequestTestTypeLabel,
-          ),
-        ),
-        AppListTableColumn<LabCatalogItem>(
-          id: 'code',
-          label: l10n.labTestCodeLabel,
-          sortComparator: (LabCatalogItem a, LabCatalogItem b) =>
-              (a.code ?? '').toLowerCase().compareTo(
-                (b.code ?? '').toLowerCase(),
-              ),
-          cellBuilder: (_, LabCatalogItem item) => _wrappedCellText(
-            item.code?.trim().isNotEmpty == true ? item.code! : '—',
-          ),
-        ),
-        AppListTableColumn<LabCatalogItem>(
-          id: 'category',
-          label: l10n.labCategoryLabel,
-          sortComparator: (LabCatalogItem a, LabCatalogItem b) =>
-              (a.category ?? '').toLowerCase().compareTo(
-                (b.category ?? '').toLowerCase(),
-              ),
-          cellBuilder: (_, LabCatalogItem item) => _wrappedCellText(
-            item.category?.trim().isNotEmpty == true ? item.category! : '—',
-          ),
-        ),
-        if (canMutateLab)
-          AppListTableColumn<LabCatalogItem>(
-            id: 'actions',
-            label: l10n.accessAdminColumnActions,
-            alwaysVisible: true,
-            cellBuilder: (BuildContext context, LabCatalogItem item) =>
-                _CatalogRowActions(
-                  editLabel: l10n.clinicalLabRequestEditSelectionAction,
-                  deleteLabel: l10n.tenantFacilityDeleteAction,
-                  onEdit: item.isStandard
-                      ? null
-                      : () => unawaited(_openLabEditDialog(item)),
-                  onDelete: item.isStandard
-                      ? null
-                      : () => unawaited(_openLabDeleteDialog(item)),
-                ),
-          ),
-      ],
+      columns: _labDefaultColumns(l10n, canMutate: canMutateLab),
       mobileItemBuilder: (BuildContext context, LabCatalogItem item) =>
           AppListTableMobileItem(
             title: item.displayTitle,
@@ -1154,11 +1194,47 @@ class _FacilityCatalogConfigPanelState
       isLoading: _diagnosisLoading && _diagnosisItems.isEmpty,
       tableHorizontalMargin: 0,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
       columnVisibilityStorageKey: 'admin_catalog_diagnoses',
+      canExport: canExportTenantFacilitySetup(ref.watch(appAccessPolicyProvider)),
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrintTenantFacilitySetup(ref.watch(appAccessPolicyProvider)),
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: (List<ClinicalCatalogOption> matching) =>
+          printTenantFacilitySetupListTable<ClinicalCatalogOption>(
+        ref: ref,
+        context: context,
+        title: l10n.tenantFacilityCatalogTabDiagnoses,
+        columns: <AppListTableColumn<ClinicalCatalogOption>>[
+          ..._diagnosisDefaultColumns(l10n, canMutate: widget.enabled),
+          ..._diagnosisColumnChoices(l10n),
+        ],
+        items: matching,
+        emptyText: l10n.tenantFacilityCatalogEmptyCatalog,
+      ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
       columnChoices: _diagnosisColumnChoices(l10n),
       exportConfig: AppListTableExportConfig<ClinicalCatalogOption>(
         fileNameStem: 'diagnoses',
+        dateOf: (_) => null,
         enableDateFilter: false,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
         rowFilter: (ClinicalCatalogOption item, AppSearchBarFilterValue filters) {
           final String? category = filters.option(_diagnosisCategoryFilterKey);
           return category == null ||
@@ -1177,9 +1253,10 @@ class _FacilityCatalogConfigPanelState
         matcher: (_, _) => true,
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
-        advancedFilterTitle: l10n.labCategoryLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         enableDateFilter: false,
         filterGroups: <AppSearchBarFilterGroup>[
           if (_diagnosisCategories.isNotEmpty)
@@ -1227,53 +1304,7 @@ class _FacilityCatalogConfigPanelState
               )
             : null,
       ),
-      columns: <AppListTableColumn<ClinicalCatalogOption>>[
-        AppListTableColumn<ClinicalCatalogOption>(
-          id: 'name',
-          label: l10n.accessAdminColumnName,
-          sortComparator: (ClinicalCatalogOption a, ClinicalCatalogOption b) =>
-              (a.name ?? '').toLowerCase().compareTo(
-                (b.name ?? '').toLowerCase(),
-              ),
-          cellBuilder: (_, ClinicalCatalogOption item) =>
-              _wrappedCellText(item.displayTitle),
-        ),
-        AppListTableColumn<ClinicalCatalogOption>(
-          id: 'code',
-          label: l10n.labTestCodeLabel,
-          sortComparator: (ClinicalCatalogOption a, ClinicalCatalogOption b) =>
-              (a.code ?? '').toLowerCase().compareTo(
-                (b.code ?? '').toLowerCase(),
-              ),
-          cellBuilder: (_, ClinicalCatalogOption item) => _wrappedCellText(
-            item.code?.trim().isNotEmpty == true ? item.code! : '—',
-          ),
-        ),
-        AppListTableColumn<ClinicalCatalogOption>(
-          id: 'category',
-          label: l10n.labCategoryLabel,
-          sortComparator: (ClinicalCatalogOption a, ClinicalCatalogOption b) =>
-              (a.category ?? '').toLowerCase().compareTo(
-                (b.category ?? '').toLowerCase(),
-              ),
-          cellBuilder: (_, ClinicalCatalogOption item) => _wrappedCellText(
-            item.category?.trim().isNotEmpty == true ? item.category! : '—',
-          ),
-        ),
-        if (widget.enabled)
-          AppListTableColumn<ClinicalCatalogOption>(
-            id: 'actions',
-            label: l10n.accessAdminColumnActions,
-            alwaysVisible: true,
-            cellBuilder: (BuildContext context, ClinicalCatalogOption item) =>
-                _CatalogRowActions(
-                  editLabel: l10n.clinicalLabRequestEditSelectionAction,
-                  deleteLabel: l10n.tenantFacilityDeleteAction,
-                  onEdit: () => unawaited(_openDiagnosisEditDialog(item)),
-                  onDelete: () => unawaited(_openDiagnosisDeleteDialog(item)),
-                ),
-          ),
-      ],
+      columns: _diagnosisDefaultColumns(l10n, canMutate: widget.enabled),
       mobileItemBuilder: (BuildContext context, ClinicalCatalogOption item) =>
           AppListTableMobileItem(
             title: item.displayTitle,
