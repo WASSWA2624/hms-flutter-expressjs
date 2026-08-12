@@ -4,6 +4,7 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/patient_registry_access.dart';
+import 'package:hosspi_hms/features/patients/presentation/widgets/patient_form_fields.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -424,13 +425,29 @@ class _PatientDuplicateMergeWorkspaceState
         ),
         for (int index = 0; index < _fields.length; index += 1)
           _MergeFieldLaneRow(
+            key: ValueKey<String>(_fields[index].key),
             field: _fields[index],
             resolution: _resolution,
             enabled: !widget.isSaving,
             onSwap: () => _swapField(index),
-            onAcceptLeft: (String value) => _setSideValue(index, left: value),
-            onAcceptRight: (String value) =>
-                _setSideValue(index, right: value),
+            onEditLeft: (String value, {String? raw, bool clearRaw = false}) {
+              _editField(
+                index,
+                isLeft: true,
+                value: value,
+                raw: raw,
+                clearRaw: clearRaw,
+              );
+            },
+            onEditRight: (String value, {String? raw, bool clearRaw = false}) {
+              _editField(
+                index,
+                isLeft: false,
+                value: value,
+                raw: raw,
+                clearRaw: clearRaw,
+              );
+            },
           ),
         if (counts.isNotEmpty)
           Wrap(
@@ -504,17 +521,29 @@ class _PatientDuplicateMergeWorkspaceState
     });
   }
 
-  void _setSideValue(int index, {String? left, String? right}) {
+  void _editField(
+    int index, {
+    required bool isLeft,
+    required String value,
+    String? raw,
+    bool clearRaw = false,
+  }) {
     setState(() {
       final PatientMergeFieldLane current = _fields[index];
-      final bool shouldSwap = (left != null && left == current.rightValue) ||
-          (right != null && right == current.leftValue);
-      if (!shouldSwap) {
-        return;
-      }
+      final PatientMergeFieldLane next = isLeft
+          ? current.copyWith(
+              leftValue: value,
+              leftRaw: raw,
+              clearLeftRaw: clearRaw,
+            )
+          : current.copyWith(
+              rightValue: value,
+              rightRaw: raw,
+              clearRightRaw: clearRaw,
+            );
       _fields = <PatientMergeFieldLane>[
         for (int i = 0; i < _fields.length; i += 1)
-          if (i == index) current.swapped() else _fields[i],
+          if (i == index) next else _fields[i],
       ];
     });
   }
@@ -740,22 +769,68 @@ class _MergeLaneHeader extends StatelessWidget {
   }
 }
 
-class _MergeFieldLaneRow extends StatelessWidget {
+class _MergeFieldLaneRow extends StatefulWidget {
   const _MergeFieldLaneRow({
     required this.field,
     required this.resolution,
     required this.enabled,
     required this.onSwap,
-    required this.onAcceptLeft,
-    required this.onAcceptRight,
+    required this.onEditLeft,
+    required this.onEditRight,
+    super.key,
   });
 
   final PatientMergeFieldLane field;
   final PatientMergeResolution? resolution;
   final bool enabled;
   final VoidCallback onSwap;
-  final ValueChanged<String> onAcceptLeft;
-  final ValueChanged<String> onAcceptRight;
+  final void Function(String value, {String? raw, bool clearRaw}) onEditLeft;
+  final void Function(String value, {String? raw, bool clearRaw}) onEditRight;
+
+  @override
+  State<_MergeFieldLaneRow> createState() => _MergeFieldLaneRowState();
+}
+
+class _MergeFieldLaneRowState extends State<_MergeFieldLaneRow> {
+  late final TextEditingController _leftController;
+  late final TextEditingController _rightController;
+
+  @override
+  void initState() {
+    super.initState();
+    _leftController = TextEditingController(text: widget.field.leftValue);
+    _rightController = TextEditingController(text: widget.field.rightValue);
+  }
+
+  @override
+  void didUpdateWidget(covariant _MergeFieldLaneRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.field.leftValue != widget.field.leftValue &&
+        _leftController.text != widget.field.leftValue) {
+      _leftController.value = TextEditingValue(
+        text: widget.field.leftValue,
+        selection: TextSelection.collapsed(
+          offset: widget.field.leftValue.length,
+        ),
+      );
+    }
+    if (oldWidget.field.rightValue != widget.field.rightValue &&
+        _rightController.text != widget.field.rightValue) {
+      _rightController.value = TextEditingValue(
+        text: widget.field.rightValue,
+        selection: TextSelection.collapsed(
+          offset: widget.field.rightValue.length,
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _leftController.dispose();
+    _rightController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -770,13 +845,17 @@ class _MergeFieldLaneRow extends StatelessWidget {
           Row(
             children: <Widget>[
               Expanded(
-                child: Text(field.label, style: theme.textTheme.titleSmall),
+                child: Text(
+                  widget.field.label,
+                  style: theme.textTheme.titleSmall,
+                ),
               ),
-              if (field.status != null && field.status!.trim().isNotEmpty)
+              if (widget.field.status != null &&
+                  widget.field.status!.trim().isNotEmpty)
                 AppWorkspaceStatusBadge(
                   status: AppWorkspaceStatus(
-                    label: _statusLabel(l10n, field),
-                    tone: _statusTone(field.status),
+                    label: _statusLabel(l10n, widget.field),
+                    tone: _statusTone(widget.field.status),
                   ),
                 ),
             ],
@@ -784,36 +863,42 @@ class _MergeFieldLaneRow extends StatelessWidget {
           SizedBox(height: theme.spacing.xs),
           LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
-              final bool stacked = constraints.maxWidth < 520;
-              final bool leftSelected = switch (resolution) {
+              final bool stacked = constraints.maxWidth < 640;
+              final bool leftSelected = switch (widget.resolution) {
                 null => false,
                 PatientMergeResolution.keepLeft => true,
                 PatientMergeResolution.keepRight => false,
-                PatientMergeResolution.autoMerge => field.prefersLeft,
+                PatientMergeResolution.autoMerge => widget.field.prefersLeft,
               };
-              final bool rightSelected = switch (resolution) {
+              final bool rightSelected = switch (widget.resolution) {
                 null => false,
                 PatientMergeResolution.keepLeft => false,
                 PatientMergeResolution.keepRight => true,
-                PatientMergeResolution.autoMerge => !field.prefersLeft,
+                PatientMergeResolution.autoMerge => !widget.field.prefersLeft,
               };
-              final Widget leftCell = _MergeValueCell(
-                value: field.leftValue,
+              final Widget leftCell = _MergeEditableValue(
+                fieldKey: widget.field.key,
+                controller: _leftController,
+                displayValue: widget.field.leftValue,
+                rawValue: widget.field.leftRaw,
                 selected: leftSelected,
-                enabled: enabled,
+                enabled: widget.enabled,
                 semanticLabel: l10n.patientsMergeLeftColumnLabel,
-                onAccept: onAcceptLeft,
+                onChanged: widget.onEditLeft,
               );
-              final Widget rightCell = _MergeValueCell(
-                value: field.rightValue,
+              final Widget rightCell = _MergeEditableValue(
+                fieldKey: widget.field.key,
+                controller: _rightController,
+                displayValue: widget.field.rightValue,
+                rawValue: widget.field.rightRaw,
                 selected: rightSelected,
-                enabled: enabled,
+                enabled: widget.enabled,
                 semanticLabel: l10n.patientsMergeRightColumnLabel,
-                onAccept: onAcceptRight,
+                onChanged: widget.onEditRight,
               );
               final Widget swap = IconButton(
                 tooltip: l10n.patientsMergeSwapFieldAction,
-                onPressed: enabled ? onSwap : null,
+                onPressed: widget.enabled ? widget.onSwap : null,
                 icon: const Icon(Icons.swap_horiz),
               );
               if (stacked) {
@@ -866,97 +951,135 @@ class _MergeFieldLaneRow extends StatelessWidget {
   }
 }
 
-class _MergeValueCell extends StatelessWidget {
-  const _MergeValueCell({
-    required this.value,
+enum _MergeFieldInputKind { text, phone, email, date, gender }
+
+_MergeFieldInputKind _mergeFieldInputKind(String key) {
+  switch (key) {
+    case 'phone':
+      return _MergeFieldInputKind.phone;
+    case 'email':
+      return _MergeFieldInputKind.email;
+    case 'date_of_birth':
+      return _MergeFieldInputKind.date;
+    case 'gender':
+      return _MergeFieldInputKind.gender;
+    default:
+      return _MergeFieldInputKind.text;
+  }
+}
+
+class _MergeEditableValue extends StatelessWidget {
+  const _MergeEditableValue({
+    required this.fieldKey,
+    required this.controller,
+    required this.displayValue,
+    required this.rawValue,
     required this.selected,
     required this.enabled,
     required this.semanticLabel,
-    required this.onAccept,
+    required this.onChanged,
   });
 
-  final String value;
+  final String fieldKey;
+  final TextEditingController controller;
+  final String displayValue;
+  final String? rawValue;
   final bool selected;
   final bool enabled;
   final String semanticLabel;
-  final ValueChanged<String> onAccept;
+  final void Function(String value, {String? raw, bool clearRaw}) onChanged;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
     final ColorScheme colors = theme.colorScheme;
-    final String display = value.trim().isEmpty
-        ? l10n.patientsMergeEmptyValueLabel
-        : value;
-    final Widget child = AnimatedContainer(
+    final Locale locale = Localizations.localeOf(context);
+    final _MergeFieldInputKind kind = _mergeFieldInputKind(fieldKey);
+    final DateTime now = DateTime.now();
+
+    return AnimatedContainer(
       duration: const Duration(milliseconds: 160),
       width: double.infinity,
-      padding: EdgeInsets.all(theme.spacing.sm),
+      padding: EdgeInsets.all(theme.spacing.xs),
       decoration: BoxDecoration(
         color: selected
-            ? colors.primaryContainer.withValues(alpha: 0.55)
-            : colors.surfaceContainerHighest.withValues(alpha: 0.35),
+            ? colors.primaryContainer.withValues(alpha: 0.35)
+            : colors.surface.withValues(alpha: 0),
         border: theme.borders.all(
           color: selected
               ? colors.primary
-              : colors.outlineVariant.withValues(alpha: 0.7),
+              : colors.outlineVariant.withValues(alpha: 0.55),
         ),
       ),
-      child: Text(
-        display,
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: value.trim().isEmpty
-              ? colors.onSurfaceVariant
-              : colors.onSurface,
-          fontStyle: value.trim().isEmpty ? FontStyle.italic : FontStyle.normal,
-        ),
-      ),
-    );
-
-    return Semantics(
-      label: '$semanticLabel: $display',
-      child: DragTarget<String>(
-        onWillAcceptWithDetails: (DragTargetDetails<String> details) {
-          return enabled && details.data != value;
-        },
-        onAcceptWithDetails: (DragTargetDetails<String> details) {
-          onAccept(details.data);
-        },
-        builder:
-            (
-              BuildContext context,
-              List<String?> candidateData,
-              List<dynamic> rejectedData,
-            ) {
-              final bool hovering = candidateData.isNotEmpty;
-              final Widget decorated = hovering
-                  ? DecoratedBox(
-                      decoration: BoxDecoration(
-                        border: theme.borders.all(color: colors.primary),
-                      ),
-                      child: child,
-                    )
-                  : child;
-              if (!enabled || value.trim().isEmpty) {
-                return decorated;
+      child: Semantics(
+        label: semanticLabel,
+        child: switch (kind) {
+          _MergeFieldInputKind.phone => PatientPhoneField(
+            controller: controller,
+            enabled: enabled,
+            onChanged: (String value) {
+              onChanged(value, raw: value, clearRaw: value.trim().isEmpty);
+            },
+          ),
+          _MergeFieldInputKind.email => PatientEmailField(
+            controller: controller,
+            enabled: enabled,
+            onChanged: (String value) {
+              onChanged(value, raw: value, clearRaw: value.trim().isEmpty);
+            },
+          ),
+          _MergeFieldInputKind.date => PatientDateField(
+            value: _parseMergeDate(rawValue),
+            enabled: enabled,
+            firstDate: DateTime(now.year - 120),
+            lastDate: now,
+            onChanged: (DateTime? date) {
+              if (date == null) {
+                onChanged('', clearRaw: true);
+                return;
               }
-              return LongPressDraggable<String>(
-                data: value,
-                feedback: Material(
-                  elevation: 3,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 240),
-                    child: child,
-                  ),
-                ),
-                childWhenDragging: Opacity(opacity: 0.35, child: decorated),
-                child: decorated,
+              onChanged(
+                AppFormatters.mediumDate(date, locale),
+                raw: date.toIso8601String().split('T').first,
               );
             },
+          ),
+          _MergeFieldInputKind.gender => AppGenderField(
+            value: displayValue.trim().isEmpty ? null : displayValue.trim(),
+            enabled: enabled,
+            maleLabel: l10n.patientsGenderMale,
+            femaleLabel: l10n.patientsGenderFemale,
+            otherLabel: l10n.patientsGenderOther,
+            unknownLabel: l10n.patientsGenderUnknown,
+            onChanged: (String? value) {
+              final String next = value?.trim() ?? '';
+              onChanged(next, raw: next, clearRaw: next.isEmpty);
+            },
+          ),
+          _MergeFieldInputKind.text => AppTextField(
+            controller: controller,
+            enabled: enabled,
+            useFloatingLabel: false,
+            textCapitalization: fieldKey == 'first_name' || fieldKey == 'last_name'
+                ? TextCapitalization.words
+                : TextCapitalization.none,
+            onChanged: (String value) {
+              onChanged(value, raw: value, clearRaw: value.trim().isEmpty);
+            },
+          ),
+        },
       ),
     );
   }
+}
+
+DateTime? _parseMergeDate(String? raw) {
+  final String? value = raw?.trim();
+  if (value == null || value.isEmpty) {
+    return null;
+  }
+  return DateTime.tryParse(value);
 }
 
 String _apiLabel(String value) {

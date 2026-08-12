@@ -256,5 +256,55 @@ void main() {
       );
       expect(keepLeft.first, 'Ada Byron');
     });
+
+    test('typed edits feed keep-left summary and preview', () {
+      const Patient left = Patient(
+        id: 'left-id',
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        primaryEmail: 'old@example.com',
+      );
+      const Patient right = Patient(
+        id: 'right-id',
+        firstName: 'Ada',
+        lastName: 'Byron',
+      );
+      final List<PatientMergeFieldLane> fields = buildPatientMergeFieldLanes(
+        l10n: l10n,
+        locale: const Locale('en'),
+        left: left,
+        right: right,
+      );
+      final List<PatientMergeFieldLane> edited = fields
+          .map((PatientMergeFieldLane field) {
+            if (field.key == 'last_name') {
+              return field.copyWith(leftValue: 'Hopper', leftRaw: 'Hopper');
+            }
+            if (field.key == 'email') {
+              return field.copyWith(
+                leftValue: 'grace@example.com',
+                leftRaw: 'grace@example.com',
+              );
+            }
+            return field;
+          })
+          .toList(growable: false);
+
+      final PatientMergeCommitPlan plan = buildPatientMergeCommitPlan(
+        left: left,
+        right: right,
+        fields: edited,
+        resolution: PatientMergeResolution.keepLeft,
+      );
+      expect(plan.summary['last_name'], 'Hopper');
+
+      final List<String> preview = buildPatientMergeChoicePreviewLines(
+        l10n: l10n,
+        fields: edited,
+        resolution: PatientMergeResolution.keepLeft,
+      );
+      expect(preview.first, 'Ada Hopper');
+      expect(preview, contains('grace@example.com'));
+    });
   });
 }
