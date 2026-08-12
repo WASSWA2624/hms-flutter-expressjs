@@ -76,7 +76,6 @@ class _RadiologyNextActionText extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
       style: theme.textTheme.bodyMedium?.copyWith(
         color: theme.colorScheme.onSurfaceVariant,
-        fontWeight: AppFontWeight.emphasis,
       ),
     );
   }
@@ -132,7 +131,6 @@ class _RadiologyCompactNextActionButton extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.labelLarge?.copyWith(
                           color: primaryColor,
-                          fontWeight: AppFontWeight.emphasis,
                         ),
                       ),
                     ),

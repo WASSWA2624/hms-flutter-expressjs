@@ -719,11 +719,12 @@ class _LabWorklistPanel extends ConsumerWidget {
           columnVisibilityStorageKey: 'lab_$sectionName',
           columnWidthStorageKey: 'lab_cw_$sectionName',
           columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-          columnVisibilityTitle: l10n.labDeskSettingsTitle,
-          columnVisibilityApplyLabel: l10n.labApplyColumnsAction,
-          columnVisibilityResetLabel: l10n.labResetColumnsAction,
+          columnVisibilityTitle: l10n.commonTableSettingsTitle,
+          columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+          columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
           columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
           onSettingsPressed: onSettingsPressed,
+          enableExport: true,
           canExport: canExport,
           exportLabel: l10n.commonTableExportActionLabel,
           exportDialogTitle: l10n.commonTableExportDialogTitle,
@@ -746,10 +747,15 @@ class _LabWorklistPanel extends ConsumerWidget {
             items: filteredItems,
             l10n: l10n,
           ),
+          goToTopLabel: l10n.commonGoToTopActionLabel,
+          loadingMoreLabel: l10n.commonLoadingMoreLabel,
+          allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
           exportConfig: AppListTableExportConfig<LabOrderSummary>(
             fileNameStem: 'lab_$sectionName',
             dateOf: (LabOrderSummary item) => item.orderedAt,
             sheetName: sectionName,
+            dateFromLabel: l10n.commonTableExportDateFromLabel,
+            dateToLabel: l10n.commonTableExportDateToLabel,
           ),
           search: AppListTableSearch<LabOrderSummary>(
             controller: searchController,
@@ -1261,11 +1267,12 @@ AppListTableColumn<LabOrderSummary> _patientNameWorklistColumn(
     label: l10n.labPatientColumnLabel,
     sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
         appListTableCompareText(_patientSortKey(left), _patientSortKey(right)),
+    exportValue: (LabOrderSummary item) =>
+        item.patientDisplayName ?? item.displayTitle,
     cellBuilder: (BuildContext context, LabOrderSummary item) {
-      final String? patientId = item.patientId?.trim();
-      return AppListItemText(
-        title: item.patientDisplayName ?? item.displayTitle,
-        subtitle: patientId?.isNotEmpty == true ? patientId : null,
+      return _labWorklistTextCell(
+        context,
+        item.patientDisplayName ?? item.displayTitle,
       );
     },
   );
@@ -1278,6 +1285,8 @@ AppListTableColumn<LabOrderSummary> _testsWorklistColumn(BuildContext context) {
     label: l10n.labTestsColumnLabel,
     sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
         appListTableCompareText(left.testsLabel, right.testsLabel),
+    exportValue: (LabOrderSummary item) =>
+        item.testsLabel ?? l10n.profileUnknownValue,
     cellBuilder: (BuildContext context, LabOrderSummary item) {
       return _labWorklistTextCell(
         context,
@@ -1299,6 +1308,8 @@ AppListTableColumn<LabOrderSummary> _labWorkflowStatusColumn(
           _worklistGlanceStatus(context, left).label,
           _worklistGlanceStatus(context, right).label,
         ),
+    exportValue: (LabOrderSummary item) =>
+        _worklistGlanceStatus(context, item).label,
     cellBuilder: (BuildContext context, LabOrderSummary item) {
       return AppWorkspaceStatusBadge(
         status: _worklistGlanceStatus(context, item),
@@ -1321,6 +1332,7 @@ AppListTableColumn<LabOrderSummary> _labNextActionColumn(
           _nextActionLabel(context, left),
           _nextActionLabel(context, right),
         ),
+    exportValue: (LabOrderSummary item) => _nextActionLabel(context, item),
     cellBuilder: (BuildContext context, LabOrderSummary item) {
       return _labNextActionCell(
         context,
@@ -1396,7 +1408,6 @@ class _LabCompactNextActionButton extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.labelLarge?.copyWith(
                           color: primaryColor,
-                          fontWeight: AppFontWeight.emphasis,
                         ),
                       ),
                     ),
@@ -1420,6 +1431,8 @@ AppListTableColumn<LabOrderSummary> _patientIdWorklistColumn(
     label: l10n.labPatientIdColumnLabel,
     sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
         appListTableCompareText(left.patientId, right.patientId),
+    exportValue: (LabOrderSummary item) =>
+        item.patientId ?? l10n.profileUnknownValue,
     cellBuilder: (BuildContext context, LabOrderSummary item) {
       return _labWorklistTextCell(
         context,
@@ -1438,6 +1451,8 @@ AppListTableColumn<LabOrderSummary> _encounterWorklistColumn(
     label: l10n.labEncounterColumnLabel,
     sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
         appListTableCompareText(left.encounterId, right.encounterId),
+    exportValue: (LabOrderSummary item) =>
+        item.encounterId ?? l10n.profileUnknownValue,
     cellBuilder: (BuildContext context, LabOrderSummary item) {
       return _labWorklistTextCell(
         context,
@@ -1459,6 +1474,8 @@ AppListTableColumn<LabOrderSummary> _labEncounterWorklistColumn(
           _labOrderEncounterLabel(left),
           _labOrderEncounterLabel(right),
         ),
+    exportValue: (LabOrderSummary item) =>
+        _labOrderEncounterLabel(item) ?? l10n.profileUnknownValue,
     cellBuilder: (BuildContext context, LabOrderSummary item) {
       return _labWorklistTextCell(
         context,
@@ -1480,6 +1497,8 @@ AppListTableColumn<LabOrderSummary> _sourceLocationWorklistColumn(
           _sourceLocationLabel(left),
           _sourceLocationLabel(right),
         ),
+    exportValue: (LabOrderSummary item) =>
+        _sourceLocationLabel(item) ?? l10n.profileUnknownValue,
     cellBuilder: (BuildContext context, LabOrderSummary item) {
       return _labWorklistTextCell(
         context,
@@ -1501,6 +1520,7 @@ AppListTableColumn<LabOrderSummary> _entryStatusWorklistColumn(
           _enteredResultItemCount(left),
           _enteredResultItemCount(right),
         ),
+    exportValue: (LabOrderSummary item) => _entryStatus(context, item).label,
     cellBuilder: (BuildContext context, LabOrderSummary item) {
       return AppWorkspaceStatusBadge(status: _entryStatus(context, item));
     },
@@ -1519,6 +1539,7 @@ AppListTableColumn<LabOrderSummary> _billingWorklistColumn(
           left.effectivePaymentStatus,
           right.effectivePaymentStatus,
         ),
+    exportValue: (LabOrderSummary item) => _labBillingGateLabel(context, item),
     cellBuilder: (BuildContext context, LabOrderSummary item) {
       return _labWorklistTextCell(context, _labBillingGateLabel(context, item));
     },
@@ -1537,6 +1558,7 @@ AppListTableColumn<LabOrderSummary> _resultStatusWorklistColumn(
           _completedResultItemCount(left),
           _completedResultItemCount(right),
         ),
+    exportValue: (LabOrderSummary item) => _resultStatus(context, item).label,
     cellBuilder: (BuildContext context, LabOrderSummary item) {
       return AppWorkspaceStatusBadge(status: _resultStatus(context, item));
     },
@@ -1566,10 +1588,15 @@ String? _labOrderEncounterLabel(LabOrderSummary order) {
 }
 
 String? _sourceLocationLabel(LabOrderSummary order) {
-  return _joinNonEmpty(<String?>[
-    order.encounterSourceLabel,
-    order.encounterLocationLabel,
-  ]);
+  final String? location = order.encounterLocationLabel?.trim();
+  if (location != null && location.isNotEmpty) {
+    return location;
+  }
+  final String? source = order.encounterSourceLabel?.trim();
+  if (source != null && source.isNotEmpty) {
+    return source;
+  }
+  return null;
 }
 
 AppListTableColumn<LabOrderSummary> _orderWorklistColumn(
@@ -1584,6 +1611,7 @@ AppListTableColumn<LabOrderSummary> _orderWorklistColumn(
         : l10n.labOrderColumnLabel,
     sortComparator: (LabOrderSummary left, LabOrderSummary right) =>
         appListTableCompareText(_orderSortKey(left), _orderSortKey(right)),
+    exportValue: (LabOrderSummary item) => _orderIdsCellLabel(item),
     cellBuilder: (BuildContext context, LabOrderSummary item) {
       return _LabOrderIdentifier(order: item);
     },
@@ -2294,6 +2322,7 @@ String _labWorklistPrintCellValue(
     'orders' => _orderIdsCellLabel(item),
     'tests' => item.testsLabel ?? l10n.profileUnknownValue,
     'workflow_status' => _worklistGlanceStatus(context, item).label,
+    'next_action' => _nextActionLabel(context, item),
     'patient_id' => item.patientId?.trim() ?? '',
     'encounter' => item.encounterId?.trim() ?? '',
     'lab_encounter' =>

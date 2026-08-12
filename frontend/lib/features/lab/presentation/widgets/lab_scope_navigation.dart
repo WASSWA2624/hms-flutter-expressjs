@@ -34,7 +34,7 @@ int labSectionTabCount(
   if (clientNarrowed) {
     return activeClientFilteredTotal;
   }
-  return state.worklist.totalItemCount ?? state.worklist.items.length;
+  return state.worklist.totalItemCount ?? scopeTotal;
 }
 
 AppTabCountTone labSectionCountTone(LabDeskSection section) {

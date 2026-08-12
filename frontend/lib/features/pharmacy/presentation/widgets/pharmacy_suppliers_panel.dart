@@ -155,8 +155,12 @@ class _PharmacySuppliersCatalogTabState
       exportConfig: AppListTableExportConfig<PharmacySupplier>(
         fileNameStem: 'pharmacy_suppliers',
         dateOf: (PharmacySupplier item) => item.createdAt,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
       ),
-      loadingMoreLabel: l10n.pharmacySuppliersLoadingTitle,
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
       loadingBuilder: (BuildContext context) {
         final ThemeData theme = Theme.of(context);
         return Padding(

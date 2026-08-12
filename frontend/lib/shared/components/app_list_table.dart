@@ -3169,7 +3169,7 @@ class _AppListTableLoadingDotsState extends State<_AppListTableLoadingDots>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1100),
+      duration: const Duration(milliseconds: 900),
     )..repeat();
   }
 
@@ -3182,28 +3182,49 @@ class _AppListTableLoadingDotsState extends State<_AppListTableLoadingDots>
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final Color base = theme.colorScheme.onSurfaceVariant;
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Color base = colorScheme.primary;
 
     return Semantics(
       label: widget.semanticLabel,
       liveRegion: true,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (BuildContext context, _) {
-          return Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              for (int index = 0; index < 3; index += 1) ...<Widget>[
-                if (index > 0) SizedBox(width: theme.spacing.xs),
-                _AppListTableLoadingDot(
-                  progress: _controller.value,
-                  phase: index / 3,
-                  color: base,
-                ),
-              ],
-            ],
-          );
-        },
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colorScheme.surface.withValues(alpha: 0.94),
+          borderRadius: BorderRadius.circular(theme.radius.full),
+          border: theme.borders.all(),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: colorScheme.shadow.withValues(alpha: 0.12),
+              blurRadius: 8,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: theme.spacing.md,
+            vertical: theme.spacing.sm,
+          ),
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (BuildContext context, _) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  for (int index = 0; index < 3; index += 1) ...<Widget>[
+                    if (index > 0) SizedBox(width: theme.spacing.sm),
+                    _AppListTableLoadingDot(
+                      progress: _controller.value,
+                      phase: index / 3,
+                      color: base,
+                    ),
+                  ],
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -3222,16 +3243,17 @@ class _AppListTableLoadingDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double wave = ((progress + phase) % 1.0);
+    final double wave = (progress + phase) % 1.0;
     final double t = wave < 0.5 ? wave * 2 : (1 - wave) * 2;
-    final double opacity = 0.28 + (0.72 * Curves.easeInOut.transform(t));
-    final double scale = 0.82 + (0.28 * Curves.easeInOut.transform(t));
+    final double eased = Curves.easeInOut.transform(t);
+    final double opacity = 0.45 + (0.55 * eased);
+    final double scale = 0.75 + (0.55 * eased);
 
     return Transform.scale(
       scale: scale,
       child: Container(
-        width: 6,
-        height: 6,
+        width: 9,
+        height: 9,
         decoration: BoxDecoration(
           color: color.withValues(alpha: opacity),
           shape: BoxShape.circle,

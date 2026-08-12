@@ -148,12 +148,16 @@ class _ReceptionScheduleAppointmentDialogState
   final GlobalKey<FormState> _registrationFormKey = GlobalKey<FormState>();
   final GlobalKey<RegisterNewPatientFormState> _registrationKey =
       GlobalKey<RegisterNewPatientFormState>();
+  final GlobalKey<ReceptionVisitorAppointmentDialogState> _visitorKey =
+      GlobalKey<ReceptionVisitorAppointmentDialogState>();
   _SchedulePatientMode _mode = _SchedulePatientMode.existing;
   Patient? _patient;
   bool _isRegistering = false;
   bool _isAppointmentBusy = false;
 
   bool get _isBusy => _isRegistering || _isAppointmentBusy;
+
+  bool get _isPatientStep => _patient == null;
 
   @override
   void initState() {
@@ -164,30 +168,14 @@ class _ReceptionScheduleAppointmentDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final bool showVisitorForm =
-        _patient == null && _mode == _SchedulePatientMode.visitor;
     return AppDialog(
       title: Text(l10n.patientsAppointmentDialogTitle),
       icon: const Icon(AppActionIcons.calendar),
       scrollable: true,
-      pinActionsToBottom: _patient == null && !showVisitorForm,
+      pinActionsToBottom: _isPatientStep,
       closeEnabled: !_isBusy,
       maxWidth: 720,
-      content: showVisitorForm
-          ? ReceptionVisitorAppointmentDialog(
-              embedded: true,
-              onCancel: () => setState(() {
-                _mode = _SchedulePatientMode.existing;
-                _isAppointmentBusy = false;
-              }),
-              onBusyChanged: (bool value) {
-                if (mounted && value != _isAppointmentBusy) {
-                  setState(() => _isAppointmentBusy = value);
-                }
-              },
-              onSaved: () => Navigator.of(context).pop(true),
-            )
-          : _patient == null
+      content: _isPatientStep
           ? _buildPatientStep(context)
           : PatientAppointmentQuickDialog(
               patient: _patient!,
@@ -206,7 +194,7 @@ class _ReceptionScheduleAppointmentDialogState
               },
               onSaved: () => Navigator.of(context).pop(true),
             ),
-      actions: _patient == null && !showVisitorForm
+      actions: _isPatientStep
           ? _patientStepActions(context)
           : const <Widget>[],
     );
@@ -281,6 +269,17 @@ class _ReceptionScheduleAppointmentDialogState
                 },
               ),
             ],
+          )
+        else
+          ReceptionVisitorAppointmentDialog(
+            key: _visitorKey,
+            embedded: true,
+            onBusyChanged: (bool value) {
+              if (mounted && value != _isAppointmentBusy) {
+                setState(() => _isAppointmentBusy = value);
+              }
+            },
+            onSaved: () => Navigator.of(context).pop(true),
           ),
       ],
     );
@@ -305,7 +304,26 @@ class _ReceptionScheduleAppointmentDialogState
           enabled: !_isBusy,
           onPressed: _isBusy ? null : _registerPatient,
         ),
+      if (_mode == _SchedulePatientMode.visitor)
+        AppButton.primary(
+          label: l10n.receptionScheduleAppointmentAction,
+          leadingIcon: AppActionIcons.calendar,
+          isLoading: _visitorKey.currentState?.isSaving ?? false,
+          enabled: !_isBusy,
+          onPressed: _isBusy
+              ? null
+              : () => unawaited(_scheduleVisitorAppointment()),
+        ),
     ];
+  }
+
+  Future<void> _scheduleVisitorAppointment() async {
+    final ReceptionVisitorAppointmentDialogState? visitorState =
+        _visitorKey.currentState;
+    if (visitorState == null || _isBusy) {
+      return;
+    }
+    await visitorState.submit();
   }
 
   Future<void> _registerPatient() async {

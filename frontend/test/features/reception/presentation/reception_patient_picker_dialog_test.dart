@@ -6,10 +6,14 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
+import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
+import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
+import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
 import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_patient_actions.dart';
+import 'package:hosspi_hms/features/reception/presentation/widgets/reception_visitor_appointment_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -17,6 +21,8 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockPatientRepository extends Mock implements PatientRepository {}
+
+class _MockOpdRepository extends Mock implements OpdRepository {}
 
 const Patient _patient = Patient(
   id: 'patient-1',
@@ -53,9 +59,100 @@ void main() {
     await tester.tap(find.text('New patient'));
     await tester.pumpAndSettle();
     expect(find.byType(RegisterNewPatientForm), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Register patient'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppButton && widget.label == 'Register patient',
+      ),
+      findsOneWidget,
+    );
     expect(find.byType(AppDialog), findsOneWidget);
   });
+
+  testWidgets(
+    'visitor tab keeps shared tab strip and pinned footer Schedule/Close',
+    (WidgetTester tester) async {
+      final _MockPatientRepository patientRepository = _MockPatientRepository();
+      final _MockOpdRepository opdRepository = _MockOpdRepository();
+      _stubPatientLookups(patientRepository, patients: const <Patient>[_patient]);
+      _stubVisitorHosts(opdRepository);
+
+      await _pumpOpenScheduler(
+        tester,
+        repository: patientRepository,
+        opdRepository: opdRepository,
+      );
+
+      await tester.tap(find.text('Visitor / staff meeting'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppDialog), findsOneWidget);
+      expect(find.byType(AppTabStrip), findsOneWidget);
+      expect(find.text('Existing patient'), findsOneWidget);
+      expect(find.text('New patient'), findsOneWidget);
+      expect(find.text('Visitor / staff meeting'), findsOneWidget);
+      final AppTabStrip tabs = tester.widget<AppTabStrip>(
+        find.byType(AppTabStrip),
+      );
+      expect(tabs.selectedId, 'visitor');
+      expect(find.byType(ReceptionVisitorAppointmentDialog), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is AppTextField && widget.labelText == 'Visitor name',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is AppSelectField<String> &&
+              widget.labelText == 'Hosting staff',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Non-patient meeting'), findsOneWidget);
+      final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
+      expect(dialog.pinActionsToBottom, isTrue);
+      expect(
+        find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is AppButton && widget.label == 'Schedule appointment',
+        ),
+        findsOneWidget,
+      );
+      // Header chrome and footer both expose a Close control.
+      expect(
+        find.byWidgetPredicate(
+          (Widget widget) => widget is AppButton && widget.label == 'Close',
+        ),
+        findsAtLeastNWidgets(1),
+      );
+      expect(dialog.actions, hasLength(2));
+      expect(
+        dialog.actions.whereType<AppButton>().map((AppButton b) => b.label),
+        containsAll(<String>['Close', 'Schedule appointment']),
+      );
+      expect(
+        find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is AppButton && widget.label == 'Register patient',
+        ),
+        findsNothing,
+      );
+
+      await tester.tap(find.text('Existing patient'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AppListTable<Patient>), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is AppButton && widget.label == 'Schedule appointment',
+        ),
+        findsNothing,
+      );
+    },
+  );
 
   testWidgets(
     'showReceptionPatientPickerDialog uses table with filters and settings',
@@ -71,8 +168,21 @@ void main() {
       expect(find.byType(AppSelectField<String>), findsNothing);
       expect(find.text('SELECT PATIENT'), findsOneWidget);
       expect(find.text('Ada Lovelace'), findsOneWidget);
-      expect(find.text('Close'), findsOneWidget);
-      expect(find.text('Select'), findsOneWidget);
+      expect(
+        find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is AppButton &&
+              widget.label == 'Close' &&
+              !widget.iconOnly,
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (Widget widget) => widget is AppButton && widget.label == 'Select',
+        ),
+        findsOneWidget,
+      );
       expect(find.byIcon(Icons.filter_alt_outlined), findsOneWidget);
       expect(find.byIcon(Icons.settings_outlined), findsOneWidget);
       expect(find.text('Export'), findsNothing);
@@ -106,7 +216,12 @@ void main() {
       onSelected: (Patient? value) => selected = value,
     );
 
-    await tester.tap(find.widgetWithText(AppButton, 'Close'));
+    await tester.tap(
+      find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppButton && widget.label == 'Close' && !widget.iconOnly,
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.byType(AppDialog), findsNothing);
@@ -130,7 +245,11 @@ void main() {
     await tester.tap(find.text('Ada Lovelace'));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.widgetWithText(AppButton, 'Select'));
+    await tester.tap(
+      find.byWidgetPredicate(
+        (Widget widget) => widget is AppButton && widget.label == 'Select',
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.byType(AppDialog), findsNothing);
@@ -180,10 +299,11 @@ void main() {
 
     expect(find.byType(AppDialog), findsOneWidget);
     expect(find.byType(AppFormInformationBanner), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Select'), findsOneWidget);
-    final AppButton selectButton = tester.widget<AppButton>(
-      find.widgetWithText(AppButton, 'Select'),
+    final Finder selectFinder = find.byWidgetPredicate(
+      (Widget widget) => widget is AppButton && widget.label == 'Select',
     );
+    expect(selectFinder, findsOneWidget);
+    final AppButton selectButton = tester.widget<AppButton>(selectFinder);
     expect(selectButton.enabled, isFalse);
   });
 }
@@ -191,6 +311,7 @@ void main() {
 Future<void> _pumpOpenScheduler(
   WidgetTester tester, {
   required _MockPatientRepository repository,
+  OpdRepository? opdRepository,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -199,6 +320,8 @@ Future<void> _pumpOpenScheduler(
           const SessionState.ready(),
         ),
         patientRepositoryProvider.overrideWithValue(repository),
+        if (opdRepository != null)
+          opdRepositoryProvider.overrideWithValue(opdRepository),
       ],
       child: MaterialApp(
         theme: AppTheme.light,
@@ -223,6 +346,22 @@ Future<void> _pumpOpenScheduler(
   await tester.pumpAndSettle();
   await tester.tap(find.widgetWithText(AppButton, 'Open scheduler'));
   await tester.pumpAndSettle();
+}
+
+void _stubVisitorHosts(_MockOpdRepository repository) {
+  when(
+    () => repository.listMeetingHosts(search: any(named: 'search')),
+  ).thenAnswer(
+    (_) async => const Result<List<OpdProviderOption>>.success(
+      <OpdProviderOption>[
+        OpdProviderOption(id: 'host-1', displayName: 'Dr Host'),
+      ],
+    ),
+  );
+  when(() => repository.listProviderSchedules()).thenAnswer(
+    (_) async =>
+        const Result<List<OpdProviderSchedule>>.success(<OpdProviderSchedule>[]),
+  );
 }
 
 Future<void> _pumpOpenPicker(

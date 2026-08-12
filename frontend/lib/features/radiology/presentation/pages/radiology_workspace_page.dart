@@ -572,9 +572,10 @@ class _RadiologyOrderBoard extends ConsumerWidget {
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
       columnVisibilityStorageKey: 'radiology_$storageSuffix',
       columnWidthStorageKey: 'radiology_cw_$storageSuffix',
-      columnVisibilityApplyLabel: l10n.radiologyApplyColumnsAction,
-      columnVisibilityResetLabel: l10n.radiologyResetColumnsAction,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
       columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+      enableExport: true,
       canExport: canExport,
       exportLabel: l10n.commonTableExportActionLabel,
       exportDialogTitle: l10n.commonTableExportDialogTitle,
@@ -599,10 +600,15 @@ class _RadiologyOrderBoard extends ConsumerWidget {
         canViewBilling: canViewBilling,
         l10n: l10n,
       ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
       exportConfig: AppListTableExportConfig<RadiologyOrder>(
         fileNameStem: 'radiology_$storageSuffix',
         dateOf: (RadiologyOrder item) => item.orderedAt,
         sheetName: section.name,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
       ),
       search: AppListTableSearch<RadiologyOrder>(
         controller: searchController,
@@ -3169,11 +3175,12 @@ AppListTableColumn<RadiologyOrder> _radiologyPatientNameColumn(
           left.patientDisplayName,
           right.patientDisplayName,
         ),
+    exportValue: (RadiologyOrder item) =>
+        item.patientDisplayName ?? l10n.profileUnknownValue,
     cellBuilder: (BuildContext context, RadiologyOrder item) {
-      final AppLocalizations l10n = context.l10n;
-      return AppListItemText(
-        title: item.patientDisplayName ?? l10n.profileUnknownValue,
-        subtitle: item.patientId,
+      return _radiologyWorklistTextCell(
+        context,
+        item.patientDisplayName ?? l10n.profileUnknownValue,
       );
     },
   );
@@ -3188,6 +3195,8 @@ AppListTableColumn<RadiologyOrder> _radiologyPatientIdColumn(
     label: l10n.radiologyPatientIdLabel,
     sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
         appListTableCompareText(left.patientId, right.patientId),
+    exportValue: (RadiologyOrder item) =>
+        item.patientId ?? l10n.profileUnknownValue,
     cellBuilder: (BuildContext context, RadiologyOrder item) {
       return _radiologyWorklistTextCell(context, item.patientId);
     },
@@ -3204,6 +3213,7 @@ AppListTableColumn<RadiologyOrder> _radiologyStudyColumn(BuildContext context) {
           _radiologyStudyLabel(left, l10n),
           _radiologyStudyLabel(right, l10n),
         ),
+    exportValue: (RadiologyOrder item) => _radiologyStudyLabel(item, l10n),
     cellBuilder: (BuildContext context, RadiologyOrder item) {
       return _radiologyWorklistTextCell(
         context,
@@ -3222,6 +3232,9 @@ AppListTableColumn<RadiologyOrder> _radiologyPriorityColumn(
     label: l10n.radiologyPriorityColumnLabel,
     sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
         appListTableCompareText(left.priority, right.priority),
+    exportValue: (RadiologyOrder item) =>
+        _radiologyPriorityDisplayLabel(l10n, item.priority) ??
+        l10n.profileUnknownValue,
     cellBuilder: (BuildContext context, RadiologyOrder item) {
       return _radiologyWorklistTextCell(
         context,
@@ -3247,6 +3260,7 @@ AppListTableColumn<RadiologyOrder> _radiologyNextActionColumn(
           _nextActionLabel(context, left),
           _nextActionLabel(context, right),
         ),
+    exportValue: (RadiologyOrder item) => _nextActionLabel(context, item),
     cellBuilder: (BuildContext context, RadiologyOrder item) {
       return RadiologyNextActionCell(
         order: item,
@@ -3272,6 +3286,8 @@ AppListTableColumn<RadiologyOrder> _radiologyStatusColumn(
           _worklistStatusLabel(context.l10n, left),
           _worklistStatusLabel(context.l10n, right),
         ),
+    exportValue: (RadiologyOrder item) =>
+        _worklistStatusLabel(context.l10n, item),
     cellBuilder: (BuildContext context, RadiologyOrder item) {
       return AppWorkspaceStatusBadge(status: _orderStatus(context, item));
     },
@@ -3287,6 +3303,9 @@ AppListTableColumn<RadiologyOrder> _radiologyModalityColumn(
     label: l10n.radiologyModalityLabel,
     sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
         appListTableCompareText(left.modality, right.modality),
+    exportValue: (RadiologyOrder item) =>
+        _modalityLabelOrNull(l10n, item.modality) ??
+        l10n.profileUnknownValue,
     cellBuilder: (BuildContext context, RadiologyOrder item) {
       return _radiologyWorklistTextCell(
         context,
@@ -3305,6 +3324,8 @@ AppListTableColumn<RadiologyOrder> _radiologyBodyRegionColumn(
     label: l10n.radiologyBodyRegionLabel,
     sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
         appListTableCompareText(left.bodyRegion, right.bodyRegion),
+    exportValue: (RadiologyOrder item) =>
+        item.bodyRegion ?? l10n.profileUnknownValue,
     cellBuilder: (BuildContext context, RadiologyOrder item) {
       return _radiologyWorklistTextCell(context, item.bodyRegion);
     },
@@ -3320,6 +3341,8 @@ AppListTableColumn<RadiologyOrder> _radiologyLateralityColumn(
     label: l10n.radiologyLateralityLabel,
     sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
         appListTableCompareText(left.laterality, right.laterality),
+    exportValue: (RadiologyOrder item) =>
+        item.laterality ?? l10n.profileUnknownValue,
     cellBuilder: (BuildContext context, RadiologyOrder item) {
       return _radiologyWorklistTextCell(context, item.laterality);
     },
@@ -3335,6 +3358,8 @@ AppListTableColumn<RadiologyOrder> _radiologyEncounterColumn(
     label: l10n.radiologyEncounterColumnLabel,
     sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
         appListTableCompareText(left.encounterId, right.encounterId),
+    exportValue: (RadiologyOrder item) =>
+        item.encounterId ?? l10n.profileUnknownValue,
     cellBuilder: (BuildContext context, RadiologyOrder item) {
       return _radiologyWorklistTextCell(context, item.encounterId);
     },
@@ -3352,6 +3377,7 @@ AppListTableColumn<RadiologyOrder> _radiologyBillingColumn(
           _billingGateLabel(context, left),
           _billingGateLabel(context, right),
         ),
+    exportValue: (RadiologyOrder item) => _billingGateLabel(context, item),
     cellBuilder: (BuildContext context, RadiologyOrder item) {
       return _radiologyWorklistTextCell(
         context,
@@ -3369,6 +3395,8 @@ AppListTableColumn<RadiologyOrder> _radiologyOrderedAtColumn(
     label: context.l10n.radiologyOrderedAtLabel,
     sortComparator: (RadiologyOrder left, RadiologyOrder right) =>
         appListTableCompareDateTime(left.orderedAt, right.orderedAt),
+    exportValue: (RadiologyOrder item) =>
+        _formatDateTimeOrNull(context, item.orderedAt) ?? '',
     cellBuilder: (BuildContext context, RadiologyOrder item) {
       return _radiologyWorklistTextCell(
         context,
@@ -3393,6 +3421,15 @@ AppListTableColumn<RadiologyOrder> _radiologyOrderIdentifierColumn(
           left.effectiveDisplayId,
           right.effectiveDisplayId,
         ),
+    exportValue: (RadiologyOrder item) {
+      if (item.isPatientGroup) {
+        final int activeOrders = item.activeOrderCount > 0
+            ? item.activeOrderCount
+            : item.orderCount;
+        return _activeOrderCountLabel(l10n, activeOrders);
+      }
+      return item.effectiveDisplayId;
+    },
     cellBuilder: (BuildContext context, RadiologyOrder item) {
       if (item.isPatientGroup) {
         final int activeOrders = item.activeOrderCount > 0
@@ -3594,7 +3631,8 @@ String _radiologyWorklistPrintCellValue(
       _radiologyPriorityDisplayLabel(l10n, item.priority) ?? '',
     'status' => _orderStatus(context, item).label,
     'next_action' => _nextActionLabel(context, item),
-    'modality' => item.modality?.trim() ?? '',
+    'modality' =>
+      _modalityLabelOrNull(l10n, item.modality) ?? '',
     'body_region' => item.bodyRegion?.trim() ?? '',
     'laterality' => item.laterality?.trim() ?? '',
     'encounter' => item.encounterId?.trim() ?? '',

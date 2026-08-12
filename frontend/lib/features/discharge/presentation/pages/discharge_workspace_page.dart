@@ -253,8 +253,6 @@ class _DischargeWorkspaceContentState
     }
 
     final List<IpdAdmissionSummary> rows = _buildRows(state);
-    final List<AppListTableColumn<IpdAdmissionSummary>> allColumns =
-        _dischargeTableColumns(context, section: _section);
     final List<AppListTableColumn<IpdAdmissionSummary>> defaultColumns =
         _dischargeDefaultColumns(context, section: _section);
     final bool canExport = canExportDischargeWorkspace(accessPolicy);
@@ -272,8 +270,10 @@ class _DischargeWorkspaceContentState
         spacing: Theme.of(context).spacing,
       ),
       maxWidth: PageMaxWidth.dataHeavy,
+      scrollable: false,
       child: SizedBox(
         width: double.infinity,
+        height: double.infinity,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -296,210 +296,242 @@ class _DischargeWorkspaceContentState
               },
             ),
             SizedBox(height: theme.spacing.sm),
-            if (_section.isFollowUps)
-              FollowUpWorklistPanel(
-                scope: const FollowUpWorklistScope(encounterType: 'IPD'),
-                storageKeyPrefix: 'discharge_follow_ups',
-                readRequirement: DischargeFollowUpsAtomPermissions.tab,
-                writeRequirement: DischargeFollowUpsAtomPermissions.write,
-                showAdvancedFilterButton: true,
-                advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
-                advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
-                advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-                advancedFilterResetLabel: l10n.opdClearFiltersAction,
-                advancedFilterCloseLabel: l10n.commonCloseActionLabel,
-                enableDateFilter: true,
-                dateFilterLabel: l10n.dischargeDateFilterLabel,
-                dateFromLabel: l10n.dischargeDateFromLabel,
-                dateToLabel: l10n.dischargeDateToLabel,
-                enableExport: true,
-                canExport: canExport,
-                enablePrint: true,
-                canPrint: canPrint,
-                printLabel: l10n.commonPrintActionLabel,
-                onPrint: (List<ReceptionFollowUpEntry> entries) =>
-                    _printDischargeFollowUpsList(
-                      context,
-                      ref,
-                      entries: entries,
-                      l10n: l10n,
-                    ),
-                onNarrowedCountChanged: (int? count) {
-                  if (_followUpsNarrowedCount == count) {
-                    return;
-                  }
-                  setState(() => _followUpsNarrowedCount = count);
-                },
-              )
-            else if (dischargeSectionTabRequirement(_section).isAllowed(
-              accessPolicy,
-            ))
-              AppListTable<IpdAdmissionSummary>(
-              items: rows,
-              columns: defaultColumns,
-              columnChoices: allColumns,
-              columnVisibilityController: _columnVisibilityController,
-              columnVisibilityStorageKey: 'discharge_${_section.name}',
-              columnWidthStorageKey: 'discharge_cw_${_section.name}',
-              columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-              columnVisibilityTitle: l10n.commonTableSettingsTitle,
-              columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
-              columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
-              columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
-              isLoading: state.isRefreshing,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              enableExport: true,
-              canExport: canExport,
-              exportLabel: l10n.commonTableExportActionLabel,
-              exportDialogTitle: l10n.commonTableExportDialogTitle,
-              exportCancelLabel: l10n.commonCancelActionLabel,
-              exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
-              exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
-              exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
-              exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
-              exportSuccessMessage: l10n.commonTableExportSuccessMessage,
-              exportFailureMessage: l10n.commonTableExportFailureMessage,
-              exportInvalidDateMessage: l10n.opdInvalidDateMessage,
-              enablePrint: true,
-              canPrint: canPrint,
-              printLabel: l10n.commonPrintActionLabel,
-              onPrint: () => _printDischargeWorklist(
-                context,
-                ref,
-                rows: rows,
-                columns: allColumns,
-                section: _section,
-                l10n: l10n,
-              ),
-              exportConfig: AppListTableExportConfig<IpdAdmissionSummary>(
-                fileNameStem: 'discharge_${_section.name}',
-                dateOf: (IpdAdmissionSummary item) =>
-                    item.dischargedAt ?? item.admittedAt,
-                sheetName: dischargeSectionLabel(l10n, _section),
-              ),
-              onRowSelected: (IpdAdmissionSummary item) {
-                unawaited(
-                  _openDischargeDetailDialog(
-                    context,
-                    ref,
-                    state,
-                    item,
-                    section: _section,
-                  ),
-                );
-              },
-              search: AppListTableSearch<IpdAdmissionSummary>(
-                controller: _searchController,
-                semanticLabel: l10n.dischargeQueueSearchLabel,
-                hintText: l10n.dischargeQueueSearchHint,
-                matcher: (IpdAdmissionSummary item, String query) =>
-                    _dischargeMatchesSearch(context, item, query),
-                onSubmitted: (String value) async {
-                  final AppFailure? failure = await controller.applySearch(
-                    value,
-                  );
-                  if (context.mounted) {
-                    _showFailureIfNeeded(context, failure);
-                  }
-                },
-                onClear: () async {
-                  final AppFailure? failure = await controller.applySearch('');
-                  if (context.mounted) {
-                    _showFailureIfNeeded(context, failure);
-                  }
-                },
-                showAdvancedFilterButton: true,
-                advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
-                advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
-                advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-                advancedFilterResetLabel: l10n.opdClearFiltersAction,
-                advancedFilterCloseLabel: l10n.commonCloseActionLabel,
-                enableDateFilter: true,
-                dateFilterLabel: l10n.dischargeDateFilterLabel,
-                dateFromLabel: l10n.dischargeDateFromLabel,
-                dateToLabel: l10n.dischargeDateToLabel,
-                datePickerButtonLabel: l10n.dischargeDatePickerLabel,
-                invalidDateMessage: l10n.dischargeInvalidDateMessage,
-                allFieldsLabel: l10n.dischargeStatusAll,
-                filterGroups: <AppSearchBarFilterGroup>[
-                  AppSearchBarFilterGroup(
-                    key: _dischargeStatusFilterKey,
-                    label: l10n.dischargeStatusFilterLabel,
-                    allLabel: l10n.dischargeStatusAll,
-                    choices: _dischargeStatusFilterChoices(l10n),
-                  ),
-                ],
-                filterValue: _dischargeFilterValue(state.query),
-                hasActiveFilters: state.query.hasAdvancedFilters,
-                onFilterChanged: (AppSearchBarFilterValue value) async {
-                  final AppFailure? failure = await controller.applyFilters(
-                    status: _dischargeStatusFromFilter(
-                      value.option(_dischargeStatusFilterKey),
-                    ),
-                    dateFrom: value.dateFrom,
-                    dateTo: value.dateTo,
-                  );
-                  if (context.mounted) {
-                    _showFailureIfNeeded(context, failure);
-                  }
-                },
-              ),
-              emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-                title: l10n.dischargeEmptyQueueTitle,
-                body: l10n.dischargeEmptyQueueBody,
-                icon: Icons.inbox_outlined,
-              ),
-              mobileItemBuilder:
-                  (BuildContext context, IpdAdmissionSummary item) {
-                    final AppLocalizations l10n = context.l10n;
-                    return AppListTableMobileItem(
-                      title: item.displayTitle,
-                      caption: item.displayId ?? l10n.profileUnknownValue,
-                      trailing: _dischargeNextActionWidget(
+            Expanded(
+              child: _section.isFollowUps
+                  ? FollowUpWorklistPanel(
+                      scope: const FollowUpWorklistScope(encounterType: 'IPD'),
+                      storageKeyPrefix: 'discharge_follow_ups',
+                      readRequirement: DischargeFollowUpsAtomPermissions.tab,
+                      writeRequirement: DischargeFollowUpsAtomPermissions.write,
+                      showAdvancedFilterButton: true,
+                      advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+                      advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+                      advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                      advancedFilterResetLabel: l10n.opdClearFiltersAction,
+                      advancedFilterCloseLabel: l10n.commonCloseActionLabel,
+                      enableDateFilter: true,
+                      dateFilterLabel: l10n.dischargeDateFilterLabel,
+                      dateFromLabel: l10n.dischargeDateFromLabel,
+                      dateToLabel: l10n.dischargeDateToLabel,
+                      enableExport: true,
+                      canExport: canExport,
+                      enablePrint: true,
+                      canPrint: canPrint,
+                      printLabel: l10n.commonPrintActionLabel,
+                      onPrint: (List<ReceptionFollowUpEntry> entries) =>
+                          _printDischargeFollowUpsList(
+                            context,
+                            ref,
+                            entries: entries,
+                            l10n: l10n,
+                          ),
+                      onNarrowedCountChanged: (int? count) {
+                        if (_followUpsNarrowedCount == count) {
+                          return;
+                        }
+                        setState(() => _followUpsNarrowedCount = count);
+                      },
+                    )
+                  : dischargeSectionTabRequirement(_section).isAllowed(
+                      accessPolicy,
+                    )
+                  ? AppListTable<IpdAdmissionSummary>(
+                      items: rows,
+                      columns: defaultColumns,
+                      columnChoices: _dischargeColumnChoices(
                         context,
-                        item,
                         section: _section,
-                        compact: true,
+                        defaults: defaultColumns,
                       ),
-                      meta: <AppListTableMobileMeta>[
-                        AppListTableMobileMeta(
-                          label: _locationLabel(context, item),
-                        ),
-                        AppListTableMobileMeta(
-                          label: _statusFor(context, item).label,
-                        ),
-                        ...switch (_section) {
-                          DischargeDeskSection.all ||
-                          DischargeDeskSection.completed =>
-                            <AppListTableMobileMeta>[
-                              AppListTableMobileMeta(
-                                label: _dateLabel(
-                                  context,
-                                  item.dischargedAt,
-                                ),
-                                icon: AppActionIcons.calendar,
-                              ),
-                            ],
-                          DischargeDeskSection.planned =>
-                            item.clearancePhase != null
-                                ? <AppListTableMobileMeta>[
-                                    AppListTableMobileMeta(
-                                      label: _apiLabel(item.clearancePhase!),
-                                    ),
-                                  ]
-                                : <AppListTableMobileMeta>[],
-                          DischargeDeskSection.pendingClearance =>
-                            <AppListTableMobileMeta>[
-                              AppListTableMobileMeta(
-                                label: _blockingItemLabel(context, item),
-                              ),
-                            ],
-                          _ => <AppListTableMobileMeta>[],
+                      columnVisibilityController: _columnVisibilityController,
+                      columnVisibilityStorageKey: 'discharge_${_section.name}',
+                      columnWidthStorageKey: 'discharge_cw_${_section.name}',
+                      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+                      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+                      columnVisibilityApplyLabel:
+                          l10n.receptionApplyColumnsAction,
+                      columnVisibilityResetLabel:
+                          l10n.receptionResetColumnsAction,
+                      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+                      isLoading: state.isRefreshing,
+                      enableExport: true,
+                      canExport: canExport,
+                      exportLabel: l10n.commonTableExportActionLabel,
+                      exportDialogTitle: l10n.commonTableExportDialogTitle,
+                      exportCancelLabel: l10n.commonCancelActionLabel,
+                      exportColumnsSectionLabel:
+                          l10n.commonTableExportColumnsSectionLabel,
+                      exportFiltersSectionLabel:
+                          l10n.commonTableExportFiltersSectionLabel,
+                      exportEmptyColumnsMessage:
+                          l10n.commonTableExportEmptyColumnsMessage,
+                      exportEmptyRowsMessage:
+                          l10n.commonTableExportEmptyRowsMessage,
+                      exportSuccessMessage:
+                          l10n.commonTableExportSuccessMessage,
+                      exportFailureMessage:
+                          l10n.commonTableExportFailureMessage,
+                      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+                      enablePrint: true,
+                      canPrint: canPrint,
+                      printLabel: l10n.commonPrintActionLabel,
+                      onPrint: () => _printDischargeWorklist(
+                        context,
+                        ref,
+                        rows: rows,
+                        columns: <AppListTableColumn<IpdAdmissionSummary>>[
+                          ...defaultColumns,
+                          ..._dischargeColumnChoices(
+                            context,
+                            section: _section,
+                            defaults: defaultColumns,
+                          ),
+                        ],
+                        section: _section,
+                        l10n: l10n,
+                      ),
+                      goToTopLabel: l10n.commonGoToTopActionLabel,
+                      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+                      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
+                      exportConfig:
+                          AppListTableExportConfig<IpdAdmissionSummary>(
+                        fileNameStem: 'discharge_${_section.name}',
+                        dateOf: (IpdAdmissionSummary item) =>
+                            item.dischargedAt ?? item.admittedAt,
+                        sheetName: dischargeSectionLabel(l10n, _section),
+                        dateFromLabel: l10n.commonTableExportDateFromLabel,
+                        dateToLabel: l10n.commonTableExportDateToLabel,
+                      ),
+                      onRowSelected: (IpdAdmissionSummary item) {
+                        unawaited(
+                          _openDischargeDetailDialog(
+                            context,
+                            ref,
+                            state,
+                            item,
+                            section: _section,
+                          ),
+                        );
+                      },
+                      search: AppListTableSearch<IpdAdmissionSummary>(
+                        controller: _searchController,
+                        semanticLabel: l10n.dischargeQueueSearchLabel,
+                        hintText: l10n.dischargeQueueSearchHint,
+                        matcher: (IpdAdmissionSummary item, String query) =>
+                            _dischargeMatchesSearch(context, item, query),
+                        onSubmitted: (String value) async {
+                          final AppFailure? failure =
+                              await controller.applySearch(value);
+                          if (context.mounted) {
+                            _showFailureIfNeeded(context, failure);
+                          }
                         },
-                      ],
-                    );
-                  },
+                        onClear: () async {
+                          final AppFailure? failure =
+                              await controller.applySearch('');
+                          if (context.mounted) {
+                            _showFailureIfNeeded(context, failure);
+                          }
+                        },
+                        showAdvancedFilterButton: true,
+                        advancedFilterButtonLabel:
+                            l10n.commonFiltersActionLabel,
+                        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+                        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+                        advancedFilterResetLabel: l10n.opdClearFiltersAction,
+                        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
+                        enableDateFilter: true,
+                        dateFilterLabel: l10n.dischargeDateFilterLabel,
+                        dateFromLabel: l10n.dischargeDateFromLabel,
+                        dateToLabel: l10n.dischargeDateToLabel,
+                        datePickerButtonLabel: l10n.dischargeDatePickerLabel,
+                        invalidDateMessage: l10n.dischargeInvalidDateMessage,
+                        allFieldsLabel: l10n.dischargeStatusAll,
+                        filterGroups: <AppSearchBarFilterGroup>[
+                          AppSearchBarFilterGroup(
+                            key: _dischargeStatusFilterKey,
+                            label: l10n.dischargeStatusFilterLabel,
+                            allLabel: l10n.dischargeStatusAll,
+                            choices: _dischargeStatusFilterChoices(l10n),
+                          ),
+                        ],
+                        filterValue: _dischargeFilterValue(state.query),
+                        hasActiveFilters: state.query.hasAdvancedFilters,
+                        onFilterChanged:
+                            (AppSearchBarFilterValue value) async {
+                          final AppFailure? failure =
+                              await controller.applyFilters(
+                            status: _dischargeStatusFromFilter(
+                              value.option(_dischargeStatusFilterKey),
+                            ),
+                            dateFrom: value.dateFrom,
+                            dateTo: value.dateTo,
+                          );
+                          if (context.mounted) {
+                            _showFailureIfNeeded(context, failure);
+                          }
+                        },
+                      ),
+                      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+                        title: l10n.dischargeEmptyQueueTitle,
+                        body: l10n.dischargeEmptyQueueBody,
+                        icon: Icons.inbox_outlined,
+                      ),
+                      mobileItemBuilder:
+                          (BuildContext context, IpdAdmissionSummary item) {
+                        final AppLocalizations l10n = context.l10n;
+                        return AppListTableMobileItem(
+                          title: item.displayTitle,
+                          caption:
+                              item.displayId ?? l10n.profileUnknownValue,
+                          trailing: _dischargeNextActionWidget(
+                            context,
+                            item,
+                            section: _section,
+                            compact: true,
+                          ),
+                          meta: <AppListTableMobileMeta>[
+                            AppListTableMobileMeta(
+                              label: _locationLabel(context, item),
+                            ),
+                            AppListTableMobileMeta(
+                              label: _statusFor(context, item).label,
+                            ),
+                            ...switch (_section) {
+                              DischargeDeskSection.all ||
+                              DischargeDeskSection.completed =>
+                                <AppListTableMobileMeta>[
+                                  AppListTableMobileMeta(
+                                    label: _dateLabel(
+                                      context,
+                                      item.dischargedAt,
+                                    ),
+                                    icon: AppActionIcons.calendar,
+                                  ),
+                                ],
+                              DischargeDeskSection.planned =>
+                                item.clearancePhase != null
+                                    ? <AppListTableMobileMeta>[
+                                        AppListTableMobileMeta(
+                                          label: _apiLabel(
+                                            item.clearancePhase!,
+                                          ),
+                                        ),
+                                      ]
+                                    : <AppListTableMobileMeta>[],
+                              DischargeDeskSection.pendingClearance =>
+                                <AppListTableMobileMeta>[
+                                  AppListTableMobileMeta(
+                                    label: _blockingItemLabel(context, item),
+                                  ),
+                                ],
+                              _ => <AppListTableMobileMeta>[],
+                            },
+                          ],
+                        );
+                      },
+                    )
+                  : const SizedBox.shrink(),
             ),
           ],
         ),
@@ -1024,12 +1056,7 @@ class _QueuePatientCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final AppLocalizations l10n = context.l10n;
-
-    return AppListItemText(
-      title: item.displayTitle,
-      subtitle: item.displayId ?? l10n.profileUnknownValue,
-    );
+    return AppListItemText(title: item.displayTitle);
   }
 }
 
@@ -1292,6 +1319,7 @@ List<AppListTableColumn<IpdAdmissionSummary>> _dischargeTableColumns(
       alwaysVisible: true,
       sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
           appListTableCompareText(left.displayTitle, right.displayTitle),
+      exportValue: (IpdAdmissionSummary item) => item.displayTitle,
       cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
         return _QueuePatientCell(item: item);
       },
@@ -1304,6 +1332,8 @@ List<AppListTableColumn<IpdAdmissionSummary>> _dischargeTableColumns(
             _locationLabel(context, left),
             _locationLabel(context, right),
           ),
+      exportValue: (IpdAdmissionSummary item) =>
+          _locationLabel(context, item),
       cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
         return Text(_locationLabel(context, item));
       },
@@ -1314,6 +1344,8 @@ List<AppListTableColumn<IpdAdmissionSummary>> _dischargeTableColumns(
       // API maps target discharge date onto dischargedAt on the summary.
       sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
           appListTableCompareDateTime(left.dischargedAt, right.dischargedAt),
+      exportValue: (IpdAdmissionSummary item) =>
+          _dateLabel(context, item.dischargedAt),
       cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
         return Text(_dateLabel(context, item.dischargedAt));
       },
@@ -1323,6 +1355,9 @@ List<AppListTableColumn<IpdAdmissionSummary>> _dischargeTableColumns(
       label: l10n.ipdDischargeClearancePhaseLabel,
       sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
           appListTableCompareText(left.clearancePhase, right.clearancePhase),
+      exportValue: (IpdAdmissionSummary item) => item.clearancePhase == null
+          ? ''
+          : _apiLabel(item.clearancePhase!),
       cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
         return _dischargeClearancePhaseCell(context, item);
       },
@@ -1335,6 +1370,8 @@ List<AppListTableColumn<IpdAdmissionSummary>> _dischargeTableColumns(
             left.clearancePhase ?? left.nextStep,
             right.clearancePhase ?? right.nextStep,
           ),
+      exportValue: (IpdAdmissionSummary item) =>
+          _blockingItemLabel(context, item),
       cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
         return _dischargeBlockingItemCell(context, item);
       },
@@ -1344,6 +1381,8 @@ List<AppListTableColumn<IpdAdmissionSummary>> _dischargeTableColumns(
       label: l10n.ipdDischargedAtLabel,
       sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
           appListTableCompareDateTime(left.dischargedAt, right.dischargedAt),
+      exportValue: (IpdAdmissionSummary item) =>
+          _dateLabel(context, item.dischargedAt),
       cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
         return Text(_dateLabel(context, item.dischargedAt));
       },
@@ -1353,6 +1392,8 @@ List<AppListTableColumn<IpdAdmissionSummary>> _dischargeTableColumns(
       label: l10n.ipdAdmittedAtColumnLabel,
       sortComparator: (IpdAdmissionSummary left, IpdAdmissionSummary right) =>
           appListTableCompareDateTime(left.admittedAt, right.admittedAt),
+      exportValue: (IpdAdmissionSummary item) =>
+          _dateLabel(context, item.admittedAt),
       cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
         return Text(_dateLabel(context, item.admittedAt));
       },
@@ -1366,6 +1407,8 @@ List<AppListTableColumn<IpdAdmissionSummary>> _dischargeTableColumns(
             left.dischargeStatus ?? left.stage,
             right.dischargeStatus ?? right.stage,
           ),
+      exportValue: (IpdAdmissionSummary item) =>
+          _statusFor(context, item).label,
       cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
         return AppWorkspaceStatusBadge(status: _statusFor(context, item));
       },
@@ -1379,6 +1422,8 @@ List<AppListTableColumn<IpdAdmissionSummary>> _dischargeTableColumns(
             _nextActionLabel(context, left),
             _nextActionLabel(context, right),
           ),
+      exportValue: (IpdAdmissionSummary item) =>
+          _nextActionLabel(context, item),
       cellBuilder: (BuildContext context, IpdAdmissionSummary item) {
         return _dischargeNextActionWidget(context, item, section: section);
       },
@@ -1434,6 +1479,21 @@ List<AppListTableColumn<IpdAdmissionSummary>> _dischargeDefaultColumns(
     ],
   };
   return columnIds.map((String id) => columnsById[id]!).toList(growable: false);
+}
+
+List<AppListTableColumn<IpdAdmissionSummary>> _dischargeColumnChoices(
+  BuildContext context, {
+  required DischargeDeskSection section,
+  required List<AppListTableColumn<IpdAdmissionSummary>> defaults,
+}) {
+  final Set<String> defaultIds = defaults
+      .map((AppListTableColumn<IpdAdmissionSummary> column) => column.key)
+      .toSet();
+  return <AppListTableColumn<IpdAdmissionSummary>>[
+    for (final AppListTableColumn<IpdAdmissionSummary> column
+        in _dischargeTableColumns(context, section: section))
+      if (!defaultIds.contains(column.key)) column,
+  ];
 }
 
 Widget _dischargeClearancePhaseCell(
@@ -1624,7 +1684,6 @@ class _DischargeCompactAction extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.labelSmall?.copyWith(
                             color: primaryColor,
-                            fontWeight: AppFontWeight.emphasis,
                           ),
                         ),
                       ],

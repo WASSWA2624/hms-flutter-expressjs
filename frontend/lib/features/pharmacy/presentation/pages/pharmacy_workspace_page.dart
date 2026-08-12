@@ -635,7 +635,12 @@ class _PharmacyQueuePanel extends ConsumerWidget {
         fileNameStem: 'pharmacy_${section.name}',
         dateOf: (PharmacyOrder item) => item.orderedAt,
         sheetName: pharmacySectionLabel(l10n, section),
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
       ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
       search: AppListTableSearch<PharmacyOrder>(
         controller: searchController,
         semanticLabel: l10n.pharmacySearchLabel,
@@ -649,8 +654,9 @@ class _PharmacyQueuePanel extends ConsumerWidget {
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
         advancedFilterCloseLabel: l10n.commonCloseActionLabel,
+        enableDateFilter: true,
         dateFilterLabel: l10n.pharmacyOrderDateFilterLabel,
-        dateFromLabel: l10n.pharmacyOrderDateFilterLabel,
+        dateFromLabel: l10n.opdDateFromLabel,
         dateToLabel: l10n.opdDateToLabel,
         datePickerButtonLabel: l10n.pharmacyPickOrderDateAction,
         invalidDateMessage: l10n.appDateInvalidMessage,
@@ -3649,10 +3655,12 @@ AppListTableColumn<PharmacyOrder> _pharmacyPatientColumn(BuildContext context) {
     label: l10n.pharmacyPatientColumnLabel,
     sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
         appListTableCompareText(left.displayTitle, right.displayTitle),
+    exportValue: (PharmacyOrder item) => item.displayTitle,
     cellBuilder: (BuildContext context, PharmacyOrder item) {
-      return AppListItemText(
-        title: item.displayTitle,
-        subtitle: item.displayId,
+      return Text(
+        item.displayTitle,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       );
     },
   );
@@ -3670,6 +3678,7 @@ AppListTableColumn<PharmacyOrder> _pharmacyLocationColumn(
           _locationLabel(context, left),
           _locationLabel(context, right),
         ),
+    exportValue: (PharmacyOrder item) => _locationLabel(context, item),
     cellBuilder: (BuildContext context, PharmacyOrder item) {
       return Text(_locationLabel(context, item));
     },
@@ -3688,6 +3697,7 @@ AppListTableColumn<PharmacyOrder> _pharmacyDispenseProgressColumn(
           left.quantityDispensedTotal,
           right.quantityDispensedTotal,
         ),
+    exportValue: (PharmacyOrder item) => _dispenseProgressLabel(context, item),
     cellBuilder: (BuildContext context, PharmacyOrder item) {
       return Text(_dispenseProgressLabel(context, item));
     },
@@ -3702,6 +3712,7 @@ AppListTableColumn<PharmacyOrder> _pharmacyItemsColumn(BuildContext context) {
     numeric: true,
     sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
         appListTableCompareNumber(left.itemCount, right.itemCount),
+    exportValue: (PharmacyOrder item) => _numberLabel(item.itemCount),
     cellBuilder: (BuildContext context, PharmacyOrder item) {
       return Text(_numberLabel(item.itemCount));
     },
@@ -3718,6 +3729,7 @@ AppListTableColumn<PharmacyOrder> _pharmacyBillingColumn(BuildContext context) {
           left.effectivePaymentStatus,
           right.effectivePaymentStatus,
         ),
+    exportValue: (PharmacyOrder item) => _billingGateLabel(context, item),
     cellBuilder: (BuildContext context, PharmacyOrder item) {
       return Text(_billingGateLabel(context, item));
     },
@@ -3736,6 +3748,8 @@ AppListTableColumn<PharmacyOrder> _pharmacyOrderedAtColumn(
           _dateTimeLabel(context, left.orderedAt),
           _dateTimeLabel(context, right.orderedAt),
         ),
+    exportValue: (PharmacyOrder item) =>
+        _dateTimeLabel(context, item.orderedAt),
     cellBuilder: (BuildContext context, PharmacyOrder item) {
       return Text(_dateTimeLabel(context, item.orderedAt));
     },
@@ -3749,6 +3763,7 @@ AppListTableColumn<PharmacyOrder> _pharmacyStatusColumn(BuildContext context) {
     label: l10n.pharmacyStatusColumnLabel,
     sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
         appListTableCompareText(left.status, right.status),
+    exportValue: (PharmacyOrder item) => _orderStatus(context, item).label,
     cellBuilder: (BuildContext context, PharmacyOrder item) {
       return AppWorkspaceStatusBadge(status: _orderStatus(context, item));
     },
@@ -3770,6 +3785,8 @@ AppListTableColumn<PharmacyOrder> _pharmacyNextActionColumn(
           pharmacyOrderNextActionLabel(context, left),
           pharmacyOrderNextActionLabel(context, right),
         ),
+    exportValue: (PharmacyOrder item) =>
+        pharmacyOrderNextActionLabel(context, item),
     cellBuilder: (BuildContext context, PharmacyOrder item) {
       return _PharmacyOrderNextActionButton(
         order: item,
@@ -4036,6 +4053,7 @@ List<AppListTableColumn<PharmacyOrder>> _optionalPharmacyWorklistColumns(
       label: l10n.pharmacyOrderColumnLabel,
       sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
           appListTableCompareText(left.displayId, right.displayId),
+      exportValue: (PharmacyOrder item) => item.displayId ?? '',
       cellBuilder: (BuildContext context, PharmacyOrder item) {
         return Text(item.displayId ?? '');
       },
@@ -4049,6 +4067,7 @@ List<AppListTableColumn<PharmacyOrder>> _optionalPharmacyWorklistColumns(
       label: l10n.labPatientIdColumnLabel,
       sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
           appListTableCompareText(left.patientId, right.patientId),
+      exportValue: (PharmacyOrder item) => item.patientId ?? '',
       cellBuilder: (BuildContext context, PharmacyOrder item) {
         return Text(item.patientId ?? '');
       },
@@ -4058,6 +4077,7 @@ List<AppListTableColumn<PharmacyOrder>> _optionalPharmacyWorklistColumns(
       label: l10n.pharmacyEncounterFieldLabel,
       sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
           appListTableCompareText(left.encounterId, right.encounterId),
+      exportValue: (PharmacyOrder item) => item.encounterId ?? '',
       cellBuilder: (BuildContext context, PharmacyOrder item) {
         return AppCopyableIdentifier(
           value: item.encounterId,
@@ -4071,6 +4091,7 @@ List<AppListTableColumn<PharmacyOrder>> _optionalPharmacyWorklistColumns(
       label: l10n.pharmacyPriorityFieldLabel,
       sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
           appListTableCompareText(left.priority, right.priority),
+      exportValue: (PharmacyOrder item) => _priorityLabel(context, item),
       cellBuilder: (BuildContext context, PharmacyOrder item) {
         return Text(_priorityLabel(context, item));
       },
@@ -4083,6 +4104,7 @@ List<AppListTableColumn<PharmacyOrder>> _optionalPharmacyWorklistColumns(
             left.prescriberDisplayName,
             right.prescriberDisplayName,
           ),
+      exportValue: (PharmacyOrder item) => item.prescriberDisplayName ?? '',
       cellBuilder: (BuildContext context, PharmacyOrder item) {
         return Text(item.prescriberDisplayName ?? '');
       },
@@ -4092,6 +4114,7 @@ List<AppListTableColumn<PharmacyOrder>> _optionalPharmacyWorklistColumns(
       label: l10n.pharmacyOrderSourceFieldLabel,
       sortComparator: (PharmacyOrder left, PharmacyOrder right) =>
           appListTableCompareText(left.orderSource, right.orderSource),
+      exportValue: (PharmacyOrder item) => _orderSourceLabel(context, item),
       cellBuilder: (BuildContext context, PharmacyOrder item) {
         return Text(_orderSourceLabel(context, item));
       },
@@ -4104,6 +4127,9 @@ List<AppListTableColumn<PharmacyOrder>> _optionalPharmacyWorklistColumns(
             left.pendingAttestationBatchCount,
             right.pendingAttestationBatchCount,
           ),
+      exportValue: (PharmacyOrder item) => item.hasPendingAttestation
+          ? (item.firstPendingBatchRef ?? l10n.pharmacyPendingBatchLabel)
+          : '',
       cellBuilder: (BuildContext context, PharmacyOrder item) {
         return Text(
           item.hasPendingAttestation
@@ -4121,6 +4147,8 @@ List<AppListTableColumn<PharmacyOrder>> _optionalPharmacyWorklistColumns(
             left.quantityRemainingTotal,
             right.quantityRemainingTotal,
           ),
+      exportValue: (PharmacyOrder item) =>
+          _numberLabel(item.quantityRemainingTotal),
       cellBuilder: (BuildContext context, PharmacyOrder item) {
         return Text(_numberLabel(item.quantityRemainingTotal));
       },

@@ -24,7 +24,7 @@ int radiologySectionTabCount(
   if (!_radiologyQueryNarrowed(state.query)) {
     return scopeTotal;
   }
-  return state.orders.totalItemCount ?? state.orders.items.length;
+  return state.orders.totalItemCount ?? scopeTotal;
 }
 
 bool _radiologyQueryNarrowed(RadiologyWorkspaceQuery query) {

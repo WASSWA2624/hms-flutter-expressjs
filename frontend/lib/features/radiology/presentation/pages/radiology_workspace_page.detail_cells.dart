@@ -482,10 +482,15 @@ String _billingGateLabel(BuildContext context, RadiologyOrder order) {
     return l10n.radiologyBillingGateUnavailable;
   }
 
-  return _joinDisplay(<String?>[
-    order.effectivePaymentStatus,
-    order.authorizationStatus,
-  ]).ifEmpty(l10n.profileUnknownValue);
+  final String? payment = order.effectivePaymentStatus?.trim();
+  if (payment != null && payment.isNotEmpty) {
+    return payment;
+  }
+  final String? authorization = order.authorizationStatus?.trim();
+  if (authorization != null && authorization.isNotEmpty) {
+    return authorization;
+  }
+  return l10n.profileUnknownValue;
 }
 
 AppWorkspaceStatusTone _worklistStatusTone(RadiologyOrder order) {

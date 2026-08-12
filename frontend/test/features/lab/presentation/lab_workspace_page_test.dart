@@ -232,7 +232,7 @@ void main() {
     expect(find.byTooltip('Refresh'), findsNothing);
     expect(find.byTooltip('Orders view'), findsNothing);
     expect(_table(tester).columnVisibilityLabel, 'Settings');
-    expect(_table(tester).columnVisibilityTitle, 'Lab desk settings');
+    expect(_table(tester).columnVisibilityTitle, 'Table Settings');
     expect(_table(tester).search?.advancedFilterButtonLabel, 'Filters');
     expect(_table(tester).search?.advancedFilterTitle, 'Advanced filters');
     expect(_table(tester).search?.enableDateFilter, isTrue);

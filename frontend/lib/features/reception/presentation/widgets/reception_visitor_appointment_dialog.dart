@@ -14,6 +14,9 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 
 /// Schedule a visitor (non-patient) meeting with any facility staff host.
+///
+/// When [embedded] is true, only the form body is built so a parent dialog can
+/// own the tab strip and pinned footer actions.
 class ReceptionVisitorAppointmentDialog extends ConsumerStatefulWidget {
   const ReceptionVisitorAppointmentDialog({
     this.embedded = false,
@@ -29,11 +32,11 @@ class ReceptionVisitorAppointmentDialog extends ConsumerStatefulWidget {
   final ValueChanged<bool>? onBusyChanged;
 
   @override
-  ConsumerState<ReceptionVisitorAppointmentDialog> createState() =>
-      _ReceptionVisitorAppointmentDialogState();
+  ReceptionVisitorAppointmentDialogState createState() =>
+      ReceptionVisitorAppointmentDialogState();
 }
 
-class _ReceptionVisitorAppointmentDialogState
+class ReceptionVisitorAppointmentDialogState
     extends ConsumerState<ReceptionVisitorAppointmentDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _visitorNameController = TextEditingController();
@@ -54,7 +57,9 @@ class _ReceptionVisitorAppointmentDialogState
   bool _isSaving = false;
   AppFailure? _failure;
 
-  bool get _isBusy => _isSaving || _isLoadingHosts;
+  bool get isSaving => _isSaving;
+
+  bool get isBusy => _isSaving || _isLoadingHosts;
 
   @override
   void initState() {
@@ -87,7 +92,7 @@ class _ReceptionVisitorAppointmentDialogState
 
     final Widget form = AppFormShell(
       formKey: _formKey,
-      enabled: !_isBusy,
+      enabled: !isBusy,
       density: AppFormSectionDensity.compact,
       formStatus: appFormFailureStatus(
         context,
@@ -104,7 +109,7 @@ class _ReceptionVisitorAppointmentDialogState
         AppTextField(
           controller: _visitorNameController,
           labelText: l10n.receptionVisitorNameLabel,
-          enabled: !_isBusy,
+          enabled: !isBusy,
           isRequired: true,
           textInputAction: TextInputAction.next,
           validator: (String? value) {
@@ -120,14 +125,14 @@ class _ReceptionVisitorAppointmentDialogState
             AppTextField(
               controller: _visitorPhoneController,
               labelText: l10n.receptionVisitorPhoneLabel,
-              enabled: !_isBusy,
+              enabled: !isBusy,
               keyboardType: TextInputType.phone,
               textInputAction: TextInputAction.next,
             ),
             AppTextField(
               controller: _visitorOrganizationController,
               labelText: l10n.receptionVisitorOrganizationLabel,
-              enabled: !_isBusy,
+              enabled: !isBusy,
               textInputAction: TextInputAction.next,
             ),
           ],
@@ -137,7 +142,7 @@ class _ReceptionVisitorAppointmentDialogState
           labelText: l10n.receptionStaffHostLabel,
           hintText: l10n.receptionStaffHostSearchHint,
           options: hostOptions,
-          enabled: !_isBusy,
+          enabled: !isBusy,
           isLoading: _isLoadingHosts,
           isRequired: true,
           enableSpeechToText: false,
@@ -159,7 +164,7 @@ class _ReceptionVisitorAppointmentDialogState
               labelText: l10n.patientsAppointmentDateLabel,
               pickerButtonLabel: l10n.patientsDatePickerAction,
               invalidDateMessage: l10n.appDateInvalidMessage,
-              enabled: !_isBusy,
+              enabled: !isBusy,
               isRequired: true,
               validator: AppValidators.requiredValue(l10n.validationRequired),
               onChanged: (DateTime? value) => setState(() => _date = value),
@@ -175,7 +180,7 @@ class _ReceptionVisitorAppointmentDialogState
                   hintText: l10n.patientsTimeHint,
                   hourLabelText: l10n.appTimeHourLabel,
                   minuteLabelText: l10n.appTimeMinuteLabel,
-                  enabled: !_isBusy,
+                  enabled: !isBusy,
                   isRequired: true,
                   validator: (AppTimeValue? value) =>
                       value == null ? l10n.validationRequired : null,
@@ -186,7 +191,7 @@ class _ReceptionVisitorAppointmentDialogState
                 AppTextField(
                   controller: _durationController,
                   labelText: l10n.patientsAppointmentDurationLabel,
-                  enabled: !_isBusy,
+                  enabled: !isBusy,
                   isRequired: true,
                   keyboardType: TextInputType.number,
                   validator: (String? value) {
@@ -204,53 +209,112 @@ class _ReceptionVisitorAppointmentDialogState
         AppTextField(
           controller: _reasonController,
           labelText: l10n.patientsAppointmentReasonLabel,
-          enabled: !_isBusy,
+          enabled: !isBusy,
           maxLines: 2,
           textInputAction: TextInputAction.done,
         ),
       ],
     );
 
-    final List<Widget> actions = <Widget>[
-      if (widget.onCancel != null)
-        AppButton(
-          label: l10n.commonCancelActionLabel,
-          onPressed: _isBusy ? null : widget.onCancel,
-        ),
-      AppButton(
-        label: l10n.receptionScheduleAppointmentAction,
-        variant: AppButtonVariant.primary,
-        isLoading: _isSaving,
-        onPressed: _isBusy ? null : _submit,
-      ),
-    ];
-
     if (widget.embedded) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          form,
-          const SizedBox(height: 16),
-          Wrap(
-            alignment: WrapAlignment.end,
-            spacing: 8,
-            runSpacing: 8,
-            children: actions,
-          ),
-        ],
-      );
+      return form;
     }
 
     return AppDialog(
       title: Text(l10n.receptionVisitorMeetingTitle),
       icon: const Icon(Icons.badge_outlined),
       scrollable: true,
-      closeEnabled: !_isBusy,
+      pinActionsToBottom: true,
+      closeEnabled: !isBusy,
       maxWidth: 720,
       content: form,
-      actions: actions,
+      actions: <Widget>[
+        if (widget.onCancel != null)
+          AppButton.close(
+            label: l10n.commonCancelActionLabel,
+            leadingIcon: AppActionIcons.cancel,
+            enabled: !isBusy,
+            onPressed: isBusy ? null : widget.onCancel,
+          ),
+        AppButton.primary(
+          label: l10n.receptionScheduleAppointmentAction,
+          leadingIcon: AppActionIcons.calendar,
+          isLoading: _isSaving,
+          enabled: !isBusy,
+          onPressed: isBusy ? null : () => unawaited(submit()),
+        ),
+      ],
     );
+  }
+
+  /// Validates and creates the visitor appointment.
+  ///
+  /// Returns `true` on success (and invokes [ReceptionVisitorAppointmentDialog.onSaved]
+  /// when provided). Returns `false` on validation or API failure.
+  Future<bool> submit() async {
+    if (isBusy) {
+      return false;
+    }
+    if (!validateAndSaveAppForm(_formKey)) {
+      return false;
+    }
+    final DateTime? scheduledStart = _combineDateAndTime(_date, _startTime);
+    if (scheduledStart == null) {
+      setState(() => _failure = AppFailure.validation());
+      return false;
+    }
+    final int duration = int.parse(_durationController.text.trim());
+    final DateTime scheduledEnd = scheduledStart.add(
+      Duration(minutes: duration),
+    );
+
+    setState(() {
+      _isSaving = true;
+      _failure = null;
+    });
+    widget.onBusyChanged?.call(true);
+
+    final AppFailure? failure = await ref
+        .read(opdWorkspaceControllerProvider.notifier)
+        .createAppointment(<String, Object?>{
+          'subject_type': 'VISITOR',
+          'visitor_name': _visitorNameController.text.trim(),
+          'visitor_phone': _visitorPhoneController.text.trim().isEmpty
+              ? null
+              : _visitorPhoneController.text.trim(),
+          'visitor_organization':
+              _visitorOrganizationController.text.trim().isEmpty
+              ? null
+              : _visitorOrganizationController.text.trim(),
+          'provider_user_id': _hostId,
+          'status': 'SCHEDULED',
+          'scheduled_start': scheduledStart.toUtc().toIso8601String(),
+          'scheduled_end': scheduledEnd.toUtc().toIso8601String(),
+          'reason': _reasonController.text.trim().isEmpty
+              ? null
+              : _reasonController.text.trim(),
+        });
+
+    if (!mounted) {
+      return false;
+    }
+    if (failure != null) {
+      setState(() {
+        _isSaving = false;
+        _failure = failure;
+      });
+      widget.onBusyChanged?.call(false);
+      return false;
+    }
+
+    setState(() => _isSaving = false);
+    widget.onBusyChanged?.call(false);
+    if (widget.onSaved != null) {
+      widget.onSaved!();
+      return true;
+    }
+    Navigator.of(context).pop(true);
+    return true;
   }
 
   Future<void> _loadHosts() async {
@@ -293,71 +357,6 @@ class _ReceptionVisitorAppointmentDialogState
       },
     );
     widget.onBusyChanged?.call(false);
-  }
-
-  Future<void> _submit() async {
-    if (_isBusy) {
-      return;
-    }
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-    final DateTime? scheduledStart = _combineDateAndTime(_date, _startTime);
-    if (scheduledStart == null) {
-      setState(() => _failure = AppFailure.validation());
-      return;
-    }
-    final int duration = int.parse(_durationController.text.trim());
-    final DateTime scheduledEnd = scheduledStart.add(
-      Duration(minutes: duration),
-    );
-
-    setState(() {
-      _isSaving = true;
-      _failure = null;
-    });
-    widget.onBusyChanged?.call(true);
-
-    final AppFailure? failure = await ref
-        .read(opdWorkspaceControllerProvider.notifier)
-        .createAppointment(<String, Object?>{
-          'subject_type': 'VISITOR',
-          'visitor_name': _visitorNameController.text.trim(),
-          'visitor_phone': _visitorPhoneController.text.trim().isEmpty
-              ? null
-              : _visitorPhoneController.text.trim(),
-          'visitor_organization':
-              _visitorOrganizationController.text.trim().isEmpty
-              ? null
-              : _visitorOrganizationController.text.trim(),
-          'provider_user_id': _hostId,
-          'status': 'SCHEDULED',
-          'scheduled_start': scheduledStart.toUtc().toIso8601String(),
-          'scheduled_end': scheduledEnd.toUtc().toIso8601String(),
-          'reason': _reasonController.text.trim().isEmpty
-              ? null
-              : _reasonController.text.trim(),
-        });
-
-    if (!mounted) {
-      return;
-    }
-    if (failure != null) {
-      setState(() {
-        _isSaving = false;
-        _failure = failure;
-      });
-      widget.onBusyChanged?.call(false);
-      return;
-    }
-
-    setState(() => _isSaving = false);
-    widget.onBusyChanged?.call(false);
-    if (widget.onSaved != null) {
-      widget.onSaved!();
-      return;
-    }
-    Navigator.of(context).pop(true);
   }
 
   DateTime? _combineDateAndTime(DateTime? date, AppTimeValue? time) {

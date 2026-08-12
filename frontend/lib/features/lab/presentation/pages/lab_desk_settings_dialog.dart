@@ -41,9 +41,9 @@ Future<LabDeskSettingsResult?> showLabDeskSettingsDialog<T>({
       allowedDefaultTabs: allowedDefaultTabs.isEmpty
           ? LabDeskSection.values
           : allowedDefaultTabs,
-      title: l10n.labDeskSettingsTitle,
-      applyLabel: l10n.labApplyColumnsAction,
-      resetLabel: l10n.labResetColumnsAction,
+      title: l10n.commonTableSettingsTitle,
+      applyLabel: l10n.receptionApplyColumnsAction,
+      resetLabel: l10n.receptionResetColumnsAction,
       closeLabel: l10n.commonCloseActionLabel,
     ),
   );

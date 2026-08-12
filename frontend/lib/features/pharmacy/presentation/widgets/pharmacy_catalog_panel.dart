@@ -210,11 +210,15 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
         l10n: l10n,
         drugs: widget.state.drugs.items,
       ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
       exportConfig: AppListTableExportConfig<PharmacyDrug>(
         fileNameStem: 'pharmacy_drugs',
         dateOf: (PharmacyDrug item) => item.createdAt,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
       ),
-      loadingMoreLabel: l10n.pharmacyDrugsLoadingMoreLabel,
       loadingBuilder: (BuildContext context) {
         final ThemeData theme = Theme.of(context);
         return Padding(
@@ -327,6 +331,7 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
           label: l10n.pharmacyDrugCodeLabel,
           preferredWidth: 120,
           alwaysVisible: true,
+          exportValue: (PharmacyDrug item) => item.code ?? '',
           cellBuilder: (_, PharmacyDrug item) => Text(item.code ?? ''),
         ),
         AppListTableColumn<PharmacyDrug>(
@@ -405,30 +410,38 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
         AppListTableColumn<PharmacyDrug>(
           id: 'buy_price',
           label: l10n.pharmacyBuyPriceLabel,
+          exportValue: (PharmacyDrug item) => _priceText(item.buyUnitPrice),
           cellBuilder: (_, PharmacyDrug item) =>
               Text(_priceText(item.buyUnitPrice)),
         ),
         AppListTableColumn<PharmacyDrug>(
           id: 'pharmacy_price',
           label: l10n.pharmacyPharmacyPriceLabel,
+          exportValue: (PharmacyDrug item) =>
+              _priceText(item.pharmacyUnitPrice ?? item.unitPrice),
           cellBuilder: (_, PharmacyDrug item) =>
               Text(_priceText(item.pharmacyUnitPrice ?? item.unitPrice)),
         ),
         AppListTableColumn<PharmacyDrug>(
           id: 'transfer_price',
           label: l10n.pharmacyTransferPriceLabel,
+          exportValue: (PharmacyDrug item) =>
+              _priceText(item.transferUnitPrice),
           cellBuilder: (_, PharmacyDrug item) =>
               Text(_priceText(item.transferUnitPrice)),
         ),
         AppListTableColumn<PharmacyDrug>(
           id: 'facility_price',
           label: l10n.pharmacyFacilityPriceLabel,
+          exportValue: (PharmacyDrug item) =>
+              _priceText(item.facilityUnitPrice),
           cellBuilder: (_, PharmacyDrug item) =>
               Text(_priceText(item.facilityUnitPrice)),
         ),
         AppListTableColumn<PharmacyDrug>(
           id: 'storage_location',
           label: l10n.pharmacyStorageLocationColumnLabel,
+          exportValue: (PharmacyDrug item) => item.storageLocationLabel ?? '',
           cellBuilder: (_, PharmacyDrug item) =>
               Text(item.storageLocationLabel ?? '—'),
         ),
@@ -436,6 +449,12 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
           id: 'reorder_level',
           label: l10n.pharmacyReorderLevelColumnLabel,
           numeric: true,
+          exportValue: (PharmacyDrug item) {
+            final num reorderLevel = item.stockRows.isNotEmpty
+                ? item.stockRows.first.reorderLevel
+                : 0;
+            return reorderLevel.toString();
+          },
           cellBuilder: (_, PharmacyDrug item) {
             final num reorderLevel = item.stockRows.isNotEmpty
                 ? item.stockRows.first.reorderLevel
@@ -446,6 +465,8 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
         AppListTableColumn<PharmacyDrug>(
           id: 'stock_status',
           label: l10n.pharmacyStockStatusFilterLabel,
+          exportValue: (PharmacyDrug item) =>
+              _stockStatus(context, item.stockStatus).label,
           cellBuilder: (BuildContext context, PharmacyDrug item) {
             return AppWorkspaceStatusBadge(
               status: _stockStatus(context, item.stockStatus),
@@ -681,9 +702,14 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
         l10n: l10n,
         items: widget.state.formularyItems.items,
       ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
       exportConfig: AppListTableExportConfig<PharmacyFormularyItem>(
         fileNameStem: 'pharmacy_formulary',
         dateOf: (PharmacyFormularyItem item) => item.createdAt,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
         rowFilter: (PharmacyFormularyItem item, AppSearchBarFilterValue filters) {
           return _matchesFormularyExportFilters(item, filters);
         },
@@ -1448,9 +1474,14 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
         l10n: l10n,
         stocks: widget.state.inventoryWorkbench.stocks.items,
       ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
       exportConfig: AppListTableExportConfig<PharmacyInventoryStock>(
         fileNameStem: 'pharmacy_inventory',
         dateOf: (PharmacyInventoryStock item) => item.nextExpiry ?? item.createdAt,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
         rowFilter: (PharmacyInventoryStock item, AppSearchBarFilterValue filters) {
           return _matchesInventoryExportFilters(item, filters);
         },
