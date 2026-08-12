@@ -52,15 +52,28 @@ void main() {
     expect(dialog.actions, hasLength(1));
     expect(find.byType(AppQuickActions), findsOneWidget);
     expect(find.text('QUEUE ACTIONS'), findsOneWidget);
+    expect(find.text('Encounter context'), findsNothing);
     expect(find.text('Prioritize'), findsOneWidget);
     expect(find.text('Change status'), findsOneWidget);
     expect(find.text('Change doctor'), findsOneWidget);
-    expect(find.text('Start consultation'), findsNothing);
+    expect(find.text('Start encounter'), findsNothing);
     expect(find.text('Close'), findsOneWidget);
     expect(find.text('Patient Example'), findsOneWidget);
     expect(find.byType(OpdWorkflowContextPanel), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(find.byType(LinearProgressIndicator), findsNothing);
+  });
+
+  testWidgets('OPD start-encounter mode shows Start encounter as primary', (
+    WidgetTester tester,
+  ) async {
+    await _pumpDialog(tester, entry, allowStartEncounter: true);
+
+    expect(find.text('Start encounter'), findsOneWidget);
+    expect(find.text('Encounter context'), findsNothing);
+    expect(find.text('Prioritize'), findsOneWidget);
+    expect(find.text('Change status'), findsOneWidget);
+    expect(find.text('Change doctor'), findsOneWidget);
   });
 
   testWidgets('hides mutation actions after the queue entry is terminal', (
@@ -72,8 +85,8 @@ void main() {
     expect(find.text('Prioritize'), findsNothing);
     expect(find.text('Change status'), findsNothing);
     expect(find.text('Change doctor'), findsNothing);
-    expect(find.text('Assign doctor'), findsNothing);
     expect(find.text('Start consultation'), findsNothing);
+    expect(find.text('Start encounter'), findsNothing);
     expect(find.text('Close'), findsOneWidget);
   });
 
@@ -97,6 +110,7 @@ void main() {
     expect(find.text('Change doctor'), findsNothing);
     expect(find.text('Assign doctor'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Start consultation'), findsNothing);
+    expect(find.text('Start encounter'), findsNothing);
     expect(find.text('Close'), findsOneWidget);
   });
 
@@ -234,6 +248,7 @@ Future<void> _pumpDialog(
   OpdQueueEntry entry, {
   AppAccessPolicy? policy,
   bool dark = false,
+  bool allowStartEncounter = false,
   TextScaler textScaler = TextScaler.noScaling,
   OpdRepository? repository,
 }) async {
@@ -270,7 +285,12 @@ Future<void> _pumpDialog(
             child: child!,
           );
         },
-        home: Scaffold(body: QueueActionsDialog(entry: entry)),
+        home: Scaffold(
+          body: QueueActionsDialog(
+            entry: entry,
+            allowStartEncounter: allowStartEncounter,
+          ),
+        ),
       ),
     ),
   );

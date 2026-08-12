@@ -8,6 +8,7 @@ import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
+import 'package:hosspi_hms/features/opd/presentation/opd_access.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -17,21 +18,30 @@ import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart'
-    show opdFrontDeskActionRequirement;
+    show opdFrontDeskActionRequirement, showFlowActionsDialog;
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 
 /// Shared queue status / doctor / prioritize actions for OPD and Reception.
+///
+/// Set [allowStartEncounter] on OPD so staff can open the clinical Flow Actions
+/// hub (vitals, triage routing, doctor/nurse work) after starting the visit.
 Future<bool?> showQueueActionsDialog({
   required BuildContext context,
   required OpdQueueEntry entry,
   AccessRequirement actionRequirement = opdFrontDeskActionRequirement,
+  AccessRequirement startEncounterRequirement = opdStartEncounterRequirement,
+  bool allowStartEncounter = false,
 }) {
   return showAppDialog<bool>(
     context: context,
     barrierDismissible: false,
-    builder: (_) =>
-        QueueActionsDialog(entry: entry, actionRequirement: actionRequirement),
+    builder: (_) => QueueActionsDialog(
+      entry: entry,
+      actionRequirement: actionRequirement,
+      startEncounterRequirement: startEncounterRequirement,
+      allowStartEncounter: allowStartEncounter,
+    ),
   );
 }
 
@@ -56,6 +66,8 @@ class QueueActionsDialog extends ConsumerWidget {
   const QueueActionsDialog({
     required this.entry,
     this.actionRequirement = opdFrontDeskActionRequirement,
+    this.startEncounterRequirement = opdStartEncounterRequirement,
+    this.allowStartEncounter = false,
     super.key,
   });
 
@@ -63,6 +75,12 @@ class QueueActionsDialog extends ConsumerWidget {
 
   /// Front-desk write gate. Reception passes `receptionFrontDeskWriteRequirement`.
   final AccessRequirement actionRequirement;
+
+  /// Gate for starting an OPD encounter from this queue row (OPD only).
+  final AccessRequirement startEncounterRequirement;
+
+  /// When true (OPD Queue), shows Start encounter and opens Flow Actions after.
+  final bool allowStartEncounter;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -73,6 +91,7 @@ class QueueActionsDialog extends ConsumerWidget {
     final String doctorActionLabel = hasProvider
         ? l10n.opdChangeDoctorAction
         : l10n.opdAssignDoctorAction;
+    final bool alreadyPrioritized = entry.isPrioritized;
 
     return AppDialog(
       title: Text(l10n.opdQueueActionsTitle),
@@ -88,6 +107,9 @@ class QueueActionsDialog extends ConsumerWidget {
             patientNumber: entry.patientIdentifier ?? '',
             currentStep: opdStageDisplayLabel(l10n, entry.status),
             currentStepCode: entry.status,
+            phoneLabel: entry.patientPhone,
+            // Single patient section — do not wrap in "Encounter context".
+            showTitle: false,
             initiallyExpanded: true,
             expandedFields: <AppWorkspacePatientContextField>[
               AppWorkspacePatientContextField(
@@ -113,26 +135,40 @@ class QueueActionsDialog extends ConsumerWidget {
             AppQuickActions(
               title: l10n.patientsQuickActionsTitle,
               permissionActions: <AppPermissionActionItem>[
-                AppPermissionActionItem(
-                  requirement: actionRequirement,
-                  label: l10n.opdPrioritizeAction,
-                  icon: AppActionIcons.priority,
-                  fullWidth: true,
-                  onPressed: () => _openPrioritize(context, ref),
-                ),
+                if (allowStartEncounter)
+                  AppPermissionActionItem(
+                    requirement: startEncounterRequirement,
+                    label: l10n.opdStartEncounterAction,
+                    icon: AppActionIcons.personAdd,
+                    fullWidth: true,
+                    variant: AppButtonVariant.primary,
+                    tooltip: l10n.opdStartEncounterTooltip,
+                    onPressed: () =>
+                        unawaited(_openStartEncounter(context, ref)),
+                  ),
+                if (!alreadyPrioritized)
+                  AppPermissionActionItem(
+                    requirement: actionRequirement,
+                    label: l10n.opdPrioritizeAction,
+                    icon: AppActionIcons.priority,
+                    fullWidth: true,
+                    tooltip: l10n.opdPrioritizeQueueDescription,
+                    onPressed: () => unawaited(_openPrioritize(context, ref)),
+                  ),
                 AppPermissionActionItem(
                   requirement: actionRequirement,
                   label: l10n.opdMoveQueueAction,
                   icon: AppActionIcons.move,
                   fullWidth: true,
-                  onPressed: () => _openChangeStatus(context),
+                  tooltip: l10n.opdMoveQueueTitle,
+                  onPressed: () => unawaited(_openChangeStatus(context)),
                 ),
                 AppPermissionActionItem(
                   requirement: actionRequirement,
                   label: doctorActionLabel,
                   icon: AppActionIcons.assignDoctor,
                   fullWidth: true,
-                  onPressed: () => _openAssignDoctor(context),
+                  onPressed: () => unawaited(_openAssignDoctor(context)),
                 ),
               ],
             ),
@@ -146,6 +182,47 @@ class QueueActionsDialog extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _openStartEncounter(BuildContext context, WidgetRef ref) async {
+    final AppLocalizations l10n = context.l10n;
+    final bool? confirmed = await showAppDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AppConfirmActionDialog(
+        title: l10n.opdStartEncounterAction,
+        body: l10n.opdStartConsultationConfirmationMessage,
+        submitLabel: l10n.opdStartEncounterAction,
+        submitLeadingIcon: AppActionIcons.personAdd,
+        icon: const Icon(AppActionIcons.personAdd),
+        onConfirm: () => ref
+            .read(opdWorkspaceControllerProvider.notifier)
+            .startOpdFromQueue(entry),
+      ),
+    );
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+
+    final OpdFlowSummary? startedFlow = ref
+        .read(opdWorkspaceControllerProvider)
+        .asData
+        ?.value
+        .when(
+          success: (OpdWorkspaceState state) => state.selectedFlow?.summary,
+          failure: (_) => null,
+        );
+
+    if (startedFlow != null && context.mounted) {
+      await showFlowActionsDialog(
+        context: context,
+        flow: startedFlow,
+        printActionLabel: l10n.commonPrintActionLabel,
+      );
+    }
+    if (context.mounted) {
+      Navigator.of(context).pop(true);
+    }
   }
 
   Future<void> _openPrioritize(BuildContext context, WidgetRef ref) async {

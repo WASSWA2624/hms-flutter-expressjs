@@ -2858,7 +2858,7 @@ Future<void> _openOpdTableItemActions(
     final bool? changed = await showQueueActionsDialog(
       context: context,
       entry: queueEntry,
-      actionRequirement: OpdQueueAtomPermissions.write,
+      allowStartEncounter: true,
     );
     if (changed == true && context.mounted) {
       ScaffoldMessenger.of(
