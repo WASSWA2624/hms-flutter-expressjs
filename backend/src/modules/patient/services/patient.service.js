@@ -1099,6 +1099,9 @@ const createPatient = async (data, userId, ipAddress, scope = {}) => {
     delete payload.primary_email;
     delete payload.primary_identifier_type;
     delete payload.primary_identifier_value;
+    // Never persist national/MRN identifiers as patient PK or public id.
+    delete payload.id;
+    delete payload.human_friendly_id;
 
     payload.tenant_id = tenantId;
     payload.facility_id = facilityId;
@@ -1219,6 +1222,10 @@ const updatePatient = async (id, data, userId, ipAddress, scope = {}) => {
     delete payload.primary_email;
     delete payload.primary_identifier_type;
     delete payload.primary_identifier_value;
+    // Patient UUID / PAT id are immutable system fields.
+    delete payload.id;
+    delete payload.human_friendly_id;
+    delete payload.tenant_id;
 
     if (hasOwn(payload, 'facility_id')) {
       payload.facility_id = await resolveIdentifierForPayload({

@@ -374,13 +374,61 @@ describe('Patient Service', () => {
           display_name: 'John Doe'
         })
       );
-      expect(patientRepository.create).toHaveBeenCalledWith(mockData);
+      expect(patientRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tenant_id: mockData.tenant_id,
+          first_name: 'John',
+          last_name: 'Doe'
+        })
+      );
+      expect(patientRepository.create.mock.calls[0][0]).not.toHaveProperty('id');
+      expect(patientRepository.create.mock.calls[0][0]).not.toHaveProperty(
+        'human_friendly_id'
+      );
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         tenant_id: mockData.tenant_id,
         user_id: mockUserId,
         action: 'CREATE',
         entity: 'patient'
       }));
+    });
+
+    it('should ignore client-provided id and human_friendly_id and keep clinical identifiers separate', async () => {
+      const mockData = {
+        id: 'CM91052101TYAH',
+        human_friendly_id: 'CM91052101TYAH',
+        tenant_id: '550e8400-e29b-41d4-a716-446655440123',
+        first_name: 'John',
+        last_name: 'Doe',
+        primary_identifier_type: 'NATIONAL_ID',
+        primary_identifier_value: 'CM91052101TYAH'
+      };
+      const mockPatient = {
+        id: '550e8400-e29b-41d4-a716-446655440456',
+        tenant_id: mockData.tenant_id,
+        first_name: 'John',
+        last_name: 'Doe',
+        human_friendly_id: 'PAT0000099'
+      };
+      patientRepository.create.mockResolvedValue(mockPatient);
+      patientRepository.findById.mockResolvedValue(mockPatient);
+
+      await patientService.createPatient(mockData, mockUserId, mockIpAddress);
+
+      const createPayload = patientRepository.create.mock.calls[0][0];
+      expect(createPayload).not.toHaveProperty('id');
+      expect(createPayload).not.toHaveProperty('human_friendly_id');
+      expect(createPayload).not.toHaveProperty('primary_identifier_type');
+      expect(createPayload).not.toHaveProperty('primary_identifier_value');
+      expect(patientIdentifierRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          patient_id: mockPatient.id,
+          identifier_type: 'NATIONAL_ID',
+          identifier_value: 'CM91052101TYAH',
+          is_primary: true
+        }),
+        expect.anything()
+      );
     });
 
     it('should create linked primary contact and identifier records when provided', async () => {

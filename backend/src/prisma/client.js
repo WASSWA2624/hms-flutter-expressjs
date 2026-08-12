@@ -109,7 +109,13 @@ const MODEL_PREFIX_OVERRIDES = Object.freeze({
   invoice: 'INV',
   payment: 'PAY',
   role: 'ROL',
-  permission: 'PER'});
+  permission: 'PER',
+  patient_identifier: 'PID',
+  patient_contact: 'PCO',
+  patient_guardian: 'PGU',
+  patient_allergy: 'PAL',
+  patient_document: 'PDO',
+  patient_medical_history: 'PMH'});
 
 const ROLE_PREFIX_MAP = Object.freeze({
   PLATFORM_OWNER: 'OWN',
@@ -269,6 +275,8 @@ const assignFriendlyIdIfMissing = async (prismaClient, model, data) => {
 
   if (typeof data.human_friendly_id === 'string' && data.human_friendly_id.trim()) {
     const standardizedInput = data.human_friendly_id.trim().toUpperCase();
+    // Keep only system-style friendly ids (ABC1234567). Clinical identifiers
+    // like NATIONAL_ID / MRN values must never become human_friendly_id.
     if (isFriendlyId(standardizedInput)) {
       data.human_friendly_id = standardizedInput;
       return;
