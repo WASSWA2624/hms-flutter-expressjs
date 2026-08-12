@@ -14,15 +14,6 @@ const getAiStatus = asyncHandler(async (req, res) => {
 });
 
 const runAiTask = asyncHandler(async (req, res) => {
-  // Send headers before the model call so browser XHR connect-timeout
-  // does not abort while Ollama is still generating.
-  if (typeof res.setHeader === 'function') {
-    res.setHeader('X-Accel-Buffering', 'no');
-  }
-  if (typeof res.flushHeaders === 'function') {
-    res.flushHeaders();
-  }
-
   const result = await aiService.runAiTask(req.params.task_key, req.body, {
     signal: req.signal,
   });

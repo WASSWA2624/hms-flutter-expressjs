@@ -426,18 +426,19 @@ class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
     final String? formatted = outcome.text;
     if (!stillOwned || formatted == null || formatted.trim().isEmpty) {
       if (stillOwned) {
-        final bool timedOut =
-            outcome.failure?.category == AppFailureCategory.timeout;
+        final AppFailure? failure = outcome.failure;
         setState(() {
-          _aiFeedbackTitle = timedOut
-              ? l10n.commonAiFormatBusyTitle
-              : l10n.commonAiFormatUnavailableTitle;
-          _aiFeedback = outcome.failure != null
-              ? l10n.failureMessage(outcome.failure!)
-              : l10n.commonAiFormatUnavailableMessage;
-          _aiFeedbackVariant = timedOut
-              ? AppFormInformationVariant.error
-              : AppFormInformationVariant.warning;
+          if (failure != null) {
+            _aiFeedbackTitle = l10n.failureTitle(failure);
+            _aiFeedback = l10n.failureMessage(failure);
+            _aiFeedbackVariant = failure.category == AppFailureCategory.timeout
+                ? AppFormInformationVariant.error
+                : AppFormInformationVariant.warning;
+          } else {
+            _aiFeedbackTitle = l10n.commonAiFormatUnavailableTitle;
+            _aiFeedback = l10n.commonAiFormatUnavailableMessage;
+            _aiFeedbackVariant = AppFormInformationVariant.warning;
+          }
         });
       }
       return;
