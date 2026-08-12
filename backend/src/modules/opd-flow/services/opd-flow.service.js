@@ -1673,12 +1673,52 @@ const sortEmergencyQueueItems = (items = []) =>
     return leftId.localeCompare(rightId);
   });
 
+const hasOpdFlowState = (encounter) => Boolean(encounter?.extension_json?.opd_flow);
+
+const buildMinimalOpdFlowShell = ({
+  arrivalMode = 'WALK_IN',
+  stage = STAGES.WAITING_VITALS
+} = {}) => ({
+  version: 1,
+  arrival_mode: arrivalMode,
+  stage,
+  next_step: getNextStep(stage),
+  consultation: {
+    require_payment: false,
+    consultation_fee: null,
+    currency: null,
+    invoice_id: null,
+    payment_id: null,
+    payment_status: 'NOT_REQUIRED',
+    is_paid: false,
+    paid_amount: null,
+    paid_at: null
+  },
+  appointment_id: null,
+  visit_queue_id: null,
+  emergency_case_id: null,
+  triage_assessment_id: null,
+  lab_order_ids: [],
+  radiology_order_ids: [],
+  pharmacy_order_id: null,
+  admission_id: null,
+  review_completed: false,
+  timeline: []
+});
+
 const getOpdFlowState = (encounter) => {
   const opdFlow = encounter?.extension_json?.opd_flow;
   if (!opdFlow) {
     throw new HttpError('errors.opd_flow.not_found', 404);
   }
   return opdFlow;
+};
+
+const getOpdFlowStateOrShell = (encounter, shellOptions) => {
+  if (hasOpdFlowState(encounter)) {
+    return getOpdFlowState(encounter);
+  }
+  return buildMinimalOpdFlowShell(shellOptions);
 };
 
 const getNextStep = (stage) => NEXT_STEP_BY_STAGE[stage] || null;
@@ -2892,15 +2932,19 @@ const bootstrapOpdFlow = async (data = {}, context = {}) => {
         encounterTypes: ACTIVE_OPD_ENCOUNTER_TYPES
       });
       if (existingOpenEncounter) {
-        if (reuseOpenEncounter) {
+        if (reuseOpenEncounter && hasOpdFlowState(existingOpenEncounter)) {
           return { encounterId: existingOpenEncounter.id, reused: true };
         }
 
-        throwActiveOpdEncounterExists({
-          encounter_id: existingOpenEncounter.human_friendly_id || existingOpenEncounter.id,
-          encounter_type: existingOpenEncounter.encounter_type,
-          stage: existingOpenEncounter.extension_json?.opd_flow?.stage || null
-        });
+        if (!reuseOpenEncounter) {
+          throwActiveOpdEncounterExists({
+            encounter_id: existingOpenEncounter.human_friendly_id || existingOpenEncounter.id,
+            encounter_type: existingOpenEncounter.encounter_type,
+            stage: existingOpenEncounter.extension_json?.opd_flow?.stage || null
+          });
+        }
+        // Incomplete OPEN encounter (e.g. seed row without opd_flow): let startOpdFlow
+        // hydrate flow state onto the existing row instead of failing getOpdFlowById.
       }
 
       return {
@@ -2912,7 +2956,10 @@ const bootstrapOpdFlow = async (data = {}, context = {}) => {
           patient_id: patient.id,
           provider_user_id: providerUserId || null,
           arrival_mode: encounterType === 'EMERGENCY' ? 'EMERGENCY' : 'WALK_IN',
-          emergency: encounterType === 'EMERGENCY' ? { severity: 'HIGH' } : undefined
+          emergency: encounterType === 'EMERGENCY' ? { severity: 'HIGH' } : undefined,
+          ...(reuseOpenEncounter && existingOpenEncounter
+            ? { reuse_open_encounter: true }
+            : {})
         }
       };
     });
@@ -3098,6 +3145,7 @@ const startOpdFlow = async (data, context = {}) => {
         throw new HttpError('errors.opd_flow.appointment_queue_mismatch', 400, [{ field: 'visit_queue_id' }]);
       }
 
+      let incompleteOpenEncounterToHydrate = null;
       const existingOpenEncounter = await resolveOpenEncounterForPatient(tx, {
         tenantId,
         facilityId,
@@ -3124,7 +3172,12 @@ const startOpdFlow = async (data, context = {}) => {
             );
           }
 
-          const supersededFlow = getOpdFlowState(existingOpenEncounter);
+          const supersededFlow = getOpdFlowStateOrShell(existingOpenEncounter, {
+            arrivalMode:
+              existingOpenEncounter.encounter_type === 'EMERGENCY'
+                ? 'EMERGENCY'
+                : 'WALK_IN'
+          });
           supersededFlow.cancellation_reason_code = 'SUPERSEDED_BY_NEW_VISIT';
           supersededFlow.cancellation_reason_notes =
             normalizeNotes(data.supersede_reason_notes) || null;
@@ -3147,7 +3200,12 @@ const startOpdFlow = async (data, context = {}) => {
             'CANCELLED'
           );
         } else if (reuseOpenEncounter) {
-          return { existingEncounterId: existingOpenEncounter.id };
+          if (hasOpdFlowState(existingOpenEncounter)) {
+            return { existingEncounterId: existingOpenEncounter.id };
+          }
+          // Seeded/incomplete OPEN rows without opd_flow still hold the active
+          // lock. Hydrate flow state onto that row instead of 404-ing.
+          incompleteOpenEncounterToHydrate = existingOpenEncounter;
         } else {
           throwActiveOpdEncounterExists({
             encounter_id: existingOpenEncounter.human_friendly_id || existingOpenEncounter.id,
@@ -3375,31 +3433,60 @@ const startOpdFlow = async (data, context = {}) => {
       }
       flowState.visit_queue_id = visitQueue.id;
 
-      let encounter = await tx.encounter.create({
-        data: {
-          tenant_id: tenantId,
-          facility_id: facilityId,
-          patient_id: patientId,
-          provider_user_id: providerUserId,
-          encounter_type: arrivalMode === 'EMERGENCY' ? 'EMERGENCY' : 'OPD',
-          status: 'OPEN',
-          active_opd_lock_key: buildActiveOpdLockKey({
-            tenantId,
-            facilityId,
-            patientId
-          }),
-          started_at: startedAt,
-          extension_json: {
-            opd_flow: flowState
+      let encounter;
+      if (incompleteOpenEncounterToHydrate) {
+        encounter = await tx.encounter.update({
+          where: { id: incompleteOpenEncounterToHydrate.id },
+          data: {
+            provider_user_id:
+              providerUserId || incompleteOpenEncounterToHydrate.provider_user_id || null,
+            encounter_type: arrivalMode === 'EMERGENCY' ? 'EMERGENCY' : 'OPD',
+            active_opd_lock_key:
+              incompleteOpenEncounterToHydrate.active_opd_lock_key ||
+              buildActiveOpdLockKey({
+                tenantId,
+                facilityId,
+                patientId
+              }),
+            extension_json: {
+              ...(incompleteOpenEncounterToHydrate.extension_json || {}),
+              opd_flow: flowState
+            }
+          },
+          include: {
+            tenant: true,
+            facility: true,
+            patient: true,
+            provider: PROVIDER_INCLUDE
           }
-        },
-        include: {
-          tenant: true,
-          facility: true,
-          patient: true,
-          provider: PROVIDER_INCLUDE
-        }
-      });
+        });
+      } else {
+        encounter = await tx.encounter.create({
+          data: {
+            tenant_id: tenantId,
+            facility_id: facilityId,
+            patient_id: patientId,
+            provider_user_id: providerUserId,
+            encounter_type: arrivalMode === 'EMERGENCY' ? 'EMERGENCY' : 'OPD',
+            status: 'OPEN',
+            active_opd_lock_key: buildActiveOpdLockKey({
+              tenantId,
+              facilityId,
+              patientId
+            }),
+            started_at: startedAt,
+            extension_json: {
+              opd_flow: flowState
+            }
+          },
+          include: {
+            tenant: true,
+            facility: true,
+            patient: true,
+            provider: PROVIDER_INCLUDE
+          }
+        });
+      }
 
       const needsBillingForPaymentStage =
         shouldCreateConsultationInvoice ||

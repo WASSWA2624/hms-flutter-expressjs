@@ -743,6 +743,139 @@ visit_queue: {
     expect(result.flow.visit_queue_id).toBe('QUE000001');
   });
 
+  it('hydrates opd_flow onto an incomplete open encounter when reuse is requested', async () => {
+    const incompleteOpenEncounter = {
+      id: 'enc-seed-1',
+      human_friendly_id: 'ENC-SEED-1',
+      encounter_type: 'OPD',
+      status: 'OPEN',
+      tenant_id: 'TENANT-1',
+      facility_id: null,
+      patient_id: 'pat-1',
+      provider_user_id: null,
+      active_opd_lock_key: 'opd:TENANT-1:GLOBAL:pat-1',
+      extension_json: {
+        seed_pack: 'demo',
+        tenant_code: 'DMO'
+      }
+    };
+    const hydratedEncounter = {
+      id: 'enc-seed-1',
+      human_friendly_id: 'ENC-SEED-1',
+      tenant_id: 'TENANT-1',
+      encounter_type: 'OPD',
+      status: 'OPEN',
+      extension_json: {
+        seed_pack: 'demo',
+        tenant_code: 'DMO',
+        opd_flow: {
+          stage: 'WAITING_CONSULTATION_PAYMENT',
+          visit_queue_id: 'vq-1',
+          appointment_id: null,
+          consultation: {
+            invoice_id: null,
+            payment_id: null,
+            require_payment: true,
+            consultation_fee: '35.00',
+            currency: 'USD'
+          }
+        }
+      }
+    };
+    const tx = {
+      admission: {
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      tenant: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'TENANT-1' })
+      },
+      appointment: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        update: jest.fn()
+      },
+      patient: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'pat-1' }),
+        create: jest.fn()
+      },
+      invoice: {
+        create: jest.fn().mockResolvedValue({
+          id: 'inv-1',
+          total_amount: '35.00',
+          currency: 'USD'
+        }),
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'inv-1',
+          total_amount: '35.00',
+          currency: 'USD',
+          payments: []
+        }),
+        update: jest.fn().mockResolvedValue({
+          id: 'inv-1',
+          total_amount: '35.00',
+          currency: 'USD',
+          status: 'ISSUED'
+        })
+      },
+      payment: {
+        create: jest.fn(),
+        findFirst: jest.fn().mockResolvedValue(null)
+      },
+      emergency_case: {
+        create: jest.fn(),
+        findFirst: jest.fn()
+      },
+      triage_assessment: {
+        create: jest.fn(),
+        findFirst: jest.fn()
+      },
+      visit_queue: {
+        create: jest.fn().mockResolvedValue({ id: 'vq-1' }),
+        findFirst: jest.fn().mockResolvedValue(null),
+        update: jest.fn()
+      },
+      encounter: {
+        create: jest.fn(),
+        update: jest.fn().mockResolvedValue(hydratedEncounter),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        findFirst: jest.fn().mockResolvedValue(hydratedEncounter)
+      }
+    };
+
+    opdFlowRepository.findOpenActiveEncounterForPatient.mockResolvedValueOnce(
+      incompleteOpenEncounter
+    );
+    prisma.$transaction.mockImplementation(async (callback) => callback(tx));
+
+    const result = await opdFlowService.startOpdFlow(
+      {
+        tenant_id: 'tenant-1',
+        patient_id: 'PAT0000003',
+        reuse_open_encounter: true,
+        consultation_fee: '35.00',
+        require_consultation_payment: true
+      },
+      { tenant_id: 'tenant-1', user_id: 'usr-1' }
+    );
+
+    expect(tx.encounter.create).not.toHaveBeenCalled();
+    expect(tx.encounter.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'enc-seed-1' },
+        data: expect.objectContaining({
+          extension_json: expect.objectContaining({
+            seed_pack: 'demo',
+            opd_flow: expect.objectContaining({
+              stage: 'WAITING_CONSULTATION_PAYMENT',
+              visit_queue_id: 'vq-1'
+            })
+          })
+        })
+      })
+    );
+    expect(result.encounter.id).toBe('enc-seed-1');
+    expect(result.flow.stage).toBe('WAITING_CONSULTATION_PAYMENT');
+  });
+
   it('rejects a new OPD flow when the patient already has an open OPD or emergency encounter', async () => {
     const tx = {
       tenant: {
