@@ -7,6 +7,8 @@ alwaysApply: true
 
 Conventions for every create/edit/filter/mutation surface built with `AppFormShell`, shared field widgets, and dialog/page form bodies (including forms opened from workspace actions and forms nested in pages). Prefer extending shared form primitives; do not invent parallel field chrome or one-off layouts.
 
+Cross-cutting: [localization.mdc](localization.mdc), [theming.mdc](theming.mdc), [responsiveness.mdc](responsiveness.mdc), [prompt.mdc](prompt.mdc) (RBAC / UI states). Dialog chrome: [dialogs.mdc](dialogs.mdc). Advanced filter forms: [tables.mdc](tables.mdc).
+
 ## Field reuse and uniformity
 
 1. **Reuse existing fields only:** Prefer shared controls from `frontend/lib/shared/components/` and `frontend/lib/shared/forms/` (`AppTextField`, `AppSelectField`, `AppDateField`, `AppTimeField`, `AppPhoneField`, `AppEmailField`, `AppGenderField`, currency/amount fields, checkboxes, switches, radios, validators, etc.).
@@ -21,7 +23,7 @@ Conventions for every create/edit/filter/mutation surface built with `AppFormShe
 
 ## Layout and density
 
-1. Wrap form bodies in `AppFormShell` (with `AppFormSection` when grouping helps). Use `AppResponsiveFieldRow` / `AppResponsiveFieldRow.two` so fields **stack on small screens** and sit **in rows on large screens**.
+1. Wrap form bodies in `AppFormShell` (with `AppFormSection` when grouping helps). Use `AppResponsiveFieldRow` / `AppResponsiveFieldRow.two` so fields **stack on small screens** and sit **in rows on large screens** ([responsiveness.mdc](responsiveness.mdc)).
 2. Arrange fields in a clear entry order: identifying / primary facts first, then dependent details, then notes and secondary options.
 3. Keep related values adjacent (e.g. date-from beside date-to; amount beside currency; paired name fields on one row when space allows).
 4. On large screens, compact short inputs (small numbers, codes, short selects) onto the same row when readability stays clear—do not pack so tightly that labels, errors, or touch targets collide.
@@ -49,18 +51,13 @@ Conventions for every create/edit/filter/mutation surface built with `AppFormShe
 2. After successful mutations, synchronize affected lists, detail panes, and workflow state so the UI reflects the new record.
 3. For money and other high-impact actions (payments, allocations, status changes), update the relevant account/workflow state and surface clear success/error feedback so operators know what changed.
 4. Cover loading, empty option lists, validation, conflict, cancelled similarity, and success states explicitly.
-
-## Authorization and responsiveness
-
-1. Respect RBAC/ABAC: omit fields and submit actions the user cannot use; do not show disabled “no access” placeholders for routine unauthorized actions.
-2. Stay usable on mobile, tablet, and desktop; support light and dark themes via theme tokens.
-3. Keep primary actions reachable; avoid clipped content and inaccessible footers on small viewports.
+5. Omit fields and submit actions the user cannot use (RBAC/ABAC per [prompt.mdc](prompt.mdc)).
 
 ## Implementation constraints
 
 - Build on `AppFormShell`, `AppFormSection`, `AppResponsiveFieldRow`, `app_validators`, shared field widgets, and (when dialog-hosted) `showAppWorkspaceMutationDialog` / `buildAppDialogFormActions`.
 - Do not fork one-off form shells, field rows, or similarity review flows per feature when a shared path exists or can be extended.
-- Dialog chrome and titles belong in [dialogs.mdc](dialogs.mdc); table filter forms also follow [tables.mdc](tables.mdc) for Advanced filters layout.
+- This file owns form fields, layout density, dependent reset, similarity, and submit feedback—not dialog chrome or table filter anatomy.
 
 ## Relevant files
 

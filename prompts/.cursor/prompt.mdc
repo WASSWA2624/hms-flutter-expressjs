@@ -14,15 +14,15 @@ Prompts must define observable behavior without requiring scope or implementatio
 
 ## Implementation Requirements
 
-- Implementations must reuse existing logic, contracts, validation, authorization, routes, state, and design-system components. 
+- Implementations must reuse existing logic, contracts, validation, authorization, routes, state, and design-system components.
 - Backend RBAC and ABAC must remain authoritative via permissions. Unauthorized UI, data, routes, and actions must not render.
 - Disabled unauthorized controls or routine “no access” feedback must not render. Forbidden feedback may appear for direct restricted access, stale permissions, or backend denial.
 - Frontend data must synchronize after mutations.
-- UI changes must remain responsive on mobile, tablet, and desktop without clipping, overflow, duplication, or inaccessible actions.
-- UI changes must use theme tokens for color, typography, spacing, shape, and states, including supported light and dark themes.
+- UI must follow [localization.mdc](localization.mdc), [theming.mdc](theming.mdc), and [responsiveness.mdc](responsiveness.mdc)—do not restate those rules here.
 - Interfaces must stay simple, focused, concise, and visually hierarchical; secondary detail should use progressive disclosure.
 - Prompts must specify permission, loading, empty, error, success, validation, and visible-feedback states.
 - Do not recreate the removed `screens/` inventory folder or write markdown inventories there. Inventory UI atoms from feature presentation code, routes, and tests.
+- Surface-specific chrome belongs in [screens.mdc](screens.mdc), [tabs.mdc](tabs.mdc), [tables.mdc](tables.mdc), [dialogs.mdc](dialogs.mdc), [forms.mdc](forms.mdc), and [printing.mdc](printing.mdc)—reference them; do not repeat them.
 
 ## Writing Requirements
 

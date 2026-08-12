@@ -7,6 +7,8 @@ alwaysApply: true
 
 Conventions for every Print entry point (list-table toolbars, dialogs, detail panes, reports, and workflow actions). Prefer the shared print preview and document templates; do not invent parallel preview shells or silent print-to-device shortcuts.
 
+Cross-cutting: [localization.mdc](localization.mdc), [theming.mdc](theming.mdc), [responsiveness.mdc](responsiveness.mdc), [prompt.mdc](prompt.mdc) (RBAC / UI states). Table toolbar placement: [tables.mdc](tables.mdc). Dialog chrome: [dialogs.mdc](dialogs.mdc).
+
 ## Labels and placement
 
 1. **Generic action label only:** Use exactly `Print` (via existing l10n such as `commonPrintActionLabel` / feature `*PrintAction` keys that resolve to `Print`).
@@ -39,10 +41,9 @@ The preview must let the user shape the document before Print commits:
 ## Implementation constraints
 
 - Build on `frontend/lib/shared/printing/` (`showAppPrintPreviewDialog`, `AppPrintPreviewWorkspace`, `AppPrintPreviewPanel`, `PrintDocumentTemplates`, facility sections, form templates).
-- Follow [dialogs.mdc](dialogs.mdc) for any print options hosted inside `AppDialog` (generic titles, flat layout, footer actions).
-- Respect RBAC/ABAC: omit Print when unauthorized; do not show disabled “no access” placeholders for routine unauthorized actions.
+- Follow [dialogs.mdc](dialogs.mdc) for any print options hosted inside `AppDialog`.
+- Omit Print when unauthorized (RBAC/ABAC per [prompt.mdc](prompt.mdc)).
 - Keep loading, empty, error, and success feedback explicit for preview build and print.
-- Stay responsive on mobile, tablet, and desktop; support light and dark themes via theme tokens.
 - Do not fork one-off print-preview dialogs or bypass preview when a shared path exists or can be extended.
 
 ## Relevant files
@@ -54,4 +55,3 @@ The preview must let the user shape the document before Print commits:
 - `frontend/lib/shared/printing/print_facility_sections.dart`
 - `frontend/lib/shared/printing/templates/print_document_templates.dart`
 - Feature `*_print_options*.dart` / print dialog call sites under `frontend/lib/features/` and `frontend/lib/shared/`
-)

@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Responsiveness
 
-Every UI surface (workspace, dialog, form, table, sheet, etc) must stay usable on mobile, tablet, and desktop. Prefer one adaptive layout over size-specific screen forks.
+Every UI surface (workspace, dialog, form, table, sheet, etc.) must stay usable on mobile, tablet, and desktop. Prefer one adaptive layout over size-specific screen forks.
 
 ## Breakpoints and utilities
 
@@ -17,16 +17,15 @@ Every UI surface (workspace, dialog, form, table, sheet, etc) must stay usable o
 
 1. Stack to one column on small widths; expand to multi-column / side-by-side only when space allows.
 2. Forms: use `AppResponsiveFieldRow` so fields stack on mobile and sit in rows on larger screens ([forms.mdc](forms.mdc)).
-3. Tables / toolbars: icon-only actions on small screens; icon + label when `showsToolbarActionLabels` ([tables.mdc](tables.mdc)).
+3. Tables / toolbars / dialog footers: icon-only actions on small screens; icon + label when space allows (`showsToolbarActionLabels` and shared dialog action scopes). Dialog header restore/maximize and header close stay icon-only ([tables.mdc](tables.mdc), [dialogs.mdc](dialogs.mdc)).
 4. Lists: provide `mobileItemBuilder` (or shared compact row) where `AppListTable` expects it; keep horizontal scroll for wide column sets on desktop.
 5. Keep primary actions reachable; avoid clipped chrome, unreachable overflow, and nested scroll traps.
 
 ## Constraints
 
 - Reuse `AppWorkspace` / `ResponsivePage` and shared layout under `frontend/lib/shared/layout/`.
-- Scale padding and radius via theme tokens (`page padding`, `context.responsiveRadius`), not magic numbers.
+- Scale padding and radius via theme tokens (`page padding`, `context.responsiveRadius`)—visual tokens belong in [theming.mdc](theming.mdc).
 - Must not ship desktop-only or mobile-only feature UIs unless the interaction model truly differs.
-- Support light and dark themes on every breakpoint.
 
 ## Relevant files
 

@@ -7,6 +7,8 @@ alwaysApply: true
 
 Conventions for every feature `*WorkspacePage` under the app shell. A **screen / workspace** is one shell route (Reception, OPD, Billing, IPD, etc.)—not a dialog, tab, or nested panel.
 
+Cross-cutting: [localization.mdc](localization.mdc), [theming.mdc](theming.mdc), [responsiveness.mdc](responsiveness.mdc), [prompt.mdc](prompt.mdc) (RBAC / UI states). Surface chrome: [dialogs.mdc](dialogs.mdc), [tabs.mdc](tabs.mdc), [forms.mdc](forms.mdc), [tables.mdc](tables.mdc).
+
 ## Shell navigation (module switch)
 
 1. Change modules through shell destinations (sidebar / drawer), user-menu targets (Settings, Communications, etc.), Home KPI routes, and other **explicit handoff** actions—via `context.go` / `AppRoutes.*.location(...)`.
@@ -16,7 +18,7 @@ Conventions for every feature `*WorkspacePage` under the app shell. A **screen /
 ## In-workspace flows (default)
 
 1. Keep create, edit, detail, check-in, orders, disposition, filters, and similar desk work on the **current** workspace as dialogs, sheets, nested panels, or tabs—not as a hop to another feature page.
-2. Prefer `showAppDialog` / `showAppWorkspaceMutationDialog` and existing shared action packs (`shared/opd_actions/`, patient / billing helpers) over new pages. Follow [dialogs.mdc](dialogs.mdc), [tabs.mdc](tabs.mdc), [forms.mdc](forms.mdc), and [tables.mdc](tables.mdc).
+2. Prefer `showAppDialog` / `showAppWorkspaceMutationDialog` and existing shared action packs (`shared/opd_actions/`, patient / billing helpers) over new pages.
 3. After mutations, refresh workspace / controller state in place so the operator finishes the task without leaving the desk.
 4. Deep links may open a tab, section, or dialog on arrival (`initialQuery`, `section`, `flowId`, etc.) without leaving the workspace.
 
@@ -35,19 +37,17 @@ Do **not** hand off mid-form or mid-wizard when the remaining steps belong on th
 
 1. Use `AppWorkspace` **or** the standardized `ResponsivePage` + `AppTabStrip` / `AppListTable` desk shell (enforced by `workspace_ui_pattern_test.dart`).
 2. Reuse shared components under `frontend/lib/shared/` and existing feature dialogs. Do not fork patient, billing, OPD, tab, table, dialog, or form chrome per module when a shared path exists or can be extended.
-3. Respect RBAC/ABAC: omit unauthorized tabs, actions, and routes; do not show disabled “no access” placeholders for routine unauthorized scopes. Receptionist-focused users keep OPD / Emergency work on Reception per `shell_route_access.dart`.
+3. Omit unauthorized tabs, actions, and routes (RBAC/ABAC per [prompt.mdc](prompt.mdc)). Receptionist-focused users keep OPD / Emergency work on Reception per `shell_route_access.dart`.
 
-## States and responsiveness
+## States
 
 1. Cover loading, empty, error, and success for workspace data, tab switches, and in-desk mutations; do not leave silent stale content after a failed load or handoff.
-2. Stay usable on mobile, tablet, and desktop; support light and dark themes via theme tokens.
-3. Keep primary actions reachable; avoid clipped chrome and inaccessible overflow on small viewports.
 
 ## Implementation constraints
 
 - Build on shell routes in `app_router.dart` / `AppRoutes` and in-desk sync via `workspace_location_sync.dart`. Do not invent a parallel navigator for feature flows.
 - Prefer extending workspace controllers and dialogs over new pages.
-- Cross-cutting tab, table, dialog, form, and print behavior belongs in the linked rules above; this file owns workspace boundaries, in-desk vs handoff navigation, and shell layout reuse.
+- This file owns workspace boundaries, in-desk vs handoff navigation, and shell layout reuse—not tab/table/dialog/form/print details.
 
 ## Relevant files
 

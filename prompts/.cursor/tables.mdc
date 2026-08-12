@@ -7,6 +7,8 @@ alwaysApply: true
 
 Conventions for every page and dialog that shows a data table via `AppListTable` / `AppSearchBar` (and call-site wrappers). Prefer extending those shared surfaces; do not invent parallel table chrome.
 
+Cross-cutting: [localization.mdc](localization.mdc), [theming.mdc](theming.mdc), [responsiveness.mdc](responsiveness.mdc), [prompt.mdc](prompt.mdc) (RBAC / UI states). Print preview and options: [printing.mdc](printing.mdc).
+
 ## Toolbar anatomy
 
 1. **Search (when needed):** Place an `AppSearchBar` above the table. Keep built-in speech-to-text (microphone) on the search field enabled unless the surface explicitly disables it.
@@ -17,7 +19,7 @@ Conventions for every page and dialog that shows a data table via `AppListTable`
    4. **Print** (only when printing is allowed for that table)
    5. Context-specific actions (Create, Assign, etc.)
 3. **Labels:** Use exactly `Filters`, `Settings`, `Export`, and `Print`. Do not rename these shared actions per feature.
-4. **Responsive chrome:** On large screens, toolbar and dialog footer actions show icon + label. On small screens, show icon-only unless there is enough space for labels. Dialog header restore/maximize and header close stay icon-only.
+4. **Responsive chrome:** Icon + label vs icon-only follows [responsiveness.mdc](responsiveness.mdc).
 
 ## Filters
 
@@ -45,13 +47,13 @@ Conventions for every page and dialog that shows a data table via `AppListTable`
 2. Dialog sections:
    - **Columns to export:** comprehensive—every exportable field for the row model, not only currently visible columns. Include a section reset that restores the default export column selection.
    - **Filters:** same comprehensive filter set as the table where practical; arrange inputs in two columns; place **Clear filters** in the filters section header (near the section chevron / collapse control).
-3. Footer actions only:  **Export** and **Close**.
+3. Footer actions only: **Export** and **Close**.
 4. Reuse shared date/text/select filter components; do not duplicate filter UI outside the shared export path.
 
 ## Print
 
-1. When Print is present, place it immediately after Export.
-2. Print opens a print-preview surface with enough options to choose sections, items, and columns to include. Keep preview options aligned with what the table/export can represent.
+1. When Print is present, place it immediately after Export in the toolbar order above.
+2. Preview, options, labels, and shared print APIs: [printing.mdc](printing.mdc).
 
 ## Cell and layout rules
 
@@ -74,9 +76,8 @@ Applies to every list table on a **main workspace tab** (the primary `AppListTab
 ## Implementation constraints
 
 - Build on `AppListTable`, `AppListTableSearch`, `AppSearchBar`, `AppListTableExportDialog`, and existing dialog/button primitives.
-- Respect RBAC/ABAC: hide Export, Print, and other actions the user cannot perform; do not show disabled “no access” placeholders for routine unauthorized actions.
-- Keep loading, empty, error, and success feedback explicit for search, filter apply, export, and print.
-- Stay responsive on mobile, tablet, and desktop; support light and dark themes via theme tokens.
+- Omit Export, Print, and other actions the user cannot perform (RBAC/ABAC per [prompt.mdc](prompt.mdc)).
+- Cover loading, empty, error, and success for search, filter apply, export, and print.
 - For main-tab lists, keep horizontal scroll, a pinned/visible footer, and empty-row padding via `AppListTable` defaults; do not opt into `shrinkWrap: true` or `padEmptyRows: false` on those surfaces without a documented exception.
 
 ## Relevant files
