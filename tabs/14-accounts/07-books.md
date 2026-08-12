@@ -2,9 +2,9 @@
 
 ## 1. Tab strip
 
-- Label: `Close books`
+- Label: `AccountsStrings.closeBooksLabel` (`Close books`)
 - Icon: `Icons.menu_book_outlined`
-- Count source: `accountsSectionTabCount` → `accountsOpenPeriodsCountProvider` ?? `openPeriods` (panel pushes filtered totals when filters active)
+- Count source: `accountsSectionTabCount` → `accountsOpenPeriodsCountProvider` ?? `AccountsSummary.openPeriods`; active + narrowed (search / Open / Overdue filters) → panel pushes filtered total
 - Count tone: `AppTabCountTone.warning`
 - Deep-link `section`: `books` (aliases `periods`, `period-close`, `close`); may pass `periodId`/`id`, `action`, `search`
 - Tab gate: `AccountsCloseBooksAtomPermissions.tab` = entry
@@ -15,19 +15,26 @@
 Order: **Filters → Settings → Export → Print → Open period → Close period** (plus Open / Overdue chips above table)
 
 - Search hint: `Period, facility, status…`
-- Advanced Filters: present — Open / Overdue groups synced with FilterChips
+- Filters: `Filters` → Advanced filters (`commonAdvancedFiltersTitle`)
+  - Footer: **Clear filters** → **Apply filters** → **Close**
+  - Groups: Open only / Overdue only — synced with FilterChips
+  - Date filter: **omitted** (justified — status chips / Open–Overdue groups cover the scope)
 - Quick filters: FilterChips `Open` / `Overdue close` (counts from current page membership; mutually exclusive)
-- Settings: `accounts_books_v1`
-- Export / table Print: ∩ `evidence:export` — omit when unauthorized (`AccountsCloseBooksAtomPermissions.export` / `print`)
+- Settings: Table Settings; key `accounts_books_v1`; exposes defaults + Facility / By; Reset restores defaults
+- Export / table Print: `enableExport` / `enablePrint` + `canExport` / `canPrint` — omit without ∩ `evidence:export` (`AccountsCloseBooksAtomPermissions.export` / `print`); Print label `Print`; preview-first `printAccountsListTable`
 - Context: `Open period`, `Close period` — omitted without ∩ `accounts:write`
-- Date filter: **omitted** (status chips / advanced Open–Overdue groups cover the queue)
 
 ## 3. Table
 
 - Row model: `AccountsFiscalPeriod`
-- Row select: books detail dialog
-- Default columns: Period, Status, Opened, Closed, Next (`Close` / `Approve` / `Books`)
-- Column choices: Facility, By
+- Row select: `showAccountsBooksDetailDialog` — generic title `Period` (identity in body)
+- Default columns (**5**):
+  1. Period (alwaysVisible)
+  2. Status
+  3. Opened
+  4. Closed
+  5. Next (`Close` / `Approve` / `Books`) — alwaysVisible / not exportable
+- Column choices (Settings extras): Facility, By
 - Mobile: trailing next label
 
 ## 4. Advanced filters / search fields
@@ -35,6 +42,7 @@ Order: **Filters → Settings → Export → Print → Open period → Close per
 - Advanced Filters groups: Open only / Overdue only (synced with chips)
 - Chips: Open only / Overdue only (mutually exclusive)
 - Free-text search
+- Same panel filter model drives table rows and active tab badge
 
 ## 5. Primary / secondary / row actions
 
@@ -43,27 +51,28 @@ Order: **Filters → Settings → Export → Print → Open period → Close per
 
 ## 6. Dialogs from this tab
 
-| Dialog | Owner |
-| --- | --- |
-| Open period | Accounts-owned `showAccountsOpenPeriodDialog` |
-| Period similarity / overlap | Accounts-owned |
-| Close period | Accounts-owned `showAccountsClosePeriodDialog` |
-| Books detail (+ checklist / Print) | Accounts-owned `showAccountsBooksDetailDialog` |
-| Approve (pending close) | Accounts-owned approval dialog |
+| Dialog | Owner | Title policy |
+| --- | --- | --- |
+| Open period | Accounts-owned `showAccountsOpenPeriodDialog` | Action title |
+| Period similarity / overlap | Accounts-owned | Similarity review |
+| Close period | Accounts-owned `showAccountsClosePeriodDialog` | Action title |
+| Books detail (+ checklist / Print) | Accounts-owned `showAccountsBooksDetailDialog` | Generic `Period` |
+| Approve (pending close) | Accounts-owned approval dialog | Action label |
 
 ## 7. Nested / follow-on
 
-Open → similarity → select existing / continue open. Detail → View unposted (may navigate journals), Print packet, Close.
+Open → similarity → select existing / continue open. Detail → View unposted (may navigate journals), Print packet, Close. Stays in-desk except allowed journals handoff.
 
 ## 8. Forms (summary)
 
 - Open: label, start date, end date
 - Close: notes / checklist confirmation fields
 - Approve: notes/reason
+- No tenant/facility/session fields on operator forms
 
 ## 9. Print / labels / preview
 
-- Table Print: preview-first `printAccountsListTable`
+- Table Print: trigger `Print`; preview-first `printAccountsListTable` → `PrintDocumentTemplates.registry`
 - Detail Print → `printAccountsBooksPacket` → `claimStatement` template reuse with books section options
 
 ## 10. Loading / empty / error / success

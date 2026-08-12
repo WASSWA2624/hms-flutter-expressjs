@@ -538,6 +538,7 @@ class _AccountsBooksPanelState extends ConsumerState<AccountsBooksPanel> {
         advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: AccountsStrings.clearFilters,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         allFieldsLabel: AccountsStrings.allFields,
         filterGroups: const <AppSearchBarFilterGroup>[
           AppSearchBarFilterGroup(
@@ -754,6 +755,7 @@ class _AccountsBooksPanelState extends ConsumerState<AccountsBooksPanel> {
       AppListTableColumn<AccountsFiscalPeriod>(
         id: accountsBooksNextColumnId,
         label: AccountsStrings.nextColumn,
+        alwaysVisible: true,
         preferredWidth: 100,
         exportable: false,
         cellBuilder: (BuildContext context, AccountsFiscalPeriod item) {

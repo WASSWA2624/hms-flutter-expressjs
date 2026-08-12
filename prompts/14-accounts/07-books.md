@@ -27,13 +27,13 @@ Make the Books desk section fully compliant with `tabs.mdc`, `tables.mdc`, `dial
 
 ## Acceptance Criteria
 
-- [ ] Tab count matches authoritative / filtered rules in Requirements 2–3.
-- [ ] Toolbar order and labels match Requirement 4; Print preview opens before print when Print applies.
-- [ ] Default column policy satisfies Requirement 6; Settings exposes all columns.
-- [ ] Advanced filters share the table/count model and include Close (`Requirement 7`).
-- [ ] Unauthorized tab and actions are absent (not disabled).
-- [ ] Dialogs/forms keep generic titles and shared field reuse.
-- [ ] `tabs/14-accounts/07-books.md` updated to match.
+- [x] Tab count matches authoritative / filtered rules in Requirements 2–3.
+- [x] Toolbar order and labels match Requirement 4; Print preview opens before print when Print applies.
+- [x] Default column policy satisfies Requirement 6; Settings exposes all columns.
+- [x] Advanced filters share the table/count model and include Close (`Requirement 7`).
+- [x] Unauthorized tab and actions are absent (not disabled).
+- [x] Dialogs/forms keep generic titles and shared field reuse.
+- [x] `tabs/14-accounts/07-books.md` updated to match.
 
 ## Verification
 
