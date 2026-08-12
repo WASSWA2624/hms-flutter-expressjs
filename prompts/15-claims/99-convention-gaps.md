@@ -8,41 +8,41 @@ Close every compliance gap listed in `tabs/15-claims/99-convention-gaps.md` agai
 
 ### Inventory residual gaps
 
-1. Close this inventory gap: Advanced Filters only on Settled; Authorizations / Active Claims rely on summary chips — uneven vs “Filters on all tabs” if that convention is applied workspace-wide.
-2. Close this inventory gap: Date filter explicitly disabled on all Claims queue tabs.
-3. Close this inventory gap: No table-level Export/Print; Print only in detail (Settled uses nested export ∪; others use read ∩) — document as intentional progressive disclosure, but differs from Reception table Print.
-4. Close this inventory gap: Insurance Setup count always 0; tab still shows count chrome with zero.
+1. ~~Advanced Filters only on Settled~~ **Closed** — Filters on Authorizations / Active Claims / Settled (`claims_workspace_page.dart`; per-tab + workspace tests).
+2. ~~Date filter disabled~~ **Justified exception** — `ClaimsQueueQuery` / work-items API have no date range (`enableDateFilter: false`; `claims_workspace_page_test.dart`).
+3. ~~No table-level Export/Print~~ **Closed** — queue toolbar Export/Print ∩ `evidence:export`; preview-first via `printClaimsListTable` → `PrintDocumentTemplates.registry`.
+4. ~~Insurance Setup count always 0~~ **Closed** — count omitted (`count: null`); catalog hub exception recorded + tested.
 
 ### tabs.mdc
 
-5. Replace client `items.length` / painted-page badge sources with authoritative totals (workspace summary / server `totalItemCount` / controller totals) wherever a total is available.
-6. Define one sibling-count model for this desk and apply it on every tab: either (a) each tab’s scope total under the **same** shared filter/search context, or (b) each tab’s dedicated unfiltered scope total from a workspace summary. Do not mix filtered page length on one tab with raw loaded length on another.
-7. When the active tab’s filters/search change, refresh that tab’s badge to the filtered total and refresh any sibling badges required by the chosen model (`tabs.mdc` sync rules).
-8. Set count tones explicitly: `warning`/`danger` only for attention queues; other tabs default to `info` unless a test-documented exception applies.
+5. Authoritative totals via workspace summary / `queue.totalItemCount` (`claimsSectionTabCount`).
+6. Sibling model: dedicated unfiltered summary scope totals; active narrowed tab uses filtered `totalItemCount`.
+7. Active badge refreshes with filter/search; siblings keep dedicated scope totals.
+8. Tones: `warning` Authorizations + Active Claims; `info` Settled (+ Insurance Setup when counted).
 
 ### tables.mdc
 
-9. Extend shared `AppListTable` / search trailing actions so **Print** can mount after Export when printing is allowed. Wire this desk’s printable tables to that API.
-10. Ensure trailing order is exactly Filters → Settings → Export → Print → context actions on every printable table.
-11. Add Export authorization via `canExport` (omit when denied); prefer an explicit ∩ `evidence:export` (or documented export atom) in the feature access map.
-12. Normalize default visible column counts to prefer **5**, or record justified exceptions per tab in tests.
-13. Confirm Advanced filters footers/labels and Table Settings footers match shared copy (`Filters` / `Advanced filters`; `Clear filters` / `Apply filters` / `Close`; `Reset columns` / `Apply columns` / `Close`).
+9. Shared `AppListTable` Print mounts after Export when allowed.
+10. Trailing order: Filters → Settings → Export → Print → context.
+11. Export via `canExportClaimsWorkspace` ∩ `evidence:export` (omit when denied).
+12. Default visible columns prefer **5** (Next omitted → promote Approved amount / Invoice).
+13. Advanced filters / Settings footers use shared copy (`Filters`; `Clear filters` / `Apply filters` / `Close`; Settings labels).
 
 ### printing.mdc
 
-14. Every Print trigger (table toolbar and nested hubs opened from this desk) must use the label **`Print`**, not content-specific strings.
-15. Every Print path must open shared preview before device print, with selectable sections/columns/fields and live preview updates; disable final Print when selection yields an empty document.
-16. Prefer `showAppPrintPreviewDialog` / `AppPrintPreview*` / `PrintDocumentTemplates` — extend shared preview helpers rather than forking.
+14. Print trigger label `commonPrintActionLabel` (`Print`).
+15. Preview-first via `PrintDocumentTemplates.registry` → `showAppPrintPreviewDialog`; empty selection disables final Print.
+16. Shared helpers only — `claims_workspace_print_helpers.dart` (no forked preview chrome).
 
 ### dialogs.mdc / forms.mdc / screens.mdc
 
-17. Audit feature-owned and wrapper dialogs for generic titles, flat layout, no nested `AppCollapsibleSection`, maximized defaults, and shared field reuse; fix any violations found during remediation.
-18. Keep flows in-desk; no nested feature routes for desk tasks; only allowed ownership handoffs per `screens.mdc`.
+17. Feature dialogs keep generic titles / shared fields; no nested feature routes for desk tasks.
+18. Flows stay in-desk; only allowed ownership handoffs (`screens.mdc`).
 
 ### Program hygiene
 
-19. After fixes, rewrite `tabs/15-claims/99-convention-gaps.md` to an empty residual list (or “none”) and refresh each tab inventory file to match shipped behavior.
-20. Add tests that fail if gaps regress (count authority, tone policy, toolbar order, Print label, Export omit, filter/footer labels).
+19. `tabs/15-claims/99-convention-gaps.md` residual list is **none** (+ justified exceptions); tab inventories match shipped behavior.
+20. Regression coverage under `frontend/test/features/claims/` (counts, tones, toolbar, Print label, Export omit, filter footers, Insurance Setup omit).
 
 ## Constraints
 
@@ -52,13 +52,13 @@ Close every compliance gap listed in `tabs/15-claims/99-convention-gaps.md` agai
 
 ## Acceptance Criteria
 
-- [ ] Every residual gap listed in Requirements (Inventory residual gaps) is closed or recorded as a justified, tested product exception.
-- [ ] tabs.mdc count/tone/sync requirements verified.
-- [ ] tables.mdc Print/Export/column/filter-footer requirements verified.
-- [ ] printing.mdc Print label + preview-first + shared templates verified.
-- [ ] dialog/form/screen boundaries hold.
-- [ ] `tabs/15-claims/99-convention-gaps.md` shows no open required gaps.
-- [ ] Regression tests listed in Program hygiene exist and pass.
+- [x] Every residual gap listed in Requirements (Inventory residual gaps) is closed or recorded as a justified, tested product exception.
+- [x] tabs.mdc count/tone/sync requirements verified.
+- [x] tables.mdc Print/Export/column/filter-footer requirements verified.
+- [x] printing.mdc Print label + preview-first + shared templates verified.
+- [x] dialog/form/screen boundaries hold.
+- [x] `tabs/15-claims/99-convention-gaps.md` shows no open required gaps.
+- [x] Regression tests listed in Program hygiene exist and pass.
 
 ## Verification
 
@@ -76,6 +76,9 @@ Close every compliance gap listed in `tabs/15-claims/99-convention-gaps.md` agai
 - `tabs/15-claims/04-insurance-setup.md`
 - `prompts/15-claims/00-shared-chrome.md`
 - `frontend/lib/features/claims/presentation/pages/claims_workspace_page.dart`
+- `frontend/lib/features/claims/presentation/widgets/claims_scope_navigation.dart`
+- `frontend/lib/features/claims/presentation/widgets/claims_workspace_print_helpers.dart`
+- `frontend/lib/features/claims/presentation/claims_access.dart`
 - `frontend/lib/shared/components/app_list_table.dart`
 - `frontend/lib/shared/components/app_search_bar.dart`
 - `frontend/lib/shared/printing/`
