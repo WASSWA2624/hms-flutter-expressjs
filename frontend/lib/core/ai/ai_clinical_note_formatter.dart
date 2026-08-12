@@ -40,14 +40,19 @@ AppClinicalNoteAiFormatter createAiClinicalNoteFormatter(
       cancelToken.cancel();
     });
 
+    // Soft status gate: only skip when the backend explicitly reports disabled.
+    // A stale ready:false cache or a transient status failure must not block
+    // the actual format call (local models can take 30–90s).
+    repository.invalidateStatusCache();
     final Result<AiStatus> statusResult = await repository.status(
       cancelToken: cancelToken,
+      forceRefresh: true,
     );
-    final bool available = statusResult.when(
-      success: (AiStatus status) => status.isAvailable,
+    final bool explicitlyDisabled = statusResult.when(
+      success: (AiStatus status) => !status.enabled,
       failure: (_) => false,
     );
-    if (!available || cancelToken.isCancelled) {
+    if (explicitlyDisabled || cancelToken.isCancelled) {
       return null;
     }
 

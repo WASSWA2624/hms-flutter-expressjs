@@ -45,6 +45,16 @@ final class DioAiRemoteDataSource implements AiRemoteDataSource {
     CancelToken? cancelToken,
   }) {
     final bool longRunning = taskKey.trim() == 'clinical_note_format';
+    // Local small-model rewrites commonly take 30–60s; the app-wide API
+    // timeout is 30s in development, so this request must override it.
+    final Options? longRunningOptions = longRunning
+        ? Options(
+            sendTimeout: const Duration(seconds: 120),
+            receiveTimeout: const Duration(seconds: 120),
+            // Ensure Dio treats this as a distinct long-poll style call.
+            extra: const <String, Object?>{'ai_long_running': true},
+          )
+        : null;
     return _apiClient.post<AiTaskResult>(
       ApiEndpoints.apiV1(<String>[
         HmsApiResource.ai.path,
@@ -62,12 +72,7 @@ final class DioAiRemoteDataSource implements AiRemoteDataSource {
         },
       ),
       cancelToken: cancelToken,
-      options: longRunning
-          ? Options(
-              sendTimeout: const Duration(seconds: 120),
-              receiveTimeout: const Duration(seconds: 120),
-            )
-          : null,
+      options: longRunningOptions,
     );
   }
 }

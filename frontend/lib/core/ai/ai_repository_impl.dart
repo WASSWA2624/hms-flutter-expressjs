@@ -35,11 +35,21 @@ final class AiRepositoryImpl implements AiRepository {
   DateTime? _cachedStatusAt;
 
   @override
-  Future<Result<AiStatus>> status({CancelToken? cancelToken}) async {
+  void invalidateStatusCache() {
+    _cachedStatus = null;
+    _cachedStatusAt = null;
+  }
+
+  @override
+  Future<Result<AiStatus>> status({
+    CancelToken? cancelToken,
+    bool forceRefresh = false,
+  }) async {
     final DateTime now = DateTime.now();
     final AiStatus? cached = _cachedStatus;
     final DateTime? cachedAt = _cachedStatusAt;
-    if (cached != null &&
+    if (!forceRefresh &&
+        cached != null &&
         cachedAt != null &&
         now.difference(cachedAt) < _statusCacheTtl) {
       return Result<AiStatus>.success(cached);

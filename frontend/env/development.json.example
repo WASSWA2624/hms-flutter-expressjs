@@ -7,7 +7,7 @@
   "APP_ADMIN_PHONE": "+256783230321",
   "APP_SUPPORT_URL": "https://hosspi.com/support",
   "API_BASE_URL": "http://localhost:3000",
-  "API_TIMEOUT_SECONDS": "30",
+  "API_TIMEOUT_SECONDS": "120",
   "LOG_LEVEL": "debug",
   "FEATURE_DEVELOPER_TOOLS_ENABLED": "true"
 }

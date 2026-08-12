@@ -191,11 +191,44 @@ void main() {
     expect(remote.lastBody?['hint'], 'Clinical note');
   });
 
-  test('clinical note formatter skips when AI is not ready', () async {
+  test('clinical note formatter still runs when status ready is false', () async {
     final _FakeAiRemoteDataSource remote = _FakeAiRemoteDataSource(
       statusResult: const Result.success(
         AiStatus(
           enabled: true,
+          provider: 'ollama',
+          model: 'llama3.2:3b',
+          ready: false,
+        ),
+      ),
+      taskResult: const Result.success(
+        AiTaskResult(
+          taskKey: 'clinical_note_format',
+          output: <String, Object?>{
+            'formatted_text': 'Patient is febrile.',
+          },
+          degraded: false,
+        ),
+      ),
+    );
+    final formatter = createAiClinicalNoteFormatter(
+      AiRepositoryImpl(remoteDataSource: remote),
+    );
+
+    final String? formatted = await formatter(
+      text: 'pt febrile',
+      abort: AppSpeechAiAbort(),
+    );
+
+    expect(formatted, 'Patient is febrile.');
+    expect(remote.taskCalls, 1);
+  });
+
+  test('clinical note formatter skips when AI is disabled', () async {
+    final _FakeAiRemoteDataSource remote = _FakeAiRemoteDataSource(
+      statusResult: const Result.success(
+        AiStatus(
+          enabled: false,
           provider: 'ollama',
           model: 'llama3.2:3b',
           ready: false,

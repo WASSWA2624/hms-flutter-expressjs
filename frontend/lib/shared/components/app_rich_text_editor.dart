@@ -321,13 +321,10 @@ class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
     if (!textChanged) {
       return;
     }
-    if (_aiFormatting) {
-      _cancelAiFormat();
-      if (mounted) {
-        setState(() => _aiFormatting = false);
-      }
-    } else if (mounted) {
-      // Rebuild so the AI button enables/disables with empty vs non-empty text.
+    // Do not cancel in-flight AI format on text notifications. Spurious
+    // controller updates during toolbar rebuilds were aborting requests; the
+    // completion path already refuses to overwrite when baseline changed.
+    if (!_aiFormatting && mounted) {
       setState(() {});
     }
   }
