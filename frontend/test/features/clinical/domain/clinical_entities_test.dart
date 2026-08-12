@@ -572,6 +572,18 @@ void main() {
     });
 
     test(
+      'hasRouteTargeting returns true for pending aliases that remap to all',
+      () {
+        final ClinicalWorkspaceQuery query = ClinicalWorkspaceQuery.fromUri(
+          Uri.parse('/clinical?section=waiting-review'),
+        );
+        expect(query.section, ClinicalWorkspaceSection.all);
+        expect(query.rawSection, 'waiting-review');
+        expect(query.hasRouteTargeting, isTrue);
+      },
+    );
+
+    test(
       'hasRouteTargeting returns false for default section with no params',
       () {
         const ClinicalWorkspaceQuery query = ClinicalWorkspaceQuery();

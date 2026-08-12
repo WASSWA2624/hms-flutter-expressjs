@@ -26,7 +26,7 @@ Order: **Filters → Settings → Export → Print**
 - Row model: clinical worklist entry via `_ClinicalWorklistPanel`
 - Scope: `ClinicalQueueScope.all` (non-terminal OP)
 - Row select → `_ClinicalEncounterDialog` / Open encounter
-- **Default columns (5):** patient, queue, provider (`Doctor`), status, nextAction
+- **Default columns (5):** patient (`opdPatientColumnLabel` → **Patient name**), queue, provider (`Doctor`), status, nextAction
 - Always-visible: status, nextAction
 - Column choices (Settings): patient, patientId, phone, ageSex, queue, status, nextAction, provider, lastUpdated, encounter, admission, encounterType, location
 - Status chips: urgent / results-ready when authorized atoms allow

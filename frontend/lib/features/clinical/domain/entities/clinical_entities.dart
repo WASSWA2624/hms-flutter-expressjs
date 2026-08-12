@@ -7,6 +7,7 @@ import 'package:hosspi_hms/shared/data/data.dart';
 final class ClinicalWorkspaceQuery {
   const ClinicalWorkspaceQuery({
     this.section = ClinicalWorkspaceSection.all,
+    this.rawSection = '',
     this.encounterId = '',
     this.panel = '',
     this.search = '',
@@ -22,8 +23,10 @@ final class ClinicalWorkspaceQuery {
       return '';
     }
 
+    final String rawSection = pick(<String>['section', 'tab']);
     return ClinicalWorkspaceQuery(
-      section: _parseClinicalSection(pick(<String>['section', 'tab'])),
+      section: _parseClinicalSection(rawSection),
+      rawSection: rawSection,
       encounterId: pick(<String>[
         'encounterId',
         'encounter_id',
@@ -36,17 +39,21 @@ final class ClinicalWorkspaceQuery {
   }
 
   final ClinicalWorkspaceSection section;
+  /// Raw `section`/`tab` query value before alias remapping (for canonicalize).
+  final String rawSection;
   final String encounterId;
   final String panel;
   final String search;
 
   bool get hasRouteTargeting =>
+      rawSection.isNotEmpty ||
       section != ClinicalWorkspaceSection.all ||
       encounterId.isNotEmpty ||
       panel.isNotEmpty ||
       search.isNotEmpty;
 
-  String get signature => '${section.name}|$encounterId|$panel|$search';
+  String get signature =>
+      '${section.name}|$rawSection|$encounterId|$panel|$search';
 }
 
 enum ClinicalQueueScope {

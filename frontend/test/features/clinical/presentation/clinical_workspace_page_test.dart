@@ -797,61 +797,27 @@ void main() {
   testWidgets('Pending advanced filters footer includes Close', (tester) async {
     await _pumpClinicalWorkspace(tester);
 
-    await tester.tap(find.text('Filters'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.byTooltip('Filters'));
+    await tester.pumpAndSettle();
 
-    expect(find.text('Advanced filters'), findsOneWidget);
+    expect(find.textContaining('ADVANCED FILTERS'), findsOneWidget);
     expect(find.text('Clear filters'), findsOneWidget);
     expect(find.text('Apply filters'), findsOneWidget);
     expect(find.text('Close'), findsWidgets);
+    await tester.tap(find.text('Close').last);
+    await tester.pumpAndSettle();
   });
 
   testWidgets('Pending default visible columns are five', (tester) async {
     await _pumpClinicalWorkspace(tester);
 
-    expect(
-      find.descendant(
-        of: find.byType(AppListTableGrid),
-        matching: find.text('Patient'),
-      ),
-      findsWidgets,
-    );
-    expect(
-      find.descendant(
-        of: find.byType(AppListTableGrid),
-        matching: find.text('Queue'),
-      ),
-      findsWidgets,
-    );
-    expect(
-      find.descendant(
-        of: find.byType(AppListTableGrid),
-        matching: find.text('Doctor'),
-      ),
-      findsWidgets,
-    );
-    expect(
-      find.descendant(
-        of: find.byType(AppListTableGrid),
-        matching: find.text('Status'),
-      ),
-      findsWidgets,
-    );
-    expect(
-      find.descendant(
-        of: find.byType(AppListTableGrid),
-        matching: find.text('Next action'),
-      ),
-      findsWidgets,
-    );
-    expect(
-      find.descendant(
-        of: find.byType(AppListTableGrid),
-        matching: find.text('Encounter type'),
-      ),
-      findsNothing,
-    );
+    expect(find.text('Sarah Clinical'), findsOneWidget);
+    expect(find.text('Patient name'), findsWidgets);
+    expect(find.text('Queue'), findsWidgets);
+    expect(find.text('Doctor'), findsWidgets);
+    expect(find.text('Status'), findsWidgets);
+    expect(find.text('Next action'), findsWidgets);
+    expect(find.text('Encounter type'), findsNothing);
   });
 
   testWidgets(
@@ -869,6 +835,29 @@ void main() {
       expect(
         harness.router.routeInformationProvider.value.uri.queryParameters,
         isNot(contains('section')),
+      );
+    },
+  );
+
+  testWidgets(
+    'deep link encounterId+panel opens encounter with panel anchor',
+    (tester) async {
+      await _pumpClinicalWorkspace(
+        tester,
+        initialLocation: '/clinical?encounterId=encounter-1&panel=notes',
+        initialQuery: ClinicalWorkspaceQuery.fromUri(
+          Uri.parse('/clinical?encounterId=encounter-1&panel=notes'),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sarah Clinical'), findsWidgets);
+      expect(
+        find.byKey(const ValueKey<String>('clinical_panel_notes')),
+        findsOneWidget,
       );
     },
   );

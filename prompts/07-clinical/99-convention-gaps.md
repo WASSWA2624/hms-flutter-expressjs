@@ -58,13 +58,13 @@ Close every compliance gap listed in `tabs/07-clinical/99-convention-gaps.md` ag
 
 ## Acceptance Criteria
 
-- [ ] Every residual gap listed in Requirements (Inventory residual gaps) is closed or recorded as a justified, tested product exception.
-- [ ] tabs.mdc count/tone/sync requirements verified.
-- [ ] tables.mdc Print/Export/column/filter-footer requirements verified.
-- [ ] printing.mdc Print label + preview-first + shared templates verified.
-- [ ] dialog/form/screen boundaries hold.
-- [ ] `tabs/07-clinical/99-convention-gaps.md` shows no open required gaps.
-- [ ] Regression tests listed in Program hygiene exist and pass.
+- [x] Every residual gap listed in Requirements (Inventory residual gaps) is closed or recorded as a justified, tested product exception.
+- [x] tabs.mdc count/tone/sync requirements verified.
+- [x] tables.mdc Print/Export/column/filter-footer requirements verified.
+- [x] printing.mdc Print label + preview-first + shared templates verified.
+- [x] dialog/form/screen boundaries hold.
+- [x] `tabs/07-clinical/99-convention-gaps.md` shows no open required gaps.
+- [x] Regression tests listed in Program hygiene exist and pass.
 
 ## Verification
 
