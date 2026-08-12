@@ -25,11 +25,11 @@
 ## Tab strip
 
 - `AppTabStrip` / `AppTabItem` via `pharmacyTabItems` (`pharmacy_scope_navigation.dart`); omitted when unauthorized — not disabled
-- Sibling-count model: dedicated unfiltered workspace summary / stock / supplier totals; active order tab uses filtered `workbench.orders.totalItemCount`
+- Sibling-count model: dedicated unfiltered workspace summary / stock / supplier totals; active order tab uses filtered `workbench.orders.totalItemCount`; active stock-alert tab uses filtered `inventoryWorkbench.stocks.totalItemCount`
 - Counts:
   - Orders: summary queues (`orderedQueue`, `partiallyDispensedQueue`, `pendingPaymentQueue`, `dispensedOrders`, `cancelledOrders`, `totalOrders`)
   - Suppliers: `state.suppliers.totalItemCount`
-  - Stock: `stock.expiringSoonRows` / `expiredRows` / `lowStockRows` / `outOfStockRows`
+  - Stock siblings: `stock.expiringSoonRows` / `expiredRows` / `lowStockRows` / `outOfStockRows`
   - Catalog: **null** (management hub, no worklist count)
 - Count tones: `warning` (queue, inProgress, pendingPayment, nearExpiry, lowStock); `danger` (cancelled, expired, outOfStock); `info` (completed, catalog, suppliers, allOrders)
 - Icons: medication_liquid / pending_actions / payments / done_all / cancel / receipt_long / inventory_2 / local_shipping / hourglass / event_busy / trending_down / remove_shopping_cart
