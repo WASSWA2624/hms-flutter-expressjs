@@ -72,6 +72,7 @@ const FAMILY_DESCRIPTIONS = Object.freeze({
   billing: 'Billing workspace and reconciliation endpoints.',
   biomedical: 'Biomedical workspace and equipment-service operational endpoints.',
   interop: 'Integration, migration, and interoperability orchestration endpoints.',
+  ai: 'Provider-agnostic AI utility endpoints. The frontend never talks to a model host.',
 });
 
 const FAMILY_SCHEMA_OVERRIDES = Object.freeze({

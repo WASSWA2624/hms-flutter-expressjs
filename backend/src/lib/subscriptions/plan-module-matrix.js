@@ -329,6 +329,7 @@ const PLATFORM_INFRASTRUCTURE_MODULES = Object.freeze([
         'license',
         'licenses',
         'subscriptions-workspace',
+        'ai',
       ],
     },
   },

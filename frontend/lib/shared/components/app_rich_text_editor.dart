@@ -409,6 +409,7 @@ class _AppRichTextEditorState extends State<AppRichTextEditor> {
                   enabled: widget.enabled,
                   dense: true,
                   transcriptTransform: appSpeechTextTranscript,
+                  aiFormatMode: 'text',
                   onChanged: widget.onChanged,
                 ),
             ],

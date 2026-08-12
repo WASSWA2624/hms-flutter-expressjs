@@ -458,7 +458,8 @@ enum HmsApiResource {
   interop(
     'interop',
     HmsApiEndpointGroup.communicationsReportsAuditIntegrations,
-  );
+  ),
+  ai('ai', HmsApiEndpointGroup.communicationsReportsAuditIntegrations);
 
   const HmsApiResource(this.path, this.group);
 

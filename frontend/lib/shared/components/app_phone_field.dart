@@ -575,6 +575,7 @@ class _UnifiedPhoneInput extends StatelessWidget {
                     enabled: canEdit && !isLoading,
                     dense: true,
                     transcriptTransform: appSpeechDigitsOnlyTranscript,
+                    aiFormatMode: 'phone',
                     onChanged: onNumberChanged,
                   ),
                 ),

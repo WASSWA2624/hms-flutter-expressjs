@@ -224,6 +224,8 @@ class _AppTimeFieldState extends State<AppTimeField> {
                       enabled: canChange,
                       dense: true,
                       transcriptTransform: appSpeechDigitsOnlyTranscript,
+                      aiFormatMode: 'time',
+                      aiFormatHint: 'HH:mm',
                       onChanged: (_) => _handlePartsChanged(field),
                     )
                   : null,

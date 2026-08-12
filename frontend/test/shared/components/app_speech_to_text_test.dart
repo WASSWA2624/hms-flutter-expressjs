@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/core/ai/ai_speech_formatter.dart';
 import 'package:hosspi_hms/core/network/app_connectivity_status.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/app_rich_text_editor.dart';
@@ -77,6 +80,7 @@ void main() {
           appConnectivityStatusProvider.overrideWith(
             (Ref ref) => Stream<AppConnectivityStatus>.value(connectivity),
           ),
+          aiSpeechFormatterProvider.overrideWithValue(null),
         ],
         child: child,
       ),
@@ -279,6 +283,101 @@ void main() {
       ),
       'hello. buy 1000 units?',
     );
+  });
+
+  test('appSpeechAiFormatModeForKeyboard maps field types', () {
+    expect(
+      appSpeechAiFormatModeForKeyboard(TextInputType.emailAddress),
+      'email',
+    );
+    expect(appSpeechAiFormatModeForKeyboard(TextInputType.phone), 'phone');
+    expect(appSpeechAiFormatModeForKeyboard(TextInputType.datetime), 'date');
+    expect(appSpeechAiFormatModeForKeyboard(TextInputType.number), 'digits');
+    expect(
+      appSpeechAiFormatModeForKeyboard(
+        const TextInputType.numberWithOptions(decimal: true),
+      ),
+      'decimal',
+    );
+    expect(appSpeechAiFormatModeForKeyboard(TextInputType.text), 'text');
+  });
+
+  test('final STT inserts before AI format and skips AI on partials', () async {
+    final TextEditingController controller = TextEditingController();
+    final List<String> formatCalls = <String>[];
+
+    await coordinator.start(
+      owner: controller,
+      controller: controller,
+      onChanged: null,
+      transcriptTransform: (String value) => value,
+      aiFormatMode: 'email',
+      aiFormatter:
+          ({
+            required String transcript,
+            required String mode,
+            required AppSpeechAiAbort abort,
+            String? locale,
+            String? hint,
+          }) async {
+            formatCalls.add('$mode:$transcript');
+            return 'name@hospital.com';
+          },
+    );
+
+    recognizer.emit('name at', isFinal: false);
+    expect(controller.text, 'name at');
+    expect(formatCalls, isEmpty);
+
+    recognizer.emit('name at hospital dot com', isFinal: true);
+    expect(controller.text, 'name at hospital dot com');
+    await Future<void>.delayed(Duration.zero);
+    expect(formatCalls, <String>['email:name at hospital dot com']);
+    expect(controller.text, 'name@hospital.com');
+  });
+
+  test('keeps STT text when AI is unavailable', () async {
+    final TextEditingController controller = TextEditingController();
+    await coordinator.start(
+      owner: controller,
+      controller: controller,
+      onChanged: null,
+      transcriptTransform: (String value) => value,
+      aiFormatter: null,
+    );
+
+    recognizer.emit('hello comma world', isFinal: true);
+    await Future<void>.delayed(Duration.zero);
+    expect(controller.text, 'hello comma world');
+  });
+
+  test('does not overwrite a user edit during in-flight format', () async {
+    final TextEditingController controller = TextEditingController();
+    final Completer<String?> completer = Completer<String?>();
+
+    await coordinator.start(
+      owner: controller,
+      controller: controller,
+      onChanged: null,
+      transcriptTransform: (String value) => value,
+      aiFormatter:
+          ({
+            required String transcript,
+            required String mode,
+            required AppSpeechAiAbort abort,
+            String? locale,
+            String? hint,
+          }) {
+            return completer.future;
+          },
+    );
+
+    recognizer.emit('draft', isFinal: true);
+    expect(controller.text, 'draft');
+    controller.text = 'user typed';
+    completer.complete('formatted');
+    await Future<void>.delayed(Duration.zero);
+    expect(controller.text, 'user typed');
   });
 
   testWidgets('mic toggles to stop while listening and inserts text', (

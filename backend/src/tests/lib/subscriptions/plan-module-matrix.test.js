@@ -46,6 +46,15 @@ describe('plan-module-matrix', () => {
     );
   });
 
+  test('workspace shell includes the AI utilities path', () => {
+    const shell = PLATFORM_INFRASTRUCTURE_MODULES.find(
+      (entry) => entry.slug === 'platform-workspace-shell'
+    );
+    expect(shell.extension_json.api_path_segments).toEqual(
+      expect.arrayContaining(['ai'])
+    );
+  });
+
   test('Basic adds core administration and outpatient operations', () => {
     const basic = new Set(
       modulesForPlanTier('BASIC', { includeLegacyAliases: false }).map(

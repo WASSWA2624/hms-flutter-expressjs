@@ -242,6 +242,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
             enabled: canSelect && !widget.isLoading,
             dense: widget.isDense,
             transcriptTransform: appSpeechTextTranscript,
+            aiFormatMode: 'text',
             onSpeechResult: (String transcript, {required bool isFinal}) {
               _handleSpeechTranscript(transcript, isFinal: isFinal);
             },

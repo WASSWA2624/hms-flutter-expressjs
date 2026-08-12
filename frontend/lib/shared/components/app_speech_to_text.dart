@@ -1,12 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hosspi_hms/core/ai/ai_speech_formatter.dart';
 import 'package:hosspi_hms/core/network/app_connectivity_status.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
+import 'package:hosspi_hms/shared/components/app_speech_ai.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace_feedback.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+
+export 'package:hosspi_hms/shared/components/app_speech_ai.dart';
 
 /// Why speech-to-text is inactive for a field.
 enum AppSpeechToTextBlockReason {
@@ -184,6 +190,25 @@ enum AppSpeechTranscriptMode {
 
   /// Amounts and decimal number fields.
   decimal,
+}
+
+/// Backend `speech_format` mode for a Flutter [TextInputType].
+String appSpeechAiFormatModeForKeyboard(TextInputType? keyboardType) {
+  if (keyboardType == TextInputType.emailAddress) {
+    return 'email';
+  }
+  if (keyboardType == TextInputType.phone) {
+    return 'phone';
+  }
+  if (keyboardType == TextInputType.datetime) {
+    return 'date';
+  }
+  return switch (appSpeechTranscriptModeForKeyboard(keyboardType)) {
+    AppSpeechTranscriptMode.decimal => 'decimal',
+    AppSpeechTranscriptMode.digits => 'digits',
+    AppSpeechTranscriptMode.email => 'email',
+    AppSpeechTranscriptMode.text => 'text',
+  };
 }
 
 /// Picks a transcript mode from a Flutter [TextInputType].
@@ -1258,13 +1283,29 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
   String _sessionSuffix = '';
   AppSpeechInitStatus _initStatus = AppSpeechInitStatus.unavailable;
   String? _lastError;
+  int _formatGeneration = 0;
+  AppSpeechAiAbort? _activeFormatAbort;
+  Object? _formattingOwner;
 
   Object? get activeOwner => _activeOwner;
   bool get isListening => _activeOwner != null && _recognizer.isListening;
   AppSpeechInitStatus get initStatus => _initStatus;
   String? get lastError => _lastError;
+  bool get isFormatting => _formattingOwner != null;
 
   bool isListeningFor(Object owner) => _activeOwner == owner && isListening;
+
+  bool isFormattingFor(Object owner) => _formattingOwner == owner;
+
+  void _cancelInFlightFormat() {
+    _formatGeneration += 1;
+    _activeFormatAbort?.abort();
+    _activeFormatAbort = null;
+    if (_formattingOwner != null) {
+      _formattingOwner = null;
+      notifyListeners();
+    }
+  }
 
   Future<AppSpeechInitStatus> ensureReady() async {
     _initStatus = await _recognizer.ensureReady(
@@ -1290,12 +1331,17 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
     required ValueChanged<String>? onChanged,
     String Function(String transcript)? transcriptTransform,
     void Function(String transcript, {required bool isFinal})? onSpeechResult,
+    AppSpeechAiFormatter? aiFormatter,
+    String aiFormatMode = 'text',
+    String? aiFormatHint,
+    String? locale,
   }) async {
     var stoppedOther = false;
     if (_activeOwner != null && _activeOwner != owner) {
       await stop(owner: _activeOwner);
       stoppedOther = true;
     }
+    _cancelInFlightFormat();
 
     final AppSpeechInitStatus status = await ensureReady();
     if (status != AppSpeechInitStatus.ready) {
@@ -1316,25 +1362,35 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
           if (_activeOwner != owner) {
             return;
           }
+          _cancelInFlightFormat();
+          final String formatPrefix = _sessionPrefix;
+          final String formatSuffix = _sessionSuffix;
           final String transcript =
               (transcriptTransform ?? appSpeechTextTranscript).call(words);
-          if (onSpeechResult != null) {
-            onSpeechResult(transcript, isFinal: isFinal);
-          } else {
-            insertSpeechTranscript(
-              controller,
-              transcript,
-              sessionPrefix: _sessionPrefix,
-              sessionSuffix: _sessionSuffix,
+          _deliverTranscript(
+            owner: owner,
+            controller: controller,
+            transcript: transcript,
+            onChanged: onChanged,
+            onSpeechResult: onSpeechResult,
+            isFinal: isFinal,
+          );
+          if (isFinal) {
+            unawaited(
+              _formatFinalTranscript(
+                owner: owner,
+                controller: controller,
+                transcript: transcript,
+                formatPrefix: formatPrefix,
+                formatSuffix: formatSuffix,
+                onChanged: onChanged,
+                onSpeechResult: onSpeechResult,
+                aiFormatter: aiFormatter,
+                aiFormatMode: aiFormatMode,
+                aiFormatHint: aiFormatHint,
+                locale: locale,
+              ),
             );
-            onChanged?.call(controller.text);
-            if (isFinal) {
-              // Keep listening until the user stops; refresh base for next utterance.
-              final ({String prefix, String suffix}) nextBounds =
-                  captureSpeechSessionBounds(controller);
-              _sessionPrefix = nextBounds.prefix;
-              _sessionSuffix = nextBounds.suffix;
-            }
           }
           notifyListeners();
         },
@@ -1367,6 +1423,101 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
     return (started: true, stoppedOther: stoppedOther);
   }
 
+  void _deliverTranscript({
+    required Object owner,
+    required TextEditingController controller,
+    required String transcript,
+    required ValueChanged<String>? onChanged,
+    required void Function(String transcript, {required bool isFinal})?
+    onSpeechResult,
+    required bool isFinal,
+  }) {
+    if (onSpeechResult != null) {
+      onSpeechResult(transcript, isFinal: isFinal);
+    } else {
+      insertSpeechTranscript(
+        controller,
+        transcript,
+        sessionPrefix: _sessionPrefix,
+        sessionSuffix: _sessionSuffix,
+      );
+      onChanged?.call(controller.text);
+      if (isFinal) {
+        final ({String prefix, String suffix}) nextBounds =
+            captureSpeechSessionBounds(controller);
+        _sessionPrefix = nextBounds.prefix;
+        _sessionSuffix = nextBounds.suffix;
+      }
+    }
+  }
+
+  Future<void> _formatFinalTranscript({
+    required Object owner,
+    required TextEditingController controller,
+    required String transcript,
+    required String formatPrefix,
+    required String formatSuffix,
+    required ValueChanged<String>? onChanged,
+    required void Function(String transcript, {required bool isFinal})?
+    onSpeechResult,
+    required AppSpeechAiFormatter? aiFormatter,
+    required String aiFormatMode,
+    String? aiFormatHint,
+    String? locale,
+  }) async {
+    if (aiFormatter == null || transcript.trim().isEmpty) {
+      return;
+    }
+
+    final int generation = _formatGeneration;
+    final AppSpeechAiAbort abort = AppSpeechAiAbort();
+    _activeFormatAbort = abort;
+    _formattingOwner = owner;
+    notifyListeners();
+
+    final String expected = '$formatPrefix$transcript$formatSuffix';
+    String? formatted;
+    try {
+      formatted = await aiFormatter(
+        transcript: transcript,
+        mode: aiFormatMode,
+        abort: abort,
+        locale: locale,
+        hint: aiFormatHint,
+      );
+    } on Object {
+      formatted = null;
+    }
+
+    if (generation != _formatGeneration) {
+      return;
+    }
+    _activeFormatAbort = null;
+    _formattingOwner = null;
+
+    final String? next = formatted?.trim();
+    if (next == null || next.isEmpty || next == transcript) {
+      notifyListeners();
+      return;
+    }
+    if (onSpeechResult == null && controller.text != expected) {
+      notifyListeners();
+      return;
+    }
+
+    _sessionPrefix = formatPrefix;
+    _sessionSuffix = formatSuffix;
+    _deliverTranscript(
+      owner: owner,
+      controller: controller,
+      transcript: next,
+      onChanged: onChanged,
+      onSpeechResult: onSpeechResult,
+      isFinal: true,
+    );
+    notifyListeners();
+  }
+
   Future<void> stop({Object? owner}) async {
     if (owner != null && _activeOwner != null && _activeOwner != owner) {
       return;
@@ -1376,6 +1527,7 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
     } on Object {
       // Best-effort stop on dispose/disable.
     }
+    _cancelInFlightFormat();
     _activeOwner = null;
     notifyListeners();
   }
@@ -1389,6 +1541,7 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
     } on Object {
       // Best-effort cancel.
     }
+    _cancelInFlightFormat();
     _activeOwner = null;
     notifyListeners();
   }
@@ -1419,6 +1572,9 @@ class AppSpeechToTextButton extends ConsumerStatefulWidget {
     this.onChanged,
     this.onSpeechResult,
     this.transcriptTransform,
+    this.aiFormatter,
+    this.aiFormatMode = 'text',
+    this.aiFormatHint,
     this.coordinator,
     this.dense = false,
     super.key,
@@ -1433,6 +1589,11 @@ class AppSpeechToTextButton extends ConsumerStatefulWidget {
       onSpeechResult;
   /// Optional sanitizer (e.g. [appSpeechDigitsOnlyTranscript] for phone/date).
   final String Function(String transcript)? transcriptTransform;
+  /// Test override. Production reads [aiSpeechFormatterProvider].
+  final AppSpeechAiFormatter? aiFormatter;
+  /// Backend `speech_format` mode (`text`, `email`, `phone`, …).
+  final String aiFormatMode;
+  final String? aiFormatHint;
   final AppSpeechToTextCoordinator? coordinator;
   final bool dense;
 
@@ -1541,6 +1702,9 @@ class _AppSpeechToTextButtonState extends ConsumerState<AppSpeechToTextButton> {
       onSpeechResult: widget.onSpeechResult,
       transcriptTransform:
           widget.transcriptTransform ?? appSpeechTextTranscript,
+      aiFormatter: widget.aiFormatter ?? ref.read(aiSpeechFormatterProvider),
+      aiFormatMode: widget.aiFormatMode,
+      aiFormatHint: widget.aiFormatHint,
     );
     if (!mounted) {
       return;
@@ -1576,6 +1740,7 @@ class _AppSpeechToTextButtonState extends ConsumerState<AppSpeechToTextButton> {
       orElse: () => true,
     );
     final bool listening = _coordinator.isListeningFor(widget.controller);
+    final bool formatting = _coordinator.isFormattingFor(widget.controller);
     final AppSpeechToTextBlockReason? blockReason = listening
         ? null
         : _blockReason(online: online);
@@ -1595,7 +1760,9 @@ class _AppSpeechToTextButtonState extends ConsumerState<AppSpeechToTextButton> {
         iconOnly: true,
         dense: widget.dense,
         variant: AppButtonVariant.tertiary,
-        leadingIcon: listening ? Icons.stop : Icons.mic_none_outlined,
+        leadingIcon: listening
+            ? Icons.stop
+            : (formatting ? Icons.hourglass_empty : Icons.mic_none_outlined),
         label: listening
             ? l10n.speechToTextStopTooltip
             : l10n.speechToTextStartTooltip,

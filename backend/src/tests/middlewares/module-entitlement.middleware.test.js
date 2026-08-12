@@ -79,6 +79,18 @@ describe('module entitlement middleware', () => {
     expect(moduleSubscriptionRepository.count).not.toHaveBeenCalled();
   });
 
+  test('allows AI utilities as platform infrastructure without a commercial module', async () => {
+    const { enforceModuleEntitlement } = loadMiddleware();
+    const req = {
+      path: '/ai/status',
+      user: { tenant_id: 'tenant-ai', roles: ['DOCTOR'] }};
+
+    const error = await invokeMiddleware(enforceModuleEntitlement(), req);
+
+    expect(error).toBeUndefined();
+    expect(moduleSubscriptionRepository.count).not.toHaveBeenCalled();
+  });
+
   test('evaluates commercial patient paths via DB entitlement', async () => {
     const { enforceModuleEntitlement } = loadMiddleware();
     const req = {

@@ -187,6 +187,8 @@ class _AppDateFieldState extends State<AppDateField> {
                     dense: true,
                     // Keep the raw utterance; date parsing happens in onSpeechResult.
                     transcriptTransform: (String transcript) => transcript,
+                    aiFormatMode: 'date',
+                    aiFormatHint: 'YYYY-MM-DD',
                     onSpeechResult: (String transcript, {required bool isFinal}) {
                       _applySpokenDateTranscript(transcript, field);
                     },

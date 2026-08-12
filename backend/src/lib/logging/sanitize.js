@@ -41,8 +41,11 @@ const SENSITIVE_FIELDS = [
   'cvc',
   'ssn',
   'social_security_number',
-  'phi',
-  'protected_health_information'
+  'transcript',
+  'prompt',
+  'completion',
+  'system_prompt',
+  'systemPrompt',
 ];
 
 // Fields that should be partially masked (show first/last few characters)

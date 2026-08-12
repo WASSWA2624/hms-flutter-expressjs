@@ -410,6 +410,7 @@ class _AppTextFieldState extends State<AppTextField> {
             dense: widget.isDense,
             onChanged: widget.onChanged,
             transcriptTransform: _speechTranscriptTransform,
+            aiFormatMode: appSpeechAiFormatModeForKeyboard(widget.keyboardType),
           )
         : null;
 

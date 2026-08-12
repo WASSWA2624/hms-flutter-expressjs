@@ -300,6 +300,7 @@ apiV1Router.use('/integrations', require('../modules/integration/routes/integrat
 apiV1Router.use('/integration-logs', require('../modules/integration-log/routes/integration-log.routes'));
 apiV1Router.use('/webhook-subscriptions', require('../modules/webhook-subscription/routes/webhook-subscription.routes'));
 apiV1Router.use('/interop', require('../modules/interop/routes/interop.routes'));
+apiV1Router.use('/ai', require('../modules/ai/routes/ai.routes'));
 
 // Mount API v1 router
 router.use('/api/v1', apiV1Router);

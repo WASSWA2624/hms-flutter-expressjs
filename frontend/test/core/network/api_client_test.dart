@@ -34,6 +34,11 @@ void main() {
         HmsApiResource.pharmacy.group,
         HmsApiEndpointGroup.diagnosticsPharmacyBilling,
       );
+      expect(
+        ApiEndpoints.apiV1(<String>[HmsApiResource.ai.path, 'status'])
+            .toString(),
+        '/api/v1/ai/status',
+      );
     });
 
     test(

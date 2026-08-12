@@ -510,6 +510,7 @@ class _UnifiedCurrencyAmountInput extends StatelessWidget {
                           transcript,
                           allowDecimal: true,
                         ),
+                    aiFormatMode: 'currency',
                     onChanged: onAmountChanged,
                   ),
                 ),

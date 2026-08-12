@@ -397,6 +397,9 @@ const loadPlatformInfrastructureSegments = async () => {
     }
   }
 
+  // Code-level fallback so /ai works before a catalog backfill lands.
+  segments.add('ai');
+
   setCached(platformInfrastructureCache, cacheKey, segments);
   return segments;
 };

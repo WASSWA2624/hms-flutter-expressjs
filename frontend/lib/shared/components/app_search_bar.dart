@@ -616,6 +616,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
               enabled: widget.enabled && !widget.isLoading,
               dense: true,
               transcriptTransform: appSpeechTextTranscript,
+              aiFormatMode: 'text',
               onChanged: widget.onChanged,
             ),
           if (widget.isLoading)

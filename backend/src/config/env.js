@@ -86,6 +86,42 @@ const validatePacsAuthMode = (mode) => {
   }
 };
 
+const {
+  AI_PROVIDER_ALLOWLIST,
+  AI_DEFAULT_PROVIDER,
+  AI_DEFAULT_BASE_URL,
+  AI_DEFAULT_MODEL,
+  AI_DEFAULT_TIMEOUT_MS,
+  AI_DEFAULT_MAX_INPUT_CHARS,
+  AI_DEFAULT_TEMPERATURE,
+} = require('@config/constants');
+
+const validateAiProvider = (provider) => {
+  if (!AI_PROVIDER_ALLOWLIST.includes(provider)) {
+    throw new Error(
+      `Invalid AI_PROVIDER: ${provider}. Must be one of: ${AI_PROVIDER_ALLOWLIST.join(', ')}`
+    );
+  }
+};
+
+const parseBoundedNumber = (
+  value,
+  defaultValue,
+  varName,
+  { min = 0, max = Number.MAX_SAFE_INTEGER } = {}
+) => {
+  if (value === undefined || value === null || value === '') {
+    return defaultValue;
+  }
+
+  const parsed = Number(String(value).trim());
+  if (!Number.isFinite(parsed) || parsed < min || parsed > max) {
+    throw new Error(`${varName} must be a number between ${min} and ${max}.`);
+  }
+
+  return parsed;
+};
+
 /**
  * Parse comma-separated CORS_ORIGINS into array
  */
@@ -276,6 +312,34 @@ const buildEnv = () => {
     process.env.RADIOLOGY_ATTESTATION_V2,
     false
   );
+  const AI_ENABLED = parseOptionalBoolean(process.env.AI_ENABLED, true);
+  const AI_PROVIDER = String(process.env.AI_PROVIDER || AI_DEFAULT_PROVIDER)
+    .trim()
+    .toLowerCase() || AI_DEFAULT_PROVIDER;
+  const AI_BASE_URL =
+    String(process.env.AI_BASE_URL || AI_DEFAULT_BASE_URL).trim() ||
+    AI_DEFAULT_BASE_URL;
+  const AI_MODEL =
+    String(process.env.AI_MODEL || AI_DEFAULT_MODEL).trim() || AI_DEFAULT_MODEL;
+  const AI_TIMEOUT_MS = parseBoundedInteger(
+    process.env.AI_TIMEOUT_MS,
+    AI_DEFAULT_TIMEOUT_MS,
+    'AI_TIMEOUT_MS',
+    { min: 1000 }
+  );
+  const AI_MAX_INPUT_CHARS = parseBoundedInteger(
+    process.env.AI_MAX_INPUT_CHARS,
+    AI_DEFAULT_MAX_INPUT_CHARS,
+    'AI_MAX_INPUT_CHARS',
+    { min: 1 }
+  );
+  const AI_TEMPERATURE = parseBoundedNumber(
+    process.env.AI_TEMPERATURE,
+    AI_DEFAULT_TEMPERATURE,
+    'AI_TEMPERATURE',
+    { min: 0, max: 2 }
+  );
+  validateAiProvider(AI_PROVIDER);
 
   if (process.env.STORAGE_PROVIDER) {
     validateStorageProvider(STORAGE_PROVIDER);
@@ -427,6 +491,13 @@ const buildEnv = () => {
     OTEL_METRIC_EXPORT_INTERVAL_MS,
     PHARMACY_WORKSPACE_V1,
     RADIOLOGY_ATTESTATION_V2,
+    AI_ENABLED,
+    AI_PROVIDER,
+    AI_BASE_URL,
+    AI_MODEL,
+    AI_TIMEOUT_MS,
+    AI_MAX_INPUT_CHARS,
+    AI_TEMPERATURE,
     AWS_ACCESS_KEY_ID,
     AWS_SECRET_ACCESS_KEY,
     AWS_REGION,
@@ -523,6 +594,13 @@ const envKeys = [
   'OTEL_METRIC_EXPORT_INTERVAL_MS',
   'PHARMACY_WORKSPACE_V1',
   'RADIOLOGY_ATTESTATION_V2',
+  'AI_ENABLED',
+  'AI_PROVIDER',
+  'AI_BASE_URL',
+  'AI_MODEL',
+  'AI_TIMEOUT_MS',
+  'AI_MAX_INPUT_CHARS',
+  'AI_TEMPERATURE',
   'AWS_ACCESS_KEY_ID',
   'AWS_SECRET_ACCESS_KEY',
   'AWS_REGION',

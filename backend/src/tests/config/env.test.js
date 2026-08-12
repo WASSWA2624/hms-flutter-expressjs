@@ -9,6 +9,14 @@ const loadEnv = (overrides = {}) => {
     NODE_ENV: 'development',
     TRUST_PROXY: undefined,
     PRISMA_MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL: undefined,
+    AUTH_SESSION_TTL_DAYS: undefined,
+    AI_ENABLED: undefined,
+    AI_PROVIDER: undefined,
+    AI_BASE_URL: undefined,
+    AI_MODEL: undefined,
+    AI_TIMEOUT_MS: undefined,
+    AI_MAX_INPUT_CHARS: undefined,
+    AI_TEMPERATURE: undefined,
     ...overrides});
 
   return env;
@@ -95,5 +103,37 @@ describe('env config', () => {
       loadEnv({
         AUTH_SESSION_TTL_DAYS: '0'})
     ).toThrow('AUTH_SESSION_TTL_DAYS must be an integer between 1 and 90.');
+  });
+
+  test('defaults AI provider settings without requiring Ollama', () => {
+    const env = loadEnv({
+      AI_ENABLED: undefined,
+      AI_PROVIDER: undefined,
+      AI_BASE_URL: undefined,
+      AI_MODEL: undefined,
+      AI_TIMEOUT_MS: undefined,
+      AI_MAX_INPUT_CHARS: undefined,
+      AI_TEMPERATURE: undefined,
+    });
+
+    expect(env.AI_ENABLED).toBe(true);
+    expect(env.AI_PROVIDER).toBe('ollama');
+    expect(env.AI_BASE_URL).toBe('http://127.0.0.1:11434');
+    expect(env.AI_MODEL).toBe('llama3.2:3b');
+    expect(env.AI_TIMEOUT_MS).toBe(8000);
+    expect(env.AI_MAX_INPUT_CHARS).toBe(4000);
+    expect(env.AI_TEMPERATURE).toBe(0);
+  });
+
+  test('rejects unknown AI providers', () => {
+    expect(() => loadEnv({ AI_PROVIDER: 'openai' })).toThrow(
+      'Invalid AI_PROVIDER: openai. Must be one of: ollama'
+    );
+  });
+
+  test('rejects AI_TIMEOUT_MS below 1000', () => {
+    expect(() => loadEnv({ AI_TIMEOUT_MS: '500' })).toThrow(
+      'AI_TIMEOUT_MS must be an integer between 1000'
+    );
   });
 });
