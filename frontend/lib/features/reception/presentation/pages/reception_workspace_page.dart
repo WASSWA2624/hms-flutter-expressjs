@@ -390,10 +390,20 @@ class _ReceptionWorkspaceContentState
                           page: AppPage<_ReceptionDeskRow>(
                             items: rows,
                             request: AppPageRequest(
-                              pageSize: rows.isEmpty ? 1 : rows.length,
+                              pageSize: _section == ReceptionDeskSection.followUps
+                                  ? AppPageRequest.maxPageSize
+                                  : (rows.isEmpty ? 1 : rows.length),
                             ),
-                            totalItemCount: rows.length,
+                            totalItemCount: _deskTableTotalItemCount(
+                              rows: rows,
+                              followUp: followUp,
+                            ),
                           ),
+                          isLoading:
+                              _section == ReceptionDeskSection.followUps &&
+                              (followUp?.isLoadingMore == true ||
+                                  (followUp?.isRefreshing == true &&
+                                      rows.isNotEmpty)),
                           columns: columns,
                           columnChoices: columnChoices,
                           columnVisibilityController:
@@ -441,10 +451,18 @@ class _ReceptionWorkspaceContentState
                           goToTopLabel: l10n.commonGoToTopActionLabel,
                           loadingMoreLabel: l10n.commonLoadingMoreLabel,
                           allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
-                          // Client-side desk lists already hold the full filtered
-                          // set; keep infinite chrome so the pinned footer can
-                          // show the row range and end-of-list status.
-                          onPageChanged: (_) {},
+                          onPageChanged: _section == ReceptionDeskSection.followUps
+                              ? (_) {
+                                  unawaited(
+                                    ref
+                                        .read(
+                                          receptionFollowUpControllerProvider
+                                              .notifier,
+                                        )
+                                        .loadMore(),
+                                  );
+                                }
+                              : (_) {},
                           pageLabelBuilder:
                               (AppPage<_ReceptionDeskRow> page) {
                             final int total =
@@ -574,6 +592,22 @@ class _ReceptionWorkspaceContentState
       success: (ReceptionFollowUpState value) => value,
       failure: (_) => null,
     );
+  }
+
+  /// Footer / infinite-scroll total: while Follow-ups still have server pages to
+  /// load, use the API total so [AppPage.hasNextPage] stays true; once caught
+  /// up, use the filtered row count so client filters do not keep requesting.
+  int _deskTableTotalItemCount({
+    required List<_ReceptionDeskRow> rows,
+    required ReceptionFollowUpState? followUp,
+  }) {
+    if (_section != ReceptionDeskSection.followUps || followUp == null) {
+      return rows.length;
+    }
+    if (followUp.hasMore) {
+      return followUp.totalCount;
+    }
+    return rows.length;
   }
 
   AppFailure? get _followUpFailure {

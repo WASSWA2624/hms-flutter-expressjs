@@ -22,30 +22,38 @@ class ReceptionFollowUpRepository {
   Future<Result<List<ReceptionFollowUpEntry>>> listScheduledFollowUps({
     String? encounterType,
   }) {
-    return _apiClient.get<List<ReceptionFollowUpEntry>>(
-      ApiEndpoints.collection(HmsApiResource.followUps),
-      queryParameters: <String, Object?>{
-        'status': 'SCHEDULED',
-        'page': 1,
-        'limit': AppPageRequest.maxPageSize,
-        'sort_by': 'scheduled_at',
-        'order': 'asc',
-        if (encounterType != null && encounterType.trim().isNotEmpty)
-          'encounter_type': encounterType.trim().toUpperCase(),
+    return listScheduledFollowUpsPage(encounterType: encounterType).then(
+      (Result<({List<ReceptionFollowUpEntry> entries, int total})> result) {
+        return result.when(
+          success: (({List<ReceptionFollowUpEntry> entries, int total}) page) =>
+              Result<List<ReceptionFollowUpEntry>>.success(page.entries),
+          failure: Result<List<ReceptionFollowUpEntry>>.failure,
+        );
       },
-      decoder: _decodeFollowUpList,
     );
   }
 
-  /// Lists scheduled follow-ups and returns the authoritative pagination total.
+  /// Lists one page of scheduled follow-ups and the authoritative total.
+  ///
+  /// [pageRequest] is 0-based; the API uses 1-based `page`.
   Future<Result<({List<ReceptionFollowUpEntry> entries, int total})>>
-  listScheduledFollowUpsPage({String? encounterType}) {
+  listScheduledFollowUpsPage({
+    String? encounterType,
+    AppPageRequest pageRequest = const AppPageRequest(
+      pageSize: AppPageRequest.maxPageSize,
+    ),
+  }) {
+    final int limit = pageRequest.pageSize < 1
+        ? AppPageRequest.maxPageSize
+        : (pageRequest.pageSize > AppPageRequest.maxPageSize
+              ? AppPageRequest.maxPageSize
+              : pageRequest.pageSize);
     return _apiClient.get<({List<ReceptionFollowUpEntry> entries, int total})>(
       ApiEndpoints.collection(HmsApiResource.followUps),
       queryParameters: <String, Object?>{
         'status': 'SCHEDULED',
-        'page': 1,
-        'limit': AppPageRequest.maxPageSize,
+        'page': pageRequest.pageIndex + 1,
+        'limit': limit,
         'sort_by': 'scheduled_at',
         'order': 'asc',
         if (encounterType != null && encounterType.trim().isNotEmpty)
@@ -100,10 +108,6 @@ class ReceptionFollowUpRepository {
       decoder: (_) {},
     );
   }
-}
-
-List<ReceptionFollowUpEntry> _decodeFollowUpList(Object? responseData) {
-  return _decodeFollowUpPage(responseData).entries;
 }
 
 ({List<ReceptionFollowUpEntry> entries, int total}) _decodeFollowUpPage(

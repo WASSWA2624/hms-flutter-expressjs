@@ -256,15 +256,24 @@ void _stubFollowUps(
   when(
     () => repository.listScheduledFollowUpsPage(
       encounterType: any(named: 'encounterType'),
+      pageRequest: any(named: 'pageRequest'),
     ),
-  ).thenAnswer((_) async {
+  ).thenAnswer((Invocation invocation) async {
     if (failList) {
       return const Result<({List<ReceptionFollowUpEntry> entries, int total})>.failure(
         AppFailure.network(),
       );
     }
+    final AppPageRequest request =
+        invocation.namedArguments[#pageRequest] as AppPageRequest? ??
+        const AppPageRequest(pageSize: AppPageRequest.maxPageSize);
+    final int start = request.offset;
+    final int end = (start + request.pageSize).clamp(0, list.length);
+    final List<ReceptionFollowUpEntry> pageItems = start >= list.length
+        ? const <ReceptionFollowUpEntry>[]
+        : list.sublist(start, end);
     return Result<({List<ReceptionFollowUpEntry> entries, int total})>.success((
-      entries: list,
+      entries: pageItems,
       total: total,
     ));
   });
@@ -352,6 +361,7 @@ void main() {
     registerFallbackValue(const OpdQueueQuery());
     registerFallbackValue(const OpdFlowQuery());
     registerFallbackValue(const OpdTriageQueueQuery());
+    registerFallbackValue(const AppPageRequest());
     registerFallbackValue(<String, Object?>{});
   });
 
@@ -915,6 +925,7 @@ void main() {
       when(
         () => followUpRepository.listScheduledFollowUpsPage(
           encounterType: any(named: 'encounterType'),
+          pageRequest: any(named: 'pageRequest'),
         ),
       ).thenAnswer(
         (_) async =>
@@ -1035,6 +1046,7 @@ void main() {
       when(
         () => followUpRepository.listScheduledFollowUpsPage(
           encounterType: any(named: 'encounterType'),
+          pageRequest: any(named: 'pageRequest'),
         ),
       ).thenAnswer((_) async {
         await Future<void>.delayed(const Duration(milliseconds: 800));
