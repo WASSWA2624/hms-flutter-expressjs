@@ -1,6 +1,3 @@
-import 'dart:async';
-
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -8,7 +5,6 @@ import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/presentation/controllers/nursing_workspace_controller.dart';
 import 'package:hosspi_hms/features/nursing/presentation/widgets/nursing_helpers.dart';
-import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -28,7 +24,6 @@ class _NursingHandoverDialogState extends ConsumerState<NursingHandoverDialog> {
   late final TextEditingController _notesController;
   String? _toUserId;
   List<NursingUserOption> _userOptions = const <NursingUserOption>[];
-  List<XFile> _attachments = const <XFile>[];
   bool _confirm = false;
   bool _isSaving = false;
   AppFailure? _failure;
@@ -100,27 +95,6 @@ class _NursingHandoverDialogState extends ConsumerState<NursingHandoverDialog> {
               onConfirmedChanged: widget.escalation
                   ? (bool value) => setState(() => _confirm = value)
                   : null,
-              attachmentTitle: widget.escalation
-                  ? null
-                  : l10n.patientsDocumentUploadTitle,
-              attachmentEmptyDescription: widget.escalation
-                  ? null
-                  : l10n.patientsDocumentUploadEmpty,
-              attachmentChooseLabel: widget.escalation
-                  ? null
-                  : l10n.patientsChooseDocumentAction,
-              attachmentClearLabel: widget.escalation
-                  ? null
-                  : l10n.patientsClearFiltersAction,
-              attachmentFileNames: _attachments
-                  .map((XFile file) => file.name)
-                  .toList(growable: false),
-              onChooseAttachments: widget.escalation
-                  ? null
-                  : _chooseAttachments,
-              onClearAttachments: widget.escalation
-                  ? null
-                  : () => setState(() => _attachments = const <XFile>[]),
             ),
           ],
         ),
@@ -151,34 +125,6 @@ class _NursingHandoverDialogState extends ConsumerState<NursingHandoverDialog> {
     setState(() => _userOptions = users);
   }
 
-  Future<void> _chooseAttachments() async {
-    final List<XFile> files = await openFiles(
-      acceptedTypeGroups: <XTypeGroup>[
-        XTypeGroup(
-          label: nursingDocumentsTypeGroupLabel(context.l10n),
-          extensions: const <String>['pdf', 'png', 'jpg', 'jpeg', 'doc', 'docx'],
-        ),
-      ],
-    );
-    if (mounted && files.isNotEmpty) {
-      setState(() => _attachments = files);
-    }
-  }
-
-  Future<List<PatientDocumentUploadFile>> _documentUploadFiles() async {
-    final List<PatientDocumentUploadFile> files = <PatientDocumentUploadFile>[];
-    for (final XFile file in _attachments) {
-      files.add(
-        PatientDocumentUploadFile(
-          name: file.name,
-          bytes: await file.readAsBytes(),
-          contentType: file.mimeType,
-        ),
-      );
-    }
-    return files;
-  }
-
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
@@ -195,21 +141,6 @@ class _NursingHandoverDialogState extends ConsumerState<NursingHandoverDialog> {
     final NursingWorkspaceController controller = ref.read(
       nursingWorkspaceControllerProvider.notifier,
     );
-    final List<PatientDocumentUploadFile> documentFiles;
-    try {
-      documentFiles = widget.escalation
-          ? const <PatientDocumentUploadFile>[]
-          : await _documentUploadFiles();
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _failure = AppFailure.validation();
-        _isSaving = false;
-      });
-      return;
-    }
     final AppFailure? failure = widget.escalation
         ? await controller.escalate(
             toUserId: toUserId,
@@ -218,7 +149,6 @@ class _NursingHandoverDialogState extends ConsumerState<NursingHandoverDialog> {
         : await controller.createHandover(
             toUserId: toUserId,
             notes: _notesController.text.trim(),
-            documentFiles: documentFiles,
           );
     if (!mounted) {
       return;
@@ -228,8 +158,8 @@ class _NursingHandoverDialogState extends ConsumerState<NursingHandoverDialog> {
       return;
     }
     setState(() {
-      _failure = failure;
       _isSaving = false;
+      _failure = failure;
     });
   }
 }

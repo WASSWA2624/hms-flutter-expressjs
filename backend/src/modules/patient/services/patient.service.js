@@ -1633,38 +1633,6 @@ const getPatientMedicalHistories = async (
   }
 };
 
-/**
- * Get patient documents (nested resource)
- */
-const getPatientDocuments = async (
-  patientId,
-  page = 1,
-  limit = 20,
-  sortBy = 'created_at',
-  order = 'desc',
-  scope = {}
-) => {
-  try {
-    const patient = await ensurePatientExists(patientId, scope);
-    const patientDocumentService = require('@services/patient-document/patient-document.service');
-    const result = await patientDocumentService.listPatientDocuments(
-      { patient_id: patient.id },
-      page,
-      limit,
-      sortBy,
-      order
-    );
-
-    return {
-      patientDocuments: result.items || [],
-      pagination: result.pagination
-    };
-  } catch (error) {
-    if (error instanceof HttpError) throw error;
-    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
-  }
-};
-
 module.exports = {
   listPatients,
   getPatientById,
@@ -1675,6 +1643,5 @@ module.exports = {
   getPatientContacts,
   getPatientGuardians,
   getPatientAllergies,
-  getPatientMedicalHistories,
-  getPatientDocuments
+  getPatientMedicalHistories
 };

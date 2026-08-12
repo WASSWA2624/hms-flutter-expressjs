@@ -125,8 +125,7 @@ class PatientDetailDialog extends ConsumerWidget {
         (state?.isRefreshingDetail ?? true) && detail == null;
 
     if (isLoadingDetail) {
-      final String dialogTitle =
-          cachedPatient?.effectiveDisplayName ?? l10n.patientsDetailTitle;
+      final String dialogTitle = l10n.patientsDetailTitle;
       return AppDialog(
         title: Text(dialogTitle),
         icon: const Icon(Icons.assignment_ind_outlined),
@@ -204,7 +203,7 @@ class PatientDetailDialog extends ConsumerWidget {
               accessPolicy,
             ));
     return AppDialog(
-      title: Text(patient.effectiveDisplayName),
+      title: Text(l10n.patientsDetailTitle),
       icon: const Icon(Icons.assignment_ind_outlined),
       maxWidth: 980,
       scrollable: true,
@@ -247,10 +246,15 @@ class PatientDetailDialog extends ConsumerWidget {
           children: <Widget>[
             if (state?.isRefreshingDetail ?? false)
               const LinearProgressIndicator(),
-            PatientDetailHeader(
-              detail: detail,
-              referenceData:
-                  state?.referenceData ?? const PatientReferenceData(),
+            AppCollapsibleSection(
+              title: l10n.patientsDetailTitle,
+              initiallyExpanded: true,
+              collapsible: true,
+              child: PatientDetailHeader(
+                detail: detail,
+                referenceData:
+                    state?.referenceData ?? const PatientReferenceData(),
+              ),
             ),
             SizedBox(height: Theme.of(context).spacing.md),
             if (!hideClinicalSections) ...<Widget>[
@@ -306,7 +310,7 @@ class PatientDetailDialog extends ConsumerWidget {
                   responsiveActionButtons: true,
                   itemTitle: (PatientAllergy item) =>
                       '${l10n.patientsAllergiesSectionTitle}: ${item.allergen} (${_apiLabel(item.severity)})',
-                  addLabel: l10n.patientsAddRelatedAction,
+                  addLabel: l10n.commonAddActionLabel,
                   editLabel: l10n.patientsEditAction,
                   deleteLabel: l10n.patientsDeleteAction,
                   addRequirement: _writeRequirement,
@@ -328,7 +332,7 @@ class PatientDetailDialog extends ConsumerWidget {
                   responsiveActionButtons: true,
                   itemTitle: (PatientIdentifier item) =>
                       '${_apiLabel(item.type)}: ${item.value}',
-                  addLabel: l10n.patientsAddRelatedAction,
+                  addLabel: l10n.commonAddActionLabel,
                   editLabel: l10n.patientsEditAction,
                   deleteLabel: l10n.patientsDeleteAction,
                   addRequirement: _writeRequirement,
@@ -353,7 +357,7 @@ class PatientDetailDialog extends ConsumerWidget {
                   responsiveActionButtons: true,
                   itemTitle: (PatientContact item) =>
                       '${_apiLabel(item.type)}: ${item.value}',
-                  addLabel: l10n.patientsAddRelatedAction,
+                  addLabel: l10n.commonAddActionLabel,
                   editLabel: l10n.patientsEditAction,
                   deleteLabel: l10n.patientsDeleteAction,
                   addRequirement: _writeRequirement,
@@ -375,7 +379,7 @@ class PatientDetailDialog extends ConsumerWidget {
                   responsiveActionButtons: true,
                   itemTitle: (PatientGuardian item) =>
                       '${item.relationship == null ? l10n.patientsGuardiansSectionTitle : _apiLabel(item.relationship!)}: ${item.name}',
-                  addLabel: l10n.patientsAddRelatedAction,
+                  addLabel: l10n.commonAddActionLabel,
                   editLabel: l10n.patientsEditAction,
                   deleteLabel: l10n.patientsDeleteAction,
                   addRequirement: _writeRequirement,
@@ -403,7 +407,7 @@ class PatientDetailDialog extends ConsumerWidget {
                         ? item.condition
                         : '${item.condition}: $date';
                   },
-                  addLabel: l10n.patientsAddRelatedAction,
+                  addLabel: l10n.commonAddActionLabel,
                   editLabel: l10n.patientsEditAction,
                   deleteLabel: l10n.patientsDeleteAction,
                   addRequirement: _writeRequirement,
@@ -420,28 +424,6 @@ class PatientDetailDialog extends ConsumerWidget {
                       _confirmDeleteRelated(context, ref, detail, item.id),
                 ),
               if (!hideClinicalSections)
-                AppExpandableRecordSection<PatientDocument>(
-                  title: l10n.patientsDocumentsSectionTitle,
-                  emptyLabel: l10n.patientsNoDocuments,
-                  items: detail.documents,
-                  initiallyExpanded: true,
-                  responsiveActionButtons: true,
-                  itemTitle: (PatientDocument item) =>
-                      '${_apiLabel(item.documentType)}: ${item.fileName ?? item.documentType}',
-                  addLabel: l10n.patientsAddRelatedAction,
-                  editLabel: l10n.patientsEditAction,
-                  deleteLabel: l10n.patientsDeleteAction,
-                  addRequirement: _writeRequirement,
-                  editRequirement: _writeRequirement,
-                  deleteRequirement: _deleteRequirement,
-                  onAdd: () =>
-                      _openRelatedForm<PatientDocument>(context, ref, detail),
-                  onEdit: (PatientDocument item) =>
-                      _openRelatedForm(context, ref, detail, item: item),
-                  onDelete: (PatientDocument item) =>
-                      _confirmDeleteRelated(context, ref, detail, item.id),
-                ),
-              if (!hideClinicalSections)
                 AppExpandableRecordSection<PatientConsent>(
                   title: l10n.patientsConsentsSectionTitle,
                   emptyLabel: l10n.patientsNoConsents,
@@ -450,7 +432,7 @@ class PatientDetailDialog extends ConsumerWidget {
                   responsiveActionButtons: true,
                   itemTitle: (PatientConsent item) =>
                       '${_apiLabel(item.consentType)}: ${_apiLabel(item.status)}',
-                  addLabel: l10n.patientsAddRelatedAction,
+                  addLabel: l10n.commonAddActionLabel,
                   editLabel: l10n.patientsEditAction,
                   deleteLabel: l10n.patientsDeleteAction,
                   addRequirement: _writeRequirement,
@@ -528,20 +510,6 @@ class PatientDetailDialog extends ConsumerWidget {
               .read(patientRegistryControllerProvider.notifier)
               .updateRelatedRecord(resource, recordId, payload);
         },
-        onUploadDocuments:
-            ({
-              required String patientId,
-              required String documentType,
-              required List<PatientDocumentUploadFile> files,
-            }) {
-              return ref
-                  .read(patientRegistryControllerProvider.notifier)
-                  .uploadPatientDocuments(
-                    patientId: patientId,
-                    documentType: documentType,
-                    files: files,
-                  );
-            },
       ),
     );
 
@@ -594,58 +562,61 @@ class _PatientListPreviewHeader extends StatelessWidget {
     final String gender = patient.gender == null
         ? l10n.profileUnknownValue
         : _genderLabel(l10n, patient.gender!);
+    final String unknown = l10n.profileUnknownValue;
     final PatientVisitContext? visit = patient.currentVisit;
 
-    return AppPatientDetails(
-      patientName: patient.effectiveDisplayName,
-      showPatientName: false,
-      patientNumber: patient.effectiveIdentifier ?? '',
-      ageLabel: _patientAgeLabel(context, patient.dateOfBirth),
-      genderLabel: gender,
-      phoneLabel: patient.primaryPhone,
-      emailLabel: patient.primaryEmail,
-      semanticLabel: l10n.patientsDetailTitle,
-      showAvatar: false,
-      status: AppWorkspaceStatus(
-        label: patient.isActive
-            ? l10n.patientsActiveFilter
-            : l10n.patientsInactiveFilter,
-        tone: patient.isActive
-            ? AppWorkspaceStatusTone.success
-            : AppWorkspaceStatusTone.neutral,
-        icon: patient.isActive
-            ? Icons.check_circle_outline
-            : Icons.block_outlined,
-      ),
-      alerts: <AppWorkspaceStatus>[
-        if (patient.hasAllergyAlert)
-          AppWorkspaceStatus(
-            label: patient.allergyAlertLabel ?? l10n.patientsAllergyAlertLabel,
-            tone: AppWorkspaceStatusTone.warning,
-            icon: Icons.warning_amber_outlined,
-          ),
-        if (patient.requiresCompletion)
-          AppWorkspaceStatus(
-            label: l10n.patientsRegistrationIncompleteValue,
-            tone: AppWorkspaceStatusTone.warning,
-            icon: Icons.error_outline,
-          ),
-      ],
-      expandedFields: <AppWorkspacePatientContextField>[
+    return AppPatientContextFactsRow(
+      fields: <AppWorkspacePatientContextField>[
         AppWorkspacePatientContextField(
-          label: l10n.patientsDobLabel,
-          value: _formatOptionalDate(context, patient.dateOfBirth),
+          label: l10n.patientsNameLabel,
+          value: patient.effectiveDisplayName,
+          icon: Icons.person_outline,
+        ),
+        AppWorkspacePatientContextField(
+          label: l10n.patientsGenderLabel,
+          value: gender,
+          icon: Icons.wc_outlined,
+        ),
+        AppWorkspacePatientContextField(
+          label: l10n.patientsAgeColumnLabel,
+          value: _patientAgeLabel(context, patient.dateOfBirth),
           icon: Icons.cake_outlined,
         ),
         AppWorkspacePatientContextField(
+          label: l10n.patientsPhoneLabel,
+          value: (patient.primaryPhone ?? '').trim().isEmpty
+              ? unknown
+              : patient.primaryPhone!,
+          icon: Icons.phone_outlined,
+        ),
+        AppWorkspacePatientContextField(
+          label: l10n.patientsEmailLabel,
+          value: (patient.primaryEmail ?? '').trim().isEmpty
+              ? unknown
+              : patient.primaryEmail!,
+          icon: Icons.email_outlined,
+        ),
+        AppWorkspacePatientContextField(
+          label: l10n.patientsStatusColumnLabel,
+          value: patient.isActive
+              ? l10n.patientsActiveFilter
+              : l10n.patientsInactiveFilter,
+          icon: patient.isActive
+              ? Icons.check_circle_outline
+              : Icons.block_outlined,
+          tone: patient.isActive
+              ? AppWorkspaceStatusTone.success
+              : AppWorkspaceStatusTone.neutral,
+        ),
+        AppWorkspacePatientContextField(
           label: l10n.patientsFacilityLabel,
-          value: patient.facilityLabel ?? '',
+          value: patient.facilityLabel ?? unknown,
           icon: Icons.business_outlined,
         ),
-        if (visit != null)
+        if (visit != null && (visit.publicId ?? '').trim().isNotEmpty)
           AppWorkspacePatientContextField(
             label: l10n.patientsVisitColumnLabel,
-            value: visit.publicId ?? '',
+            value: visit.publicId!,
             icon: Icons.assignment_turned_in_outlined,
             tone: AppWorkspaceStatusTone.info,
             copyable: true,

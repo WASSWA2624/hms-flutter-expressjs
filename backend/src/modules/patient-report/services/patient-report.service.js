@@ -260,9 +260,6 @@ const countSectionData = async ({
     case 'guardians':
       return prisma.patient_guardian.count({
         where: { deleted_at: null, patient_id: patientId }});
-    case 'documents':
-      return prisma.patient_document.count({
-        where: { deleted_at: null, patient_id: patientId }});
     case 'consents':
       return prisma.consent.count({
         where: { deleted_at: null, patient_id: patientId }});

@@ -7480,7 +7480,7 @@
   "@patientsEmptyBody": {
     "description": "Patient list empty state body."
   },
-  "patientsDetailTitle": "Patient details",
+  "patientsDetailTitle": "Patient Details",
   "@patientsDetailTitle": {
     "description": "Patient detail panel title."
   },

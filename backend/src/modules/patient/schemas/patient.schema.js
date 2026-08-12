@@ -155,10 +155,6 @@ const patientIdParamsSchema = z.object({
 const patientWorkspaceParamsSchema = z.object({
   patientId: patientRouteIdSchema});
 
-const patientDocumentParamsSchema = z.object({
-  patientId: patientRouteIdSchema,
-  documentId: uuidOrFriendlyIdentifierSchema});
-
 const patientDuplicateDismissParamsSchema = z.object({
   reviewId: z.string().trim().min(1).max(255)});
 
@@ -238,12 +234,6 @@ const patientDuplicateDismissSchema = z.object({
   secondary_patient_id: uuidOrFriendlyIdentifierSchema,
   dismissed_reason: z.string().trim().max(255).optional().nullable()});
 
-const patientDocumentUploadBodySchema = z.object({
-  document_type: z.string().trim().max(120).optional().nullable(),
-  title: z.string().trim().max(255).optional().nullable(),
-  description: z.string().trim().max(2000).optional().nullable(),
-  document_date: dateLikeBodySchema});
-
 module.exports = {
   createPatientSchema,
   updatePatientSchema,
@@ -251,7 +241,6 @@ module.exports = {
   listPatientsQuerySchema,
   patientFriendlyIdSchema,
   patientWorkspaceParamsSchema,
-  patientDocumentParamsSchema,
   patientDuplicateDismissParamsSchema,
   patientWorkspaceOverviewQuerySchema,
   patientWorkspaceReferenceDataQuerySchema,
@@ -259,5 +248,5 @@ module.exports = {
   patientDuplicateListQuerySchema,
   patientMergePreviewSchema,
   patientMergeSchema,
-  patientDuplicateDismissSchema,
-  patientDocumentUploadBodySchema};
+  patientDuplicateDismissSchema};
+

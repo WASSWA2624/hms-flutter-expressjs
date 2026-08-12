@@ -84,7 +84,6 @@ const MODULE_SEGMENT_SLUG_OVERRIDES = Object.freeze({
   'patient-guardians': 'patient-registry',
   'patient-allergies': 'patient-registry',
   'patient-medical-histories': 'patient-registry',
-  'patient-documents': 'patient-registry',
   'patient-reports': 'patient-registry',
   consents: 'patient-registry',
   consent: 'patient-registry',

@@ -107,11 +107,6 @@ const PATIENT_REPORT_SECTIONS = Object.freeze([
     permissions: [PERMISSIONS.PATIENT_READ],
   }),
   Object.freeze({
-    id: 'documents',
-    sort_order: 210,
-    permissions: [PERMISSIONS.PATIENT_READ],
-  }),
-  Object.freeze({
     id: 'consents',
     sort_order: 220,
     permissions: [PERMISSIONS.PATIENT_READ],

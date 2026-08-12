@@ -519,21 +519,6 @@ final class PatientRegistryController
     );
   }
 
-  Future<AppFailure?> uploadPatientDocuments({
-    required String patientId,
-    required String documentType,
-    required List<PatientDocumentUploadFile> files,
-  }) async {
-    return _mutateSelectedDetail<List<PatientDocument>>(
-      () => _repository.uploadPatientDocuments(
-        patientId: patientId,
-        documentType: documentType,
-        files: files,
-      ),
-      patientId: patientId,
-    );
-  }
-
   Future<AppFailure?> updateRelatedRecord(
     PatientRelatedResource resource,
     String recordId,

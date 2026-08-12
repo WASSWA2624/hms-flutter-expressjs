@@ -1037,7 +1037,6 @@ enum PatientRelatedResource {
   guardian,
   allergy,
   medicalHistory,
-  document,
   consent,
 }
 

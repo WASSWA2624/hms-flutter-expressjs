@@ -11,7 +11,6 @@ const NO_STORE_PREFIXES = Object.freeze([
   '/api/v1/patient-guardians',
   '/api/v1/patient-allergies',
   '/api/v1/patient-medical-histories',
-  '/api/v1/patient-documents',
   '/api/v1/patient-reports',
   '/api/v1/encounters',
   '/api/v1/clinical-notes',

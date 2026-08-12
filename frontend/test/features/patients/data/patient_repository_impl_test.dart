@@ -17,7 +17,6 @@ void main() {
   const String guardiansPath = '/api/v1/patient-guardians';
   const String allergiesPath = '/api/v1/patient-allergies';
   const String historiesPath = '/api/v1/patient-medical-histories';
-  const String documentsPath = '/api/v1/patient-documents';
   const String consentsPath = '/api/v1/consents';
 
   Map<String, Object?> dataList(List<Object?> items) => <String, Object?>{
@@ -121,16 +120,6 @@ void main() {
         'condition': 'Hypertension',
       },
     ]),
-    documentsPath: dataList(<Object?>[
-      <String, Object?>{
-        'id': 'document-1',
-        'tenant_id': 'tenant-1',
-        'patient_id': patientId,
-        'document_type': 'IDENTITY',
-        'storage_key': 'patients/tenant-1/patient/doc.pdf',
-        'file_name': 'id.pdf',
-      },
-    ]),
     consentsPath: dataList(<Object?>[
       <String, Object?>{
         'id': 'consent-1',
@@ -175,7 +164,7 @@ void main() {
       expect(detail.guardians, hasLength(1));
       expect(detail.allergies, hasLength(1));
       expect(detail.medicalHistories, hasLength(1));
-      expect(detail.documents, hasLength(1));
+      expect(detail.documents, isEmpty);
       expect(detail.consents, hasLength(1));
       expect(detail.timeline, hasLength(2));
       expect(detail.workspace.appointments, hasLength(1));
@@ -193,9 +182,12 @@ void main() {
           guardiansPath,
           allergiesPath,
           historiesPath,
-          documentsPath,
           consentsPath,
         ]),
+      );
+      expect(
+        apiClient.requestedPaths,
+        isNot(contains('/api/v1/patient-documents')),
       );
     },
   );

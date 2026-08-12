@@ -10942,7 +10942,7 @@ abstract class AppLocalizations {
   /// Patient detail panel title.
   ///
   /// In en, this message translates to:
-  /// **'Patient details'**
+  /// **'Patient Details'**
   String get patientsDetailTitle;
 
   /// Patient detail loading state title.

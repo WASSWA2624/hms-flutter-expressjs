@@ -51,7 +51,6 @@ enum HmsApiResource {
     'patient-medical-histories',
     HmsApiEndpointGroup.patientFlow,
   ),
-  patientDocuments('patient-documents', HmsApiEndpointGroup.patientFlow),
   patientReports('patient-reports', HmsApiEndpointGroup.patientFlow),
   consents('consents', HmsApiEndpointGroup.patientFlow),
   termsAcceptances('terms-acceptances', HmsApiEndpointGroup.patientFlow),

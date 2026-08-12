@@ -20,9 +20,6 @@ import 'package:hosspi_hms/features/nursing/data/repositories/nursing_repository
 import 'package:hosspi_hms/features/nursing/domain/entities/nursing_entities.dart';
 import 'package:hosspi_hms/features/nursing/domain/repositories/nursing_repository.dart';
 import 'package:hosspi_hms/features/nursing/presentation/nursing_access.dart';
-import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
-import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
-import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
@@ -39,8 +36,6 @@ final class NursingWorkspaceController
   static const AppPageRequest _fetchRequest = AppPageRequest(pageSize: 100);
 
   NursingRepository get _repository => ref.read(nursingRepositoryProvider);
-  PatientRepository get _patientRepository =>
-      ref.read(patientRepositoryProvider);
   ClinicalRepository get _clinicalRepository =>
       ref.read(clinicalRepositoryProvider);
 
@@ -716,8 +711,6 @@ final class NursingWorkspaceController
     required String toUserId,
     required String notes,
     String? reason,
-    List<PatientDocumentUploadFile> documentFiles =
-        const <PatientDocumentUploadFile>[],
   }) {
     final NursingPatientDetail? detail = _selectedDetail;
     if (detail == null) {
@@ -725,28 +718,18 @@ final class NursingWorkspaceController
     }
 
     return _mutateSelected((NursingPatientSummary summary) async {
-      final Result<List<Map<String, Object?>>> documentsResult =
-          await _uploadHandoverDocuments(detail, documentFiles);
-      return documentsResult.when<Future<Result<NursingPatientDetail>>>(
-        success: (List<Map<String, Object?>> documents) {
-          return _repository.createHandover(summary, <String, Object?>{
-            'to_user_id': toUserId,
-            'signoff_notes': notes,
-            'items_json': <String, Object?>{
-              'type': reason ?? 'NURSING_HANDOVER',
-              'admission_id': summary.admissionId,
-              'patient_id': summary.patientDisplayId,
-              'patient_name': summary.patientDisplayName,
-              'location': summary.locationLabel,
-              'stage': summary.stage,
-              if (documents.isNotEmpty) 'documents': documents,
-            },
-          });
+      return _repository.createHandover(summary, <String, Object?>{
+        'to_user_id': toUserId,
+        'signoff_notes': notes,
+        'items_json': <String, Object?>{
+          'type': reason ?? 'NURSING_HANDOVER',
+          'admission_id': summary.admissionId,
+          'patient_id': summary.patientDisplayId,
+          'patient_name': summary.patientDisplayName,
+          'location': summary.locationLabel,
+          'stage': summary.stage,
         },
-        failure: (AppFailure failure) async {
-          return Result<NursingPatientDetail>.failure(failure);
-        },
-      );
+      });
     });
   }
 
@@ -759,85 +742,6 @@ final class NursingWorkspaceController
       notes: message,
       reason: 'CLINICAL_ESCALATION',
     );
-  }
-
-  Future<Result<List<Map<String, Object?>>>> _uploadHandoverDocuments(
-    NursingPatientDetail detail,
-    List<PatientDocumentUploadFile> files,
-  ) async {
-    if (files.isEmpty) {
-      return const Result<List<Map<String, Object?>>>.success(
-        <Map<String, Object?>>[],
-      );
-    }
-    final String? patientId = detail.summary.patientId?.trim();
-    if (patientId == null || patientId.isEmpty) {
-      return Result<List<Map<String, Object?>>>.failure(
-        AppFailure.validation(validationFields: const <String>{'patient_id'}),
-      );
-    }
-
-    final Map<bool, List<PatientDocumentUploadFile>> groupedFiles =
-        <bool, List<PatientDocumentUploadFile>>{
-          true: <PatientDocumentUploadFile>[],
-          false: <PatientDocumentUploadFile>[],
-        };
-    for (final PatientDocumentUploadFile file in files) {
-      groupedFiles[_isScannedUploadFile(file)]!.add(file);
-    }
-
-    final List<Map<String, Object?>> uploadedDocuments =
-        <Map<String, Object?>>[];
-    for (final MapEntry<bool, List<PatientDocumentUploadFile>> entry
-        in groupedFiles.entries) {
-      if (entry.value.isEmpty) {
-        continue;
-      }
-      final String documentType = entry.key
-          ? 'SCANNED_HANDOVER_DOCUMENT'
-          : 'HANDOVER_DOCUMENT';
-      final Result<List<PatientDocument>> uploadResult =
-          await _patientRepository.uploadPatientDocuments(
-            patientId: patientId,
-            documentType: documentType,
-            files: entry.value,
-          );
-      final AppFailure? failure = uploadResult.when(
-        success: (_) => null,
-        failure: (AppFailure failure) => failure,
-      );
-      if (failure != null) {
-        return Result<List<Map<String, Object?>>>.failure(failure);
-      }
-
-      final List<PatientDocument> documents = uploadResult.when(
-        success: (List<PatientDocument> value) => value,
-        failure: (_) => const <PatientDocument>[],
-      );
-      uploadedDocuments.addAll(
-        documents.map(
-          (PatientDocument document) => <String, Object?>{
-            'document_id': document.id,
-            'document_type': document.documentType,
-            'storage_key': document.storageKey,
-            'file_name': document.fileName,
-            'content_type': document.contentType,
-            'is_scanned': entry.key,
-          },
-        ),
-      );
-    }
-
-    return Result<List<Map<String, Object?>>>.success(uploadedDocuments);
-  }
-
-  bool _isScannedUploadFile(PatientDocumentUploadFile file) {
-    final String name = file.name.toLowerCase();
-    final String contentType = file.contentType?.toLowerCase() ?? '';
-    return name.endsWith('.jpg') ||
-        name.endsWith('.jpeg') ||
-        name.endsWith('.png') ||
-        contentType.startsWith('image/');
   }
 
   Future<AppFailure?> acceptHandover(

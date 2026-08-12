@@ -364,31 +364,6 @@ const getPatientMedicalHistories = asyncHandler(async (req, res) => {
   );
 });
 
-/**
- * Get patient documents (nested resource)
- * GET /api/v1/patients/:id/documents
- */
-const getPatientDocuments = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const {
-    page = DEFAULT_PAGE,
-    limit = DEFAULT_PAGE_LIMIT,
-    sort_by,
-    order = 'desc'
-  } = req.query;
-
-  const result = await patientService.getPatientDocuments(
-    id,
-    parseInt(page),
-    parseInt(limit),
-    sort_by,
-    order,
-    buildPatientScope(req)
-  );
-
-  sendPaginated(res, 'messages.patient.documents.list.success', result.patientDocuments, result.pagination);
-});
-
 const getPatientWorkspaceOverview = asyncHandler(async (req, res) => {
   const result = await patientWorkspaceService.getPatientWorkspaceOverview(
     buildPatientScope(req),
@@ -647,49 +622,6 @@ const dismissDuplicateCandidate = asyncHandler(async (req, res) => {
   sendSuccess(res, 200, 'messages.patient.workspace.duplicates.dismiss.success', result);
 });
 
-const uploadPatientDocuments = asyncHandler(async (req, res) => {
-  const { patientId } = req.params;
-  const result = await patientWorkspaceService.uploadPatientDocuments(
-    patientId,
-    req.files || [],
-    req.body || {},
-    buildPatientScope(req),
-    buildUserContext(req)
-  );
-  sendSuccess(res, 201, 'messages.patient.workspace.documents.upload.success', result);
-});
-
-const sendPatientDocumentAsset = async (res, result, disposition) => {
-  const safeFileName = String(result.fileName || 'document').replace(/"/g, '');
-  res.setHeader('Content-Type', result.contentType || 'application/octet-stream');
-  res.setHeader('Content-Disposition', `${disposition}; filename="${safeFileName}"`);
-  res.status(200).send(result.buffer);
-};
-
-const previewPatientDocument = asyncHandler(async (req, res) => {
-  const { patientId, documentId } = req.params;
-  const result = await patientWorkspaceService.getPatientDocumentAsset(
-    patientId,
-    documentId,
-    buildPatientScope(req),
-    buildUserContext(req),
-    'inline'
-  );
-  await sendPatientDocumentAsset(res, result, 'inline');
-});
-
-const downloadPatientDocument = asyncHandler(async (req, res) => {
-  const { patientId, documentId } = req.params;
-  const result = await patientWorkspaceService.getPatientDocumentAsset(
-    patientId,
-    documentId,
-    buildPatientScope(req),
-    buildUserContext(req),
-    'attachment'
-  );
-  await sendPatientDocumentAsset(res, result, 'attachment');
-});
-
 module.exports = {
   listPatients,
   getPatientById,
@@ -701,7 +633,6 @@ module.exports = {
   getPatientGuardians,
   getPatientAllergies,
   getPatientMedicalHistories,
-  getPatientDocuments,
   getPatientWorkspaceOverview,
   getPatientWorkspaceReferenceData,
   getPatientWorkspace,
@@ -719,7 +650,5 @@ module.exports = {
   listDuplicateCandidates,
   previewPatientMerge,
   mergePatients,
-  dismissDuplicateCandidate,
-  uploadPatientDocuments,
-  previewPatientDocument,
-  downloadPatientDocument};
+  dismissDuplicateCandidate};
+

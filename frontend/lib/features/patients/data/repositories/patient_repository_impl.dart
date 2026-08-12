@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
@@ -174,12 +173,6 @@ final class PatientRepositoryImpl implements PatientRepository {
           patient.id,
           decodeMedicalHistoryList,
         );
-    final Future<Result<List<PatientDocument>>> documentsFuture =
-        _fetchRelatedList<PatientDocument>(
-          HmsApiResource.patientDocuments,
-          patient.id,
-          decodeDocumentList,
-        );
     final Future<Result<List<PatientConsent>>> consentsFuture =
         _fetchRelatedList<PatientConsent>(
           HmsApiResource.consents,
@@ -198,7 +191,6 @@ final class PatientRepositoryImpl implements PatientRepository {
     final Result<List<PatientAllergy>> allergiesResult = await allergiesFuture;
     final Result<List<PatientMedicalHistory>> medicalHistoriesResult =
         await medicalHistoriesFuture;
-    final Result<List<PatientDocument>> documentsResult = await documentsFuture;
     final Result<List<PatientConsent>> consentsResult = await consentsFuture;
 
     final AppFailure? failure = <AppFailure?>[
@@ -209,7 +201,6 @@ final class PatientRepositoryImpl implements PatientRepository {
       _failureOf(guardiansResult),
       _failureOf(allergiesResult),
       _failureOf(medicalHistoriesResult),
-      _failureOf(documentsResult),
       _failureOf(consentsResult),
     ].firstWhere((AppFailure? value) => value != null, orElse: () => null);
     if (failure != null) {
@@ -230,7 +221,6 @@ final class PatientRepositoryImpl implements PatientRepository {
         guardians: _valueOrNull(guardiansResult)!,
         allergies: _valueOrNull(allergiesResult)!,
         medicalHistories: _valueOrNull(medicalHistoriesResult)!,
-        documents: _valueOrNull(documentsResult)!,
         consents: _valueOrNull(consentsResult)!,
         timeline: _valueOrNull(timelineResult)!,
       ),
@@ -335,43 +325,6 @@ final class PatientRepositoryImpl implements PatientRepository {
       ApiEndpoints.collection(_resourceEndpoint(resource)),
       data: _withoutEmpty(payload),
       decoder: (_) {},
-    );
-  }
-
-  @override
-  Future<Result<List<PatientDocument>>> uploadPatientDocuments({
-    required String patientId,
-    required String documentType,
-    required List<PatientDocumentUploadFile> files,
-  }) {
-    final FormData formData = FormData();
-    formData.fields.add(
-      MapEntry<String, String>('document_type', documentType),
-    );
-    for (final PatientDocumentUploadFile file in files) {
-      formData.files.add(
-        MapEntry<String, MultipartFile>(
-          'files',
-          MultipartFile.fromBytes(
-            file.bytes,
-            filename: file.name,
-            contentType: file.contentType == null
-                ? null
-                : DioMediaType.parse(file.contentType!),
-          ),
-        ),
-      );
-    }
-
-    return _apiClient.post<List<PatientDocument>>(
-      ApiEndpoints.apiV1(<String>[
-        HmsApiResource.patients.path,
-        patientId,
-        'documents',
-        'upload',
-      ]),
-      data: formData,
-      decoder: decodeDocumentUploadList,
     );
   }
 
@@ -492,7 +445,6 @@ final class PatientRepositoryImpl implements PatientRepository {
       PatientRelatedResource.allergy => HmsApiResource.patientAllergies,
       PatientRelatedResource.medicalHistory =>
         HmsApiResource.patientMedicalHistories,
-      PatientRelatedResource.document => HmsApiResource.patientDocuments,
       PatientRelatedResource.consent => HmsApiResource.consents,
     };
   }

@@ -3,6 +3,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_list_item_text.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
@@ -72,7 +73,7 @@ class AppExpandableRecordSection<T> extends StatelessWidget {
     return AppCollapsibleSection(
       title: title,
       initiallyExpanded: initiallyExpanded,
-      actions: addButton == null ? const <Widget>[] : <Widget>[addButton],
+      headerActions: addButton == null ? const <Widget>[] : <Widget>[addButton],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
@@ -91,11 +92,29 @@ class AppExpandableRecordSection<T> extends StatelessWidget {
               Widget
             >[
               if (index > 0) const Divider(height: 1),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: _itemLeading(context, visibleItems[index]),
-                title: _itemTitle(context, visibleItems[index]),
-                trailing: _itemActions(context, visibleItems[index]),
+              Builder(
+                builder: (BuildContext context) {
+                  final T item = visibleItems[index];
+                  final Widget? leading = _itemLeading(context, item);
+                  final Widget? trailing = _itemActions(context, item);
+                  return Padding(
+                    padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: <Widget>[
+                        if (leading != null) ...<Widget>[
+                          leading,
+                          SizedBox(width: theme.spacing.sm),
+                        ],
+                        Expanded(child: _itemTitle(context, item)),
+                        if (trailing != null) ...<Widget>[
+                          SizedBox(width: theme.spacing.sm),
+                          trailing,
+                        ],
+                      ],
+                    ),
+                  );
+                },
               ),
             ],
         ],
@@ -179,7 +198,11 @@ class AppExpandableRecordSection<T> extends StatelessWidget {
       return null;
     }
 
-    return Wrap(spacing: Theme.of(context).spacing.xs, children: actions);
+    return Wrap(
+      spacing: Theme.of(context).spacing.xs,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: actions,
+    );
   }
 }
 
@@ -202,16 +225,17 @@ class _GuardedRecordAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool compact = !responsive || AppBreakpoints.of(context).isMobile;
+    // Icon-only on phones; always icon + short label on larger screens.
+    final bool iconOnly = AppBreakpoints.of(context).isMobile;
     final AccessRequirement? resolvedRequirement = requirement;
     if (resolvedRequirement == null) {
-      return _buildButton(context, iconOnly: compact);
+      return _buildButton(context, iconOnly: iconOnly);
     }
 
     return AppAccessActionGate(
       requirement: resolvedRequirement,
       builder: (_, bool isAllowed) =>
-          _buildButton(context, iconOnly: compact, enabled: isAllowed),
+          _buildButton(context, iconOnly: iconOnly, enabled: isAllowed),
     );
   }
 
@@ -223,39 +247,44 @@ class _GuardedRecordAction extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final VoidCallback? handler = enabled ? onPressed : null;
+    // Borderless / fill-less chrome so Add/Edit read as text actions.
+    final Widget button = switch (variant) {
+      AppRecordActionVariant.add => AppButton.tertiary(
+        iconOnly: iconOnly,
+        dense: true,
+        leadingIcon: icon,
+        label: label,
+        semanticLabel: label,
+        tooltip: label,
+        onPressed: handler,
+      ),
+      AppRecordActionVariant.edit => AppButton.tertiary(
+        iconOnly: iconOnly,
+        dense: true,
+        leadingIcon: icon,
+        label: label,
+        semanticLabel: label,
+        tooltip: label,
+        onPressed: handler,
+      ),
+      AppRecordActionVariant.delete => AppButton.tertiary(
+        iconOnly: iconOnly,
+        dense: true,
+        leadingIcon: icon,
+        label: label,
+        semanticLabel: label,
+        tooltip: label,
+        color: colorScheme.error,
+        onPressed: handler,
+      ),
+    };
 
-    switch (variant) {
-      case AppRecordActionVariant.add:
-        return AppButton.primary(
-          iconOnly: iconOnly,
-          dense: true,
-          leadingIcon: icon,
-          label: label,
-          semanticLabel: label,
-          tooltip: label,
-          onPressed: handler,
-        );
-      case AppRecordActionVariant.edit:
-        return AppButton.secondary(
-          iconOnly: iconOnly,
-          dense: true,
-          leadingIcon: icon,
-          label: label,
-          semanticLabel: label,
-          tooltip: label,
-          onPressed: handler,
-        );
-      case AppRecordActionVariant.delete:
-        return AppButton.tertiary(
-          iconOnly: iconOnly,
-          dense: true,
-          leadingIcon: icon,
-          label: label,
-          semanticLabel: label,
-          tooltip: label,
-          color: colorScheme.error,
-          onPressed: handler,
-        );
-    }
+    return AppActionLabelScope(
+      showLabels: !iconOnly,
+      forceIconOnly: iconOnly,
+      plainChrome: true,
+      dense: true,
+      child: button,
+    );
   }
 }

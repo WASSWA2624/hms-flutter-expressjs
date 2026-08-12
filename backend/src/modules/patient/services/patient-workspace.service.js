@@ -3,7 +3,6 @@ const prisma = require('@prisma/client');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const { logger } = require('@lib/logging');
-const { createStorageService, sanitizeFilename } = require('@lib/storage');
 const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
@@ -29,13 +28,6 @@ const DUPLICATE_REVIEW_SCORE = 60;
 const DUPLICATE_STRONG_SCORE = 80;
 const DUPLICATE_SCORE_VERSION = 'patient-v2';
 const PHI_ACCESS_WINDOW_MS = 15 * 60 * 1000;
-const MAX_DOCUMENT_FILES = 5;
-const MAX_DOCUMENT_SIZE_BYTES = 10 * 1024 * 1024;
-const ACCEPTED_DOCUMENT_MIME_TYPES = new Set([
-  'application/pdf',
-  'image/jpeg',
-  'image/jpg',
-  'image/png']);
 const DOCUMENT_TYPE_OPTIONS = Object.freeze([
   'IDENTITY',
   'INSURANCE',
@@ -246,32 +238,6 @@ const resolvePatientRecord = async (patientIdentifier, scope = {}, include = {})
   }
 
   return patient;
-};
-
-const resolveDocumentRecord = async (documentIdentifier, patientId) => {
-  const record = await resolveModelRecordByIdentifier({
-    model: 'patient_document',
-    identifier: documentIdentifier,
-    where: {
-      patient_id: patientId,
-      deleted_at: null},
-    select: {
-      id: true,
-      human_friendly_id: true,
-      tenant_id: true,
-      patient_id: true,
-      document_type: true,
-      storage_key: true,
-      file_name: true,
-      content_type: true,
-      created_at: true,
-      updated_at: true}});
-
-  if (!record) {
-    throw new HttpError('errors.patient_document.not_found', 404);
-  }
-
-  return record;
 };
 
 const resolvePrimaryContact = (patient) => {
@@ -2005,104 +1971,6 @@ const dismissDuplicateCandidate = async (reviewId, payload = {}, scope = {}, use
     dismissed: true};
 };
 
-const buildUploadPath = (patient, originalFileName) => {
-  const safeName = sanitizeFilename(normalizeText(originalFileName) || 'document');
-  const date = new Date();
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-  return [
-    'patients',
-    normalizeText(patient?.tenant?.human_friendly_id || patient?.tenant_id || 'tenant'),
-    normalizeText(patient?.human_friendly_id || patient?.id || 'patient'),
-    'documents',
-    String(year),
-    month,
-    `${Date.now()}-${safeName}`]
-    .map((value) => sanitizeFilename(value))
-    .join('/');
-};
-
-const normalizeUploadedFile = (file = {}) => ({
-  originalname: normalizeText(file?.originalname || file?.name || file?.fileName),
-  mimetype: normalizeLower(file?.mimetype || file?.type || file?.mimeType),
-  size: Number(file?.size || file?.fileSize || 0),
-  buffer: file?.buffer});
-
-const uploadPatientDocuments = async (patientIdentifier, files = [], body = {}, scope = {}, userContext = {}) => {
-  const patient = await resolvePatientRecord(patientIdentifier, scope);
-  const normalizedFiles = (Array.isArray(files) ? files : [])
-    .map(normalizeUploadedFile)
-    .filter((file) => Boolean(file.originalname) && Buffer.isBuffer(file.buffer));
-
-  if (normalizedFiles.length === 0) {
-    throw new HttpError('errors.validation.field.required', 400, [{ field: 'files' }]);
-  }
-  if (normalizedFiles.length > MAX_DOCUMENT_FILES) {
-    throw new HttpError('errors.validation.invalid', 400, [{ field: 'files' }]);
-  }
-
-  const documentType = normalizeUpper(body?.document_type) || 'OTHER';
-  const storage = createStorageService();
-  const uploadedRecords = [];
-
-  for (const file of normalizedFiles) {
-    if (!ACCEPTED_DOCUMENT_MIME_TYPES.has(file.mimetype)) {
-      throw new HttpError('errors.validation.invalid', 400, [{ field: 'content_type' }]);
-    }
-    if (file.size > MAX_DOCUMENT_SIZE_BYTES) {
-      throw new HttpError('errors.validation.invalid', 400, [{ field: 'size' }]);
-    }
-
-    const storageKey = buildUploadPath(patient, file.originalname);
-    const uploaded = await storage.upload(file.buffer, storageKey, {
-      mimeType: file.mimetype,
-      encrypt: true});
-    const created = await prisma.patient_document.create({
-      data: {
-        tenant_id: patient.tenant_id,
-        patient_id: patient.id,
-        document_type: documentType,
-        storage_key: uploaded?.path || storageKey,
-        file_name: file.originalname,
-        content_type: file.mimetype || null}});
-
-    uploadedRecords.push(created);
-    await createAuditLog({
-      tenant_id: patient.tenant_id,
-      user_id: userContext?.user_id,
-      action: 'CREATE',
-      entity: 'patient_document',
-      entity_id: created.id,
-      diff: {
-        after: {
-          patient_id: patient.id,
-          document_type: documentType,
-          storage_key: uploaded?.path || storageKey}},
-      ip_address: userContext?.ip_address});
-  }
-
-  return {
-    items: uploadedRecords.map(serializeDocument)};
-};
-
-const getPatientDocumentAsset = async (patientIdentifier, documentIdentifier, scope = {}, userContext = {}, disposition = 'inline') => {
-  const patient = await resolvePatientRecord(patientIdentifier, scope);
-  const document = await resolveDocumentRecord(documentIdentifier, patient.id);
-  const storage = createStorageService();
-  const buffer = await storage.download(document.storage_key);
-
-  await recordPatientPhiAccess({
-    userId: userContext?.user_id,
-    patient,
-    routeFamily: disposition === 'attachment' ? 'document_download' : 'document_preview',
-    ipAddress: userContext?.ip_address});
-
-  return {
-    buffer,
-    contentType: normalizeText(document.content_type) || 'application/octet-stream',
-    fileName: normalizeText(document.file_name) || `${document.document_type || 'document'}`};
-};
-
 module.exports = {
   getPatientWorkspaceOverview,
   getPatientWorkspaceReferenceData,
@@ -2121,6 +1989,4 @@ module.exports = {
   listDuplicateCandidates,
   previewPatientMerge,
   mergePatients,
-  dismissDuplicateCandidate,
-  uploadPatientDocuments,
-  getPatientDocumentAsset};
+  dismissDuplicateCandidate};

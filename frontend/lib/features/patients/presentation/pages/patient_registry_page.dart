@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
 
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -3489,7 +3488,6 @@ enum _PatientReportSection {
   guardians,
   allergies,
   medicalHistory,
-  documents,
   consents,
 }
 
@@ -3508,7 +3506,6 @@ const List<_PatientReportSection> _patientReportSections =
       _PatientReportSection.guardians,
       _PatientReportSection.allergies,
       _PatientReportSection.medicalHistory,
-      _PatientReportSection.documents,
       _PatientReportSection.consents,
     ];
 
@@ -3821,19 +3818,6 @@ _PatientReportDocument _buildPatientReportDocument(
         ],
         emptyText: emptyText,
       ),
-    if (selection.sections.contains(_PatientReportSection.documents))
-      _PatientReportBlock(
-        title: l10n.patientsDocumentsSectionTitle,
-        rows: <_PatientReportRow>[
-          for (final PatientDocument item in detail.documents)
-            _PatientReportRow(
-              label: _apiLabel(item.documentType),
-              value: item.fileName ?? item.storageKey,
-              detail: item.contentType,
-            ),
-        ],
-        emptyText: emptyText,
-      ),
     if (selection.sections.contains(_PatientReportSection.consents))
       _PatientReportBlock(
         title: l10n.patientsConsentsSectionTitle,
@@ -4103,7 +4087,6 @@ int _patientReportSectionCount(
     _PatientReportSection.guardians => detail.guardians.length,
     _PatientReportSection.allergies => detail.allergies.length,
     _PatientReportSection.medicalHistory => detail.medicalHistories.length,
-    _PatientReportSection.documents => detail.documents.length,
     _PatientReportSection.consents => detail.consents.length,
   };
 }
@@ -4147,7 +4130,6 @@ String _patientReportSectionApiId(_PatientReportSection section) {
     _PatientReportSection.guardians => 'guardians',
     _PatientReportSection.allergies => 'allergies',
     _PatientReportSection.medicalHistory => 'medical_history',
-    _PatientReportSection.documents => 'documents',
     _PatientReportSection.consents => 'consents',
   };
 }
@@ -4174,7 +4156,6 @@ String _patientReportSectionLabel(
     _PatientReportSection.allergies => l10n.patientsAllergiesSectionTitle,
     _PatientReportSection.medicalHistory =>
       l10n.patientsMedicalHistorySectionTitle,
-    _PatientReportSection.documents => l10n.patientsDocumentsSectionTitle,
     _PatientReportSection.consents => l10n.patientsConsentsSectionTitle,
   };
 }
@@ -4197,7 +4178,6 @@ IconData _patientReportSectionIcon(Object section) {
     _PatientReportSection.guardians => Icons.supervisor_account_outlined,
     _PatientReportSection.allergies => Icons.warning_amber_outlined,
     _PatientReportSection.medicalHistory => Icons.history_edu_outlined,
-    _PatientReportSection.documents => Icons.description_outlined,
     _PatientReportSection.consents => Icons.fact_check_outlined,
   };
 }
@@ -4911,7 +4891,6 @@ class PatientRelatedRecordDialog<T> extends StatefulWidget {
     required this.referenceData,
     required this.onCreate,
     required this.onUpdate,
-    this.onUploadDocuments,
     this.item,
     super.key,
   });
@@ -4926,12 +4905,6 @@ class PatientRelatedRecordDialog<T> extends StatefulWidget {
     Map<String, Object?> payload,
   )
   onUpdate;
-  final Future<AppFailure?> Function({
-    required String patientId,
-    required String documentType,
-    required List<PatientDocumentUploadFile> files,
-  })?
-  onUploadDocuments;
 
   @override
   State<PatientRelatedRecordDialog<T>> createState() =>
@@ -4948,8 +4921,6 @@ class _PatientRelatedRecordDialogState<T>
   String? _choice;
   bool _isPrimary = false;
   DateTime? _date;
-  List<XFile> _documentFiles = const <XFile>[];
-  bool _isPickingDocuments = false;
   bool _isSaving = false;
   AppFailure? _failure;
 
@@ -5141,66 +5112,6 @@ class _PatientRelatedRecordDialogState<T>
           enabled: !_isSaving,
         ),
       ],
-      PatientRelatedResource.document => <Widget>[
-        AppSelectField<String>.searchable(
-          value: _choice,
-          labelText: l10n.patientsDocumentTypeLabel,
-          enabled: !_isSaving,
-          isRequired: true,
-          menuHeight: 320,
-          validator: AppValidators.requiredValue(l10n.validationRequired),
-          onChanged: (String? value) => setState(() => _choice = value),
-          options: _documentTypeSelectOptions(
-            widget.referenceData.documentTypes.isEmpty
-                ? _documentTypes
-                : widget.referenceData.documentTypes,
-          ),
-        ),
-        AppFileUploadPanel(
-          title: l10n.patientsDocumentUploadTitle,
-          emptyDescription: l10n.patientsDocumentUploadEmpty,
-          chooseLabel: l10n.patientsChooseDocumentAction,
-          clearLabel: l10n.patientsClearFiltersAction,
-          fileNames: _documentFiles
-              .map((XFile file) => file.name)
-              .toList(growable: false),
-          enabled:
-              !_isSaving &&
-              !_isPickingDocuments &&
-              widget.onUploadDocuments != null,
-          isLoading: _isPickingDocuments,
-          onChoose: _pickDocumentFiles,
-          onClear: () => setState(() => _documentFiles = const <XFile>[]),
-        ),
-        AppTextField(
-          controller: _first,
-          labelText: l10n.patientsStorageKeyAdvancedLabel,
-          helperText: l10n.patientsStorageKeyAdvancedHelper,
-          enabled: !_isSaving,
-          isRequired:
-              _documentFiles.isEmpty &&
-              (_isEditing || widget.onUploadDocuments == null),
-          validator: (String? value) {
-            if (_documentFiles.isNotEmpty) {
-              return null;
-            }
-            if (!_isEditing && widget.onUploadDocuments != null) {
-              return AppValidators.requiredText(l10n.validationRequired)(value);
-            }
-            return AppValidators.requiredText(l10n.validationRequired)(value);
-          },
-        ),
-        AppTextField(
-          controller: _second,
-          labelText: l10n.patientsFileNameLabel,
-          enabled: !_isSaving,
-        ),
-        AppTextField(
-          controller: _third,
-          labelText: l10n.patientsContentTypeLabel,
-          enabled: !_isSaving,
-        ),
-      ],
       PatientRelatedResource.consent => <Widget>[
         AppSelectField<String>.searchable(
           value: _choice,
@@ -5284,50 +5195,6 @@ class _PatientRelatedRecordDialogState<T>
     );
   }
 
-  Future<void> _pickDocumentFiles() async {
-    setState(() {
-      _isPickingDocuments = true;
-      _failure = null;
-    });
-    try {
-      final List<XFile> files = await openFiles(
-        acceptedTypeGroups: <XTypeGroup>[
-          XTypeGroup(
-            label: context.l10n.patientsDocumentsSectionTitle,
-            extensions: const <String>['pdf', 'jpg', 'jpeg', 'png'],
-            mimeTypes: const <String>[
-              'application/pdf',
-              'image/jpeg',
-              'image/jpg',
-              'image/png',
-            ],
-          ),
-        ],
-      );
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _documentFiles = files.take(5).toList(growable: false);
-        _isPickingDocuments = false;
-        if (_documentFiles.isNotEmpty) {
-          _first.clear();
-          if (_documentFiles.length == 1) {
-            _second.text = _documentFiles.first.name;
-            _third.text = _documentFiles.first.mimeType ?? '';
-          }
-        }
-      });
-    } catch (_) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {
-        _isPickingDocuments = false;
-      });
-    }
-  }
-
   void _hydrate() {
     final Object? item = widget.item;
     switch (item) {
@@ -5353,11 +5220,6 @@ class _PatientRelatedRecordDialogState<T>
         _first.text = value.condition;
         _date = value.diagnosisDate;
         _second.text = value.notes ?? '';
-      case final PatientDocument value:
-        _choice = value.documentType;
-        _first.text = value.storageKey;
-        _second.text = value.fileName ?? '';
-        _third.text = value.contentType ?? '';
       case final PatientConsent value:
         _choice = value.consentType;
         _first.text = value.status;
@@ -5377,25 +5239,6 @@ class _PatientRelatedRecordDialogState<T>
     });
 
     final String? recordId = _recordId(widget.item);
-    if (widget.resource == PatientRelatedResource.document &&
-        recordId == null &&
-        _documentFiles.isNotEmpty &&
-        widget.onUploadDocuments != null) {
-      final AppFailure? failure = await _uploadDocuments();
-      if (!mounted) {
-        return;
-      }
-      if (failure == null) {
-        Navigator.of(context).pop(true);
-        return;
-      }
-      setState(() {
-        _isSaving = false;
-        _failure = failure;
-      });
-      return;
-    }
-
     final Map<String, Object?> payload = _payload();
     final AppFailure? failure = recordId == null
         ? await widget.onCreate(payload)
@@ -5411,25 +5254,6 @@ class _PatientRelatedRecordDialogState<T>
       _isSaving = false;
       _failure = failure;
     });
-  }
-
-  Future<AppFailure?> _uploadDocuments() async {
-    final List<PatientDocumentUploadFile> files = <PatientDocumentUploadFile>[];
-    for (final XFile file in _documentFiles) {
-      files.add(
-        PatientDocumentUploadFile(
-          name: file.name,
-          bytes: await file.readAsBytes(),
-          contentType: file.mimeType,
-        ),
-      );
-    }
-
-    return widget.onUploadDocuments!(
-      patientId: widget.detail.patient.id,
-      documentType: _choice ?? 'OTHER',
-      files: files,
-    );
   }
 
   Map<String, Object?> _payload() {
@@ -5471,13 +5295,6 @@ class _PatientRelatedRecordDialogState<T>
         'condition': _first.text.trim(),
         'diagnosis_date': _date?.toUtc().toIso8601String(),
         'notes': _second.text.trim(),
-      },
-      PatientRelatedResource.document => <String, Object?>{
-        ...createContext,
-        'document_type': _choice,
-        'storage_key': _first.text.trim(),
-        'file_name': _second.text.trim(),
-        'content_type': _third.text.trim(),
       },
       PatientRelatedResource.consent => <String, Object?>{
         'patient_id': patient.id,
@@ -5560,9 +5377,6 @@ PatientRelatedResource _resourceForItem<T>(T? item) {
   if (item is PatientMedicalHistory || T == PatientMedicalHistory) {
     return PatientRelatedResource.medicalHistory;
   }
-  if (item is PatientDocument || T == PatientDocument) {
-    return PatientRelatedResource.document;
-  }
   return PatientRelatedResource.consent;
 }
 
@@ -5587,9 +5401,6 @@ PatientRelatedResource _resourceForRecordId(
   )) {
     return PatientRelatedResource.medicalHistory;
   }
-  if (detail.documents.any((PatientDocument item) => item.id == recordId)) {
-    return PatientRelatedResource.document;
-  }
   return PatientRelatedResource.consent;
 }
 
@@ -5600,7 +5411,6 @@ String? _recordId(Object? item) {
     final PatientGuardian value => value.id,
     final PatientAllergy value => value.id,
     final PatientMedicalHistory value => value.id,
-    final PatientDocument value => value.id,
     final PatientConsent value => value.id,
     _ => null,
   };
@@ -5613,8 +5423,6 @@ String? _defaultChoice(
   return switch (resource) {
     PatientRelatedResource.contact => 'PHONE',
     PatientRelatedResource.allergy => 'MILD',
-    PatientRelatedResource.document =>
-      referenceData.documentTypes.firstOrNull ?? _documentTypes.first,
     PatientRelatedResource.consent =>
       referenceData.consentTypes.firstOrNull ?? _consentTypes.first,
     _ => null,
@@ -5628,7 +5436,6 @@ IconData _resourceIcon(PatientRelatedResource resource) {
     PatientRelatedResource.guardian => Icons.supervisor_account_outlined,
     PatientRelatedResource.allergy => Icons.warning_amber_outlined,
     PatientRelatedResource.medicalHistory => Icons.history_edu_outlined,
-    PatientRelatedResource.document => Icons.description_outlined,
     PatientRelatedResource.consent => Icons.assignment_turned_in_outlined,
   };
 }
@@ -5792,19 +5599,6 @@ List<AppSelectOption<String>> _relationshipSelectOptions(String currentValue) {
   ];
 }
 
-List<AppSelectOption<String>> _documentTypeSelectOptions(
-  Iterable<String> values,
-) {
-  return <AppSelectOption<String>>[
-    for (final String value in values)
-      AppSelectOption<String>(
-        value: value,
-        label: _apiLabel(value),
-        leadingIcon: Icon(_documentTypeIcon(value)),
-      ),
-  ];
-}
-
 List<AppSelectOption<String>> _consentTypeSelectOptions(
   Iterable<String> values,
 ) {
@@ -5882,20 +5676,6 @@ IconData _relationshipIcon(String value) {
     'GUARDIAN' || 'CAREGIVER' => Icons.supervisor_account_outlined,
     'NEXT_OF_KIN' => Icons.contact_emergency_outlined,
     _ => Icons.person_outline,
-  };
-}
-
-IconData _documentTypeIcon(String value) {
-  return switch (value.toUpperCase()) {
-    'IDENTITY' => Icons.badge_outlined,
-    'INSURANCE' => Icons.health_and_safety_outlined,
-    'REFERRAL' => Icons.forward_to_inbox_outlined,
-    'LAB_RESULT' => Icons.science_outlined,
-    'RADIOLOGY' => Icons.biotech_outlined,
-    'PRESCRIPTION' => Icons.medication_outlined,
-    'CONSENT' => Icons.assignment_turned_in_outlined,
-    'DISCHARGE' => Icons.logout_outlined,
-    _ => Icons.description_outlined,
   };
 }
 
@@ -5986,17 +5766,6 @@ const List<String> _consentTypes = <String>[
   'DATA_SHARING',
   'RESEARCH',
   'BILLING',
-  'OTHER',
-];
-const List<String> _documentTypes = <String>[
-  'IDENTITY',
-  'INSURANCE',
-  'REFERRAL',
-  'LAB_RESULT',
-  'RADIOLOGY',
-  'PRESCRIPTION',
-  'CONSENT',
-  'DISCHARGE',
   'OTHER',
 ];
 final DateTime _patientFilterFirstDate = DateTime(1900);

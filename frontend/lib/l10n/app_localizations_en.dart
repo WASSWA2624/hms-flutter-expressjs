@@ -5764,7 +5764,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsEmptyBody => 'Adjust filters or register a patient.';
 
   @override
-  String get patientsDetailTitle => 'Patient details';
+  String get patientsDetailTitle => 'Patient Details';
 
   @override
   String get patientsDetailLoadingTitle => 'Loading patient';

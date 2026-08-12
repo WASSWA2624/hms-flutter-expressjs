@@ -735,9 +735,6 @@ String _htmlEscape(String value) {
       .replaceAll("'", '&#39;');
 }
 
-String nursingDocumentsTypeGroupLabel(AppLocalizations l10n) =>
-    l10n.patientsDocumentsSectionTitle;
-
 NursingQueueScope nursingScopeFromFilterValue(String? value) {
   return switch (value) {
     'urgent' => NursingQueueScope.urgent,

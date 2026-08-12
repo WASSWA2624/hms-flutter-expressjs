@@ -8,7 +8,6 @@
  */
 
 const express = require('express');
-const multer = require('multer');
 const router = express.Router();
 const patientController = require('@controllers/patient/patient.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
@@ -21,7 +20,6 @@ const {
   patientIdParamsSchema,
   listPatientsQuerySchema,
   patientWorkspaceParamsSchema,
-  patientDocumentParamsSchema,
   patientDuplicateDismissParamsSchema,
   patientWorkspaceOverviewQuerySchema,
   patientWorkspaceReferenceDataQuerySchema,
@@ -29,15 +27,8 @@ const {
   patientDuplicateListQuerySchema,
   patientMergePreviewSchema,
   patientMergeSchema,
-  patientDuplicateDismissSchema,
-  patientDocumentUploadBodySchema} = require('@validations/patient/patient.schema');
+  patientDuplicateDismissSchema} = require('@validations/patient/patient.schema');
 const { listQuerySchema } = require('@lib/validation/zod');
-
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    files: 5,
-    fileSize: 10 * 1024 * 1024}});
 
 router.use(authenticate(), denyRoles(STAFF_PATIENT_FLOW_DENIED_ROLES));
 
@@ -252,33 +243,6 @@ router.get(
   patientController.listPatientPhiAccessLogs
 );
 
-router.post(
-  '/:patientId/documents/upload',
-  authenticate(),
-  authorize(PERMISSIONS.PATIENT_WRITE, 'permission'),
-  upload.array('files', 5),
-  validateRequest({
-    params: patientWorkspaceParamsSchema,
-    body: patientDocumentUploadBodySchema}),
-  patientController.uploadPatientDocuments
-);
-
-router.get(
-  '/:patientId/documents/:documentId/preview',
-  validateRequest({ params: patientDocumentParamsSchema }),
-  authenticate(),
-  authorize(PERMISSIONS.PATIENT_READ, 'permission'),
-  patientController.previewPatientDocument
-);
-
-router.get(
-  '/:patientId/documents/:documentId/download',
-  validateRequest({ params: patientDocumentParamsSchema }),
-  authenticate(),
-  authorize(PERMISSIONS.PATIENT_READ, 'permission'),
-  patientController.downloadPatientDocument
-);
-
 /**
  * @description Get patient by ID
  * @method GET
@@ -398,26 +362,6 @@ router.get(
   authenticate(),
   authorize(PERMISSIONS.PATIENT_READ, 'permission'),
   patientController.getPatientMedicalHistories
-);
-
-/**
- * @description Get patient documents
- * @method GET
- * @route /api/v1/patients/:id/documents
- * @authentication Required (JWT)
- * @permissions Authenticated users
- * @urlParams {string} id - Patient ID (UUID or human-friendly ID)
- * @queryParams {number} [page=1], {number} [limit=20], {string} [sort_by], {string} [order]
- * @returns {Object} Paginated list of patient documents
- * @throws 401 Unauthorized
- * @throws 404 Patient not found
- */
-router.get(
-  '/:id/documents',
-  validateRequest({ params: patientIdParamsSchema, query: listQuerySchema }),
-  authenticate(),
-  authorize(PERMISSIONS.PATIENT_READ, 'permission'),
-  patientController.getPatientDocuments
 );
 
 /**
