@@ -617,7 +617,7 @@ void main() {
       },
     );
 
-    testWidgets('writer: Start encounter search-bar CTA present; no next-action column', (
+    testWidgets('writer: Start encounter search-bar CTA and next-action column', (
       WidgetTester tester,
     ) async {
       await _pumpQueueTab(
@@ -629,7 +629,8 @@ void main() {
       expect(find.byTooltip('Create or continue an OPD encounter'), findsOneWidget);
       expect(find.text('Start OPD encounter'), findsWidgets);
       expect(find.text('Queue Patient'), findsOneWidget);
-      expect(find.text('Next action'), findsNothing);
+      expect(find.text('Next action'), findsOneWidget);
+      expect(find.text('Start encounter'), findsWidgets);
     });
 
     testWidgets('∪ allowance: clinical:read alone shows Queue chrome', (
@@ -1098,15 +1099,15 @@ void main() {
         expect(find.text('Doctor'), findsWidgets);
         expect(find.text('Wait time'), findsWidgets);
         expect(find.text('Status'), findsWidgets);
-        expect(find.text('Visit type'), findsWidgets);
-        // Next action intentionally absent on Queue (row select is sole hub).
-        expect(find.text('Next action'), findsNothing);
+        expect(find.text('Next action'), findsOneWidget);
+        expect(find.text('Visit type'), findsNothing);
         expect(find.text('Arrival mode'), findsNothing);
         expect(find.text('OPD encounter'), findsNothing);
 
         await tester.tap(find.byTooltip('Settings'));
         await tester.pumpAndSettle();
         expect(find.text('TABLE SETTINGS'), findsOneWidget);
+        expect(find.text('Visit type'), findsWidgets);
         expect(find.text('Arrival time'), findsWidgets);
         expect(find.text('Arrival mode'), findsWidgets);
         expect(find.text('OPD encounter'), findsWidgets);

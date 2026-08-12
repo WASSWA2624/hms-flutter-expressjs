@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +15,9 @@ import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
+import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
+import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
+import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -23,18 +28,23 @@ import 'package:mocktail/mocktail.dart';
 
 class _MockOpdRepository extends Mock implements OpdRepository {}
 
+class _MockPatientRepository extends Mock implements PatientRepository {}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(const OpdAppointmentQuery());
     registerFallbackValue(const OpdQueueQuery());
     registerFallbackValue(const OpdFlowQuery());
     registerFallbackValue(const OpdTriageQueueQuery());
+    registerFallbackValue(const PatientListQuery());
+    registerFallbackValue(const PatientDuplicateQuery());
     registerFallbackValue(<String, Object?>{});
   });
 
   const OpdQueueEntry entry = OpdQueueEntry(
     id: 'queue-internal',
     publicId: 'QUE000001',
+    patientId: 'PAT000001',
     patientDisplayName: 'Patient Example',
     providerUserId: 'USR000001',
     providerDisplayName: 'Provider Example',
@@ -77,7 +87,7 @@ void main() {
   });
 
   testWidgets(
-    'Start encounter confirms and returns started flow for Flow Actions',
+    'Start encounter opens the full OPD encounter dialog',
     (WidgetTester tester) async {
       tester.view.physicalSize = const Size(1280, 900);
       tester.view.devicePixelRatio = 1;
@@ -85,27 +95,13 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       final _MockOpdRepository repository = _MockOpdRepository();
+      final _MockPatientRepository patientRepository = _MockPatientRepository();
       _stubWorkspaceLoad(repository);
-      const OpdFlowDetail started = OpdFlowDetail(
-        summary: OpdFlowSummary(
-          id: 'encounter-1',
-          publicId: 'ENC000001',
-          patientId: 'PAT000001',
-          patientDisplayName: 'Patient Example',
-          providerUserId: 'USR000001',
-          status: 'OPEN',
-          stage: 'WAITING_VITALS',
-          visitQueueId: 'QUE000001',
-        ),
+      _stubEncounterDialogLookups(
+        patientRepository: patientRepository,
+        opdRepository: repository,
       );
-      when(
-        () => repository.startOpdFlow(
-          any(),
-          idempotencyKey: any(named: 'idempotencyKey'),
-        ),
-      ).thenAnswer((_) async => const Result<OpdFlowDetail>.success(started));
 
-      QueueActionsOutcome? outcome;
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -114,6 +110,7 @@ void main() {
               const SessionState.ready(),
             ),
             opdRepositoryProvider.overrideWithValue(repository),
+            patientRepositoryProvider.overrideWithValue(patientRepository),
           ],
           child: MaterialApp(
             theme: AppTheme.light,
@@ -124,11 +121,13 @@ void main() {
                 builder: (BuildContext context) {
                   return AppButton.primary(
                     label: 'Open queue',
-                    onPressed: () async {
-                      outcome = await showQueueActionsDialog(
-                        context: context,
-                        entry: entry,
-                        allowStartEncounter: true,
+                    onPressed: () {
+                      unawaited(
+                        showQueueActionsDialog(
+                          context: context,
+                          entry: entry,
+                          allowStartEncounter: true,
+                        ),
                       );
                     },
                   );
@@ -146,15 +145,10 @@ void main() {
 
       await tester.tap(find.text('Start encounter'));
       await tester.pumpAndSettle();
-      expect(find.byType(AppConfirmActionDialog), findsOneWidget);
-
-      await tester.tap(find.widgetWithText(TextButton, 'Start encounter').last);
-      await tester.pumpAndSettle();
 
       expect(find.byType(AppConfirmActionDialog), findsNothing);
-      expect(find.text('QUEUE ACTIONS'), findsNothing);
-      expect(outcome?.changed, isTrue);
-      expect(outcome?.startedFlow?.publicId, 'ENC000001');
+      expect(find.byType(OpdEncounterDialog), findsOneWidget);
+      expect(find.text('START OPD ENCOUNTER'), findsOneWidget);
     },
   );
 
@@ -433,6 +427,55 @@ void _stubWorkspaceLoad(_MockOpdRepository repository) {
   when(() => repository.listProviders()).thenAnswer(
     (_) async =>
         const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
+  );
+}
+
+void _stubEncounterDialogLookups({
+  required _MockPatientRepository patientRepository,
+  required _MockOpdRepository opdRepository,
+}) {
+  when(() => patientRepository.listPatients(any())).thenAnswer(
+    (_) async => const Result<AppPage<Patient>>.success(
+      AppPage<Patient>(
+        items: <Patient>[
+          Patient(
+            id: 'PAT000001',
+            publicId: 'PAT000001',
+            firstName: 'Patient',
+            lastName: 'Example',
+          ),
+        ],
+        request: AppPageRequest(pageSize: 50),
+        totalItemCount: 1,
+      ),
+    ),
+  );
+  when(() => patientRepository.loadReferenceData()).thenAnswer(
+    (_) async =>
+        const Result<PatientReferenceData>.success(PatientReferenceData()),
+  );
+  when(() => patientRepository.listDuplicateCandidates(any())).thenAnswer(
+    (_) async => const Result<AppPage<PatientDuplicateCandidate>>.success(
+      AppPage<PatientDuplicateCandidate>(
+        items: <PatientDuplicateCandidate>[],
+        request: AppPageRequest(pageSize: 8),
+        totalItemCount: 0,
+      ),
+    ),
+  );
+  when(
+    () => opdRepository.listProviders(search: any(named: 'search')),
+  ).thenAnswer(
+    (_) async =>
+        const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
+  );
+  when(
+    () => opdRepository.getBillingDefaults(
+      facilityId: any(named: 'facilityId'),
+      tenantId: any(named: 'tenantId'),
+    ),
+  ).thenAnswer(
+    (_) async => const Result<OpdBillingDefaults>.success(OpdBillingDefaults()),
   );
 }
 

@@ -136,7 +136,10 @@ final class NetworkFailureMapper {
     }
 
     if (statusCode == 404) {
-      return AppFailure.notFound(statusCode: statusCode);
+      return AppFailure.notFound(
+        statusCode: statusCode,
+        detailMessage: detail,
+      );
     }
 
     if (statusCode == 429) {

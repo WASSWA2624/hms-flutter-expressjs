@@ -171,11 +171,15 @@ OpdEncounterDialog buildOpdWorkspaceEncounterDialog({
   required OpdWorkspaceState state,
   OpdAppointment? initialAppointment,
   String? initialAppointmentId,
+  Patient? initialPatient,
+  String? initialPatientId,
+  String? visitQueueId,
   String defaultArrivalMode = 'WALK_IN',
   String? defaultProviderId,
   ValueChanged<OpdFlowSummary>? onExistingActiveEncounter,
   bool includeEncounterLifecycleCallbacks = true,
 }) {
+  final String? linkedVisitQueueId = visitQueueId?.trim();
   return OpdEncounterDialog(
     providerSchedules: state.providerSchedules,
     appointments: state.appointments.items,
@@ -183,14 +187,29 @@ OpdEncounterDialog buildOpdWorkspaceEncounterDialog({
       ...state.flows.items,
       ...state.triageQueue.items,
     ],
+    initialPatient: initialPatient,
+    initialPatientId: initialPatientId,
     initialAppointment: initialAppointment,
     initialAppointmentId: initialAppointmentId,
     defaultArrivalMode: defaultArrivalMode,
     defaultProviderId: defaultProviderId,
     onSubmit: (Map<String, Object?> payload) {
+      final bool linkingVisitQueue =
+          linkedVisitQueueId != null && linkedVisitQueueId.isNotEmpty;
+      final Map<String, Object?> merged = <String, Object?>{...payload};
+      if (linkingVisitQueue) {
+        merged['visit_queue_id'] = linkedVisitQueueId;
+        // startOpdFlow already reuses open encounters for the queue/patient.
+        // Avoid PATCH /context when linking a desk queue row — that path 404s
+        // when the dialog's "active encounter" id is stale or unresolvable.
+        merged.remove('existing_encounter_id');
+        if (merged['force_new_encounter'] != true) {
+          merged['reuse_open_encounter'] = true;
+        }
+      }
       return ref
           .read(opdWorkspaceControllerProvider.notifier)
-          .submitOpdEncounter(payload);
+          .submitOpdEncounter(merged);
     },
     onExistingActiveEncounter: onExistingActiveEncounter,
     onCancelEncounter: includeEncounterLifecycleCallbacks

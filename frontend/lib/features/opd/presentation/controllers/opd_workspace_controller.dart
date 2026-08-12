@@ -720,7 +720,7 @@ final class OpdWorkspaceController
 
   Future<Result<OpdFlowDetail>> startOpdFromQueue(OpdQueueEntry entry) async {
     final String key = createIdempotencyKey();
-    final String? patientId = entry.patientId?.trim();
+    final String? patientId = entry.patientApiId;
     final String? appointmentId = entry.appointmentId?.trim();
     final String? providerUserId = entry.providerUserId?.trim();
     final Result<OpdFlowDetail> result = await _mutateFlowDetail(
@@ -1469,10 +1469,19 @@ final class OpdWorkspaceController
     final String key = createIdempotencyKey();
     final bool forceNewEncounter = payload['force_new_encounter'] == true;
     final Object? existingEncounterId = payload['existing_encounter_id'];
+    final String? visitQueueId = () {
+      final Object? raw = payload['visit_queue_id'];
+      if (raw is! String) {
+        return null;
+      }
+      final String trimmed = raw.trim();
+      return trimmed.isEmpty ? null : trimmed;
+    }();
+    final Result<OpdFlowDetail> result;
     if (!forceNewEncounter &&
         existingEncounterId is String &&
         existingEncounterId.trim().isNotEmpty) {
-      return _mutateFlowDetail(
+      result = await _mutateFlowDetail(
         () => _repository.updateActiveEncounter(
           existingEncounterId.trim(),
           Map<String, Object?>.from(payload)
@@ -1481,15 +1490,46 @@ final class OpdWorkspaceController
           idempotencyKey: key,
         ),
       );
+    } else {
+      result = await _mutateFlowDetail(
+        () => _repository.startOpdFlow(<String, Object?>{
+          'arrival_mode': 'WALK_IN',
+          'queued_at': DateTime.now().toUtc().toIso8601String(),
+          ...payload,
+          'reuse_open_encounter': !forceNewEncounter,
+        }, idempotencyKey: key),
+      );
     }
-
-    return _mutateFlowDetail(
-      () => _repository.startOpdFlow(<String, Object?>{
-        'arrival_mode': 'WALK_IN',
-        'queued_at': DateTime.now().toUtc().toIso8601String(),
-        ...payload,
-        'reuse_open_encounter': !forceNewEncounter,
-      }, idempotencyKey: key),
+    return result.when(
+      success: (OpdFlowDetail detail) {
+        // Backend may omit visit_queue_id on the snapshot; keep the desk queue
+        // row in sync when the caller linked this start to a queue entry.
+        if (visitQueueId != null) {
+          final OpdWorkspaceState? latest = _currentState;
+          if (latest != null) {
+            final bool terminal =
+                detail.summary.isTerminal ||
+                isOpdTerminalStatus(
+                  detail.summary.status ?? detail.summary.stage,
+                );
+            final bool cancelled =
+                (detail.summary.status ?? '').toUpperCase() == 'CANCELLED';
+            _emit(
+              latest.copyWith(
+                queueEntries: _patchLinkedQueueEntry(
+                  latest.queueEntries,
+                  visitQueueId,
+                  terminal
+                      ? (cancelled ? 'CANCELLED' : 'COMPLETED')
+                      : 'IN_PROGRESS',
+                ),
+              ),
+            );
+          }
+        }
+        return Result<OpdFlowDetail>.success(detail);
+      },
+      failure: Result<OpdFlowDetail>.failure,
     );
   }
 

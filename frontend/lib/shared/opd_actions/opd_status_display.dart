@@ -4,16 +4,28 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 String opdStatusDisplayLabel(AppLocalizations l10n, OpdFlowSummary flow) {
-  final String code = (flow.displayCode ?? flow.stage ?? '')
+  final String code = (flow.displayCode ?? flow.stage ?? flow.status ?? '')
       .trim()
       .toUpperCase();
-  return _opdLabel(l10n, code) ??
-      flow.displayStatus ??
-      AppDisplay.apiLabel(code);
+  final String? mapped = _opdLabel(l10n, code);
+  if (mapped != null && mapped.isNotEmpty) {
+    return mapped;
+  }
+  final String? displayStatus = flow.displayStatus?.trim();
+  if (displayStatus != null && displayStatus.isNotEmpty) {
+    return displayStatus;
+  }
+  if (code.isEmpty) {
+    return '';
+  }
+  return AppDisplay.apiLabel(code);
 }
 
 String opdStageDisplayLabel(AppLocalizations l10n, String? value) {
   final String code = (value ?? '').trim().toUpperCase();
+  if (code.isEmpty) {
+    return '';
+  }
   return _opdLabel(l10n, code) ?? AppDisplay.apiLabel(code);
 }
 
@@ -122,13 +134,14 @@ AppWorkspaceStatusTone opdClinicalServiceStatusTone(String? status) {
 AppWorkspaceStatusTone opdStageStatusTone(String? value) {
   return switch ((value ?? '').toUpperCase()) {
     'COMPLETED' ||
+    'CLOSED' ||
     'DISCHARGED' ||
     'ADMITTED' ||
     'RESULTS_READY' ||
     'REPORT_READY' ||
     'MEDICINES_DISPENSED' => AppWorkspaceStatusTone.success,
     'NORMAL' || 'ROUTINE' => AppWorkspaceStatusTone.success,
-    'CANCELLED' || 'NO_SHOW' => AppWorkspaceStatusTone.error,
+    'CANCELLED' || 'CANCELED' || 'NO_SHOW' => AppWorkspaceStatusTone.error,
     'CRITICAL' => AppWorkspaceStatusTone.error,
     'ABNORMAL' ||
     'SERVICE_ONLY' ||
@@ -137,11 +150,14 @@ AppWorkspaceStatusTone opdStageStatusTone(String? value) {
     'DOCTOR_NEEDED' ||
     'PHARMACY_PENDING' ||
     'PHARMACY_REQUESTED' ||
-    'ADMISSION_PENDING' => AppWorkspaceStatusTone.warning,
+    'ADMISSION_PENDING' ||
+    'CONFIRMED' => AppWorkspaceStatusTone.warning,
     'WAITING_CONSULTATION_PAYMENT' ||
     'WAITING_VITALS' ||
     'WAITING_DOCTOR_ASSIGNMENT' => AppWorkspaceStatusTone.warning,
     'IN_PROGRESS' ||
+    'OPEN' ||
+    'SCHEDULED' ||
     'WITH_DOCTOR' ||
     'LAB_PENDING' ||
     'SAMPLE_PENDING' ||
@@ -202,6 +218,13 @@ String? _opdLabel(AppLocalizations l10n, String code) {
     'ADMISSION_PENDING' => l10n.opdStatusAdmissionPendingLabel,
     'ADMITTED' => l10n.opdStatusAdmittedLabel,
     'DISCHARGED' => l10n.opdStatusDischargedLabel,
+    'CONFIRMED' => l10n.opdStatusConfirmedLabel,
+    'SCHEDULED' => l10n.opdStatusScheduledLabel,
+    'IN_PROGRESS' => l10n.opdStatusInProgressLabel,
+    'OPEN' => l10n.opdStatusOpenLabel,
+    'COMPLETED' || 'CLOSED' => l10n.opdStatusCompletedLabel,
+    'CANCELLED' || 'CANCELED' => l10n.opdStatusCancelledLabel,
+    'NO_SHOW' => l10n.opdStatusNoShowLabel,
     _ => null,
   };
 }

@@ -5690,6 +5690,34 @@
   "@opdStatusDischargedLabel": {
     "description": "OPD display label."
   },
+  "opdStatusConfirmedLabel": "Confirmed — waiting",
+  "@opdStatusConfirmedLabel": {
+    "description": "Visit-queue / desk status: patient confirmed and waiting."
+  },
+  "opdStatusScheduledLabel": "Scheduled",
+  "@opdStatusScheduledLabel": {
+    "description": "Visit-queue / appointment status: scheduled for a future visit."
+  },
+  "opdStatusInProgressLabel": "In progress",
+  "@opdStatusInProgressLabel": {
+    "description": "Visit-queue / encounter status: care is underway."
+  },
+  "opdStatusOpenLabel": "Open encounter",
+  "@opdStatusOpenLabel": {
+    "description": "Encounter status when the visit is open without a finer stage."
+  },
+  "opdStatusCompletedLabel": "Completed",
+  "@opdStatusCompletedLabel": {
+    "description": "Visit-queue / encounter status: finished."
+  },
+  "opdStatusCancelledLabel": "Cancelled",
+  "@opdStatusCancelledLabel": {
+    "description": "Visit-queue / encounter status: cancelled."
+  },
+  "opdStatusNoShowLabel": "No-show",
+  "@opdStatusNoShowLabel": {
+    "description": "Visit-queue status: patient did not arrive."
+  },
   "opdNextCollectSampleLabel": "Collect sample",
   "@opdNextCollectSampleLabel": {
     "description": "OPD display label."

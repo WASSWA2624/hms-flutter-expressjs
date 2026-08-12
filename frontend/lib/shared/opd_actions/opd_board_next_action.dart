@@ -30,6 +30,8 @@ export 'opd_flow_next_action_key.dart';
 enum OpdBoardNextActionKind {
   checkInAppointment,
   continueAppointmentEncounter,
+  startQueueEncounter,
+  openFlowActions,
   payConsultation,
   recordVitals,
   assignDoctor,
@@ -69,6 +71,8 @@ String? opdFlowActionKeyForBoardKind(OpdBoardNextActionKind kind) {
     OpdBoardNextActionKind.correctStage => 'correct_stage',
     OpdBoardNextActionKind.checkInAppointment ||
     OpdBoardNextActionKind.continueAppointmentEncounter ||
+    OpdBoardNextActionKind.startQueueEncounter ||
+    OpdBoardNextActionKind.openFlowActions ||
     OpdBoardNextActionKind.none => null,
   };
 }
@@ -135,6 +139,9 @@ AccessRequirement? opdBoardNextActionRequirement(OpdBoardNextActionKind kind) {
     OpdBoardNextActionKind.checkInAppointment ||
     OpdBoardNextActionKind.continueAppointmentEncounter =>
       opdFrontDeskActionRequirement,
+    OpdBoardNextActionKind.startQueueEncounter =>
+      opdEncounterPermissionRequirement,
+    OpdBoardNextActionKind.openFlowActions => null,
     OpdBoardNextActionKind.payConsultation => opdBillingActionRequirement,
     OpdBoardNextActionKind.recordVitals => opdVitalsActionRequirement,
     OpdBoardNextActionKind.assignDoctor ||
@@ -157,6 +164,8 @@ String opdBoardNextActionLabel(
     OpdBoardNextActionKind.checkInAppointment => l10n.opdCheckInAction,
     OpdBoardNextActionKind.continueAppointmentEncounter =>
       l10n.opdContinueEncounterAction,
+    OpdBoardNextActionKind.startQueueEncounter => l10n.opdStartEncounterAction,
+    OpdBoardNextActionKind.openFlowActions => l10n.opdOpenActions,
     OpdBoardNextActionKind.payConsultation => l10n.opdPayConsultationAction,
     OpdBoardNextActionKind.recordVitals => l10n.opdRecordVitalsAction,
     OpdBoardNextActionKind.assignDoctor =>
@@ -188,6 +197,8 @@ IconData opdBoardNextActionIcon(OpdBoardNextActionKind kind) {
   return switch (kind) {
     OpdBoardNextActionKind.checkInAppointment ||
     OpdBoardNextActionKind.continueAppointmentEncounter => Icons.login_outlined,
+    OpdBoardNextActionKind.startQueueEncounter => AppActionIcons.personAdd,
+    OpdBoardNextActionKind.openFlowActions => Icons.medical_services_outlined,
     OpdBoardNextActionKind.payConsultation => AppActionIcons.payment,
     OpdBoardNextActionKind.recordVitals => Icons.monitor_heart_outlined,
     OpdBoardNextActionKind.assignDoctor => AppActionIcons.assignDoctor,
@@ -364,8 +375,15 @@ Future<bool?> runOpdBoardNextAction({
       return openIpd;
     case OpdBoardNextActionKind.correctStage:
       return showCorrectStageDialog(context: context, flow: flow);
+    case OpdBoardNextActionKind.openFlowActions:
+      return showFlowActionsDialog(
+        context: context,
+        flow: flow,
+        printActionLabel: context.l10n.commonPrintActionLabel,
+      );
     case OpdBoardNextActionKind.checkInAppointment ||
         OpdBoardNextActionKind.continueAppointmentEncounter ||
+        OpdBoardNextActionKind.startQueueEncounter ||
         OpdBoardNextActionKind.none:
       return null;
   }

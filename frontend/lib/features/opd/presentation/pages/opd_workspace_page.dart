@@ -1377,7 +1377,7 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
       billing: _flowBillingLabel(context, flow),
       billingState: _flowBillingState(flow),
       billingTone: _flowBillingTone(flow),
-      nextStep: flow.displayNextStep ?? flow.nextStep,
+      nextStep: flow.displayNextStep ?? flow.nextStep ?? flow.stage,
       time: flow.queuedAt ?? flow.startedAt,
       urgencyRank: _flowUrgencyRank(flow),
       flow: flow,
@@ -1422,7 +1422,7 @@ List<_OpdTableItem> _tableItems(BuildContext context, OpdWorkspaceState state) {
       provider: entry.providerDisplayName,
       ownerRole: context.l10n.opdWorkflowReceptionTitle,
       billing: _queueBillingLabel(context, entry),
-      // No stage next-action — row select opens the queue hub (sole entry).
+      nextStep: context.l10n.opdStartEncounterAction,
       billingState: _queueBillingState(entry),
       billingTone: _queueBillingTone(entry),
       time: entry.queuedAt,
@@ -1898,7 +1898,9 @@ Widget _opdStatusBadge(BuildContext context, _OpdTableItem item) {
       label: _queueStatusLabel(context, item),
       tone: item.category == _opdCategoryTriage
           ? appTriageToneForValue(item.status)
-          : _stageTone(item.status ?? item.flow?.stage),
+          : opdStageStatusTone(
+              item.status ?? item.flow?.displayCode ?? item.flow?.stage,
+            ),
     ),
   );
 }
@@ -2003,9 +2005,17 @@ String _opdNextActionExportValue(
   if (flow != null) {
     final OpdBoardNextActionKind kind = opdBoardNextActionKindForFlow(flow);
     if (kind == OpdBoardNextActionKind.none) {
-      return '';
+      final String hint = opdNextStepDisplayLabel(
+        context.l10n,
+        flow.displayNextStep ?? flow.nextStep,
+      );
+      return hint.isNotEmpty ? hint : context.l10n.opdOpenActions;
     }
     return opdBoardNextActionLabel(context, kind, flow: flow);
+  }
+
+  if (item.queueEntry != null) {
+    return context.l10n.opdStartEncounterAction;
   }
 
   final OpdAppointment? appointment = item.appointment;
@@ -2262,9 +2272,7 @@ List<_OpdTableColumnId> _opdDefaultColumnsForSection(
       _OpdTableColumnId.provider,
       _OpdTableColumnId.waitingTime,
       _OpdTableColumnId.status,
-      // Next action is intentionally not mounted on Queue (`opdBoardShowsNextActionColumn`);
-      // Visit type fills the fifth default slot (tables.mdc prefer-5).
-      _OpdTableColumnId.visitType,
+      _OpdTableColumnId.nextAction,
     ],
     OpdWorkspaceSection.triage => const <_OpdTableColumnId>[
       _OpdTableColumnId.patient,
@@ -2923,7 +2931,23 @@ class _OpdNextActionCell extends ConsumerWidget {
     if (flow != null) {
       final OpdBoardNextActionKind kind = opdBoardNextActionKindForFlow(flow);
       if (kind == OpdBoardNextActionKind.none) {
-        return const SizedBox.shrink();
+        final String hint = opdNextStepDisplayLabel(
+          context.l10n,
+          flow.displayNextStep ?? flow.nextStep,
+        );
+        return OpdBoardNextActionCell(
+          kind: OpdBoardNextActionKind.openFlowActions,
+          flow: flow,
+          labelOverride: hint.isNotEmpty ? hint : null,
+          onPressed: () => unawaited(
+            _runFlowNextAction(
+              context,
+              ref,
+              flow,
+              OpdBoardNextActionKind.openFlowActions,
+            ),
+          ),
+        );
       }
       return OpdBoardNextActionCell(
         kind: kind,
@@ -2966,7 +2990,16 @@ class _OpdNextActionCell extends ConsumerWidget {
       );
     }
 
-    // Queue rows: no next-action control — row select is the sole hub entry.
+    final OpdQueueEntry? queueEntry = item.queueEntry;
+    if (queueEntry != null) {
+      return OpdBoardNextActionCell(
+        kind: OpdBoardNextActionKind.startQueueEncounter,
+        onPressed: () => unawaited(
+          _openOpdTableItemActions(context, item, state: state),
+        ),
+      );
+    }
+
     return const SizedBox.shrink();
   }
 
@@ -3110,45 +3143,6 @@ String _formatDateTime(BuildContext context, DateTime? value) {
   return value == null
       ? context.l10n.profileUnknownValue
       : AppFormatters.dateTime(value, Localizations.localeOf(context));
-}
-
-
-AppWorkspaceStatusTone _stageTone(String? value) {
-  return switch ((value ?? '').toUpperCase()) {
-    'COMPLETED' ||
-    'DISCHARGED' ||
-    'ADMITTED' ||
-    'RESULTS_READY' ||
-    'REPORT_READY' ||
-    'MEDICINES_DISPENSED' => AppWorkspaceStatusTone.success,
-    'NORMAL' || 'ROUTINE' => AppWorkspaceStatusTone.success,
-    'CANCELLED' || 'NO_SHOW' => AppWorkspaceStatusTone.error,
-    'CRITICAL' => AppWorkspaceStatusTone.error,
-    'ABNORMAL' ||
-    'SERVICE_ONLY' ||
-    'PAYMENT_DUE' ||
-    'VITALS_NEEDED' ||
-    'DOCTOR_NEEDED' ||
-    'PHARMACY_PENDING' ||
-    'PHARMACY_REQUESTED' ||
-    'ADMISSION_PENDING' => AppWorkspaceStatusTone.warning,
-    'WAITING_CONSULTATION_PAYMENT' ||
-    'WAITING_VITALS' ||
-    'WAITING_DOCTOR_ASSIGNMENT' => AppWorkspaceStatusTone.warning,
-    'IN_PROGRESS' ||
-    'WITH_DOCTOR' ||
-    'LAB_PENDING' ||
-    'SAMPLE_PENDING' ||
-    'IN_LAB' ||
-    'IMAGING_PENDING' ||
-    'REPORT_PENDING' ||
-    'LAB_REQUESTED' ||
-    'RADIOLOGY_REQUESTED' ||
-    'LAB_AND_RADIOLOGY_REQUESTED' ||
-    'WAITING_DOCTOR_REVIEW' ||
-    'WAITING_DISPOSITION' => AppWorkspaceStatusTone.info,
-    _ => AppWorkspaceStatusTone.neutral,
-  };
 }
 
 const String _opdCategoryArrival = 'ARRIVAL';

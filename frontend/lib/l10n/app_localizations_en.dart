@@ -4462,6 +4462,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get opdStatusDischargedLabel => 'Discharged';
 
   @override
+  String get opdStatusConfirmedLabel => 'Confirmed — waiting';
+
+  @override
+  String get opdStatusScheduledLabel => 'Scheduled';
+
+  @override
+  String get opdStatusInProgressLabel => 'In progress';
+
+  @override
+  String get opdStatusOpenLabel => 'Open encounter';
+
+  @override
+  String get opdStatusCompletedLabel => 'Completed';
+
+  @override
+  String get opdStatusCancelledLabel => 'Cancelled';
+
+  @override
+  String get opdStatusNoShowLabel => 'No-show';
+
+  @override
   String get opdNextCollectSampleLabel => 'Collect sample';
 
   @override

@@ -341,6 +341,7 @@ final class OpdQueueEntry {
     this.queuedAt,
     this.isPrioritized = false,
     this.patientDisplayName,
+    this.patientPublicId,
     this.patientIdentifier,
     this.patientPhone,
     this.appointmentReason,
@@ -362,6 +363,7 @@ final class OpdQueueEntry {
   final DateTime? queuedAt;
   final bool isPrioritized;
   final String? patientDisplayName;
+  final String? patientPublicId;
   final String? patientIdentifier;
   final String? patientPhone;
   final String? appointmentReason;
@@ -373,9 +375,25 @@ final class OpdQueueEntry {
 
   String get apiId => publicId ?? id;
 
+  /// Resolvable patient id for start/update payloads (friendly id preferred).
+  String? get patientApiId {
+    for (final String? candidate in <String?>[
+      patientPublicId,
+      patientId,
+      patientIdentifier,
+    ]) {
+      final String? trimmed = candidate?.trim();
+      if (trimmed != null && trimmed.isNotEmpty) {
+        return trimmed;
+      }
+    }
+    return null;
+  }
+
   String get displayTitle {
     return _firstNonEmpty(<String?>[
           patientDisplayName,
+          patientPublicId,
           patientIdentifier,
           id,
         ]) ??
@@ -394,6 +412,7 @@ final class OpdQueueEntry {
     DateTime? queuedAt,
     bool? isPrioritized,
     String? patientDisplayName,
+    String? patientPublicId,
     String? patientIdentifier,
     String? patientPhone,
     String? appointmentReason,
@@ -415,6 +434,7 @@ final class OpdQueueEntry {
       queuedAt: queuedAt ?? this.queuedAt,
       isPrioritized: isPrioritized ?? this.isPrioritized,
       patientDisplayName: patientDisplayName ?? this.patientDisplayName,
+      patientPublicId: patientPublicId ?? this.patientPublicId,
       patientIdentifier: patientIdentifier ?? this.patientIdentifier,
       patientPhone: patientPhone ?? this.patientPhone,
       appointmentReason: appointmentReason ?? this.appointmentReason,

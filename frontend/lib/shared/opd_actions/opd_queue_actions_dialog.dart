@@ -17,6 +17,7 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_encounter_flow.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart'
     show opdFrontDeskActionRequirement;
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
@@ -74,6 +75,8 @@ bool _queueEntryHasProvider(OpdQueueEntry entry) {
   final String? providerId = entry.providerUserId?.trim();
   return providerId != null && providerId.isNotEmpty;
 }
+
+String? _queueEntryPatientApiId(OpdQueueEntry entry) => entry.patientApiId;
 
 class QueueActionsDialog extends ConsumerWidget {
   const QueueActionsDialog({
@@ -198,54 +201,66 @@ class QueueActionsDialog extends ConsumerWidget {
   }
 
   Future<void> _openStartEncounter(BuildContext context, WidgetRef ref) async {
-    final AppLocalizations l10n = context.l10n;
-    OpdFlowDetail? startedDetail;
-    final bool? confirmed = await showAppDialog<bool>(
+    OpdWorkspaceState? workspace = _readWorkspaceState(ref);
+    if (workspace == null) {
+      await ref.read(opdWorkspaceControllerProvider.notifier).refresh();
+      if (!context.mounted) {
+        return;
+      }
+      workspace = _readWorkspaceState(ref);
+    }
+    if (workspace == null || !context.mounted) {
+      return;
+    }
+
+    // Match startOpdFromQueue: desk queue rows already carry appointment linkage
+    // on the backend. Forcing ONLINE_APPOINTMENT / appointment mode here caused
+    // start failures (terminal appointments, patient mismatches, missing IDs).
+    final String? patientId = _queueEntryPatientApiId(entry);
+
+    OpdFlowSummary? activeEncounterToOpen;
+    final OpdEncounterDialogResult? dialogResult = await showOpdEncounterDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => AppConfirmActionDialog(
-        title: l10n.opdStartEncounterAction,
-        body: l10n.opdStartConsultationConfirmationMessage,
-        submitLabel: l10n.opdStartEncounterAction,
-        submitLeadingIcon: AppActionIcons.personAdd,
-        icon: const Icon(AppActionIcons.personAdd),
-        onConfirm: () async {
-          final Result<OpdFlowDetail> result = await ref
-              .read(opdWorkspaceControllerProvider.notifier)
-              .startOpdFromQueue(entry);
-          return result.when(
-            success: (OpdFlowDetail detail) {
-              startedDetail = detail;
-              return null;
-            },
-            failure: (AppFailure failure) => failure,
-          );
+      dialog: buildOpdWorkspaceEncounterDialog(
+        ref: ref,
+        state: workspace,
+        initialPatientId: patientId,
+        defaultArrivalMode: 'WALK_IN',
+        defaultProviderId: entry.providerUserId,
+        visitQueueId: entry.apiId,
+        includeEncounterLifecycleCallbacks: false,
+        onExistingActiveEncounter: (OpdFlowSummary flow) {
+          activeEncounterToOpen = flow;
         },
       ),
     );
-    if (confirmed != true || !context.mounted) {
+    if (!context.mounted || dialogResult == null) {
       return;
     }
 
-    // Prefer the mutation payload — selectedFlow can be missing after a silent
-    // workspace refresh, which previously made Start encounter look like a no-op.
     final OpdFlowSummary? startedFlow =
-        startedDetail?.summary ??
-        ref
-            .read(opdWorkspaceControllerProvider)
-            .asData
-            ?.value
-            .when(
-              success: (OpdWorkspaceState state) => state.selectedFlow?.summary,
-              failure: (_) => null,
-            );
+        switch (dialogResult.action) {
+          OpdEncounterDialogAction.submit ||
+          OpdEncounterDialogAction.continueWorkflow =>
+            dialogResult.flow ?? activeEncounterToOpen,
+          OpdEncounterDialogAction.cancelled ||
+          OpdEncounterDialogAction.closed => null,
+        };
 
-    if (!context.mounted) {
-      return;
-    }
     Navigator.of(context).pop(
       QueueActionsOutcome(changed: true, startedFlow: startedFlow),
     );
+  }
+
+  OpdWorkspaceState? _readWorkspaceState(WidgetRef ref) {
+    return ref
+        .read(opdWorkspaceControllerProvider)
+        .asData
+        ?.value
+        .when(
+          success: (OpdWorkspaceState state) => state,
+          failure: (_) => null,
+        );
   }
 
   Future<void> _openPrioritize(BuildContext context, WidgetRef ref) async {

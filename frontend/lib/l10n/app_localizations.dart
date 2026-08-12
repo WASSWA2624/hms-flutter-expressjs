@@ -8461,6 +8461,48 @@ abstract class AppLocalizations {
   /// **'Discharged'**
   String get opdStatusDischargedLabel;
 
+  /// Visit-queue / desk status: patient confirmed and waiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed — waiting'**
+  String get opdStatusConfirmedLabel;
+
+  /// Visit-queue / appointment status: scheduled for a future visit.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get opdStatusScheduledLabel;
+
+  /// Visit-queue / encounter status: care is underway.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get opdStatusInProgressLabel;
+
+  /// Encounter status when the visit is open without a finer stage.
+  ///
+  /// In en, this message translates to:
+  /// **'Open encounter'**
+  String get opdStatusOpenLabel;
+
+  /// Visit-queue / encounter status: finished.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get opdStatusCompletedLabel;
+
+  /// Visit-queue / encounter status: cancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get opdStatusCancelledLabel;
+
+  /// Visit-queue status: patient did not arrive.
+  ///
+  /// In en, this message translates to:
+  /// **'No-show'**
+  String get opdStatusNoShowLabel;
+
   /// OPD display label.
   ///
   /// In en, this message translates to:

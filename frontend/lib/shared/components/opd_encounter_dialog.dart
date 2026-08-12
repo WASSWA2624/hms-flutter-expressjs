@@ -1625,27 +1625,52 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     setState(() {
       _isLoadingPatients = true;
     });
-    final Result<AppPage<Patient>> result = await ref
-        .read(opdEncounterDialogControllerProvider)
-        .listPatients(
-          const PatientListQuery(
-            isActive: true,
-            pageRequest: AppPageRequest(pageSize: 50),
-          ),
-        );
+    final OpdEncounterDialogController controller = ref.read(
+      opdEncounterDialogControllerProvider,
+    );
+    final String? pinnedPatientId = _initialPatientApiId();
+    final Future<Result<AppPage<Patient>>> pageFuture = controller.listPatients(
+      const PatientListQuery(
+        isActive: true,
+        pageRequest: AppPageRequest(pageSize: 50),
+      ),
+    );
+    final Future<Result<AppPage<Patient>>>? pinnedFuture =
+        _isNonEmpty(pinnedPatientId) && widget.initialPatient == null
+        ? controller.listPatients(
+            PatientListQuery(
+              search: pinnedPatientId!,
+              isActive: true,
+              pageRequest: const AppPageRequest(pageSize: 10),
+            ),
+          )
+        : null;
+
+    final Result<AppPage<Patient>> result = await pageFuture;
+    Result<AppPage<Patient>>? pinnedResult;
+    if (pinnedFuture != null) {
+      pinnedResult = await pinnedFuture;
+    }
     if (!mounted) {
       return;
     }
 
     result.when(
       success: (AppPage<Patient> page) {
+        final List<Patient> pinnedMatches = pinnedResult?.when(
+              success: (AppPage<Patient> pinned) => pinned.items,
+              failure: (_) => const <Patient>[],
+            ) ??
+            const <Patient>[];
         setState(() {
           _patientOptions = _mergePatients(<Patient>[
             ..._patientOptions,
+            ...pinnedMatches,
             ...page.items,
           ]);
           _isLoadingPatients = false;
         });
+        _normalizePinnedPatientId();
         _applyInitialContext(force: true);
       },
       failure: (AppFailure failure) {
@@ -1656,6 +1681,23 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         });
       },
     );
+  }
+
+  void _normalizePinnedPatientId() {
+    if (!_pinPatientContext || !_isNonEmpty(_patientId)) {
+      return;
+    }
+    final Patient? patient = widget.initialPatient ?? _patientByApiId(_patientId);
+    if (patient == null) {
+      return;
+    }
+    final String? normalized = _firstNonEmptyText(<String?>[
+      patient.publicId,
+      patient.id,
+    ]);
+    if (_isNonEmpty(normalized) && normalized != _patientId) {
+      _patientId = normalized;
+    }
   }
 
   Future<void> _loadAppointmentOptions() async {
@@ -1723,6 +1765,14 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         setState(() {
           _providerOptions = dedupeOpdProviderOptions(providers);
           _providerSchedules = schedules;
+          _providerId = resolveOpdProviderSelection(
+            options: opdProviderSelectOptions(
+              providers: _providerOptionsForDialog(),
+              schedules: schedules,
+            ),
+            providers: _providerOptionsForDialog(),
+            assignedProviderId: _providerId,
+          );
           _applyProviderDefaultsToState(_providerId);
           _isLoadingProviders = false;
         });

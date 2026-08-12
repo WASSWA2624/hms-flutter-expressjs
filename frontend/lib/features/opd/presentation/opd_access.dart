@@ -284,8 +284,9 @@ bool opdBoardShowsNextActionColumn(
 ) {
   return switch (section) {
     OpdWorkspaceSection.followUps => false,
-    // Inventory: queue next-action is empty; row select is the sole hub entry.
-    OpdWorkspaceSection.queue => false,
+    // Inventory: queue next-action is Start encounter (row select still opens hub).
+    OpdWorkspaceSection.queue =>
+      OpdQueueAtomPermissions.startEncounter.isAllowed(policy),
     OpdWorkspaceSection.arrivals =>
       OpdArrivalsAtomPermissions.startEncounter.isAllowed(policy) ||
           OpdArrivalsAtomPermissions.frontDesk.isAllowed(policy) ||

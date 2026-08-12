@@ -121,14 +121,18 @@ final class OpdQueueEntryDto {
       appointmentId:
           _string(json['appointment_human_friendly_id']) ??
           _string(json['appointment_id']),
-      providerUserId: _string(json['provider_user_id']),
+      providerUserId:
+          _string(json['provider_human_friendly_id']) ??
+          _string(json['provider_user_id']),
       status: _string(json['status']),
       queuedAt: _date(json['queued_at']),
       isPrioritized: _bool(json['is_prioritized']),
       patientDisplayName:
           _string(json['patient_display_name']) ??
           _patientDisplayName(_nullableMap(json['patient'])),
+      patientPublicId: _string(json['patient_human_friendly_id']),
       patientIdentifier:
+          _string(json['patient_human_friendly_id']) ??
           _string(json['patient_primary_identifier']) ??
           _string(_nullableMap(json['patient'])?['human_friendly_id']),
       patientPhone: _string(json['patient_primary_phone']),

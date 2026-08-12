@@ -47,7 +47,8 @@ sealed class AppFailure {
     String? detailMessage,
   }) = ForbiddenFailure;
 
-  const factory AppFailure.notFound({int? statusCode}) = NotFoundFailure;
+  const factory AppFailure.notFound({int? statusCode, String? detailMessage}) =
+      NotFoundFailure;
 
   factory AppFailure.conflict({
     String code,
@@ -226,7 +227,7 @@ final class ForbiddenFailure extends AppFailure {
 }
 
 final class NotFoundFailure extends AppFailure {
-  const NotFoundFailure({super.statusCode})
+  const NotFoundFailure({super.statusCode, super.detailMessage})
     : super._(
         category: AppFailureCategory.notFound,
         code: 'network.not_found',
