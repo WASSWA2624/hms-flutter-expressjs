@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/network/app_connectivity_status.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
@@ -136,7 +138,13 @@ void main() {
 
     await _pumpDialog(
       tester,
-      onLookupDuplicates: (_) async {
+      registrationScope: const PatientRegistrationScope(
+        defaultTenantId: 'tenant-1',
+        defaultFacilityId: 'facility-1',
+      ),
+      onLookupDuplicates: (PatientDuplicateQuery query) async {
+        expect(query.tenantId, 'tenant-1');
+        expect(query.facilityId, 'facility-1');
         return const Result<AppPage<PatientDuplicateCandidate>>.success(
           AppPage<PatientDuplicateCandidate>(
             items: <PatientDuplicateCandidate>[
@@ -149,6 +157,8 @@ void main() {
                   id: 'patient-1',
                   displayName: 'Jane Doe',
                   primaryPhone: '+256700000000',
+                  tenantId: 'tenant-1',
+                  facilityId: 'facility-1',
                 ),
               ),
             ],
@@ -165,16 +175,86 @@ void main() {
 
     await _fillRegisterPatientBasics(tester);
     await tester.tap(find.widgetWithText(AppButton, 'Register patient'));
-    await tester.pumpAndSettle();
+    await _pumpUntilFound(tester, find.text('SIMILAR PATIENTS FOUND'));
 
     expect(submitCount, 0);
+    expect(find.text('SIMILAR PATIENTS FOUND'), findsOneWidget);
     expect(find.text('Potential duplicate found'), findsOneWidget);
     expect(find.text('Register anyway'), findsOneWidget);
     expect(find.text('Use existing patient'), findsOneWidget);
-    expect(find.byIcon(AppActionIcons.copy), findsWidgets);
+    // Registration form stays underneath; no inline warning panel.
+    expect(find.text('REGISTER NEW PATIENT'), findsOneWidget);
 
     await tester.tap(find.widgetWithText(AppButton, 'Register anyway'));
-    await tester.pumpAndSettle();
+    await _pumpUntilGone(tester, find.text('SIMILAR PATIENTS FOUND'));
+
+    expect(submitCount, 1);
+  });
+
+  testWidgets('cross-scope exact identity still allows register anyway', (
+    WidgetTester tester,
+  ) async {
+    var submitCount = 0;
+
+    await _pumpDialog(
+      tester,
+      registrationScope: const PatientRegistrationScope(
+        defaultTenantId: 'tenant-1',
+        defaultFacilityId: 'facility-1',
+      ),
+      onLookupDuplicates: (_) async {
+        return const Result<AppPage<PatientDuplicateCandidate>>.success(
+          AppPage<PatientDuplicateCandidate>(
+            items: <PatientDuplicateCandidate>[
+              PatientDuplicateCandidate(
+                reviewId: 'review-cross',
+                confidenceScore: 100,
+                classification: 'STRONG_MATCH',
+                fieldComparisons: <PatientDuplicateFieldComparison>[
+                  PatientDuplicateFieldComparison(
+                    field: 'NAME',
+                    inputValue: 'Jane Doe',
+                    candidateValue: 'Jane Doe',
+                    status: 'MATCH',
+                  ),
+                  PatientDuplicateFieldComparison(
+                    field: 'PHONE',
+                    inputValue: '+256700000000',
+                    candidateValue: '+256700000000',
+                    status: 'MATCH',
+                  ),
+                ],
+                candidatePatient: Patient(
+                  id: 'patient-other-facility',
+                  displayName: 'Jane Doe',
+                  primaryPhone: '+256700000000',
+                  tenantId: 'tenant-1',
+                  facilityId: 'facility-2',
+                  facilityLabel: 'Other Clinic',
+                ),
+              ),
+            ],
+            request: AppPageRequest(pageSize: 8),
+            totalItemCount: 1,
+          ),
+        );
+      },
+      onSubmit: (Map<String, Object?> payload) async {
+        submitCount += 1;
+        return _registeredPatientResult(payload);
+      },
+    );
+
+    await _fillRegisterPatientBasics(tester);
+    await tester.tap(find.widgetWithText(AppButton, 'Register patient'));
+    await _pumpUntilFound(tester, find.text('SIMILAR PATIENTS FOUND'));
+
+    expect(find.text('Register anyway'), findsOneWidget);
+    expect(find.text('Other Clinic'), findsWidgets);
+    expect(find.text('Facility'), findsWidgets);
+
+    await tester.tap(find.widgetWithText(AppButton, 'Register anyway'));
+    await _pumpUntilGone(tester, find.text('SIMILAR PATIENTS FOUND'));
 
     expect(submitCount, 1);
   });
@@ -224,19 +304,63 @@ void main() {
 
     await _fillRegisterPatientBasics(tester);
     await tester.tap(find.widgetWithText(AppButton, 'Register patient'));
-    await tester.pumpAndSettle();
+    await _pumpUntilFound(tester, find.text('SIMILAR PATIENTS FOUND'));
 
-    expect(find.text('Phone'), findsOneWidget);
-    expect(find.text('Match'), findsOneWidget);
-    expect(find.text('+256700000000'), findsOneWidget);
-    expect(find.text('Strong match'), findsOneWidget);
-    expect(find.text('88% match'), findsOneWidget);
+    expect(find.text('SIMILAR PATIENTS FOUND'), findsOneWidget);
+    expect(find.text('Phone'), findsWidgets);
+    expect(find.text('+256700000000'), findsWidgets);
+    expect(find.text('88%'), findsWidgets);
     await tester.tap(find.widgetWithText(AppButton, 'Use existing patient'));
-    await tester.pumpAndSettle();
-
+    await _pumpUntilGone(tester, find.byType(RegisterNewPatientDialog));
     expect(result?.id, 'patient-existing');
     expect(submitCount, 0);
     expect(find.byType(RegisterNewPatientDialog), findsNothing);
+  });
+
+  testWidgets('canceling similarity review keeps registration form open', (
+    WidgetTester tester,
+  ) async {
+    var submitCount = 0;
+
+    await _pumpDialog(
+      tester,
+      onLookupDuplicates: (_) async {
+        return const Result<AppPage<PatientDuplicateCandidate>>.success(
+          AppPage<PatientDuplicateCandidate>(
+            items: <PatientDuplicateCandidate>[
+              PatientDuplicateCandidate(
+                reviewId: 'review-1',
+                confidenceScore: 80,
+                classification: 'POSSIBLE',
+                candidatePatient: Patient(
+                  id: 'patient-1',
+                  displayName: 'Jane Doe',
+                ),
+              ),
+            ],
+            request: AppPageRequest(pageSize: 8),
+            totalItemCount: 1,
+          ),
+        );
+      },
+      onSubmit: (Map<String, Object?> payload) async {
+        submitCount += 1;
+        return _registeredPatientResult(payload);
+      },
+    );
+
+    await _fillRegisterPatientBasics(tester);
+    await tester.tap(find.widgetWithText(AppButton, 'Register patient'));
+    await _pumpUntilFound(tester, find.text('SIMILAR PATIENTS FOUND'));
+
+    expect(find.text('SIMILAR PATIENTS FOUND'), findsOneWidget);
+    await tester.tap(find.widgetWithText(AppButton, 'Close').last);
+    await _pumpUntilGone(tester, find.text('SIMILAR PATIENTS FOUND'));
+
+    expect(submitCount, 0);
+    expect(find.byType(RegisterNewPatientDialog), findsOneWidget);
+    expect(find.text('REGISTER NEW PATIENT'), findsOneWidget);
+    expect(find.text('Register patient'), findsOneWidget);
   });
 
   testWidgets('locks dismiss while submitting', (WidgetTester tester) async {
@@ -293,43 +417,57 @@ Future<void> _pumpDialog(
   bool dark = false,
   TextScaler textScaler = TextScaler.noScaling,
 }) async {
+  tester.view.physicalSize = const Size(1200, 900);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
+
   await tester.pumpWidget(
-    MaterialApp(
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: dark ? ThemeMode.dark : ThemeMode.light,
-      localizationsDelegates: AppLocalizations.localizationsDelegates,
-      supportedLocales: AppLocalizations.supportedLocales,
-      builder: (BuildContext context, Widget? child) {
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(textScaler: textScaler),
-          child: child!,
-        );
-      },
-      home: Scaffold(
-        body: Builder(
-          builder: (BuildContext context) {
-            return Center(
-              child: AppButton.primary(
-                label: 'Open register',
-                leadingIcon: AppActionIcons.personAdd,
-                onPressed: () async {
-                  final PatientRegistrationResult? value =
-                      await showRegisterNewPatientDialog(
-                        context: context,
-                        referenceData: const PatientReferenceData(),
-                        registrationScope: registrationScope,
-                        onLookupDuplicates: onLookupDuplicates,
-                        onSubmit:
-                            onSubmit ??
-                            (Map<String, Object?> payload) async =>
-                                _registeredPatientResult(payload),
-                      );
-                  onResult?.call(value?.patient);
-                },
-              ),
-            );
-          },
+    ProviderScope(
+      overrides: [
+        appConnectivityStatusProvider.overrideWith(
+          (Ref ref) => Stream<AppConnectivityStatus>.value(
+            AppConnectivityStatus.online,
+          ),
+        ),
+      ],
+      child: MaterialApp(
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        themeMode: dark ? ThemeMode.dark : ThemeMode.light,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        builder: (BuildContext context, Widget? child) {
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+            child: child!,
+          );
+        },
+        home: Scaffold(
+          body: Builder(
+            builder: (BuildContext context) {
+              return Center(
+                child: AppButton.primary(
+                  label: 'Open register',
+                  leadingIcon: AppActionIcons.personAdd,
+                  onPressed: () async {
+                    final PatientRegistrationResult? value =
+                        await showRegisterNewPatientDialog(
+                          context: context,
+                          referenceData: const PatientReferenceData(),
+                          registrationScope: registrationScope,
+                          onLookupDuplicates: onLookupDuplicates,
+                          onSubmit:
+                              onSubmit ??
+                              (Map<String, Object?> payload) async =>
+                                  _registeredPatientResult(payload),
+                        );
+                    onResult?.call(value?.patient);
+                  },
+                ),
+              );
+            },
+          ),
         ),
       ),
     ),
@@ -337,6 +475,34 @@ Future<void> _pumpDialog(
   await tester.pumpAndSettle();
   await tester.tap(find.widgetWithText(AppButton, 'Open register'));
   await tester.pumpAndSettle();
+}
+
+Future<void> _pumpUntilFound(
+  WidgetTester tester,
+  Finder finder, {
+  int maxFrames = 40,
+}) async {
+  for (int i = 0; i < maxFrames; i += 1) {
+    await tester.pump(const Duration(milliseconds: 50));
+    if (finder.evaluate().isNotEmpty) {
+      return;
+    }
+  }
+  fail('Timed out waiting for $finder');
+}
+
+Future<void> _pumpUntilGone(
+  WidgetTester tester,
+  Finder finder, {
+  int maxFrames = 40,
+}) async {
+  for (int i = 0; i < maxFrames; i += 1) {
+    await tester.pump(const Duration(milliseconds: 50));
+    if (finder.evaluate().isEmpty) {
+      return;
+    }
+  }
+  fail('Timed out waiting for $finder to disappear');
 }
 
 Future<void> _fillRegisterPatientBasics(

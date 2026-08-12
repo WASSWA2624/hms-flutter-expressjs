@@ -506,9 +506,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     final bool hasActiveEncounter = _activeEncounter != null;
     final bool isNewPatientMode = _patientMode == _WalkInPatientMode.newPatient;
     final String primaryActionLabel = isNewPatientMode
-        ? (_newPatientFormKey.currentState?.duplicateWarningAccepted == true
-              ? l10n.patientsRegisterAnywayAction
-              : l10n.opdCreatePatientAction)
+        ? l10n.opdCreatePatientAction
         : hasActiveEncounter && !_forceNewEncounter
         ? l10n.opdOpenActiveEncounterAction
         : l10n.opdStartEncounterAction;

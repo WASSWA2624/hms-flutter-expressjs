@@ -8618,6 +8618,39 @@
   "@patientsDuplicateWarningBody": {
     "description": "Patient registration duplicate warning body."
   },
+  "patientsSimilarDialogTitle": "Similar patients found",
+  "@patientsSimilarDialogTitle": {
+    "description": "Patient registration similarity review dialog title."
+  },
+  "patientsExactDialogTitle": "Duplicate patient found",
+  "@patientsExactDialogTitle": {
+    "description": "Patient registration exact-duplicate dialog title."
+  },
+  "patientsExactBannerTitle": "Exact patient match",
+  "@patientsExactBannerTitle": {
+    "description": "Patient registration exact-duplicate banner title."
+  },
+  "patientsExactDialogBody": "An existing patient matches the compared fields. Use the existing record instead of creating another.",
+  "@patientsExactDialogBody": {
+    "description": "Patient registration exact-duplicate dialog body."
+  },
+  "patientsSimilarDialogBody": "Closest match is {score}% similar. Review matches before registering another patient.",
+  "@patientsSimilarDialogBody": {
+    "description": "Patient registration near-match dialog body.",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "patientsProposedHeading": "Proposed patient",
+  "@patientsProposedHeading": {
+    "description": "Patient registration similarity proposed-values heading."
+  },
+  "patientsMatchesHeading": "Similar patients",
+  "@patientsMatchesHeading": {
+    "description": "Patient registration similarity matches heading."
+  },
   "patientsDuplicateStatusMatchLabel": "Match",
   "@patientsDuplicateStatusMatchLabel": {
     "description": "Duplicate field comparison exact match status label."

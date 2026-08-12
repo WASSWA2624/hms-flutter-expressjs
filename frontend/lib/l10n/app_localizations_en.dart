@@ -6716,6 +6716,30 @@ class AppLocalizationsEn extends AppLocalizations {
       'Review matches before creating another record.';
 
   @override
+  String get patientsSimilarDialogTitle => 'Similar patients found';
+
+  @override
+  String get patientsExactDialogTitle => 'Duplicate patient found';
+
+  @override
+  String get patientsExactBannerTitle => 'Exact patient match';
+
+  @override
+  String get patientsExactDialogBody =>
+      'An existing patient matches the compared fields. Use the existing record instead of creating another.';
+
+  @override
+  String patientsSimilarDialogBody(int score) {
+    return 'Closest match is $score% similar. Review matches before registering another patient.';
+  }
+
+  @override
+  String get patientsProposedHeading => 'Proposed patient';
+
+  @override
+  String get patientsMatchesHeading => 'Similar patients';
+
+  @override
   String get patientsDuplicateStatusMatchLabel => 'Match';
 
   @override

@@ -12679,6 +12679,48 @@ abstract class AppLocalizations {
   /// **'Review matches before creating another record.'**
   String get patientsDuplicateWarningBody;
 
+  /// Patient registration similarity review dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar patients found'**
+  String get patientsSimilarDialogTitle;
+
+  /// Patient registration exact-duplicate dialog title.
+  ///
+  /// In en, this message translates to:
+  /// **'Duplicate patient found'**
+  String get patientsExactDialogTitle;
+
+  /// Patient registration exact-duplicate banner title.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact patient match'**
+  String get patientsExactBannerTitle;
+
+  /// Patient registration exact-duplicate dialog body.
+  ///
+  /// In en, this message translates to:
+  /// **'An existing patient matches the compared fields. Use the existing record instead of creating another.'**
+  String get patientsExactDialogBody;
+
+  /// Patient registration near-match dialog body.
+  ///
+  /// In en, this message translates to:
+  /// **'Closest match is {score}% similar. Review matches before registering another patient.'**
+  String patientsSimilarDialogBody(int score);
+
+  /// Patient registration similarity proposed-values heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed patient'**
+  String get patientsProposedHeading;
+
+  /// Patient registration similarity matches heading.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar patients'**
+  String get patientsMatchesHeading;
+
   /// Duplicate field comparison exact match status label.
   ///
   /// In en, this message translates to:

@@ -334,9 +334,7 @@ class _ReceptionScheduleAppointmentDialogState
       ),
       if (_mode == _SchedulePatientMode.newPatient)
         AppButton.primary(
-          label: _registrationKey.currentState?.duplicateWarningAccepted == true
-              ? l10n.patientsRegisterAnywayAction
-              : l10n.patientsRegisterNewPatientAction,
+          label: l10n.patientsRegisterNewPatientAction,
           leadingIcon: AppActionIcons.personAdd,
           isLoading: _isRegistering,
           enabled: !_isBusy,

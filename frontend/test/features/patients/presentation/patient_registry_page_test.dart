@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/network/app_connectivity_status.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
@@ -61,60 +62,42 @@ void main() {
   });
 
   testWidgets(
-    'RegisterNewPatientDialog warns before saving duplicate candidates',
+    'RegisterNewPatientDialog opens similarity dialog before saving duplicates',
     (WidgetTester tester) async {
       var lookupCount = 0;
       var submitCount = 0;
 
-      await pumpLocalizedWidget(
+      await _pumpRegisterSimilarityHarness(
         tester,
-        Builder(
-          builder: (BuildContext context) {
-            return AppButton.primary(
-              label: 'Open register dialog',
-              onPressed: () {
-                unawaited(
-                  showRegisterNewPatientDialog(
-                    context: context,
-                    referenceData: const PatientReferenceData(),
-                    onLookupDuplicates: (PatientDuplicateQuery query) async {
-                      lookupCount += 1;
-                      expect(query.firstName, 'Jane');
-                      expect(query.lastName, 'Doe');
-                      expect(query.gender, 'FEMALE');
-                      return const Result<
-                        AppPage<PatientDuplicateCandidate>
-                      >.success(
-                        AppPage<PatientDuplicateCandidate>(
-                          items: <PatientDuplicateCandidate>[
-                            PatientDuplicateCandidate(
-                              reviewId: 'review-1',
-                              confidenceScore: 92,
-                              classification: 'STRONG_MATCH',
-                              matchReasons: <String>['name', 'phone'],
-                              candidatePatient: Patient(
-                                id: 'patient-1',
-                                displayName: 'Jane Doe',
-                                primaryPhone: '+256700000000',
-                              ),
-                            ),
-                          ],
-                          request: AppPageRequest(pageSize: 8),
-                          totalItemCount: 1,
-                        ),
-                      );
-                    },
-                    onSubmit: (Map<String, Object?> payload) async {
-                      submitCount += 1;
-                      return _registeredPatientResult(payload);
-                    },
+        onLookupDuplicates: (PatientDuplicateQuery query) async {
+          lookupCount += 1;
+          expect(query.firstName, 'Jane');
+          expect(query.lastName, 'Doe');
+          expect(query.gender, 'FEMALE');
+          return const Result<AppPage<PatientDuplicateCandidate>>.success(
+            AppPage<PatientDuplicateCandidate>(
+              items: <PatientDuplicateCandidate>[
+                PatientDuplicateCandidate(
+                  reviewId: 'review-1',
+                  confidenceScore: 92,
+                  classification: 'STRONG_MATCH',
+                  matchReasons: <String>['name', 'phone'],
+                  candidatePatient: Patient(
+                    id: 'patient-1',
+                    displayName: 'Jane Doe',
+                    primaryPhone: '+256700000000',
                   ),
-                );
-              },
-            );
-          },
-        ),
-        size: const Size(1000, 800),
+                ),
+              ],
+              request: AppPageRequest(pageSize: 8),
+              totalItemCount: 1,
+            ),
+          );
+        },
+        onSubmit: (Map<String, Object?> payload) async {
+          submitCount += 1;
+          return _registeredPatientResult(payload);
+        },
       );
 
       await tester.tap(find.text('Open register dialog'));
@@ -122,72 +105,54 @@ void main() {
 
       await _fillRegisterPatientBasics(tester);
       await tester.tap(find.text('Register patient'));
-      await tester.pumpAndSettle();
+      await _pumpUntilFound(tester, find.text('SIMILAR PATIENTS FOUND'));
 
       expect(lookupCount, 1);
       expect(submitCount, 0);
+      expect(find.text('SIMILAR PATIENTS FOUND'), findsOneWidget);
       expect(find.text('Potential duplicate found'), findsOneWidget);
       expect(find.text('Register anyway'), findsOneWidget);
 
       await tester.tap(find.text('Register anyway'));
-      await tester.pumpAndSettle();
+      await _pumpUntilGone(tester, find.text('SIMILAR PATIENTS FOUND'));
 
       expect(submitCount, 1);
     },
   );
 
   testWidgets(
-    'RegisterNewPatientDialog clears duplicate warning when a field is edited',
+    'RegisterNewPatientDialog rechecks similarity after cancel and edit',
     (WidgetTester tester) async {
       var lookupCount = 0;
 
-      await pumpLocalizedWidget(
+      await _pumpRegisterSimilarityHarness(
         tester,
-        Builder(
-          builder: (BuildContext context) {
-            return AppButton.primary(
-              label: 'Open register dialog',
-              onPressed: () {
-                unawaited(
-                  showAppDialog<Patient>(
-                    context: context,
-                    builder: (_) => RegisterNewPatientDialog(
-                      referenceData: const PatientReferenceData(),
-                      onLookupDuplicates: (PatientDuplicateQuery query) async {
-                        lookupCount += 1;
-                        return const Result<
-                          AppPage<PatientDuplicateCandidate>
-                        >.success(
-                          AppPage<PatientDuplicateCandidate>(
-                            items: <PatientDuplicateCandidate>[
-                              PatientDuplicateCandidate(
-                                reviewId: 'review-1',
-                                confidenceScore: 92,
-                                classification: 'STRONG_MATCH',
-                                matchReasons: <String>['name', 'phone'],
-                                candidatePatient: Patient(
-                                  id: 'patient-1',
-                                  displayName: 'Jane Doe',
-                                  primaryPhone: '+256700000000',
-                                ),
-                              ),
-                            ],
-                            request: AppPageRequest(pageSize: 8),
-                            totalItemCount: 1,
-                          ),
-                        );
-                      },
-                      onSubmit: (Map<String, Object?> payload) async {
-                        return _registeredPatientResult(payload);
-                      },
-                    ),
+        useShowAppDialog: true,
+        onLookupDuplicates: (PatientDuplicateQuery query) async {
+          lookupCount += 1;
+          return const Result<AppPage<PatientDuplicateCandidate>>.success(
+            AppPage<PatientDuplicateCandidate>(
+              items: <PatientDuplicateCandidate>[
+                PatientDuplicateCandidate(
+                  reviewId: 'review-1',
+                  confidenceScore: 92,
+                  classification: 'STRONG_MATCH',
+                  matchReasons: <String>['name', 'phone'],
+                  candidatePatient: Patient(
+                    id: 'patient-1',
+                    displayName: 'Jane Doe',
+                    primaryPhone: '+256700000000',
                   ),
-                );
-              },
-            );
-          },
-        ),
-        size: const Size(1000, 800),
+                ),
+              ],
+              request: AppPageRequest(pageSize: 8),
+              totalItemCount: 1,
+            ),
+          );
+        },
+        onSubmit: (Map<String, Object?> payload) async {
+          return _registeredPatientResult(payload);
+        },
       );
 
       await tester.tap(find.text('Open register dialog'));
@@ -195,23 +160,26 @@ void main() {
 
       await _fillRegisterPatientBasics(tester);
       await tester.tap(find.text('Register patient'));
-      await tester.pumpAndSettle();
+      await _pumpUntilFound(tester, find.text('SIMILAR PATIENTS FOUND'));
 
       expect(lookupCount, 1);
-      expect(find.text('Potential duplicate found'), findsOneWidget);
+      expect(find.text('SIMILAR PATIENTS FOUND'), findsOneWidget);
       expect(find.text('Register anyway'), findsOneWidget);
 
-      await tester.enterText(find.byType(EditableText).at(0), 'Janet');
-      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(AppButton, 'Close').last);
+      await _pumpUntilGone(tester, find.text('SIMILAR PATIENTS FOUND'));
 
-      expect(find.text('Potential duplicate found'), findsNothing);
+      expect(find.text('SIMILAR PATIENTS FOUND'), findsNothing);
+      expect(find.text('REGISTER NEW PATIENT'), findsOneWidget);
       expect(find.text('Register patient'), findsOneWidget);
-      expect(find.text('Register anyway'), findsNothing);
 
+      await tester.enterText(find.byType(EditableText).at(0), 'Janet');
+      await tester.pump();
       await tester.tap(find.text('Register patient'));
-      await tester.pumpAndSettle();
+      await _pumpUntilFound(tester, find.text('SIMILAR PATIENTS FOUND'));
 
       expect(lookupCount, 2);
+      expect(find.text('SIMILAR PATIENTS FOUND'), findsOneWidget);
     },
   );
 
@@ -1642,6 +1610,98 @@ void main() {
       isTrue,
     );
   });
+}
+
+Future<void> _pumpRegisterSimilarityHarness(
+  WidgetTester tester, {
+  required Future<Result<AppPage<PatientDuplicateCandidate>>> Function(
+    PatientDuplicateQuery query,
+  )
+  onLookupDuplicates,
+  required Future<Result<Patient>> Function(Map<String, Object?> payload)
+  onSubmit,
+  bool useShowAppDialog = false,
+}) async {
+  setTestViewport(tester, const Size(1200, 900));
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        appConnectivityStatusProvider.overrideWith(
+          (Ref ref) => Stream<AppConnectivityStatus>.value(
+            AppConnectivityStatus.online,
+          ),
+        ),
+      ],
+      child: MaterialApp(
+        theme: AppTheme.light,
+        darkTheme: AppTheme.dark,
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: Scaffold(
+          body: Builder(
+            builder: (BuildContext context) {
+              return Center(
+                child: AppButton.primary(
+                  label: 'Open register dialog',
+                  onPressed: () {
+                    if (useShowAppDialog) {
+                      unawaited(
+                        showAppDialog<Patient>(
+                          context: context,
+                          builder: (_) => RegisterNewPatientDialog(
+                            referenceData: const PatientReferenceData(),
+                            onLookupDuplicates: onLookupDuplicates,
+                            onSubmit: onSubmit,
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+                    unawaited(
+                      showRegisterNewPatientDialog(
+                        context: context,
+                        referenceData: const PatientReferenceData(),
+                        onLookupDuplicates: onLookupDuplicates,
+                        onSubmit: onSubmit,
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+Future<void> _pumpUntilFound(
+  WidgetTester tester,
+  Finder finder, {
+  int maxFrames = 40,
+}) async {
+  for (int i = 0; i < maxFrames; i += 1) {
+    await tester.pump(const Duration(milliseconds: 50));
+    if (finder.evaluate().isNotEmpty) {
+      return;
+    }
+  }
+  fail('Timed out waiting for $finder');
+}
+
+Future<void> _pumpUntilGone(
+  WidgetTester tester,
+  Finder finder, {
+  int maxFrames = 40,
+}) async {
+  for (int i = 0; i < maxFrames; i += 1) {
+    await tester.pump(const Duration(milliseconds: 50));
+    if (finder.evaluate().isEmpty) {
+      return;
+    }
+  }
+  fail('Timed out waiting for $finder to disappear');
 }
 
 Future<void> _fillRegisterPatientBasics(
