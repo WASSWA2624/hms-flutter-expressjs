@@ -47753,13 +47753,13 @@ abstract class AppLocalizations {
   /// Empty state for selected lab requests table.
   ///
   /// In en, this message translates to:
-  /// **'No lab requests selected. Use Add Lab Panels.'**
+  /// **'No lab requests selected. Use Add Lab Orders.'**
   String get clinicalLabRequestSelectedTableEmptyLabel;
 
   /// Open lab request catalog picker for tests or panels.
   ///
   /// In en, this message translates to:
-  /// **'Add Lab Panels'**
+  /// **'Add Lab Orders'**
   String get clinicalLabRequestAddPanelsAction;
 
   /// Selected item count on request flow summary bar.

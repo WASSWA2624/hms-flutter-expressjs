@@ -33287,11 +33287,11 @@
   "@clinicalRequestSelectedActionsColumnLabel": {
     "description": "Actions column on selected catalog item table."
   },
-  "clinicalLabRequestSelectedTableEmptyLabel": "No lab requests selected. Use Add Lab Panels.",
+  "clinicalLabRequestSelectedTableEmptyLabel": "No lab requests selected. Use Add Lab Orders.",
   "@clinicalLabRequestSelectedTableEmptyLabel": {
     "description": "Empty state for selected lab requests table."
   },
-  "clinicalLabRequestAddPanelsAction": "Add Lab Panels",
+  "clinicalLabRequestAddPanelsAction": "Add Lab Orders",
   "@clinicalLabRequestAddPanelsAction": {
     "description": "Open lab request catalog picker for tests or panels."
   },

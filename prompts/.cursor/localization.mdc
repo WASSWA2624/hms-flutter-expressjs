@@ -1,0 +1,36 @@
+---
+description: Require all user-facing UI copy via l10n keys; ban hard-coded strings
+alwaysApply: true
+---
+
+# Localization
+
+Every user-facing string in the UI must come from localization—not literals in widgets, dialogs, validators, snackbars, empty/error states, accessibility labels, or tooltips.
+
+## Frontend rules
+
+1. Add keys to `frontend/lib/l10n/app_en.arb` and use `context.l10n` / `AppLocalizations` after `flutter gen-l10n`.
+2. Must not hard-code user-facing text in features or shared UI; must not invent private string-holder classes (`_FooText`, etc.).
+3. Prefer descriptive, stable keys (`commonSaveButton`, `validationRequired`, `networkTimeoutMessage`).
+4. Use placeholders / pluralization for dynamic copy—must not concatenate translated fragments.
+5. Format dates, times, numbers, and currency with locale-aware helpers ([`date_time_formatting.mdc`](../../frontend/.cursor/date_time_formatting.mdc)).
+6. Controllers and repositories must not own user-facing copy; resolve messages in the presentation layer via l10n (or stable error codes mapped to keys).
+
+## English-first workflow
+
+1. Edit English (`app_en.arb`) first for routine UI work.
+2. Edit other locales only when the user asks for translation or parity work ([`locale-development.mdc`](../../.cursor/locale-development.mdc)).
+3. Keep clinical, legal, and user-entered text un-auto-translated; English remains the fallback.
+
+## Constraints
+
+- Keep copy concise and clinically / operationally appropriate.
+- Include a11y labels and validation / error messages in ARB files.
+- Follow `frontend/.cursor/localization_i18n.mdc` for key naming and acceptance checks.
+
+## Relevant files
+
+- `frontend/lib/l10n/app_en.arb`
+- `frontend/l10n.yaml`
+- `frontend/.cursor/localization_i18n.mdc`
+- `.cursor/locale-development.mdc`

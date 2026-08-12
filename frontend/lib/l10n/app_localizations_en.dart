@@ -25933,10 +25933,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clinicalLabRequestSelectedTableEmptyLabel =>
-      'No lab requests selected. Use Add Lab Panels.';
+      'No lab requests selected. Use Add Lab Orders.';
 
   @override
-  String get clinicalLabRequestAddPanelsAction => 'Add Lab Panels';
+  String get clinicalLabRequestAddPanelsAction => 'Add Lab Orders';
 
   @override
   String clinicalRequestFlowItemCountLabel(int count) {

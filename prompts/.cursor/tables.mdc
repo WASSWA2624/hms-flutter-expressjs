@@ -62,6 +62,14 @@ Conventions for every page and dialog that shows a data table via `AppListTable`
 5. **No bolded (strong) text in table rows:** Do not use bold text for any content inside table cells or rows. Reserve bold styling for headers, section labels, or summary rows as specifically required by the overall UI, but avoid in the regular data rows and columns.
 6. **Atomic cells:** Each cell must display a single, atomic data value representing one fact (e.g., one status, date, count, label, or ID). Do not concatenate unrelated information into a single cell. If a field is composite, consider splitting it into separate columns or using clear, unambiguous formatting for truly atomic compound types (e.g., formatted date+time where inseparable, but not "Name — Status" in a single cell).
 
+## Main-tab table viewport (desktop / wide layout)
+
+Applies to every list table on a **main workspace tab** (the primary `AppListTable` under `AppTabStrip` / desk scope—not a one-off nested table inside a dialog body, detail pane, or collapsible aside unless that surface is itself the tab’s main list).
+
+1. **Horizontal overflow → scroll:** When visible columns (plus margins / `#` index) exceed the available width, the table body must scroll horizontally. Do not clip columns, force unreadable squeeze, or drop columns solely to fit. Prefer the shared `AppListTable` horizontal scroll + pinned scrollbar gutter; do not invent a parallel horizontal scroller.
+2. **Footer always visible:** The table footer (pagination, load-more / all-loaded status, go-to-top, or any call-site `footer`) must remain visible at the bottom of the table chrome while the row body scrolls. Do not place the footer inside the vertically scrolling row viewport, and do not let a short or empty body push the footer off-screen. Keep the shared shell layout: toolbar (if any) → expandable/scrollable body → footer.
+3. **Pad short lists with empty rows:** When there are fewer data rows than needed to fill the table’s bounded body height, fill the remaining viewport with blank spacer rows (same row height / dividers as data rows, no fake data). Use `AppListTable`’s default empty-row padding for bounded, non–shrink-wrapped main-tab tables (`padEmptyRows` on / default). Do not leave a large empty gap above a floating footer, and do not disable padding on main-tab lists without a justified exception (e.g. intentionally shrink-wrapped embed).
+4. **Bounded height:** Main-tab tables must receive a bounded vertical budget (typically `Expanded` / flex under the tab body) so virtualization, empty-row padding, and a pinned footer can work. Avoid nesting the main list in an unbounded ancestor scroll that collapses the table and hides the footer.
 
 ## Implementation constraints
 
@@ -69,6 +77,7 @@ Conventions for every page and dialog that shows a data table via `AppListTable`
 - Respect RBAC/ABAC: hide Export, Print, and other actions the user cannot perform; do not show disabled “no access” placeholders for routine unauthorized actions.
 - Keep loading, empty, error, and success feedback explicit for search, filter apply, export, and print.
 - Stay responsive on mobile, tablet, and desktop; support light and dark themes via theme tokens.
+- For main-tab lists, keep horizontal scroll, a pinned/visible footer, and empty-row padding via `AppListTable` defaults; do not opt into `shrinkWrap: true` or `padEmptyRows: false` on those surfaces without a documented exception.
 
 ## Relevant files
 

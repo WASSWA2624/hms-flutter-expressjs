@@ -1,0 +1,34 @@
+---
+description: Require full light/dark theme coverage via tokens; ban hard-coded visual values
+alwaysApply: true
+---
+
+# Theming
+
+Every UI surface must render correctly in light and dark themes. Source color, spacing, radius, elevation, and typography from the app theme—must not hard-code visual values unless a platform API forces a literal and no token exists.
+
+## Token usage
+
+1. Read visuals through `Theme.of(context)`: `colorScheme`, `textTheme`, `theme.spacing`, `theme.radius`, `theme.appTokens`, and status/tone extensions.
+2. Prefer shared theme-aware widgets under `frontend/lib/shared/` over one-off styled containers.
+3. Use semantic roles and status tones (e.g. success / warning / error / info) for clinical states—must not use raw `Colors.*` or one-off hex values for status.
+4. Scale shape with `context.responsiveRadius(...)` when corners must adapt by breakpoint ([responsiveness.mdc](responsiveness.mdc)).
+
+## Hard-coding policy
+
+1. Must not hard-code colors, paddings, radii, elevations, font sizes, or font families in feature or shared widgets.
+2. If a theme token does not exist for a required visual, invent an appropriate token and extend the theme—do not use a literal. Only use a literal when absolutely unavoidable (e.g. third-party / platform constraint) and after attempting to extend the theme; document why beside the value.
+3. Must not fork a parallel palette or `ThemeData` inside a feature; extend `frontend/lib/app/theme/` instead.
+
+## Mode and contrast
+
+1. Support light, dark, and system modes via `appThemeModeProvider` / `AppThemeModeController`.
+2. Verify contrast and readability in both modes; theme changes must update reactively without restart.
+3. Follow token tables and access patterns in `frontend/.cursor/design-system.mdc`.
+
+## Relevant files
+
+- `frontend/lib/app/theme/app_theme.dart`
+- `frontend/lib/app/theme/app_theme_extensions.dart`
+- `frontend/lib/app/theme/app_theme_mode_controller.dart`
+- `frontend/.cursor/design-system.mdc`

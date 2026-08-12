@@ -57,7 +57,7 @@ void main() {
       expect(find.text('Close'), findsNothing);
       expect(
         find.text(
-          'Review your selection below. Use Add Lab Panels to browse the catalog, then review billing before submitting.',
+          'Review your selection below. Use Add Lab Orders to browse the catalog, then review billing before submitting.',
         ),
         findsNothing,
       );
@@ -96,7 +96,7 @@ void main() {
             },
       );
 
-      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Panels'));
+      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Orders'));
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
@@ -151,7 +151,7 @@ void main() {
         ],
       );
 
-      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Panels'));
+      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Orders'));
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
@@ -165,7 +165,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('No lab requests selected. Use Add Lab Panels.'), findsNothing);
+      expect(find.text('No lab requests selected. Use Add Lab Orders.'), findsNothing);
       expect(find.text('Complete blood count'), findsOneWidget);
       expect(find.text('Lipid profile'), findsOneWidget);
       expect(find.text('Total'), findsOneWidget);
@@ -199,7 +199,7 @@ void main() {
         ],
       );
 
-      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Panels'));
+      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Orders'));
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
@@ -246,7 +246,7 @@ void main() {
         ],
       );
 
-      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Panels'));
+      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Orders'));
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
@@ -271,7 +271,7 @@ void main() {
 
       expect(find.text('Complete blood count'), findsNothing);
       expect(
-        find.text('No lab requests selected. Use Add Lab Panels.'),
+        find.text('No lab requests selected. Use Add Lab Orders.'),
         findsOneWidget,
       );
     });
@@ -286,7 +286,7 @@ void main() {
           ],
         );
 
-        await tester.tap(find.widgetWithText(AppButton, 'Add Lab Panels'));
+        await tester.tap(find.widgetWithText(AppButton, 'Add Lab Orders'));
         await tester.pumpAndSettle();
         await tester.pump(const Duration(milliseconds: 300));
         await tester.pumpAndSettle();
@@ -332,7 +332,7 @@ void main() {
       expect(find.byType(AppCopyableIdentifier), findsNWidgets(2));
       expect(find.widgetWithText(AppButton, 'Remove selected'), findsNothing);
 
-      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Panels'));
+      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Orders'));
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
@@ -361,7 +361,7 @@ void main() {
         ],
       );
 
-      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Panels'));
+      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Orders'));
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
@@ -375,7 +375,7 @@ void main() {
 
       expect(find.text('Complete blood count'), findsNothing);
       expect(
-        find.text('No lab requests selected. Use Add Lab Panels.'),
+        find.text('No lab requests selected. Use Add Lab Orders.'),
         findsOneWidget,
       );
     });
@@ -390,7 +390,7 @@ void main() {
         ],
       );
 
-      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Panels'));
+      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Orders'));
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();
@@ -426,7 +426,7 @@ void main() {
             },
       );
 
-      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Panels'));
+      await tester.tap(find.widgetWithText(AppButton, 'Add Lab Orders'));
       await tester.pumpAndSettle();
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpAndSettle();

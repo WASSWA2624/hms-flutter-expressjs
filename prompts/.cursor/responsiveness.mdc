@@ -1,0 +1,36 @@
+---
+description: Require mobile, tablet, and desktop-ready UI via shared breakpoints and adaptive chrome
+alwaysApply: true
+---
+
+# Responsiveness
+
+Every UI surface (workspace, dialog, form, table, sheet, etc) must stay usable on mobile, tablet, and desktop. Prefer one adaptive layout over size-specific screen forks.
+
+## Breakpoints and utilities
+
+1. Use `AppBreakpoints` / `ResponsiveBuilder` from `frontend/lib/core/responsive/`—must not invent ad-hoc width thresholds.
+2. Prefer parent constraints (`LayoutBuilder` / `ResponsiveBuilder`) over raw `MediaQuery` when adapting local chrome.
+3. Follow shell and content-width rules in `frontend/.cursor/layouts.mdc`; must not hard-code fixed widths that break small viewports.
+
+## Layout adaptation
+
+1. Stack to one column on small widths; expand to multi-column / side-by-side only when space allows.
+2. Forms: use `AppResponsiveFieldRow` so fields stack on mobile and sit in rows on larger screens ([forms.mdc](forms.mdc)).
+3. Tables / toolbars: icon-only actions on small screens; icon + label when `showsToolbarActionLabels` ([tables.mdc](tables.mdc)).
+4. Lists: provide `mobileItemBuilder` (or shared compact row) where `AppListTable` expects it; keep horizontal scroll for wide column sets on desktop.
+5. Keep primary actions reachable; avoid clipped chrome, unreachable overflow, and nested scroll traps.
+
+## Constraints
+
+- Reuse `AppWorkspace` / `ResponsivePage` and shared layout under `frontend/lib/shared/layout/`.
+- Scale padding and radius via theme tokens (`page padding`, `context.responsiveRadius`), not magic numbers.
+- Must not ship desktop-only or mobile-only feature UIs unless the interaction model truly differs.
+- Support light and dark themes on every breakpoint.
+
+## Relevant files
+
+- `frontend/lib/core/responsive/app_breakpoints.dart`
+- `frontend/lib/shared/layout/`
+- `frontend/lib/shared/forms/app_responsive_field_row.dart`
+- `frontend/.cursor/layouts.mdc`
