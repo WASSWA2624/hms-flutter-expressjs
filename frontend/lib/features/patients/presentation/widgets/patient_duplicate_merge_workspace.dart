@@ -348,11 +348,13 @@ class PatientDuplicateMergeWorkspace extends StatefulWidget {
     required this.comparisons,
     required this.isSaving,
     required this.onConfirmMerge,
+    this.facilities = const <PatientReferenceOption>[],
     super.key,
   });
 
   final PatientMergePreview preview;
   final List<PatientDuplicateFieldComparison> comparisons;
+  final List<PatientReferenceOption> facilities;
   final bool isSaving;
   final Future<void> Function(PatientMergeCommitPlan plan) onConfirmMerge;
 
@@ -427,6 +429,7 @@ class _PatientDuplicateMergeWorkspaceState
           _MergeFieldLaneRow(
             key: ValueKey<String>(_fields[index].key),
             field: _fields[index],
+            facilities: widget.facilities,
             resolution: _resolution,
             enabled: !widget.isSaving,
             onSwap: () => _swapField(index),
@@ -474,6 +477,7 @@ class _PatientDuplicateMergeWorkspaceState
             }
             return _MergeChoiceRow(
               fields: _fields,
+              facilities: widget.facilities,
               isSaving: widget.isSaving,
               selected: _resolution,
               onSelect: (PatientMergeResolution resolution) {
@@ -577,12 +581,14 @@ class _PatientDuplicateMergeWorkspaceState
 class _MergeChoiceRow extends StatelessWidget {
   const _MergeChoiceRow({
     required this.fields,
+    required this.facilities,
     required this.isSaving,
     required this.selected,
     required this.onSelect,
   });
 
   final List<PatientMergeFieldLane> fields;
+  final List<PatientReferenceOption> facilities;
   final bool isSaving;
   final PatientMergeResolution? selected;
   final ValueChanged<PatientMergeResolution> onSelect;
@@ -594,6 +600,7 @@ class _MergeChoiceRow extends StatelessWidget {
     final List<Widget> choices = <Widget>[
       _MergeChoiceColumn(
         fields: fields,
+        facilities: facilities,
         resolution: PatientMergeResolution.keepLeft,
         selected: selected == PatientMergeResolution.keepLeft,
         isSaving: isSaving,
@@ -604,6 +611,7 @@ class _MergeChoiceRow extends StatelessWidget {
       ),
       _MergeChoiceColumn(
         fields: fields,
+        facilities: facilities,
         resolution: PatientMergeResolution.autoMerge,
         selected: selected == PatientMergeResolution.autoMerge,
         isSaving: isSaving,
@@ -614,6 +622,7 @@ class _MergeChoiceRow extends StatelessWidget {
       ),
       _MergeChoiceColumn(
         fields: fields,
+        facilities: facilities,
         resolution: PatientMergeResolution.keepRight,
         selected: selected == PatientMergeResolution.keepRight,
         isSaving: isSaving,
@@ -654,9 +663,10 @@ class _MergeChoiceRow extends StatelessWidget {
   }
 }
 
-class _MergeChoiceColumn extends StatelessWidget {
+class _MergeChoiceColumn extends StatefulWidget {
   const _MergeChoiceColumn({
     required this.fields,
+    required this.facilities,
     required this.resolution,
     required this.selected,
     required this.isSaving,
@@ -667,6 +677,7 @@ class _MergeChoiceColumn extends StatelessWidget {
   });
 
   final List<PatientMergeFieldLane> fields;
+  final List<PatientReferenceOption> facilities;
   final PatientMergeResolution resolution;
   final bool selected;
   final bool isSaving;
@@ -676,63 +687,155 @@ class _MergeChoiceColumn extends StatelessWidget {
   final VoidCallback onPressed;
 
   @override
+  State<_MergeChoiceColumn> createState() => _MergeChoiceColumnState();
+}
+
+class _MergeChoiceColumnState extends State<_MergeChoiceColumn> {
+  late final TextEditingController _firstNameController;
+  late final TextEditingController _lastNameController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _emailController;
+
+  @override
+  void initState() {
+    super.initState();
+    _firstNameController = TextEditingController(text: _valueFor('first_name'));
+    _lastNameController = TextEditingController(text: _valueFor('last_name'));
+    _phoneController = TextEditingController(text: _valueFor('phone'));
+    _emailController = TextEditingController(text: _valueFor('email'));
+  }
+
+  @override
+  void didUpdateWidget(covariant _MergeChoiceColumn oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _syncController(_firstNameController, _valueFor('first_name'));
+    _syncController(_lastNameController, _valueFor('last_name'));
+    _syncController(_phoneController, _valueFor('phone'));
+    _syncController(_emailController, _valueFor('email'));
+  }
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  String _valueFor(String key) {
+    for (final PatientMergeFieldLane field in widget.fields) {
+      if (field.key == key) {
+        return field.resolvedDisplay(widget.resolution).trim();
+      }
+    }
+    return '';
+  }
+
+  String? _rawFor(String key) {
+    for (final PatientMergeFieldLane field in widget.fields) {
+      if (field.key == key) {
+        return field.resolvedRaw(widget.resolution);
+      }
+    }
+    return null;
+  }
+
+  void _syncController(TextEditingController controller, String value) {
+    if (controller.text == value) {
+      return;
+    }
+    controller.value = TextEditingValue(
+      text: value,
+      selection: TextSelection.collapsed(offset: value.length),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
     final ColorScheme colors = theme.colorScheme;
-    final List<String> lines = buildPatientMergeChoicePreviewLines(
-      l10n: l10n,
-      fields: fields,
-      resolution: resolution,
-    );
+    final Locale locale = Localizations.localeOf(context);
+    final DateTime now = DateTime.now();
+    final String gender = _valueFor('gender');
+    final DateTime? dob = _parseMergeDate(_rawFor('date_of_birth'));
 
     return Column(
-      crossAxisAlignment: align,
+      crossAxisAlignment: widget.align,
       children: <Widget>[
-        Container(
-          width: double.infinity,
-          padding: EdgeInsets.all(theme.spacing.sm),
-          decoration: BoxDecoration(
-            color: selected
-                ? colors.primaryContainer.withValues(alpha: 0.45)
-                : colors.surfaceContainerHighest.withValues(alpha: 0.3),
-            border: theme.borders.all(
-              color: selected
-                  ? colors.primary
-                  : colors.outlineVariant.withValues(alpha: 0.7),
-            ),
-          ),
+        AppContentPanel(
+          density: AppContentPanelDensity.compact,
+          backgroundColor: widget.selected
+              ? colors.primaryContainer.withValues(alpha: 0.4)
+              : null,
+          borderColor: widget.selected ? colors.primary : null,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               Text(
                 l10n.patientsMergeChoicePreviewLabel,
-                style: theme.textTheme.labelMedium?.copyWith(
-                  color: colors.onSurfaceVariant,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: widget.selected ? colors.primary : colors.onSurface,
+                  fontWeight: AppFontWeight.strong,
                 ),
               ),
-              SizedBox(height: theme.spacing.xs),
-              for (final String line in lines)
-                Text(
-                  line,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontStyle: line == l10n.patientsMergeEmptyValueLabel
-                        ? FontStyle.italic
-                        : FontStyle.normal,
-                    color: line == l10n.patientsMergeEmptyValueLabel
-                        ? colors.onSurfaceVariant
-                        : colors.onSurface,
-                  ),
-                ),
+              SizedBox(height: theme.spacing.sm),
+              AppTextField(
+                controller: _firstNameController,
+                labelText: l10n.patientsFirstNameLabel,
+                enabled: false,
+                enableSpeechToText: false,
+              ),
+              SizedBox(height: theme.spacing.sm),
+              AppTextField(
+                controller: _lastNameController,
+                labelText: l10n.patientsLastNameLabel,
+                enabled: false,
+                enableSpeechToText: false,
+              ),
+              SizedBox(height: theme.spacing.sm),
+              PatientDateField(
+                value: dob,
+                enabled: false,
+                firstDate: DateTime(now.year - 120),
+                lastDate: now,
+                labelText: l10n.patientsDobLabel,
+                hintText: dob == null
+                    ? l10n.patientsMergeEmptyValueLabel
+                    : AppFormatters.mediumDate(dob, locale),
+              ),
+              SizedBox(height: theme.spacing.sm),
+              AppGenderField(
+                value: gender.isEmpty ? null : gender,
+                enabled: false,
+                labelText: l10n.patientsGenderLabel,
+                maleLabel: l10n.patientsGenderMale,
+                femaleLabel: l10n.patientsGenderFemale,
+                otherLabel: l10n.patientsGenderOther,
+                unknownLabel: l10n.patientsGenderUnknown,
+              ),
+              SizedBox(height: theme.spacing.sm),
+              PatientPhoneField(
+                controller: _phoneController,
+                labelText: l10n.patientsPhoneLabel,
+                enabled: false,
+              ),
+              SizedBox(height: theme.spacing.sm),
+              PatientEmailField(
+                controller: _emailController,
+                labelText: l10n.patientsEmailLabel,
+                enabled: false,
+              ),
             ],
           ),
         ),
-        SizedBox(height: theme.spacing.xs),
+        SizedBox(height: theme.spacing.sm),
         AppButton.secondary(
-          label: buttonLabel,
-          leadingIcon: buttonIcon,
-          enabled: !isSaving,
-          onPressed: onPressed,
+          label: widget.buttonLabel,
+          leadingIcon: widget.buttonIcon,
+          enabled: !widget.isSaving,
+          onPressed: widget.onPressed,
         ),
       ],
     );
@@ -772,6 +875,7 @@ class _MergeLaneHeader extends StatelessWidget {
 class _MergeFieldLaneRow extends StatefulWidget {
   const _MergeFieldLaneRow({
     required this.field,
+    required this.facilities,
     required this.resolution,
     required this.enabled,
     required this.onSwap,
@@ -781,6 +885,7 @@ class _MergeFieldLaneRow extends StatefulWidget {
   });
 
   final PatientMergeFieldLane field;
+  final List<PatientReferenceOption> facilities;
   final PatientMergeResolution? resolution;
   final bool enabled;
   final VoidCallback onSwap;
@@ -837,91 +942,91 @@ class _MergeFieldLaneRowState extends State<_MergeFieldLaneRow> {
     final ThemeData theme = Theme.of(context);
     final AppLocalizations l10n = context.l10n;
 
-    return AppContentPanel(
-      density: AppContentPanelDensity.compact,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              Expanded(
-                child: Text(
-                  widget.field.label,
-                  style: theme.textTheme.titleSmall,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Row(
+          children: <Widget>[
+            Expanded(
+              child: Text(
+                widget.field.label,
+                style: theme.textTheme.titleSmall,
+              ),
+            ),
+            if (widget.field.status != null &&
+                widget.field.status!.trim().isNotEmpty)
+              AppWorkspaceStatusBadge(
+                status: AppWorkspaceStatus(
+                  label: _statusLabel(l10n, widget.field),
+                  tone: _statusTone(widget.field.status),
                 ),
               ),
-              if (widget.field.status != null &&
-                  widget.field.status!.trim().isNotEmpty)
-                AppWorkspaceStatusBadge(
-                  status: AppWorkspaceStatus(
-                    label: _statusLabel(l10n, widget.field),
-                    tone: _statusTone(widget.field.status),
-                  ),
-                ),
-            ],
-          ),
-          SizedBox(height: theme.spacing.xs),
-          LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              final bool stacked = constraints.maxWidth < 640;
-              final bool leftSelected = switch (widget.resolution) {
-                null => false,
-                PatientMergeResolution.keepLeft => true,
-                PatientMergeResolution.keepRight => false,
-                PatientMergeResolution.autoMerge => widget.field.prefersLeft,
-              };
-              final bool rightSelected = switch (widget.resolution) {
-                null => false,
-                PatientMergeResolution.keepLeft => false,
-                PatientMergeResolution.keepRight => true,
-                PatientMergeResolution.autoMerge => !widget.field.prefersLeft,
-              };
-              final Widget leftCell = _MergeEditableValue(
-                fieldKey: widget.field.key,
-                controller: _leftController,
-                displayValue: widget.field.leftValue,
-                rawValue: widget.field.leftRaw,
-                selected: leftSelected,
-                enabled: widget.enabled,
-                semanticLabel: l10n.patientsMergeLeftColumnLabel,
-                onChanged: widget.onEditLeft,
-              );
-              final Widget rightCell = _MergeEditableValue(
-                fieldKey: widget.field.key,
-                controller: _rightController,
-                displayValue: widget.field.rightValue,
-                rawValue: widget.field.rightRaw,
-                selected: rightSelected,
-                enabled: widget.enabled,
-                semanticLabel: l10n.patientsMergeRightColumnLabel,
-                onChanged: widget.onEditRight,
-              );
-              final Widget swap = IconButton(
-                tooltip: l10n.patientsMergeSwapFieldAction,
-                onPressed: widget.enabled ? widget.onSwap : null,
-                icon: const Icon(Icons.swap_horiz),
-              );
-              if (stacked) {
-                return Column(
-                  children: <Widget>[
-                    leftCell,
-                    swap,
-                    rightCell,
-                  ],
-                );
-              }
-              return Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          ],
+        ),
+        SizedBox(height: theme.spacing.xs),
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final bool stacked = constraints.maxWidth < 640;
+            final bool leftSelected = switch (widget.resolution) {
+              null => false,
+              PatientMergeResolution.keepLeft => true,
+              PatientMergeResolution.keepRight => false,
+              PatientMergeResolution.autoMerge => widget.field.prefersLeft,
+            };
+            final bool rightSelected = switch (widget.resolution) {
+              null => false,
+              PatientMergeResolution.keepLeft => false,
+              PatientMergeResolution.keepRight => true,
+              PatientMergeResolution.autoMerge => !widget.field.prefersLeft,
+            };
+            final Widget leftCell = _MergeEditableValue(
+              fieldKey: widget.field.key,
+              facilities: widget.facilities,
+              controller: _leftController,
+              displayValue: widget.field.leftValue,
+              rawValue: widget.field.leftRaw,
+              selected: leftSelected,
+              enabled: widget.enabled,
+              semanticLabel: l10n.patientsMergeLeftColumnLabel,
+              onChanged: widget.onEditLeft,
+            );
+            final Widget rightCell = _MergeEditableValue(
+              fieldKey: widget.field.key,
+              facilities: widget.facilities,
+              controller: _rightController,
+              displayValue: widget.field.rightValue,
+              rawValue: widget.field.rightRaw,
+              selected: rightSelected,
+              enabled: widget.enabled,
+              semanticLabel: l10n.patientsMergeRightColumnLabel,
+              onChanged: widget.onEditRight,
+            );
+            final Widget swap = IconButton(
+              tooltip: l10n.patientsMergeSwapFieldAction,
+              onPressed: widget.enabled ? widget.onSwap : null,
+              icon: const Icon(Icons.swap_horiz),
+            );
+            if (stacked) {
+              return Column(
                 children: <Widget>[
-                  Expanded(child: leftCell),
+                  leftCell,
                   swap,
-                  Expanded(child: rightCell),
+                  rightCell,
                 ],
               );
-            },
-          ),
-        ],
-      ),
+            }
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(child: leftCell),
+                swap,
+                Expanded(child: rightCell),
+              ],
+            );
+          },
+        ),
+        SizedBox(height: theme.spacing.sm),
+      ],
     );
   }
 
@@ -951,7 +1056,7 @@ class _MergeFieldLaneRowState extends State<_MergeFieldLaneRow> {
   }
 }
 
-enum _MergeFieldInputKind { text, phone, email, date, gender }
+enum _MergeFieldInputKind { text, phone, email, date, gender, facility, locked }
 
 _MergeFieldInputKind _mergeFieldInputKind(String key) {
   switch (key) {
@@ -963,6 +1068,10 @@ _MergeFieldInputKind _mergeFieldInputKind(String key) {
       return _MergeFieldInputKind.date;
     case 'gender':
       return _MergeFieldInputKind.gender;
+    case 'facility_id':
+      return _MergeFieldInputKind.facility;
+    case 'identifier':
+      return _MergeFieldInputKind.locked;
     default:
       return _MergeFieldInputKind.text;
   }
@@ -971,6 +1080,7 @@ _MergeFieldInputKind _mergeFieldInputKind(String key) {
 class _MergeEditableValue extends StatelessWidget {
   const _MergeEditableValue({
     required this.fieldKey,
+    required this.facilities,
     required this.controller,
     required this.displayValue,
     required this.rawValue,
@@ -981,6 +1091,7 @@ class _MergeEditableValue extends StatelessWidget {
   });
 
   final String fieldKey;
+  final List<PatientReferenceOption> facilities;
   final TextEditingController controller;
   final String displayValue;
   final String? rawValue;
@@ -997,81 +1108,148 @@ class _MergeEditableValue extends StatelessWidget {
     final Locale locale = Localizations.localeOf(context);
     final _MergeFieldInputKind kind = _mergeFieldInputKind(fieldKey);
     final DateTime now = DateTime.now();
+    final bool canEdit = enabled && kind != _MergeFieldInputKind.locked;
+    final String? facilityValue = (rawValue ?? '').trim().isEmpty
+        ? null
+        : rawValue!.trim();
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 160),
-      width: double.infinity,
-      padding: EdgeInsets.all(theme.spacing.xs),
-      decoration: BoxDecoration(
-        color: selected
-            ? colors.primaryContainer.withValues(alpha: 0.35)
-            : colors.surface.withValues(alpha: 0),
-        border: theme.borders.all(
-          color: selected
-              ? colors.primary
-              : colors.outlineVariant.withValues(alpha: 0.55),
-        ),
-      ),
-      child: Semantics(
-        label: semanticLabel,
-        child: switch (kind) {
-          _MergeFieldInputKind.phone => PatientPhoneField(
-            controller: controller,
-            enabled: enabled,
-            onChanged: (String value) {
-              onChanged(value, raw: value, clearRaw: value.trim().isEmpty);
-            },
-          ),
-          _MergeFieldInputKind.email => PatientEmailField(
-            controller: controller,
-            enabled: enabled,
-            onChanged: (String value) {
-              onChanged(value, raw: value, clearRaw: value.trim().isEmpty);
-            },
-          ),
-          _MergeFieldInputKind.date => PatientDateField(
-            value: _parseMergeDate(rawValue),
-            enabled: enabled,
-            firstDate: DateTime(now.year - 120),
-            lastDate: now,
-            onChanged: (DateTime? date) {
-              if (date == null) {
-                onChanged('', clearRaw: true);
-                return;
-              }
-              onChanged(
-                AppFormatters.mediumDate(date, locale),
-                raw: date.toIso8601String().split('T').first,
-              );
-            },
-          ),
-          _MergeFieldInputKind.gender => AppGenderField(
-            value: displayValue.trim().isEmpty ? null : displayValue.trim(),
-            enabled: enabled,
-            maleLabel: l10n.patientsGenderMale,
-            femaleLabel: l10n.patientsGenderFemale,
-            otherLabel: l10n.patientsGenderOther,
-            unknownLabel: l10n.patientsGenderUnknown,
-            onChanged: (String? value) {
-              final String next = value?.trim() ?? '';
-              onChanged(next, raw: next, clearRaw: next.isEmpty);
-            },
-          ),
-          _MergeFieldInputKind.text => AppTextField(
-            controller: controller,
-            enabled: enabled,
-            useFloatingLabel: false,
-            textCapitalization: fieldKey == 'first_name' || fieldKey == 'last_name'
-                ? TextCapitalization.words
-                : TextCapitalization.none,
-            onChanged: (String value) {
-              onChanged(value, raw: value, clearRaw: value.trim().isEmpty);
-            },
-          ),
+    final Widget field = switch (kind) {
+      _MergeFieldInputKind.phone => PatientPhoneField(
+        controller: controller,
+        enabled: canEdit,
+        onChanged: (String value) {
+          onChanged(value, raw: value, clearRaw: value.trim().isEmpty);
         },
+      ),
+      _MergeFieldInputKind.email => PatientEmailField(
+        controller: controller,
+        enabled: canEdit,
+        onChanged: (String value) {
+          onChanged(value, raw: value, clearRaw: value.trim().isEmpty);
+        },
+      ),
+      _MergeFieldInputKind.date => PatientDateField(
+        value: _parseMergeDate(rawValue),
+        enabled: canEdit,
+        firstDate: DateTime(now.year - 120),
+        lastDate: now,
+        onChanged: (DateTime? date) {
+          if (date == null) {
+            onChanged('', clearRaw: true);
+            return;
+          }
+          onChanged(
+            AppFormatters.mediumDate(date, locale),
+            raw: date.toIso8601String().split('T').first,
+          );
+        },
+      ),
+      _MergeFieldInputKind.gender => AppGenderField(
+        value: displayValue.trim().isEmpty ? null : displayValue.trim(),
+        enabled: canEdit,
+        maleLabel: l10n.patientsGenderMale,
+        femaleLabel: l10n.patientsGenderFemale,
+        otherLabel: l10n.patientsGenderOther,
+        unknownLabel: l10n.patientsGenderUnknown,
+        onChanged: (String? value) {
+          final String next = value?.trim() ?? '';
+          onChanged(next, raw: next, clearRaw: next.isEmpty);
+        },
+      ),
+      _MergeFieldInputKind.facility => PatientFacilitySelectField(
+        facilities: _facilityOptionsForSide(
+          facilities: facilities,
+          selectedId: facilityValue,
+          selectedLabel: displayValue,
+        ),
+        value: facilityValue,
+        enabled: canEdit,
+        labelText: '',
+        onChanged: (String? id) {
+          final String nextId = id?.trim() ?? '';
+          final String label = _facilityLabel(
+            facilities: facilities,
+            id: nextId,
+            fallback: displayValue,
+          );
+          onChanged(label, raw: nextId, clearRaw: nextId.isEmpty);
+        },
+      ),
+      _MergeFieldInputKind.locked => AppTextField(
+        controller: controller,
+        enabled: false,
+        readOnly: true,
+        enableSpeechToText: false,
+        useFloatingLabel: false,
+      ),
+      _MergeFieldInputKind.text => AppTextField(
+        controller: controller,
+        enabled: canEdit,
+        enableSpeechToText: false,
+        useFloatingLabel: false,
+        textCapitalization: fieldKey == 'first_name' || fieldKey == 'last_name'
+            ? TextCapitalization.words
+            : TextCapitalization.none,
+        onChanged: (String value) {
+          onChanged(value, raw: value, clearRaw: value.trim().isEmpty);
+        },
+      ),
+    };
+
+    return Semantics(
+      label: semanticLabel,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: selected
+              ? colors.primaryContainer.withValues(alpha: 0.28)
+              : null,
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(selected ? theme.spacing.xs : 0),
+          child: field,
+        ),
       ),
     );
   }
+}
+
+List<PatientReferenceOption> _facilityOptionsForSide({
+  required List<PatientReferenceOption> facilities,
+  required String? selectedId,
+  required String selectedLabel,
+}) {
+  if (selectedId == null || selectedId.isEmpty) {
+    return facilities;
+  }
+  final bool exists = facilities.any(
+    (PatientReferenceOption option) => option.id == selectedId,
+  );
+  if (exists) {
+    return facilities;
+  }
+  return <PatientReferenceOption>[
+    PatientReferenceOption(
+      id: selectedId,
+      label: selectedLabel.trim().isEmpty ? selectedId : selectedLabel.trim(),
+    ),
+    ...facilities,
+  ];
+}
+
+String _facilityLabel({
+  required List<PatientReferenceOption> facilities,
+  required String id,
+  required String fallback,
+}) {
+  if (id.isEmpty) {
+    return '';
+  }
+  for (final PatientReferenceOption option in facilities) {
+    if (option.id == id) {
+      return option.label;
+    }
+  }
+  return fallback.trim().isEmpty ? id : fallback.trim();
 }
 
 DateTime? _parseMergeDate(String? raw) {

@@ -1007,6 +1007,7 @@ class _PatientList extends ConsumerWidget {
       exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
       exportSuccessMessage: l10n.commonTableExportSuccessMessage,
       exportFailureMessage: l10n.commonTableExportFailureMessage,
+      enableExport: true,
       canExport: canExportPatientRegistry(policy),
       enablePrint: true,
       canPrint: canPrintPatientRegistry(policy),
@@ -4366,6 +4367,7 @@ class _PatientDuplicateReviewDialogState
             PatientDuplicateMergeWorkspace(
               preview: _preview!,
               comparisons: _selectedDuplicate!.fieldComparisons,
+              facilities: _mergeFacilities(ref),
               isSaving: _isSaving,
               onConfirmMerge: (PatientMergeCommitPlan plan) {
                 return _mergeDuplicate(_selectedDuplicate!, plan: plan);
@@ -4373,6 +4375,20 @@ class _PatientDuplicateReviewDialogState
             ),
         ],
       ),
+    );
+  }
+
+  List<PatientReferenceOption> _mergeFacilities(WidgetRef ref) {
+    final Result<PatientRegistryState>? result = ref
+        .watch(patientRegistryControllerProvider)
+        .asData
+        ?.value;
+    if (result == null) {
+      return const <PatientReferenceOption>[];
+    }
+    return result.when(
+      success: (PatientRegistryState state) => state.referenceData.facilities,
+      failure: (_) => const <PatientReferenceOption>[],
     );
   }
 
