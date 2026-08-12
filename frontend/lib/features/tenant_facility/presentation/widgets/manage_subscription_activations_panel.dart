@@ -21,7 +21,12 @@ import 'package:hosspi_hms/shared/management/platform_management_list_sync.dart'
 
 /// Platform setup tab: pending subscription payments awaiting activation.
 class ManageSubscriptionActivationsPanel extends ConsumerStatefulWidget {
-  const ManageSubscriptionActivationsPanel({super.key});
+  const ManageSubscriptionActivationsPanel({
+    super.key,
+    this.onListTotalChanged,
+  });
+
+  final ValueChanged<int>? onListTotalChanged;
 
   @override
   ConsumerState<ManageSubscriptionActivationsPanel> createState() =>
@@ -121,6 +126,7 @@ class _ManageSubscriptionActivationsPanelState
           _items = data.page.items;
           _totalItemCount = data.page.totalItemCount ?? data.page.items.length;
         });
+        widget.onListTotalChanged?.call(_totalItemCount);
       },
       failure: (AppFailure loadFailure) {
         setState(() {

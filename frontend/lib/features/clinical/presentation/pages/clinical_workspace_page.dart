@@ -696,10 +696,14 @@ class _ClinicalWorklistPanel extends ConsumerWidget {
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => _printClinicalWorklist(
+      printFailureMessage: l10n.commonTablePrintFailureMessage,
+      loadMatchingItems: () => matchingItemsOrThrow(
+        controller.loadMatchingWorklistItems(),
+      ),
+      onPrint: (List<ClinicalWorklistEntry> items) => _printClinicalWorklist(
         context,
         ref,
-        state: state,
+        items: items,
         section: section,
         showNextAction: showNextAction,
         l10n: l10n,
@@ -3963,7 +3967,7 @@ ClinicalRequestPatientContext _clinicalLabOrderPatientContext(
 Future<void> _printClinicalWorklist(
   BuildContext context,
   WidgetRef ref, {
-  required ClinicalWorkspaceState state,
+  required List<ClinicalWorklistEntry> items,
   required ClinicalWorkspaceSection section,
   required bool showNextAction,
   required AppLocalizations l10n,
@@ -3992,7 +3996,7 @@ Future<void> _printClinicalWorklist(
           ),
       ];
   final List<Map<String, String>> printRows = <Map<String, String>>[
-    for (final ClinicalWorklistEntry item in state.worklist.items)
+    for (final ClinicalWorklistEntry item in items)
       <String, String>{
         for (final _ClinicalTableColumnId column in columnIds)
           column.name: _clinicalPrintCellValue(context, item, column),

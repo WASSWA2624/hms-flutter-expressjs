@@ -21,6 +21,9 @@ import 'package:hosspi_hms/features/radiology/domain/repositories/radiology_repo
 import 'package:hosspi_hms/features/tenant_facility/data/repositories/tenant_facility_repository_impl.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facility_setup.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/repositories/tenant_facility_repository.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/tenant_facility_setup_access.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_print_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
@@ -47,6 +50,7 @@ class FacilityCatalogConfigPanel extends ConsumerStatefulWidget {
     this.tenantId,
     this.defaultCurrency = appDefaultCurrencyCode,
     this.enabled = true,
+    this.onListTotalChanged,
     super.key,
   });
 
@@ -54,6 +58,7 @@ class FacilityCatalogConfigPanel extends ConsumerStatefulWidget {
   final String? tenantId;
   final String defaultCurrency;
   final bool enabled;
+  final ValueChanged<int>? onListTotalChanged;
 
   @override
   ConsumerState<FacilityCatalogConfigPanel> createState() =>
@@ -243,16 +248,17 @@ class _FacilityCatalogConfigPanelState
     final List<RadiologyCatalogProcedure> filtered = _computeFilteredRadiologyItems();
     if (query.isEmpty) {
       _radiologyVisibleItems = filtered;
-      return;
+    } else {
+      _radiologyVisibleItems = filtered
+          .where((RadiologyCatalogProcedure item) {
+            final String haystack =
+                '${item.name} ${item.code ?? ''} ${item.modality ?? ''}'
+                    .toLowerCase();
+            return haystack.contains(query);
+          })
+          .toList(growable: false);
     }
-    _radiologyVisibleItems = filtered
-        .where((RadiologyCatalogProcedure item) {
-          final String haystack =
-              '${item.name} ${item.code ?? ''} ${item.modality ?? ''}'
-                  .toLowerCase();
-          return haystack.contains(query);
-        })
-        .toList(growable: false);
+    _notifyParentTotal();
   }
 
   void _recomputeLabVisible() {
@@ -260,24 +266,25 @@ class _FacilityCatalogConfigPanelState
     final String query = _labSearchController.text.trim().toLowerCase();
     if (query.isEmpty) {
       _labVisibleItems = filtered;
-      return;
+    } else {
+      final List<LabCatalogItem> matched = filtered
+          .where((LabCatalogItem item) => _labDeskSearchMatches(item, query))
+          .toList();
+      matched.sort((LabCatalogItem left, LabCatalogItem right) {
+        final int rankCompare = _labDeskSearchRank(
+          left,
+          query,
+        ).compareTo(_labDeskSearchRank(right, query));
+        if (rankCompare != 0) {
+          return rankCompare;
+        }
+        return left.displayTitle.toLowerCase().compareTo(
+          right.displayTitle.toLowerCase(),
+        );
+      });
+      _labVisibleItems = matched;
     }
-    final List<LabCatalogItem> matched = filtered
-        .where((LabCatalogItem item) => _labDeskSearchMatches(item, query))
-        .toList();
-    matched.sort((LabCatalogItem left, LabCatalogItem right) {
-      final int rankCompare = _labDeskSearchRank(
-        left,
-        query,
-      ).compareTo(_labDeskSearchRank(right, query));
-      if (rankCompare != 0) {
-        return rankCompare;
-      }
-      return left.displayTitle.toLowerCase().compareTo(
-        right.displayTitle.toLowerCase(),
-      );
-    });
-    _labVisibleItems = matched;
+    _notifyParentTotal();
   }
 
   bool _labDeskSearchMatches(LabCatalogItem item, String query) {
@@ -320,16 +327,25 @@ class _FacilityCatalogConfigPanelState
         _computeFilteredDiagnosisItems();
     if (query.isEmpty) {
       _diagnosisVisibleItems = filtered;
-      return;
+    } else {
+      _diagnosisVisibleItems = filtered
+          .where((ClinicalCatalogOption item) {
+            final String haystack =
+                '${item.name ?? ''} ${item.code ?? ''} ${item.category ?? ''}'
+                    .toLowerCase();
+            return haystack.contains(query);
+          })
+          .toList(growable: false);
     }
-    _diagnosisVisibleItems = filtered
-        .where((ClinicalCatalogOption item) {
-          final String haystack =
-              '${item.name ?? ''} ${item.code ?? ''} ${item.category ?? ''}'
-                  .toLowerCase();
-          return haystack.contains(query);
-        })
-        .toList(growable: false);
+    _notifyParentTotal();
+  }
+
+  void _notifyParentTotal() {
+    final int total =
+        (_radiologyHydrated ? _radiologyVisibleItems.length : 0) +
+        (_labHydrated ? _labVisibleItems.length : 0) +
+        (_diagnosisHydrated ? _diagnosisVisibleItems.length : 0);
+    widget.onListTotalChanged?.call(total);
   }
 
   void _onRadiologySearchChanged() {
@@ -440,16 +456,19 @@ class _FacilityCatalogConfigPanelState
               id: _CatalogDeskTab.radiology.name,
               icon: Icons.image_search_outlined,
               label: l10n.tenantFacilityCatalogTabRadiology,
+              count: _radiologyHydrated ? _radiologyVisibleItems.length : null,
             ),
             AppTabItem(
               id: _CatalogDeskTab.lab.name,
               icon: Icons.biotech_outlined,
               label: l10n.tenantFacilityCatalogTabLab,
+              count: _labHydrated ? _labVisibleItems.length : null,
             ),
             AppTabItem(
               id: _CatalogDeskTab.diagnoses.name,
               icon: Icons.medical_information_outlined,
               label: l10n.tenantFacilityCatalogTabDiagnoses,
+              count: _diagnosisHydrated ? _diagnosisVisibleItems.length : null,
             ),
           ],
           selectedId: _tab.name,
@@ -493,7 +512,24 @@ class _FacilityCatalogConfigPanelState
   }
 
   Widget _wrappedCellText(String value) {
-    return Text(value, softWrap: true);
+    return tenantFacilitySetupAtomicCell(value);
+  }
+
+  AppListTableColumn<T> _catalogColumn<T>({
+    required String id,
+    required String label,
+    required String Function(T item) valueOf,
+    int Function(T a, T b)? sortComparator,
+  }) {
+    return AppListTableColumn<T>(
+      id: id,
+      label: label,
+      sortComparator:
+          sortComparator ??
+          (T a, T b) => appListTableCompareText(valueOf(a), valueOf(b)),
+      exportValue: valueOf,
+      cellBuilder: (_, T item) => _wrappedCellText(valueOf(item)),
+    );
   }
 
   String _dashOr(String? value) {
@@ -534,106 +570,104 @@ class _FacilityCatalogConfigPanelState
     AppLocalizations l10n,
   ) {
     return <AppListTableColumn<RadiologyCatalogProcedure>>[
-      AppListTableColumn<RadiologyCatalogProcedure>(
+      _catalogColumn<RadiologyCatalogProcedure>(
         id: 'body_region',
         label: l10n.radiologyBodyRegionLabel,
-        sortComparator: (RadiologyCatalogProcedure a, RadiologyCatalogProcedure b) =>
-            appListTableCompareText(a.bodyRegion, b.bodyRegion),
-        cellBuilder: (_, RadiologyCatalogProcedure item) =>
-            _wrappedCellText(_dashOr(item.bodyRegion)),
+        valueOf: (RadiologyCatalogProcedure item) => _dashOr(item.bodyRegion),
       ),
-      AppListTableColumn<RadiologyCatalogProcedure>(
+      _catalogColumn<RadiologyCatalogProcedure>(
         id: 'laterality',
         label: l10n.radiologyLateralityLabel,
-        sortComparator: (RadiologyCatalogProcedure a, RadiologyCatalogProcedure b) =>
-            appListTableCompareText(a.laterality, b.laterality),
-        cellBuilder: (_, RadiologyCatalogProcedure item) =>
-            _wrappedCellText(_dashOr(item.laterality)),
+        valueOf: (RadiologyCatalogProcedure item) => _dashOr(item.laterality),
       ),
-      AppListTableColumn<RadiologyCatalogProcedure>(
+      _catalogColumn<RadiologyCatalogProcedure>(
         id: 'procedure_type',
         label: l10n.clinicalResultsModuleProcedureLabel,
-        sortComparator: (RadiologyCatalogProcedure a, RadiologyCatalogProcedure b) =>
-            appListTableCompareText(a.procedureType, b.procedureType),
-        cellBuilder: (_, RadiologyCatalogProcedure item) =>
-            _wrappedCellText(_dashOr(item.procedureType)),
+        valueOf: (RadiologyCatalogProcedure item) =>
+            _dashOr(item.procedureType),
       ),
-      AppListTableColumn<RadiologyCatalogProcedure>(
+      _catalogColumn<RadiologyCatalogProcedure>(
         id: 'equipment',
         label: l10n.radiologyEquipmentColumnLabel,
-        sortComparator: (RadiologyCatalogProcedure a, RadiologyCatalogProcedure b) =>
-            appListTableCompareText(a.equipment, b.equipment),
-        cellBuilder: (_, RadiologyCatalogProcedure item) =>
-            _wrappedCellText(_dashOr(item.equipment)),
+        valueOf: (RadiologyCatalogProcedure item) => _dashOr(item.equipment),
       ),
-      AppListTableColumn<RadiologyCatalogProcedure>(
+      _catalogColumn<RadiologyCatalogProcedure>(
         id: 'status',
         label: l10n.radiologyStatusColumnLabel,
-        sortComparator: (RadiologyCatalogProcedure a, RadiologyCatalogProcedure b) =>
-            appListTableCompareText(a.status, b.status),
-        cellBuilder: (_, RadiologyCatalogProcedure item) =>
-            _wrappedCellText(_dashOr(item.status)),
+        valueOf: (RadiologyCatalogProcedure item) => _dashOr(item.status),
       ),
-      AppListTableColumn<RadiologyCatalogProcedure>(
+      _catalogColumn<RadiologyCatalogProcedure>(
         id: 'source',
         label: l10n.radiologySourceColumnLabel,
-        sortComparator: (RadiologyCatalogProcedure a, RadiologyCatalogProcedure b) =>
-            appListTableCompareText(a.source, b.source),
-        cellBuilder: (_, RadiologyCatalogProcedure item) =>
-            _wrappedCellText(_dashOr(item.source)),
+        valueOf: (RadiologyCatalogProcedure item) => _dashOr(item.source),
       ),
     ];
+  }
+
+  String _labTypeLabel(AppLocalizations l10n, LabCatalogItem item) {
+    return item.type == LabCatalogItemType.panel
+        ? l10n.clinicalLabRequestPanelTypeLabel
+        : l10n.clinicalLabRequestTestTypeLabel;
+  }
+
+  String _labUnitValue(LabCatalogItem item) {
+    if (item.type == LabCatalogItemType.panel) {
+      return '—';
+    }
+    return _dashOr(item.unit);
+  }
+
+  String _labRangeValue(AppLocalizations l10n, LabCatalogItem item) {
+    if (item.type == LabCatalogItemType.panel) {
+      return '—';
+    }
+    final int rangeCount = item.referenceRangeCount > 0
+        ? item.referenceRangeCount
+        : item.referenceRanges.length;
+    if (rangeCount > 0) {
+      return l10n.labReferenceRangeCount(rangeCount);
+    }
+    return _dashOr(item.referenceRange);
   }
 
   List<AppListTableColumn<LabCatalogItem>> _labColumnChoices(
     AppLocalizations l10n,
   ) {
     return <AppListTableColumn<LabCatalogItem>>[
-      AppListTableColumn<LabCatalogItem>(
+      _catalogColumn<LabCatalogItem>(
         id: 'specimen',
         label: l10n.labSpecimenTypeLabel,
-        sortComparator: (LabCatalogItem a, LabCatalogItem b) =>
-            appListTableCompareText(a.specimenType, b.specimenType),
-        cellBuilder: (_, LabCatalogItem item) =>
-            _wrappedCellText(_dashOr(item.specimenType)),
+        valueOf: (LabCatalogItem item) => _dashOr(item.specimenType),
       ),
-      AppListTableColumn<LabCatalogItem>(
+      _catalogColumn<LabCatalogItem>(
         id: 'result_kind',
         label: l10n.labResultKindLabel,
-        sortComparator: (LabCatalogItem a, LabCatalogItem b) =>
-            appListTableCompareText(a.resultKind, b.resultKind),
-        cellBuilder: (_, LabCatalogItem item) =>
-            _wrappedCellText(_labResultKindLabel(l10n, item.resultKind)),
+        valueOf: (LabCatalogItem item) =>
+            _labResultKindLabel(l10n, item.resultKind),
       ),
-      AppListTableColumn<LabCatalogItem>(
-        id: 'unit_range',
-        label: l10n.labUnitRangeCountColumnLabel,
-        sortComparator: (LabCatalogItem a, LabCatalogItem b) =>
-            appListTableCompareText(
-              _labUnitRangeOrTestCount(l10n, a),
-              _labUnitRangeOrTestCount(l10n, b),
-            ),
-        cellBuilder: (_, LabCatalogItem item) =>
-            _wrappedCellText(_labUnitRangeOrTestCount(l10n, item)),
+      _catalogColumn<LabCatalogItem>(
+        id: 'unit',
+        label: l10n.labDefaultUnitLabel,
+        valueOf: _labUnitValue,
       ),
-      AppListTableColumn<LabCatalogItem>(
+      _catalogColumn<LabCatalogItem>(
+        id: 'range_count',
+        label: l10n.labReferenceRangeColumnLabel,
+        valueOf: (LabCatalogItem item) => _labRangeValue(l10n, item),
+      ),
+      _catalogColumn<LabCatalogItem>(
         id: 'tests_count',
         label: l10n.labTestsColumnLabel,
+        valueOf: (LabCatalogItem item) => item.type == LabCatalogItemType.panel
+            ? l10n.clinicalLabOrderItemCount(item.testCount)
+            : '—',
         sortComparator: (LabCatalogItem a, LabCatalogItem b) =>
             a.testCount.compareTo(b.testCount),
-        cellBuilder: (_, LabCatalogItem item) => _wrappedCellText(
-          item.type == LabCatalogItemType.panel
-              ? l10n.clinicalLabOrderItemCount(item.testCount)
-              : '—',
-        ),
       ),
-      AppListTableColumn<LabCatalogItem>(
+      _catalogColumn<LabCatalogItem>(
         id: 'description',
         label: l10n.labPanelDescriptionLabel,
-        sortComparator: (LabCatalogItem a, LabCatalogItem b) =>
-            appListTableCompareText(a.description, b.description),
-        cellBuilder: (_, LabCatalogItem item) =>
-            _wrappedCellText(_dashOr(item.description)),
+        valueOf: (LabCatalogItem item) => _dashOr(item.description),
       ),
     ];
   }
@@ -642,22 +676,77 @@ class _FacilityCatalogConfigPanelState
     AppLocalizations l10n,
   ) {
     return <AppListTableColumn<ClinicalCatalogOption>>[
-      AppListTableColumn<ClinicalCatalogOption>(
+      _catalogColumn<ClinicalCatalogOption>(
         id: 'status',
         label: l10n.accessAdminColumnStatus,
-        sortComparator: (ClinicalCatalogOption a, ClinicalCatalogOption b) =>
-            appListTableCompareText(a.status, b.status),
-        cellBuilder: (_, ClinicalCatalogOption item) =>
-            _wrappedCellText(_dashOr(item.status)),
+        valueOf: (ClinicalCatalogOption item) => _dashOr(item.status),
       ),
-      AppListTableColumn<ClinicalCatalogOption>(
+      _catalogColumn<ClinicalCatalogOption>(
         id: 'details',
         label: l10n.accessAdminColumnDetails,
-        sortComparator: (ClinicalCatalogOption a, ClinicalCatalogOption b) =>
-            appListTableCompareText(a.secondaryText, b.secondaryText),
-        cellBuilder: (_, ClinicalCatalogOption item) =>
-            _wrappedCellText(_dashOr(item.secondaryText)),
+        valueOf: (ClinicalCatalogOption item) => _dashOr(item.secondaryText),
       ),
+    ];
+  }
+
+  List<AppListTableColumn<RadiologyCatalogProcedure>> _radiologyDefaultColumns(
+    AppLocalizations l10n, {
+    required bool canMutate,
+  }) {
+    return <AppListTableColumn<RadiologyCatalogProcedure>>[
+      _catalogColumn<RadiologyCatalogProcedure>(
+        id: 'name',
+        label: l10n.radiologyProcedureNameLabel,
+        valueOf: (RadiologyCatalogProcedure item) => item.name,
+      ),
+      _catalogColumn<RadiologyCatalogProcedure>(
+        id: 'code',
+        label: l10n.labTestCodeLabel,
+        valueOf: (RadiologyCatalogProcedure item) => _dashOr(item.code),
+      ),
+      _catalogColumn<RadiologyCatalogProcedure>(
+        id: 'modality',
+        label: l10n.radiologyModalityLabel,
+        valueOf: (RadiologyCatalogProcedure item) => _dashOr(item.modality),
+      ),
+      _catalogColumn<RadiologyCatalogProcedure>(
+        id: 'deletion_status',
+        label: l10n.radiologyDeletionStatusColumnLabel,
+        valueOf: (RadiologyCatalogProcedure item) => item.isDeleted
+            ? l10n.radiologyDeletionStatusSoftDeleted
+            : l10n.radiologyDeletionStatusActive,
+        sortComparator:
+            (RadiologyCatalogProcedure a, RadiologyCatalogProcedure b) =>
+                a.isDeleted == b.isDeleted ? 0 : (a.isDeleted ? 1 : -1),
+      ),
+      if (canMutate)
+        AppListTableColumn<RadiologyCatalogProcedure>(
+          id: 'actions',
+          label: l10n.accessAdminColumnActions,
+          alwaysVisible: true,
+          exportable: false,
+          cellBuilder: (BuildContext context, RadiologyCatalogProcedure item) =>
+              _CatalogRowActions(
+                editLabel: l10n.clinicalLabRequestEditSelectionAction,
+                deleteLabel: l10n.clinicalRadiologyDeleteSelectionAction,
+                restoreLabel: l10n.radiologyRestoreProcedureAction,
+                permanentDeleteLabel:
+                    l10n.radiologyPermanentDeleteProcedureAction,
+                isDeleted: item.isDeleted,
+                onEdit: item.isDeleted || item.isStandard
+                    ? null
+                    : () => unawaited(_openRadiologyEditDialog(item)),
+                onDelete: item.isDeleted || item.isStandard
+                    ? null
+                    : () => unawaited(_openRadiologyDeleteDialog(item)),
+                onRestore: item.isDeleted && !item.isStandard
+                    ? () => unawaited(_openRadiologyRestoreDialog(item))
+                    : null,
+                onPermanentDelete: item.isDeleted && !item.isStandard
+                    ? () => unawaited(_openRadiologyPermanentDeleteDialog(item))
+                    : null,
+              ),
+        ),
     ];
   }
 
@@ -669,11 +758,47 @@ class _FacilityCatalogConfigPanelState
       isLoading: _radiologyLoading && _radiologyItems.isEmpty,
       tableHorizontalMargin: 0,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
       columnVisibilityStorageKey: 'admin_catalog_radiology',
+      canExport: canExportTenantFacilitySetup(ref.watch(appAccessPolicyProvider)),
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrintTenantFacilitySetup(ref.watch(appAccessPolicyProvider)),
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: (List<RadiologyCatalogProcedure> matching) =>
+          printTenantFacilitySetupListTable<RadiologyCatalogProcedure>(
+        ref: ref,
+        context: context,
+        title: l10n.tenantFacilityCatalogTabRadiology,
+        columns: <AppListTableColumn<RadiologyCatalogProcedure>>[
+          ..._radiologyDefaultColumns(l10n, canMutate: canMutateRadiology),
+          ..._radiologyColumnChoices(l10n),
+        ],
+        items: matching,
+        emptyText: l10n.tenantFacilityCatalogEmptyCatalog,
+      ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
       columnChoices: _radiologyColumnChoices(l10n),
       exportConfig: AppListTableExportConfig<RadiologyCatalogProcedure>(
         fileNameStem: 'radiology_procedures',
+        dateOf: (_) => null,
         enableDateFilter: false,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
         rowFilter: (RadiologyCatalogProcedure item, AppSearchBarFilterValue filters) {
           final String? modality = filters.option(_modalityFilterKey);
           return modality == null ||
@@ -696,9 +821,10 @@ class _FacilityCatalogConfigPanelState
         matcher: (_, _) => true,
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
-        advancedFilterTitle: l10n.radiologyModalityLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         enableDateFilter: false,
         filterGroups: <AppSearchBarFilterGroup>[
           if (_radiologyModalities.isNotEmpty)
@@ -746,79 +872,10 @@ class _FacilityCatalogConfigPanelState
               )
             : null,
       ),
-      columns: <AppListTableColumn<RadiologyCatalogProcedure>>[
-        AppListTableColumn<RadiologyCatalogProcedure>(
-          id: 'name',
-          label: l10n.radiologyProcedureNameLabel,
-          sortComparator: (RadiologyCatalogProcedure a, RadiologyCatalogProcedure b) =>
-              a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-          cellBuilder: (_, RadiologyCatalogProcedure item) =>
-              _wrappedCellText(item.name),
-        ),
-        AppListTableColumn<RadiologyCatalogProcedure>(
-          id: 'code',
-          label: l10n.labTestCodeLabel,
-          sortComparator: (RadiologyCatalogProcedure a, RadiologyCatalogProcedure b) =>
-              (a.code ?? '').toLowerCase().compareTo(
-                (b.code ?? '').toLowerCase(),
-              ),
-          cellBuilder: (_, RadiologyCatalogProcedure item) => _wrappedCellText(
-            item.code?.trim().isNotEmpty == true ? item.code! : '—',
-          ),
-        ),
-        AppListTableColumn<RadiologyCatalogProcedure>(
-          id: 'modality',
-          label: l10n.radiologyModalityLabel,
-          sortComparator: (RadiologyCatalogProcedure a, RadiologyCatalogProcedure b) =>
-              (a.modality ?? '').toLowerCase().compareTo(
-                (b.modality ?? '').toLowerCase(),
-              ),
-          cellBuilder: (_, RadiologyCatalogProcedure item) => _wrappedCellText(
-            item.modality?.trim().isNotEmpty == true ? item.modality! : '—',
-          ),
-        ),
-        AppListTableColumn<RadiologyCatalogProcedure>(
-          id: 'deletion_status',
-          label: l10n.radiologyDeletionStatusColumnLabel,
-          sortComparator: (RadiologyCatalogProcedure a, RadiologyCatalogProcedure b) =>
-              a.isDeleted == b.isDeleted
-                  ? 0
-                  : (a.isDeleted ? 1 : -1),
-          cellBuilder: (_, RadiologyCatalogProcedure item) => _wrappedCellText(
-            item.isDeleted
-                ? l10n.radiologyDeletionStatusSoftDeleted
-                : l10n.radiologyDeletionStatusActive,
-          ),
-        ),
-        if (canMutateRadiology)
-          AppListTableColumn<RadiologyCatalogProcedure>(
-            id: 'actions',
-            label: l10n.accessAdminColumnActions,
-            alwaysVisible: true,
-            cellBuilder: (BuildContext context, RadiologyCatalogProcedure item) =>
-                _CatalogRowActions(
-                  editLabel: l10n.clinicalLabRequestEditSelectionAction,
-                  deleteLabel: l10n.clinicalRadiologyDeleteSelectionAction,
-                  restoreLabel: l10n.radiologyRestoreProcedureAction,
-                  permanentDeleteLabel:
-                      l10n.radiologyPermanentDeleteProcedureAction,
-                  isDeleted: item.isDeleted,
-                  onEdit: item.isDeleted || item.isStandard
-                      ? null
-                      : () => unawaited(_openRadiologyEditDialog(item)),
-                  onDelete: item.isDeleted || item.isStandard
-                      ? null
-                      : () => unawaited(_openRadiologyDeleteDialog(item)),
-                  onRestore: item.isDeleted && !item.isStandard
-                      ? () => unawaited(_openRadiologyRestoreDialog(item))
-                      : null,
-                  onPermanentDelete: item.isDeleted && !item.isStandard
-                      ? () =>
-                            unawaited(_openRadiologyPermanentDeleteDialog(item))
-                      : null,
-                ),
-          ),
-      ],
+      columns: _radiologyDefaultColumns(
+        l10n,
+        canMutate: canMutateRadiology,
+      ),
       mobileItemBuilder: (BuildContext context, RadiologyCatalogProcedure item) =>
           AppListTableMobileItem(
             title: item.name,

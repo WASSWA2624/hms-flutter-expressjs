@@ -221,12 +221,12 @@ class _AccountsToPostPanelState extends ConsumerState<AccountsToPostPanel> {
       enablePrint: true,
       canPrint: canPrint,
       printLabel: context.l10n.commonPrintActionLabel,
-      onPrint: () => printAccountsListTable<AccountsWorkItem>(
+      onPrint: (items) => printAccountsListTable<AccountsWorkItem>(
         ref: ref,
         context: context,
         title: AccountsStrings.toPostLabel,
         columns: columns,
-        items: state.workItems.items,
+        items: items,
         emptyText: AccountsStrings.toPostEmpty,
       ),
       goToTopLabel: context.l10n.commonGoToTopActionLabel,

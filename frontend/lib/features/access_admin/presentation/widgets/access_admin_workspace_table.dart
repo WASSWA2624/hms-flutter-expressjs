@@ -540,24 +540,40 @@ List<AppListTableColumn<AccessAdminItem>> accessAdminPermissionColumns(
             left.effectiveDisplayId,
             right.effectiveDisplayId,
           ),
-      cellBuilder: (_, AccessAdminItem item) => Text(item.effectiveDisplayId),
+      exportValue: (AccessAdminItem item) => item.effectiveDisplayId,
+      cellBuilder: (_, AccessAdminItem item) => Text(
+        item.effectiveDisplayId,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
     ),
     AppListTableColumn<AccessAdminItem>(
       id: 'perm_name',
       label: l10n.accessAdminPermissionNameColumnLabel,
       sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
           appListTableCompareText(left.title, right.title),
-      cellBuilder: (_, AccessAdminItem item) => Text(item.title),
+      exportValue: (AccessAdminItem item) => item.title,
+      cellBuilder: (_, AccessAdminItem item) => Text(
+        item.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
     ),
     AppListTableColumn<AccessAdminItem>(
       id: 'perm_tenant',
       label: l10n.settingsWorkspaceTenantLabel,
       sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
           appListTableCompareText(left.tenantName, right.tenantName),
+      exportValue: (AccessAdminItem item) =>
+          (item.tenantName ?? '').trim().isNotEmpty
+          ? item.tenantName!.trim()
+          : '—',
       cellBuilder: (_, AccessAdminItem item) => Text(
         (item.tenantName ?? '').trim().isNotEmpty
             ? item.tenantName!.trim()
             : '—',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     ),
     AppListTableColumn<AccessAdminItem>(
@@ -568,8 +584,13 @@ List<AppListTableColumn<AccessAdminItem>> accessAdminPermissionColumns(
             accessAdminPermissionDescription(l10n, left),
             accessAdminPermissionDescription(l10n, right),
           ),
-      cellBuilder: (BuildContext context, AccessAdminItem item) =>
-          Text(accessAdminPermissionDescription(context.l10n, item)),
+      exportValue: (AccessAdminItem item) =>
+          accessAdminPermissionDescription(l10n, item),
+      cellBuilder: (BuildContext context, AccessAdminItem item) => Text(
+        accessAdminPermissionDescription(context.l10n, item),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
     ),
     AppListTableColumn<AccessAdminItem>(
       id: 'perm_code',
@@ -579,12 +600,18 @@ List<AppListTableColumn<AccessAdminItem>> accessAdminPermissionColumns(
             accessAdminPermissionMachineCode(left),
             accessAdminPermissionMachineCode(right),
           ),
+      exportValue: (AccessAdminItem item) =>
+          accessAdminPermissionMachineCode(item) ?? '—',
       cellBuilder: (_, AccessAdminItem item) {
         final String? code = accessAdminPermissionMachineCode(item);
         if (code == null) {
           return const Text('—');
         }
-        return Text(code);
+        return Text(
+          code,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
       },
     ),
   ];

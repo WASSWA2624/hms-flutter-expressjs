@@ -371,6 +371,23 @@ final class DischargeWorkspaceController
     return _refreshQueue();
   }
 
+  Future<Result<List<IpdAdmissionSummary>>> loadMatchingQueueItems() {
+    final DischargeWorkspaceState? current = _currentState;
+    if (current == null) {
+      return Future<Result<List<IpdAdmissionSummary>>>.value(
+        const Result<List<IpdAdmissionSummary>>.success(
+          <IpdAdmissionSummary>[],
+        ),
+      );
+    }
+    final DischargeWorklistQuery query = current.query;
+    return loadMatchingAppPageItems<IpdAdmissionSummary>(
+      loadPage: (AppPageRequest request) {
+        return _loadQueue(query.copyWith(pageRequest: request));
+      },
+    );
+  }
+
   Future<AppFailure?> selectAdmission(IpdAdmissionSummary admission) async {
     final DischargeWorkspaceState? current = _currentState;
     if (current == null) {

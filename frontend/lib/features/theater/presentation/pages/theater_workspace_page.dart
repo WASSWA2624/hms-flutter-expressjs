@@ -677,10 +677,14 @@ class _TheaterCaseBoard extends ConsumerWidget {
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => _printTheaterCaseBoard(
+      printFailureMessage: l10n.commonTablePrintFailureMessage,
+      loadMatchingItems: () => matchingItemsOrThrow(
+        controller.loadMatchingCases(),
+      ),
+      onPrint: (List<TheaterCase> items) => _printTheaterCaseBoard(
         context,
         ref,
-        state: state,
+        items: items,
         section: section,
         showNextAction: showNextAction,
         l10n: l10n,
@@ -2483,7 +2487,7 @@ String _theaterSectionExportSheetName(
 Future<void> _printTheaterCaseBoard(
   BuildContext context,
   WidgetRef ref, {
-  required TheaterWorkspaceState state,
+  required List<TheaterCase> items,
   required TheaterSection section,
   required bool showNextAction,
   required AppLocalizations l10n,
@@ -2509,7 +2513,7 @@ Future<void> _printTheaterCaseBoard(
           TheaterWorkspacePrintColumn(id: column.key, label: column.label),
       ];
   final List<Map<String, String>> printRows = <Map<String, String>>[
-    for (final TheaterCase item in state.cases.items)
+    for (final TheaterCase item in items)
       <String, String>{
         for (final AppListTableColumn<TheaterCase> column in columns)
           column.key: _theaterCasePrintCellValue(context, item, column.key),

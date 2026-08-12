@@ -509,12 +509,12 @@ class _AccountsBooksPanelState extends ConsumerState<AccountsBooksPanel> {
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => printAccountsListTable<AccountsFiscalPeriod>(
+      onPrint: (items) => printAccountsListTable<AccountsFiscalPeriod>(
         ref: ref,
         context: context,
         title: AccountsStrings.closeBooksLabel,
         columns: columns,
-        items: _page.items,
+        items: items,
         emptyText: AccountsStrings.booksEmpty,
       ),
       goToTopLabel: l10n.commonGoToTopActionLabel,

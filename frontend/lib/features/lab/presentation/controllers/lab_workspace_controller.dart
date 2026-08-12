@@ -246,6 +246,23 @@ final class LabWorkspaceController
     return _refreshWorkbench(showLoading: true);
   }
 
+  Future<Result<List<LabOrderSummary>>> loadMatchingWorklistItems() {
+    final LabWorkspaceState? current = _currentState;
+    if (current == null) {
+      return Future<Result<List<LabOrderSummary>>>.value(
+        const Result<List<LabOrderSummary>>.success(<LabOrderSummary>[]),
+      );
+    }
+    final LabWorkbenchQuery query = current.query;
+    return loadMatchingAppPageItems<LabOrderSummary>(
+      loadPage: (AppPageRequest request) async {
+        final Result<LabWorkbenchBundle> result = await _repository
+            .loadWorkbench(query.copyWith(pageRequest: request));
+        return result.map((LabWorkbenchBundle bundle) => bundle.worklist);
+      },
+    );
+  }
+
   Future<AppFailure?> selectOrder(LabOrderSummary order) {
     if (order.isPatientGroup) {
       final List<String> orderIds = _workflowIdentifiersFor(order);

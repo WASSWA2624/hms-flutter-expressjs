@@ -277,6 +277,10 @@
   "@commonTableExportFailureMessage": {
     "description": "SnackBar or inline error when table Excel export fails."
   },
+  "commonTablePrintFailureMessage": "Print failed. Try again.",
+  "@commonTablePrintFailureMessage": {
+    "description": "SnackBar shown when resolving the matching dataset for table Print fails."
+  },
   "commonTableExportDateRangeLabel": "Date range",
   "@commonTableExportDateRangeLabel": {
     "description": "Section label for the From/To date range in the table export dialog."
@@ -23735,6 +23739,14 @@
   "reportsAllDatasetsLabel": "All datasets",
   "@reportsAllDatasetsLabel": {
     "description": "All datasets filter label."
+  },
+  "reportsTriggerFilterLabel": "Trigger",
+  "@reportsTriggerFilterLabel": {
+    "description": "Filter label for report schedule or run trigger."
+  },
+  "reportsAllTriggersLabel": "All triggers",
+  "@reportsAllTriggersLabel": {
+    "description": "All triggers filter label."
   },
   "reportsPanelOverview": "Overview",
   "@reportsPanelOverview": {

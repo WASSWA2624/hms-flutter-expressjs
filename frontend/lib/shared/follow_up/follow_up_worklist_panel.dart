@@ -331,7 +331,7 @@ class _FollowUpWorklistBody extends ConsumerWidget {
                   printLabel: printLabel ?? l10n.commonPrintActionLabel,
                   onPrint: onPrint == null
                       ? null
-                      : () => onPrint!(visibleEntries),
+                      : (List<ReceptionFollowUpEntry> items) => onPrint!(items),
                   goToTopLabel: l10n.commonGoToTopActionLabel,
                   loadingMoreLabel: l10n.commonLoadingMoreLabel,
                   allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,

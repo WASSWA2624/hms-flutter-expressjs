@@ -93,6 +93,21 @@ final class PatientRegistryController
     );
   }
 
+  Future<Result<List<Patient>>> loadMatchingPatients() {
+    final PatientRegistryState? current = _currentState;
+    if (current == null) {
+      return Future<Result<List<Patient>>>.value(
+        const Result<List<Patient>>.success(<Patient>[]),
+      );
+    }
+    final PatientListQuery query = current.query;
+    return loadMatchingAppPageItems<Patient>(
+      loadPage: (AppPageRequest request) {
+        return _repository.listPatients(query.copyWith(pageRequest: request));
+      },
+    );
+  }
+
   Future<AppFailure?> applyQuery(PatientListQuery query) async {
     final PatientRegistryState? current = _currentState;
     if (current == null) {

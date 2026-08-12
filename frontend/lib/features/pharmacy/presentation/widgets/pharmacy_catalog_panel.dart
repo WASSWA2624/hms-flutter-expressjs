@@ -204,11 +204,11 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => _printPharmacyDrugsList(
+      onPrint: (List<PharmacyDrug> items) => _printPharmacyDrugsList(
         context,
         ref,
         l10n: l10n,
-        drugs: widget.state.drugs.items,
+        drugs: items,
       ),
       goToTopLabel: l10n.commonGoToTopActionLabel,
       loadingMoreLabel: l10n.commonLoadingMoreLabel,
@@ -696,11 +696,12 @@ class _FormularyCatalogTabState extends ConsumerState<_FormularyCatalogTab> {
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => _printPharmacyFormularyList(
+      onPrint: (List<PharmacyFormularyItem> items) =>
+          _printPharmacyFormularyList(
         context,
         ref,
         l10n: l10n,
-        items: widget.state.formularyItems.items,
+        items: items,
       ),
       goToTopLabel: l10n.commonGoToTopActionLabel,
       loadingMoreLabel: l10n.commonLoadingMoreLabel,
@@ -1468,11 +1469,12 @@ class _InventoryCatalogTabState extends ConsumerState<_InventoryCatalogTab> {
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => _printPharmacyInventoryList(
+      onPrint: (List<PharmacyInventoryStock> items) =>
+          _printPharmacyInventoryList(
         context,
         ref,
         l10n: l10n,
-        stocks: widget.state.inventoryWorkbench.stocks.items,
+        stocks: items,
       ),
       goToTopLabel: l10n.commonGoToTopActionLabel,
       loadingMoreLabel: l10n.commonLoadingMoreLabel,
@@ -2305,11 +2307,12 @@ class _StorageLayoutCatalogTabState
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => _printPharmacyStorageRoomsList(
+      onPrint: (List<PharmacyStorageRoom> items) =>
+          _printPharmacyStorageRoomsList(
         context,
         ref,
         l10n: l10n,
-        rooms: rooms,
+        rooms: items,
       ),
       exportConfig: AppListTableExportConfig<PharmacyStorageRoom>(
         fileNameStem: 'pharmacy_storage_rooms',
@@ -2704,11 +2707,11 @@ class _ShelvesCatalogTabState extends ConsumerState<_ShelvesCatalogTab> {
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => _printPharmacyShelvesList(
+      onPrint: (List<_ShelfRow> items) => _printPharmacyShelvesList(
         context,
         ref,
         l10n: l10n,
-        shelves: shelfRows,
+        shelves: items,
       ),
       exportConfig: AppListTableExportConfig<_ShelfRow>(
         fileNameStem: 'pharmacy_shelves',

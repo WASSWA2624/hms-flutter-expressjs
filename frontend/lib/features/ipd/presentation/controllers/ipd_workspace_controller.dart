@@ -208,6 +208,23 @@ final class IpdWorkspaceController
     return _refreshWorklist(showLoading: true);
   }
 
+  Future<Result<List<IpdAdmissionSummary>>> loadMatchingAdmissions() {
+    final IpdWorkspaceState? current = _currentState;
+    if (current == null) {
+      return Future<Result<List<IpdAdmissionSummary>>>.value(
+        const Result<List<IpdAdmissionSummary>>.success(
+          <IpdAdmissionSummary>[],
+        ),
+      );
+    }
+    final IpdAdmissionQuery query = current.query;
+    return loadMatchingAppPageItems<IpdAdmissionSummary>(
+      loadPage: (AppPageRequest request) {
+        return _repository.listAdmissions(query.copyWith(pageRequest: request));
+      },
+    );
+  }
+
   Future<AppFailure?> selectAdmission(IpdAdmissionSummary admission) async {
     final IpdWorkspaceState? current = _currentState;
     if (current == null) {

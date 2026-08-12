@@ -691,13 +691,24 @@ void main() {
     await tester.tap(find.byTooltip('Settings'));
     await tester.pumpAndSettle();
 
-    final CheckboxListTile pinnedStatus = tester.widget<CheckboxListTile>(
-      find.widgetWithText(CheckboxListTile, 'Status'),
+    final Finder dialog = find.byType(AppDialog);
+    final Finder statusCheckbox = find.descendant(
+      of: find.descendant(of: dialog, matching: find.widgetWithText(Row, 'Status')),
+      matching: find.byType(Checkbox),
     );
+    final Checkbox pinnedStatus = tester.widget<Checkbox>(statusCheckbox);
     expect(pinnedStatus.value, isTrue);
     expect(pinnedStatus.onChanged, isNull);
 
-    await tester.tap(find.widgetWithText(CheckboxListTile, 'Title'));
+    await tester.tap(
+      find.descendant(
+        of: find.descendant(
+          of: dialog,
+          matching: find.widgetWithText(Row, 'Title'),
+        ),
+        matching: find.byType(Checkbox),
+      ),
+    );
     await tester.pump();
     await tester.tap(find.text('Apply columns'));
     await tester.pumpAndSettle();
@@ -770,7 +781,7 @@ void main() {
               items: items,
               columns: _columns,
               enablePrint: true,
-              onPrint: () async {},
+              onPrint: (_) async {},
               search: AppListTableSearch<_RowItem>(
                 controller: searchController,
                 semanticLabel: 'Search rows',
@@ -1170,6 +1181,70 @@ void main() {
       expect(find.text('4'), findsOneWidget);
       // Does not force the old fixed 50-row pad when the viewport is shorter.
       expect(find.text('50'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'AppListTable infinite scroll keeps requesting while more pages exist',
+    (WidgetTester tester) async {
+      final List<AppPageRequest> requests = <AppPageRequest>[];
+      AppPage<_RowItem> page = AppPage<_RowItem>(
+        items: List<_RowItem>.generate(3, (int index) {
+          return _RowItem(
+            id: '$index',
+            title: 'Item $index',
+            status: 'Active',
+          );
+        }),
+        request: const AppPageRequest(pageSize: 100),
+        totalItemCount: 250,
+      );
+
+      await pumpComponent(
+        tester,
+        StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return SizedBox(
+              height: 360,
+              width: 960,
+              child: AppListTable<_RowItem>(
+                page: page,
+                columns: _columns,
+                allRowsLoadedLabel: 'All rows loaded',
+                mobileItemBuilder: (BuildContext context, _RowItem item) {
+                  return ListTile(title: Text(item.title));
+                },
+                onPageChanged: (AppPageRequest request) {
+                  requests.add(request);
+                  if (requests.length != 1) {
+                    return;
+                  }
+                  setState(() {
+                    page = AppPage<_RowItem>(
+                      items: List<_RowItem>.generate(3, (int index) {
+                        return _RowItem(
+                          id: 'p${request.pageIndex}-$index',
+                          title: 'Page ${request.pageIndex} $index',
+                          status: 'Active',
+                        );
+                      }),
+                      request: request,
+                      totalItemCount: 250,
+                    );
+                  });
+                },
+              ),
+            );
+          },
+        ),
+        size: const Size(960, 600),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(requests, isNotEmpty);
+      expect(requests.first.pageIndex, 1);
+      expect(find.text('All rows loaded'), findsNothing);
     },
   );
 

@@ -8,6 +8,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_list_table_column_layout_memory.dart';
@@ -1073,6 +1074,7 @@ class AppListTable<T> extends StatefulWidget {
     this.enableExport = true,
     this.canExport = true,
     this.exportConfig,
+    this.loadMatchingItems,
     this.exportLabel,
     this.exportDialogTitle,
     this.exportCancelLabel,
@@ -1087,6 +1089,7 @@ class AppListTable<T> extends StatefulWidget {
     this.canPrint = true,
     this.onPrint,
     this.printLabel,
+    this.printFailureMessage,
     this.enableColumnResize = true,
     this.tableHorizontalMargin,
     this.toolbarContentGap,
@@ -1172,6 +1175,10 @@ class AppListTable<T> extends StatefulWidget {
   /// Defaults to true; callers should pass false when the user lacks export access.
   final bool canExport;
   final AppListTableExportConfig<T>? exportConfig;
+
+  /// Resolves the matching dataset for Export and Print. Prefer this over
+  /// passing only the currently loaded [page] slice.
+  final AppListTableMatchingItemsLoader<T>? loadMatchingItems;
   final String? exportLabel;
   final String? exportDialogTitle;
   final String? exportCancelLabel;
@@ -1190,11 +1197,15 @@ class AppListTable<T> extends StatefulWidget {
   /// When false, hides Print even if [enablePrint] is true (permission gate).
   final bool canPrint;
 
-  /// Opens the feature print-preview path. Required when [enablePrint] is true.
-  final Future<void> Function()? onPrint;
+  /// Opens the feature print-preview path with the matching dataset.
+  /// Required when [enablePrint] is true.
+  final Future<void> Function(List<T> matchingItems)? onPrint;
 
   /// Defaults to `Print` when null.
   final String? printLabel;
+
+  /// Shown when resolving the matching dataset for Print fails.
+  final String? printFailureMessage;
   final bool enableColumnResize;
   final double? tableHorizontalMargin;
 
@@ -1246,6 +1257,8 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   List<T> _accumulatedItems = <T>[];
   int _accumulatedPageIndex = -1;
   bool _pendingLoadMore = false;
+  bool _skipAutoLoadMore = false;
+  ScrollMetrics? _lastVerticalScrollMetrics;
   ScrollPosition? _ancestorScrollPosition;
   List<T>? _cachedSortSource;
   String? _cachedSortColumnKey;
@@ -1265,6 +1278,11 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     _syncColumnWidths();
     _syncAccumulatedPage(widget.page);
     _ensureDefaultSortColumn();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _continueInfiniteScrollIfNeeded();
+      }
+    });
   }
 
   @override
@@ -1321,13 +1339,24 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     if (oldWidget.page != widget.page ||
         oldWidget.paginationMode != widget.paginationMode ||
         !identical(oldWidget.items, widget.items)) {
+      if (oldWidget.page != widget.page) {
+        _skipAutoLoadMore = false;
+      }
       _syncAccumulatedPage(widget.page);
       if (!identical(oldWidget.items, widget.items)) {
         _invalidateSortCache();
       }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _continueInfiniteScrollIfNeeded();
+        }
+      });
     }
     if (oldWidget.isLoading && !widget.isLoading) {
       _pendingLoadMore = false;
+      if (oldWidget.page == widget.page) {
+        _skipAutoLoadMore = true;
+      }
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -1505,9 +1534,14 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   }
 
   void _handleScrollMetrics(ScrollMetrics metrics) {
+    _lastVerticalScrollMetrics = metrics;
     if (metrics.maxScrollExtent <= 0) {
+      if (!_skipAutoLoadMore) {
+        _maybeRequestNextPage();
+      }
       return;
     }
+    _skipAutoLoadMore = false;
     // Prefetch roughly a viewport ahead so batch reveals and next-page
     // requests start before the user actually hits the bottom.
     final double loadExtent = math.max(
@@ -1518,6 +1552,22 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       return;
     }
     _onNearScrollEnd();
+  }
+
+  void _continueInfiniteScrollIfNeeded() {
+    if (!_usesInfinitePagination || _skipAutoLoadMore) {
+      return;
+    }
+    final ScrollMetrics? metrics = _lastVerticalScrollMetrics;
+    if (metrics == null) {
+      // First layout may not have dispatched inner-table metrics yet
+      // (ancestor lookup cannot see the table's own CustomScrollView).
+      // Request the next page when more matching rows exist so empty-row
+      // padding cannot stall infinite scroll.
+      _maybeRequestNextPage();
+      return;
+    }
+    _handleScrollMetrics(metrics);
   }
 
   void _scheduleRevealIfNeeded({bool allowPageRequest = true}) {
@@ -1941,20 +1991,29 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     // removing the listener when capabilities change would swap the widget
     // type at this slot and remount the whole table subtree, resetting the
     // scroll position (for example right after the last page loads).
-    return NotificationListener<ScrollNotification>(
-      onNotification: (ScrollNotification notification) {
+    return NotificationListener<ScrollMetricsNotification>(
+      onNotification: (ScrollMetricsNotification notification) {
         if (notification.metrics.axis != Axis.vertical) {
-          return false;
-        }
-        if (notification is! ScrollUpdateNotification &&
-            notification is! OverscrollNotification &&
-            notification is! ScrollEndNotification) {
           return false;
         }
         _handleScrollMetrics(notification.metrics);
         return false;
       },
-      child: child,
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (ScrollNotification notification) {
+          if (notification.metrics.axis != Axis.vertical) {
+            return false;
+          }
+          if (notification is! ScrollUpdateNotification &&
+              notification is! OverscrollNotification &&
+              notification is! ScrollEndNotification) {
+            return false;
+          }
+          _handleScrollMetrics(notification.metrics);
+          return false;
+        },
+        child: child,
+      ),
     );
   }
 
@@ -2108,6 +2167,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
           onColumnWidthChanged: widget.enableColumnResize
               ? _updateColumnWidth
               : null,
+          onVerticalScrollMetrics: _handleScrollMetrics,
         );
       },
     );
@@ -2434,12 +2494,79 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
           label: _printLabel,
           tooltip: _printLabel,
           onPressed: () {
-            unawaited(widget.onPrint!.call());
+            unawaited(_handlePrint());
           },
         ),
       );
     }
     return actions;
+  }
+
+  Future<void> _handlePrint() async {
+    if (!widget.enablePrint || !widget.canPrint || widget.onPrint == null) {
+      return;
+    }
+    final AppListTableMatchingItemsLoader<T>? loader = _matchingItemsLoader;
+    final bool showLoading = loader != null;
+    if (showLoading && mounted) {
+      unawaited(
+        showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext dialogContext) {
+            return PopScope(
+              canPop: false,
+              child: Center(
+                child: AppLoadingIndicator(
+                  size: AppLoadingIndicatorSize.compact,
+                  expand: false,
+                  title: dialogContext.l10n.commonLoadingTitle,
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
+    try {
+      final List<T> items = await _resolveMatchingItems();
+      if (showLoading && mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+      if (!mounted) {
+        return;
+      }
+      await widget.onPrint!(items);
+    } catch (_) {
+      if (showLoading && mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+      if (!mounted) {
+        return;
+      }
+      final String message =
+          widget.printFailureMessage ??
+          context.l10n.commonTablePrintFailureMessage;
+      ScaffoldMessenger.maybeOf(
+        context,
+      )?.showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
+  AppListTableMatchingItemsLoader<T>? get _matchingItemsLoader {
+    return widget.loadMatchingItems ?? widget.exportConfig?.loadMatchingItems;
+  }
+
+  Future<List<T>> _resolveMatchingItems() async {
+    final AppListTableMatchingItemsLoader<T>? loader = _matchingItemsLoader;
+    if (loader != null) {
+      return loader();
+    }
+    final List<T>? overrideItems = widget.exportConfig?.items;
+    if (overrideItems != null) {
+      return overrideItems;
+    }
+    return _exportRows();
   }
 
   Future<void> _openExportDialog() async {
@@ -2497,8 +2624,34 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     final AppListTableExportConfig<T> config =
         widget.exportConfig ?? AppListTableExportConfig<T>();
     final AppListTableSearch<T>? search = widget.search;
+    final AppListTableMatchingItemsLoader<T>? loader =
+        widget.loadMatchingItems ?? config.loadMatchingItems;
     if (search == null) {
-      return config;
+      if (identical(loader, config.loadMatchingItems)) {
+        return config;
+      }
+      return AppListTableExportConfig<T>(
+        fileNameStem: config.fileNameStem,
+        sheetName: config.sheetName,
+        enableDateFilter: config.enableDateFilter,
+        filterGroups: config.filterGroups,
+        textFilters: config.textFilters,
+        initialFilterValue: config.initialFilterValue,
+        rowFilter: config.rowFilter,
+        dateOf: config.dateOf,
+        items: config.items,
+        loadMatchingItems: loader,
+        saver: config.saver,
+        firstDate: config.firstDate,
+        lastDate: config.lastDate,
+        currentDate: config.currentDate,
+        dateFilterLabel: config.dateFilterLabel,
+        dateFromLabel: config.dateFromLabel,
+        dateToLabel: config.dateToLabel,
+        datePickerButtonLabel: config.datePickerButtonLabel,
+        invalidDateMessage: config.invalidDateMessage,
+        allFieldsLabel: config.allFieldsLabel,
+      );
     }
     return AppListTableExportConfig<T>(
       fileNameStem: config.fileNameStem,
@@ -2516,6 +2669,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       rowFilter: config.rowFilter,
       dateOf: config.dateOf,
       items: config.items,
+      loadMatchingItems: widget.loadMatchingItems ?? config.loadMatchingItems,
       saver: config.saver,
       firstDate: config.firstDate ?? search.firstDate,
       lastDate: config.lastDate ?? search.lastDate,
@@ -3581,6 +3735,7 @@ class _DesktopListTable<T> extends StatefulWidget {
     required this.goToTopController,
     required this.columnWidthFor,
     this.onColumnWidthChanged,
+    this.onVerticalScrollMetrics,
   });
 
   final List<T> items;
@@ -3608,6 +3763,7 @@ class _DesktopListTable<T> extends StatefulWidget {
   final _AppListTableGoToTopController goToTopController;
   final double Function(AppListTableColumn<T> column) columnWidthFor;
   final void Function(String columnKey, double width)? onColumnWidthChanged;
+  final ValueChanged<ScrollMetrics>? onVerticalScrollMetrics;
 
   @override
   State<_DesktopListTable<T>> createState() => _DesktopListTableState<T>();
@@ -3638,10 +3794,30 @@ class _DesktopListTableState<T> extends State<_DesktopListTable<T>> {
     super.initState();
     _horizontalController = ScrollController();
     _verticalController = ScrollController();
+    _verticalController.addListener(_reportVerticalScrollMetrics);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _reportVerticalScrollMetrics();
+    });
+  }
+
+  @override
+  void didUpdateWidget(covariant _DesktopListTable<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _reportVerticalScrollMetrics();
+    });
+  }
+
+  void _reportVerticalScrollMetrics() {
+    if (!mounted || !_verticalController.hasClients) {
+      return;
+    }
+    widget.onVerticalScrollMetrics?.call(_verticalController.position);
   }
 
   @override
   void dispose() {
+    _verticalController.removeListener(_reportVerticalScrollMetrics);
     _horizontalController.dispose();
     _verticalController.dispose();
     super.dispose();

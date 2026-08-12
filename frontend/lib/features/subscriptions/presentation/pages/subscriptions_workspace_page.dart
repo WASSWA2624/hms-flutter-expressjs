@@ -1165,7 +1165,12 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
       enablePrint: true,
       canPrint: canPrint,
       printLabel: context.l10n.commonPrintActionLabel,
-      onPrint: () => printSubscriptionsListTable<SubscriptionItem>(
+      printFailureMessage: context.l10n.commonTablePrintFailureMessage,
+      loadMatchingItems: () => matchingItemsOrThrow(
+        controller.loadMatchingItems(),
+      ),
+      onPrint: (List<SubscriptionItem> items) =>
+          printSubscriptionsListTable<SubscriptionItem>(
         ref: ref,
         context: context,
         title: sheetName,
@@ -1173,7 +1178,7 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
           ...columns,
           ...columnChoices,
         ],
-        items: state.items.items,
+        items: items,
         emptyText: _SubscriptionsText.emptyTitle,
       ),
       goToTopLabel: context.l10n.commonGoToTopActionLabel,

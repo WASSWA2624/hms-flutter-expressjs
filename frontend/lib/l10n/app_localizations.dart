@@ -472,6 +472,12 @@ abstract class AppLocalizations {
   /// **'Export failed. Try again.'**
   String get commonTableExportFailureMessage;
 
+  /// SnackBar shown when resolving the matching dataset for table Print fails.
+  ///
+  /// In en, this message translates to:
+  /// **'Print failed. Try again.'**
+  String get commonTablePrintFailureMessage;
+
   /// Section label for the From/To date range in the table export dialog.
   ///
   /// In en, this message translates to:
@@ -33988,6 +33994,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'All datasets'**
   String get reportsAllDatasetsLabel;
+
+  /// Filter label for report schedule or run trigger.
+  ///
+  /// In en, this message translates to:
+  /// **'Trigger'**
+  String get reportsTriggerFilterLabel;
+
+  /// All triggers filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'All triggers'**
+  String get reportsAllTriggersLabel;
 
   /// Reports workspace overview panel label.
   ///

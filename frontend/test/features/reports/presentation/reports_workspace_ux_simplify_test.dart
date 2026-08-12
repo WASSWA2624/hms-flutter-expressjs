@@ -185,12 +185,13 @@ void main() {
     );
   });
 
-  testWidgets('Filters remains the sole panel entry', (
+  testWidgets('AppTabStrip is the panel entry', (
     WidgetTester tester,
   ) async {
     await _pumpReports(tester, repository: repository);
 
-    expect(find.text('Filters'), findsWidgets);
+    expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.text('Catalog'), findsWidgets);
     expect(find.text('Browse catalog'), findsOneWidget);
     expect(find.text('Reporting and Analytics'), findsWidgets);
 
@@ -209,13 +210,7 @@ void main() {
       itemsTable.search?.filterGroups.any(
         (AppSearchBarFilterGroup group) => group.key == 'panel',
       ),
-      isTrue,
-    );
-    expect(
-      itemsTable.search?.filterGroups
-          .expand((AppSearchBarFilterGroup group) => group.choices)
-          .any((AppSearchBarFilterChoice choice) => choice.label == 'Catalog'),
-      isTrue,
+      isFalse,
     );
   });
 

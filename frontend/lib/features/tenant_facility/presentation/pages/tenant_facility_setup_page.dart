@@ -28,6 +28,7 @@ import 'package:hosspi_hms/features/tenant_facility/domain/entities/unit_similar
 import 'package:hosspi_hms/features/tenant_facility/domain/entities/ward_similarity.dart';
 import 'package:hosspi_hms/features/tenant_facility/domain/repositories/tenant_facility_repository.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/tenant_facility_setup_access.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/bed_details_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/bed_similarity_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/department_details_dialog.dart';
@@ -40,6 +41,7 @@ import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/room_de
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/room_similarity_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_management_dialogs.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_print_helpers.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_similarity_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/unit_details_dialog.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/unit_similarity_dialog.dart';
@@ -87,6 +89,7 @@ class TenantFacilitySetupPage extends ConsumerWidget {
       loadingBody: l10n.tenantFacilitySetupLoadingBody,
       maxWidth: PageMaxWidth.dashboard,
       centerVertically: false,
+      scrollable: false,
       onRetry: () {
         ref.read(tenantFacilitySetupControllerProvider.notifier).refresh();
       },
@@ -481,6 +484,17 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
   TenantFacilitySetupDeskSection? _section;
   final Set<TenantFacilitySetupDeskSection> _mountedSections =
       <TenantFacilitySetupDeskSection>{};
+  final Map<TenantFacilitySetupDeskSection, int> _liveSectionCounts =
+      <TenantFacilitySetupDeskSection, int>{};
+
+  void _setLiveSectionCount(TenantFacilitySetupDeskSection section, int count) {
+    if (_liveSectionCounts[section] == count) {
+      return;
+    }
+    setState(() {
+      _liveSectionCounts[section] = count;
+    });
+  }
 
   List<TenantFacilitySetupDeskSection> get _visibleSections {
     return tenantFacilityVisibleSetupDeskSections(
@@ -610,6 +624,19 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
                   section,
                   policy: accessPolicy,
                 ),
+                count: tenantFacilitySetupDeskSectionCount(
+                  section: section,
+                  snapshot: widget.snapshot,
+                  liveCount: _liveSectionCounts[section],
+                ),
+                countTone: section ==
+                            TenantFacilitySetupDeskSection
+                                .subscriptionApprovals ||
+                        section ==
+                            TenantFacilitySetupDeskSection
+                                .subscriptionActivations
+                    ? AppTabCountTone.warning
+                    : AppTabCountTone.info,
               ),
           ],
           selectedId: current.name,
@@ -652,45 +679,79 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
       TenantFacilitySetupDeskSection.tenants => ManageTenantsPanel(
         sessionTenant: snapshot.tenant,
         onMutated: (_) => _refreshSetup(),
+        onListTotalChanged: (int count) =>
+            _setLiveSectionCount(TenantFacilitySetupDeskSection.tenants, count),
       ),
       TenantFacilitySetupDeskSection.facility => ManageFacilitiesPanel(
         sessionFacility: snapshot.facility,
         sessionTenantId: snapshot.tenant?.id ?? snapshot.facility?.tenantId,
         onMutated: (_) => _refreshSetup(),
+        onListTotalChanged: (int count) =>
+            _setLiveSectionCount(TenantFacilitySetupDeskSection.facility, count),
       ),
       TenantFacilitySetupDeskSection.departments => _DepartmentSetupSection(
         snapshot: snapshot,
         canSubmit: canSubmitStructure,
+        onListTotalChanged: (int count) => _setLiveSectionCount(
+          TenantFacilitySetupDeskSection.departments,
+          count,
+        ),
       ),
       TenantFacilitySetupDeskSection.units => _UnitSetupSection(
         snapshot: snapshot,
         canSubmit: canSubmitStructure,
+        onListTotalChanged: (int count) =>
+            _setLiveSectionCount(TenantFacilitySetupDeskSection.units, count),
       ),
       TenantFacilitySetupDeskSection.wards => _WardSetupSection(
         snapshot: snapshot,
         canSubmit: canSubmitStructure,
+        onListTotalChanged: (int count) =>
+            _setLiveSectionCount(TenantFacilitySetupDeskSection.wards, count),
       ),
       TenantFacilitySetupDeskSection.rooms => _RoomSetupSection(
         snapshot: snapshot,
         canSubmit: canSubmitStructure,
+        onListTotalChanged: (int count) =>
+            _setLiveSectionCount(TenantFacilitySetupDeskSection.rooms, count),
       ),
       TenantFacilitySetupDeskSection.beds => _BedSetupSection(
         snapshot: snapshot,
         canSubmit: canSubmitStructure,
+        onListTotalChanged: (int count) =>
+            _setLiveSectionCount(TenantFacilitySetupDeskSection.beds, count),
       ),
       TenantFacilitySetupDeskSection.clinicalCatalog =>
           _buildClinicalCatalogBody(snapshot),
-      TenantFacilitySetupDeskSection.roles =>
-        const ManageRolesPermissionsPanel(),
-      TenantFacilitySetupDeskSection.permissions =>
-        const ManageRolesPermissionsPanel(
-          panel: AccessAdminPanel.permissions,
+      TenantFacilitySetupDeskSection.roles => ManageRolesPermissionsPanel(
+        onListTotalChanged: (int count) =>
+            _setLiveSectionCount(TenantFacilitySetupDeskSection.roles, count),
+      ),
+      TenantFacilitySetupDeskSection.permissions => ManageRolesPermissionsPanel(
+        panel: AccessAdminPanel.permissions,
+        onListTotalChanged: (int count) => _setLiveSectionCount(
+          TenantFacilitySetupDeskSection.permissions,
+          count,
         ),
-      TenantFacilitySetupDeskSection.users => const ManageUsersPanel(),
+      ),
+      TenantFacilitySetupDeskSection.users => ManageUsersPanel(
+        onListTotalChanged: (int count) =>
+            _setLiveSectionCount(TenantFacilitySetupDeskSection.users, count),
+      ),
       TenantFacilitySetupDeskSection.subscriptionApprovals =>
-        const ManageSubscriptionApprovalsPanel(),
+        ManageSubscriptionApprovalsPanel(
+          onListTotalChanged: (int count) => _setLiveSectionCount(
+            TenantFacilitySetupDeskSection.subscriptionApprovals,
+            count,
+          ),
+        ),
       TenantFacilitySetupDeskSection.subscriptionActivations =>
-        const ManageSubscriptionActivationsPanel(),
+        ManageSubscriptionActivationsPanel(
+          onListTotalChanged: (int count) => _setLiveSectionCount(
+            TenantFacilitySetupDeskSection.subscriptionActivations,
+            count,
+          ),
+        ),
     };
   }
 
@@ -707,6 +768,10 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
         tenantCurrency: snapshot.tenant?.currency,
       ),
       enabled: widget.canManageFacility || widget.canManageTenant,
+      onListTotalChanged: (int count) => _setLiveSectionCount(
+        TenantFacilitySetupDeskSection.clinicalCatalog,
+        count,
+      ),
     );
   }
 }
@@ -2605,11 +2670,13 @@ class _DepartmentSetupSection extends ConsumerStatefulWidget {
     required this.snapshot,
     required this.canSubmit,
     this.framed = true,
+    this.onListTotalChanged,
   });
 
   final FacilitySetupSnapshot snapshot;
   final bool canSubmit;
   final bool framed;
+  final ValueChanged<int>? onListTotalChanged;
 
   @override
   ConsumerState<_DepartmentSetupSection> createState() =>
@@ -2948,6 +3015,7 @@ class _DepartmentSetupSectionState
           _tenantNamesById = tenantNames;
           _facilityNamesById = facilityNames;
         });
+        widget.onListTotalChanged?.call(_totalItemCount);
       },
       failure: (AppFailure failure) {
         setState(() {
@@ -3132,7 +3200,9 @@ class _DepartmentSetupSectionState
                         _facilityLabel(right),
                       ),
               cellBuilder: (_, DepartmentProfile department) =>
-                  Text(_facilityLabel(department)),
+                  tenantFacilitySetupAtomicCell(_facilityLabel(department)),
+              exportValue: (DepartmentProfile department) =>
+                  _facilityLabel(department),
             ),
           if (showTenantColumn)
             AppListTableColumn<DepartmentProfile>(
@@ -3146,7 +3216,9 @@ class _DepartmentSetupSectionState
                         _tenantLabel(right),
                       ),
               cellBuilder: (_, DepartmentProfile department) =>
-                  Text(_tenantLabel(department)),
+                  tenantFacilitySetupAtomicCell(_tenantLabel(department)),
+              exportValue: (DepartmentProfile department) =>
+                  _tenantLabel(department),
             ),
           if (showDetailColumns)
             AppListTableColumn<DepartmentProfile>(
@@ -3159,9 +3231,12 @@ class _DepartmentSetupSectionState
                         _departmentTypeLabel(l10n, left.type),
                         _departmentTypeLabel(l10n, right.type),
                       ),
-              cellBuilder: (_, DepartmentProfile department) => Text(
-                _departmentTypeLabel(l10n, department.type),
-              ),
+              cellBuilder: (_, DepartmentProfile department) =>
+                  tenantFacilitySetupAtomicCell(
+                    _departmentTypeLabel(l10n, department.type),
+                  ),
+              exportValue: (DepartmentProfile department) =>
+                  _departmentTypeLabel(l10n, department.type),
             ),
         ];
 
@@ -3388,11 +3463,13 @@ class _UnitSetupSection extends ConsumerStatefulWidget {
     required this.snapshot,
     required this.canSubmit,
     this.framed = true,
+    this.onListTotalChanged,
   });
 
   final FacilitySetupSnapshot snapshot;
   final bool canSubmit;
   final bool framed;
+  final ValueChanged<int>? onListTotalChanged;
 
   @override
   ConsumerState<_UnitSetupSection> createState() => _UnitSetupSectionState();
@@ -3799,6 +3876,7 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
           _departmentNamesById = departmentNames;
           _syncDepartmentFilterToOptions();
         });
+        widget.onListTotalChanged?.call(_totalItemCount);
       },
       failure: (AppFailure failure) {
         setState(() {
@@ -4001,7 +4079,9 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
                   _departmentLabel(left),
                   _departmentLabel(right),
                 ),
-            cellBuilder: (_, UnitProfile unit) => Text(_departmentLabel(unit)),
+            exportValue: (UnitProfile unit) => _departmentLabel(unit),
+            cellBuilder: (_, UnitProfile unit) =>
+                tenantFacilitySetupAtomicCell(_departmentLabel(unit)),
           ),
         ];
     final List<AppListTableColumn<UnitProfile>> optionalColumns =
@@ -4016,7 +4096,9 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
                     _facilityLabel(left),
                     _facilityLabel(right),
                   ),
-              cellBuilder: (_, UnitProfile unit) => Text(_facilityLabel(unit)),
+              exportValue: (UnitProfile unit) => _facilityLabel(unit),
+              cellBuilder: (_, UnitProfile unit) =>
+                  tenantFacilitySetupAtomicCell(_facilityLabel(unit)),
             ),
           if (showTenantColumn)
             AppListTableColumn<UnitProfile>(
@@ -4028,7 +4110,9 @@ class _UnitSetupSectionState extends ConsumerState<_UnitSetupSection> {
                     _tenantLabel(left),
                     _tenantLabel(right),
                   ),
-              cellBuilder: (_, UnitProfile unit) => Text(_tenantLabel(unit)),
+              exportValue: (UnitProfile unit) => _tenantLabel(unit),
+              cellBuilder: (_, UnitProfile unit) =>
+                  tenantFacilitySetupAtomicCell(_tenantLabel(unit)),
             ),
         ];
 
@@ -4246,11 +4330,13 @@ class _WardSetupSection extends ConsumerStatefulWidget {
     required this.snapshot,
     required this.canSubmit,
     this.framed = true,
+    this.onListTotalChanged,
   });
 
   final FacilitySetupSnapshot snapshot;
   final bool canSubmit;
   final bool framed;
+  final ValueChanged<int>? onListTotalChanged;
 
   @override
   ConsumerState<_WardSetupSection> createState() => _WardSetupSectionState();
@@ -4671,6 +4757,7 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
           _departmentNamesById = departmentNames;
           _syncDepartmentFilterToOptions();
         });
+        widget.onListTotalChanged?.call(_totalItemCount);
       },
       failure: (AppFailure failure) {
         setState(() {
@@ -4890,9 +4977,56 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
                   _wardTypeLabel(l10n, left.type),
                   _wardTypeLabel(l10n, right.type),
                 ),
-            cellBuilder: (_, WardProfile ward) =>
-                Text(_wardTypeLabel(l10n, ward.type)),
+            exportValue: (WardProfile ward) =>
+                _wardTypeLabel(l10n, ward.type),
+            cellBuilder: (_, WardProfile ward) => tenantFacilitySetupAtomicCell(
+              _wardTypeLabel(l10n, ward.type),
+            ),
           ),
+        ];
+    final List<AppListTableColumn<WardProfile>> optionalColumns =
+        <AppListTableColumn<WardProfile>>[
+          AppListTableColumn<WardProfile>(
+            id: 'department',
+            label: l10n.tenantFacilityUnitDepartmentLabel,
+            preferredWidth: 160,
+            sortComparator: (WardProfile left, WardProfile right) =>
+                appListTableCompareText(
+                  _departmentLabel(left),
+                  _departmentLabel(right),
+                ),
+            exportValue: (WardProfile ward) => _departmentLabel(ward),
+            cellBuilder: (_, WardProfile ward) =>
+                tenantFacilitySetupAtomicCell(_departmentLabel(ward)),
+          ),
+          if (showFacilityColumn)
+            AppListTableColumn<WardProfile>(
+              id: 'facility',
+              label: l10n.profileFacilityLabel,
+              preferredWidth: 160,
+              sortComparator: (WardProfile left, WardProfile right) =>
+                  appListTableCompareText(
+                    _facilityLabel(left),
+                    _facilityLabel(right),
+                  ),
+              exportValue: (WardProfile ward) => _facilityLabel(ward),
+              cellBuilder: (_, WardProfile ward) =>
+                  tenantFacilitySetupAtomicCell(_facilityLabel(ward)),
+            ),
+          if (showTenantColumn)
+            AppListTableColumn<WardProfile>(
+              id: 'tenant',
+              label: l10n.profileTenantLabel,
+              preferredWidth: 160,
+              sortComparator: (WardProfile left, WardProfile right) =>
+                  appListTableCompareText(
+                    _tenantLabel(left),
+                    _tenantLabel(right),
+                  ),
+              exportValue: (WardProfile ward) => _tenantLabel(ward),
+              cellBuilder: (_, WardProfile ward) =>
+                  tenantFacilitySetupAtomicCell(_tenantLabel(ward)),
+            ),
         ];
 
     final Widget content = _loading && _wards.isEmpty
@@ -5010,6 +5144,7 @@ class _WardSetupSectionState extends ConsumerState<_WardSetupSection> {
               return _activeStatusLabel(l10n, ward.isActive);
             },
             extraColumns: extraColumns,
+            optionalColumns: optionalColumns,
             isDeletedBuilder: (WardProfile ward) => ward.isDeleted,
             onEdit: (WardProfile ward) {
               if (ward.isDeleted ||
@@ -5114,11 +5249,13 @@ class _RoomSetupSection extends ConsumerStatefulWidget {
     required this.snapshot,
     required this.canSubmit,
     this.framed = true,
+    this.onListTotalChanged,
   });
 
   final FacilitySetupSnapshot snapshot;
   final bool canSubmit;
   final bool framed;
+  final ValueChanged<int>? onListTotalChanged;
 
   @override
   ConsumerState<_RoomSetupSection> createState() => _RoomSetupSectionState();
@@ -5536,6 +5673,7 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
           _wardNamesById = wardNames;
           _syncWardFilterToOptions();
         });
+        widget.onListTotalChanged?.call(_totalItemCount);
       },
       failure: (AppFailure failure) {
         setState(() {
@@ -5724,7 +5862,9 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
             preferredWidth: 160,
             sortComparator: (RoomProfile left, RoomProfile right) =>
                 appListTableCompareText(_wardLabel(left), _wardLabel(right)),
-            cellBuilder: (_, RoomProfile room) => Text(_wardLabel(room)),
+            exportValue: (RoomProfile room) => _wardLabel(room),
+            cellBuilder: (_, RoomProfile room) =>
+                tenantFacilitySetupAtomicCell(_wardLabel(room)),
           ),
         ];
     final List<AppListTableColumn<RoomProfile>> optionalColumns =
@@ -5735,9 +5875,13 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
             preferredWidth: 100,
             sortComparator: (RoomProfile left, RoomProfile right) =>
                 appListTableCompareText(left.floor, right.floor),
+            exportValue: (RoomProfile room) {
+              final String? floor = room.floor?.trim();
+              return floor == null || floor.isEmpty ? '—' : floor;
+            },
             cellBuilder: (_, RoomProfile room) {
               final String? floor = room.floor?.trim();
-              return Text(
+              return tenantFacilitySetupAtomicCell(
                 floor == null || floor.isEmpty ? '—' : floor,
               );
             },
@@ -5752,7 +5896,9 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
                     _facilityLabel(left),
                     _facilityLabel(right),
                   ),
-              cellBuilder: (_, RoomProfile room) => Text(_facilityLabel(room)),
+              exportValue: (RoomProfile room) => _facilityLabel(room),
+              cellBuilder: (_, RoomProfile room) =>
+                  tenantFacilitySetupAtomicCell(_facilityLabel(room)),
             ),
           if (showTenantColumn)
             AppListTableColumn<RoomProfile>(
@@ -5764,7 +5910,9 @@ class _RoomSetupSectionState extends ConsumerState<_RoomSetupSection> {
                     _tenantLabel(left),
                     _tenantLabel(right),
                   ),
-              cellBuilder: (_, RoomProfile room) => Text(_tenantLabel(room)),
+              exportValue: (RoomProfile room) => _tenantLabel(room),
+              cellBuilder: (_, RoomProfile room) =>
+                  tenantFacilitySetupAtomicCell(_tenantLabel(room)),
             ),
         ];
 
@@ -5994,11 +6142,13 @@ class _BedSetupSection extends ConsumerStatefulWidget {
     required this.snapshot,
     required this.canSubmit,
     this.framed = true,
+    this.onListTotalChanged,
   });
 
   final FacilitySetupSnapshot snapshot;
   final bool canSubmit;
   final bool framed;
+  final ValueChanged<int>? onListTotalChanged;
 
   @override
   ConsumerState<_BedSetupSection> createState() => _BedSetupSectionState();
@@ -6470,6 +6620,7 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
           _syncWardFilterToOptions();
           _syncRoomFilterToOptions();
         });
+        widget.onListTotalChanged?.call(_totalItemCount);
       },
       failure: (AppFailure failure) {
         setState(() {
@@ -6690,8 +6841,51 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
             preferredWidth: 160,
             sortComparator: (BedProfile left, BedProfile right) =>
                 appListTableCompareText(_wardLabel(left), _wardLabel(right)),
-            cellBuilder: (_, BedProfile bed) => Text(_wardLabel(bed)),
+            exportValue: (BedProfile bed) => _wardLabel(bed),
+            cellBuilder: (_, BedProfile bed) =>
+                tenantFacilitySetupAtomicCell(_wardLabel(bed)),
           ),
+        ];
+    final List<AppListTableColumn<BedProfile>> optionalColumns =
+        <AppListTableColumn<BedProfile>>[
+          AppListTableColumn<BedProfile>(
+            id: 'room',
+            label: l10n.tenantFacilityRoomNameLabel,
+            preferredWidth: 160,
+            sortComparator: (BedProfile left, BedProfile right) =>
+                appListTableCompareText(_roomLabel(left), _roomLabel(right)),
+            exportValue: (BedProfile bed) => _roomLabel(bed),
+            cellBuilder: (_, BedProfile bed) =>
+                tenantFacilitySetupAtomicCell(_roomLabel(bed)),
+          ),
+          if (showFacilityColumn)
+            AppListTableColumn<BedProfile>(
+              id: 'facility',
+              label: l10n.profileFacilityLabel,
+              preferredWidth: 160,
+              sortComparator: (BedProfile left, BedProfile right) =>
+                  appListTableCompareText(
+                    _facilityLabel(left),
+                    _facilityLabel(right),
+                  ),
+              exportValue: (BedProfile bed) => _facilityLabel(bed),
+              cellBuilder: (_, BedProfile bed) =>
+                  tenantFacilitySetupAtomicCell(_facilityLabel(bed)),
+            ),
+          if (showTenantColumn)
+            AppListTableColumn<BedProfile>(
+              id: 'tenant',
+              label: l10n.profileTenantLabel,
+              preferredWidth: 160,
+              sortComparator: (BedProfile left, BedProfile right) =>
+                  appListTableCompareText(
+                    _tenantLabel(left),
+                    _tenantLabel(right),
+                  ),
+              exportValue: (BedProfile bed) => _tenantLabel(bed),
+              cellBuilder: (_, BedProfile bed) =>
+                  tenantFacilitySetupAtomicCell(_tenantLabel(bed)),
+            ),
         ];
 
     final Widget content = _loading && _beds.isEmpty
@@ -6811,6 +7005,7 @@ class _BedSetupSectionState extends ConsumerState<_BedSetupSection> {
               return tenantFacilityBedStatusLabel(l10n, bed.status);
             },
             extraColumns: extraColumns,
+            optionalColumns: optionalColumns,
             isDeletedBuilder: (BedProfile bed) => bed.isDeleted,
             onEdit: (BedProfile bed) {
               if (bed.isDeleted || isSubmitting || _busyBedId != null) {
@@ -6965,7 +7160,7 @@ class _SearchableEntityGroupScopeOption {
   final String label;
 }
 
-class _SearchableEntityGroup<T> extends StatefulWidget {
+class _SearchableEntityGroup<T> extends ConsumerStatefulWidget {
   const _SearchableEntityGroup({
     required this.title,
     required this.items,
@@ -7052,11 +7247,12 @@ class _SearchableEntityGroup<T> extends StatefulWidget {
   final Future<void> Function(AppPageRequest request)? onPageChanged;
 
   @override
-  State<_SearchableEntityGroup<T>> createState() =>
+  ConsumerState<_SearchableEntityGroup<T>> createState() =>
       _SearchableEntityGroupState<T>();
 }
 
-class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
+class _SearchableEntityGroupState<T>
+    extends ConsumerState<_SearchableEntityGroup<T>> {
   static const String _statusFilterKey = 'status';
   static const String _scopeFilterKey = 'scope';
   static const String _statusActive = 'active';
@@ -7154,14 +7350,11 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
         widget.titleBuilder(left),
         widget.titleBuilder(right),
       ),
+      exportValue: (T item) => widget.titleBuilder(item),
       cellBuilder: (BuildContext context, T item) {
-        final bool deleted = widget.isDeletedBuilder(item);
-        final List<String> details =
-            widget.nameDetailBuilder?.call(item) ?? const <String>[];
-        return TenantFacilityNestedTableCell(
-          title: widget.titleBuilder(item),
-          details: details,
-          deleted: deleted,
+        return tenantFacilitySetupAtomicCell(
+          widget.titleBuilder(item),
+          muted: widget.isDeletedBuilder(item),
         );
       },
     );
@@ -7173,7 +7366,8 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
       preferredWidth: 120,
       sortComparator: (T left, T right) =>
           appListTableCompareText(statusLabel(left), statusLabel(right)),
-      cellBuilder: (_, T item) => Text(statusLabel(item)),
+      exportValue: (T item) => statusLabel(item),
+      cellBuilder: (_, T item) => tenantFacilitySetupAtomicCell(statusLabel(item)),
     );
     final List<AppListTableColumn<T>> leadingColumns =
         widget.leadingColumns ?? <AppListTableColumn<T>>[];
@@ -7186,6 +7380,7 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
             id: 'actions',
             label: l10n.accessAdminColumnActions,
             alwaysVisible: true,
+            exportable: false,
             preferredWidth: widget.onPermanentDelete != null ? 280 : 168,
             cellBuilder: (BuildContext context, T item) {
               final bool deleted = widget.isDeletedBuilder(item);
@@ -7260,6 +7455,49 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
           )
         : null;
 
+    final bool canExport = canExportTenantFacilitySetup(
+      ref.watch(appAccessPolicyProvider),
+    );
+    final bool canPrint = canPrintTenantFacilitySetup(
+      ref.watch(appAccessPolicyProvider),
+    );
+    final List<AppListTableColumn<T>> allExportColumns =
+        <AppListTableColumn<T>>[
+          ...leadingColumns,
+          nameColumn,
+          ...extraColumns,
+          statusColumn,
+          ...?widget.optionalColumns,
+          if (widget.nameDetailBuilder != null)
+            AppListTableColumn<T>(
+              id: 'record_id',
+              label: l10n.reportsReferenceLabel,
+              exportValue: (T item) {
+                final List<String> details = widget.nameDetailBuilder!(item);
+                return details.isEmpty ? '' : details.first;
+              },
+              cellBuilder: (_, T item) {
+                final List<String> details = widget.nameDetailBuilder!(item);
+                return tenantFacilitySetupAtomicCell(
+                  details.isEmpty ? l10n.profileUnknownValue : details.first,
+                );
+              },
+            ),
+          AppListTableColumn<T>(
+            id: 'details',
+            label: l10n.accessAdminColumnDetails,
+            sortComparator: (T left, T right) => appListTableCompareText(
+              widget.subtitleBuilder(left),
+              widget.subtitleBuilder(right),
+            ),
+            exportValue: (T item) => widget.subtitleBuilder(item),
+            cellBuilder: (_, T item) =>
+                tenantFacilitySetupAtomicCell(widget.subtitleBuilder(item)),
+          ),
+        ];
+    final String exportStem = widget.columnVisibilityStorageKey ??
+        'setup_structure_${widget.title}';
+
     final Widget table = AppListTable<T>(
       items: widget.serverDrivenList ? null : items,
       page: widget.serverDrivenList
@@ -7296,6 +7534,43 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
           widget.columnVisibilityStorageKey ??
           'setup_structure_${widget.title}',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+      canExport: canExport,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: (List<T> matching) => printTenantFacilitySetupListTable<T>(
+        ref: ref,
+        context: context,
+        title: widget.title,
+        columns: allExportColumns,
+        items: matching,
+        emptyText: widget.emptyLabel,
+      ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
+      exportConfig: AppListTableExportConfig<T>(
+        fileNameStem: exportStem.replaceAll(RegExp(r'[^A-Za-z0-9_-]+'), '_'),
+        dateOf: (_) => null,
+        sheetName: widget.title,
+        enableDateFilter: false,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
+      ),
       onRowSelected: widget.onRowSelected,
       columns: <AppListTableColumn<T>>[
         ...leadingColumns,
@@ -7306,6 +7581,21 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
       ],
       columnChoices: <AppListTableColumn<T>>[
         ...?widget.optionalColumns,
+        if (widget.nameDetailBuilder != null)
+          AppListTableColumn<T>(
+            id: 'record_id',
+            label: l10n.reportsReferenceLabel,
+            exportValue: (T item) {
+              final List<String> details = widget.nameDetailBuilder!(item);
+              return details.isEmpty ? '' : details.first;
+            },
+            cellBuilder: (_, T item) {
+              final List<String> details = widget.nameDetailBuilder!(item);
+              return tenantFacilitySetupAtomicCell(
+                details.isEmpty ? l10n.profileUnknownValue : details.first,
+              );
+            },
+          ),
         AppListTableColumn<T>(
           id: 'details',
           label: l10n.accessAdminColumnDetails,
@@ -7313,7 +7603,9 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
             widget.subtitleBuilder(left),
             widget.subtitleBuilder(right),
           ),
-          cellBuilder: (_, T item) => Text(widget.subtitleBuilder(item)),
+          exportValue: (T item) => widget.subtitleBuilder(item),
+          cellBuilder: (_, T item) =>
+              tenantFacilitySetupAtomicCell(widget.subtitleBuilder(item)),
         ),
       ],
       search: AppListTableSearch<T>(
@@ -7327,10 +7619,11 @@ class _SearchableEntityGroupState<T> extends State<_SearchableEntityGroup<T>> {
                 widget.subtitleBuilder(item),
               ).contains(_normalizeSearch(query)),
         showAdvancedFilterButton: true,
-        advancedFilterTitle: l10n.commonFilterActionLabel,
-        advancedFilterButtonLabel: l10n.commonFilterActionLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         filterGroups: <AppSearchBarFilterGroup>[
           if (_hasScopeSelector)
             AppSearchBarFilterGroup(

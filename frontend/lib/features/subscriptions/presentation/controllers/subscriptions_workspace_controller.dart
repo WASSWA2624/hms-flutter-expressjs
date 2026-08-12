@@ -218,6 +218,25 @@ final class SubscriptionsWorkspaceController
     return _loadQuery(current.query.copyWith(pageRequest: request));
   }
 
+  Future<Result<List<SubscriptionItem>>> loadMatchingItems() {
+    final SubscriptionsWorkspaceState? current = _currentState;
+    if (current == null) {
+      return Future<Result<List<SubscriptionItem>>>.value(
+        const Result<List<SubscriptionItem>>.success(<SubscriptionItem>[]),
+      );
+    }
+    final SubscriptionsWorkspaceQuery query = current.query;
+    return loadMatchingAppPageItems<SubscriptionItem>(
+      loadPage: (AppPageRequest request) async {
+        final Result<SubscriptionsWorkspaceData> result = await _repository
+            .getWorkspace(query.copyWith(pageRequest: request));
+        return result.map(
+          (SubscriptionsWorkspaceData data) => data.items,
+        );
+      },
+    );
+  }
+
   void selectItem(SubscriptionItem item) {
     final SubscriptionsWorkspaceState? current = _currentState;
     if (current == null) {

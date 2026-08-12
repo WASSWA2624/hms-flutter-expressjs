@@ -179,9 +179,11 @@ void _stubClaimsRepository(_MockClaimsRepository repository) {
     final ClaimsQueueQuery query =
         invocation.positionalArguments.single as ClaimsQueueQuery;
     final List<ClaimsQueueItem> items = _itemsForQuery(query);
+    final int start = query.pageRequest.offset.clamp(0, items.length);
+    final int end = (start + query.pageRequest.pageSize).clamp(0, items.length);
     return Result<AppPage<ClaimsQueueItem>>.success(
       AppPage<ClaimsQueueItem>(
-        items: items,
+        items: items.sublist(start, end),
         request: query.pageRequest,
         totalItemCount: items.length,
       ),
@@ -916,4 +918,19 @@ void main() {
       isTrue,
     );
   });
+
+  testWidgets(
+    'matching-dataset loader returns the full applied-query set',
+    (WidgetTester tester) async {
+      await _pumpClaimsWorkspace(tester, repository: repository);
+      final AppListTable<ClaimsQueueItem> table = _table(tester);
+      expect(table.loadMatchingItems, isNotNull);
+      final List<ClaimsQueueItem> matching = await table.loadMatchingItems!();
+      expect(matching.length, table.page?.totalItemCount ?? matching.length);
+      expect(
+        matching.length,
+        greaterThanOrEqualTo(table.page?.items.length ?? 0),
+      );
+    },
+  );
 }

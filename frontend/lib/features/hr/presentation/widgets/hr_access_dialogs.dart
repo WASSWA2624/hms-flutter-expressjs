@@ -719,12 +719,12 @@ class _HrAccessWorkspacePanelState
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => printHrListTable<HrAccessUser>(
+      onPrint: (List<HrAccessUser> items) => printHrListTable<HrAccessUser>(
         ref: ref,
         context: context,
         title: l10n.hrAccessPanelUsers,
         columns: columns,
-        items: visibleUsers,
+        items: items,
         emptyText: l10n.hrAccessEmptyUsersLabel,
       ),
       goToTopLabel: l10n.commonGoToTopActionLabel,
@@ -888,12 +888,12 @@ class _HrAccessWorkspacePanelState
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => printHrListTable<HrAccessRole>(
+      onPrint: (List<HrAccessRole> items) => printHrListTable<HrAccessRole>(
         ref: ref,
         context: context,
         title: l10n.hrAccessPanelRoles,
         columns: columns,
-        items: visibleRoles,
+        items: items,
         emptyText: l10n.hrAccessEmptyRolesLabel,
       ),
       goToTopLabel: l10n.commonGoToTopActionLabel,
@@ -1022,12 +1022,13 @@ class _HrAccessWorkspacePanelState
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => printHrListTable<HrAccessPermission>(
+      onPrint: (List<HrAccessPermission> items) =>
+          printHrListTable<HrAccessPermission>(
         ref: ref,
         context: context,
         title: l10n.hrAccessPanelPermissions,
         columns: columns,
-        items: _permissions,
+        items: items,
         emptyText: l10n.hrAccessEmptyPermissionsLabel,
       ),
       goToTopLabel: l10n.commonGoToTopActionLabel,

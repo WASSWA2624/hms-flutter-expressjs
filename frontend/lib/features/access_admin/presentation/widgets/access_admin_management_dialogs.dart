@@ -131,6 +131,8 @@ abstract class _ScopedAccessAdminListDialogState<
 
   AccessAdminWorkspaceQuery get listQuery;
 
+  ValueChanged<int>? get onListTotalChangedCallback => null;
+
   @override
   void initState() {
     super.initState();
@@ -218,6 +220,7 @@ abstract class _ScopedAccessAdminListDialogState<
           items = data.page.items;
           totalItemCount = data.page.totalItemCount ?? data.page.items.length;
         });
+        onListTotalChangedCallback?.call(totalItemCount);
       },
       failure: (AppFailure loadFailure) {
         setState(() {
@@ -327,7 +330,8 @@ abstract class _ScopedAccessAdminListDialogState<
       enablePrint: true,
       canPrint: canPrintAccessAdminWorkspace(ref.watch(appAccessPolicyProvider)),
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => printAccessAdminListTable<AccessAdminItem>(
+      onPrint: (List<AccessAdminItem> matchingItems) =>
+          printAccessAdminListTable<AccessAdminItem>(
         ref: ref,
         context: context,
         title: l10n.accessAdminTitle,
@@ -335,7 +339,7 @@ abstract class _ScopedAccessAdminListDialogState<
           ...columns,
           ...?columnChoices,
         ],
-        items: items,
+        items: matchingItems,
         emptyText: l10n.accessAdminEmptyTitle,
       ),
       goToTopLabel: l10n.commonGoToTopActionLabel,
@@ -424,6 +428,7 @@ class ManageUsersPanel extends ConsumerStatefulWidget {
     this.reloadListenable,
     this.onMutated,
     this.onOpenDetail,
+    this.onListTotalChanged,
     super.key,
   });
 
@@ -434,6 +439,7 @@ class ManageUsersPanel extends ConsumerStatefulWidget {
 
   /// When set and returns `true`, skips the Access Admin user-details dialog.
   final Future<bool> Function(AccessAdminItem item)? onOpenDetail;
+  final ValueChanged<int>? onListTotalChanged;
 
   @override
   ConsumerState<ManageUsersPanel> createState() => _ManageUsersPanelState();
@@ -441,6 +447,10 @@ class ManageUsersPanel extends ConsumerStatefulWidget {
 
 class _ManageUsersPanelState
     extends _ScopedAccessAdminListDialogState<ManageUsersPanel> {
+  @override
+  ValueChanged<int>? get onListTotalChangedCallback =>
+      widget.onListTotalChanged;
+
   String? tenantFilter;
   String? facilityFilter;
   String? roleFilter;
@@ -961,7 +971,7 @@ class _ManageUsersPanelState
           search: buildTableSearch(
             l10n: l10n,
             showAdvancedFilterButton: true,
-            advancedFilterTitle: l10n.accessAdminUsersFiltersTitle,
+            advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
             filterGroups: filterGroups,
             filterValue: filterOptions.isEmpty
                 ? AppSearchBarFilterValue.empty
@@ -989,7 +999,12 @@ class _ManageUsersPanelState
               label: l10n.accessAdminColumnName,
               sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
                   appListTableCompareText(left.title, right.title),
-              cellBuilder: (_, AccessAdminItem item) => Text(item.title),
+              exportValue: (AccessAdminItem item) => item.title,
+              cellBuilder: (_, AccessAdminItem item) => Text(
+                item.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
             AppListTableColumn<AccessAdminItem>(
               id: 'roles',
@@ -1003,6 +1018,9 @@ class _ManageUsersPanelState
                         .map((AccessAdminRoleRef role) => role.name)
                         .join(', '),
                   ),
+              exportValue: (AccessAdminItem item) => item.roles
+                  .map((AccessAdminRoleRef role) => role.name)
+                  .join(', '),
               cellBuilder: (_, AccessAdminItem item) {
                 if (item.roles.isEmpty) {
                   return const Text('—');
@@ -1028,10 +1046,15 @@ class _ManageUsersPanelState
                     : (right.status ?? '—');
                 return appListTableCompareText(leftStatus, rightStatus);
               },
+              exportValue: (AccessAdminItem item) => item.isDeleted
+                  ? l10n.tenantFacilityStructureDeletedStatus
+                  : (item.status ?? '—'),
               cellBuilder: (_, AccessAdminItem item) => Text(
                 item.isDeleted
                     ? l10n.tenantFacilityStructureDeletedStatus
                     : (item.status ?? '—'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             if (canWrite)
@@ -1039,6 +1062,7 @@ class _ManageUsersPanelState
                 id: 'actions',
                 label: l10n.accessAdminColumnActions,
                 alwaysVisible: true,
+                exportable: false,
                 cellBuilder: (BuildContext context, AccessAdminItem user) {
                   final ThemeData theme = Theme.of(context);
                   final double actionGap = theme.spacing.md;
@@ -1108,8 +1132,12 @@ class _ManageUsersPanelState
                     left.effectiveDisplayId,
                     right.effectiveDisplayId,
                   ),
-              cellBuilder: (_, AccessAdminItem item) =>
-                  Text(item.effectiveDisplayId),
+              exportValue: (AccessAdminItem item) => item.effectiveDisplayId,
+              cellBuilder: (_, AccessAdminItem item) => Text(
+                item.effectiveDisplayId,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
             AppListTableColumn<AccessAdminItem>(
               id: 'facility',
@@ -1123,10 +1151,16 @@ class _ManageUsersPanelState
                         ? right.facilityName!
                         : (right.facilityId ?? '—'),
                   ),
+              exportValue: (AccessAdminItem item) =>
+                  item.facilityName?.trim().isNotEmpty == true
+                  ? item.facilityName!
+                  : (item.facilityId ?? '—'),
               cellBuilder: (_, AccessAdminItem item) => Text(
                 item.facilityName?.trim().isNotEmpty == true
                     ? item.facilityName!
                     : (item.facilityId ?? '—'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             AppListTableColumn<AccessAdminItem>(
@@ -1137,8 +1171,13 @@ class _ManageUsersPanelState
                     left.subtitle ?? left.email ?? '—',
                     right.subtitle ?? right.email ?? '—',
                   ),
-              cellBuilder: (_, AccessAdminItem item) =>
-                  Text(item.subtitle ?? item.email ?? '—'),
+              exportValue: (AccessAdminItem item) =>
+                  item.subtitle ?? item.email ?? '—',
+              cellBuilder: (_, AccessAdminItem item) => Text(
+                item.subtitle ?? item.email ?? '—',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),
@@ -1326,6 +1365,7 @@ class ManageRolesPermissionsPanel extends ConsumerStatefulWidget {
     this.reloadListenable,
     this.panel = AccessAdminPanel.roles,
     this.onMutated,
+    this.onListTotalChanged,
     super.key,
   });
 
@@ -1334,6 +1374,7 @@ class ManageRolesPermissionsPanel extends ConsumerStatefulWidget {
   final Listenable? reloadListenable;
   final AccessAdminPanel panel;
   final ValueChanged<bool>? onMutated;
+  final ValueChanged<int>? onListTotalChanged;
 
   @override
   ConsumerState<ManageRolesPermissionsPanel> createState() =>
@@ -1342,6 +1383,10 @@ class ManageRolesPermissionsPanel extends ConsumerStatefulWidget {
 
 class _ManageRolesPermissionsPanelState
     extends _ScopedAccessAdminListDialogState<ManageRolesPermissionsPanel> {
+  @override
+  ValueChanged<int>? get onListTotalChangedCallback =>
+      widget.onListTotalChanged;
+
   String? roleScopeFilter;
   String? tenantFilter;
   String? facilityFilter;
@@ -2086,7 +2131,7 @@ class _ManageRolesPermissionsPanelState
           search: buildTableSearch(
             l10n: l10n,
             showAdvancedFilterButton: filterGroups.isNotEmpty,
-            advancedFilterTitle: l10n.accessAdminFiltersTitle,
+            advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
             filterGroups: filterGroups,
             filterValue: activeOptions.isEmpty
                 ? AppSearchBarFilterValue.empty
@@ -2124,8 +2169,13 @@ class _ManageRolesPermissionsPanelState
                               left.effectiveDisplayId,
                               right.effectiveDisplayId,
                             ),
-                    cellBuilder: (_, AccessAdminItem item) =>
-                        Text(item.effectiveDisplayId),
+                    exportValue: (AccessAdminItem item) =>
+                        item.effectiveDisplayId,
+                    cellBuilder: (_, AccessAdminItem item) => Text(
+                      item.effectiveDisplayId,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   AppListTableColumn<AccessAdminItem>(
                     id: 'name',
@@ -2133,12 +2183,18 @@ class _ManageRolesPermissionsPanelState
                     sortComparator:
                         (AccessAdminItem left, AccessAdminItem right) =>
                             appListTableCompareText(left.title, right.title),
-                    cellBuilder: (_, AccessAdminItem item) {
-                      if (!item.isDeleted) {
-                        return Text(item.title);
-                      }
+                    exportValue: (AccessAdminItem item) => item.title,
+                    cellBuilder: (BuildContext context, AccessAdminItem item) {
+                      final ThemeData theme = Theme.of(context);
                       return Text(
-                        '${item.title} · ${l10n.tenantFacilityStructureDeletedStatus}',
+                        item.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: item.isDeleted
+                            ? theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              )
+                            : theme.textTheme.bodyMedium,
                       );
                     },
                   ),
@@ -2152,10 +2208,16 @@ class _ManageRolesPermissionsPanelState
                                 left.tenantName,
                                 right.tenantName,
                               ),
+                      exportValue: (AccessAdminItem item) =>
+                          (item.tenantName ?? '').trim().isNotEmpty
+                          ? item.tenantName!.trim()
+                          : '—',
                       cellBuilder: (_, AccessAdminItem item) => Text(
                         (item.tenantName ?? '').trim().isNotEmpty
                             ? item.tenantName!.trim()
                             : '—',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   AppListTableColumn<AccessAdminItem>(
@@ -2167,6 +2229,18 @@ class _ManageRolesPermissionsPanelState
                               accessAdminRoleScopeLabel(context, left),
                               accessAdminRoleScopeLabel(context, right),
                             ),
+                    exportValue: (AccessAdminItem item) {
+                      if (item.isFacilityScopedRole) {
+                        final String? facility = item.facilityName?.trim();
+                        return facility != null && facility.isNotEmpty
+                            ? '${l10n.accessAdminRoleScopeFacilityBadge} · $facility'
+                            : l10n.accessAdminRoleScopeFacilityBadge;
+                      }
+                      if (item.isPlatformScopedRole) {
+                        return l10n.accessAdminRoleScopePlatformLabel;
+                      }
+                      return l10n.accessAdminRoleScopeTenantBadge;
+                    },
                     cellBuilder:
                         (BuildContext context, AccessAdminItem item) =>
                             _RoleScopeBadge(item: item),
@@ -2176,6 +2250,7 @@ class _ManageRolesPermissionsPanelState
                       id: 'actions',
                       label: l10n.accessAdminColumnActions,
                       alwaysVisible: true,
+                      exportable: false,
                       cellBuilder: (BuildContext context, AccessAdminItem role) {
                         final ThemeData theme = Theme.of(context);
                         final double actionGap = theme.spacing.md;
@@ -2294,12 +2369,42 @@ class _ManageRolesPermissionsPanelState
                                 left.tenantName,
                                 right.tenantName,
                               ),
+                      exportValue: (AccessAdminItem item) =>
+                          (item.tenantName ?? '').trim().isNotEmpty
+                          ? item.tenantName!.trim()
+                          : '—',
                       cellBuilder: (_, AccessAdminItem item) => Text(
                         (item.tenantName ?? '').trim().isNotEmpty
                             ? item.tenantName!.trim()
                             : '—',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                  AppListTableColumn<AccessAdminItem>(
+                    id: 'status',
+                    label: l10n.accessAdminColumnStatus,
+                    sortComparator:
+                        (AccessAdminItem left, AccessAdminItem right) =>
+                            appListTableCompareText(
+                              left.isDeleted
+                                  ? l10n.tenantFacilityStructureDeletedStatus
+                                  : (left.status ?? '—'),
+                              right.isDeleted
+                                  ? l10n.tenantFacilityStructureDeletedStatus
+                                  : (right.status ?? '—'),
+                            ),
+                    exportValue: (AccessAdminItem item) => item.isDeleted
+                        ? l10n.tenantFacilityStructureDeletedStatus
+                        : (item.status ?? '—'),
+                    cellBuilder: (_, AccessAdminItem item) => Text(
+                      item.isDeleted
+                          ? l10n.tenantFacilityStructureDeletedStatus
+                          : (item.status ?? '—'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                   AppListTableColumn<AccessAdminItem>(
                     id: 'details',
                     label: l10n.accessAdminColumnDetails,
@@ -2309,8 +2414,12 @@ class _ManageRolesPermissionsPanelState
                               left.subtitle,
                               right.subtitle,
                             ),
-                    cellBuilder: (_, AccessAdminItem item) =>
-                        Text(item.subtitle ?? '—'),
+                    exportValue: (AccessAdminItem item) => item.subtitle ?? '—',
+                    cellBuilder: (_, AccessAdminItem item) => Text(
+                      item.subtitle ?? '—',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
             ),

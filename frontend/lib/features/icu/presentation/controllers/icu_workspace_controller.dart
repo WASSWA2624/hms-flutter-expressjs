@@ -136,6 +136,21 @@ final class IcuWorkspaceController
     return _refreshBoard(showLoading: true);
   }
 
+  Future<Result<List<IcuPatientSummary>>> loadMatchingBoardItems() {
+    final IcuWorkspaceState? current = _currentState;
+    if (current == null) {
+      return Future<Result<List<IcuPatientSummary>>>.value(
+        const Result<List<IcuPatientSummary>>.success(<IcuPatientSummary>[]),
+      );
+    }
+    final IcuBoardQuery query = current.query;
+    return loadMatchingAppPageItems<IcuPatientSummary>(
+      loadPage: (AppPageRequest request) {
+        return _repository.listIcuBoard(query.copyWith(pageRequest: request));
+      },
+    );
+  }
+
   Future<AppFailure?> selectPatient(IcuPatientSummary summary) async {
     final IcuWorkspaceState? current = _currentState;
     if (current == null) {

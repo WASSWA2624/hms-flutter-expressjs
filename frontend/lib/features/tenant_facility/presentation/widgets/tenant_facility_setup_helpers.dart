@@ -286,6 +286,56 @@ bool tenantFacilityLooksLikeOpaqueId(String? value) {
   return _tenantFacilityOpaqueIdPattern.hasMatch(trimmed);
 }
 
+/// Authoritative tab badge for `/admin/setup`. Prefer [liveCount] (filtered
+/// list total) when the tab has loaded; otherwise use workspace snapshot
+/// totals for structure lists. Omit when no countable total is available.
+int? tenantFacilitySetupDeskSectionCount({
+  required TenantFacilitySetupDeskSection section,
+  required FacilitySetupSnapshot snapshot,
+  int? liveCount,
+}) {
+  if (liveCount != null) {
+    return liveCount;
+  }
+  return switch (section) {
+    TenantFacilitySetupDeskSection.departments => snapshot.departments.length,
+    TenantFacilitySetupDeskSection.units => snapshot.units.length,
+    TenantFacilitySetupDeskSection.wards => snapshot.wards.length,
+    TenantFacilitySetupDeskSection.rooms => snapshot.rooms.length,
+    TenantFacilitySetupDeskSection.beds => snapshot.beds.length,
+    TenantFacilitySetupDeskSection.facility => snapshot.facilities.length,
+    TenantFacilitySetupDeskSection.tenants ||
+    TenantFacilitySetupDeskSection.roles ||
+    TenantFacilitySetupDeskSection.permissions ||
+    TenantFacilitySetupDeskSection.users ||
+    TenantFacilitySetupDeskSection.clinicalCatalog ||
+    TenantFacilitySetupDeskSection.subscriptionApprovals ||
+    TenantFacilitySetupDeskSection.subscriptionActivations => null,
+  };
+}
+
+/// Single-line atomic table cell (no stacked subtitles, no bold).
+Widget tenantFacilitySetupAtomicCell(
+  String value, {
+  bool muted = false,
+}) {
+  return Builder(
+    builder: (BuildContext context) {
+      final ThemeData theme = Theme.of(context);
+      return Text(
+        value,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: muted
+            ? theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              )
+            : theme.textTheme.bodyMedium,
+      );
+    },
+  );
+}
+
 /// Related-name label that never surfaces opaque ids and flags deleted parents.
 String tenantFacilityRelatedNameLabel(
   String? name, {

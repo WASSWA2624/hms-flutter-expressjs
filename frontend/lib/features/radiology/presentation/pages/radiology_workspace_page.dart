@@ -590,11 +590,16 @@ class _RadiologyOrderBoard extends ConsumerWidget {
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => _printRadiologyWorklist(
+      printFailureMessage: l10n.commonTablePrintFailureMessage,
+      loadMatchingItems: () => matchingItemsOrThrow(
+        controller.loadMatchingOrders(),
+      ),
+      onPrint: (List<RadiologyOrder> items) => _printRadiologyWorklist(
         context,
         ref,
         state: state,
         section: section,
+        items: items,
         canWork: canWork,
         canRequest: canRequest,
         canViewBilling: canViewBilling,
@@ -3498,6 +3503,7 @@ Future<void> _printRadiologyWorklist(
   WidgetRef ref, {
   required RadiologyWorkspaceState state,
   required RadiologyDeskSection section,
+  required List<RadiologyOrder> items,
   required bool canWork,
   required bool canRequest,
   required bool canViewBilling,
@@ -3533,7 +3539,7 @@ Future<void> _printRadiologyWorklist(
           RadiologyWorkspacePrintColumn(id: column.key, label: column.label),
       ];
   final List<Map<String, String>> printRows = <Map<String, String>>[
-    for (final RadiologyOrder item in state.orders.items)
+    for (final RadiologyOrder item in items)
       <String, String>{
         for (final AppListTableColumn<RadiologyOrder> column in columns)
           column.key: _radiologyWorklistPrintCellValue(context, item, column.key),

@@ -213,10 +213,11 @@ List<AppListTableColumn<ReportsWorkspaceItem>> reportItemColumns(
       sortComparator: (ReportsWorkspaceItem left, ReportsWorkspaceItem right) {
         return appListTableCompareText(left.title, right.title);
       },
-      cellBuilder: (_, ReportsWorkspaceItem item) => ReportsTwoLineCell(
-        title: item.title,
-        subtitle: item.subtitle,
-        icon: reportsItemIcon(item.kind),
+      exportValue: (ReportsWorkspaceItem item) => item.title,
+      cellBuilder: (_, ReportsWorkspaceItem item) => Text(
+        item.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     ),
     AppListTableColumn<ReportsWorkspaceItem>(
@@ -225,8 +226,13 @@ List<AppListTableColumn<ReportsWorkspaceItem>> reportItemColumns(
       sortComparator: (ReportsWorkspaceItem left, ReportsWorkspaceItem right) {
         return appListTableCompareText(left.reference, right.reference);
       },
+      exportValue: (ReportsWorkspaceItem item) => item.reference ?? '',
       cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
-        return Text(reportsValueOrUnknown(context, item.reference));
+        return Text(
+          reportsValueOrUnknown(context, item.reference),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
       },
     ),
     AppListTableColumn<ReportsWorkspaceItem>(
@@ -235,8 +241,14 @@ List<AppListTableColumn<ReportsWorkspaceItem>> reportItemColumns(
       sortComparator: (ReportsWorkspaceItem left, ReportsWorkspaceItem right) {
         return appListTableCompareDateTime(left.occurredAt, right.occurredAt);
       },
+      exportValue: (ReportsWorkspaceItem item) =>
+          item.occurredAt?.toIso8601String() ?? '',
       cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
-        return Text(reportsDateTime(context, item.occurredAt));
+        return Text(
+          reportsDateTime(context, item.occurredAt),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
       },
     ),
     AppListTableColumn<ReportsWorkspaceItem>(
@@ -245,6 +257,7 @@ List<AppListTableColumn<ReportsWorkspaceItem>> reportItemColumns(
       sortComparator: (ReportsWorkspaceItem left, ReportsWorkspaceItem right) {
         return appListTableCompareText(left.status, right.status);
       },
+      exportValue: (ReportsWorkspaceItem item) => item.status ?? '',
       cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
         return AppWorkspaceStatusBadge(
           status: reportsTableStatus(context, item.status),
@@ -269,55 +282,100 @@ List<AppListTableColumn<ReportsWorkspaceItem>> reportItemColumnChoices(
 ) {
   return <AppListTableColumn<ReportsWorkspaceItem>>[
     AppListTableColumn<ReportsWorkspaceItem>(
+      id: 'subtitle',
+      label: l10n.reportsDetailsLabel,
+      sortComparator: (ReportsWorkspaceItem left, ReportsWorkspaceItem right) {
+        return appListTableCompareText(left.subtitle, right.subtitle);
+      },
+      exportValue: (ReportsWorkspaceItem item) => item.subtitle ?? '',
+      cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
+        return Text(
+          reportsValueOrUnknown(context, item.subtitle),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
+      },
+    ),
+    AppListTableColumn<ReportsWorkspaceItem>(
       id: 'owner',
       label: l10n.reportsOwnerLabel,
       sortComparator: (ReportsWorkspaceItem left, ReportsWorkspaceItem right) {
         return appListTableCompareText(left.ownerLabel, right.ownerLabel);
       },
+      exportValue: (ReportsWorkspaceItem item) => item.ownerLabel ?? '',
       cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
-        return Text(reportsValueOrUnknown(context, item.ownerLabel));
+        return Text(
+          reportsValueOrUnknown(context, item.ownerLabel),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
       },
     ),
     AppListTableColumn<ReportsWorkspaceItem>(
       id: 'format',
       label: l10n.reportsFormatColumnLabel,
+      exportValue: (ReportsWorkspaceItem item) => item.format ?? '',
       cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
-        return Text(reportsValueOrUnknown(context, item.format));
+        return Text(
+          reportsValueOrUnknown(context, item.format),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
       },
     ),
     AppListTableColumn<ReportsWorkspaceItem>(
       id: 'dataset',
       label: l10n.reportsDatasetLabel,
+      exportValue: (ReportsWorkspaceItem item) => item.datasetKey ?? '',
       cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
-        return Text(reportsValueOrUnknown(context, item.datasetKey));
+        return Text(
+          reportsValueOrUnknown(context, item.datasetKey),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
       },
     ),
     AppListTableColumn<ReportsWorkspaceItem>(
       id: 'facility',
       label: l10n.reportsFacilityLabel,
+      exportValue: (ReportsWorkspaceItem item) => item.facilityLabel ?? '',
       cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
-        return Text(reportsValueOrUnknown(context, item.facilityLabel));
+        return Text(
+          reportsValueOrUnknown(context, item.facilityLabel),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
       },
     ),
     AppListTableColumn<ReportsWorkspaceItem>(
       id: 'category',
       label: l10n.reportsCategoryLabel,
+      exportValue: (ReportsWorkspaceItem item) =>
+          reportsApiLabel(item.category) ?? '',
       cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
         return Text(
           reportsValueOrUnknown(context, reportsApiLabel(item.category)),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         );
       },
     ),
     AppListTableColumn<ReportsWorkspaceItem>(
       id: 'description',
       label: l10n.reportsDetailsLabel,
+      exportValue: (ReportsWorkspaceItem item) => item.description ?? '',
       cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
-        return Text(reportsValueOrUnknown(context, item.description));
+        return Text(
+          reportsValueOrUnknown(context, item.description),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
       },
     ),
     AppListTableColumn<ReportsWorkspaceItem>(
       id: 'value',
       label: l10n.reportsValueLabel,
+      exportValue: (ReportsWorkspaceItem item) => item.value?.toString() ?? '',
       cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
         return Text(
           item.value == null
@@ -326,14 +384,21 @@ List<AppListTableColumn<ReportsWorkspaceItem>> reportItemColumnChoices(
                   item.value!,
                   Localizations.localeOf(context),
                 ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         );
       },
     ),
     AppListTableColumn<ReportsWorkspaceItem>(
       id: 'error',
       label: l10n.reportsErrorLabel,
+      exportValue: (ReportsWorkspaceItem item) => item.errorMessage ?? '',
       cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
-        return Text(reportsValueOrUnknown(context, item.errorMessage));
+        return Text(
+          reportsValueOrUnknown(context, item.errorMessage),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
       },
     ),
   ];
@@ -355,17 +420,23 @@ List<AppListTableColumn<ReportsWorkspaceItem>> scheduleColumns(
       sortComparator: (ReportsWorkspaceItem left, ReportsWorkspaceItem right) {
         return appListTableCompareText(left.title, right.title);
       },
-      cellBuilder: (_, ReportsWorkspaceItem item) => ReportsTwoLineCell(
-        title: item.title,
-        subtitle: item.subtitle,
-        icon: Icons.schedule_outlined,
+      exportValue: (ReportsWorkspaceItem item) => item.title,
+      cellBuilder: (_, ReportsWorkspaceItem item) => Text(
+        item.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     ),
     AppListTableColumn<ReportsWorkspaceItem>(
       id: 'format',
       label: l10n.reportsFormatColumnLabel,
+      exportValue: (ReportsWorkspaceItem item) => item.format ?? '',
       cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
-        return Text(reportsValueOrUnknown(context, item.format));
+        return Text(
+          reportsValueOrUnknown(context, item.format),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
       },
     ),
     AppListTableColumn<ReportsWorkspaceItem>(
@@ -374,8 +445,14 @@ List<AppListTableColumn<ReportsWorkspaceItem>> scheduleColumns(
       sortComparator: (ReportsWorkspaceItem left, ReportsWorkspaceItem right) {
         return appListTableCompareDateTime(left.occurredAt, right.occurredAt);
       },
+      exportValue: (ReportsWorkspaceItem item) =>
+          item.occurredAt?.toIso8601String() ?? '',
       cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
-        return Text(reportsDateTime(context, item.occurredAt));
+        return Text(
+          reportsDateTime(context, item.occurredAt),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
       },
     ),
     AppListTableColumn<ReportsWorkspaceItem>(
@@ -384,6 +461,7 @@ List<AppListTableColumn<ReportsWorkspaceItem>> scheduleColumns(
       sortComparator: (ReportsWorkspaceItem left, ReportsWorkspaceItem right) {
         return appListTableCompareText(left.status, right.status);
       },
+      exportValue: (ReportsWorkspaceItem item) => item.status ?? '',
       cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
         return AppWorkspaceStatusBadge(
           status: reportsTableStatus(context, item.status),
@@ -403,6 +481,59 @@ List<AppListTableColumn<ReportsWorkspaceItem>> scheduleColumns(
   ];
 }
 
+List<AppListTableColumn<ReportsWorkspaceItem>> scheduleColumnChoices(
+  BuildContext context,
+  AppLocalizations l10n,
+) {
+  return <AppListTableColumn<ReportsWorkspaceItem>>[
+    AppListTableColumn<ReportsWorkspaceItem>(
+      id: 'reference',
+      label: l10n.reportsReferenceLabel,
+      sortComparator: (ReportsWorkspaceItem left, ReportsWorkspaceItem right) {
+        return appListTableCompareText(left.reference, right.reference);
+      },
+      exportValue: (ReportsWorkspaceItem item) => item.reference ?? '',
+      cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
+        return Text(
+          reportsValueOrUnknown(context, item.reference),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
+      },
+    ),
+    AppListTableColumn<ReportsWorkspaceItem>(
+      id: 'owner',
+      label: l10n.reportsOwnerLabel,
+      sortComparator: (ReportsWorkspaceItem left, ReportsWorkspaceItem right) {
+        return appListTableCompareText(left.ownerLabel, right.ownerLabel);
+      },
+      exportValue: (ReportsWorkspaceItem item) => item.ownerLabel ?? '',
+      cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
+        return Text(
+          reportsValueOrUnknown(context, item.ownerLabel),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
+      },
+    ),
+    AppListTableColumn<ReportsWorkspaceItem>(
+      id: 'subtitle',
+      label: l10n.reportsDetailsLabel,
+      sortComparator: (ReportsWorkspaceItem left, ReportsWorkspaceItem right) {
+        return appListTableCompareText(left.subtitle, right.subtitle);
+      },
+      exportValue: (ReportsWorkspaceItem item) => item.subtitle ?? '',
+      cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
+        return Text(
+          reportsValueOrUnknown(context, item.subtitle),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
+      },
+    ),
+  ];
+}
+
 List<AppListTableColumn<ComplianceLogItem>> complianceLogColumns(
   BuildContext context,
   WidgetRef ref,
@@ -417,10 +548,11 @@ List<AppListTableColumn<ComplianceLogItem>> complianceLogColumns(
       sortComparator: (ComplianceLogItem left, ComplianceLogItem right) {
         return appListTableCompareText(left.title, right.title);
       },
-      cellBuilder: (_, ComplianceLogItem item) => ReportsTwoLineCell(
-        title: item.title,
-        subtitle: item.subtitle,
-        icon: Icons.manage_search_outlined,
+      exportValue: (ComplianceLogItem item) => item.title,
+      cellBuilder: (_, ComplianceLogItem item) => Text(
+        item.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     ),
     AppListTableColumn<ComplianceLogItem>(
@@ -429,8 +561,13 @@ List<AppListTableColumn<ComplianceLogItem>> complianceLogColumns(
       sortComparator: (ComplianceLogItem left, ComplianceLogItem right) {
         return appListTableCompareText(left.userLabel, right.userLabel);
       },
+      exportValue: (ComplianceLogItem item) => item.userLabel ?? '',
       cellBuilder: (BuildContext context, ComplianceLogItem item) {
-        return Text(reportsValueOrUnknown(context, item.userLabel));
+        return Text(
+          reportsValueOrUnknown(context, item.userLabel),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
       },
     ),
     AppListTableColumn<ComplianceLogItem>(
@@ -442,8 +579,13 @@ List<AppListTableColumn<ComplianceLogItem>> complianceLogColumns(
           right.recordReference,
         );
       },
+      exportValue: (ComplianceLogItem item) => item.recordReference ?? '',
       cellBuilder: (BuildContext context, ComplianceLogItem item) {
-        return Text(reportsValueOrUnknown(context, item.recordReference));
+        return Text(
+          reportsValueOrUnknown(context, item.recordReference),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
       },
     ),
     AppListTableColumn<ComplianceLogItem>(
@@ -452,8 +594,14 @@ List<AppListTableColumn<ComplianceLogItem>> complianceLogColumns(
       sortComparator: (ComplianceLogItem left, ComplianceLogItem right) {
         return appListTableCompareDateTime(left.occurredAt, right.occurredAt);
       },
+      exportValue: (ComplianceLogItem item) =>
+          item.occurredAt?.toIso8601String() ?? '',
       cellBuilder: (BuildContext context, ComplianceLogItem item) {
-        return Text(reportsDateTime(context, item.occurredAt));
+        return Text(
+          reportsDateTime(context, item.occurredAt),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
       },
     ),
     if (canExport)
@@ -474,74 +622,114 @@ List<AppListTableColumn<ComplianceLogItem>> complianceLogColumnChoices(
     AppListTableColumn<ComplianceLogItem>(
       id: 'patient',
       label: l10n.reportsPatientLabel,
+      exportValue: (ComplianceLogItem item) => item.patientLabel ?? '',
       cellBuilder: (BuildContext context, ComplianceLogItem item) {
-        return Text(reportsValueOrUnknown(context, item.patientLabel));
+        return Text(
+          reportsValueOrUnknown(context, item.patientLabel),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
       },
     ),
     AppListTableColumn<ComplianceLogItem>(
       id: 'action',
       label: l10n.reportsActionLabel,
+      exportValue: (ComplianceLogItem item) =>
+          reportsApiLabel(item.action) ?? '',
       cellBuilder: (BuildContext context, ComplianceLogItem item) {
         return Text(
           reportsValueOrUnknown(context, reportsApiLabel(item.action)),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         );
       },
     ),
     AppListTableColumn<ComplianceLogItem>(
       id: 'entity',
       label: l10n.reportsEntityLabel,
+      exportValue: (ComplianceLogItem item) =>
+          reportsApiLabel(item.entity) ?? '',
       cellBuilder: (BuildContext context, ComplianceLogItem item) {
         return Text(
           reportsValueOrUnknown(context, reportsApiLabel(item.entity)),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         );
       },
     ),
     AppListTableColumn<ComplianceLogItem>(
       id: 'scope',
       label: l10n.reportsScopeLabel,
+      exportValue: (ComplianceLogItem item) =>
+          reportsApiLabel(item.scope) ?? '',
       cellBuilder: (BuildContext context, ComplianceLogItem item) {
         return Text(
           reportsValueOrUnknown(context, reportsApiLabel(item.scope)),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         );
       },
     ),
     AppListTableColumn<ComplianceLogItem>(
       id: 'purpose',
       label: l10n.reportsPurposeLabel,
+      exportValue: (ComplianceLogItem item) =>
+          reportsApiLabel(item.purpose) ?? '',
       cellBuilder: (BuildContext context, ComplianceLogItem item) {
         return Text(
           reportsValueOrUnknown(context, reportsApiLabel(item.purpose)),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         );
       },
     ),
     AppListTableColumn<ComplianceLogItem>(
       id: 'legal_basis',
       label: l10n.reportsLegalBasisLabel,
+      exportValue: (ComplianceLogItem item) =>
+          reportsApiLabel(item.legalBasis) ?? '',
       cellBuilder: (BuildContext context, ComplianceLogItem item) {
         return Text(
           reportsValueOrUnknown(context, reportsApiLabel(item.legalBasis)),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         );
       },
     ),
     AppListTableColumn<ComplianceLogItem>(
       id: 'facility',
       label: l10n.reportsFacilityLabel,
+      exportValue: (ComplianceLogItem item) => item.facilityLabel ?? '',
       cellBuilder: (BuildContext context, ComplianceLogItem item) {
-        return Text(reportsValueOrUnknown(context, item.facilityLabel));
+        return Text(
+          reportsValueOrUnknown(context, item.facilityLabel),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
       },
     ),
     AppListTableColumn<ComplianceLogItem>(
       id: 'ip_address',
       label: l10n.reportsIpAddressLabel,
+      exportValue: (ComplianceLogItem item) => item.ipAddress ?? '',
       cellBuilder: (BuildContext context, ComplianceLogItem item) {
-        return Text(reportsValueOrUnknown(context, item.ipAddress));
+        return Text(
+          reportsValueOrUnknown(context, item.ipAddress),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
       },
     ),
     AppListTableColumn<ComplianceLogItem>(
       id: 'details',
       label: l10n.reportsDetailsLabel,
+      exportValue: (ComplianceLogItem item) => item.details ?? '',
       cellBuilder: (BuildContext context, ComplianceLogItem item) {
-        return Text(reportsValueOrUnknown(context, item.details));
+        return Text(
+          reportsValueOrUnknown(context, item.details),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
       },
     ),
   ];
@@ -559,6 +747,7 @@ AppListTableColumn<ReportsWorkspaceItem> _reportNextActionColumn({
     id: 'next_action',
     label: l10n.reportsNextActionColumnLabel,
     alwaysVisible: true,
+    exportable: false,
     cellBuilder: (BuildContext context, ReportsWorkspaceItem item) {
       return ReportNextActionCell(
         item: item,
@@ -581,6 +770,7 @@ AppListTableColumn<ComplianceLogItem> _complianceNextActionColumn({
     id: 'next_action',
     label: l10n.reportsNextActionColumnLabel,
     alwaysVisible: true,
+    exportable: false,
     cellBuilder: (BuildContext context, ComplianceLogItem item) {
       final String? label = complianceNextActionLabel(
         l10n,
@@ -708,7 +898,6 @@ class ReportsCompactActionButton extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: primaryColor,
-                        fontWeight: AppFontWeight.emphasis,
                       ),
                     ),
                   ),
@@ -721,58 +910,6 @@ class ReportsCompactActionButton extends StatelessWidget {
     );
   }
 }
-
-class ReportsTwoLineCell extends StatelessWidget {
-  const ReportsTwoLineCell({
-    required this.title,
-    this.subtitle,
-    this.icon,
-    super.key,
-  });
-
-  final String title;
-  final String? subtitle;
-  final IconData? icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        if (icon != null) ...<Widget>[
-          Icon(icon, size: theme.appTokens.listIconSize),
-          SizedBox(width: theme.spacing.xs),
-        ],
-        Flexible(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Text(
-                title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleSmall,
-              ),
-              if (subtitle != null && subtitle!.isNotEmpty)
-                Text(
-                  subtitle!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-
 
 class ReportsMobileTile extends StatelessWidget {
   const ReportsMobileTile({

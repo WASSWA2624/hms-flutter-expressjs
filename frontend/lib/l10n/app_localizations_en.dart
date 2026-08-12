@@ -216,6 +216,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonTableExportFailureMessage => 'Export failed. Try again.';
 
   @override
+  String get commonTablePrintFailureMessage => 'Print failed. Try again.';
+
+  @override
   String get commonTableExportDateRangeLabel => 'Date range';
 
   @override
@@ -18442,6 +18445,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportsAllDatasetsLabel => 'All datasets';
+
+  @override
+  String get reportsTriggerFilterLabel => 'Trigger';
+
+  @override
+  String get reportsAllTriggersLabel => 'All triggers';
 
   @override
   String get reportsPanelOverview => 'Overview';

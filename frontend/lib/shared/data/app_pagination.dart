@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 
 @immutable
 final class AppPageRequest {
@@ -107,4 +108,69 @@ final class AppPage<T> {
   @override
   int get hashCode =>
       Object.hash(Object.hashAll(items), request, totalItemCount);
+}
+
+/// Loads every row that matches the current list query by walking [AppPage]
+/// results until [AppPage.hasNextPage] is false.
+///
+/// Each request uses [pageSize] clamped to [AppPageRequest.maxPageSize].
+/// Callers must pass the same search, filters, and scope as the table query.
+Future<Result<List<T>>> loadMatchingAppPageItems<T>({
+  required Future<Result<AppPage<T>>> Function(AppPageRequest request) loadPage,
+  int pageSize = AppPageRequest.maxPageSize,
+}) async {
+  final int size = pageSize < 1
+      ? AppPageRequest.maxPageSize
+      : (pageSize > AppPageRequest.maxPageSize
+            ? AppPageRequest.maxPageSize
+            : pageSize);
+  AppPageRequest request = AppPageRequest(pageIndex: 0, pageSize: size);
+  final List<T> items = <T>[];
+  const int maxPages = 10000;
+  for (int pageNumber = 0; pageNumber < maxPages; pageNumber += 1) {
+    final Result<AppPage<T>> result = await loadPage(request);
+    switch (result) {
+      case ResultFailure<AppPage<T>>(:final failure):
+        return Result<List<T>>.failure(failure);
+      case ResultSuccess<AppPage<T>>(:final value):
+        items.addAll(value.items);
+        final int? total = value.totalItemCount;
+        if (total != null && items.length >= total) {
+          return Result<List<T>>.success(List<T>.unmodifiable(items));
+        }
+        if (!value.hasNextPage || value.items.isEmpty) {
+          return Result<List<T>>.success(List<T>.unmodifiable(items));
+        }
+        request = request.next();
+    }
+  }
+  return Result<List<T>>.success(List<T>.unmodifiable(items));
+}
+
+/// Unwraps [loadMatchingAppPageItems] for table export/print loaders.
+Future<List<T>> matchingAppPageItemsOrThrow<T>({
+  required Future<Result<AppPage<T>>> Function(AppPageRequest request) loadPage,
+  int pageSize = AppPageRequest.maxPageSize,
+}) async {
+  final Result<List<T>> result = await loadMatchingAppPageItems<T>(
+    loadPage: loadPage,
+    pageSize: pageSize,
+  );
+  return result.when(
+    success: (List<T> items) => items,
+    failure: (failure) {
+      throw failure;
+    },
+  );
+}
+
+/// Unwraps a matching-dataset [Result] for [AppListTable] loaders.
+Future<List<T>> matchingItemsOrThrow<T>(Future<Result<List<T>>> future) async {
+  final Result<List<T>> result = await future;
+  return result.when(
+    success: (List<T> items) => items,
+    failure: (failure) {
+      throw failure;
+    },
+  );
 }

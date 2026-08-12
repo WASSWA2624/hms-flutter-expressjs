@@ -274,6 +274,23 @@ final class RadiologyWorkspaceController
     return _refreshWorkbench(showLoading: true);
   }
 
+  Future<Result<List<RadiologyOrder>>> loadMatchingOrders() {
+    final RadiologyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return Future<Result<List<RadiologyOrder>>>.value(
+        const Result<List<RadiologyOrder>>.success(<RadiologyOrder>[]),
+      );
+    }
+    final RadiologyWorkspaceQuery query = current.query;
+    return loadMatchingAppPageItems<RadiologyOrder>(
+      loadPage: (AppPageRequest request) async {
+        final Result<RadiologyWorkbench> result = await _repository
+            .getWorkbench(query.copyWith(pageRequest: request));
+        return result.map((RadiologyWorkbench workbench) => workbench.orders);
+      },
+    );
+  }
+
   Future<AppFailure?> searchReferences({
     String? search,
     String? patientId,

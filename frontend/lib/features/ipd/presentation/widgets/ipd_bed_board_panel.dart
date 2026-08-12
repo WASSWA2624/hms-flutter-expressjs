@@ -201,10 +201,10 @@ class _IpdBedBoardPanelState extends ConsumerState<IpdBedBoardPanel> {
       enablePrint: true,
       canPrint: canPrintIpdWorkspace(policy),
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => _printIpdBedBoardList(
+      onPrint: (List<IpdBedBoardEntry> items) => _printIpdBedBoardList(
         context,
         ref,
-        state: state,
+        items: items,
         canManageBeds: widget.canManageBeds,
         l10n: l10n,
       ),
@@ -553,7 +553,7 @@ AppListTableColumn<IpdBedBoardEntry> _ipdBedBoardColumn(
 Future<void> _printIpdBedBoardList(
   BuildContext context,
   WidgetRef ref, {
-  required IpdWorkspaceState state,
+  required List<IpdBedBoardEntry> items,
   required bool canManageBeds,
   required AppLocalizations l10n,
 }) async {
@@ -580,7 +580,7 @@ Future<void> _printIpdBedBoardList(
           IpdWorkspacePrintColumn(id: column.key, label: column.label),
       ];
   final List<Map<String, String>> printRows = <Map<String, String>>[
-    for (final IpdBedBoardEntry bed in state.bedBoard)
+    for (final IpdBedBoardEntry bed in items)
       <String, String>{
         for (final AppListTableColumn<IpdBedBoardEntry> column in columns)
           column.key: _ipdBedBoardPrintCellValue(context, bed, column.key),

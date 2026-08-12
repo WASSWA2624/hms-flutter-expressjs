@@ -234,6 +234,26 @@ final class ClinicalWorkspaceController
     return _refreshWorklist(showLoading: true);
   }
 
+  Future<Result<List<ClinicalWorklistEntry>>> loadMatchingWorklistItems() {
+    final ClinicalWorkspaceState? current = _currentState;
+    if (current == null) {
+      return Future<Result<List<ClinicalWorklistEntry>>>.value(
+        const Result<List<ClinicalWorklistEntry>>.success(
+          <ClinicalWorklistEntry>[],
+        ),
+      );
+    }
+    final ClinicalWorklistQuery query = current.query;
+    return loadMatchingAppPageItems<ClinicalWorklistEntry>(
+      loadPage: (AppPageRequest request) async {
+        final Result<_ClinicalWorklistLoad> result = await _loadWorklist(
+          query.copyWith(pageRequest: request),
+        );
+        return result.map((_ClinicalWorklistLoad loaded) => loaded.page);
+      },
+    );
+  }
+
   Future<AppFailure?> selectEntry(ClinicalWorklistEntry entry) async {
     final ClinicalWorkspaceState? current = _currentState;
     if (current == null) {

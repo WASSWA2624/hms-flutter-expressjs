@@ -2563,12 +2563,13 @@ class _OpdMainTable extends ConsumerWidget {
         enablePrint: true,
         canPrint: canPrintOpdWorkspace(policy),
         printLabel: l10n.commonPrintActionLabel,
-        onPrint: () => _printOpdWorkspaceList(
+        printFailureMessage: l10n.commonTablePrintFailureMessage,
+        onPrint: (List<_OpdTableItem> items) => _printOpdWorkspaceList(
           context,
           ref,
           section: section,
           state: state,
-          items: exportItems,
+          items: items,
           showNextAction: showNextAction,
           l10n: l10n,
         ),

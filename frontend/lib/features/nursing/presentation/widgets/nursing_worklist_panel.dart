@@ -92,10 +92,14 @@ class NursingWorklistPanel extends ConsumerWidget {
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => _printNursingWorklist(
+      printFailureMessage: l10n.commonTablePrintFailureMessage,
+      loadMatchingItems: () => matchingItemsOrThrow(
+        controller.loadMatchingWorkItems(),
+      ),
+      onPrint: (List<NursingWorkItem> items) => _printNursingWorklist(
         context,
         ref,
-        state: state,
+        items: items,
         scope: scope,
         policy: policy,
         l10n: l10n,
@@ -238,7 +242,7 @@ String _scopeLabel(AppLocalizations l10n, NursingQueueScope scope) {
 Future<void> _printNursingWorklist(
   BuildContext context,
   WidgetRef ref, {
-  required NursingWorkspaceState state,
+  required List<NursingWorkItem> items,
   required NursingQueueScope scope,
   required AppAccessPolicy policy,
   required AppLocalizations l10n,
@@ -256,7 +260,7 @@ Future<void> _printNursingWorklist(
           NursingWorkspacePrintColumn(id: column.key, label: column.label),
       ];
   final List<Map<String, String>> printRows = <Map<String, String>>[
-    for (final NursingWorkItem item in state.worklist.items)
+    for (final NursingWorkItem item in items)
       <String, String>{
         for (final AppListTableColumn<NursingWorkItem> column in columns)
           column.key: nursingWorklistExportCellValue(

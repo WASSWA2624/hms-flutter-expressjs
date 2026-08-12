@@ -757,7 +757,12 @@ class _ClaimsQueuePanel extends ConsumerWidget {
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => printClaimsListTable<ClaimsQueueItem>(
+      printFailureMessage: l10n.commonTablePrintFailureMessage,
+      loadMatchingItems: () => matchingItemsOrThrow(
+        controller.loadMatchingQueueItems(),
+      ),
+      onPrint: (List<ClaimsQueueItem> items) =>
+          printClaimsListTable<ClaimsQueueItem>(
         ref: ref,
         context: context,
         title: switch (section) {
@@ -770,7 +775,7 @@ class _ClaimsQueuePanel extends ConsumerWidget {
           ...columns,
           ...columnChoices,
         ],
-        items: state.queue.items,
+        items: items,
         emptyText: l10n.claimsEmptyQueueTitle,
       ),
       goToTopLabel: l10n.commonGoToTopActionLabel,

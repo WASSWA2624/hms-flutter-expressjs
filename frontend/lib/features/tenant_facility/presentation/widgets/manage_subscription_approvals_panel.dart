@@ -21,7 +21,12 @@ import 'package:hosspi_hms/shared/management/platform_management_list_sync.dart'
 
 /// Platform setup tab: pending self-registrations awaiting Pro trial activation.
 class ManageSubscriptionApprovalsPanel extends ConsumerStatefulWidget {
-  const ManageSubscriptionApprovalsPanel({super.key});
+  const ManageSubscriptionApprovalsPanel({
+    super.key,
+    this.onListTotalChanged,
+  });
+
+  final ValueChanged<int>? onListTotalChanged;
 
   @override
   ConsumerState<ManageSubscriptionApprovalsPanel> createState() =>
@@ -121,6 +126,7 @@ class _ManageSubscriptionApprovalsPanelState
           _items = data.page.items;
           _totalItemCount = data.page.totalItemCount ?? data.page.items.length;
         });
+        widget.onListTotalChanged?.call(_totalItemCount);
       },
       failure: (AppFailure loadFailure) {
         setState(() {

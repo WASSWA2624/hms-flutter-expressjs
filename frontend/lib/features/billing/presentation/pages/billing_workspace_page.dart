@@ -507,10 +507,14 @@ class _BillingQueuePanel extends ConsumerWidget {
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => _printBillingWorklist(
+      printFailureMessage: l10n.commonTablePrintFailureMessage,
+      loadMatchingItems: () => matchingItemsOrThrow(
+        ref.read(billingWorkspaceControllerProvider.notifier).loadMatchingWorkItems(),
+      ),
+      onPrint: (List<BillingWorkItem> items) => _printBillingWorklist(
         context,
         ref,
-        rows: state.workItems.items,
+        rows: items,
         columns: <AppListTableColumn<BillingWorkItem>>[
           ...columns,
           ...columnChoices,

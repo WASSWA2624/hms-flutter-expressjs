@@ -437,6 +437,21 @@ final class HrWorkspaceController
     return _refreshWorkItems(showLoading: true);
   }
 
+  Future<Result<List<HrWorkItem>>> loadMatchingWorkItems() {
+    final HrWorkspaceState? current = _currentState;
+    if (current == null) {
+      return Future<Result<List<HrWorkItem>>>.value(
+        const Result<List<HrWorkItem>>.success(<HrWorkItem>[]),
+      );
+    }
+    final HrWorkItemsQuery query = current.workItemsQuery;
+    return loadMatchingAppPageItems<HrWorkItem>(
+      loadPage: (AppPageRequest request) {
+        return _repository.listWorkItems(query.copyWith(pageRequest: request));
+      },
+    );
+  }
+
   Future<AppFailure?> createStaffProfile(Map<String, Object?> payload) async {
     final HrWorkspaceState? current = _currentState;
     if (current == null) {

@@ -286,23 +286,16 @@ void main() {
         )
         .toList();
     expect(complianceTables, isNotEmpty);
-    expect(
-      complianceTables.first.search?.filterGroups
-          .expand((AppSearchBarFilterGroup group) => group.choices)
-          .any((AppSearchBarFilterChoice choice) => choice.label == 'Catalog'),
-      isFalse,
-    );
-    expect(
-      complianceTables.first.search?.filterGroups
-          .expand((AppSearchBarFilterGroup group) => group.choices)
-          .any(
-            (AppSearchBarFilterChoice choice) => choice.label == 'Audit logs',
-          ),
-      isTrue,
-    );
+    final List<String> tabLabels = tester
+        .widget<AppTabStrip>(find.byType(AppTabStrip))
+        .tabs
+        .map((AppTabItem tab) => tab.label)
+        .toList();
+    expect(tabLabels, isNot(contains('Catalog')));
+    expect(tabLabels, contains('Audit logs'));
   });
 
-  testWidgets('catalog-only filters omit compliance Audit panel choice', (
+  testWidgets('catalog-only tabs omit compliance Audit tab', (
     WidgetTester tester,
   ) async {
     await _pumpReports(tester, repository: repository, policy: _policy());
@@ -312,25 +305,13 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pumpAndSettle();
 
-    final AppListTable<ReportsWorkspaceItem> itemsTable = tester
-        .widgetList<AppListTable<ReportsWorkspaceItem>>(
-          find.byType(AppListTable<ReportsWorkspaceItem>),
-        )
-        .first;
-    expect(
-      itemsTable.search?.filterGroups
-          .expand((AppSearchBarFilterGroup group) => group.choices)
-          .any(
-            (AppSearchBarFilterChoice choice) => choice.label == 'Audit logs',
-          ),
-      isFalse,
-    );
-    expect(
-      itemsTable.search?.filterGroups
-          .expand((AppSearchBarFilterGroup group) => group.choices)
-          .any((AppSearchBarFilterChoice choice) => choice.label == 'Catalog'),
-      isTrue,
-    );
+    final List<String> tabLabels = tester
+        .widget<AppTabStrip>(find.byType(AppTabStrip))
+        .tabs
+        .map((AppTabItem tab) => tab.label)
+        .toList();
+    expect(tabLabels, contains('Catalog'));
+    expect(tabLabels, isNot(contains('Audit logs')));
   });
 
   testWidgets('export next-action absent without evidence:export', (
@@ -621,7 +602,7 @@ void main() {
   });
 
   testWidgets(
-    'union of reports:read + compliance:read shows Catalog and Audit filters',
+    'union of reports:read + compliance:read shows Catalog and Audit tabs',
     (WidgetTester tester) async {
       final AppAccessPolicy both = _policy(
         permissions: <AppPermission>{
@@ -636,17 +617,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpAndSettle();
 
-      final AppListTable<ReportsWorkspaceItem> itemsTable = tester
-          .widgetList<AppListTable<ReportsWorkspaceItem>>(
-            find.byType(AppListTable<ReportsWorkspaceItem>),
-          )
-          .first;
-      final Iterable<String> panelLabels = itemsTable.search!.filterGroups
-          .expand((AppSearchBarFilterGroup group) => group.choices)
-          .map((AppSearchBarFilterChoice choice) => choice.label);
-
-      expect(panelLabels, contains('Catalog'));
-      expect(panelLabels, contains('Audit logs'));
+      expect(find.text('Catalog'), findsWidgets);
+      final List<String> tabLabels = tester
+          .widget<AppTabStrip>(find.byType(AppTabStrip))
+          .tabs
+          .map((AppTabItem tab) => tab.label)
+          .toList();
+      expect(tabLabels, contains('Catalog'));
+      expect(tabLabels, contains('Audit logs'));
       expect(find.text('Daily census'), findsWidgets);
       expect(find.text('Daily census email'), findsOneWidget);
     },

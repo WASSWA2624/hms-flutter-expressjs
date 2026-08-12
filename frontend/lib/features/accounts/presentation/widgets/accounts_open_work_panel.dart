@@ -136,12 +136,12 @@ class _AccountsOpenWorkPanelState extends ConsumerState<AccountsOpenWorkPanel> {
       enablePrint: true,
       canPrint: canPrint,
       printLabel: context.l10n.commonPrintActionLabel,
-      onPrint: () => printAccountsListTable<AccountsWorkItem>(
+      onPrint: (items) => printAccountsListTable<AccountsWorkItem>(
         ref: ref,
         context: context,
         title: AccountsStrings.openWorkLabel,
         columns: columns,
-        items: state.workItems.items,
+        items: items,
         emptyText: AccountsStrings.openWorkEmpty,
       ),
       goToTopLabel: context.l10n.commonGoToTopActionLabel,

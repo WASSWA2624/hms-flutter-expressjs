@@ -172,6 +172,23 @@ final class PharmacyWorkspaceController
     return _refreshOrders(showLoading: true);
   }
 
+  Future<Result<List<PharmacyOrder>>> loadMatchingOrders() {
+    final PharmacyWorkspaceState? current = _currentState;
+    if (current == null) {
+      return Future<Result<List<PharmacyOrder>>>.value(
+        const Result<List<PharmacyOrder>>.success(<PharmacyOrder>[]),
+      );
+    }
+    final PharmacyWorkbenchQuery query = current.query;
+    return loadMatchingAppPageItems<PharmacyOrder>(
+      loadPage: (AppPageRequest request) async {
+        final Result<PharmacyWorkbench> result = await _repository
+            .loadWorkbench(query.copyWith(pageRequest: request));
+        return result.map((PharmacyWorkbench workbench) => workbench.orders);
+      },
+    );
+  }
+
   Future<AppFailure?> selectOrder(PharmacyOrder order) async {
     final PharmacyWorkspaceState? current = _currentState;
     if (current == null) {

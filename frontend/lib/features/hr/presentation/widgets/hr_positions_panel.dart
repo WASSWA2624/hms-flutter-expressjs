@@ -478,7 +478,7 @@ class _HrPositionsPanelState extends ConsumerState<HrPositionsPanel> {
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => printHrListTable<HrStaffPosition>(
+      onPrint: (List<HrStaffPosition> items) => printHrListTable<HrStaffPosition>(
         ref: ref,
         context: context,
         title: l10n.hrPositionsTabLabel,
@@ -529,7 +529,7 @@ class _HrPositionsPanelState extends ConsumerState<HrPositionsPanel> {
             ),
           ),
         ],
-        items: _page.items,
+        items: items,
         emptyText: l10n.hrNoPositionsTitle,
       ),
       goToTopLabel: l10n.commonGoToTopActionLabel,

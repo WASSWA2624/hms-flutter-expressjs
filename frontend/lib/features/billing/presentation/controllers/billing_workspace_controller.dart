@@ -227,6 +227,21 @@ final class BillingWorkspaceController
     return _refreshWorkspace();
   }
 
+  Future<Result<List<BillingWorkItem>>> loadMatchingWorkItems() {
+    final BillingWorkspaceState? current = _currentState;
+    if (current == null) {
+      return Future<Result<List<BillingWorkItem>>>.value(
+        const Result<List<BillingWorkItem>>.success(<BillingWorkItem>[]),
+      );
+    }
+    final BillingWorkspaceQuery query = current.query;
+    return loadMatchingAppPageItems<BillingWorkItem>(
+      loadPage: (AppPageRequest request) {
+        return _repository.listWorkItems(query.copyWith(pageRequest: request));
+      },
+    );
+  }
+
   void selectItem(BillingWorkItem item) {
     final BillingWorkspaceState? current = _currentState;
     if (current == null) {

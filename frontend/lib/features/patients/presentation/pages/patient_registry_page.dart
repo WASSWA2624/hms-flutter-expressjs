@@ -1041,8 +1041,17 @@ class _PatientList extends ConsumerWidget {
       enablePrint: true,
       canPrint: canPrintPatientRegistry(policy),
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () =>
-          _printPatientRegistryList(context, ref, state, section, l10n),
+      printFailureMessage: l10n.commonTablePrintFailureMessage,
+      loadMatchingItems: () => matchingItemsOrThrow(
+        ref.read(patientRegistryControllerProvider.notifier).loadMatchingPatients(),
+      ),
+      onPrint: (List<Patient> items) => _printPatientRegistryList(
+        context,
+        ref,
+        items,
+        section,
+        l10n,
+      ),
       goToTopLabel: l10n.commonGoToTopActionLabel,
       loadingMoreLabel: l10n.commonLoadingMoreLabel,
       allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
@@ -1168,14 +1177,14 @@ class _PatientList extends ConsumerWidget {
 Future<void> _printPatientRegistryList(
   BuildContext context,
   WidgetRef ref,
-  PatientRegistryState state,
+  List<Patient> items,
   PatientRegistrySection section,
   AppLocalizations l10n,
 ) async {
   final List<PatientRegistryPrintColumn> printColumns =
       _patientRegistryPrintColumns(context, ref, section, l10n);
   final List<Map<String, String>> printRows = <Map<String, String>>[
-    for (final Patient patient in state.page.items)
+    for (final Patient patient in items)
       <String, String>{
         for (final PatientRegistryPrintColumn column in printColumns)
           column.id: _patientRegistryPrintCellValue(

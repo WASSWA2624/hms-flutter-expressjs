@@ -620,7 +620,12 @@ class _PharmacyQueuePanel extends ConsumerWidget {
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => printPharmacyListTable<PharmacyOrder>(
+      printFailureMessage: l10n.commonTablePrintFailureMessage,
+      loadMatchingItems: () => matchingItemsOrThrow(
+        controller.loadMatchingOrders(),
+      ),
+      onPrint: (List<PharmacyOrder> items) =>
+          printPharmacyListTable<PharmacyOrder>(
         ref: ref,
         context: context,
         title: pharmacySectionLabel(l10n, section),
@@ -628,7 +633,7 @@ class _PharmacyQueuePanel extends ConsumerWidget {
           ...visibleColumns,
           ...columnChoices,
         ],
-        items: state.workbench.orders.items,
+        items: items,
         emptyText: l10n.pharmacyNoOrdersTitle,
       ),
       exportConfig: AppListTableExportConfig<PharmacyOrder>(

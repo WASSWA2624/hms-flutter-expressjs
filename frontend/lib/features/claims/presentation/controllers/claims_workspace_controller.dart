@@ -222,6 +222,21 @@ final class ClaimsWorkspaceController
     return _refreshQueue();
   }
 
+  Future<Result<List<ClaimsQueueItem>>> loadMatchingQueueItems() {
+    final ClaimsWorkspaceState? current = _currentState;
+    if (current == null) {
+      return Future<Result<List<ClaimsQueueItem>>>.value(
+        const Result<List<ClaimsQueueItem>>.success(<ClaimsQueueItem>[]),
+      );
+    }
+    final ClaimsQueueQuery query = current.query;
+    return loadMatchingAppPageItems<ClaimsQueueItem>(
+      loadPage: (AppPageRequest request) {
+        return _repository.listQueue(query.copyWith(pageRequest: request));
+      },
+    );
+  }
+
   Future<AppFailure?> selectItem(ClaimsQueueItem item) async {
     final ClaimsWorkspaceState? current = _currentState;
     if (current == null) {

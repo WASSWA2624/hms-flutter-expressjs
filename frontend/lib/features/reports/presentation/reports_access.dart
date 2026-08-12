@@ -105,6 +105,23 @@ bool canExportEvidence(AppAccessPolicy policy) {
   return reportsExportRequirement.isAllowed(policy) || _isReportsAdmin(policy);
 }
 
+/// Worklist Export / Print — ∩ `evidence:export` (omit when unauthorized).
+const AccessRequirement reportsWorkspaceExportRequirement =
+    reportsExportRequirement;
+
+/// Alias — list Print uses the same desk export gate.
+const AccessRequirement reportsWorkspacePrintRequirement =
+    reportsWorkspaceExportRequirement;
+
+bool canExportReportsWorkspace(AppAccessPolicy policy) {
+  return canExportEvidence(policy);
+}
+
+bool canPrintReportsWorkspace(AppAccessPolicy policy) {
+  return reportsWorkspacePrintRequirement.isAllowed(policy) ||
+      _isReportsAdmin(policy);
+}
+
 AccessRequirement reportsPanelReadRequirement(ReportsWorkspacePanel panel) {
   return panel.isCompliance
       ? reportsComplianceReadRequirement

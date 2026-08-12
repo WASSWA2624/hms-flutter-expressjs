@@ -105,10 +105,10 @@ class _IcuBedBoardPanelState extends ConsumerState<IcuBedBoardPanel> {
       enablePrint: true,
       canPrint: canPrintIcuWorkspace(policy),
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => _printIcuBedBoardList(
+      onPrint: (List<IcuBed> items) => _printIcuBedBoardList(
         context,
         ref,
-        beds: beds,
+        beds: items,
         columns: <AppListTableColumn<IcuBed>>[
           ...columns.defaults,
           ...columns.choices,

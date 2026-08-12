@@ -930,7 +930,11 @@ class _HrWorkQueueTableState extends ConsumerState<_HrWorkQueueTable> {
       enablePrint: true,
       canPrint: canPrintHrWorkspace(ref.watch(appAccessPolicyProvider)),
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => printHrListTable<HrWorkItem>(
+      printFailureMessage: l10n.commonTablePrintFailureMessage,
+      loadMatchingItems: () => matchingItemsOrThrow(
+        controller.loadMatchingWorkItems(),
+      ),
+      onPrint: (List<HrWorkItem> items) => printHrListTable<HrWorkItem>(
         ref: ref,
         context: context,
         title: hrQueueLabel(l10n, queue),
@@ -969,7 +973,7 @@ class _HrWorkQueueTableState extends ConsumerState<_HrWorkQueueTable> {
           ),
           ..._workQueueColumnChoices(context, queue),
         ],
-        items: state.workItems.items,
+        items: items,
         emptyText: queue == HrQueue.payrollDrafts
             ? l10n.hrPayCompensationEmptyTitle
             : l10n.hrNoQueueItemsTitle,
@@ -2515,7 +2519,9 @@ AppListTableColumn<HrWorkItem> _workItemNextActionColumn(
       };
       return AppAccessActionGate(
         requirement: requirement,
-        hideWhenDenied: true,
+        // Payroll keeps the next-action label visible when denied so operators
+        // can see the pending step; other queues omit unauthorized chrome.
+        hideWhenDenied: item.queue != HrQueue.payrollDrafts,
         builder: (BuildContext context, bool isAllowed) {
           return AppButton.tertiary(
             label: _workItemNextAction(context, item),

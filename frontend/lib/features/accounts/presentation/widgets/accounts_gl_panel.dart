@@ -285,12 +285,12 @@ class _AccountsGlPanelState extends ConsumerState<AccountsGlPanel> {
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => printAccountsListTable<AccountsGlAccount>(
+      onPrint: (items) => printAccountsListTable<AccountsGlAccount>(
         ref: ref,
         context: context,
         title: AccountsStrings.generalLedgerLabel,
         columns: columns,
-        items: _page.items,
+        items: items,
         emptyText: AccountsStrings.glEmpty,
       ),
       goToTopLabel: l10n.commonGoToTopActionLabel,

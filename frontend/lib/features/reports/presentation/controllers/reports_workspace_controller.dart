@@ -115,16 +115,19 @@ final class ReportsWorkspaceController
     String? status,
     String? format,
     String? dataset,
+    String? trigger,
   }) {
     return _applyQuery(
       (ReportsWorkspaceQuery current) => current.copyWith(
         status: status,
         format: format,
         dataset: dataset,
+        trigger: trigger,
         pageRequest: current.pageRequest.first(),
         clearStatus: status == null || status.trim().isEmpty,
         clearFormat: format == null || format.trim().isEmpty,
         clearDataset: dataset == null || dataset.trim().isEmpty,
+        clearTrigger: trigger == null || trigger.trim().isEmpty,
       ),
       clearSelections: true,
     );
@@ -171,6 +174,61 @@ final class ReportsWorkspaceController
   Future<AppFailure?> changePage(AppPageRequest request) {
     return _applyQuery(
       (ReportsWorkspaceQuery current) => current.copyWith(pageRequest: request),
+    );
+  }
+
+  Future<Result<List<ReportsWorkspaceItem>>> loadMatchingOverviewItems() {
+    final ReportsWorkspaceState? current = _currentState;
+    if (current == null) {
+      return Future<Result<List<ReportsWorkspaceItem>>>.value(
+        const Result<List<ReportsWorkspaceItem>>.success(
+          <ReportsWorkspaceItem>[],
+        ),
+      );
+    }
+    final ReportsWorkspaceQuery query = current.query;
+    return loadMatchingAppPageItems<ReportsWorkspaceItem>(
+      loadPage: (AppPageRequest request) async {
+        final Result<ReportsWorkspaceOverview> result = await _repository
+            .getWorkspace(query.copyWith(pageRequest: request));
+        return result.map(
+          (ReportsWorkspaceOverview overview) => overview.items,
+        );
+      },
+    );
+  }
+
+  Future<Result<List<ReportsWorkspaceItem>>> loadMatchingSchedules() {
+    final ReportsWorkspaceState? current = _currentState;
+    if (current == null) {
+      return Future<Result<List<ReportsWorkspaceItem>>>.value(
+        const Result<List<ReportsWorkspaceItem>>.success(
+          <ReportsWorkspaceItem>[],
+        ),
+      );
+    }
+    final ReportsWorkspaceQuery query = current.query;
+    return loadMatchingAppPageItems<ReportsWorkspaceItem>(
+      loadPage: (AppPageRequest request) {
+        return _repository.listSchedules(query.copyWith(pageRequest: request));
+      },
+    );
+  }
+
+  Future<Result<List<ComplianceLogItem>>> loadMatchingComplianceLogs() {
+    final ReportsWorkspaceState? current = _currentState;
+    if (current == null) {
+      return Future<Result<List<ComplianceLogItem>>>.value(
+        const Result<List<ComplianceLogItem>>.success(<ComplianceLogItem>[]),
+      );
+    }
+    final ReportsWorkspaceQuery query = current.query;
+    return loadMatchingAppPageItems<ComplianceLogItem>(
+      loadPage: (AppPageRequest request) {
+        return _repository.listComplianceLogs(
+          query.copyWith(pageRequest: request),
+        );
+      },
     );
   }
 

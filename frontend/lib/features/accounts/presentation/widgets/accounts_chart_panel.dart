@@ -433,12 +433,12 @@ class _AccountsChartPanelState extends ConsumerState<AccountsChartPanel> {
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => printAccountsListTable<AccountsChartAccount>(
+      onPrint: (items) => printAccountsListTable<AccountsChartAccount>(
         ref: ref,
         context: context,
         title: AccountsStrings.accountChartLabel,
         columns: columns,
-        items: _page.items,
+        items: items,
         emptyText: AccountsStrings.chartEmpty,
       ),
       goToTopLabel: l10n.commonGoToTopActionLabel,

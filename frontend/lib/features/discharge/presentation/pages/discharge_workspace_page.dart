@@ -28,6 +28,7 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/follow_up/follow_up_worklist_panel.dart';
 import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -375,10 +376,15 @@ class _DischargeWorkspaceContentState
                       enablePrint: true,
                       canPrint: canPrint,
                       printLabel: l10n.commonPrintActionLabel,
-                      onPrint: () => _printDischargeWorklist(
+                      printFailureMessage: l10n.commonTablePrintFailureMessage,
+                      loadMatchingItems: () => matchingItemsOrThrow(
+                        controller.loadMatchingQueueItems(),
+                      ),
+                      onPrint: (List<IpdAdmissionSummary> items) =>
+                          _printDischargeWorklist(
                         context,
                         ref,
-                        rows: rows,
+                        rows: items,
                         columns: <AppListTableColumn<IpdAdmissionSummary>>[
                           ...defaultColumns,
                           ..._dischargeColumnChoices(

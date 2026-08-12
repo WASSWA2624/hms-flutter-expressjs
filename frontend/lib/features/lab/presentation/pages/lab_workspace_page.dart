@@ -739,12 +739,15 @@ class _LabWorklistPanel extends ConsumerWidget {
           enablePrint: true,
           canPrint: canPrint,
           printLabel: l10n.commonPrintActionLabel,
-          onPrint: () => _printLabWorklist(
+          printFailureMessage: l10n.commonTablePrintFailureMessage,
+          loadMatchingItems: () => matchingItemsOrThrow(
+            controller.loadMatchingWorklistItems(),
+          ),
+          onPrint: (List<LabOrderSummary> items) => _printLabWorklist(
             context,
             ref,
-            state: state,
             sectionName: sectionName,
-            items: filteredItems,
+            items: items,
             l10n: l10n,
           ),
           goToTopLabel: l10n.commonGoToTopActionLabel,
@@ -2231,7 +2234,6 @@ String _nextActionLabel(BuildContext context, LabOrderSummary order) {
 Future<void> _printLabWorklist(
   BuildContext context,
   WidgetRef ref, {
-  required LabWorkspaceState state,
   required String sectionName,
   required List<LabOrderSummary> items,
   required AppLocalizations l10n,

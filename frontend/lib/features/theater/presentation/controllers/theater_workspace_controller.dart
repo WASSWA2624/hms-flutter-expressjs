@@ -296,6 +296,21 @@ final class TheaterWorkspaceController
     return _refreshCases(showLoading: true);
   }
 
+  Future<Result<List<TheaterCase>>> loadMatchingCases() {
+    final TheaterWorkspaceState? current = _currentState;
+    if (current == null) {
+      return Future<Result<List<TheaterCase>>>.value(
+        const Result<List<TheaterCase>>.success(<TheaterCase>[]),
+      );
+    }
+    final TheaterCaseQuery query = current.query;
+    return loadMatchingAppPageItems<TheaterCase>(
+      loadPage: (AppPageRequest request) {
+        return _repository.listCases(query.copyWith(pageRequest: request));
+      },
+    );
+  }
+
   Future<AppFailure?> selectCase(TheaterCase theaterCase) async {
     final TheaterWorkspaceState? current = _currentState;
     if (current == null) {

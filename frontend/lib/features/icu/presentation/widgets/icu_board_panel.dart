@@ -93,12 +93,15 @@ class IcuBoardPanel extends ConsumerWidget {
       enablePrint: true,
       canPrint: canPrintIcuWorkspace(policy),
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => _printIcuBoardList(
+      printFailureMessage: l10n.commonTablePrintFailureMessage,
+      loadMatchingItems: () => matchingItemsOrThrow(
+        controller.loadMatchingBoardItems(),
+      ),
+      onPrint: (List<IcuPatientSummary> items) => _printIcuBoardList(
         context,
         ref,
-        state: state,
         section: section,
-        displayPage: displayPage,
+        items: items,
         writeRequirement: writeRequirement,
         includeNextAction: includeNextAction,
         l10n: l10n,
@@ -259,9 +262,8 @@ String _sectionLabel(AppLocalizations l10n, IcuWorkspaceSection section) {
 Future<void> _printIcuBoardList(
   BuildContext context,
   WidgetRef ref, {
-  required IcuWorkspaceState state,
   required IcuWorkspaceSection section,
-  required AppPage<IcuPatientSummary> displayPage,
+  required List<IcuPatientSummary> items,
   required AccessRequirement writeRequirement,
   required bool includeNextAction,
   required AppLocalizations l10n,
@@ -290,7 +292,7 @@ Future<void> _printIcuBoardList(
           IcuWorkspacePrintColumn(id: column.key, label: column.label),
       ];
   final List<Map<String, String>> printRows = <Map<String, String>>[
-    for (final IcuPatientSummary item in displayPage.items)
+    for (final IcuPatientSummary item in items)
       <String, String>{
         for (final AppListTableColumn<IcuPatientSummary> column in columns)
           column.key: _icuBoardPrintCellValue(context, item, column.key),

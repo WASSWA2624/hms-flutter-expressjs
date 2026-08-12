@@ -24,7 +24,9 @@ import 'package:hosspi_hms/features/tenant_facility/domain/entities/tenant_facil
 import 'package:hosspi_hms/features/tenant_facility/domain/repositories/tenant_facility_repository.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/controllers/tenant_facility_setup_controller.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/pages/tenant_facility_setup_page.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/tenant_facility_setup_access.dart';
 import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_helpers.dart';
+import 'package:hosspi_hms/features/tenant_facility/presentation/widgets/tenant_facility_setup_print_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
@@ -150,6 +152,7 @@ class ManageTenantsPanel extends ConsumerStatefulWidget {
     this.sessionTenant,
     this.reloadListenable,
     this.onMutated,
+    this.onListTotalChanged,
     super.key,
   });
 
@@ -158,6 +161,7 @@ class ManageTenantsPanel extends ConsumerStatefulWidget {
   final TenantProfile? sessionTenant;
   final Listenable? reloadListenable;
   final ValueChanged<bool>? onMutated;
+  final ValueChanged<int>? onListTotalChanged;
 
   @override
   ConsumerState<ManageTenantsPanel> createState() => _ManageTenantsPanelState();
@@ -393,6 +397,7 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
           _tenants = tenants;
           _totalItemCount = totalItemCount;
         });
+        widget.onListTotalChanged?.call(_totalItemCount);
       },
       failure: (AppFailure failure) {
         setState(() {
@@ -1015,6 +1020,92 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
       onPageChanged: _onPageChanged,
       columnVisibilityStorageKey: 'setup_manage_tenants_v3',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+      canExport: canExportTenantFacilitySetup(ref.watch(appAccessPolicyProvider)),
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrintTenantFacilitySetup(ref.watch(appAccessPolicyProvider)),
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: (List<TenantProfile> matching) =>
+          printTenantFacilitySetupListTable<TenantProfile>(
+        ref: ref,
+        context: context,
+        title: l10n.tenantFacilityManageTenantsTitle,
+        columns: <AppListTableColumn<TenantProfile>>[
+          AppListTableColumn<TenantProfile>(
+            id: 'name',
+            label: l10n.tenantFacilityTenantNameLabel,
+            exportValue: (TenantProfile tenant) => tenant.name,
+            cellBuilder: (_, TenantProfile tenant) =>
+                tenantFacilitySetupAtomicCell(
+                  tenant.name,
+                  muted: tenant.isDeleted,
+                ),
+          ),
+          AppListTableColumn<TenantProfile>(
+            id: 'status',
+            label: l10n.tenantFacilityTenantStatusLabel,
+            exportValue: (TenantProfile tenant) =>
+                _tenantStatusLabel(l10n, tenant),
+            cellBuilder: (_, TenantProfile tenant) =>
+                tenantFacilitySetupAtomicCell(_tenantStatusLabel(l10n, tenant)),
+          ),
+          AppListTableColumn<TenantProfile>(
+            id: 'id',
+            label: l10n.tenantFacilityTenantDetailsIdLabel,
+            exportValue: (TenantProfile tenant) =>
+                tenantFacilityHumanFriendlyDisplayId(
+                  tenant.displayId,
+                  opaqueId: tenant.resourceUuid ?? tenant.id,
+                ) ??
+                '',
+            cellBuilder: (_, TenantProfile tenant) =>
+                tenantFacilitySetupAtomicCell(
+                  tenantFacilityHumanFriendlyDisplayId(
+                        tenant.displayId,
+                        opaqueId: tenant.resourceUuid ?? tenant.id,
+                      ) ??
+                      l10n.profileUnknownValue,
+                ),
+          ),
+          AppListTableColumn<TenantProfile>(
+            id: 'slug',
+            label: l10n.tenantFacilityTenantSlugLabel,
+            exportValue: (TenantProfile tenant) => tenant.slug ?? '',
+            cellBuilder: (_, TenantProfile tenant) =>
+                tenantFacilitySetupAtomicCell(
+                  tenant.slug?.trim().isNotEmpty == true
+                      ? tenant.slug!
+                      : l10n.profileUnknownValue,
+                ),
+          ),
+        ],
+        items: matching,
+        emptyText: l10n.tenantFacilityNoTenants,
+      ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
+      exportConfig: AppListTableExportConfig<TenantProfile>(
+        fileNameStem: 'setup_tenants',
+        dateOf: (_) => null,
+        sheetName: l10n.tenantFacilityManageTenantsTitle,
+        enableDateFilter: false,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
+      ),
       search: AppListTableSearch<TenantProfile>(
         controller: _searchController,
         hintText: l10n.tenantFacilitySearchLabel,
@@ -1024,10 +1115,11 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
         onClear: () => unawaited(_reload(resetPage: true)),
         enableDateFilter: false,
         showAdvancedFilterButton: true,
-        advancedFilterButtonLabel: l10n.commonFilterActionLabel,
-        advancedFilterTitle: l10n.tenantFacilityTenantStatusLabel,
+        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         filterGroups: <AppSearchBarFilterGroup>[
           AppSearchBarFilterGroup(
             key: _statusFilterKey,
@@ -1072,19 +1164,11 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
           preferredWidth: 220,
           sortComparator: (TenantProfile left, TenantProfile right) =>
               appListTableCompareText(left.name, right.name),
+          exportValue: (TenantProfile tenant) => tenant.name,
           cellBuilder: (_, TenantProfile tenant) {
-            final String? slug = tenant.slug?.trim();
-            final String? displayId = tenantFacilityHumanFriendlyDisplayId(
-              tenant.displayId,
-              opaqueId: tenant.resourceUuid ?? tenant.id,
-            );
-            return TenantFacilityNestedTableCell(
-              title: tenant.name,
-              details: <String>[
-                if (displayId != null) displayId,
-                if (slug != null && slug.isNotEmpty) slug,
-              ],
-              deleted: tenant.isDeleted,
+            return tenantFacilitySetupAtomicCell(
+              tenant.name,
+              muted: tenant.isDeleted,
             );
           },
         ),
@@ -1096,14 +1180,17 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
                 _tenantStatusLabel(l10n, left),
                 _tenantStatusLabel(l10n, right),
               ),
+          exportValue: (TenantProfile tenant) =>
+              _tenantStatusLabel(l10n, tenant),
           cellBuilder: (_, TenantProfile tenant) =>
-              Text(_tenantStatusLabel(l10n, tenant)),
+              tenantFacilitySetupAtomicCell(_tenantStatusLabel(l10n, tenant)),
         ),
         if (_canEdit)
           AppListTableColumn<TenantProfile>(
             id: 'actions',
             label: l10n.accessAdminColumnActions,
             alwaysVisible: true,
+            exportable: false,
             cellBuilder: (BuildContext context, TenantProfile tenant) {
               return _TenantManagementRowActions(
                 enabled: !_loading,
@@ -1124,12 +1211,35 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
       ],
       columnChoices: <AppListTableColumn<TenantProfile>>[
         AppListTableColumn<TenantProfile>(
+          id: 'id',
+          label: l10n.tenantFacilityTenantDetailsIdLabel,
+          exportValue: (TenantProfile tenant) =>
+              tenantFacilityHumanFriendlyDisplayId(
+                tenant.displayId,
+                opaqueId: tenant.resourceUuid ?? tenant.id,
+              ) ??
+              '',
+          cellBuilder: (_, TenantProfile tenant) =>
+              tenantFacilitySetupAtomicCell(
+                tenantFacilityHumanFriendlyDisplayId(
+                      tenant.displayId,
+                      opaqueId: tenant.resourceUuid ?? tenant.id,
+                    ) ??
+                    l10n.profileUnknownValue,
+              ),
+        ),
+        AppListTableColumn<TenantProfile>(
           id: 'slug',
           label: l10n.tenantFacilityTenantSlugLabel,
           sortComparator: (TenantProfile left, TenantProfile right) =>
               appListTableCompareText(left.slug, right.slug),
+          exportValue: (TenantProfile tenant) => tenant.slug ?? '',
           cellBuilder: (_, TenantProfile tenant) =>
-              Text(tenant.slug?.trim().isNotEmpty == true ? tenant.slug! : '—'),
+              tenantFacilitySetupAtomicCell(
+                tenant.slug?.trim().isNotEmpty == true
+                    ? tenant.slug!
+                    : l10n.profileUnknownValue,
+              ),
         ),
       ],
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
@@ -2093,8 +2203,6 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
     final String showLabel = l10n.tenantFacilityTenantDetailsShowSummaryAction;
 
     return AppCollapsibleSection(
@@ -2141,6 +2249,10 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
                 columnVisibilityStorageKey:
                     'setup_tenant_details_facilities_v1',
                 columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+                columnVisibilityTitle: l10n.commonTableSettingsTitle,
+                columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+                columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+                columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
                 search: AppListTableSearch<FacilityProfile>(
                   controller: searchController,
                   hintText: l10n.tenantFacilitySearchLabel,
@@ -2148,10 +2260,11 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
                   matcher: (_, _) => true,
                   enableDateFilter: false,
                   showAdvancedFilterButton: true,
-                  advancedFilterButtonLabel: l10n.commonFilterActionLabel,
-                  advancedFilterTitle: l10n.tenantFacilityTenantStatusLabel,
+                  advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+                  advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
                   advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
                   advancedFilterResetLabel: l10n.opdClearFiltersAction,
+                  advancedFilterCloseLabel: l10n.commonCloseActionLabel,
                   filterGroups: <AppSearchBarFilterGroup>[
                     AppSearchBarFilterGroup(
                       key: _TenantDetailsDialogState._statusFilterKey,
@@ -2184,14 +2297,11 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
                             .name
                             .toLowerCase()
                             .compareTo(right.name.toLowerCase()),
-                    cellBuilder: (_, FacilityProfile facility) => Text(
-                      facility.name,
-                      style: facility.isDeleted
-                          ? theme.textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            )
-                          : null,
-                    ),
+                    cellBuilder: (_, FacilityProfile facility) =>
+                        tenantFacilitySetupAtomicCell(
+                          facility.name,
+                          muted: facility.isDeleted,
+                        ),
                   ),
                   AppListTableColumn<FacilityProfile>(
                     id: 'type',
@@ -2200,7 +2310,9 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
                         (FacilityProfile left, FacilityProfile right) =>
                             left.type.name.compareTo(right.type.name),
                     cellBuilder: (_, FacilityProfile facility) =>
-                        Text(facility.type.name),
+                        tenantFacilitySetupAtomicCell(
+                          tenantFacilityFacilityTypeLabel(l10n, facility.type),
+                        ),
                   ),
                   AppListTableColumn<FacilityProfile>(
                     id: 'status',
@@ -2211,13 +2323,16 @@ class _TenantDetailsFacilitiesPanel extends StatelessWidget {
                               left,
                             ).compareTo(statusLabelBuilder(right)),
                     cellBuilder: (_, FacilityProfile facility) =>
-                        Text(statusLabelBuilder(facility)),
+                        tenantFacilitySetupAtomicCell(
+                          statusLabelBuilder(facility),
+                        ),
                   ),
                   if (canManage)
                     AppListTableColumn<FacilityProfile>(
                       id: 'actions',
                       label: l10n.accessAdminColumnActions,
                       alwaysVisible: true,
+                      exportable: false,
                       cellBuilder:
                           (BuildContext context, FacilityProfile facility) {
                             if (facility.isDeleted) {
@@ -4237,6 +4352,7 @@ class ManageFacilitiesPanel extends ConsumerStatefulWidget {
     this.sessionTenantId,
     this.reloadListenable,
     this.onMutated,
+    this.onListTotalChanged,
     super.key,
   });
 
@@ -4246,6 +4362,7 @@ class ManageFacilitiesPanel extends ConsumerStatefulWidget {
   final String? sessionTenantId;
   final Listenable? reloadListenable;
   final ValueChanged<bool>? onMutated;
+  final ValueChanged<int>? onListTotalChanged;
 
   @override
   ConsumerState<ManageFacilitiesPanel> createState() =>
@@ -4629,6 +4746,7 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
           _facilities = page.items;
           _totalItemCount = totalItemCount;
         });
+        widget.onListTotalChanged?.call(_totalItemCount);
       },
       failure: (AppFailure failure) {
         setState(() {
@@ -5048,12 +5166,6 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
     final bool showTenantColumn = tenantFacilityFacilitiesShowsTenantColumn(
       _listScope,
     );
-    final bool showCodeColumn = tenantFacilityFacilitiesShowsCodeColumn(
-      _listScope,
-    );
-    final bool showContactColumns = tenantFacilityFacilitiesShowsContactColumns(
-      _listScope,
-    );
     final bool showTenantFilter = tenantFacilityFacilitiesShowsTenantFilter(
       _listScope,
     );
@@ -5095,9 +5207,112 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
       },
       onPageChanged: _onPageChanged,
       columnVisibilityStorageKey: showTenantColumn
-          ? 'setup_manage_facilities_v4'
-          : 'setup_manage_facilities_tenant_v2',
+          ? 'setup_manage_facilities_v5'
+          : 'setup_manage_facilities_tenant_v3',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+      canExport: canExportTenantFacilitySetup(ref.watch(appAccessPolicyProvider)),
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrintTenantFacilitySetup(ref.watch(appAccessPolicyProvider)),
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: (List<FacilityProfile> matching) =>
+          printTenantFacilitySetupListTable<FacilityProfile>(
+        ref: ref,
+        context: context,
+        title: l10n.tenantFacilityManageFacilitiesTitle,
+        columns: <AppListTableColumn<FacilityProfile>>[
+          AppListTableColumn<FacilityProfile>(
+            id: 'name',
+            label: l10n.authFacilityNameLabel,
+            exportValue: (FacilityProfile facility) => facility.name,
+            cellBuilder: (_, FacilityProfile facility) =>
+                tenantFacilitySetupAtomicCell(
+                  facility.name,
+                  muted: facility.isDeleted,
+                ),
+          ),
+          AppListTableColumn<FacilityProfile>(
+            id: 'type',
+            label: l10n.profileFacilityTypeLabel,
+            exportValue: (FacilityProfile facility) =>
+                tenantFacilityFacilityTypeLabel(l10n, facility.type),
+            cellBuilder: (_, FacilityProfile facility) =>
+                tenantFacilitySetupAtomicCell(
+                  tenantFacilityFacilityTypeLabel(l10n, facility.type),
+                ),
+          ),
+          AppListTableColumn<FacilityProfile>(
+            id: 'status',
+            label: l10n.tenantFacilityTenantStatusLabel,
+            exportValue: (FacilityProfile facility) =>
+                _facilityStatusLabel(l10n, facility),
+            cellBuilder: (_, FacilityProfile facility) =>
+                tenantFacilitySetupAtomicCell(
+                  _facilityStatusLabel(l10n, facility),
+                ),
+          ),
+          AppListTableColumn<FacilityProfile>(
+            id: 'tenant',
+            label: l10n.profileTenantLabel,
+            exportValue: (FacilityProfile facility) =>
+                _tenantLabel(facility.tenantId, l10n),
+            cellBuilder: (_, FacilityProfile facility) =>
+                tenantFacilitySetupAtomicCell(
+                  _tenantLabel(facility.tenantId, l10n),
+                ),
+          ),
+          AppListTableColumn<FacilityProfile>(
+            id: 'code',
+            label: l10n.tenantFacilityFacilityIdLabel,
+            exportValue: (FacilityProfile facility) =>
+                _facilityCodeLabel(facility),
+            cellBuilder: (_, FacilityProfile facility) =>
+                tenantFacilitySetupAtomicCell(_facilityCodeLabel(facility)),
+          ),
+          AppListTableColumn<FacilityProfile>(
+            id: 'phone',
+            label: l10n.profilePhoneLabel,
+            exportValue: (FacilityProfile facility) =>
+                _optionalText(facility.phone),
+            cellBuilder: (_, FacilityProfile facility) =>
+                tenantFacilitySetupAtomicCell(_optionalText(facility.phone)),
+          ),
+          AppListTableColumn<FacilityProfile>(
+            id: 'email',
+            label: l10n.profileEmailLabel,
+            exportValue: (FacilityProfile facility) =>
+                _optionalText(facility.email),
+            cellBuilder: (_, FacilityProfile facility) =>
+                tenantFacilitySetupAtomicCell(_optionalText(facility.email)),
+          ),
+        ],
+        items: matching,
+        emptyText: l10n.tenantFacilityNoFacilities,
+      ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
+      exportConfig: AppListTableExportConfig<FacilityProfile>(
+        fileNameStem: 'setup_facilities',
+        dateOf: (_) => null,
+        sheetName: l10n.tenantFacilityManageFacilitiesTitle,
+        enableDateFilter: false,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
+      ),
       search: AppListTableSearch<FacilityProfile>(
         controller: _searchController,
         hintText: l10n.tenantFacilitySearchLabel,
@@ -5107,10 +5322,11 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
         onClear: () => unawaited(_reload(resetPage: true)),
         enableDateFilter: false,
         showAdvancedFilterButton: true,
-        advancedFilterButtonLabel: l10n.commonFilterActionLabel,
-        advancedFilterTitle: l10n.commonFilterActionLabel,
+        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         filterGroups: <AppSearchBarFilterGroup>[
           if (showTenantFilter && _tenantOptions.isNotEmpty)
             AppSearchBarFilterGroup(
@@ -5201,26 +5417,11 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
           preferredWidth: 220,
           sortComparator: (FacilityProfile left, FacilityProfile right) =>
               appListTableCompareText(left.name, right.name),
+          exportValue: (FacilityProfile facility) => facility.name,
           cellBuilder: (_, FacilityProfile facility) {
-            final List<String> details = <String>[];
-            final String code = _facilityCodeLabel(facility);
-            if (code != '—') {
-              details.add(code);
-            }
-            if (showContactColumns) {
-              final String phone = _optionalText(facility.phone);
-              final String email = _optionalText(facility.email);
-              if (phone != '—') {
-                details.add(phone);
-              }
-              if (email != '—') {
-                details.add(email);
-              }
-            }
-            return TenantFacilityNestedTableCell(
-              title: facility.name,
-              details: details,
-              deleted: facility.isDeleted,
+            return tenantFacilitySetupAtomicCell(
+              facility.name,
+              muted: facility.isDeleted,
             );
           },
         ),
@@ -5233,8 +5434,12 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
                   _tenantLabel(left.tenantId, l10n),
                   _tenantLabel(right.tenantId, l10n),
                 ),
+            exportValue: (FacilityProfile facility) =>
+                _tenantLabel(facility.tenantId, l10n),
             cellBuilder: (_, FacilityProfile facility) =>
-                Text(_tenantLabel(facility.tenantId, l10n)),
+                tenantFacilitySetupAtomicCell(
+                  _tenantLabel(facility.tenantId, l10n),
+                ),
           ),
         AppListTableColumn<FacilityProfile>(
           id: 'type',
@@ -5244,9 +5449,27 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
                 tenantFacilityFacilityTypeLabel(l10n, left.type),
                 tenantFacilityFacilityTypeLabel(l10n, right.type),
               ),
+          exportValue: (FacilityProfile facility) =>
+              tenantFacilityFacilityTypeLabel(l10n, facility.type),
           cellBuilder: (_, FacilityProfile facility) =>
-              Text(tenantFacilityFacilityTypeLabel(l10n, facility.type)),
+              tenantFacilitySetupAtomicCell(
+                tenantFacilityFacilityTypeLabel(l10n, facility.type),
+              ),
         ),
+        if (!showTenantColumn)
+          AppListTableColumn<FacilityProfile>(
+            id: 'code',
+            label: l10n.tenantFacilityFacilityIdLabel,
+            sortComparator: (FacilityProfile left, FacilityProfile right) =>
+                appListTableCompareText(
+                  _facilityCodeLabel(left),
+                  _facilityCodeLabel(right),
+                ),
+            exportValue: (FacilityProfile facility) =>
+                _facilityCodeLabel(facility),
+            cellBuilder: (_, FacilityProfile facility) =>
+                tenantFacilitySetupAtomicCell(_facilityCodeLabel(facility)),
+          ),
         AppListTableColumn<FacilityProfile>(
           id: 'status',
           label: l10n.tenantFacilityTenantStatusLabel,
@@ -5255,20 +5478,20 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
                 _facilityStatusLabel(l10n, left),
                 _facilityStatusLabel(l10n, right),
               ),
-          cellBuilder: (_, FacilityProfile facility) => Text(
-            _facilityStatusLabel(l10n, facility),
-            style: facility.isDeleted
-                ? Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  )
-                : null,
-          ),
+          exportValue: (FacilityProfile facility) =>
+              _facilityStatusLabel(l10n, facility),
+          cellBuilder: (_, FacilityProfile facility) =>
+              tenantFacilitySetupAtomicCell(
+                _facilityStatusLabel(l10n, facility),
+                muted: facility.isDeleted,
+              ),
         ),
         if (_canManage)
           AppListTableColumn<FacilityProfile>(
             id: 'actions',
             label: l10n.accessAdminColumnActions,
             alwaysVisible: true,
+            exportable: false,
             cellBuilder: (BuildContext context, FacilityProfile facility) {
               return GestureDetector(
                 onTap: () {},
@@ -5293,7 +5516,7 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
           ),
       ],
       columnChoices: <AppListTableColumn<FacilityProfile>>[
-        if (!showCodeColumn)
+        if (showTenantColumn)
           AppListTableColumn<FacilityProfile>(
             id: 'code',
             label: l10n.tenantFacilityFacilityIdLabel,
@@ -5302,58 +5525,72 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
                   _facilityCodeLabel(left),
                   _facilityCodeLabel(right),
                 ),
+            exportValue: (FacilityProfile facility) =>
+                _facilityCodeLabel(facility),
             cellBuilder: (_, FacilityProfile facility) =>
-                Text(_facilityCodeLabel(facility)),
+                tenantFacilitySetupAtomicCell(_facilityCodeLabel(facility)),
           ),
-        if (!showContactColumns) ...<AppListTableColumn<FacilityProfile>>[
-          AppListTableColumn<FacilityProfile>(
-            id: 'phone',
-            label: l10n.profilePhoneLabel,
-            sortComparator: (FacilityProfile left, FacilityProfile right) =>
-                appListTableCompareText(left.phone, right.phone),
-            cellBuilder: (_, FacilityProfile facility) =>
-                Text(_optionalText(facility.phone)),
-          ),
-          AppListTableColumn<FacilityProfile>(
-            id: 'email',
-            label: l10n.profileEmailLabel,
-            sortComparator: (FacilityProfile left, FacilityProfile right) =>
-                appListTableCompareText(left.email, right.email),
-            cellBuilder: (_, FacilityProfile facility) =>
-                Text(_optionalText(facility.email)),
-          ),
-        ],
+        AppListTableColumn<FacilityProfile>(
+          id: 'phone',
+          label: l10n.profilePhoneLabel,
+          sortComparator: (FacilityProfile left, FacilityProfile right) =>
+              appListTableCompareText(left.phone, right.phone),
+          exportValue: (FacilityProfile facility) =>
+              _optionalText(facility.phone),
+          cellBuilder: (_, FacilityProfile facility) =>
+              tenantFacilitySetupAtomicCell(_optionalText(facility.phone)),
+        ),
+        AppListTableColumn<FacilityProfile>(
+          id: 'email',
+          label: l10n.profileEmailLabel,
+          sortComparator: (FacilityProfile left, FacilityProfile right) =>
+              appListTableCompareText(left.email, right.email),
+          exportValue: (FacilityProfile facility) =>
+              _optionalText(facility.email),
+          cellBuilder: (_, FacilityProfile facility) =>
+              tenantFacilitySetupAtomicCell(_optionalText(facility.email)),
+        ),
         AppListTableColumn<FacilityProfile>(
           id: 'address',
           label: l10n.tenantFacilityAddressLineLabel,
           sortComparator: (FacilityProfile left, FacilityProfile right) =>
               appListTableCompareText(left.addressLine1, right.addressLine1),
+          exportValue: (FacilityProfile facility) =>
+              _optionalText(facility.addressLine1),
           cellBuilder: (_, FacilityProfile facility) =>
-              Text(_optionalText(facility.addressLine1)),
+              tenantFacilitySetupAtomicCell(
+                _optionalText(facility.addressLine1),
+              ),
         ),
         AppListTableColumn<FacilityProfile>(
           id: 'city',
           label: l10n.tenantFacilityCityLabel,
           sortComparator: (FacilityProfile left, FacilityProfile right) =>
               appListTableCompareText(left.city, right.city),
+          exportValue: (FacilityProfile facility) =>
+              _optionalText(facility.city),
           cellBuilder: (_, FacilityProfile facility) =>
-              Text(_optionalText(facility.city)),
+              tenantFacilitySetupAtomicCell(_optionalText(facility.city)),
         ),
         AppListTableColumn<FacilityProfile>(
           id: 'country',
           label: l10n.tenantFacilityCountryLabel,
           sortComparator: (FacilityProfile left, FacilityProfile right) =>
               appListTableCompareText(left.country, right.country),
+          exportValue: (FacilityProfile facility) =>
+              _optionalText(facility.country),
           cellBuilder: (_, FacilityProfile facility) =>
-              Text(_optionalText(facility.country)),
+              tenantFacilitySetupAtomicCell(_optionalText(facility.country)),
         ),
         AppListTableColumn<FacilityProfile>(
           id: 'currency',
           label: l10n.tenantFacilityDefaultCurrencyLabel,
           sortComparator: (FacilityProfile left, FacilityProfile right) =>
               appListTableCompareText(left.currency, right.currency),
+          exportValue: (FacilityProfile facility) =>
+              _optionalText(facility.currency),
           cellBuilder: (_, FacilityProfile facility) =>
-              Text(_optionalText(facility.currency)),
+              tenantFacilitySetupAtomicCell(_optionalText(facility.currency)),
         ),
         AppListTableColumn<FacilityProfile>(
           id: 'consultation_fee',
@@ -5363,8 +5600,12 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
                 left.standardConsultationFee,
                 right.standardConsultationFee,
               ),
+          exportValue: (FacilityProfile facility) =>
+              _optionalText(facility.standardConsultationFee),
           cellBuilder: (_, FacilityProfile facility) =>
-              Text(_optionalText(facility.standardConsultationFee)),
+              tenantFacilitySetupAtomicCell(
+                _optionalText(facility.standardConsultationFee),
+              ),
         ),
         AppListTableColumn<FacilityProfile>(
           id: 'logo',
@@ -5374,11 +5615,16 @@ class _ManageFacilitiesPanelState extends ConsumerState<ManageFacilitiesPanel> {
             final bool rightHas = right.logoUrl?.trim().isNotEmpty == true;
             return (leftHas ? 1 : 0).compareTo(rightHas ? 1 : 0);
           },
-          cellBuilder: (_, FacilityProfile facility) => Text(
-            facility.logoUrl?.trim().isNotEmpty == true
-                ? l10n.commonYesLabel
-                : '—',
-          ),
+          exportValue: (FacilityProfile facility) =>
+              facility.logoUrl?.trim().isNotEmpty == true
+              ? l10n.commonYesLabel
+              : '—',
+          cellBuilder: (_, FacilityProfile facility) =>
+              tenantFacilitySetupAtomicCell(
+                facility.logoUrl?.trim().isNotEmpty == true
+                    ? l10n.commonYesLabel
+                    : '—',
+              ),
         ),
       ],
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(

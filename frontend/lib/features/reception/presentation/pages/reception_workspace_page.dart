@@ -434,7 +434,10 @@ class _ReceptionWorkspaceContentState
                             ref.watch(appAccessPolicyProvider),
                           ),
                           printLabel: l10n.commonPrintActionLabel,
-                          onPrint: () => _printDeskList(rows, l10n),
+                          printFailureMessage:
+                              l10n.commonTablePrintFailureMessage,
+                          onPrint: (List<_ReceptionDeskRow> items) =>
+                              _printDeskList(items, l10n),
                           goToTopLabel: l10n.commonGoToTopActionLabel,
                           loadingMoreLabel: l10n.commonLoadingMoreLabel,
                           allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,

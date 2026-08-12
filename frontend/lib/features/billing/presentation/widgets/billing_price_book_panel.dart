@@ -219,11 +219,11 @@ class _BillingPriceBookPanelState extends ConsumerState<BillingPriceBookPanel> {
     }
   }
 
-  Future<void> _printList() async {
+  Future<void> _printList(List<BillingPriceBookEntry> items) async {
     await printBillingPriceBookList(
       ref: ref,
       context: context,
-      entries: _page.items,
+      entries: items,
     );
   }
 
@@ -334,7 +334,7 @@ class _BillingPriceBookPanelState extends ConsumerState<BillingPriceBookPanel> {
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: _printList,
+      onPrint: (List<BillingPriceBookEntry> items) => _printList(items),
       goToTopLabel: l10n.commonGoToTopActionLabel,
       loadingMoreLabel: l10n.commonLoadingMoreLabel,
       allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,

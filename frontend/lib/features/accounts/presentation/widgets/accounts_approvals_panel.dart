@@ -134,12 +134,12 @@ class _AccountsApprovalsPanelState extends ConsumerState<AccountsApprovalsPanel>
       enablePrint: true,
       canPrint: canPrint,
       printLabel: context.l10n.commonPrintActionLabel,
-      onPrint: () => printAccountsListTable<AccountsWorkItem>(
+      onPrint: (items) => printAccountsListTable<AccountsWorkItem>(
         ref: ref,
         context: context,
         title: AccountsStrings.needApprovalLabel,
         columns: columns,
-        items: state.workItems.items,
+        items: items,
         emptyText: AccountsStrings.needApprovalEmpty,
       ),
       goToTopLabel: context.l10n.commonGoToTopActionLabel,

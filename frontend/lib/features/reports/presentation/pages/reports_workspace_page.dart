@@ -13,10 +13,11 @@ import 'package:hosspi_hms/features/reports/data/repositories/reports_repository
 import 'package:hosspi_hms/features/reports/domain/entities/reports_entities.dart';
 import 'package:hosspi_hms/features/reports/presentation/controllers/reports_workspace_controller.dart';
 import 'package:hosspi_hms/features/reports/presentation/reports_access.dart';
+import 'package:hosspi_hms/features/reports/presentation/widgets/reports_domain_reporting_groups.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_overview_dashboard.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_overview_shortcut_dialogs.dart';
-import 'package:hosspi_hms/features/reports/presentation/widgets/reports_domain_reporting_groups.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_pharmacy_domain_groups.dart';
+import 'package:hosspi_hms/features/reports/presentation/widgets/reports_workspace_print_helpers.dart';
 import 'package:hosspi_hms/features/reports/presentation/widgets/reports_workspace_table_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -61,6 +62,7 @@ class ReportsWorkspacePage extends ConsumerWidget {
       loadingBody: l10n.reportsLoadingBody,
       maxWidth: PageMaxWidth.dataHeavy,
       centerVertically: false,
+      scrollable: false,
       onRetry: () {
         ref.read(reportsWorkspaceControllerProvider.notifier).refresh();
       },
@@ -181,9 +183,14 @@ class _ReportsWorkspaceContentState
             ReportsDomainReportingGroups.shouldShow(policy)) &&
         state.query.panel == ReportsWorkspacePanel.overview;
 
-    final bool showSchedules =
+    final bool showSchedulesOnListTabs =
         canReadCatalog &&
         !state.query.panel.isCompliance &&
+        state.query.panel != ReportsWorkspacePanel.overview &&
+        !showDomainReportingOverview;
+    final bool showSchedulesOnOverview =
+        canReadCatalog &&
+        state.query.panel == ReportsWorkspacePanel.overview &&
         !showDomainReportingOverview;
     final bool showTimeline =
         canReadCatalog &&
@@ -195,28 +202,73 @@ class _ReportsWorkspaceContentState
       title: l10n.reportsTitle,
       leadingIcon: AppRouteIcons.reports,
       showHeader: !showDomainReportingOverview,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          if (allowedPanels.isNotEmpty &&
-              allowedPanels.contains(state.query.panel))
-            _ReportsPrimaryPanel(
-              state: state,
-              searchController: _searchController,
-              reportTableColumns: _reportTableColumns,
-              complianceTableColumns: _complianceTableColumns,
-              policy: policy,
-              allowedPanels: allowedPanels,
-            ),
-          if (showSchedules) ...<Widget>[
-            SizedBox(height: Theme.of(context).spacing.lg),
-            _ReportSchedulesPanel(
-              state: state,
-              columnVisibilityController: _scheduleTableColumns,
-              policy: policy,
+      scrollable: false,
+      body: SizedBox(
+        width: double.infinity,
+        height: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            if (allowedPanels.isNotEmpty &&
+                allowedPanels.contains(state.query.panel))
+              AppTabStrip(
+                tabs: <AppTabItem>[
+                  for (final ReportsWorkspacePanel panel in allowedPanels)
+                    AppTabItem(
+                      id: panel.serverValue,
+                      icon: _panelIcon(panel),
+                      label: _panelLabel(l10n, panel),
+                      count: _panelCount(state, panel),
+                      countTone: panel.isCompliance
+                          ? AppTabCountTone.warning
+                          : AppTabCountTone.info,
+                    ),
+                ],
+                selectedId: state.query.panel.serverValue,
+                onTabTapped: (String tabId) {
+                  final ReportsWorkspacePanel next =
+                      ReportsWorkspacePanel.fromServer(tabId);
+                  if (allowedPanels.contains(next) &&
+                      next != state.query.panel) {
+                    unawaited(controller.applyPanel(next));
+                  }
+                },
+              ),
+            SizedBox(height: Theme.of(context).spacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Expanded(
+                    flex: showSchedulesOnListTabs ? 3 : 1,
+                    child: _ReportsPrimaryPanel(
+                      state: state,
+                      searchController: _searchController,
+                      reportTableColumns: _reportTableColumns,
+                      complianceTableColumns: _complianceTableColumns,
+                      policy: policy,
+                      allowedPanels: allowedPanels,
+                      showSchedulesOnOverview: showSchedulesOnOverview,
+                      scheduleTableColumns: _scheduleTableColumns,
+                    ),
+                  ),
+                  if (showSchedulesOnListTabs) ...<Widget>[
+                    SizedBox(height: Theme.of(context).spacing.md),
+                    Expanded(
+                      flex: 2,
+                      child: _ReportSchedulesPanel(
+                        state: state,
+                        columnVisibilityController: _scheduleTableColumns,
+                        policy: policy,
+                        bounded: true,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ],
-        ],
+        ),
       ),
       activity: showTimeline ? _ReportsTimelinePanel(state: state) : null,
     );
@@ -251,6 +303,8 @@ class _ReportsPrimaryPanel extends ConsumerWidget {
     required this.complianceTableColumns,
     required this.policy,
     required this.allowedPanels,
+    required this.showSchedulesOnOverview,
+    required this.scheduleTableColumns,
   });
 
   final ReportsWorkspaceState state;
@@ -261,6 +315,9 @@ class _ReportsPrimaryPanel extends ConsumerWidget {
   complianceTableColumns;
   final AppAccessPolicy policy;
   final List<ReportsWorkspacePanel> allowedPanels;
+  final bool showSchedulesOnOverview;
+  final AppListTableColumnVisibilityController<ReportsWorkspaceItem>
+  scheduleTableColumns;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -271,16 +328,16 @@ class _ReportsPrimaryPanel extends ConsumerWidget {
         searchController: searchController,
         columnVisibilityController: complianceTableColumns,
         policy: policy,
-        allowedPanels: allowedPanels,
       );
     }
 
     if (panel == ReportsWorkspacePanel.overview) {
       return _ReportsOverviewPanel(
         state: state,
-        searchController: searchController,
         policy: policy,
         allowedPanels: allowedPanels,
+        showSchedules: showSchedulesOnOverview,
+        scheduleTableColumns: scheduleTableColumns,
       );
     }
 
@@ -289,7 +346,6 @@ class _ReportsPrimaryPanel extends ConsumerWidget {
       searchController: searchController,
       columnVisibilityController: reportTableColumns,
       policy: policy,
-      allowedPanels: allowedPanels,
     );
   }
 }
@@ -297,127 +353,90 @@ class _ReportsPrimaryPanel extends ConsumerWidget {
 class _ReportsOverviewPanel extends ConsumerWidget {
   const _ReportsOverviewPanel({
     required this.state,
-    required this.searchController,
     required this.policy,
     required this.allowedPanels,
+    required this.showSchedules,
+    required this.scheduleTableColumns,
   });
 
   final ReportsWorkspaceState state;
-  final TextEditingController searchController;
   final AppAccessPolicy policy;
   final List<ReportsWorkspacePanel> allowedPanels;
+  final bool showSchedules;
+  final AppListTableColumnVisibilityController<ReportsWorkspaceItem>
+  scheduleTableColumns;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AppLocalizations l10n = context.l10n;
-    final ReportsWorkspaceController controller = ref.read(
-      reportsWorkspaceControllerProvider.notifier,
-    );
-    final ThemeData theme = Theme.of(context);
-    final bool showDomainGroups =
-        ReportsPharmacyDomainGroups.shouldShow(policy) ||
-        ReportsDomainReportingGroups.shouldShow(policy);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        if (!showDomainGroups) ...<Widget>[
-          Text(
-            l10n.reportsPanelOverview,
-            style: theme.textTheme.titleMedium,
-          ),
-          SizedBox(height: theme.spacing.sm),
-          AppSearchBar(
-            controller: searchController,
-            semanticLabel: l10n.reportsSearchLabel,
-            hintText: l10n.reportsSearchHint,
-            clearLabel: l10n.reportsClearSearchLabel,
-            onSubmitted: controller.applySearch,
-            onClear: () => controller.applySearch(''),
-            enableDateFilter: false,
-            showAdvancedFilterButton: true,
-            advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
-            advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
-            advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-            advancedFilterResetLabel: l10n.opdClearFiltersAction,
-            filterGroups: <AppSearchBarFilterGroup>[
-              AppSearchBarFilterGroup(
-                key: _panelFilterKey,
-                label: l10n.reportsPanelFilterLabel,
-                allLabel: l10n.reportsPanelOverview,
-                choices: _panelChoices(l10n, allowedPanels),
-              ),
-            ],
-            filterValue: AppSearchBarFilterValue.empty,
-            hasActiveFilters: false,
-            onFilterChanged: (AppSearchBarFilterValue value) {
-              final ReportsWorkspacePanel panel =
-                  ReportsWorkspacePanel.fromServer(
-                    value.option(_panelFilterKey),
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          ReportsOverviewDashboard(
+            state: state,
+            policy: policy,
+            allowedPanels: allowedPanels,
+            onPharmacyOpenDataset: (String datasetKey) {
+              final String title = state.overview.lookups.datasets
+                  .where((ReportsLookupOption option) => option.id == datasetKey)
+                  .map((ReportsLookupOption option) => option.label)
+                  .firstWhere(
+                    (String label) => label.isNotEmpty,
+                    orElse: () => datasetKey,
                   );
-              if (panel != state.query.panel &&
-                  allowedPanels.contains(panel)) {
-                controller.applyPanel(panel);
-              }
+              unawaited(
+                openReportsOverviewShortcutDialog(
+                  context: context,
+                  ref: ref,
+                  kind: ReportsOverviewShortcutKind.dataset,
+                  datasetKey: datasetKey,
+                  title: title,
+                  onOpenItem: (ReportsWorkspaceItem item) {
+                    return openReportDetailDialog(
+                      context,
+                      ref,
+                      state,
+                      item,
+                      policy,
+                    );
+                  },
+                ),
+              );
+            },
+            onPharmacyOpenPanel: (ReportsWorkspacePanel panel) {
+              final ReportsOverviewShortcutKind kind =
+                  panel == ReportsWorkspacePanel.delivery
+                  ? ReportsOverviewShortcutKind.delivery
+                  : ReportsOverviewShortcutKind.catalog;
+              unawaited(
+                openReportsOverviewShortcutDialog(
+                  context: context,
+                  ref: ref,
+                  kind: kind,
+                  onOpenItem: (ReportsWorkspaceItem item) {
+                    return openReportDetailDialog(
+                      context,
+                      ref,
+                      state,
+                      item,
+                      policy,
+                    );
+                  },
+                ),
+              );
             },
           ),
-          SizedBox(height: theme.spacing.md),
+          if (showSchedules) ...<Widget>[
+            SizedBox(height: Theme.of(context).spacing.lg),
+            _ReportSchedulesPanel(
+              state: state,
+              columnVisibilityController: scheduleTableColumns,
+              policy: policy,
+              bounded: false,
+            ),
+          ],
         ],
-        ReportsOverviewDashboard(
-          state: state,
-          policy: policy,
-          allowedPanels: allowedPanels,
-          onPharmacyOpenDataset: (String datasetKey) {
-            final String title = state.overview.lookups.datasets
-                .where((ReportsLookupOption option) => option.id == datasetKey)
-                .map((ReportsLookupOption option) => option.label)
-                .firstWhere(
-                  (String label) => label.isNotEmpty,
-                  orElse: () => datasetKey,
-                );
-            unawaited(
-              openReportsOverviewShortcutDialog(
-                context: context,
-                ref: ref,
-                kind: ReportsOverviewShortcutKind.dataset,
-                datasetKey: datasetKey,
-                title: title,
-                onOpenItem: (ReportsWorkspaceItem item) {
-                  return openReportDetailDialog(
-                    context,
-                    ref,
-                    state,
-                    item,
-                    policy,
-                  );
-                },
-              ),
-            );
-          },
-          onPharmacyOpenPanel: (ReportsWorkspacePanel panel) {
-            final ReportsOverviewShortcutKind kind =
-                panel == ReportsWorkspacePanel.delivery
-                ? ReportsOverviewShortcutKind.delivery
-                : ReportsOverviewShortcutKind.catalog;
-            unawaited(
-              openReportsOverviewShortcutDialog(
-                context: context,
-                ref: ref,
-                kind: kind,
-                onOpenItem: (ReportsWorkspaceItem item) {
-                  return openReportDetailDialog(
-                    context,
-                    ref,
-                    state,
-                    item,
-                    policy,
-                  );
-                },
-              ),
-            );
-          },
-        ),
-      ],
+      ),
     );
   }
 }
@@ -428,7 +447,6 @@ class _ReportItemsPanel extends ConsumerWidget {
     required this.searchController,
     required this.columnVisibilityController,
     required this.policy,
-    required this.allowedPanels,
   });
 
   final ReportsWorkspaceState state;
@@ -436,7 +454,6 @@ class _ReportItemsPanel extends ConsumerWidget {
   final AppListTableColumnVisibilityController<ReportsWorkspaceItem>
   columnVisibilityController;
   final AppAccessPolicy policy;
-  final List<ReportsWorkspacePanel> allowedPanels;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -445,46 +462,12 @@ class _ReportItemsPanel extends ConsumerWidget {
       reportsWorkspaceControllerProvider.notifier,
     );
     final bool canWrite = canWriteReports(policy);
-    final bool canExport = canExportEvidence(policy);
+    final bool canExport = canExportReportsWorkspace(policy);
+    final bool canPrint = canPrintReportsWorkspace(policy);
     final String storageKey = 'reports_items_${state.query.panel.serverValue}';
-
-    return AppCollapsibleSection(
-      title: _panelLabel(l10n, state.query.panel),
-      child: AppListTable<ReportsWorkspaceItem>(
-        page: state.overview.items,
-        isLoading: state.isRefreshing,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        columnVisibilityController: columnVisibilityController,
-        columnVisibilityStorageKey: storageKey,
-        columnWidthStorageKey:
-            'reports_items_cw_${state.query.panel.serverValue}',
-        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-        columnVisibilityTitle: l10n.commonTableSettingsTitle,
-        search: _reportSearch(
-          context,
-          state,
-          searchController,
-          controller,
-          allowedPanels,
-        ),
-        itemKeyBuilder: (ReportsWorkspaceItem item) =>
-            ValueKey<String>(item.id),
-        onRowSelected: (ReportsWorkspaceItem item) {
-          unawaited(openReportDetailDialog(context, ref, state, item, policy));
-        },
-        previousPageLabel: l10n.reportsPreviousPageLabel,
-        nextPageLabel: l10n.reportsNextPageLabel,
-        pageLabelBuilder: (AppPage<ReportsWorkspaceItem> page) {
-          return _pageLabel(context, page);
-        },
-        onPageChanged: controller.changePage,
-        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-          title: l10n.reportsNoItemsTitle,
-          body: l10n.reportsNoItemsBody,
-          icon: Icons.analytics_outlined,
-        ),
-        columns: reportItemColumns(
+    final String sheetName = _panelLabel(l10n, state.query.panel);
+    final List<AppListTableColumn<ReportsWorkspaceItem>> columns =
+        reportItemColumns(
           context,
           ref,
           l10n,
@@ -501,8 +484,86 @@ class _ReportItemsPanel extends ConsumerWidget {
                   policy,
                 );
               },
+        );
+    final List<AppListTableColumn<ReportsWorkspaceItem>> columnChoices =
+        reportItemColumnChoices(context, l10n);
+
+    return AppListTable<ReportsWorkspaceItem>(
+      page: state.overview.items,
+      isLoading: state.isRefreshing,
+      columnVisibilityController: columnVisibilityController,
+      columnVisibilityStorageKey: storageKey,
+      columnWidthStorageKey:
+          'reports_items_cw_${state.query.panel.serverValue}',
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+      canExport: canExport,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: l10n.commonPrintActionLabel,
+      printFailureMessage: l10n.commonTablePrintFailureMessage,
+      loadMatchingItems: () => matchingItemsOrThrow(
+        controller.loadMatchingOverviewItems(),
+      ),
+      onPrint: (List<ReportsWorkspaceItem> items) =>
+          printReportsListTable<ReportsWorkspaceItem>(
+        ref: ref,
+        context: context,
+        title: sheetName,
+        columns: <AppListTableColumn<ReportsWorkspaceItem>>[
+          ...columns,
+          ...columnChoices,
+        ],
+        items: items,
+        emptyText: l10n.reportsNoItemsTitle,
+      ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
+      exportConfig: AppListTableExportConfig<ReportsWorkspaceItem>(
+        fileNameStem: 'reports_${state.query.panel.serverValue}',
+        dateOf: (ReportsWorkspaceItem item) => item.occurredAt,
+        sheetName: sheetName,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
+      ),
+      search: _reportSearch(
+        context,
+        state,
+        searchController,
+        controller,
+      ),
+        itemKeyBuilder: (ReportsWorkspaceItem item) =>
+            ValueKey<String>(item.id),
+        onRowSelected: (ReportsWorkspaceItem item) {
+          unawaited(openReportDetailDialog(context, ref, state, item, policy));
+        },
+        previousPageLabel: l10n.reportsPreviousPageLabel,
+        nextPageLabel: l10n.reportsNextPageLabel,
+        pageLabelBuilder: (AppPage<ReportsWorkspaceItem> page) {
+          return _pageLabel(context, page);
+        },
+        onPageChanged: controller.changePage,
+        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+          title: l10n.reportsNoItemsTitle,
+          body: l10n.reportsNoItemsBody,
+          icon: Icons.analytics_outlined,
         ),
-        columnChoices: reportItemColumnChoices(context, l10n),
+        columns: columns,
+        columnChoices: columnChoices,
         mobileItemBuilder: (BuildContext context, ReportsWorkspaceItem item) {
           final String? nextLabel = reportNextActionLabel(
             l10n,
@@ -540,7 +601,6 @@ class _ReportItemsPanel extends ConsumerWidget {
                   ),
           );
         },
-      ),
     );
   }
 
@@ -549,7 +609,6 @@ class _ReportItemsPanel extends ConsumerWidget {
     ReportsWorkspaceState state,
     TextEditingController searchController,
     ReportsWorkspaceController controller,
-    List<ReportsWorkspacePanel> allowedPanels,
   ) {
     final AppLocalizations l10n = context.l10n;
     return AppListTableSearch<ReportsWorkspaceItem>(
@@ -567,18 +626,14 @@ class _ReportItemsPanel extends ConsumerWidget {
       advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
       advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
       advancedFilterResetLabel: l10n.opdClearFiltersAction,
+      advancedFilterCloseLabel: l10n.commonCloseActionLabel,
+      allFieldsLabel: l10n.opdAllFieldsFilterLabel,
       dateFilterLabel: l10n.reportsDateFilterLabel,
       dateFromLabel: l10n.reportsDateFromLabel,
       dateToLabel: l10n.reportsDateToLabel,
       datePickerButtonLabel: l10n.reportsDatePickerLabel,
       invalidDateMessage: l10n.reportsInvalidDateMessage,
       filterGroups: <AppSearchBarFilterGroup>[
-        AppSearchBarFilterGroup(
-          key: _panelFilterKey,
-          label: l10n.reportsPanelFilterLabel,
-          allLabel: l10n.reportsPanelOverview,
-          choices: _panelChoices(l10n, allowedPanels),
-        ),
         AppSearchBarFilterGroup(
           key: _statusFilterKey,
           label: l10n.reportsStatusFilterLabel,
@@ -599,23 +654,22 @@ class _ReportItemsPanel extends ConsumerWidget {
             reportsTailoredDatasets(policy, state.overview.lookups.datasets),
           ),
         ),
+        if (state.overview.lookups.triggers.isNotEmpty)
+          AppSearchBarFilterGroup(
+            key: _triggerFilterKey,
+            label: l10n.reportsTriggerFilterLabel,
+            allLabel: l10n.reportsAllTriggersLabel,
+            choices: _lookupChoices(state.overview.lookups.triggers),
+          ),
       ],
       filterValue: _reportFilterValue(state.query),
       hasActiveFilters: _hasReportFilters(state.query),
       onFilterChanged: (AppSearchBarFilterValue value) {
-        final ReportsWorkspacePanel panel = ReportsWorkspacePanel.fromServer(
-          value.option(_panelFilterKey),
-        );
-        if (panel != state.query.panel) {
-          if (allowedPanels.contains(panel)) {
-            controller.applyPanel(panel);
-          }
-          return;
-        }
         controller.applyReportFilters(
           status: value.option(_statusFilterKey),
           format: value.option(_formatFilterKey),
           dataset: value.option(_datasetFilterKey),
+          trigger: value.option(_triggerFilterKey),
         );
       },
     );
@@ -628,7 +682,6 @@ class _ComplianceLogPanel extends ConsumerWidget {
     required this.searchController,
     required this.columnVisibilityController,
     required this.policy,
-    required this.allowedPanels,
   });
 
   final ReportsWorkspaceState state;
@@ -636,7 +689,6 @@ class _ComplianceLogPanel extends ConsumerWidget {
   final AppListTableColumnVisibilityController<ComplianceLogItem>
   columnVisibilityController;
   final AppAccessPolicy policy;
-  final List<ReportsWorkspacePanel> allowedPanels;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -644,71 +696,119 @@ class _ComplianceLogPanel extends ConsumerWidget {
     final ReportsWorkspaceController controller = ref.read(
       reportsWorkspaceControllerProvider.notifier,
     );
-    final bool canExport = canExportEvidence(policy);
+    final bool canExport = canExportReportsWorkspace(policy);
+    final bool canPrint = canPrintReportsWorkspace(policy);
     final String storageKey =
         'reports_compliance_${state.query.panel.serverValue}';
+    final String sheetName = _panelLabel(l10n, state.query.panel);
+    final List<AppListTableColumn<ComplianceLogItem>> columns =
+        complianceLogColumns(
+          context,
+          ref,
+          l10n,
+          canExport: canExport,
+          onNextAction:
+              (BuildContext actionContext, WidgetRef actionRef, item) {
+                return _handleComplianceNextAction(
+                  actionContext,
+                  actionRef,
+                  state,
+                  item,
+                  policy,
+                );
+              },
+        );
+    final List<AppListTableColumn<ComplianceLogItem>> columnChoices =
+        complianceLogColumnChoices(context, l10n);
 
-    return AppCollapsibleSection(
-      title: _panelLabel(l10n, state.query.panel),
-      child: AppListTable<ComplianceLogItem>(
-        page: state.complianceLogs,
-        isLoading: state.isRefreshing,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        columnVisibilityController: columnVisibilityController,
-        columnVisibilityStorageKey: storageKey,
-        columnWidthStorageKey:
-            'reports_compliance_cw_${state.query.panel.serverValue}',
-        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-        columnVisibilityTitle: l10n.commonTableSettingsTitle,
-        search: AppListTableSearch<ComplianceLogItem>(
-          controller: searchController,
-          semanticLabel: l10n.reportsSearchLabel,
-          hintText: l10n.reportsComplianceSearchHint,
-          clearLabel: l10n.reportsClearSearchLabel,
-          matcher: (ComplianceLogItem item, String query) {
-            return matchesComplianceLogSearch(context, item, query);
-          },
-          onSubmitted: controller.applySearch,
-          onClear: () => controller.applySearch(''),
-          showAdvancedFilterButton: true,
-          advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
-          advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
-          advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-          advancedFilterResetLabel: l10n.opdClearFiltersAction,
-          dateFilterLabel: l10n.reportsDateFilterLabel,
-          dateFromLabel: l10n.reportsDateFromLabel,
-          dateToLabel: l10n.reportsDateToLabel,
-          datePickerButtonLabel: l10n.reportsDatePickerLabel,
-          invalidDateMessage: l10n.reportsInvalidDateMessage,
-          filterGroups: <AppSearchBarFilterGroup>[
-            AppSearchBarFilterGroup(
-              key: _panelFilterKey,
-              label: l10n.reportsPanelFilterLabel,
-              allLabel: l10n.reportsPanelAudit,
-              choices: _panelChoices(l10n, allowedPanels),
-            ),
-            AppSearchBarFilterGroup(
-              key: _statusFilterKey,
-              label: l10n.reportsComplianceTypeFilterLabel,
-              allLabel: l10n.reportsAllStatusesLabel,
-              choices: _complianceStatusChoices(l10n, state.query.panel),
-            ),
-          ],
-          filterValue: _reportFilterValue(state.query),
-          hasActiveFilters: _hasReportFilters(state.query),
-          onFilterChanged: (AppSearchBarFilterValue value) {
-            final ReportsWorkspacePanel panel =
-                ReportsWorkspacePanel.fromServer(value.option(_panelFilterKey));
-            if (panel != state.query.panel) {
-              if (allowedPanels.contains(panel)) {
-                controller.applyPanel(panel);
-              }
-              return;
-            }
-            controller.applyStatus(value.option(_statusFilterKey));
-          },
-        ),
+    return AppListTable<ComplianceLogItem>(
+      page: state.complianceLogs,
+      isLoading: state.isRefreshing,
+      columnVisibilityController: columnVisibilityController,
+      columnVisibilityStorageKey: storageKey,
+      columnWidthStorageKey:
+          'reports_compliance_cw_${state.query.panel.serverValue}',
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+      canExport: canExport,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: l10n.commonPrintActionLabel,
+      printFailureMessage: l10n.commonTablePrintFailureMessage,
+      loadMatchingItems: () => matchingItemsOrThrow(
+        controller.loadMatchingComplianceLogs(),
+      ),
+      onPrint: (List<ComplianceLogItem> items) =>
+          printReportsListTable<ComplianceLogItem>(
+        ref: ref,
+        context: context,
+        title: sheetName,
+        columns: <AppListTableColumn<ComplianceLogItem>>[
+          ...columns,
+          ...columnChoices,
+        ],
+        items: items,
+        emptyText: l10n.reportsNoComplianceLogsTitle,
+      ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
+      exportConfig: AppListTableExportConfig<ComplianceLogItem>(
+        fileNameStem: 'reports_${state.query.panel.serverValue}',
+        dateOf: (ComplianceLogItem item) => item.occurredAt,
+        sheetName: sheetName,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
+      ),
+      search: AppListTableSearch<ComplianceLogItem>(
+        controller: searchController,
+        semanticLabel: l10n.reportsSearchLabel,
+        hintText: l10n.reportsComplianceSearchHint,
+        clearLabel: l10n.reportsClearSearchLabel,
+        matcher: (ComplianceLogItem item, String query) {
+          return matchesComplianceLogSearch(context, item, query);
+        },
+        onSubmitted: controller.applySearch,
+        onClear: () => controller.applySearch(''),
+        showAdvancedFilterButton: true,
+        advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+        advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+        advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
+        allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+        dateFilterLabel: l10n.reportsDateFilterLabel,
+        dateFromLabel: l10n.reportsDateFromLabel,
+        dateToLabel: l10n.reportsDateToLabel,
+        datePickerButtonLabel: l10n.reportsDatePickerLabel,
+        invalidDateMessage: l10n.reportsInvalidDateMessage,
+        filterGroups: <AppSearchBarFilterGroup>[
+          AppSearchBarFilterGroup(
+            key: _statusFilterKey,
+            label: l10n.reportsComplianceTypeFilterLabel,
+            allLabel: l10n.reportsAllStatusesLabel,
+            choices: _complianceStatusChoices(l10n, state.query.panel),
+          ),
+        ],
+        filterValue: _reportFilterValue(state.query),
+        hasActiveFilters: _hasReportFilters(state.query),
+        onFilterChanged: (AppSearchBarFilterValue value) {
+          controller.applyStatus(value.option(_statusFilterKey));
+        },
+      ),
         itemKeyBuilder: (ComplianceLogItem item) => ValueKey<String>(item.id),
         onRowSelected: (ComplianceLogItem item) {
           unawaited(
@@ -726,23 +826,8 @@ class _ComplianceLogPanel extends ConsumerWidget {
           body: l10n.reportsNoComplianceLogsBody,
           icon: Icons.manage_search_outlined,
         ),
-        columns: complianceLogColumns(
-          context,
-          ref,
-          l10n,
-          canExport: canExport,
-          onNextAction:
-              (BuildContext actionContext, WidgetRef actionRef, item) {
-                return _handleComplianceNextAction(
-                  actionContext,
-                  actionRef,
-                  state,
-                  item,
-                  policy,
-                );
-              },
-        ),
-        columnChoices: complianceLogColumnChoices(context, l10n),
+        columns: columns,
+        columnChoices: columnChoices,
         mobileItemBuilder: (BuildContext context, ComplianceLogItem item) {
           final String? exportLabel = complianceNextActionLabel(
             l10n,
@@ -778,7 +863,6 @@ class _ComplianceLogPanel extends ConsumerWidget {
                   ),
           );
         },
-      ),
     );
   }
 }
@@ -788,51 +872,27 @@ class _ReportSchedulesPanel extends ConsumerWidget {
     required this.state,
     required this.columnVisibilityController,
     required this.policy,
+    required this.bounded,
   });
 
   final ReportsWorkspaceState state;
   final AppListTableColumnVisibilityController<ReportsWorkspaceItem>
   columnVisibilityController;
   final AppAccessPolicy policy;
+  final bool bounded;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final ReportsWorkspaceController controller = ref.read(
       reportsWorkspaceControllerProvider.notifier,
     );
     final bool canWrite = canWriteReports(policy);
-
-    return AppCollapsibleSection(
-      title: l10n.reportsSchedulesTitle,
-      child: AppListTable<ReportsWorkspaceItem>(
-        page: state.overview.schedules,
-        isLoading: state.isRefreshing,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        columnVisibilityController: columnVisibilityController,
-        columnVisibilityStorageKey: 'reports_schedules',
-        columnWidthStorageKey: 'reports_schedules_cw',
-        columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-        columnVisibilityTitle: l10n.commonTableSettingsTitle,
-        itemKeyBuilder: (ReportsWorkspaceItem item) =>
-            ValueKey<String>(item.id),
-        onRowSelected: (ReportsWorkspaceItem item) {
-          unawaited(openReportDetailDialog(context, ref, state, item, policy));
-        },
-        previousPageLabel: l10n.reportsPreviousPageLabel,
-        nextPageLabel: l10n.reportsNextPageLabel,
-        pageLabelBuilder: (AppPage<ReportsWorkspaceItem> page) {
-          return _pageLabel(context, page);
-        },
-        onPageChanged: controller.changePage,
-        emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
-          title: l10n.reportsNoSchedulesTitle,
-          body: l10n.reportsNoSchedulesBody,
-          icon: Icons.schedule_outlined,
-          minHeight: 180,
-        ),
-        columns: scheduleColumns(
+    final bool canExport = canExportReportsWorkspace(policy);
+    final bool canPrint = canPrintReportsWorkspace(policy);
+    final List<AppListTableColumn<ReportsWorkspaceItem>> columns =
+        scheduleColumns(
           context,
           ref,
           l10n,
@@ -849,45 +909,128 @@ class _ReportSchedulesPanel extends ConsumerWidget {
                   policy,
                 );
               },
-        ),
-        mobileItemBuilder: (BuildContext context, ReportsWorkspaceItem item) {
-          final String? nextLabel = reportNextActionLabel(
-            l10n,
-            item,
-            canWrite: canWrite,
-            canExport: false,
-          );
-          return AppListTableMobileItem(
-            title: item.title,
-            caption: item.reference,
-            meta: <AppListTableMobileMeta>[
-              AppListTableMobileMeta(
-                label: reportsTableStatus(context, item.status).label,
-              ),
-              AppListTableMobileMeta(
-                label: reportsDateTime(context, item.occurredAt),
-                icon: Icons.schedule_outlined,
-              ),
-            ],
-            showAvatar: false,
-            trailing: nextLabel == null
-                ? null
-                : ReportNextActionCell(
-                    item: item,
-                    canWrite: canWrite,
-                    canExport: false,
-                    isSaving: state.isSaving,
-                    onPressed: () => _handleReportNextAction(
-                      context,
-                      ref,
-                      state,
-                      item,
-                      policy,
-                    ),
-                  ),
-          );
-        },
+        );
+    final List<AppListTableColumn<ReportsWorkspaceItem>> columnChoices =
+        scheduleColumnChoices(context, l10n);
+
+    final Widget table = AppListTable<ReportsWorkspaceItem>(
+      page: state.overview.schedules,
+      isLoading: state.isRefreshing,
+      shrinkWrap: !bounded,
+      physics: bounded ? null : const NeverScrollableScrollPhysics(),
+      columnVisibilityController: columnVisibilityController,
+      columnVisibilityStorageKey: 'reports_schedules',
+      columnWidthStorageKey: 'reports_schedules_cw',
+      columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+      canExport: canExport,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: l10n.commonPrintActionLabel,
+      printFailureMessage: l10n.commonTablePrintFailureMessage,
+      loadMatchingItems: () => matchingItemsOrThrow(
+        controller.loadMatchingSchedules(),
       ),
+      onPrint: (List<ReportsWorkspaceItem> items) =>
+          printReportsListTable<ReportsWorkspaceItem>(
+        ref: ref,
+        context: context,
+        title: l10n.reportsSchedulesTitle,
+        columns: <AppListTableColumn<ReportsWorkspaceItem>>[
+          ...columns,
+          ...columnChoices,
+        ],
+        items: items,
+        emptyText: l10n.reportsNoSchedulesTitle,
+      ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
+      exportConfig: AppListTableExportConfig<ReportsWorkspaceItem>(
+        fileNameStem: 'reports_schedules',
+        dateOf: (ReportsWorkspaceItem item) => item.occurredAt,
+        sheetName: l10n.reportsSchedulesTitle,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
+      ),
+      itemKeyBuilder: (ReportsWorkspaceItem item) =>
+          ValueKey<String>(item.id),
+      onRowSelected: (ReportsWorkspaceItem item) {
+        unawaited(openReportDetailDialog(context, ref, state, item, policy));
+      },
+      previousPageLabel: l10n.reportsPreviousPageLabel,
+      nextPageLabel: l10n.reportsNextPageLabel,
+      pageLabelBuilder: (AppPage<ReportsWorkspaceItem> page) {
+        return _pageLabel(context, page);
+      },
+      onPageChanged: controller.changePage,
+      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+        title: l10n.reportsNoSchedulesTitle,
+        body: l10n.reportsNoSchedulesBody,
+        icon: Icons.schedule_outlined,
+        minHeight: bounded ? 0 : 180,
+      ),
+      columns: columns,
+      columnChoices: columnChoices,
+      mobileItemBuilder: (BuildContext context, ReportsWorkspaceItem item) {
+        final String? nextLabel = reportNextActionLabel(
+          l10n,
+          item,
+          canWrite: canWrite,
+          canExport: false,
+        );
+        return AppListTableMobileItem(
+          title: item.title,
+          caption: item.reference,
+          meta: <AppListTableMobileMeta>[
+            AppListTableMobileMeta(
+              label: reportsTableStatus(context, item.status).label,
+            ),
+            AppListTableMobileMeta(
+              label: reportsDateTime(context, item.occurredAt),
+              icon: Icons.schedule_outlined,
+            ),
+          ],
+          showAvatar: false,
+          trailing: nextLabel == null
+              ? null
+              : ReportNextActionCell(
+                  item: item,
+                  canWrite: canWrite,
+                  canExport: false,
+                  isSaving: state.isSaving,
+                  onPressed: () => _handleReportNextAction(
+                    context,
+                    ref,
+                    state,
+                    item,
+                    policy,
+                  ),
+                ),
+        );
+      },
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Text(l10n.reportsSchedulesTitle, style: theme.textTheme.titleMedium),
+        SizedBox(height: theme.spacing.sm),
+        if (bounded) Expanded(child: table) else table,
+      ],
     );
   }
 }
@@ -2228,18 +2371,50 @@ String _panelLabel(AppLocalizations l10n, ReportsWorkspacePanel panel) {
   };
 }
 
-List<AppSearchBarFilterChoice> _panelChoices(
-  AppLocalizations l10n,
-  List<ReportsWorkspacePanel> allowedPanels,
-) {
-  return <AppSearchBarFilterChoice>[
-    for (final ReportsWorkspacePanel panel in allowedPanels)
-      AppSearchBarFilterChoice(
-        value: panel.serverValue,
-        label: _panelLabel(l10n, panel),
-        icon: _panelIcon(panel),
-      ),
-  ];
+int? _panelCount(ReportsWorkspaceState state, ReportsWorkspacePanel panel) {
+  if (panel == ReportsWorkspacePanel.overview) {
+    return null;
+  }
+  final bool active = state.query.panel == panel;
+  if (panel.isCompliance) {
+    if (active) {
+      return state.complianceLogs.totalItemCount ??
+          state.complianceLogs.items.length;
+    }
+    final int queueTotal = state.overview.queueSummaries
+        .where((ReportsQueueSummary queue) => queue.panel == panel)
+        .fold<int>(0, (int sum, ReportsQueueSummary queue) => sum + queue.count);
+    if (queueTotal > 0) {
+      return queueTotal;
+    }
+    return null;
+  }
+  if (active) {
+    return state.overview.items.totalItemCount ??
+        state.overview.items.items.length;
+  }
+  final int queueTotal = state.overview.queueSummaries
+      .where((ReportsQueueSummary queue) => queue.panel == panel)
+      .fold<int>(0, (int sum, ReportsQueueSummary queue) => sum + queue.count);
+  if (queueTotal > 0) {
+    return queueTotal;
+  }
+  final String? cardId = switch (panel) {
+    ReportsWorkspacePanel.catalog => 'definitions',
+    ReportsWorkspacePanel.delivery => 'runs_queued',
+    ReportsWorkspacePanel.dashboards => 'widgets_pinned',
+    ReportsWorkspacePanel.monitor => 'kpi_critical',
+    ReportsWorkspacePanel.activity => 'activity_24h',
+    _ => null,
+  };
+  if (cardId != null) {
+    for (final ReportsSummaryCard card in state.overview.summary) {
+      if (card.id == cardId) {
+        return card.value;
+      }
+    }
+  }
+  return 0;
 }
 
 List<AppSearchBarFilterChoice> _lookupChoices(
@@ -2288,19 +2463,19 @@ List<AppSearchBarFilterChoice> _complianceStatusChoices(
 AppSearchBarFilterValue _reportFilterValue(ReportsWorkspaceQuery query) {
   return AppSearchBarFilterValue(
     options: <String, String>{
-      _panelFilterKey: query.panel.serverValue,
       if (query.status != null) _statusFilterKey: query.status!,
       if (query.format != null) _formatFilterKey: query.format!,
       if (query.dataset != null) _datasetFilterKey: query.dataset!,
+      if (query.trigger != null) _triggerFilterKey: query.trigger!,
     },
   );
 }
 
 bool _hasReportFilters(ReportsWorkspaceQuery query) {
-  return query.panel != ReportsWorkspacePanel.overview ||
-      query.status != null ||
+  return query.status != null ||
       query.format != null ||
       query.dataset != null ||
+      query.trigger != null ||
       query.from != null ||
       query.to != null;
 }
@@ -2443,8 +2618,8 @@ String? _apiLabel(String? value) {
       .join(' ');
 }
 
-const String _panelFilterKey = 'panel';
 const String _statusFilterKey = 'status';
 const String _formatFilterKey = 'format';
 const String _datasetFilterKey = 'dataset';
+const String _triggerFilterKey = 'trigger';
 const String _dailyFrequency = 'DAILY';

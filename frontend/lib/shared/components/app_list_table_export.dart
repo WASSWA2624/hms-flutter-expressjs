@@ -36,6 +36,9 @@ typedef AppListTableExportSaver =
       required String fileName,
     });
 
+/// Loads every row that matches the table's applied query (not only loaded pages).
+typedef AppListTableMatchingItemsLoader<T> = Future<List<T>> Function();
+
 /// Caller-supplied export behavior for [AppListTable].
 @immutable
 final class AppListTableExportConfig<T> {
@@ -49,6 +52,7 @@ final class AppListTableExportConfig<T> {
     this.rowFilter,
     this.dateOf,
     this.items,
+    this.loadMatchingItems,
     this.saver,
     this.firstDate,
     this.lastDate,
@@ -70,6 +74,10 @@ final class AppListTableExportConfig<T> {
   final AppListTableExportRowFilter<T>? rowFilter;
   final AppListTableExportDateOf<T>? dateOf;
   final List<T>? items;
+
+  /// When set, Export resolves this matching dataset at confirm time instead of
+  /// using only [items] or the currently loaded table rows.
+  final AppListTableMatchingItemsLoader<T>? loadMatchingItems;
   final AppListTableExportSaver? saver;
   final DateTime? firstDate;
   final DateTime? lastDate;
@@ -961,24 +969,34 @@ class _AppListTableExportDialogState<T>
       return;
     }
 
-    final List<T> sourceRows = widget.config.items ?? widget.rows;
-    final List<T> filteredRows = applyAppListTableExportFilters<T>(
-      rows: sourceRows,
-      filters: _filters,
-      rowFilter: widget.config.rowFilter,
-      dateOf: widget.config.dateOf,
-    );
-    if (filteredRows.isEmpty) {
-      setState(() => _inlineError = widget.emptyRowsMessage);
-      return;
-    }
-
     setState(() {
       _isExporting = true;
       _inlineError = null;
     });
 
     try {
+      final AppListTableMatchingItemsLoader<T>? loader =
+          widget.config.loadMatchingItems;
+      final List<T> sourceRows = loader != null
+          ? await loader()
+          : (widget.config.items ?? widget.rows);
+      if (!mounted) {
+        return;
+      }
+      final List<T> filteredRows = applyAppListTableExportFilters<T>(
+        rows: sourceRows,
+        filters: _filters,
+        rowFilter: widget.config.rowFilter,
+        dateOf: widget.config.dateOf,
+      );
+      if (filteredRows.isEmpty) {
+        setState(() {
+          _isExporting = false;
+          _inlineError = widget.emptyRowsMessage;
+        });
+        return;
+      }
+
       final Uint8List bytes = buildAppListTableExcelBytes<T>(
         rows: filteredRows,
         columns: selectedColumns,

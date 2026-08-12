@@ -214,7 +214,7 @@ void main() {
     expect(find.text('Runs and delivery'), findsWidgets);
     expect(find.text('Workspace activity'), findsOneWidget);
     expect(find.text('Queue mix'), findsOneWidget);
-    expect(find.text('Filters'), findsWidgets);
+    expect(find.text('Catalog'), findsWidgets);
 
     final AppListTable<ReportsWorkspaceItem> schedulesTable = _schedulesTable(
       tester,

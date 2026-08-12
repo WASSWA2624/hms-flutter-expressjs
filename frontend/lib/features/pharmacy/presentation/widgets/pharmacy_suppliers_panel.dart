@@ -119,7 +119,7 @@ class _PharmacySuppliersCatalogTabState
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => printPharmacyWorkspaceList(
+      onPrint: (List<PharmacySupplier> items) => printPharmacyWorkspaceList(
         ref: ref,
         context: context,
         title: l10n.pharmacyDeskSuppliersLabel,
@@ -142,7 +142,7 @@ class _PharmacySuppliersCatalogTabState
           ),
         ],
         rows: <Map<String, String>>[
-          for (final PharmacySupplier item in widget.state.suppliers.items)
+          for (final PharmacySupplier item in items)
             <String, String>{
               'name': item.primaryName,
               'location': item.location ?? '',

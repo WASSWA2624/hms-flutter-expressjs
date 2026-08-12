@@ -713,6 +713,73 @@ void main() {
       'Gamma',
     );
   });
+
+  testWidgets(
+    'Export uses loadMatchingItems beyond the loaded table page',
+    (WidgetTester tester) async {
+      final TextEditingController searchController = TextEditingController();
+      addTearDown(searchController.dispose);
+
+      Uint8List? savedBytes;
+      int loaderCalls = 0;
+      final List<_ExportRow> loadedPage = items.take(1).toList(growable: false);
+
+      await pumpComponent(
+        tester,
+        SizedBox(
+          height: 520,
+          child: AppListTable<_ExportRow>(
+            items: loadedPage,
+            columns: columns,
+            exportConfig: AppListTableExportConfig<_ExportRow>(
+              fileNameStem: 'export_matching',
+              enableDateFilter: false,
+              loadMatchingItems: () async {
+                loaderCalls += 1;
+                return items;
+              },
+              saver:
+                  ({required Uint8List bytes, required String fileName}) async {
+                    savedBytes = bytes;
+                    return true;
+                  },
+            ),
+            search: AppListTableSearch<_ExportRow>(
+              controller: searchController,
+              semanticLabel: 'Search rows',
+              matcher: (_, _) => true,
+            ),
+            mobileItemBuilder: (BuildContext context, _ExportRow item) {
+              return Text(item.title);
+            },
+          ),
+        ),
+        size: const Size(1000, 700),
+      );
+
+      await tester.tap(find.byIcon(AppActionIcons.export));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(AppButton, 'Export').last);
+      await tester.pumpAndSettle();
+
+      expect(loaderCalls, 1);
+      expect(savedBytes, isNotNull);
+      final Excel workbook = Excel.decodeBytes(savedBytes!);
+      final Sheet sheet = workbook.tables.values.first;
+      expect(
+        sheet.cell(CellIndex.indexByString('A2')).value?.toString(),
+        'Alpha',
+      );
+      expect(
+        sheet.cell(CellIndex.indexByString('A3')).value?.toString(),
+        'Beta',
+      );
+      expect(
+        sheet.cell(CellIndex.indexByString('A4')).value?.toString(),
+        'Gamma',
+      );
+    },
+  );
 }
 
 final class _ExportRow {

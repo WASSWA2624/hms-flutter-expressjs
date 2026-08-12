@@ -675,10 +675,15 @@ class _IpdBoardPanel extends ConsumerWidget {
       enablePrint: true,
       canPrint: canPrintIpdWorkspace(policy),
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => _printIpdAdmissionsList(
+      printFailureMessage: l10n.commonTablePrintFailureMessage,
+      loadMatchingItems: () => matchingItemsOrThrow(
+        controller.loadMatchingAdmissions(),
+      ),
+      onPrint: (List<IpdAdmissionSummary> items) => _printIpdAdmissionsList(
         context,
         ref,
         state: state,
+        items: items,
         section: section,
         showNextAction: showNextAction,
         l10n: l10n,
@@ -819,6 +824,7 @@ Future<void> _printIpdAdmissionsList(
   BuildContext context,
   WidgetRef ref, {
   required IpdWorkspaceState state,
+  required List<IpdAdmissionSummary> items,
   required IpdWorkspaceSection section,
   required bool showNextAction,
   required AppLocalizations l10n,
@@ -843,7 +849,7 @@ Future<void> _printIpdAdmissionsList(
           IpdWorkspacePrintColumn(id: column.key, label: column.label),
       ];
   final List<Map<String, String>> printRows = <Map<String, String>>[
-    for (final IpdAdmissionSummary item in state.admissions.items)
+    for (final IpdAdmissionSummary item in items)
       <String, String>{
         for (final AppListTableColumn<IpdAdmissionSummary> column in columns)
           column.key: _ipdAdmissionPrintCellValue(context, item, column.key),

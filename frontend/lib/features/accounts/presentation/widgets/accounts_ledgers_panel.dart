@@ -265,12 +265,12 @@ class _AccountsLedgersPanelState extends ConsumerState<AccountsLedgersPanel> {
       enablePrint: true,
       canPrint: canPrint,
       printLabel: l10n.commonPrintActionLabel,
-      onPrint: () => printAccountsListTable<AccountsPatientBalance>(
+      onPrint: (items) => printAccountsListTable<AccountsPatientBalance>(
         ref: ref,
         context: context,
         title: AccountsStrings.patientLedgersLabel,
         columns: columns,
-        items: _page.items,
+        items: items,
         emptyText: AccountsStrings.patientLedgersEmpty,
       ),
       goToTopLabel: l10n.commonGoToTopActionLabel,

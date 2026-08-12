@@ -234,6 +234,25 @@ final class NursingWorkspaceController
     return _refreshWorklist(showLoading: true);
   }
 
+  Future<Result<List<NursingWorkItem>>> loadMatchingWorkItems() {
+    final NursingWorkspaceState? current = _currentState;
+    if (current == null) {
+      return Future<Result<List<NursingWorkItem>>>.value(
+        const Result<List<NursingWorkItem>>.success(<NursingWorkItem>[]),
+      );
+    }
+    final NursingWorklistQuery query = current.query;
+    final List<NursingHandover> handovers = current.pendingHandovers;
+    return loadMatchingAppPageItems<NursingWorkItem>(
+      loadPage: (AppPageRequest request) {
+        return _loadWorklist(
+          query.copyWith(pageRequest: request),
+          handovers,
+        );
+      },
+    );
+  }
+
   Future<List<NursingUserOption>> searchUsers(String query) async {
     final Result<List<NursingUserOption>> result = await _repository
         .searchUsers(query);
