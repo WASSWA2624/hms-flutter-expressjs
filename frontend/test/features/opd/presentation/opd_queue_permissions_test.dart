@@ -154,6 +154,7 @@ AppAccessPolicy _writerPolicy() {
 void _stubWorkspace(
   _MockOpdRepository repository, {
   List<OpdQueueEntry> queueEntries = const <OpdQueueEntry>[_queueEntry],
+  int? queueTotalItemCount,
   bool failLists = false,
 }) {
   when(() => repository.listAppointments(any())).thenAnswer((invocation) async {
@@ -178,7 +179,7 @@ void _stubWorkspace(
         items: queueEntries,
         request:
             (invocation.positionalArguments.single as OpdQueueQuery).pageRequest,
-        totalItemCount: queueEntries.length,
+        totalItemCount: queueTotalItemCount ?? queueEntries.length,
       ),
     );
   });
@@ -252,11 +253,13 @@ Future<GoRouter> _pumpQueueTab(
   ThemeMode themeMode = ThemeMode.light,
   String initialLocation = '/opd?section=queue',
   List<OpdQueueEntry> queueEntries = const <OpdQueueEntry>[_queueEntry],
+  int? queueTotalItemCount,
   bool failLists = false,
 }) async {
   _stubWorkspace(
     repository,
     queueEntries: queueEntries,
+    queueTotalItemCount: queueTotalItemCount,
     failLists: failLists,
   );
   SharedPreferences.setMockInitialValues(<String, Object>{});
@@ -1172,6 +1175,28 @@ void main() {
         );
         expect(find.text('Other Queue'), findsWidgets);
         expect(find.text('Queue Patient'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Queue badge matches table membership (ignores inflated API total)',
+      (WidgetTester tester) async {
+        await _pumpQueueTab(
+          tester,
+          repository: repository,
+          accessPolicy: _readerPolicy(),
+          queueEntries: const <OpdQueueEntry>[_queueEntry],
+          queueTotalItemCount: 1000,
+        );
+
+        final AppTabStrip strip = tester.widget<AppTabStrip>(
+          find.byType(AppTabStrip),
+        );
+        expect(
+          strip.tabs.firstWhere((AppTabItem t) => t.id == 'queue').count,
+          1,
+        );
+        expect(find.text('Queue Patient'), findsOneWidget);
       },
     );
   });

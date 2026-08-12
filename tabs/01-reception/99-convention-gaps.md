@@ -1,9 +1,7 @@
 # Reception inventory — convention gaps
 
-Required compliance gaps vs `prompts/.cursor/*.mdc` after shared-chrome remediation.
+Required compliance gaps vs `prompts/.cursor/*.mdc` after shared-chrome + main-tab table remediation.
 
 ## Residual
 
-None — shared chrome closed count authority/tones, Export gate (`evidence:export`), table Print (preview-first), toolbar order, Follow-ups Filters, Payment gate date filter, and Flow Actions Print label from Reception.
-
-Per-tab inventory refresh continues under `prompts/01-reception/01-appointments.md` … `06-payment-gate.md`.
+None — main-tab viewport (`scrollable: false` / `Expanded` / no `shrinkWrap`), atomic cells, Export l10n + `exportValue`, Print preview copy via `commonPrint*`, authoritative Active visits summary counts, Follow-ups / Payment gate default columns, and prose-free table cells are closed.

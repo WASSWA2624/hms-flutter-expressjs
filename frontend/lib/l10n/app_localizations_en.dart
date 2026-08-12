@@ -237,6 +237,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonGoToTopActionLabel => 'Go to top';
 
   @override
+  String get commonLoadingMoreLabel => 'Loading more...';
+
+  @override
+  String get commonAllRowsLoadedLabel => 'All rows loaded';
+
+  @override
+  String get commonPrintSectionsLabel => 'Print sections';
+
+  @override
+  String get commonPrintSummarySectionLabel => 'Summary';
+
+  @override
+  String get commonPrintRowsSectionLabel => 'Rows';
+
+  @override
+  String commonPrintRowCountLabel(int count) {
+    return '$count rows';
+  }
+
+  @override
   String get commonAdvancedFiltersTitle => 'Advanced filters';
 
   @override
@@ -4537,6 +4557,20 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get opdNoQueueBody =>
       'Reception queue entries will appear here as patients are routed.';
+
+  @override
+  String get opdNoTriageTitle => 'No triage patients';
+
+  @override
+  String get opdNoTriageBody =>
+      'Patients waiting for triage assessment will appear here.';
+
+  @override
+  String get opdNoActiveTitle => 'No active encounters';
+
+  @override
+  String get opdNoActiveBody =>
+      'In-consultation outpatient encounters will appear here.';
 
   @override
   String get opdNoFlowsTitle => 'No OPD encounters';

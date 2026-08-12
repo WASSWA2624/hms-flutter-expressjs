@@ -299,15 +299,16 @@ class _ReceptionWorkspaceContentState
       filterValue,
     );
     final List<AppListTableColumn<_ReceptionDeskRow>> columns =
-        _receptionDefaultColumns(l10n);
+        _withExportValues(_receptionDefaultColumns(l10n), l10n);
     final List<AppListTableColumn<_ReceptionDeskRow>> columnChoices =
-        _receptionColumnChoices(l10n);
+        _withExportValues(_receptionColumnChoices(l10n), l10n);
 
     return ResponsivePage(
       padding: ResponsiveSpacing.workspacePagePaddingFor(
         spacing: Theme.of(context).spacing,
       ),
       maxWidth: PageMaxWidth.dataHeavy,
+      scrollable: false,
       child: SizedBox(
         width: double.infinity,
         child: Column(
@@ -351,127 +352,176 @@ class _ReceptionWorkspaceContentState
               },
             ),
             SizedBox(height: theme.spacing.sm),
-            if (_section == ReceptionDeskSection.paymentGate &&
-                _paymentGateFailure != null &&
-                paymentGate == null)
-              AppStateView(
-                title: l10n.errorUnexpectedTitle,
-                body: l10n.errorUnexpectedMessage,
-                variant: AppStateViewVariant.error,
-                action: AppButton.secondary(
-                  label: l10n.commonRetryActionLabel,
-                  onPressed: () => ref
-                      .read(receptionPaymentGateControllerProvider.notifier)
-                      .refresh(),
-                ),
-              )
-            else if (_section == ReceptionDeskSection.followUps &&
-                _followUpFailure != null &&
-                followUp == null)
-              AppStateView(
-                title: l10n.errorUnexpectedTitle,
-                body: l10n.errorUnexpectedMessage,
-                variant: AppStateViewVariant.error,
-                action: AppButton.secondary(
-                  label: l10n.commonRetryActionLabel,
-                  onPressed: () => ref
-                      .read(receptionFollowUpControllerProvider.notifier)
-                      .refresh(),
-                ),
-              )
-            else
-              AppListTable<_ReceptionDeskRow>(
-                items: rows,
-                columns: columns,
-                columnChoices: columnChoices,
-                columnVisibilityController: _columnVisibilityController,
-                columnVisibilityStorageKey: 'reception_${_section.name}',
-                columnWidthStorageKey: 'reception_cw_${_section.name}',
-                columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-                columnVisibilityTitle: l10n.commonTableSettingsTitle,
-                columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
-                columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
-                columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
-                canExport: canExportReceptionDesk(
-                  ref.watch(appAccessPolicyProvider),
-                ),
-                enablePrint: true,
-                canPrint: canPrintReceptionDesk(
-                  ref.watch(appAccessPolicyProvider),
-                ),
-                printLabel: l10n.commonPrintActionLabel,
-                onPrint: () => _printDeskList(rows, l10n),
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                onRowSelected: (_ReceptionDeskRow row) =>
-                    unawaited(_openRowDetail(row)),
-                itemKeyBuilder: (_ReceptionDeskRow row) =>
-                    ValueKey<String>(row.id),
-                search: AppListTableSearch<_ReceptionDeskRow>(
-                  controller: _searchController,
-                  semanticLabel: _sectionSearchHint(l10n),
-                  hintText: _sectionSearchHint(l10n),
-                  clearLabel: l10n.receptionClearFiltersAction,
-                  matcher: (_ReceptionDeskRow row, String query) =>
-                      row.matchesSearch(
-                        _section,
-                        query,
-                        context,
-                        field: filterValue.field,
+            Expanded(
+              child: _section == ReceptionDeskSection.paymentGate &&
+                      _paymentGateFailure != null &&
+                      paymentGate == null
+                  ? AppStateView(
+                      title: l10n.errorUnexpectedTitle,
+                      body: l10n.errorUnexpectedMessage,
+                      variant: AppStateViewVariant.error,
+                      action: AppButton.secondary(
+                        label: l10n.commonRetryActionLabel,
+                        onPressed: () => ref
+                            .read(
+                              receptionPaymentGateControllerProvider.notifier,
+                            )
+                            .refresh(),
                       ),
-                  showAdvancedFilterButton: true,
-                  advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
-                  advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
-                  advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-                  advancedFilterResetLabel: l10n.receptionClearFiltersAction,
-                  advancedFilterCloseLabel: l10n.commonCloseActionLabel,
-                  advancedFilterResetAppliesImmediately: true,
-                  searchFields: _searchFields(l10n),
-                  searchFieldLabel: l10n.opdSearchFieldFilterLabel,
-                  dateFilterLabel: _dateFilterLabel(l10n),
-                  dateFromLabel: l10n.opdDateFromLabel,
-                  dateToLabel: l10n.opdDateToLabel,
-                  datePickerButtonLabel: l10n.opdDatePickerButtonLabel,
-                  invalidDateMessage: l10n.opdInvalidDateMessage,
-                  allFieldsLabel: l10n.opdAllFieldsFilterLabel,
-                  filterGroups: _filterGroups(sectionRows, l10n),
-                  filterValue: filterValue,
-                  hasActiveFilters: filterValue.isActive,
-                  onFilterChanged: (AppSearchBarFilterValue value) {
-                    setState(() => _filterValues[_section] = value);
-                  },
-                  // Filters → Settings → Export → Print → Schedule → Register.
-                  trailingActions: _searchTrailingActions(l10n),
-                ),
-                emptyBuilder: (_) => AppStateView(
-                  title: switch (_section) {
-                    ReceptionDeskSection.paymentGate =>
-                      l10n.receptionPaymentGateEmptyTitle,
-                    ReceptionDeskSection.followUps =>
-                      l10n.receptionFollowUpsEmptyTitle,
-                    ReceptionDeskSection.highPriority =>
-                      l10n.receptionHighPriorityEmptyTitle,
-                    ReceptionDeskSection.appointments ||
-                    ReceptionDeskSection.queue ||
-                    ReceptionDeskSection.activeVisits =>
-                      l10n.receptionEmptyTitle,
-                  },
-                  body: switch (_section) {
-                    ReceptionDeskSection.paymentGate =>
-                      l10n.receptionPaymentGateEmptyBody,
-                    ReceptionDeskSection.followUps =>
-                      l10n.receptionFollowUpsEmptyBody,
-                    ReceptionDeskSection.highPriority =>
-                      l10n.receptionHighPriorityEmptyBody,
-                    ReceptionDeskSection.appointments ||
-                    ReceptionDeskSection.queue ||
-                    ReceptionDeskSection.activeVisits =>
-                      l10n.receptionEmptyBody,
-                  },
-                  variant: AppStateViewVariant.empty,
-                ),
-                mobileItemBuilder: _mobileItemBuilder,
-              ),
+                    )
+                  : _section == ReceptionDeskSection.followUps &&
+                          _followUpFailure != null &&
+                          followUp == null
+                      ? AppStateView(
+                          title: l10n.errorUnexpectedTitle,
+                          body: l10n.errorUnexpectedMessage,
+                          variant: AppStateViewVariant.error,
+                          action: AppButton.secondary(
+                            label: l10n.commonRetryActionLabel,
+                            onPressed: () => ref
+                                .read(
+                                  receptionFollowUpControllerProvider.notifier,
+                                )
+                                .refresh(),
+                          ),
+                        )
+                      : AppListTable<_ReceptionDeskRow>(
+                          items: rows,
+                          columns: columns,
+                          columnChoices: columnChoices,
+                          columnVisibilityController:
+                              _columnVisibilityController,
+                          columnVisibilityStorageKey:
+                              'reception_${_section.name}',
+                          columnWidthStorageKey:
+                              'reception_cw_${_section.name}',
+                          columnVisibilityLabel:
+                              l10n.commonTableSettingsActionLabel,
+                          columnVisibilityTitle: l10n.commonTableSettingsTitle,
+                          columnVisibilityApplyLabel:
+                              l10n.receptionApplyColumnsAction,
+                          columnVisibilityResetLabel:
+                              l10n.receptionResetColumnsAction,
+                          columnVisibilityCloseLabel:
+                              l10n.commonCloseActionLabel,
+                          exportLabel: l10n.commonTableExportActionLabel,
+                          exportDialogTitle: l10n.commonTableExportDialogTitle,
+                          exportCancelLabel: l10n.commonCancelActionLabel,
+                          exportColumnsSectionLabel:
+                              l10n.commonTableExportColumnsSectionLabel,
+                          exportFiltersSectionLabel:
+                              l10n.commonTableExportFiltersSectionLabel,
+                          exportEmptyColumnsMessage:
+                              l10n.commonTableExportEmptyColumnsMessage,
+                          exportEmptyRowsMessage:
+                              l10n.commonTableExportEmptyRowsMessage,
+                          exportSuccessMessage:
+                              l10n.commonTableExportSuccessMessage,
+                          exportFailureMessage:
+                              l10n.commonTableExportFailureMessage,
+                          canExport: canExportReceptionDesk(
+                            ref.watch(appAccessPolicyProvider),
+                          ),
+                          enablePrint: true,
+                          canPrint: canPrintReceptionDesk(
+                            ref.watch(appAccessPolicyProvider),
+                          ),
+                          printLabel: l10n.commonPrintActionLabel,
+                          onPrint: () => _printDeskList(rows, l10n),
+                          goToTopLabel: l10n.commonGoToTopActionLabel,
+                          loadingMoreLabel: l10n.commonLoadingMoreLabel,
+                          allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
+                          exportConfig:
+                              AppListTableExportConfig<_ReceptionDeskRow>(
+                            fileNameStem: 'reception_${_section.name}',
+                            dateOf: (_ReceptionDeskRow row) => row.time,
+                            rowFilter:
+                                (
+                                  _ReceptionDeskRow row,
+                                  AppSearchBarFilterValue filters,
+                                ) {
+                              return _applyFilters(
+                                <_ReceptionDeskRow>[row],
+                                filters,
+                              ).isNotEmpty;
+                            },
+                          ),
+                          onRowSelected: (_ReceptionDeskRow row) =>
+                              unawaited(_openRowDetail(row)),
+                          itemKeyBuilder: (_ReceptionDeskRow row) =>
+                              ValueKey<String>(row.id),
+                          search: AppListTableSearch<_ReceptionDeskRow>(
+                            controller: _searchController,
+                            semanticLabel: _sectionSearchHint(l10n),
+                            hintText: _sectionSearchHint(l10n),
+                            clearLabel: l10n.receptionClearFiltersAction,
+                            matcher: (_ReceptionDeskRow row, String query) =>
+                                row.matchesSearch(
+                                  _section,
+                                  query,
+                                  context,
+                                  field: filterValue.field,
+                                ),
+                            showAdvancedFilterButton: true,
+                            advancedFilterButtonLabel:
+                                l10n.commonFiltersActionLabel,
+                            advancedFilterTitle:
+                                l10n.commonAdvancedFiltersTitle,
+                            advancedFilterApplyLabel:
+                                l10n.opdApplyFiltersAction,
+                            advancedFilterResetLabel:
+                                l10n.receptionClearFiltersAction,
+                            advancedFilterCloseLabel:
+                                l10n.commonCloseActionLabel,
+                            advancedFilterResetAppliesImmediately: true,
+                            searchFields: _searchFields(l10n),
+                            searchFieldLabel: l10n.opdSearchFieldFilterLabel,
+                            dateFilterLabel: _dateFilterLabel(l10n),
+                            dateFromLabel: l10n.opdDateFromLabel,
+                            dateToLabel: l10n.opdDateToLabel,
+                            datePickerButtonLabel:
+                                l10n.opdDatePickerButtonLabel,
+                            invalidDateMessage: l10n.opdInvalidDateMessage,
+                            allFieldsLabel: l10n.opdAllFieldsFilterLabel,
+                            filterGroups: _filterGroups(sectionRows, l10n),
+                            filterValue: filterValue,
+                            hasActiveFilters: filterValue.isActive,
+                            onFilterChanged: (AppSearchBarFilterValue value) {
+                              setState(() => _filterValues[_section] = value);
+                            },
+                            // Filters → Settings → Export → Print → Schedule → Register.
+                            trailingActions: _searchTrailingActions(l10n),
+                          ),
+                          emptyBuilder: (_) => AppStateView(
+                            title: switch (_section) {
+                              ReceptionDeskSection.paymentGate =>
+                                l10n.receptionPaymentGateEmptyTitle,
+                              ReceptionDeskSection.followUps =>
+                                l10n.receptionFollowUpsEmptyTitle,
+                              ReceptionDeskSection.highPriority =>
+                                l10n.receptionHighPriorityEmptyTitle,
+                              ReceptionDeskSection.appointments ||
+                              ReceptionDeskSection.queue ||
+                              ReceptionDeskSection.activeVisits =>
+                                l10n.receptionEmptyTitle,
+                            },
+                            body: switch (_section) {
+                              ReceptionDeskSection.paymentGate =>
+                                l10n.receptionPaymentGateEmptyBody,
+                              ReceptionDeskSection.followUps =>
+                                l10n.receptionFollowUpsEmptyBody,
+                              ReceptionDeskSection.highPriority =>
+                                l10n.receptionHighPriorityEmptyBody,
+                              ReceptionDeskSection.appointments ||
+                              ReceptionDeskSection.queue ||
+                              ReceptionDeskSection.activeVisits =>
+                                l10n.receptionEmptyBody,
+                            },
+                            variant: AppStateViewVariant.empty,
+                          ),
+                          mobileItemBuilder: _mobileItemBuilder,
+                        ),
+            ),
           ],
         ),
       ),
@@ -909,6 +959,7 @@ class _ReceptionWorkspaceContentState
           _receptionPaymentEncounterColumn(l10n),
           _receptionPaymentGateStatusColumn(l10n),
           _receptionPaymentOutstandingColumn(l10n),
+          _receptionPaymentServicesColumn(l10n),
           if (_canShowPaymentGateNextAction)
             _receptionPaymentNextActionColumn(l10n),
         ];
@@ -918,7 +969,7 @@ class _ReceptionWorkspaceContentState
           _receptionPatientPhoneColumn(l10n),
           _receptionFollowUpDateColumn(l10n, locale),
           _receptionFollowUpTimeColumn(l10n, locale),
-          _receptionPatientIdColumn(l10n),
+          _receptionFollowUpStatusColumn(l10n),
         ];
     }
   }
@@ -946,7 +997,6 @@ class _ReceptionWorkspaceContentState
         return <AppListTableColumn<_ReceptionDeskRow>>[
           _receptionPatientIdColumn(l10n),
           _receptionAssignedDoctorColumn(l10n),
-          _receptionChiefComplaintColumn(l10n),
           _receptionFlowPaymentStatusColumn(l10n),
           _receptionConsultationFeeColumn(l10n),
         ];
@@ -955,30 +1005,40 @@ class _ReceptionWorkspaceContentState
           _receptionPatientIdColumn(l10n),
           _receptionPatientGenderColumn(l10n),
           _receptionPatientDobColumn(l10n),
-          _receptionPaymentServicesColumn(l10n),
           _receptionPaymentInvoicesColumn(l10n),
         ];
       case ReceptionDeskSection.followUps:
         return <AppListTableColumn<_ReceptionDeskRow>>[
-          AppListTableColumn<_ReceptionDeskRow>(
-            id: 'follow_up_status',
-            label: l10n.receptionStatusLabel,
-            cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
-                Text(
-                  opdStageDisplayLabel(
-                    l10n,
-                    row.followUpEntry?.status ?? '',
-                  ),
-                ),
-          ),
-          AppListTableColumn<_ReceptionDeskRow>(
-            id: 'follow_up_notes',
-            label: l10n.opdNotesLabel,
-            cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
-                Text(row.followUpEntry?.notes?.trim() ?? ''),
-          ),
+          _receptionPatientIdColumn(l10n),
         ];
     }
+  }
+
+  List<AppListTableColumn<_ReceptionDeskRow>> _withExportValues(
+    List<AppListTableColumn<_ReceptionDeskRow>> columns,
+    AppLocalizations l10n,
+  ) {
+    return <AppListTableColumn<_ReceptionDeskRow>>[
+      for (final AppListTableColumn<_ReceptionDeskRow> column in columns)
+        AppListTableColumn<_ReceptionDeskRow>(
+          id: column.id,
+          label: column.label,
+          cellBuilder: column.cellBuilder,
+          numeric: column.numeric,
+          alwaysVisible: column.alwaysVisible,
+          tooltip: column.tooltip,
+          sortable: column.sortable,
+          sortComparator: column.sortComparator,
+          headerBuilder: column.headerBuilder,
+          preferredWidth: column.preferredWidth,
+          fixedWidth: column.fixedWidth,
+          exportable: column.exportable,
+          exportValue:
+              column.exportValue ??
+              (_ReceptionDeskRow row) =>
+                  _deskExportCellValue(row, column.key, l10n),
+        ),
+    ];
   }
 
   AppListTableColumn<_ReceptionDeskRow> _receptionPatientColumn(
@@ -989,50 +1049,9 @@ class _ReceptionWorkspaceContentState
       label: l10n.opdPatientNameLabel,
       alwaysVisible: true,
       cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
-        final ThemeData theme = Theme.of(context);
-        final bool prioritized = row.queueEntry?.isPrioritized == true;
-        final bool showEmergencyBadge =
-            _section == ReceptionDeskSection.highPriority &&
-            _canShowHighPriorityEmergencyNested &&
-            row.flow != null &&
-            isReceptionEmergencyFlow(row.flow!);
-        final bool showVisitorBadge = row.appointment?.isVisitorMeeting == true;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            AppListItemText(
-              title: row.patientName(context),
-              subtitle: row.patientIdentifier,
-            ),
-            if (showVisitorBadge) ...<Widget>[
-              SizedBox(height: theme.spacing.xs),
-              AppWorkspaceStatusBadge(
-                status: AppWorkspaceStatus(
-                  label: l10n.receptionVisitorMeetingBadge,
-                  tone: AppWorkspaceStatusTone.info,
-                ),
-              ),
-            ],
-            if (prioritized) ...<Widget>[
-              SizedBox(height: theme.spacing.xs),
-              AppWorkspaceStatusBadge(
-                status: AppWorkspaceStatus(
-                  label: l10n.receptionHighPriorityBadgeLabel,
-                  tone: AppWorkspaceStatusTone.warning,
-                ),
-              ),
-            ],
-            if (showEmergencyBadge) ...<Widget>[
-              SizedBox(height: theme.spacing.xs),
-              AppWorkspaceStatusBadge(
-                status: AppWorkspaceStatus(
-                  label: l10n.opdTriageScopeEmergency,
-                  tone: AppWorkspaceStatusTone.error,
-                ),
-              ),
-            ],
-          ],
+        return AppListItemText(
+          title: row.patientName(context),
+          subtitle: row.patientIdentifier,
         );
       },
       sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) {
@@ -1098,6 +1117,22 @@ class _ReceptionWorkspaceContentState
           appListTableCompareDateTime(
             a.followUpEntry?.scheduledAt,
             b.followUpEntry?.scheduledAt,
+          ),
+    );
+  }
+
+  AppListTableColumn<_ReceptionDeskRow> _receptionFollowUpStatusColumn(
+    AppLocalizations l10n,
+  ) {
+    return AppListTableColumn<_ReceptionDeskRow>(
+      id: 'follow_up_status',
+      label: l10n.receptionStatusLabel,
+      cellBuilder: (BuildContext context, _ReceptionDeskRow row) => Text(
+        opdStageDisplayLabel(l10n, row.followUpEntry?.status ?? ''),
+      ),
+      sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
+          (a.followUpEntry?.status ?? '').compareTo(
+            b.followUpEntry?.status ?? '',
           ),
     );
   }
@@ -1264,15 +1299,8 @@ class _ReceptionWorkspaceContentState
     return AppListTableColumn<_ReceptionDeskRow>(
       id: 'encounter',
       label: l10n.billingEncounterLabel,
-      cellBuilder: (BuildContext context, _ReceptionDeskRow row) {
-        final ReceptionPaymentGateEntry? entry = row.paymentGateEntry;
-        return AppListItemText(
-          title: entry?.encounterIdentifier ?? '',
-          subtitle: entry?.services
-              .map((String source) => billingApiLabel(context, source))
-              .join(', '),
-        );
-      },
+      cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
+          Text(row.paymentGateEntry?.encounterIdentifier ?? ''),
       sortComparator: (_ReceptionDeskRow a, _ReceptionDeskRow b) =>
           (a.paymentGateEntry?.encounterIdentifier ?? '').compareTo(
             b.paymentGateEntry?.encounterIdentifier ?? '',
@@ -1441,17 +1469,6 @@ class _ReceptionWorkspaceContentState
       label: l10n.patientsFacilityLabel,
       cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
           Text(row.appointment?.facilityName ?? ''),
-    );
-  }
-
-  AppListTableColumn<_ReceptionDeskRow> _receptionChiefComplaintColumn(
-    AppLocalizations l10n,
-  ) {
-    return AppListTableColumn<_ReceptionDeskRow>(
-      id: 'chief_complaint',
-      label: l10n.opdChiefComplaintLabel,
-      cellBuilder: (BuildContext context, _ReceptionDeskRow row) =>
-          Text(row.flow?.chiefComplaint ?? ''),
     );
   }
 
@@ -1940,7 +1957,13 @@ class _ReceptionWorkspaceContentState
             )
             .length;
       case ReceptionDeskSection.activeVisits:
-        return state.flows.items.where(isReceptionActiveVisit).length;
+        // Prefer workspace summary when available (same pattern as OPD Active);
+        // otherwise board membership for in-scope loaded flows.
+        final int membership = state.flows.items
+            .where(isReceptionActiveVisit)
+            .length;
+        final int summary = state.summaryCounts.activeOpd;
+        return summary > 0 ? summary : membership;
       case ReceptionDeskSection.paymentGate:
         return paymentGateTotal ?? paymentGateEntries.length;
       case ReceptionDeskSection.followUps:
@@ -2008,6 +2031,14 @@ class _ReceptionWorkspaceContentState
     return columns;
   }
 
+  String _deskExportCellValue(
+    _ReceptionDeskRow row,
+    String columnId,
+    AppLocalizations l10n,
+  ) {
+    return _deskPrintCellValue(row, columnId, l10n);
+  }
+
   String _deskPrintCellValue(
     _ReceptionDeskRow row,
     String columnId,
@@ -2027,25 +2058,77 @@ class _ReceptionWorkspaceContentState
       'follow_up_time' => row.time == null
           ? ''
           : AppFormatters.time(row.time!, locale),
-      'status' => _rowFilterCode(row),
+      'follow_up_status' => opdStageDisplayLabel(
+          l10n,
+          row.followUpEntry?.status ?? '',
+        ),
+      'status' => switch (_section) {
+          ReceptionDeskSection.appointments =>
+            row.appointmentCurrentStepLabel(l10n),
+          ReceptionDeskSection.queue ||
+          ReceptionDeskSection.highPriority =>
+            row.queueCurrentStepLabel(l10n),
+          ReceptionDeskSection.activeVisits =>
+            row.flowCurrentStepLabel(l10n),
+          ReceptionDeskSection.paymentGate => row.paymentGateEntry == null
+              ? ''
+              : billingClearanceLabel(
+                  context,
+                  row.paymentGateEntry!.clearanceState,
+                ),
+          ReceptionDeskSection.followUps => opdStageDisplayLabel(
+              l10n,
+              row.followUpEntry?.status ?? '',
+            ),
+        },
       'next_action' => row.nextActionLabel(_section, l10n) ?? '',
       'provider' => row.staffName ?? '',
-      'payment_status' => row.paymentStatus ?? '',
+      'payment_status' => switch (_section) {
+          ReceptionDeskSection.queue ||
+          ReceptionDeskSection.highPriority =>
+            row.queueEntry?.paymentStatus ?? '',
+          ReceptionDeskSection.activeVisits =>
+            row.flow?.consultationPaymentStatus ?? '',
+          _ => row.paymentStatus ?? '',
+        },
       'outstanding' => _paymentMoneySummary(context, row.paymentGateEntry),
       'encounter' =>
         row.paymentGateEntry?.encounterIdentifier ??
             row.paymentGateEntry?.encounterId ??
             '',
-      'services' => row.paymentGateEntry?.services.join(', ') ?? '',
-      'patient_gender' => row.patientGender ?? '',
+      'services' =>
+        row.paymentGateEntry?.services
+                .map((String source) => billingApiLabel(context, source))
+                .join(', ') ??
+            '',
+      'patient_gender' => (() {
+          final String value = row.patientGender?.trim().toUpperCase() ?? '';
+          return switch (value) {
+            'MALE' || 'M' => l10n.patientsGenderMale,
+            'FEMALE' || 'F' => l10n.patientsGenderFemale,
+            'OTHER' => l10n.patientsGenderOther,
+            '' => '',
+            _ => l10n.patientsGenderUnknown,
+          };
+        })(),
+      'patient_dob' => row.patientDateOfBirth == null
+          ? ''
+          : AppFormatters.shortDate(row.patientDateOfBirth!, locale),
       'reason' =>
         row.appointment?.reason ??
         row.queueEntry?.appointmentReason ??
-        row.flow?.chiefComplaint ??
         '',
       'facility' => row.appointment?.facilityName ?? '',
-      'chief_complaint' => row.flow?.chiefComplaint ?? '',
       'assigned_doctor' => row.flow?.assignedStaffDisplayName ?? '',
+      'consultation_fee' => row.flow?.consultationFee == null
+          ? ''
+          : AppFormatters.currency(
+              row.flow!.consultationFee!,
+              locale,
+              currencyCode: row.flow!.consultationCurrency,
+            ),
+      'appointment_id' => row.appointment?.publicId ?? row.appointment?.id ?? '',
+      'queue_id' => row.queueEntry?.publicId ?? row.queueEntry?.id ?? '',
       'invoices' =>
         row.paymentGateEntry?.invoices
                 .map((BillingWorkItem invoice) => invoice.effectiveDisplayId)
@@ -2988,8 +3071,6 @@ class _ReceptionDeskMobileRow extends StatelessWidget {
               icon: AppActionIcons.time,
             ),
           ],
-          if (entry?.notes?.trim().isNotEmpty == true)
-            AppListTableMobileMeta(label: entry!.notes!.trim()),
         ],
       );
     }

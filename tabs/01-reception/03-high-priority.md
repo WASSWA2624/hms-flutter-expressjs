@@ -30,15 +30,13 @@ Order: **Filters → Settings → Export → Print → Schedule → Register**
   - Linked flow without emergency grant → fall through to Queue Actions (emergency Flow Actions not mounted)
   - No linked flow → Queue Actions (`ReceptionHighPriorityAtomPermissions.frontDesk`)
 - Default columns (prefer **5** data columns; next-action is read-only guidance):
-  1. Patient (alwaysVisible) — high-priority badge when prioritized
+  1. Patient (alwaysVisible) — name + identifier subtitle only (atomic)
   2. Phone
   3. Queued at (`receptionQueuedAtLabel`)
   4. Current step (`receptionCurrentStepLabel`)
   5. Provider / Doctor
   6. Next action label — if allowed (`nextActionLabel`); **read-only text**
-- Patient cell badges:
-  - High priority badge (`receptionHighPriorityBadgeLabel`) when prioritized
-  - Emergency badge (`opdTriageScopeEmergency`) when nested emergency read allowed + `isReceptionEmergencyFlow`
+- Mobile compact row may still show emergency / priority meta chips when nested emergency read allows
 - Column choices (Settings): Patient ID, Queue ID, Payment status, Reason
 - Reset restores the five defaults (+ next-action when readable)
 

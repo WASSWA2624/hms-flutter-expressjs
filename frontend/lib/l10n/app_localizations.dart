@@ -514,6 +514,42 @@ abstract class AppLocalizations {
   /// **'Go to top'**
   String get commonGoToTopActionLabel;
 
+  /// Footer status while a list table loads the next page of rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading more...'**
+  String get commonLoadingMoreLabel;
+
+  /// Footer status when a list table has no further pages to load.
+  ///
+  /// In en, this message translates to:
+  /// **'All rows loaded'**
+  String get commonAllRowsLoadedLabel;
+
+  /// Section title for print-preview options that choose summary and row blocks.
+  ///
+  /// In en, this message translates to:
+  /// **'Print sections'**
+  String get commonPrintSectionsLabel;
+
+  /// Print-preview section that includes a short worklist summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get commonPrintSummarySectionLabel;
+
+  /// Print-preview section that includes the tabular worklist rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Rows'**
+  String get commonPrintRowsSectionLabel;
+
+  /// Compact row-count label used in worklist print summary and references.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} rows'**
+  String commonPrintRowCountLabel(int count);
+
   /// Title for the advanced filters modal in worklist table search chrome.
   ///
   /// In en, this message translates to:
@@ -8622,6 +8658,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Reception queue entries will appear here as patients are routed.'**
   String get opdNoQueueBody;
+
+  /// Empty state title for OPD triage.
+  ///
+  /// In en, this message translates to:
+  /// **'No triage patients'**
+  String get opdNoTriageTitle;
+
+  /// Empty state body for OPD triage.
+  ///
+  /// In en, this message translates to:
+  /// **'Patients waiting for triage assessment will appear here.'**
+  String get opdNoTriageBody;
+
+  /// Empty state title for active OPD encounters.
+  ///
+  /// In en, this message translates to:
+  /// **'No active encounters'**
+  String get opdNoActiveTitle;
+
+  /// Empty state body for active OPD encounters.
+  ///
+  /// In en, this message translates to:
+  /// **'In-consultation outpatient encounters will appear here.'**
+  String get opdNoActiveBody;
 
   /// Empty state title for OPD encounters.
   ///

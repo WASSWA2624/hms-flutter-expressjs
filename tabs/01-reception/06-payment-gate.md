@@ -29,13 +29,14 @@ Order: **Filters → Settings → Export → Print → Schedule → Register**
 - Row model: `_ReceptionDeskRow.paymentGate(ReceptionPaymentGateEntry)`
 - Row select → read-only billing guidance detail
 - Default columns (prefer **5** data columns; next-action is read-only guidance):
-  1. Patient
-  2. Encounter (`billingEncounterLabel`) — subtitle services
+  1. Patient (name + identifier subtitle only)
+  2. Encounter (`billingEncounterLabel`) — identifier only
   3. Current step / clearance (`receptionCurrentStepLabel` + `billingClearanceLabel`)
   4. Amount due (`billingAmountDueColumn`)
-  5. Next action guidance (`opdNextActionFilterLabel` / Billing guidance) — if `receptionPaymentGateShowsNextActionColumn`
+  5. Source / services (`billingSourceColumn`)
+  6. Next action guidance (`opdNextActionFilterLabel` / Billing guidance) — if `receptionPaymentGateShowsNextActionColumn`
 - Column choices (Settings):
-  - Patient ID, Gender (`patientsGenderColumnLabel`), DOB (`patientsDobColumnLabel`), Source (`billingSourceColumn`), Invoice (`billingInvoiceColumn`)
+  - Patient ID, Gender (`patientsGenderColumnLabel`), DOB (`patientsDobColumnLabel`), Invoice (`billingInvoiceColumn`)
 - Reset restores the defaults (+ next-action when readable)
 
 ## 4. Advanced filters / search fields

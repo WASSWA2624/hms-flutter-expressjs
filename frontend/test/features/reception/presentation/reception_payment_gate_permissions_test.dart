@@ -719,6 +719,7 @@ void main() {
         expect(find.text('Encounter'), findsWidgets);
         expect(find.text('Current step'), findsWidgets);
         expect(find.text('Due'), findsWidgets);
+        expect(find.text('Source'), findsWidgets);
         expect(find.text('Billing guidance'), findsWidgets);
         expect(find.text('Penny Payment'), findsOneWidget);
         expect(find.text('Owen Overdue'), findsOneWidget);
@@ -726,7 +727,6 @@ void main() {
         await tester.tap(find.byTooltip('Settings'));
         await tester.pumpAndSettle();
         expect(find.text('TABLE SETTINGS'), findsOneWidget);
-        expect(find.text('Source'), findsWidgets);
         expect(find.text('Invoice'), findsWidgets);
         await tester.tap(find.text('Close').last);
         await tester.pumpAndSettle();

@@ -25,7 +25,6 @@ import 'package:hosspi_hms/shared/follow_up/follow_up_worklist_panel.dart';
 import 'package:hosspi_hms/shared/follow_up/scoped_follow_up_controller.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
-import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
 import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
@@ -482,6 +481,7 @@ class _OpdWorkspaceBodyState extends State<_OpdWorkspaceBody> {
       state: widget.state,
       section: widget.section,
       page: _tablePage(items, widget.pageRequest),
+      exportItems: items,
       searchController: widget.searchController,
       columnVisibilityController: widget.columnVisibilityController,
       filter: widget.filter,
@@ -667,7 +667,9 @@ final class _OpdTableFilter {
   static _OpdTableFilter fromSearchBarValue(
     AppSearchBarFilterValue value, {
     String search = '',
+    Set<String> preserveStatuses = const <String>{},
   }) {
+    final String? status = value.option(_opdFilterKeyStatus);
     return _OpdTableFilter(
       search: search,
       searchField: value.field,
@@ -675,7 +677,10 @@ final class _OpdTableFilter {
       dateTo: value.dateTo,
       datePreset: value.option(_opdFilterKeyArrivalDatePreset),
       category: value.option(_opdFilterKeyCategory),
-      status: value.option(_opdFilterKeyStatus),
+      status: status,
+      // Keep `panel=` multi-status membership unless Advanced filters sets a
+      // single status (which replaces the set).
+      statuses: status != null ? const <String>{} : preserveStatuses,
       triageScope: value.option(_opdFilterKeyTriageScope),
       visitType: value.option(_opdFilterKeyVisitType),
       queue: value.option(_opdFilterKeyQueue),
@@ -1916,7 +1921,6 @@ AppListTableColumn<_OpdTableItem> _opdDataColumn(
       return switch (column) {
         _OpdTableColumnId.patient => AppListItemText(
           title: item.patientName ?? item.title,
-          subtitle: item.patientNumber,
         ),
         _OpdTableColumnId.category => Text(
           _categoryLabel(context, item.category),
@@ -2193,10 +2197,15 @@ String _opdSectionQueryValue(OpdWorkspaceSection section) {
       title: l10n.opdNoQueueTitle,
       body: l10n.opdNoQueueBody,
     ),
-    OpdWorkspaceSection.all ||
-    OpdWorkspaceSection.triage ||
-    OpdWorkspaceSection.active ||
-    OpdWorkspaceSection.followUps => (
+    OpdWorkspaceSection.triage => (
+      title: l10n.opdNoTriageTitle,
+      body: l10n.opdNoTriageBody,
+    ),
+    OpdWorkspaceSection.active => (
+      title: l10n.opdNoActiveTitle,
+      body: l10n.opdNoActiveBody,
+    ),
+    OpdWorkspaceSection.all || OpdWorkspaceSection.followUps => (
       title: l10n.opdNoFlowsTitle,
       body: l10n.opdNoFlowsBody,
     ),
@@ -2240,6 +2249,51 @@ List<_OpdTableColumnId> _opdDefaultColumnsForSection(
       _OpdTableColumnId.nextAction,
     ],
   };
+}
+
+/// Defaults for a section after Next-action RBAC omit, still preferring **5**
+/// visible columns by promoting from the section's optional choices.
+List<_OpdTableColumnId> _opdResolvedDefaultColumnsForSection(
+  OpdWorkspaceSection section, {
+  required bool showNextAction,
+}) {
+  final List<_OpdTableColumnId> defaults = _opdDefaultColumnsForSection(section)
+      .where(
+        (_OpdTableColumnId column) =>
+            showNextAction || column != _OpdTableColumnId.nextAction,
+      )
+      .toList();
+  if (defaults.length >= 5) {
+    return defaults;
+  }
+  final List<_OpdTableColumnId> resolved = List<_OpdTableColumnId>.of(defaults);
+  for (final _OpdTableColumnId choice in _opdColumnChoicesForSection(section)) {
+    if (resolved.length >= 5) {
+      break;
+    }
+    if (choice == _OpdTableColumnId.nextAction && !showNextAction) {
+      continue;
+    }
+    if (!resolved.contains(choice)) {
+      resolved.add(choice);
+    }
+  }
+  return resolved;
+}
+
+List<_OpdTableColumnId> _opdResolvedColumnChoicesForSection(
+  OpdWorkspaceSection section, {
+  required bool showNextAction,
+  required List<_OpdTableColumnId> defaults,
+}) {
+  final Set<_OpdTableColumnId> defaultSet = defaults.toSet();
+  return _opdColumnChoicesForSection(section)
+      .where(
+        (_OpdTableColumnId column) =>
+            !defaultSet.contains(column) &&
+            (showNextAction || column != _OpdTableColumnId.nextAction),
+      )
+      .toList(growable: false);
 }
 
 List<_OpdTableColumnId> _opdColumnChoicesForSection(
@@ -2408,6 +2462,7 @@ class _OpdMainTable extends ConsumerWidget {
     required this.state,
     required this.section,
     required this.page,
+    required this.exportItems,
     required this.searchController,
     required this.columnVisibilityController,
     required this.filter,
@@ -2421,6 +2476,8 @@ class _OpdMainTable extends ConsumerWidget {
   final OpdWorkspaceState state;
   final OpdWorkspaceSection section;
   final AppPage<_OpdTableItem> page;
+  /// Full filtered membership for this tab (not just the visible page).
+  final List<_OpdTableItem> exportItems;
   final TextEditingController searchController;
   final AppListTableColumnVisibilityController<_OpdTableItem>
   columnVisibilityController;
@@ -2436,18 +2493,17 @@ class _OpdMainTable extends ConsumerWidget {
     final l10n = context.l10n;
     final AppAccessPolicy policy = ref.watch(appAccessPolicyProvider);
     final bool showNextAction = opdBoardShowsNextActionColumn(policy, section);
-    final List<_OpdTableColumnId> defaultColumns = _opdDefaultColumnsForSection(
-      section,
-    ).where(
-      (_OpdTableColumnId column) =>
-          showNextAction || column != _OpdTableColumnId.nextAction,
-    ).toList(growable: false);
-    final List<_OpdTableColumnId> columnChoices = _opdColumnChoicesForSection(
-      section,
-    ).where(
-      (_OpdTableColumnId column) =>
-          showNextAction || column != _OpdTableColumnId.nextAction,
-    ).toList(growable: false);
+    final List<_OpdTableColumnId> defaultColumns =
+        _opdResolvedDefaultColumnsForSection(
+          section,
+          showNextAction: showNextAction,
+        );
+    final List<_OpdTableColumnId> columnChoices =
+        _opdResolvedColumnChoicesForSection(
+          section,
+          showNextAction: showNextAction,
+          defaults: defaultColumns,
+        );
 
     return SizedBox(
       width: double.infinity,
@@ -2458,6 +2514,8 @@ class _OpdMainTable extends ConsumerWidget {
         columnWidthStorageKey: 'opd_cw_${section.name}',
         columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
         columnVisibilityTitle: l10n.commonTableSettingsTitle,
+        columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+        columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
         columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
         exportLabel: l10n.commonTableExportActionLabel,
         exportDialogTitle: l10n.commonTableExportDialogTitle,
@@ -2476,15 +2534,19 @@ class _OpdMainTable extends ConsumerWidget {
           context,
           ref,
           section: section,
-          page: page,
+          items: exportItems,
           showNextAction: showNextAction,
           l10n: l10n,
         ),
         exportConfig: AppListTableExportConfig<_OpdTableItem>(
           fileNameStem: 'opd_${section.name}',
+          items: exportItems,
           dateOf: (_OpdTableItem item) => item.time,
           rowFilter: (_OpdTableItem item, AppSearchBarFilterValue filters) {
-            return _OpdTableFilter.fromSearchBarValue(filters).matches(item);
+            return _OpdTableFilter.fromSearchBarValue(
+              filters,
+              preserveStatuses: filter.statuses,
+            ).matches(item);
           },
         ),
         isLoading: isLoading,
@@ -2564,6 +2626,7 @@ class _OpdMainTable extends ConsumerWidget {
               _OpdTableFilter.fromSearchBarValue(
                 value,
                 search: searchController.text,
+                preserveStatuses: filter.statuses,
               ),
             );
           },
@@ -2680,17 +2743,24 @@ Future<void> _printOpdWorkspaceList(
   BuildContext context,
   WidgetRef ref, {
   required OpdWorkspaceSection section,
-  required AppPage<_OpdTableItem> page,
+  required List<_OpdTableItem> items,
   required bool showNextAction,
   required AppLocalizations l10n,
 }) async {
   final List<_OpdTableColumnId> columnIds = <_OpdTableColumnId>[
-    ..._opdDefaultColumnsForSection(section),
-    ..._opdColumnChoicesForSection(section),
-  ].where(
-    (_OpdTableColumnId column) =>
-        showNextAction || column != _OpdTableColumnId.nextAction,
-  ).toList(growable: false);
+    ..._opdResolvedDefaultColumnsForSection(
+      section,
+      showNextAction: showNextAction,
+    ),
+    ..._opdResolvedColumnChoicesForSection(
+      section,
+      showNextAction: showNextAction,
+      defaults: _opdResolvedDefaultColumnsForSection(
+        section,
+        showNextAction: showNextAction,
+      ),
+    ),
+  ];
   final List<OpdWorkspacePrintColumn> printColumns = <OpdWorkspacePrintColumn>[
     for (final _OpdTableColumnId column in columnIds)
       OpdWorkspacePrintColumn(
@@ -2699,20 +2769,24 @@ Future<void> _printOpdWorkspaceList(
       ),
   ];
   final List<Map<String, String>> printRows = <Map<String, String>>[
-    for (final _OpdTableItem item in page.items)
+    for (final _OpdTableItem item in items)
       <String, String>{
         for (final _OpdTableColumnId column in columnIds)
           _opdTableColumnStorageId(column):
               _opdExportCellValue(context, column, item),
       },
   ];
+  final ({String title, String body}) empty = _opdSectionEmptyCopy(
+    l10n,
+    section,
+  );
   await printOpdWorkspaceList(
     ref: ref,
     context: context,
     title: _opdSectionLabel(l10n, section),
     columns: printColumns,
     rows: printRows,
-    emptyText: l10n.opdNoFlowsTitle,
+    emptyText: empty.title,
   );
 }
 
@@ -2888,7 +2962,7 @@ class _ProviderCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Text(
-      item.provider ?? opdUnknownProviderLabel,
+      item.provider ?? context.l10n.profileUnknownValue,
       maxLines: 1,
       softWrap: false,
       overflow: TextOverflow.ellipsis,

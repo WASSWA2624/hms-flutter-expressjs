@@ -13,7 +13,7 @@
   - Loading: `receptionLoadingTitle` / `receptionLoadingBody`
   - Retry refreshes OPD reception data + payment-gate + follow-ups when those tabs are readable
   - `keepPreviousDataDuringRefresh: true`
-- Body: `ResponsivePage` + `AppTabStrip` + `AppListTable<_ReceptionDeskRow>`
+- Body: `ResponsivePage(scrollable: false)` + `AppTabStrip` + `Expanded` + `AppListTable<_ReceptionDeskRow>` (bounded main-tab viewport: horizontal scroll, pinned footer, empty-row padding; no `shrinkWrap`)
 - In-desk URL: `syncWorkspaceLocation` with `?section=<query>`
 - Deep-link query (`ReceptionWorkspaceQuery`): `section`, `search`, `patientId`, `flowId`, `action`
   - `action=register|register_patient|new_patient` → Register patient
@@ -27,7 +27,7 @@
 - Component: `AppTabStrip` / `AppTabItem` (standard variant)
 - Tabs omitted when unauthorized (`receptionDeskSectionRequirement(section)`) — not disabled
 - Every visible tab shows authoritative `count`:
-  - Sibling model: dedicated unfiltered scope totals (Follow-ups / Payment gate prefer controller `totalCount`)
+  - Sibling model: dedicated unfiltered scope totals (Follow-ups / Payment gate prefer controller `totalCount`; Active visits prefers `summaryCounts.activeOpd` when > 0)
   - Active tab with search/advanced filters: filtered membership total for that query
 - Count tones (`AppTabCountTone`): `warning` for Desk queue, High priority, Active visits (in-facility turnaround pressure), and Payment gate (outstanding clearance pressure); `info` for Appointments and Follow-ups
 - Icons per section (leading): event / queue / priority / pending / phone / payments
@@ -42,13 +42,15 @@ Order on search bar: **Filters → Settings → Export → Print → Schedule �
 | Clear | `receptionClearFiltersAction` | |
 | Filters | `commonFiltersActionLabel` → title `commonAdvancedFiltersTitle` | all tabs including Follow-ups; date filter on all tabs (Payment gate uses `billingIssuedDateFilterLabel`) |
 | Settings | `commonTableSettingsActionLabel` → `commonTableSettingsTitle` | Apply `receptionApplyColumnsAction`, Reset `receptionResetColumnsAction`, Close `commonCloseActionLabel` |
-| Export | `Export` via `AppListTable.enableExport` + `canExport` | gated by `receptionDeskExportRequirement` (∩ `evidence:export`); omitted when denied |
-| Print (table) | `commonPrintActionLabel` → `Print` | `AppListTable.enablePrint` + `canPrint`; opens `printReceptionDeskList` → `PrintDocumentTemplates.registry` preview-first |
+| Export | `commonTableExport*` labels via `AppListTable` + `canExport` + `exportValue` / `AppListTableExportConfig` | gated by `receptionDeskExportRequirement` (∩ `evidence:export`); omitted when denied |
+| Print (table) | `commonPrintActionLabel` → `Print` | `AppListTable.enablePrint` + `canPrint`; opens `printReceptionDeskList` → `PrintDocumentTemplates.registry` preview-first; section labels via `commonPrint*` |
 | Schedule | `receptionScheduleAppointmentAction` | omitted when ∩ `patient:write` denied |
 | Register | `receptionRegisterPatientAction` | omitted when ∩ `patient:write` denied |
+| Footer | `commonGoToTopActionLabel` / `commonLoadingMoreLabel` / `commonAllRowsLoadedLabel` | |
 
 Column visibility storage: `reception_${section.name}` / widths `reception_cw_${section.name}`.
 Default visible columns prefer **5** data columns (+ optional next-action when authorized).
+Patient cells are atomic (`AppListItemText` name + identifier); no nested badges or body-prose notes/complaints in table cells.
 
 ## Shared strip actions → dialogs
 

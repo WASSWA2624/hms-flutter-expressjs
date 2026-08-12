@@ -712,15 +712,14 @@ void main() {
         expect(find.text('Phone'), findsWidgets);
         expect(find.text('Follow-up date'), findsWidgets);
         expect(find.text('Follow-up time'), findsWidgets);
-        expect(find.text('Patient ID'), findsWidgets);
+        expect(find.text('Status'), findsWidgets);
         expect(find.text('Follow Up Patient'), findsOneWidget);
         expect(find.text('Completed Follow Patient'), findsOneWidget);
 
         await tester.tap(find.byTooltip('Settings'));
         await tester.pumpAndSettle();
         expect(find.text('TABLE SETTINGS'), findsOneWidget);
-        expect(find.text('Status'), findsWidgets);
-        expect(find.text('Notes'), findsWidgets);
+        expect(find.text('Patient ID'), findsWidgets);
         await tester.tap(find.text('Close').last);
         await tester.pumpAndSettle();
 

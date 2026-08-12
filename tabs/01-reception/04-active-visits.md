@@ -4,7 +4,7 @@
 
 - Label: `receptionSectionActiveVisits`
 - Icon: `Icons.pending_actions_outlined`
-- Count source: authoritative active-visit scope total (`isReceptionActiveVisit`); when this tab is active and stage/next-action/provider/payment/date/search narrow the list, badge uses the filtered membership total
+- Count source: prefer `OpdWorkspaceState.summaryCounts.activeOpd` when > 0; otherwise board membership (`isReceptionActiveVisit` on loaded flows). When this tab is active and stage/next-action/provider/payment/date/search narrow the list, badge uses the filtered membership total
 - Sibling tabs: dedicated unfiltered scope totals (shared chrome sibling model)
 - Count tone: `AppTabCountTone.warning` — product-justified in-facility turnaround pressure (documented in Active visits permission tests)
 - Deep-link `section`: `active` (aliases `active-visits`, `active_visits`, `visits`, `in-progress`, `turnaround_pressure`)
@@ -35,8 +35,9 @@ Order: **Filters → Settings → Export → Print → Schedule → Register**
   5. Provider / Doctor
   6. Next action label — if `receptionActiveVisitsShowsNextActionColumn` (read-only text, not a mutation button)
 - Column choices (Settings):
-  - Patient ID, Assigned doctor (`receptionAssignedDoctorLabel`), Chief complaint (`opdChiefComplaintLabel`), Payment status, Consultation fee (`receptionConsultationFeeLabel`)
+  - Patient ID, Assigned doctor (`receptionAssignedDoctorLabel`), Payment status, Consultation fee (`receptionConsultationFeeLabel`)
 - Reset restores the five defaults (+ next-action when readable)
+- Chief complaint stays in Flow Actions detail (not a table cell — `tables.mdc` no body prose)
 
 ## 4. Advanced filters / search fields
 

@@ -702,7 +702,7 @@ void main() {
         await tester.pumpAndSettle();
         expect(find.text('TABLE SETTINGS'), findsOneWidget);
         expect(find.text('Assigned doctor'), findsOneWidget);
-        expect(find.text('Chief complaint'), findsOneWidget);
+        expect(find.text('Consultation fee'), findsOneWidget);
       },
     );
 

@@ -305,6 +305,36 @@
   "@commonGoToTopActionLabel": {
     "description": "Tooltip and semantic label for scrolling a table back to the header."
   },
+  "commonLoadingMoreLabel": "Loading more...",
+  "@commonLoadingMoreLabel": {
+    "description": "Footer status while a list table loads the next page of rows."
+  },
+  "commonAllRowsLoadedLabel": "All rows loaded",
+  "@commonAllRowsLoadedLabel": {
+    "description": "Footer status when a list table has no further pages to load."
+  },
+  "commonPrintSectionsLabel": "Print sections",
+  "@commonPrintSectionsLabel": {
+    "description": "Section title for print-preview options that choose summary and row blocks."
+  },
+  "commonPrintSummarySectionLabel": "Summary",
+  "@commonPrintSummarySectionLabel": {
+    "description": "Print-preview section that includes a short worklist summary."
+  },
+  "commonPrintRowsSectionLabel": "Rows",
+  "@commonPrintRowsSectionLabel": {
+    "description": "Print-preview section that includes the tabular worklist rows."
+  },
+  "commonPrintRowCountLabel": "{count} rows",
+  "@commonPrintRowCountLabel": {
+    "description": "Compact row-count label used in worklist print summary and references.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "12"
+      }
+    }
+  },
   "commonAdvancedFiltersTitle": "Advanced filters",
   "@commonAdvancedFiltersTitle": {
     "description": "Title for the advanced filters modal in worklist table search chrome."
@@ -5709,6 +5739,10 @@
   "opdNoArrivalsBody": "Scheduled and checked-in patients will appear here.",
   "opdNoQueueTitle": "No queued patients",
   "opdNoQueueBody": "Reception queue entries will appear here as patients are routed.",
+  "opdNoTriageTitle": "No triage patients",
+  "opdNoTriageBody": "Patients waiting for triage assessment will appear here.",
+  "opdNoActiveTitle": "No active encounters",
+  "opdNoActiveBody": "In-consultation outpatient encounters will appear here.",
   "opdNoFlowsTitle": "No OPD encounters",
   "opdNoFlowsBody": "Started outpatient encounters will appear here.",
   "opdNoFlowSelectedTitle": "No encounter selected",
@@ -6401,6 +6435,18 @@
   },
   "@opdNoQueueBody": {
     "description": "Empty state body for OPD queue."
+  },
+  "@opdNoTriageTitle": {
+    "description": "Empty state title for OPD triage."
+  },
+  "@opdNoTriageBody": {
+    "description": "Empty state body for OPD triage."
+  },
+  "@opdNoActiveTitle": {
+    "description": "Empty state title for active OPD encounters."
+  },
+  "@opdNoActiveBody": {
+    "description": "Empty state body for active OPD encounters."
   },
   "@opdNoFlowsTitle": {
     "description": "Empty state title for OPD encounters."

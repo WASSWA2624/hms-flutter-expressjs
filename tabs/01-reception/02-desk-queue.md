@@ -30,7 +30,7 @@ Order: **Filters → Settings → Export → Print → Schedule → Register**
   - If linked active flow → **reused** Flow Actions (`printActionLabel: Print`; clinical/vitals/billing off)
   - Else → Queue Actions hub
 - Default columns (prefer **5** data columns; next-action is read-only guidance chrome):
-  1. Patient (alwaysVisible) — high-priority badge when `isPrioritized`
+  1. Patient (alwaysVisible) — name + identifier subtitle only (atomic)
   2. Phone (`patientsPhoneIdentifierColumnLabel`)
   3. Queued at (`receptionQueuedAtLabel`)
   4. Current step (`receptionCurrentStepLabel`)

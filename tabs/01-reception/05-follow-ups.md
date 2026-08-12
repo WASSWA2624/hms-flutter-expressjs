@@ -29,15 +29,15 @@ Order: **Filters → Settings → Export → Print → Schedule → Register**
 - Row model: `_ReceptionDeskRow.followUp(ReceptionFollowUpEntry)` from `receptionFollowUpControllerProvider`
 - Row select → Reception follow-up detail
 - Default columns (prefer **5** data columns):
-  1. Patient
+  1. Patient (name + identifier subtitle only — atomic identity cell)
   2. Phone (`patientsPhoneIdentifierColumnLabel`)
   3. Follow-up date (`opdFollowUpDateLabel`)
   4. Follow-up time (`opdFollowUpTimeLabel`)
-  5. Patient ID (`opdPatientIdLabel`)
+  5. Status (`receptionStatusLabel` / `opdStageDisplayLabel`)
 - Column choices (Settings):
-  - Status (`receptionStatusLabel` / display via `opdStageDisplayLabel`)
-  - Notes (`opdNotesLabel`)
+  - Patient ID (`opdPatientIdLabel`)
 - Reset restores the five defaults
+- Notes stay in follow-up detail dialog (not a table cell — `tables.mdc` no body prose)
 
 ## 4. Advanced filters / search fields
 

@@ -29,7 +29,7 @@ Order: **Filters → Settings → Export → Print → Schedule → Register**
 - Row model: `_ReceptionDeskRow.appointment(OpdAppointment)` — pre-encounter appointments only
 - Row select: opens Appointment Actions hub (`onRowSelected`)
 - Default columns (prefer **5** data columns; next-action optional chrome):
-  1. Patient (`opdPatientNameLabel`, alwaysVisible) — subtitle identifier; visitor badge `receptionVisitorMeetingBadge`
+  1. Patient (`opdPatientNameLabel`, alwaysVisible) — name + identifier subtitle only (atomic)
   2. Phone (`patientsPhoneIdentifierColumnLabel`)
   3. Scheduled time (`receptionScheduledTimeLabel`)
   4. Current step (`receptionCurrentStepLabel`) — badge via `opdAppointmentCurrentStepLabel`
