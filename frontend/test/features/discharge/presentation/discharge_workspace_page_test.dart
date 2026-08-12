@@ -273,6 +273,17 @@ void main() {
     expect(find.text('Carol Completed'), findsNothing);
     expect(find.byTooltip('Manage clearance'), findsOneWidget);
     expect(find.byTooltip('Refresh'), findsNothing);
+    expect(_table(tester).columnVisibilityStorageKey, 'discharge_planned');
+    expect(_table(tester).columns.length, 5);
+    expect(_table(tester).enablePrint, isTrue);
+    expect(_table(tester).search?.enableDateFilter, isTrue);
+    expect(
+      _table(tester).columns.any(
+        (AppListTableColumn<IpdAdmissionSummary> column) =>
+            column.id == 'clearance_phase',
+      ),
+      isTrue,
+    );
   });
 
   testWidgets('deep link section=completed selects Completed tab with Print', (

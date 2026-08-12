@@ -83,6 +83,10 @@ void main() {
         dischargeSectionCountTone(DischargeDeskSection.all),
         AppTabCountTone.info,
       );
+      expect(
+        dischargeSectionCountTone(DischargeDeskSection.planned),
+        AppTabCountTone.warning,
+      );
     });
 
     test('active All tab uses filtered queue length when narrowed', () {

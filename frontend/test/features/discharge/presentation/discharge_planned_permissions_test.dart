@@ -304,12 +304,52 @@ void main() {
         same(dischargeWorkspaceEntryRequirement),
       );
       expect(
+        DischargePlannedAtomPermissions.export,
+        same(dischargeWorkspaceExportRequirement),
+      );
+      expect(
+        DischargePlannedAtomPermissions.print,
+        same(dischargeWorkspacePrintRequirement),
+      );
+      expect(
+        DischargePlannedAtomPermissions.printSummary,
+        same(dischargeWorkspaceReadRequirement),
+      );
+      expect(
         DischargePlannedAtomPermissions.medicinesPanel,
         same(DischargeAllPatientsAtomPermissions.medicinesPanel),
       );
       expect(
         DischargePlannedAtomPermissions.write,
         same(DischargeAllPatientsAtomPermissions.write),
+      );
+    });
+
+    test('export/print toolbar atoms omit without evidence:export', () {
+      final AppAccessPolicy reader = _policy(
+        permissions: <AppPermission>{AppPermissions.clinicalRead},
+      );
+      expect(
+        DischargePlannedAtomPermissions.export.isAllowed(reader),
+        isFalse,
+      );
+      expect(
+        DischargePlannedAtomPermissions.print.isAllowed(reader),
+        isFalse,
+      );
+      final AppAccessPolicy withExport = _policy(
+        permissions: <AppPermission>{
+          AppPermissions.clinicalRead,
+          AppPermissions.evidenceExport,
+        },
+      );
+      expect(
+        DischargePlannedAtomPermissions.export.isAllowed(withExport),
+        isTrue,
+      );
+      expect(
+        DischargePlannedAtomPermissions.print.isAllowed(withExport),
+        isTrue,
       );
     });
 
@@ -530,6 +570,19 @@ void main() {
       expect(find.byTooltip('Start discharge plan'), findsNothing);
       expect(find.text('Filters'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
+      expect(find.byTooltip('Export'), findsNothing);
+      final AppListTable<IpdAdmissionSummary> table =
+          tester.widget<AppListTable<IpdAdmissionSummary>>(
+            find.byType(AppListTable<IpdAdmissionSummary>),
+          );
+      expect(table.enablePrint, isTrue);
+      expect(table.canExport, isFalse);
+      expect(table.canPrint, isFalse);
+      expect(table.printLabel, 'Print');
+      expect(table.columns.length, 5);
+      expect(table.columnVisibilityStorageKey, 'discharge_planned');
+      expect(table.search?.advancedFilterCloseLabel, 'Close');
+      expect(table.search?.enableDateFilter, isTrue);
       expect(find.textContaining('no access'), findsNothing);
 
       await tester.tap(find.text('Alice Planned'));
