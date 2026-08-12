@@ -300,6 +300,46 @@ String? _nonEmpty(String value) {
   return trimmed.isEmpty ? null : trimmed;
 }
 
+/// Compact survivor lines for a merge choice, reflecting current lane values.
+List<String> buildPatientMergeChoicePreviewLines({
+  required AppLocalizations l10n,
+  required List<PatientMergeFieldLane> fields,
+  required PatientMergeResolution resolution,
+}) {
+  String displayFor(String key) {
+    for (final PatientMergeFieldLane field in fields) {
+      if (field.key == key) {
+        final String value = field.resolvedDisplay(resolution).trim();
+        return value.isEmpty ? l10n.patientsMergeEmptyValueLabel : value;
+      }
+    }
+    return l10n.patientsMergeEmptyValueLabel;
+  }
+
+  final String firstName = displayFor('first_name');
+  final String lastName = displayFor('last_name');
+  final bool firstEmpty = firstName == l10n.patientsMergeEmptyValueLabel;
+  final bool lastEmpty = lastName == l10n.patientsMergeEmptyValueLabel;
+  final String name;
+  if (firstEmpty && lastEmpty) {
+    name = l10n.patientsMergeEmptyValueLabel;
+  } else if (firstEmpty) {
+    name = lastName;
+  } else if (lastEmpty) {
+    name = firstName;
+  } else {
+    name = '$firstName $lastName';
+  }
+
+  return <String>[
+    name,
+    displayFor('date_of_birth'),
+    displayFor('gender'),
+    displayFor('phone'),
+    displayFor('email'),
+  ];
+}
+
 /// Field-level merge workspace shown after Review merge.
 class PatientDuplicateMergeWorkspace extends StatefulWidget {
   const PatientDuplicateMergeWorkspace({
@@ -415,35 +455,15 @@ class _PatientDuplicateMergeWorkspaceState
             if (!isAllowed) {
               return const SizedBox.shrink();
             }
-            return Wrap(
-              spacing: theme.spacing.xs,
-              runSpacing: theme.spacing.xs,
-              children: <Widget>[
-                AppButton.secondary(
-                  label: l10n.patientsMergeKeepLeftAction,
-                  leadingIcon: Icons.west_outlined,
-                  enabled: !widget.isSaving,
-                  onPressed: () => setState(() {
-                    _resolution = PatientMergeResolution.keepLeft;
-                  }),
-                ),
-                AppButton.secondary(
-                  label: l10n.patientsMergeKeepRightAction,
-                  leadingIcon: Icons.east_outlined,
-                  enabled: !widget.isSaving,
-                  onPressed: () => setState(() {
-                    _resolution = PatientMergeResolution.keepRight;
-                  }),
-                ),
-                AppButton.secondary(
-                  label: l10n.patientsMergeAutoAction,
-                  leadingIcon: Icons.auto_fix_high_outlined,
-                  enabled: !widget.isSaving,
-                  onPressed: () => setState(() {
-                    _resolution = PatientMergeResolution.autoMerge;
-                  }),
-                ),
-              ],
+            return _MergeChoiceRow(
+              fields: _fields,
+              isSaving: widget.isSaving,
+              selected: _resolution,
+              onSelect: (PatientMergeResolution resolution) {
+                setState(() {
+                  _resolution = resolution;
+                });
+              },
             );
           },
         ),
@@ -522,6 +542,171 @@ class _PatientDuplicateMergeWorkspaceState
       PatientMergeResolution.keepRight => l10n.patientsMergeKeepRightSelected,
       PatientMergeResolution.autoMerge => l10n.patientsMergeAutoSelected,
     };
+  }
+}
+
+class _MergeChoiceRow extends StatelessWidget {
+  const _MergeChoiceRow({
+    required this.fields,
+    required this.isSaving,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  final List<PatientMergeFieldLane> fields;
+  final bool isSaving;
+  final PatientMergeResolution? selected;
+  final ValueChanged<PatientMergeResolution> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final List<Widget> choices = <Widget>[
+      _MergeChoiceColumn(
+        fields: fields,
+        resolution: PatientMergeResolution.keepLeft,
+        selected: selected == PatientMergeResolution.keepLeft,
+        isSaving: isSaving,
+        align: CrossAxisAlignment.start,
+        buttonLabel: l10n.patientsMergeKeepLeftAction,
+        buttonIcon: Icons.west_outlined,
+        onPressed: () => onSelect(PatientMergeResolution.keepLeft),
+      ),
+      _MergeChoiceColumn(
+        fields: fields,
+        resolution: PatientMergeResolution.autoMerge,
+        selected: selected == PatientMergeResolution.autoMerge,
+        isSaving: isSaving,
+        align: CrossAxisAlignment.center,
+        buttonLabel: l10n.patientsMergeAutoAction,
+        buttonIcon: Icons.auto_fix_high_outlined,
+        onPressed: () => onSelect(PatientMergeResolution.autoMerge),
+      ),
+      _MergeChoiceColumn(
+        fields: fields,
+        resolution: PatientMergeResolution.keepRight,
+        selected: selected == PatientMergeResolution.keepRight,
+        isSaving: isSaving,
+        align: CrossAxisAlignment.end,
+        buttonLabel: l10n.patientsMergeKeepRightAction,
+        buttonIcon: Icons.east_outlined,
+        onPressed: () => onSelect(PatientMergeResolution.keepRight),
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool stacked = constraints.maxWidth < 720;
+        if (stacked) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              for (int index = 0; index < choices.length; index += 1) ...<Widget>[
+                choices[index],
+                if (index < choices.length - 1)
+                  SizedBox(height: theme.spacing.sm),
+              ],
+            ],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Expanded(child: choices[0]),
+            SizedBox(width: theme.spacing.sm),
+            Expanded(child: choices[1]),
+            SizedBox(width: theme.spacing.sm),
+            Expanded(child: choices[2]),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _MergeChoiceColumn extends StatelessWidget {
+  const _MergeChoiceColumn({
+    required this.fields,
+    required this.resolution,
+    required this.selected,
+    required this.isSaving,
+    required this.align,
+    required this.buttonLabel,
+    required this.buttonIcon,
+    required this.onPressed,
+  });
+
+  final List<PatientMergeFieldLane> fields;
+  final PatientMergeResolution resolution;
+  final bool selected;
+  final bool isSaving;
+  final CrossAxisAlignment align;
+  final String buttonLabel;
+  final IconData buttonIcon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
+    final ColorScheme colors = theme.colorScheme;
+    final List<String> lines = buildPatientMergeChoicePreviewLines(
+      l10n: l10n,
+      fields: fields,
+      resolution: resolution,
+    );
+
+    return Column(
+      crossAxisAlignment: align,
+      children: <Widget>[
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.all(theme.spacing.sm),
+          decoration: BoxDecoration(
+            color: selected
+                ? colors.primaryContainer.withValues(alpha: 0.45)
+                : colors.surfaceContainerHighest.withValues(alpha: 0.3),
+            border: theme.borders.all(
+              color: selected
+                  ? colors.primary
+                  : colors.outlineVariant.withValues(alpha: 0.7),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Text(
+                l10n.patientsMergeChoicePreviewLabel,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+              SizedBox(height: theme.spacing.xs),
+              for (final String line in lines)
+                Text(
+                  line,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontStyle: line == l10n.patientsMergeEmptyValueLabel
+                        ? FontStyle.italic
+                        : FontStyle.normal,
+                    color: line == l10n.patientsMergeEmptyValueLabel
+                        ? colors.onSurfaceVariant
+                        : colors.onSurface,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        AppButton.secondary(
+          label: buttonLabel,
+          leadingIcon: buttonIcon,
+          enabled: !isSaving,
+          onPressed: onPressed,
+        ),
+      ],
+    );
   }
 }
 

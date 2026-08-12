@@ -181,4 +181,80 @@ void main() {
       expect(plan.summary['last_name'], 'Byron');
     });
   });
+
+  group('buildPatientMergeChoicePreviewLines', () {
+    test('shows survivor values and empty placeholders', () {
+      const Patient left = Patient(
+        id: 'left-id',
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        gender: 'FEMALE',
+        primaryPhone: '+100',
+      );
+      const Patient right = Patient(
+        id: 'right-id',
+        firstName: 'Ada',
+        lastName: 'Byron',
+        primaryEmail: 'ada@example.com',
+      );
+      final List<PatientMergeFieldLane> fields = buildPatientMergeFieldLanes(
+        l10n: l10n,
+        locale: const Locale('en'),
+        left: left,
+        right: right,
+      );
+
+      final List<String> keepLeft = buildPatientMergeChoicePreviewLines(
+        l10n: l10n,
+        fields: fields,
+        resolution: PatientMergeResolution.keepLeft,
+      );
+      expect(keepLeft.first, 'Ada Lovelace');
+      expect(keepLeft, contains('FEMALE'));
+      expect(keepLeft, contains('+100'));
+      expect(keepLeft, contains(l10n.patientsMergeEmptyValueLabel));
+
+      final List<String> keepRight = buildPatientMergeChoicePreviewLines(
+        l10n: l10n,
+        fields: fields,
+        resolution: PatientMergeResolution.keepRight,
+      );
+      expect(keepRight.first, 'Ada Byron');
+      expect(keepRight, contains('ada@example.com'));
+    });
+
+    test('updates after field swap', () {
+      const Patient left = Patient(
+        id: 'left-id',
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+      );
+      const Patient right = Patient(
+        id: 'right-id',
+        firstName: 'Ada',
+        lastName: 'Byron',
+      );
+      final List<PatientMergeFieldLane> fields = buildPatientMergeFieldLanes(
+        l10n: l10n,
+        locale: const Locale('en'),
+        left: left,
+        right: right,
+      );
+      final List<PatientMergeFieldLane> swapped = fields
+          .map((PatientMergeFieldLane field) {
+            if (field.key == 'last_name') {
+              return field.swapped();
+            }
+            return field;
+          })
+          .toList(growable: false);
+
+      final List<String> keepLeft = buildPatientMergeChoicePreviewLines(
+        l10n: l10n,
+        fields: swapped,
+        resolution: PatientMergeResolution.keepLeft,
+      );
+      expect(keepLeft.first, 'Ada Byron');
+    });
+  });
 }

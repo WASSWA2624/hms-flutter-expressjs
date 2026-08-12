@@ -8811,6 +8811,10 @@
   "@patientsMergeEmptyValueLabel": {
     "description": "Placeholder shown when a merge field value is blank."
   },
+  "patientsMergeChoicePreviewLabel": "Will keep",
+  "@patientsMergeChoicePreviewLabel": {
+    "description": "Label above each merge choice survivor preview."
+  },
   "patientsActivityTitle": "Registry attention",
   "@patientsActivityTitle": {
     "description": "Patient registry activity section title."

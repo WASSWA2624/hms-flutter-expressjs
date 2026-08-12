@@ -4527,39 +4527,43 @@ class _DuplicateReviewCard extends StatelessWidget {
             ),
           ],
           SizedBox(height: theme.spacing.sm),
-          Wrap(
-            spacing: theme.spacing.xs,
-            runSpacing: theme.spacing.xs,
-            children: <Widget>[
-              AppAccessActionGate(
-                requirement: PatientAllAtomPermissions.duplicateReview,
-                builder: (_, bool isAllowed) {
-                  if (!isAllowed) {
-                    return const SizedBox.shrink();
-                  }
-                  return AppButton.secondary(
-                    label: l10n.patientsReviewMergeAction,
-                    leadingIcon: Icons.merge_type_outlined,
-                    enabled: !isBusy && primary != null && secondary != null,
-                    onPressed: onPreview,
-                  );
-                },
-              ),
-              AppAccessActionGate(
-                requirement: PatientAllAtomPermissions.duplicateReview,
-                builder: (_, bool isAllowed) {
-                  if (!isAllowed) {
-                    return const SizedBox.shrink();
-                  }
-                  return AppButton.tertiary(
-                    label: l10n.patientsDismissDuplicateAction,
-                    leadingIcon: Icons.block_outlined,
-                    enabled: !isBusy && primary != null && secondary != null,
-                    onPressed: onDismiss,
-                  );
-                },
-              ),
-            ],
+          Align(
+            alignment: AlignmentDirectional.centerEnd,
+            child: Wrap(
+              spacing: theme.spacing.xs,
+              runSpacing: theme.spacing.xs,
+              alignment: WrapAlignment.end,
+              children: <Widget>[
+                AppAccessActionGate(
+                  requirement: PatientAllAtomPermissions.duplicateReview,
+                  builder: (_, bool isAllowed) {
+                    if (!isAllowed) {
+                      return const SizedBox.shrink();
+                    }
+                    return AppButton.secondary(
+                      label: l10n.patientsReviewMergeAction,
+                      leadingIcon: Icons.merge_type_outlined,
+                      enabled: !isBusy && primary != null && secondary != null,
+                      onPressed: onPreview,
+                    );
+                  },
+                ),
+                AppAccessActionGate(
+                  requirement: PatientAllAtomPermissions.duplicateReview,
+                  builder: (_, bool isAllowed) {
+                    if (!isAllowed) {
+                      return const SizedBox.shrink();
+                    }
+                    return AppButton.tertiary(
+                      label: l10n.patientsDismissDuplicateAction,
+                      leadingIcon: Icons.block_outlined,
+                      enabled: !isBusy && primary != null && secondary != null,
+                      onPressed: onDismiss,
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ],
       ),

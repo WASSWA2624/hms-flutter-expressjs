@@ -6860,6 +6860,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsMergeEmptyValueLabel => 'Empty';
 
   @override
+  String get patientsMergeChoicePreviewLabel => 'Will keep';
+
+  @override
   String get patientsActivityTitle => 'Registry attention';
 
   @override

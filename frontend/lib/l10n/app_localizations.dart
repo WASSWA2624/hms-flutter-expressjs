@@ -12925,6 +12925,12 @@ abstract class AppLocalizations {
   /// **'Empty'**
   String get patientsMergeEmptyValueLabel;
 
+  /// Label above each merge choice survivor preview.
+  ///
+  /// In en, this message translates to:
+  /// **'Will keep'**
+  String get patientsMergeChoicePreviewLabel;
+
   /// Patient registry activity section title.
   ///
   /// In en, this message translates to:
