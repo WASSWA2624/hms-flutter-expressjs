@@ -1,0 +1,4 @@
+
+I have noticed an issue in the print functionalities on the table and also the export functionality. Currently, the export and print functionalities, whenever they are printing or exporting data on a table, are only exporting and printing data that is available in that table, even if in the database there is quite more data. That's not the intended behavior.
+
+The intended behavior is that the export and print buttons should have full access to all the data in that table. The only limiting factor on the number of rows that should be printed should be the filters that are currently applied to that table. Also, when scrolling, one should always be able to infinitely continue to scroll, and data should infinitely load whenever it is available instead of loading up a few rows and then it stops loading. As long as there is still more data to load, then the table needs to continue scrolling and updating.

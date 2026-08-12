@@ -17,6 +17,7 @@ import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_en
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/access_admin_access.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_workspace_print_helpers.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_workspace_table.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -306,7 +307,47 @@ abstract class _ScopedAccessAdminListDialogState<
       columnChoices: columnChoices,
       search: search,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
       columnVisibilityStorageKey: columnVisibilityStorageKey,
+      enableExport: true,
+      canExport: canExportAccessAdminWorkspace(ref.watch(appAccessPolicyProvider)),
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrintAccessAdminWorkspace(ref.watch(appAccessPolicyProvider)),
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () => printAccessAdminListTable<AccessAdminItem>(
+        ref: ref,
+        context: context,
+        title: l10n.accessAdminTitle,
+        columns: <AppListTableColumn<AccessAdminItem>>[
+          ...columns,
+          ...?columnChoices,
+        ],
+        items: items,
+        emptyText: l10n.accessAdminEmptyTitle,
+      ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
+      exportConfig: AppListTableExportConfig<AccessAdminItem>(
+        fileNameStem: 'access_admin_users',
+        dateOf: (_) => null,
+        sheetName: l10n.accessAdminTitle,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
+      ),
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.accessAdminEmptyTitle,
         body: l10n.accessAdminEmptyBody,
@@ -361,10 +402,11 @@ abstract class _ScopedAccessAdminListDialogState<
       onClear: () => unawaited(reload(resetPage: true)),
       enableDateFilter: false,
       showAdvancedFilterButton: showAdvancedFilterButton,
-      advancedFilterButtonLabel: l10n.commonFilterActionLabel,
-      advancedFilterTitle: advancedFilterTitle ?? l10n.accessAdminFiltersTitle,
+      advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+      advancedFilterTitle: advancedFilterTitle ?? l10n.commonAdvancedFiltersTitle,
       advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
       advancedFilterResetLabel: l10n.opdClearFiltersAction,
+      advancedFilterCloseLabel: l10n.commonCloseActionLabel,
       filterGroups: filterGroups,
       filterValue: filterValue,
       hasActiveFilters: hasActiveFilters,
@@ -969,7 +1011,7 @@ class _ManageUsersPanelState
                   item.roles
                       .map((AccessAdminRoleRef role) => role.name)
                       .join(', '),
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 );
               },

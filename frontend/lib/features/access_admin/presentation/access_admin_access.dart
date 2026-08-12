@@ -513,3 +513,21 @@ abstract final class AccessAdminRegistrationsAtomPermissions {
   static const AccessRequirement write =
       accessAdminRegistrationsWriteRequirement;
 }
+
+/// Worklist Export / Print — ∩ `evidence:export` (omit when unauthorized).
+const AccessRequirement accessAdminWorkspaceExportRequirement =
+    AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.evidenceExport],
+);
+
+/// Alias — list Print uses the same desk export gate.
+const AccessRequirement accessAdminWorkspacePrintRequirement =
+    accessAdminWorkspaceExportRequirement;
+
+bool canExportAccessAdminWorkspace(AppAccessPolicy policy) {
+  return accessAdminWorkspaceExportRequirement.isAllowed(policy);
+}
+
+bool canPrintAccessAdminWorkspace(AppAccessPolicy policy) {
+  return accessAdminWorkspacePrintRequirement.isAllowed(policy);
+}

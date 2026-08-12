@@ -98,6 +98,24 @@ bool canDeleteSubscriptions(AppAccessPolicy policy) {
   return subscriptionsWorkspaceDeleteRequirement.isAllowed(policy);
 }
 
+/// Worklist Export / Print — ∩ `evidence:export` (omit when unauthorized).
+const AccessRequirement subscriptionsWorkspaceExportRequirement =
+    AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.evidenceExport],
+);
+
+/// Alias — list Print uses the same desk export gate.
+const AccessRequirement subscriptionsWorkspacePrintRequirement =
+    subscriptionsWorkspaceExportRequirement;
+
+bool canExportSubscriptionsWorkspace(AppAccessPolicy policy) {
+  return subscriptionsWorkspaceExportRequirement.isAllowed(policy);
+}
+
+bool canPrintSubscriptionsWorkspace(AppAccessPolicy policy) {
+  return subscriptionsWorkspacePrintRequirement.isAllowed(policy);
+}
+
 /// Per-panel tab strip gate. Panels share workspace read until a tab prompt
 /// documents a narrower requirement.
 AccessRequirement subscriptionsPanelTabRequirement(SubscriptionPanel panel) {

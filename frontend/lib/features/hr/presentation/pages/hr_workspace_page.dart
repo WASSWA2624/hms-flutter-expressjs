@@ -46,6 +46,7 @@ import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_details_bod
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_print_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_workspace_form_fields.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_workspace_print_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
@@ -306,6 +307,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
       scrollable: false,
       child: SizedBox(
         width: double.infinity,
+        height: double.infinity,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
@@ -316,7 +318,11 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
                     id: section.name,
                     icon: _sectionIcon(section),
                     label: _sectionLabel(l10n, section),
-                    count: _sectionCount(state, section),
+                    count: _sectionCount(
+                      state,
+                      section,
+                      activeSection: activeSection,
+                    ),
                     countTone: _sectionCountTone(section),
                   ),
               ],
@@ -906,6 +912,78 @@ class _HrWorkQueueTableState extends ConsumerState<_HrWorkQueueTable> {
           : 'hr_work_queue_cw_${queue.name}_v2',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+      enableExport: true,
+      canExport: canExportHrWorkspace(ref.watch(appAccessPolicyProvider)),
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrintHrWorkspace(ref.watch(appAccessPolicyProvider)),
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () => printHrListTable<HrWorkItem>(
+        ref: ref,
+        context: context,
+        title: hrQueueLabel(l10n, queue),
+        columns: <AppListTableColumn<HrWorkItem>>[
+          ..._workQueueColumns(
+            context,
+            queue,
+            onNextAction: onNextAction,
+            visiblePayrollItems: queue == HrQueue.payrollDrafts
+                ? visibleItems
+                : null,
+            selectedRosterKeys: isRosterQueue ? _selectedRosterKeys : null,
+            visibleRosterItems: isRosterQueue ? visibleItems : null,
+            onRosterSelectionChanged: isRosterQueue
+                ? (Set<String> next) => setState(() {
+                    _selectedRosterKeys
+                      ..clear()
+                      ..addAll(next);
+                  })
+                : null,
+            onEditRoster: isRosterQueue
+                ? (HrWorkItem item) => unawaited(_editRosterTemplate(item))
+                : null,
+            onDeleteRoster: isRosterQueue
+                ? (HrWorkItem item) => unawaited(_softDeleteRosterTemplate(item))
+                : null,
+            onRestoreRoster: isRosterQueue
+                ? (HrWorkItem item) => unawaited(_restoreRosterTemplate(item))
+                : null,
+            onPermanentDeleteRoster: isRosterQueue
+                ? (HrWorkItem item) =>
+                      unawaited(_permanentDeleteRosterTemplate(item))
+                : null,
+            canWriteRosters: canWriteRosters,
+            isMutating: state.isMutating,
+          ),
+          ..._workQueueColumnChoices(context, queue),
+        ],
+        items: state.workItems.items,
+        emptyText: queue == HrQueue.payrollDrafts
+            ? l10n.hrPayCompensationEmptyTitle
+            : l10n.hrNoQueueItemsTitle,
+      ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
+      exportConfig: AppListTableExportConfig<HrWorkItem>(
+        fileNameStem: 'hr_${queue.name}',
+        dateOf: (HrWorkItem item) => item.startAt,
+        sheetName: hrQueueLabel(l10n, queue),
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
+      ),
       search: AppListTableSearch<HrWorkItem>(
         controller: widget.searchController,
         semanticLabel: l10n.hrSearchLabel,
@@ -929,7 +1007,8 @@ class _HrWorkQueueTableState extends ConsumerState<_HrWorkQueueTable> {
         advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
         advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-        advancedFilterResetLabel: l10n.hrClearFiltersAction,
+        advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         allFieldsLabel: l10n.opdAllFieldsFilterLabel,
         filterGroups: <AppSearchBarFilterGroup>[
           if (showQueueFacet)
@@ -1667,9 +1746,13 @@ IconData _sectionIcon(HrDeskSection section) {
   };
 }
 
-int _sectionCount(HrWorkspaceState state, HrDeskSection section) {
+int? _sectionCount(
+  HrWorkspaceState state,
+  HrDeskSection section, {
+  required HrDeskSection activeSection,
+}) {
   final HrWorkspaceSummary summary = state.overview.summary;
-  return switch (section) {
+  final int? summaryCount = switch (section) {
     HrDeskSection.staffDirectory =>
       state.staff.totalItemCount ?? state.staff.items.length,
     HrDeskSection.positions => state.positionsTotalCount,
@@ -1679,8 +1762,21 @@ int _sectionCount(HrWorkspaceState state, HrDeskSection section) {
     HrDeskSection.unassignedShifts =>
       summary.unassignedShifts + summary.overdueShifts,
     HrDeskSection.payroll => summary.payrollDraftRuns,
-    HrDeskSection.access => 0,
+    HrDeskSection.access => null,
   };
+  if (summaryCount == null) {
+    return null;
+  }
+  if (section != activeSection) {
+    return summaryCount;
+  }
+  final HrDeskSection? loadedSection = HrDeskSection.fromQueue(
+    state.workItemsQuery.queue,
+  );
+  if (loadedSection != section) {
+    return summaryCount;
+  }
+  return state.workItems.totalItemCount ?? summaryCount;
 }
 
 AppTabCountTone _sectionCountTone(HrDeskSection section) {
@@ -1913,6 +2009,22 @@ List<AppListTableColumn<HrWorkItem>> _workQueueColumnChoices(
   final AppLocalizations l10n = context.l10n;
   return <AppListTableColumn<HrWorkItem>>[
     AppListTableColumn<HrWorkItem>(
+      id: 'staff_number',
+      label: l10n.hrStaffNumberLabel,
+      sortComparator: (HrWorkItem left, HrWorkItem right) =>
+          appListTableCompareText(left.staffNumber, right.staffNumber),
+      exportValue: (HrWorkItem item) => item.staffNumber ?? '',
+      cellBuilder: (BuildContext context, HrWorkItem item) {
+        return Text(
+          (item.staffNumber ?? '').trim().isNotEmpty
+              ? item.staffNumber!
+              : context.l10n.profileUnknownValue,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        );
+      },
+    ),
+    AppListTableColumn<HrWorkItem>(
       id: 'queue',
       label: l10n.hrQueueColumnLabel,
       sortComparator: (HrWorkItem left, HrWorkItem right) =>
@@ -1988,16 +2100,16 @@ AppListTableColumn<HrWorkItem> _workItemStaffColumn(AppLocalizations l10n) {
     label: l10n.hrStaffColumnLabel,
     sortComparator: (HrWorkItem left, HrWorkItem right) =>
         appListTableCompareText(left.staffName, right.staffName),
+    exportValue: (HrWorkItem item) => (item.staffName ?? '').trim().isNotEmpty
+        ? item.staffName!
+        : '',
     cellBuilder: (BuildContext context, HrWorkItem item) {
-      final ThemeData theme = Theme.of(context);
-      return AppListItemText(
-        title: (item.staffName ?? '').trim().isNotEmpty
+      return Text(
+        (item.staffName ?? '').trim().isNotEmpty
             ? item.staffName!
             : context.l10n.profileUnknownValue,
-        subtitle: item.staffNumber,
-        titleStyle: theme.textTheme.bodyMedium?.copyWith(
-          fontWeight: AppFontWeight.emphasis,
-        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       );
     },
   );
@@ -2074,6 +2186,7 @@ AppListTableColumn<HrWorkItem> _workItemRosterSelectColumn(
     id: 'select',
     label: l10n.hrRosterSelectAllAction,
     alwaysVisible: true,
+    exportable: false,
     fixedWidth: 48,
     headerBuilder: (BuildContext context) {
       // Resolve against the latest selection inside the builder so the header
@@ -2363,6 +2476,7 @@ AppListTableColumn<HrWorkItem> _workItemStatusColumn(AppLocalizations l10n) {
     alwaysVisible: true,
     sortComparator: (HrWorkItem left, HrWorkItem right) =>
         appListTableCompareText(left.status, right.status),
+    exportValue: (HrWorkItem item) => item.status ?? '',
     cellBuilder: (BuildContext context, HrWorkItem item) {
       if (item.queue == HrQueue.rosterDrafts) {
         return _StatusBadge(
@@ -2401,7 +2515,7 @@ AppListTableColumn<HrWorkItem> _workItemNextActionColumn(
       };
       return AppAccessActionGate(
         requirement: requirement,
-        hideWhenDenied: false,
+        hideWhenDenied: true,
         builder: (BuildContext context, bool isAllowed) {
           return AppButton.tertiary(
             label: _workItemNextAction(context, item),

@@ -15,6 +15,7 @@ import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_con
 import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_reference_localizations.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_staff_onboarding_dialog.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_workspace_print_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
@@ -245,10 +246,11 @@ class _HrAccessWorkspacePanelState
         unawaited(_reload(resetPage: true));
       },
       showAdvancedFilterButton: true,
-      advancedFilterButtonLabel: l10n.hrFiltersLabel,
-      advancedFilterTitle: l10n.hrFiltersLabel,
+      advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+      advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
       advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-      advancedFilterResetLabel: l10n.hrClearFiltersAction,
+      advancedFilterResetLabel: l10n.opdClearFiltersAction,
+      advancedFilterCloseLabel: l10n.commonCloseActionLabel,
       enableDateFilter: false,
       allFieldsLabel: l10n.opdAllFieldsFilterLabel,
       textFilters: <AppSearchBarTextFilter>[
@@ -304,10 +306,11 @@ class _HrAccessWorkspacePanelState
         unawaited(_reload(resetPage: true));
       },
       showAdvancedFilterButton: true,
-      advancedFilterButtonLabel: l10n.hrFiltersLabel,
-      advancedFilterTitle: l10n.hrFiltersLabel,
+      advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+      advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
       advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-      advancedFilterResetLabel: l10n.hrClearFiltersAction,
+      advancedFilterResetLabel: l10n.opdClearFiltersAction,
+      advancedFilterCloseLabel: l10n.commonCloseActionLabel,
       enableDateFilter: false,
       allFieldsLabel: l10n.opdAllFieldsFilterLabel,
       filterGroups: <AppSearchBarFilterGroup>[
@@ -352,10 +355,11 @@ class _HrAccessWorkspacePanelState
         unawaited(_reload(resetPage: true));
       },
       showAdvancedFilterButton: true,
-      advancedFilterButtonLabel: l10n.hrFiltersLabel,
-      advancedFilterTitle: l10n.hrFiltersLabel,
+      advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
+      advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
       advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-      advancedFilterResetLabel: l10n.hrClearFiltersAction,
+      advancedFilterResetLabel: l10n.opdClearFiltersAction,
+      advancedFilterCloseLabel: l10n.commonCloseActionLabel,
       enableDateFilter: false,
       allFieldsLabel: l10n.opdAllFieldsFilterLabel,
       filterValue: _accessFilters,
@@ -512,9 +516,8 @@ class _HrAccessWorkspacePanelState
           )
         : _buildPanelTable(context, l10n);
 
-    return Column(
+    final Widget content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: embedded ? MainAxisSize.min : MainAxisSize.max,
       children: <Widget>[
         Text(
           l10n.hrAccessWorkspaceDescription,
@@ -556,11 +559,19 @@ class _HrAccessWorkspacePanelState
             children: _buildActions(context, l10n),
           ),
           SizedBox(height: Theme.of(context).spacing.md),
-          panelContent,
-        ] else
-          Expanded(child: panelContent),
+        ],
+        Expanded(child: panelContent),
       ],
     );
+
+    if (embedded) {
+      return SizedBox(
+        width: double.infinity,
+        height: double.infinity,
+        child: content,
+      );
+    }
+    return content;
   }
 
   Widget _buildPanelTable(BuildContext context, AppLocalizations l10n) {
@@ -578,6 +589,105 @@ class _HrAccessWorkspacePanelState
 
     final List<HrAccessUser> visibleUsers = _filteredUsers;
 
+    final bool canExport = canExportHrWorkspace(_policy);
+    final bool canPrint = canPrintHrWorkspace(_policy);
+    final List<AppListTableColumn<HrAccessUser>> columns =
+        <AppListTableColumn<HrAccessUser>>[
+      AppListTableColumn<HrAccessUser>(
+        id: 'staff',
+        label: l10n.hrStaffColumnLabel,
+        sortComparator: (HrAccessUser left, HrAccessUser right) =>
+            appListTableCompareText(left.displayLabel, right.displayLabel),
+        exportValue: (HrAccessUser item) => item.displayLabel,
+        cellBuilder: (BuildContext context, HrAccessUser item) {
+          return Text(
+            item.displayLabel,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          );
+        },
+      ),
+      AppListTableColumn<HrAccessUser>(
+        id: 'email',
+        label: l10n.hrEmailLabel,
+        sortComparator: (HrAccessUser left, HrAccessUser right) =>
+            appListTableCompareText(left.email, right.email),
+        exportValue: (HrAccessUser item) => item.email ?? '',
+        cellBuilder: (BuildContext context, HrAccessUser item) {
+          return Text(
+            (item.email ?? '').trim().isNotEmpty
+                ? item.email!
+                : context.l10n.profileUnknownValue,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          );
+        },
+      ),
+      AppListTableColumn<HrAccessUser>(
+        id: 'roles',
+        label: l10n.hrAccessAssignedRolesLabel,
+        sortComparator: (HrAccessUser left, HrAccessUser right) =>
+            appListTableCompareText(
+              left.roleNames.join(', '),
+              right.roleNames.join(', '),
+            ),
+        exportValue: (HrAccessUser item) => item.roleNames
+            .map(
+              (String role) =>
+                  l10n.hrReferenceRoleLabel(role, fallback: role),
+            )
+            .join(', '),
+        cellBuilder: (BuildContext context, HrAccessUser item) {
+          if (item.roleNames.isEmpty) {
+            return const Text('—');
+          }
+          return Text(
+            item.roleNames
+                .map(
+                  (String role) =>
+                      l10n.hrReferenceRoleLabel(role, fallback: role),
+                )
+                .join(', '),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          );
+        },
+      ),
+      AppListTableColumn<HrAccessUser>(
+        id: 'status',
+        label: l10n.hrStatusColumnLabel,
+        sortComparator: (HrAccessUser left, HrAccessUser right) =>
+            appListTableCompareText(left.status, right.status),
+        exportValue: (HrAccessUser item) => item.status ?? '',
+        cellBuilder: (BuildContext context, HrAccessUser item) {
+          if ((item.status ?? '').isEmpty) {
+            return Text(context.l10n.profileUnknownValue);
+          }
+          return _HrAccessStatusBadge(status: item.status);
+        },
+      ),
+      if (showPositionColumn)
+        AppListTableColumn<HrAccessUser>(
+          id: 'position',
+          label: l10n.hrAccessPositionTitleLabel,
+          sortComparator: (HrAccessUser left, HrAccessUser right) =>
+              appListTableCompareText(
+                left.positionTitle,
+                right.positionTitle,
+              ),
+          exportValue: (HrAccessUser item) => item.positionTitle ?? '',
+          cellBuilder: (BuildContext context, HrAccessUser item) {
+            return Text(
+              (item.positionTitle ?? '').trim().isNotEmpty
+                  ? item.positionTitle!
+                  : context.l10n.profileUnknownValue,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            );
+          },
+        ),
+    ];
+
     return AppListTable<HrAccessUser>(
       page: AppPage<HrAccessUser>(
         items: visibleUsers,
@@ -590,8 +700,43 @@ class _HrAccessWorkspacePanelState
       search: _usersTableSearch(l10n),
       columnVisibilityController: _userColumnVisibility,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-      shrinkWrap: widget.embedded,
-      physics: widget.embedded ? const NeverScrollableScrollPhysics() : null,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+      enableExport: true,
+      canExport: canExport,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () => printHrListTable<HrAccessUser>(
+        ref: ref,
+        context: context,
+        title: l10n.hrAccessPanelUsers,
+        columns: columns,
+        items: visibleUsers,
+        emptyText: l10n.hrAccessEmptyUsersLabel,
+      ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
+      exportConfig: AppListTableExportConfig<HrAccessUser>(
+        fileNameStem: 'hr_access_users',
+        dateOf: (_) => null,
+        sheetName: l10n.hrAccessPanelUsers,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
+      ),
       itemKeyBuilder: (HrAccessUser item) => ValueKey<String>(item.effectiveId),
       onRowSelected: (HrAccessUser user) async {
         await showHrAccessUserDetailDialog(
@@ -610,88 +755,7 @@ class _HrAccessWorkspacePanelState
         title: l10n.hrAccessPanelUsers,
         body: l10n.hrAccessEmptyUsersLabel,
       ),
-      columns: <AppListTableColumn<HrAccessUser>>[
-        AppListTableColumn<HrAccessUser>(
-          label: l10n.hrStaffColumnLabel,
-          sortComparator: (HrAccessUser left, HrAccessUser right) =>
-              appListTableCompareText(left.displayLabel, right.displayLabel),
-          cellBuilder: (BuildContext context, HrAccessUser item) {
-            return AppCopyableIdentifierCell(
-              title: item.displayLabel,
-              identifier: item.staffProfileId != null
-                  ? (item.staffProfileName ?? item.staffProfileId)
-                  : item.displayId,
-              subtitle:
-                  (item.staffProfileName ?? '').trim().isNotEmpty &&
-                      item.staffProfileName != item.displayLabel
-                  ? item.staffProfileName
-                  : null,
-            );
-          },
-        ),
-        AppListTableColumn<HrAccessUser>(
-          label: l10n.hrEmailLabel,
-          sortComparator: (HrAccessUser left, HrAccessUser right) =>
-              appListTableCompareText(left.email, right.email),
-          cellBuilder: (BuildContext context, HrAccessUser item) {
-            return Text(
-              (item.email ?? '').trim().isNotEmpty
-                  ? item.email!
-                  : context.l10n.profileUnknownValue,
-            );
-          },
-        ),
-        AppListTableColumn<HrAccessUser>(
-          label: l10n.hrAccessAssignedRolesLabel,
-          sortComparator: (HrAccessUser left, HrAccessUser right) =>
-              appListTableCompareText(
-                left.roleNames.join(', '),
-                right.roleNames.join(', '),
-              ),
-          cellBuilder: (BuildContext context, HrAccessUser item) {
-            if (item.roleNames.isEmpty) {
-              return const Text('—');
-            }
-            return Text(
-              item.roleNames
-                  .map(
-                    (String role) =>
-                        l10n.hrReferenceRoleLabel(role, fallback: role),
-                  )
-                  .join(', '),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            );
-          },
-        ),
-        AppListTableColumn<HrAccessUser>(
-          label: l10n.hrStatusColumnLabel,
-          sortComparator: (HrAccessUser left, HrAccessUser right) =>
-              appListTableCompareText(left.status, right.status),
-          cellBuilder: (BuildContext context, HrAccessUser item) {
-            if ((item.status ?? '').isEmpty) {
-              return Text(context.l10n.profileUnknownValue);
-            }
-            return _HrAccessStatusBadge(status: item.status);
-          },
-        ),
-        if (showPositionColumn)
-          AppListTableColumn<HrAccessUser>(
-            label: l10n.hrAccessPositionTitleLabel,
-            sortComparator: (HrAccessUser left, HrAccessUser right) =>
-                appListTableCompareText(
-                  left.positionTitle,
-                  right.positionTitle,
-                ),
-            cellBuilder: (BuildContext context, HrAccessUser item) {
-              return Text(
-                (item.positionTitle ?? '').trim().isNotEmpty
-                    ? item.positionTitle!
-                    : context.l10n.profileUnknownValue,
-              );
-            },
-          ),
-      ],
+      columns: columns,
       mobileItemBuilder: (BuildContext context, HrAccessUser item) {
         return AppListTableMobileItem(
           title: item.displayLabel,
@@ -709,6 +773,89 @@ class _HrAccessWorkspacePanelState
 
   Widget _buildRolesTable(BuildContext context, AppLocalizations l10n) {
     final List<HrAccessRole> visibleRoles = _filteredRoles;
+    final bool canExport = canExportHrWorkspace(_policy);
+    final bool canPrint = canPrintHrWorkspace(_policy);
+    final List<AppListTableColumn<HrAccessRole>> columns =
+        <AppListTableColumn<HrAccessRole>>[
+      AppListTableColumn<HrAccessRole>(
+        id: 'name',
+        label: l10n.hrAccessRoleNameLabel,
+        sortComparator: (HrAccessRole left, HrAccessRole right) =>
+            appListTableCompareText(
+              left.effectiveDisplayName,
+              right.effectiveDisplayName,
+            ),
+        exportValue: (HrAccessRole item) => l10n.hrReferenceRoleLabel(
+          item.name ?? item.effectiveId,
+          fallback: item.effectiveDisplayName,
+        ),
+        cellBuilder: (BuildContext context, HrAccessRole item) {
+          final String label = l10n.hrReferenceRoleLabel(
+            item.name ?? item.effectiveId,
+            fallback: item.effectiveDisplayName,
+          );
+          return Text(label, maxLines: 1, overflow: TextOverflow.ellipsis);
+        },
+      ),
+      AppListTableColumn<HrAccessRole>(
+        id: 'description',
+        label: l10n.hrAccessRoleDescriptionLabel,
+        sortComparator: (HrAccessRole left, HrAccessRole right) =>
+            appListTableCompareText(left.description, right.description),
+        exportValue: (HrAccessRole item) => item.description ?? '',
+        cellBuilder: (BuildContext context, HrAccessRole item) {
+          return Text(
+            (item.description ?? '').trim().isNotEmpty
+                ? item.description!
+                : context.l10n.profileUnknownValue,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          );
+        },
+      ),
+      AppListTableColumn<HrAccessRole>(
+        id: 'permissions',
+        label: l10n.hrAccessPanelPermissions,
+        sortComparator: (HrAccessRole left, HrAccessRole right) =>
+            left.permissionCount.compareTo(right.permissionCount),
+        exportValue: (HrAccessRole item) => '${item.permissionCount}',
+        cellBuilder: (BuildContext context, HrAccessRole item) {
+          return Text(
+            l10n.hrAccessPermissionCountLabel(item.permissionCount),
+          );
+        },
+      ),
+      AppListTableColumn<HrAccessRole>(
+        id: 'staff',
+        label: l10n.hrStaffColumnLabel,
+        sortComparator: (HrAccessRole left, HrAccessRole right) =>
+            left.userCount.compareTo(right.userCount),
+        exportValue: (HrAccessRole item) => '${item.userCount}',
+        cellBuilder: (BuildContext context, HrAccessRole item) {
+          return Text(l10n.hrAccessStaffAssignmentCountLabel(item.userCount));
+        },
+      ),
+      AppListTableColumn<HrAccessRole>(
+        id: 'system',
+        label: l10n.hrAccessSystemColumnLabel,
+        sortComparator: (HrAccessRole left, HrAccessRole right) =>
+            appListTableCompareText(
+              left.isSystemCritical ? '1' : '0',
+              right.isSystemCritical ? '1' : '0',
+            ),
+        exportValue: (HrAccessRole item) =>
+            item.isSystemCritical ? l10n.hrAccessSystemCriticalRoleBadge : '',
+        cellBuilder: (BuildContext context, HrAccessRole item) {
+          if (!item.isSystemCritical) {
+            return const Text('—');
+          }
+          return Chip(
+            label: Text(l10n.hrAccessSystemCriticalRoleBadge),
+            visualDensity: VisualDensity.compact,
+          );
+        },
+      ),
+    ];
 
     return AppListTable<HrAccessRole>(
       page: AppPage<HrAccessRole>(
@@ -722,8 +869,43 @@ class _HrAccessWorkspacePanelState
       search: _rolesTableSearch(l10n),
       columnVisibilityController: _roleColumnVisibility,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-      shrinkWrap: widget.embedded,
-      physics: widget.embedded ? const NeverScrollableScrollPhysics() : null,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+      enableExport: true,
+      canExport: canExport,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () => printHrListTable<HrAccessRole>(
+        ref: ref,
+        context: context,
+        title: l10n.hrAccessPanelRoles,
+        columns: columns,
+        items: visibleRoles,
+        emptyText: l10n.hrAccessEmptyRolesLabel,
+      ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
+      exportConfig: AppListTableExportConfig<HrAccessRole>(
+        fileNameStem: 'hr_access_roles',
+        dateOf: (_) => null,
+        sheetName: l10n.hrAccessPanelRoles,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
+      ),
       itemKeyBuilder: (HrAccessRole item) => ValueKey<String>(item.effectiveId),
       onRowSelected: (HrAccessRole role) async {
         await showHrAccessRoleDetailDialog(
@@ -743,72 +925,7 @@ class _HrAccessWorkspacePanelState
         title: l10n.hrAccessPanelRoles,
         body: l10n.hrAccessEmptyRolesLabel,
       ),
-      columns: <AppListTableColumn<HrAccessRole>>[
-        AppListTableColumn<HrAccessRole>(
-          label: l10n.hrAccessRoleNameLabel,
-          sortComparator: (HrAccessRole left, HrAccessRole right) =>
-              appListTableCompareText(
-                left.effectiveDisplayName,
-                right.effectiveDisplayName,
-              ),
-          cellBuilder: (BuildContext context, HrAccessRole item) {
-            final String label = l10n.hrReferenceRoleLabel(
-              item.name ?? item.effectiveId,
-              fallback: item.effectiveDisplayName,
-            );
-            return Text(label, maxLines: 1, overflow: TextOverflow.ellipsis);
-          },
-        ),
-        AppListTableColumn<HrAccessRole>(
-          label: l10n.hrAccessRoleDescriptionLabel,
-          sortComparator: (HrAccessRole left, HrAccessRole right) =>
-              appListTableCompareText(left.description, right.description),
-          cellBuilder: (BuildContext context, HrAccessRole item) {
-            return Text(
-              (item.description ?? '').trim().isNotEmpty
-                  ? item.description!
-                  : context.l10n.profileUnknownValue,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            );
-          },
-        ),
-        AppListTableColumn<HrAccessRole>(
-          label: l10n.hrAccessPanelPermissions,
-          sortComparator: (HrAccessRole left, HrAccessRole right) =>
-              left.permissionCount.compareTo(right.permissionCount),
-          cellBuilder: (BuildContext context, HrAccessRole item) {
-            return Text(
-              l10n.hrAccessPermissionCountLabel(item.permissionCount),
-            );
-          },
-        ),
-        AppListTableColumn<HrAccessRole>(
-          label: l10n.hrStaffColumnLabel,
-          sortComparator: (HrAccessRole left, HrAccessRole right) =>
-              left.userCount.compareTo(right.userCount),
-          cellBuilder: (BuildContext context, HrAccessRole item) {
-            return Text(l10n.hrAccessStaffAssignmentCountLabel(item.userCount));
-          },
-        ),
-        AppListTableColumn<HrAccessRole>(
-          label: l10n.hrAccessSystemColumnLabel,
-          sortComparator: (HrAccessRole left, HrAccessRole right) =>
-              appListTableCompareText(
-                left.isSystemCritical ? '1' : '0',
-                right.isSystemCritical ? '1' : '0',
-              ),
-          cellBuilder: (BuildContext context, HrAccessRole item) {
-            if (!item.isSystemCritical) {
-              return const Text('—');
-            }
-            return Chip(
-              label: Text(l10n.hrAccessSystemCriticalRoleBadge),
-              visualDensity: VisualDensity.compact,
-            );
-          },
-        ),
-      ],
+      columns: columns,
       mobileItemBuilder: (BuildContext context, HrAccessRole item) {
         return AppListTableMobileItem(
           title: item.effectiveDisplayName,
@@ -825,6 +942,57 @@ class _HrAccessWorkspacePanelState
   }
 
   Widget _buildPermissionsTable(BuildContext context, AppLocalizations l10n) {
+    final bool canExport = canExportHrWorkspace(_policy);
+    final bool canPrint = canPrintHrWorkspace(_policy);
+    final List<AppListTableColumn<HrAccessPermission>> columns =
+        <AppListTableColumn<HrAccessPermission>>[
+      AppListTableColumn<HrAccessPermission>(
+        id: 'name',
+        label: l10n.hrAccessPermissionNameLabel,
+        sortComparator: (HrAccessPermission left, HrAccessPermission right) =>
+            appListTableCompareText(left.name, right.name),
+        exportValue: (HrAccessPermission item) =>
+            item.name ?? item.effectiveId,
+        cellBuilder: (BuildContext context, HrAccessPermission item) {
+          return Text(
+            item.name ?? item.effectiveId,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          );
+        },
+      ),
+      AppListTableColumn<HrAccessPermission>(
+        id: 'description',
+        label: l10n.hrAccessPermissionDescriptionLabel,
+        sortComparator: (HrAccessPermission left, HrAccessPermission right) =>
+            appListTableCompareText(left.description, right.description),
+        exportValue: (HrAccessPermission item) {
+          final String code = item.name ?? item.effectiveId;
+          return item.description ??
+              l10n.permissionCatalogDescriptionForCode(code);
+        },
+        cellBuilder: (BuildContext context, HrAccessPermission item) {
+          final String code = item.name ?? item.effectiveId;
+          return Text(
+            item.description ??
+                l10n.permissionCatalogDescriptionForCode(code),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          );
+        },
+      ),
+      AppListTableColumn<HrAccessPermission>(
+        id: 'roles',
+        label: l10n.hrAccessPanelRoles,
+        sortComparator: (HrAccessPermission left, HrAccessPermission right) =>
+            left.roleCount.compareTo(right.roleCount),
+        exportValue: (HrAccessPermission item) => '${item.roleCount}',
+        cellBuilder: (BuildContext context, HrAccessPermission item) {
+          return Text(l10n.hrAccessPermissionRoleCount(item.roleCount));
+        },
+      ),
+    ];
+
     return AppListTable<HrAccessPermission>(
       page: AppPage<HrAccessPermission>(
         items: _permissions,
@@ -835,8 +1003,43 @@ class _HrAccessWorkspacePanelState
       search: _permissionsTableSearch(l10n),
       columnVisibilityController: _permissionColumnVisibility,
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
-      shrinkWrap: widget.embedded,
-      physics: widget.embedded ? const NeverScrollableScrollPhysics() : null,
+      columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+      enableExport: true,
+      canExport: canExport,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () => printHrListTable<HrAccessPermission>(
+        ref: ref,
+        context: context,
+        title: l10n.hrAccessPanelPermissions,
+        columns: columns,
+        items: _permissions,
+        emptyText: l10n.hrAccessEmptyPermissionsLabel,
+      ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
+      exportConfig: AppListTableExportConfig<HrAccessPermission>(
+        fileNameStem: 'hr_access_permissions',
+        dateOf: (_) => null,
+        sheetName: l10n.hrAccessPanelPermissions,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
+      ),
       itemKeyBuilder: (HrAccessPermission item) =>
           ValueKey<String>(item.effectiveId),
       onRowSelected: (HrAccessPermission permission) async {
@@ -859,38 +1062,7 @@ class _HrAccessWorkspacePanelState
         title: l10n.hrAccessPanelPermissions,
         body: l10n.hrAccessEmptyPermissionsLabel,
       ),
-      columns: <AppListTableColumn<HrAccessPermission>>[
-        AppListTableColumn<HrAccessPermission>(
-          label: l10n.hrAccessPermissionNameLabel,
-          sortComparator: (HrAccessPermission left, HrAccessPermission right) =>
-              appListTableCompareText(left.name, right.name),
-          cellBuilder: (BuildContext context, HrAccessPermission item) {
-            return Text(item.name ?? item.effectiveId);
-          },
-        ),
-        AppListTableColumn<HrAccessPermission>(
-          label: l10n.hrAccessPermissionDescriptionLabel,
-          sortComparator: (HrAccessPermission left, HrAccessPermission right) =>
-              appListTableCompareText(left.description, right.description),
-          cellBuilder: (BuildContext context, HrAccessPermission item) {
-            final String code = item.name ?? item.effectiveId;
-            return Text(
-              item.description ??
-                  l10n.permissionCatalogDescriptionForCode(code),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            );
-          },
-        ),
-        AppListTableColumn<HrAccessPermission>(
-          label: l10n.hrAccessPanelRoles,
-          sortComparator: (HrAccessPermission left, HrAccessPermission right) =>
-              left.roleCount.compareTo(right.roleCount),
-          cellBuilder: (BuildContext context, HrAccessPermission item) {
-            return Text(l10n.hrAccessPermissionRoleCount(item.roleCount));
-          },
-        ),
-      ],
+      columns: columns,
       mobileItemBuilder: (BuildContext context, HrAccessPermission item) {
         return AppListTableMobileItem(
           title: item.name ?? item.effectiveId,

@@ -143,6 +143,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
   bool _isSyncingControllerText = false;
   bool _hadFocus = false;
   bool _browseAllOptions = false;
+  bool _menuOpen = false;
   Object? _dropdownEntriesCacheToken;
   List<DropdownMenuEntry<T>>? _cachedDropdownEntries;
 
@@ -247,20 +248,6 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
           );
         }
 
-        final Widget trailingIcon = _SelectTrailingIcon(
-          showClear: canClear,
-          isExpanded: false,
-          isLoading: widget.isLoading,
-          onClear: _clearSelection,
-          speechButton: buildSpeechButton(),
-        );
-        final Widget selectedTrailingIcon = _SelectTrailingIcon(
-          showClear: canClear,
-          isExpanded: true,
-          isLoading: widget.isLoading,
-          onClear: _clearSelection,
-          speechButton: buildSpeechButton(),
-        );
         // Searchable fields must use DropdownMenu's native filter path so
         // typing updates the open overlay immediately (not only after a
         // parent rebuild of dropdownMenuEntries). Speech uses the same path
@@ -270,7 +257,8 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
             widget.filterCallback != null ||
             showSpeech;
         final bool useNativeSearch = widget.searchCallback != null;
-        final bool menuIsOpen = _focusNode.hasFocus;
+        final bool editable = widget.searchable || showSpeech;
+        final bool menuIsOpen = _focusNode.hasFocus || _menuOpen;
         final _SelectMenuChrome menuChrome = _selectMenuChrome(
           theme,
           colorScheme,
@@ -309,8 +297,25 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
           ),
           hintText: widget.hintText,
           helperText: widget.helperText,
-          trailingIcon: trailingIcon,
-          selectedTrailingIcon: selectedTrailingIcon,
+          // Own the suffix so expandable taps can focus the editable field.
+          // DropdownMenu's default trailing IconButton focuses an internal
+          // node instead of [focusNode], which leaves searchable selects
+          // looking non-editable after opening via the chevron.
+          showTrailingIcon: false,
+          decorationBuilder: (BuildContext context, MenuController menuController) {
+            return InputDecoration(
+              suffixIcon: _SelectTrailingIcon(
+                showClear: canClear,
+                isExpanded: menuController.isOpen || menuIsOpen,
+                isLoading: widget.isLoading,
+                onClear: _clearSelection,
+                speechButton: buildSpeechButton(),
+                onExpandPressed: canSelect
+                    ? () => _toggleMenu(menuController, focusForTyping: editable)
+                    : null,
+              ),
+            );
+          },
           textStyle: theme.textTheme.bodyLarge
               ?.copyWith(
                 color: canSelect
@@ -323,9 +328,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
               .merge(widget.textStyle),
           enableFilter: useNativeFilter,
           enableSearch: useNativeSearch,
-          keyboardType: (widget.searchable || showSpeech)
-              ? TextInputType.text
-              : null,
+          keyboardType: editable ? TextInputType.text : null,
           expandedInsets: EdgeInsets.zero,
           filterCallback: useNativeFilter
               ? (List<DropdownMenuEntry<T>> entries, String filter) =>
@@ -334,15 +337,18 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
           searchCallback: useNativeSearch
               ? widget.searchCallback ?? _searchEntries
               : null,
-          requestFocusOnTap: widget.searchable || showSpeech,
-          selectOnly: !(widget.searchable || showSpeech),
+          requestFocusOnTap: editable,
+          selectOnly: !editable,
           closeBehavior: DropdownMenuCloseBehavior.self,
           focusNode: _focusNode,
           autovalidateMode: widget.autovalidateMode,
           validator: widget.validator,
           onSaved: widget.onSaved,
           forceErrorText: widget.errorText,
-          onSelected: _commitSelection,
+          onSelected: (T? value) {
+            _menuOpen = false;
+            _commitSelection(value);
+          },
           dropdownMenuEntries: dropdownMenuEntries,
         );
       },
@@ -530,8 +536,29 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
       _focusNode.unfocus();
     }
     _browseAllOptions = false;
+    _menuOpen = false;
     _syncControllerForSelection(null);
     _formFieldKey.currentState?.didChange(null);
+  }
+
+  void _toggleMenu(
+    MenuController menuController, {
+    required bool focusForTyping,
+  }) {
+    if (menuController.isOpen) {
+      menuController.close();
+      _menuOpen = false;
+    } else {
+      if (focusForTyping) {
+        _browseAllOptions = true;
+        _focusNode.requestFocus();
+      }
+      menuController.open();
+      _menuOpen = true;
+    }
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _syncControllerForSelection(T? value) {
@@ -572,6 +599,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
         }
       } else if (!hasFocus && _hadFocus) {
         _browseAllOptions = false;
+        _menuOpen = false;
         _syncControllerForSelection(widget.value);
       }
     }
@@ -1071,6 +1099,7 @@ class _SelectTrailingIcon extends StatelessWidget {
     required this.isLoading,
     required this.onClear,
     this.speechButton,
+    this.onExpandPressed,
   });
 
   final bool showClear;
@@ -1078,6 +1107,7 @@ class _SelectTrailingIcon extends StatelessWidget {
   final bool isLoading;
   final VoidCallback? onClear;
   final Widget? speechButton;
+  final VoidCallback? onExpandPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -1119,9 +1149,12 @@ class _SelectTrailingIcon extends StatelessWidget {
                 ),
               ),
             ),
-          Padding(
+          IconButton(
+            visualDensity: VisualDensity.compact,
             padding: EdgeInsetsDirectional.only(end: theme.spacing.sm),
-            child: Icon(
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+            onPressed: onExpandPressed,
+            icon: Icon(
               isExpanded ? Icons.arrow_drop_up : Icons.arrow_drop_down,
               color: colorScheme.onSurfaceVariant,
             ),

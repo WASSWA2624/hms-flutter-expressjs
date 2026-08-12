@@ -60,7 +60,7 @@ int? claimsSectionTabCount(
   if (!claimsQueueQueryNarrowed(state.query, section)) {
     return scopeTotal;
   }
-  return state.queue.totalItemCount ?? state.queue.items.length;
+  return state.queue.totalItemCount ?? scopeTotal;
 }
 
 AppTabCountTone claimsSectionCountTone(ClaimsDeskSection section) {

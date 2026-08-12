@@ -35,6 +35,10 @@ const Patient _patient = Patient(
 void main() {
   setUpAll(() {
     registerFallbackValue(const PatientListQuery());
+    registerFallbackValue(const OpdAppointmentQuery());
+    registerFallbackValue(const OpdQueueQuery());
+    registerFallbackValue(const OpdFlowQuery());
+    registerFallbackValue(const OpdTriageQueueQuery());
   });
 
   testWidgets('scheduler opens one dialog with Existing patient selected', (
@@ -103,17 +107,22 @@ void main() {
         ),
         findsOneWidget,
       );
+      expect(find.byType(AppPhoneField), findsOneWidget);
       expect(
         find.byWidgetPredicate(
           (Widget widget) =>
               widget is AppSelectField<String> &&
-              widget.labelText == 'Hosting staff',
+              widget.labelText == 'Hosting staff' &&
+              widget.searchable,
         ),
         findsOneWidget,
       );
-      expect(find.text('Non-patient meeting'), findsOneWidget);
+      expect(find.text('Non-patient meeting'), findsNothing);
+      expect(find.byType(AppDateField), findsOneWidget);
+      expect(find.byType(AppTimeField), findsOneWidget);
       final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
       expect(dialog.pinActionsToBottom, isTrue);
+      expect(dialog.scrollable, isFalse);
       expect(
         find.byWidgetPredicate(
           (Widget widget) =>
@@ -150,6 +159,44 @@ void main() {
               widget is AppButton && widget.label == 'Schedule appointment',
         ),
         findsNothing,
+      );
+    },
+  );
+
+  testWidgets(
+    'selecting existing patient pins Schedule/Close in parent footer',
+    (WidgetTester tester) async {
+      final _MockPatientRepository patientRepository = _MockPatientRepository();
+      final _MockOpdRepository opdRepository = _MockOpdRepository();
+      _stubPatientLookups(patientRepository, patients: const <Patient>[_patient]);
+      _stubVisitorHosts(opdRepository);
+
+      await _pumpOpenScheduler(
+        tester,
+        repository: patientRepository,
+        opdRepository: opdRepository,
+      );
+
+      await tester.tap(find.text('Ada Lovelace'));
+      await tester.pumpAndSettle();
+
+      final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
+      expect(dialog.pinActionsToBottom, isTrue);
+      expect(dialog.scrollable, isFalse);
+      expect(dialog.actions, hasLength(2));
+      expect(
+        dialog.actions.whereType<AppButton>().map((AppButton b) => b.label),
+        containsAll(<String>['Close', 'Schedule appointment']),
+      );
+      expect(find.byType(AppTabStrip), findsNothing);
+      expect(find.byType(AppDateField), findsOneWidget);
+      expect(find.byType(AppTimeField), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AppResponsiveFieldRow),
+          matching: find.byType(AppDateField),
+        ),
+        findsOneWidget,
       );
     },
   );
@@ -366,6 +413,70 @@ void _stubVisitorHosts(_MockOpdRepository repository) {
   when(() => repository.listProviderSchedules()).thenAnswer(
     (_) async =>
         const Result<List<OpdProviderSchedule>>.success(<OpdProviderSchedule>[]),
+  );
+  when(() => repository.listAppointments(any())).thenAnswer(
+    (Invocation invocation) async => Result<AppPage<OpdAppointment>>.success(
+      AppPage<OpdAppointment>(
+        items: const <OpdAppointment>[],
+        request: (invocation.positionalArguments.single as OpdAppointmentQuery)
+            .pageRequest,
+        totalItemCount: 0,
+      ),
+    ),
+  );
+  when(() => repository.listVisitQueues(any())).thenAnswer(
+    (_) async => const Result<AppPage<OpdQueueEntry>>.success(
+      AppPage<OpdQueueEntry>(
+        items: <OpdQueueEntry>[],
+        request: AppPageRequest(pageSize: 12),
+        totalItemCount: 0,
+      ),
+    ),
+  );
+  when(() => repository.listOpdFlows(any())).thenAnswer(
+    (_) async => const Result<AppPage<OpdFlowSummary>>.success(
+      AppPage<OpdFlowSummary>(
+        items: <OpdFlowSummary>[],
+        request: AppPageRequest(),
+        totalItemCount: 0,
+      ),
+    ),
+  );
+  when(() => repository.listTriageQueue(any())).thenAnswer(
+    (_) async => const Result<AppPage<OpdFlowSummary>>.success(
+      AppPage<OpdFlowSummary>(
+        items: <OpdFlowSummary>[],
+        request: AppPageRequest(pageSize: 12),
+        totalItemCount: 0,
+      ),
+    ),
+  );
+  when(() => repository.getOpdSummaryCounts()).thenAnswer(
+    (_) async =>
+        const Result<OpdFlowAggregateCounts>.success(OpdFlowAggregateCounts()),
+  );
+  when(
+    () => repository.listClinicalAlertThresholds(
+      vitalType: any(named: 'vitalType'),
+    ),
+  ).thenAnswer(
+    (_) async => const Result<List<OpdClinicalAlertThreshold>>.success(
+      <OpdClinicalAlertThreshold>[],
+    ),
+  );
+  when(() => repository.listProviders()).thenAnswer(
+    (_) async => const Result<List<OpdProviderOption>>.success(
+      <OpdProviderOption>[
+        OpdProviderOption(id: 'doc-1', displayName: 'Dr Ada'),
+      ],
+    ),
+  );
+  when(() => repository.listProviders(search: any(named: 'search'))).thenAnswer(
+    (_) async => const Result<List<OpdProviderOption>>.success(
+      <OpdProviderOption>[
+        OpdProviderOption(id: 'doc-1', displayName: 'Dr Ada'),
+      ],
+    ),
   );
 }
 

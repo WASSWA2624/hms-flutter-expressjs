@@ -124,6 +124,39 @@ void main() {
     expect(selected, 'live');
   });
 
+  testWidgets(
+    'AppSelectField.searchable focuses text field when opened via chevron',
+    (WidgetTester tester) async {
+      await pumpComponent(
+        tester,
+        AppSelectField<String>.searchable(
+          labelText: 'Status',
+          hintText: 'Search statuses',
+          options: const <AppSelectOption<String>>[
+            AppSelectOption<String>(value: 'draft', label: 'Draft'),
+            AppSelectOption<String>(value: 'live', label: 'Live'),
+          ],
+          onChanged: (_) {},
+        ),
+      );
+
+      await tester.tap(find.byIcon(Icons.arrow_drop_down));
+      await tester.pumpAndSettle();
+
+      final EditableText editable = tester.widget<EditableText>(
+        find.byType(EditableText),
+      );
+      expect(editable.focusNode?.hasFocus, isTrue);
+      expect(editable.readOnly, isFalse);
+
+      await tester.enterText(find.byType(EditableText), 'liv');
+      await tester.pumpAndSettle();
+
+      expect(find.text('Draft').hitTestable(), findsNothing);
+      expect(find.text('Live').hitTestable(), findsOneWidget);
+    },
+  );
+
   testWidgets('AppSelectField.searchable matches hidden option search text', (
     WidgetTester tester,
   ) async {

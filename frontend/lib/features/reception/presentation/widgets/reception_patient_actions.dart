@@ -14,6 +14,7 @@ import 'package:hosspi_hms/features/patients/presentation/controllers/patient_re
 import 'package:hosspi_hms/features/reception/presentation/widgets/reception_visitor_appointment_dialog.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
@@ -150,6 +151,8 @@ class _ReceptionScheduleAppointmentDialogState
       GlobalKey<RegisterNewPatientFormState>();
   final GlobalKey<ReceptionVisitorAppointmentDialogState> _visitorKey =
       GlobalKey<ReceptionVisitorAppointmentDialogState>();
+  final GlobalKey<PatientAppointmentQuickDialogState> _appointmentKey =
+      GlobalKey<PatientAppointmentQuickDialogState>();
   _SchedulePatientMode _mode = _SchedulePatientMode.existing;
   Patient? _patient;
   bool _isRegistering = false;
@@ -171,39 +174,80 @@ class _ReceptionScheduleAppointmentDialogState
     return AppDialog(
       title: Text(l10n.patientsAppointmentDialogTitle),
       icon: const Icon(AppActionIcons.calendar),
-      scrollable: true,
-      pinActionsToBottom: _isPatientStep,
+      scrollable: false,
+      pinActionsToBottom: true,
       closeEnabled: !_isBusy,
       maxWidth: 720,
       content: _isPatientStep
           ? _buildPatientStep(context)
-          : PatientAppointmentQuickDialog(
-              patient: _patient!,
-              referenceData: widget.referenceData,
-              embedded: true,
-              allowClinicalActions: false,
-              allowVitalsActions: false,
-              onCancel: () => setState(() {
-                _patient = null;
-                _isAppointmentBusy = false;
-              }),
-              onBusyChanged: (bool value) {
-                if (mounted && value != _isAppointmentBusy) {
-                  setState(() => _isAppointmentBusy = value);
-                }
-              },
-              onSaved: () => Navigator.of(context).pop(true),
-            ),
+          : _buildAppointmentStep(context),
       actions: _isPatientStep
           ? _patientStepActions(context)
-          : const <Widget>[],
+          : _appointmentStepActions(context),
     );
   }
 
   Widget _buildPatientStep(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final Widget tabBody;
+    if (_mode == _SchedulePatientMode.existing) {
+      tabBody = _ReceptionPatientPickerDialog(
+        embedded: true,
+        onSelected: (Patient? value) {
+          if (value != null) {
+            setState(() => _patient = value);
+          }
+        },
+      );
+    } else if (_mode == _SchedulePatientMode.newPatient) {
+      tabBody = SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        child: AppFormShell(
+          formKey: _registrationFormKey,
+          enabled: !_isRegistering,
+          formStatus: appFormFailureStatus(
+            context,
+            _registrationKey.currentState?.failure,
+            messageBuilder: (AppFailure failure) =>
+                failure.displayMessage(l10n),
+          ),
+          children: <Widget>[
+            RegisterNewPatientForm(
+              key: _registrationKey,
+              referenceData: widget.referenceData,
+              registrationScope: widget.registrationScope,
+              enabled: !_isRegistering,
+              onLookupDuplicates: (PatientDuplicateQuery query) => ref
+                  .read(patientRegistryControllerProvider.notifier)
+                  .loadDuplicateCandidates(query),
+              onDuplicateStateChanged: () => setState(() {}),
+              onUseExistingPatient: (Patient patient) {
+                setState(() {
+                  _patient = patient;
+                  _isRegistering = false;
+                });
+              },
+            ),
+          ],
+        ),
+      );
+    } else {
+      tabBody = SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        child: ReceptionVisitorAppointmentDialog(
+          key: _visitorKey,
+          embedded: true,
+          onBusyChanged: (bool value) {
+            if (mounted && value != _isAppointmentBusy) {
+              setState(() => _isAppointmentBusy = value);
+            }
+          },
+          onSaved: () => Navigator.of(context).pop(true),
+        ),
+      );
+    }
+
     return Column(
-      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         AppTabStrip(
@@ -232,56 +276,32 @@ class _ReceptionScheduleAppointmentDialogState
           },
         ),
         const SizedBox(height: 16),
-        if (_mode == _SchedulePatientMode.existing)
-          _ReceptionPatientPickerDialog(
-            embedded: true,
-            onSelected: (Patient? value) {
-              if (value != null) {
-                setState(() => _patient = value);
-              }
-            },
-          )
-        else if (_mode == _SchedulePatientMode.newPatient)
-          AppFormShell(
-            formKey: _registrationFormKey,
-            enabled: !_isRegistering,
-            formStatus: appFormFailureStatus(
-              context,
-              _registrationKey.currentState?.failure,
-              messageBuilder: (AppFailure failure) =>
-                  failure.displayMessage(l10n),
-            ),
-            children: <Widget>[
-              RegisterNewPatientForm(
-                key: _registrationKey,
-                referenceData: widget.referenceData,
-                registrationScope: widget.registrationScope,
-                enabled: !_isRegistering,
-                onLookupDuplicates: (PatientDuplicateQuery query) => ref
-                    .read(patientRegistryControllerProvider.notifier)
-                    .loadDuplicateCandidates(query),
-                onDuplicateStateChanged: () => setState(() {}),
-                onUseExistingPatient: (Patient patient) {
-                  setState(() {
-                    _patient = patient;
-                    _isRegistering = false;
-                  });
-                },
-              ),
-            ],
-          )
-        else
-          ReceptionVisitorAppointmentDialog(
-            key: _visitorKey,
-            embedded: true,
-            onBusyChanged: (bool value) {
-              if (mounted && value != _isAppointmentBusy) {
-                setState(() => _isAppointmentBusy = value);
-              }
-            },
-            onSaved: () => Navigator.of(context).pop(true),
-          ),
+        Expanded(child: tabBody),
       ],
+    );
+  }
+
+  Widget _buildAppointmentStep(BuildContext context) {
+    return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      child: PatientAppointmentQuickDialog(
+        key: _appointmentKey,
+        patient: _patient!,
+        referenceData: widget.referenceData,
+        embedded: true,
+        allowClinicalActions: false,
+        allowVitalsActions: false,
+        onCancel: () => setState(() {
+          _patient = null;
+          _isAppointmentBusy = false;
+        }),
+        onBusyChanged: (bool value) {
+          if (mounted && value != _isAppointmentBusy) {
+            setState(() => _isAppointmentBusy = value);
+          }
+        },
+        onSaved: () => Navigator.of(context).pop(true),
+      ),
     );
   }
 
@@ -315,6 +335,38 @@ class _ReceptionScheduleAppointmentDialogState
               : () => unawaited(_scheduleVisitorAppointment()),
         ),
     ];
+  }
+
+  List<Widget> _appointmentStepActions(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final PatientAppointmentQuickDialogState? appointmentState =
+        _appointmentKey.currentState;
+    final bool canSubmit = appointmentState?.canSubmit ?? !_isBusy;
+    return clinicalActionDialogActions(
+      context,
+      l10n.patientsQuickAppointmentAction,
+      appointmentState?.isSaving ?? false,
+      canSubmit ? () => unawaited(_schedulePatientAppointment()) : null,
+      onCancel: () {
+        if (_isBusy) {
+          return;
+        }
+        setState(() {
+          _patient = null;
+          _isAppointmentBusy = false;
+        });
+      },
+      submitLeadingIcon: AppActionIcons.calendar,
+    );
+  }
+
+  Future<void> _schedulePatientAppointment() async {
+    final PatientAppointmentQuickDialogState? appointmentState =
+        _appointmentKey.currentState;
+    if (appointmentState == null || _isBusy) {
+      return;
+    }
+    await appointmentState.submit();
   }
 
   Future<void> _scheduleVisitorAppointment() async {
@@ -641,10 +693,7 @@ class _ReceptionPatientPickerDialogState
     final Widget table = AppListTable<Patient>(
       page: page,
       isLoading: _isLoading,
-      shrinkWrap: widget.embedded,
-      physics: widget.embedded
-          ? const NeverScrollableScrollPhysics()
-          : null,
+      shrinkWrap: false,
       tableHorizontalMargin: 0,
       enableExport: false,
       forceCompact: true,
@@ -783,10 +832,7 @@ class _ReceptionPatientPickerDialogState
               failure: _failure!,
             ),
           ),
-        if (widget.embedded)
-          table
-        else
-          Expanded(child: table),
+        Expanded(child: table),
       ],
     );
 

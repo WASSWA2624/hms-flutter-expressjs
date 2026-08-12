@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/hr/data/repositories/hr_repository_impl.dart';
@@ -12,6 +13,7 @@ import 'package:hosspi_hms/features/hr/domain/entities/hr_staff_position.dart';
 import 'package:hosspi_hms/features/hr/presentation/controllers/hr_workspace_controller.dart';
 import 'package:hosspi_hms/features/hr/presentation/hr_presentation_helpers.dart';
 import 'package:hosspi_hms/features/hr/presentation/widgets/hr_assign_position_dialog.dart';
+import 'package:hosspi_hms/features/hr/presentation/widgets/hr_workspace_print_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
@@ -443,9 +445,11 @@ class _HrPositionsPanelState extends ConsumerState<HrPositionsPanel> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final bool canWrite = HrHumanResourcesAtomPermissions.write.isAllowed(
-      ref.watch(appAccessPolicyProvider),
-    );
+    final AppAccessPolicy accessPolicy = ref.watch(appAccessPolicyProvider);
+    final bool canWrite =
+        HrHumanResourcesAtomPermissions.write.isAllowed(accessPolicy);
+    final bool canExport = canExportHrWorkspace(accessPolicy);
+    final bool canPrint = canPrintHrWorkspace(accessPolicy);
 
     return AppListTable<HrStaffPosition>(
       page: _page,
@@ -456,6 +460,88 @@ class _HrPositionsPanelState extends ConsumerState<HrPositionsPanel> {
       columnWidthStorageKey: 'hr.positions.table.widths.v2',
       columnVisibilityLabel: l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
+      enableExport: true,
+      canExport: canExport,
+      exportLabel: l10n.commonTableExportActionLabel,
+      exportDialogTitle: l10n.commonTableExportDialogTitle,
+      exportCancelLabel: l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: l10n.commonPrintActionLabel,
+      onPrint: () => printHrListTable<HrStaffPosition>(
+        ref: ref,
+        context: context,
+        title: l10n.hrPositionsTabLabel,
+        columns: <AppListTableColumn<HrStaffPosition>>[
+          AppListTableColumn<HrStaffPosition>(
+            id: 'name',
+            label: l10n.hrPositionLabel,
+            exportValue: (HrStaffPosition item) => item.name,
+            cellBuilder: (_, HrStaffPosition item) => Text(item.name),
+          ),
+          AppListTableColumn<HrStaffPosition>(
+            id: 'id',
+            label: l10n.hrPositionIdLabel,
+            exportValue: (HrStaffPosition item) => item.effectiveId,
+            cellBuilder: (_, HrStaffPosition item) => Text(item.effectiveId),
+          ),
+          AppListTableColumn<HrStaffPosition>(
+            id: 'description',
+            label: l10n.hrPositionDescriptionLabel,
+            exportValue: (HrStaffPosition item) => item.description ?? '',
+            cellBuilder: (_, HrStaffPosition item) =>
+                Text(item.description ?? ''),
+          ),
+          AppListTableColumn<HrStaffPosition>(
+            id: 'scope',
+            label: l10n.hrPositionScopeLabel,
+            exportValue: (HrStaffPosition item) => _scopeLabel(l10n, item),
+            cellBuilder: (_, HrStaffPosition item) =>
+                Text(_scopeLabel(l10n, item)),
+          ),
+          AppListTableColumn<HrStaffPosition>(
+            id: 'status',
+            label: l10n.hrStatusLabel,
+            exportValue: (HrStaffPosition item) {
+              if (item.isDeleted) {
+                return l10n.tenantFacilityStructureDeletedStatus;
+              }
+              return item.isActive
+                  ? l10n.hrPositionActiveStatus
+                  : l10n.hrPositionInactiveStatus;
+            },
+            cellBuilder: (_, HrStaffPosition item) => Text(
+              item.isDeleted
+                  ? l10n.tenantFacilityStructureDeletedStatus
+                  : item.isActive
+                  ? l10n.hrPositionActiveStatus
+                  : l10n.hrPositionInactiveStatus,
+            ),
+          ),
+        ],
+        items: _page.items,
+        emptyText: l10n.hrNoPositionsTitle,
+      ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
+      exportConfig: AppListTableExportConfig<HrStaffPosition>(
+        fileNameStem: 'hr_positions',
+        dateOf: (_) => null,
+        sheetName: l10n.hrPositionsTabLabel,
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
+      ),
       onRowSelected: (HrStaffPosition item) => unawaited(_openDetail(item)),
       emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
         title: l10n.hrNoPositionsTitle,
@@ -487,7 +573,8 @@ class _HrPositionsPanelState extends ConsumerState<HrPositionsPanel> {
         advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
         advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
         advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
-        advancedFilterResetLabel: l10n.hrClearFiltersAction,
+        advancedFilterResetLabel: l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         allFieldsLabel: l10n.opdAllFieldsFilterLabel,
         searchFields: <AppSearchBarFieldChoice>[
           AppSearchBarFieldChoice(
@@ -610,7 +697,7 @@ class _HrPositionsPanelState extends ConsumerState<HrPositionsPanel> {
           preferredWidth: 220,
           cellBuilder: (_, HrStaffPosition item) => Text(
             item.name,
-            maxLines: 2,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           sortComparator: (HrStaffPosition a, HrStaffPosition b) =>
@@ -636,7 +723,7 @@ class _HrPositionsPanelState extends ConsumerState<HrPositionsPanel> {
             (item.description ?? '').trim().isEmpty
                 ? '—'
                 : item.description!,
-            maxLines: 2,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           exportValue: (HrStaffPosition item) => item.description ?? '',

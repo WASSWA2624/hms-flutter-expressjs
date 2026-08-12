@@ -68,10 +68,10 @@ class PatientAppointmentQuickDialog extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<PatientAppointmentQuickDialog> createState() =>
-      _PatientAppointmentQuickDialogState();
+      PatientAppointmentQuickDialogState();
 }
 
-class _PatientAppointmentQuickDialogState
+class PatientAppointmentQuickDialogState
     extends ConsumerState<PatientAppointmentQuickDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _durationController = TextEditingController(
@@ -90,6 +90,12 @@ class _PatientAppointmentQuickDialogState
   bool _encounterCheckFailed = false;
   OpdFlowSummary? _openEncounter;
   AppFailure? _failure;
+
+  bool get isSaving => _isSaving;
+
+  bool get isBusy => _isBusy;
+
+  bool get canSubmit => !_isBusy && !_schedulingBlocked;
 
   @override
   void initState() {
@@ -195,8 +201,8 @@ class _PatientAppointmentQuickDialogState
             enabled: !_isBusy,
             onChanged: (String? value) => setState(() => _facilityId = value),
           ),
-        AppFormSection(
-          density: AppFormSectionDensity.compact,
+        AppResponsiveFieldRow(
+          gap: AppResponsiveFieldRowGap.form,
           children: <Widget>[
             AppDateField(
               value: _date,
@@ -210,34 +216,29 @@ class _PatientAppointmentQuickDialogState
               validator: AppValidators.requiredValue(l10n.validationRequired),
               onChanged: (DateTime? value) => setState(() => _date = value),
             ),
-            AppResponsiveFieldRow(
-              gap: AppResponsiveFieldRowGap.form,
-              children: <Widget>[
-                AppTimeField(
-                  value: _startTime,
-                  labelText: l10n.patientsAppointmentTimeLabel,
-                  pickerButtonLabel: l10n.appTimePickerAction,
-                  invalidTimeMessage: l10n.patientsTimeInvalidMessage,
-                  hintText: l10n.patientsTimeHint,
-                  hourLabelText: l10n.appTimeHourLabel,
-                  minuteLabelText: l10n.appTimeMinuteLabel,
-                  enabled: !_isBusy,
-                  isRequired: true,
-                  validator: (AppTimeValue? value) =>
-                      value == null ? l10n.validationRequired : null,
-                  onChanged: (AppTimeValue? value) {
-                    setState(() => _startTime = value);
-                  },
-                ),
-                AppTextField(
-                  controller: _durationController,
-                  labelText: l10n.patientsAppointmentDurationLabel,
-                  enabled: !_isBusy,
-                  isRequired: true,
-                  keyboardType: TextInputType.number,
-                  validator: _durationValidator(l10n),
-                ),
-              ],
+            AppTimeField(
+              value: _startTime,
+              labelText: l10n.patientsAppointmentTimeLabel,
+              pickerButtonLabel: l10n.appTimePickerAction,
+              invalidTimeMessage: l10n.patientsTimeInvalidMessage,
+              hintText: l10n.patientsTimeHint,
+              hourLabelText: l10n.appTimeHourLabel,
+              minuteLabelText: l10n.appTimeMinuteLabel,
+              enabled: !_isBusy,
+              isRequired: true,
+              validator: (AppTimeValue? value) =>
+                  value == null ? l10n.validationRequired : null,
+              onChanged: (AppTimeValue? value) {
+                setState(() => _startTime = value);
+              },
+            ),
+            AppTextField(
+              controller: _durationController,
+              labelText: l10n.patientsAppointmentDurationLabel,
+              enabled: !_isBusy,
+              isRequired: true,
+              keyboardType: TextInputType.number,
+              validator: _durationValidator(l10n),
             ),
           ],
         ),
@@ -255,6 +256,7 @@ class _PatientAppointmentQuickDialogState
             labelText: l10n.patientsProviderLabel,
             helperText: l10n.patientsProviderOptionalHelper,
             enabled: !_isBusy,
+            isLoading: _isLoadingProviders,
             onChanged: (String? value) => setState(() => _providerId = value),
             options: opdProviderSelectOptions(
               providers: providers,
@@ -270,29 +272,8 @@ class _PatientAppointmentQuickDialogState
         ),
       ],
     );
-    final List<Widget> actions = clinicalActionDialogActions(
-      context,
-      l10n.patientsQuickAppointmentAction,
-      _isSaving,
-      _isBusy || _schedulingBlocked ? null : _submit,
-      onCancel: _cancel,
-      submitLeadingIcon: AppActionIcons.calendar,
-    );
     if (widget.embedded) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          form,
-          const SizedBox(height: 16),
-          Wrap(
-            alignment: WrapAlignment.end,
-            spacing: 8,
-            runSpacing: 8,
-            children: actions,
-          ),
-        ],
-      );
+      return form;
     }
     return AppDialog(
       title: Text(l10n.patientsAppointmentDialogTitle),
@@ -302,8 +283,98 @@ class _PatientAppointmentQuickDialogState
       closeEnabled: !_isBusy,
       maxWidth: 720,
       content: form,
-      actions: actions,
+      actions: clinicalActionDialogActions(
+        context,
+        l10n.patientsQuickAppointmentAction,
+        _isSaving,
+        _isBusy || _schedulingBlocked ? null : () => unawaited(submit()),
+        onCancel: _cancel,
+        submitLeadingIcon: AppActionIcons.calendar,
+      ),
     );
+  }
+
+  /// Validates and creates the patient appointment.
+  ///
+  /// Returns `true` on success (and invokes [PatientAppointmentQuickDialog.onSaved]
+  /// when provided). Returns `false` on validation or API failure.
+  Future<bool> submit() async {
+    if (_isBusy) {
+      return false;
+    }
+    if (!validateAndSaveAppForm(_formKey)) {
+      return false;
+    }
+    final DateTime? scheduledStart = _combineDateAndTime(_date, _startTime);
+    if (scheduledStart == null) {
+      setState(() => _failure = AppFailure.validation());
+      return false;
+    }
+    final int duration = int.parse(_durationController.text.trim());
+
+    setState(() {
+      _isCheckingEncounter = true;
+      _failure = null;
+      _encounterCheckFailed = false;
+    });
+    widget.onBusyChanged?.call(true);
+    final Result<OpdFlowSummary?> encounterResult =
+        await _lookupOpenEncounter();
+    if (!mounted) {
+      return false;
+    }
+    AppFailure? encounterFailure;
+    OpdFlowSummary? openEncounter;
+    encounterResult.when(
+      success: (OpdFlowSummary? value) => openEncounter = value,
+      failure: (AppFailure failure) => encounterFailure = failure,
+    );
+    if (encounterFailure != null || openEncounter != null) {
+      setState(() {
+        _isCheckingEncounter = false;
+        _encounterCheckFailed = encounterFailure != null;
+        _openEncounter = openEncounter;
+        _failure = encounterFailure;
+      });
+      widget.onBusyChanged?.call(false);
+      return false;
+    }
+    setState(() {
+      _isCheckingEncounter = false;
+      _isSaving = true;
+    });
+    final AppFailure? failure = await ref
+        .read(opdWorkspaceControllerProvider.notifier)
+        .createAppointment(<String, Object?>{
+          'tenant_id': widget.patient.tenantId,
+          'facility_id': _facilityId,
+          'patient_id': patientApiId(widget.patient),
+          'provider_user_id': _providerId,
+          'status': _status,
+          'scheduled_start': scheduledStart.toUtc().toIso8601String(),
+          'scheduled_end': scheduledStart
+              .add(Duration(minutes: duration))
+              .toUtc()
+              .toIso8601String(),
+          'reason': _reasonController.text.trim(),
+        });
+    if (!mounted) {
+      return false;
+    }
+    if (failure == null) {
+      if (widget.embedded) {
+        widget.onSaved?.call();
+      } else {
+        Navigator.of(context).pop(true);
+      }
+      return true;
+    }
+    setState(() {
+      _isSaving = false;
+      _failure = failure;
+    });
+    widget.onBusyChanged?.call(false);
+    return false;
   }
 
   void _cancel() {
@@ -487,84 +558,6 @@ class _PatientAppointmentQuickDialogState
       _openEncounter = openEncounter;
       _encounterCheckFailed = encounterFailure != null;
       _isLoadingProviders = false;
-    });
-    widget.onBusyChanged?.call(false);
-  }
-
-  Future<void> _submit() async {
-    if (_isBusy) {
-      return;
-    }
-    if (!validateAndSaveAppForm(_formKey)) {
-      return;
-    }
-    final DateTime? scheduledStart = _combineDateAndTime(_date, _startTime);
-    if (scheduledStart == null) {
-      setState(() => _failure = AppFailure.validation());
-      return;
-    }
-    final int duration = int.parse(_durationController.text.trim());
-
-    setState(() {
-      _isCheckingEncounter = true;
-      _failure = null;
-      _encounterCheckFailed = false;
-    });
-    widget.onBusyChanged?.call(true);
-    final Result<OpdFlowSummary?> encounterResult =
-        await _lookupOpenEncounter();
-    if (!mounted) {
-      return;
-    }
-    AppFailure? encounterFailure;
-    OpdFlowSummary? openEncounter;
-    encounterResult.when(
-      success: (OpdFlowSummary? value) => openEncounter = value,
-      failure: (AppFailure failure) => encounterFailure = failure,
-    );
-    if (encounterFailure != null || openEncounter != null) {
-      setState(() {
-        _isCheckingEncounter = false;
-        _encounterCheckFailed = encounterFailure != null;
-        _openEncounter = openEncounter;
-        _failure = encounterFailure;
-      });
-      widget.onBusyChanged?.call(false);
-      return;
-    }
-    setState(() {
-      _isCheckingEncounter = false;
-      _isSaving = true;
-    });
-    final AppFailure? failure = await ref
-        .read(opdWorkspaceControllerProvider.notifier)
-        .createAppointment(<String, Object?>{
-          'tenant_id': widget.patient.tenantId,
-          'facility_id': _facilityId,
-          'patient_id': patientApiId(widget.patient),
-          'provider_user_id': _providerId,
-          'status': _status,
-          'scheduled_start': scheduledStart.toUtc().toIso8601String(),
-          'scheduled_end': scheduledStart
-              .add(Duration(minutes: duration))
-              .toUtc()
-              .toIso8601String(),
-          'reason': _reasonController.text.trim(),
-        });
-    if (!mounted) {
-      return;
-    }
-    if (failure == null) {
-      if (widget.embedded) {
-        widget.onSaved?.call();
-      } else {
-        Navigator.of(context).pop(true);
-      }
-      return;
-    }
-    setState(() {
-      _isSaving = false;
-      _failure = failure;
     });
     widget.onBusyChanged?.call(false);
   }

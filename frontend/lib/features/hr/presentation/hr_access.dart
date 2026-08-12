@@ -540,5 +540,22 @@ abstract final class HrAccessAtomPermissions {
   static const AccessRequirement activity = hrWorkspaceReadRequirement;
 }
 
+/// Worklist Export / Print — ∩ `evidence:export` (omit when unauthorized).
+const AccessRequirement hrWorkspaceExportRequirement = AccessRequirement(
+  allPermissions: <AppPermission>[AppPermissions.evidenceExport],
+);
+
+/// Alias — list Print uses the same desk export gate.
+const AccessRequirement hrWorkspacePrintRequirement =
+    hrWorkspaceExportRequirement;
+
+bool canExportHrWorkspace(AppAccessPolicy policy) {
+  return hrWorkspaceExportRequirement.isAllowed(policy);
+}
+
+bool canPrintHrWorkspace(AppAccessPolicy policy) {
+  return hrWorkspacePrintRequirement.isAllowed(policy);
+}
+
 /// Alias used by `screens/hr.md` / tab prompts.
 typedef HrManageUsersRolesAtomPermissions = HrAccessAtomPermissions;

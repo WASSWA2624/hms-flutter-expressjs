@@ -8,9 +8,9 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/printing/printing.dart';
 
-/// Column choice for Claims workspace list print (aligned with exportable fields).
-final class ClaimsWorkspacePrintColumn {
-  const ClaimsWorkspacePrintColumn({
+/// Column choice for Access Admin workspace list print (aligned with exportable fields).
+final class AccessAdminWorkspacePrintColumn {
+  const AccessAdminWorkspacePrintColumn({
     required this.id,
     required this.label,
   });
@@ -19,22 +19,22 @@ final class ClaimsWorkspacePrintColumn {
   final String label;
 }
 
-final class ClaimsWorkspacePrintOptionsController extends ChangeNotifier {
-  ClaimsWorkspacePrintOptionsController({
-    required List<ClaimsWorkspacePrintColumn> columns,
-  }) : _columns = List<ClaimsWorkspacePrintColumn>.unmodifiable(columns) {
+final class AccessAdminWorkspacePrintOptionsController extends ChangeNotifier {
+  AccessAdminWorkspacePrintOptionsController({
+    required List<AccessAdminWorkspacePrintColumn> columns,
+  }) : _columns = List<AccessAdminWorkspacePrintColumn>.unmodifiable(columns) {
     _selectedColumnIds =
-        columns.map((ClaimsWorkspacePrintColumn c) => c.id).toSet();
+        columns.map((AccessAdminWorkspacePrintColumn c) => c.id).toSet();
     _includeSummary = true;
     _includeRows = true;
   }
 
-  final List<ClaimsWorkspacePrintColumn> _columns;
+  final List<AccessAdminWorkspacePrintColumn> _columns;
   late Set<String> _selectedColumnIds;
   late bool _includeSummary;
   late bool _includeRows;
 
-  List<ClaimsWorkspacePrintColumn> get columns => _columns;
+  List<AccessAdminWorkspacePrintColumn> get columns => _columns;
 
   Set<String> get selectedColumnIds =>
       Set<String>.unmodifiable(_selectedColumnIds);
@@ -67,7 +67,7 @@ final class ClaimsWorkspacePrintOptionsController extends ChangeNotifier {
     final Set<String> next = selected
         .where(
           (String id) =>
-              _columns.any((ClaimsWorkspacePrintColumn c) => c.id == id),
+              _columns.any((AccessAdminWorkspacePrintColumn c) => c.id == id),
         )
         .toSet();
     if (setEquals(next, _selectedColumnIds)) {
@@ -78,21 +78,21 @@ final class ClaimsWorkspacePrintOptionsController extends ChangeNotifier {
   }
 }
 
-/// Preview-first worklist print for Claims queue tables.
-Future<void> printClaimsWorkspaceList({
+/// Preview-first worklist print for Access Admin queue tables.
+Future<void> printAccessAdminWorkspaceList({
   required WidgetRef ref,
   required BuildContext context,
   required String title,
-  required List<ClaimsWorkspacePrintColumn> columns,
+  required List<AccessAdminWorkspacePrintColumn> columns,
   required List<Map<String, String>> rows,
   required String emptyText,
 }) async {
   final AppLocalizations l10n = context.l10n;
-  final ClaimsWorkspacePrintOptionsController options =
-      ClaimsWorkspacePrintOptionsController(columns: columns);
+  final AccessAdminWorkspacePrintOptionsController options =
+      AccessAdminWorkspacePrintOptionsController(columns: columns);
 
   String buildBodyHtml() {
-    return claimsWorkspaceListHtml(
+    return accessAdminWorkspaceListHtml(
       l10n: l10n,
       rows: rows,
       options: options,
@@ -115,7 +115,7 @@ Future<void> printClaimsWorkspaceList({
       ),
       bodyHtml: buildBodyHtml(),
       bodyHtmlBuilder: buildBodyHtml,
-      previewSectionsExtra: ClaimsWorkspacePrintOptionsSection(
+      previewSectionsExtra: AccessAdminWorkspacePrintOptionsSection(
         controller: options,
       ),
       previewDocumentRevision: options,
@@ -126,8 +126,8 @@ Future<void> printClaimsWorkspaceList({
   }
 }
 
-/// Maps [AppListTable] exportable columns + rows into Claims list print.
-Future<void> printClaimsListTable<T>({
+/// Maps [AppListTable] exportable columns + rows into Access Admin list print.
+Future<void> printAccessAdminListTable<T>({
   required WidgetRef ref,
   required BuildContext context,
   required String title,
@@ -138,10 +138,10 @@ Future<void> printClaimsListTable<T>({
   final List<AppListTableColumn<T>> exportColumns = columns
       .where((AppListTableColumn<T> column) => column.includesInExport)
       .toList(growable: false);
-  final List<ClaimsWorkspacePrintColumn> printColumns =
-      <ClaimsWorkspacePrintColumn>[
+  final List<AccessAdminWorkspacePrintColumn> printColumns =
+      <AccessAdminWorkspacePrintColumn>[
         for (final AppListTableColumn<T> column in exportColumns)
-          ClaimsWorkspacePrintColumn(id: column.key, label: column.label),
+          AccessAdminWorkspacePrintColumn(id: column.key, label: column.label),
       ];
   final List<Map<String, String>> printRows = <Map<String, String>>[
     for (final T item in items)
@@ -156,7 +156,7 @@ Future<void> printClaimsListTable<T>({
               '',
       },
   ];
-  await printClaimsWorkspaceList(
+  await printAccessAdminWorkspaceList(
     ref: ref,
     context: context,
     title: title,
@@ -166,10 +166,10 @@ Future<void> printClaimsListTable<T>({
   );
 }
 
-String claimsWorkspaceListHtml({
+String accessAdminWorkspaceListHtml({
   required AppLocalizations l10n,
   required List<Map<String, String>> rows,
-  required ClaimsWorkspacePrintOptionsController options,
+  required AccessAdminWorkspacePrintOptionsController options,
   required String emptyText,
 }) {
   final StringBuffer buffer = StringBuffer();
@@ -185,16 +185,16 @@ String claimsWorkspaceListHtml({
   }
 
   if (options.includeRows) {
-    final List<ClaimsWorkspacePrintColumn> selected = options.columns
+    final List<AccessAdminWorkspacePrintColumn> selected = options.columns
         .where(
-          (ClaimsWorkspacePrintColumn column) =>
+          (AccessAdminWorkspacePrintColumn column) =>
               options.selectedColumnIds.contains(column.id),
         )
         .toList(growable: false);
     final List<List<String>> tableRows = <List<String>>[
       for (final Map<String, String> row in rows)
         <String>[
-          for (final ClaimsWorkspacePrintColumn column in selected)
+          for (final AccessAdminWorkspacePrintColumn column in selected)
             row[column.id] ?? '',
         ],
     ];
@@ -203,7 +203,7 @@ String claimsWorkspaceListHtml({
         title: l10n.commonPrintRowsSectionLabel,
         bodyHtml: PrintFormTemplate.table(
           headers: <String>[
-            for (final ClaimsWorkspacePrintColumn column in selected)
+            for (final AccessAdminWorkspacePrintColumn column in selected)
               column.label,
           ],
           rows: tableRows,
@@ -216,13 +216,13 @@ String claimsWorkspaceListHtml({
   return buffer.toString();
 }
 
-class ClaimsWorkspacePrintOptionsSection extends StatelessWidget {
-  const ClaimsWorkspacePrintOptionsSection({
+class AccessAdminWorkspacePrintOptionsSection extends StatelessWidget {
+  const AccessAdminWorkspacePrintOptionsSection({
     required this.controller,
     super.key,
   });
 
-  final ClaimsWorkspacePrintOptionsController controller;
+  final AccessAdminWorkspacePrintOptionsController controller;
 
   @override
   Widget build(BuildContext context) {
@@ -264,7 +264,7 @@ class ClaimsWorkspacePrintOptionsSection extends StatelessWidget {
               AppReportSectionPicker(
                 compact: true,
                 sections: <AppReportSectionData>[
-                  for (final ClaimsWorkspacePrintColumn column
+                  for (final AccessAdminWorkspacePrintColumn column
                       in controller.columns)
                     AppReportSectionData(
                       id: column.id,

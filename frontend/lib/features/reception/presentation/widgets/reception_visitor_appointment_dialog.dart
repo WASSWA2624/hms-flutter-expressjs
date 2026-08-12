@@ -39,6 +39,8 @@ class ReceptionVisitorAppointmentDialog extends ConsumerStatefulWidget {
 class ReceptionVisitorAppointmentDialogState
     extends ConsumerState<ReceptionVisitorAppointmentDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final GlobalKey<State<AppPhoneField>> _phoneFieldKey =
+      GlobalKey<State<AppPhoneField>>();
   final TextEditingController _visitorNameController = TextEditingController();
   final TextEditingController _visitorPhoneController = TextEditingController();
   final TextEditingController _visitorOrganizationController =
@@ -100,12 +102,6 @@ class ReceptionVisitorAppointmentDialogState
         messageBuilder: (AppFailure failure) => failure.displayMessage(l10n),
       ),
       children: <Widget>[
-        AppFormInformationBanner(
-          title: l10n.receptionVisitorMeetingBannerTitle,
-          message: l10n.receptionVisitorMeetingBannerBody,
-          variant: AppFormInformationVariant.info,
-          icon: Icons.badge_outlined,
-        ),
         AppTextField(
           controller: _visitorNameController,
           labelText: l10n.receptionVisitorNameLabel,
@@ -122,11 +118,17 @@ class ReceptionVisitorAppointmentDialogState
         AppResponsiveFieldRow(
           gap: AppResponsiveFieldRowGap.form,
           children: <Widget>[
-            AppTextField(
+            AppPhoneField(
+              key: _phoneFieldKey,
               controller: _visitorPhoneController,
               labelText: l10n.receptionVisitorPhoneLabel,
+              countryLabelText: l10n.appPhoneCountryLabel,
+              countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
+              countryNoResultsText: l10n.appPhoneCountryNoResults,
+              numberLabelText: l10n.appPhoneNumberLabel,
+              numberHintText: l10n.appPhoneNumberHint,
+              invalidPhoneMessage: l10n.appPhoneInvalidMessage,
               enabled: !isBusy,
-              keyboardType: TextInputType.phone,
               textInputAction: TextInputAction.next,
             ),
             AppTextField(
@@ -141,11 +143,11 @@ class ReceptionVisitorAppointmentDialogState
           value: _hostId,
           labelText: l10n.receptionStaffHostLabel,
           hintText: l10n.receptionStaffHostSearchHint,
+          emptyResultsText: l10n.appSelectNoResults,
           options: hostOptions,
           enabled: !isBusy,
           isLoading: _isLoadingHosts,
           isRequired: true,
-          enableSpeechToText: false,
           onChanged: (String? value) => setState(() => _hostId = value),
           validator: (String? value) {
             if ((value ?? '').trim().isEmpty) {
@@ -154,8 +156,8 @@ class ReceptionVisitorAppointmentDialogState
             return null;
           },
         ),
-        AppFormSection(
-          density: AppFormSectionDensity.compact,
+        AppResponsiveFieldRow(
+          gap: AppResponsiveFieldRowGap.form,
           children: <Widget>[
             AppDateField(
               value: _date,
@@ -169,40 +171,35 @@ class ReceptionVisitorAppointmentDialogState
               validator: AppValidators.requiredValue(l10n.validationRequired),
               onChanged: (DateTime? value) => setState(() => _date = value),
             ),
-            AppResponsiveFieldRow(
-              gap: AppResponsiveFieldRowGap.form,
-              children: <Widget>[
-                AppTimeField(
-                  value: _startTime,
-                  labelText: l10n.patientsAppointmentTimeLabel,
-                  pickerButtonLabel: l10n.appTimePickerAction,
-                  invalidTimeMessage: l10n.patientsTimeInvalidMessage,
-                  hintText: l10n.patientsTimeHint,
-                  hourLabelText: l10n.appTimeHourLabel,
-                  minuteLabelText: l10n.appTimeMinuteLabel,
-                  enabled: !isBusy,
-                  isRequired: true,
-                  validator: (AppTimeValue? value) =>
-                      value == null ? l10n.validationRequired : null,
-                  onChanged: (AppTimeValue? value) {
-                    setState(() => _startTime = value);
-                  },
-                ),
-                AppTextField(
-                  controller: _durationController,
-                  labelText: l10n.patientsAppointmentDurationLabel,
-                  enabled: !isBusy,
-                  isRequired: true,
-                  keyboardType: TextInputType.number,
-                  validator: (String? value) {
-                    final int? minutes = int.tryParse((value ?? '').trim());
-                    if (minutes == null || minutes <= 0) {
-                      return l10n.validationRequired;
-                    }
-                    return null;
-                  },
-                ),
-              ],
+            AppTimeField(
+              value: _startTime,
+              labelText: l10n.patientsAppointmentTimeLabel,
+              pickerButtonLabel: l10n.appTimePickerAction,
+              invalidTimeMessage: l10n.patientsTimeInvalidMessage,
+              hintText: l10n.patientsTimeHint,
+              hourLabelText: l10n.appTimeHourLabel,
+              minuteLabelText: l10n.appTimeMinuteLabel,
+              enabled: !isBusy,
+              isRequired: true,
+              validator: (AppTimeValue? value) =>
+                  value == null ? l10n.validationRequired : null,
+              onChanged: (AppTimeValue? value) {
+                setState(() => _startTime = value);
+              },
+            ),
+            AppTextField(
+              controller: _durationController,
+              labelText: l10n.patientsAppointmentDurationLabel,
+              enabled: !isBusy,
+              isRequired: true,
+              keyboardType: TextInputType.number,
+              validator: (String? value) {
+                final int? minutes = int.tryParse((value ?? '').trim());
+                if (minutes == null || minutes <= 0) {
+                  return l10n.validationRequired;
+                }
+                return null;
+              },
             ),
           ],
         ),
@@ -255,6 +252,7 @@ class ReceptionVisitorAppointmentDialogState
     if (isBusy) {
       return false;
     }
+    AppPhoneField.commitPhone(_phoneFieldKey);
     if (!validateAndSaveAppForm(_formKey)) {
       return false;
     }

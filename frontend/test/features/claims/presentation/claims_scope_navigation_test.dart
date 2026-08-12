@@ -103,6 +103,22 @@ void main() {
     );
   });
 
+  test('active tab falls back to scope total when filtered total is null', () {
+    final ClaimsWorkspaceState narrowed = stateFor(
+      search: 'AUTH',
+      totalItemCount: null,
+      itemCount: 1,
+    );
+    expect(
+      claimsSectionTabCount(
+        narrowed,
+        ClaimsDeskSection.authorizations,
+        activeSection: ClaimsDeskSection.authorizations,
+      ),
+      5,
+    );
+  });
+
   test('count tones follow urgency policy', () {
     expect(
       claimsSectionCountTone(ClaimsDeskSection.authorizations),

@@ -19,6 +19,7 @@ import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.da
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/opd_actions/patient_appointment_quick_dialog.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -32,6 +33,15 @@ void main() {
     registerFallbackValue(const OpdTriageQueueQuery());
     registerFallbackValue(<String, Object?>{});
   });
+
+  Finder appButton(String label, {bool excludeIconOnly = false}) {
+    return find.byWidgetPredicate(
+      (Widget widget) =>
+          widget is AppButton &&
+          widget.label == label &&
+          (!excludeIconOnly || !widget.iconOnly),
+    );
+  }
 
   const Patient patient = Patient(
     id: 'patient-internal',
@@ -53,14 +63,33 @@ void main() {
     expect(dialog.closeEnabled, isTrue);
     expect(dialog.pinActionsToBottom, isTrue);
     expect(find.text('SCHEDULE APPOINTMENT'), findsOneWidget);
-    expect(
-      find.widgetWithText(AppButton, 'Schedule appointment'),
-      findsOneWidget,
-    );
-    expect(find.widgetWithText(AppButton, 'Close'), findsOneWidget);
+    expect(appButton('Schedule appointment'), findsOneWidget);
+    expect(appButton('Close', excludeIconOnly: true), findsOneWidget);
     expect(find.text('Ada Lovelace'), findsNothing);
     expect(find.byType(AppDateField), findsOneWidget);
     expect(find.byType(AppTimeField), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AppResponsiveFieldRow),
+        matching: find.byType(AppDateField),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(AppResponsiveFieldRow),
+        matching: find.byType(AppTimeField),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is AppSelectField<String> &&
+            widget.labelText == 'Provider',
+      ),
+      findsOneWidget,
+    );
     expect(find.byIcon(AppActionIcons.calendar), findsWidgets);
     expect(find.byIcon(AppActionIcons.cancel), findsWidgets);
   });
@@ -79,7 +108,7 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    await tester.tap(find.widgetWithText(AppButton, 'Close'));
+    await tester.tap(appButton('Close', excludeIconOnly: true));
     await tester.pumpAndSettle();
 
     expect(result, isFalse);
@@ -105,7 +134,7 @@ void main() {
 
     final Finder reasonField = find.byType(AppTextField).last;
     await tester.enterText(reasonField, 'Follow-up review');
-    await tester.tap(find.widgetWithText(AppButton, 'Schedule appointment'));
+    await tester.tap(appButton('Schedule appointment'));
     await tester.pumpAndSettle();
 
     expect(result, isNull);
@@ -145,7 +174,7 @@ void main() {
       onResult: (bool? value) => result = value,
     );
 
-    await tester.tap(find.widgetWithText(AppButton, 'Schedule appointment'));
+    await tester.tap(appButton('Schedule appointment'));
     await tester.pumpAndSettle();
 
     expect(result, isTrue);
@@ -200,14 +229,11 @@ void main() {
       find.textContaining('already in an active OPD encounter'),
       findsOneWidget,
     );
-    expect(
-      find.widgetWithText(AppButton, 'Continue encounter'),
-      findsOneWidget,
-    );
-    expect(find.widgetWithText(AppButton, 'Edit encounter'), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Reschedule'), findsOneWidget);
+    expect(appButton('Continue encounter'), findsOneWidget);
+    expect(appButton('Edit encounter'), findsOneWidget);
+    expect(appButton('Reschedule'), findsOneWidget);
     final AppButton submit = tester.widget<AppButton>(
-      find.widgetWithText(AppButton, 'Schedule appointment'),
+      appButton('Schedule appointment'),
     );
     expect(submit.enabled, isFalse);
     verifyNever(() => repository.createAppointment(any()));
@@ -234,11 +260,8 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('SCHEDULE APPOINTMENT'), findsOneWidget);
-    expect(
-      find.widgetWithText(AppButton, 'Schedule appointment'),
-      findsOneWidget,
-    );
-    expect(find.widgetWithText(AppButton, 'Close'), findsOneWidget);
+    expect(appButton('Schedule appointment'), findsOneWidget);
+    expect(appButton('Close', excludeIconOnly: true), findsOneWidget);
   });
 }
 

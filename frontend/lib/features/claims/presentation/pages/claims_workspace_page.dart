@@ -773,6 +773,9 @@ class _ClaimsQueuePanel extends ConsumerWidget {
         items: state.queue.items,
         emptyText: l10n.claimsEmptyQueueTitle,
       ),
+      goToTopLabel: l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
       exportConfig: AppListTableExportConfig<ClaimsQueueItem>(
         fileNameStem: 'claims_${section.name}',
         dateOf: (ClaimsQueueItem item) => item.timelineAt,
@@ -782,6 +785,8 @@ class _ClaimsQueuePanel extends ConsumerWidget {
           ClaimsDeskSection.settled => l10n.claimsSectionSettled,
           ClaimsDeskSection.insuranceSetup => l10n.claimsSectionInsuranceSetup,
         },
+        dateFromLabel: l10n.commonTableExportDateFromLabel,
+        dateToLabel: l10n.commonTableExportDateToLabel,
       ),
       search: AppListTableSearch<ClaimsQueueItem>(
         controller: searchController,
@@ -971,6 +976,7 @@ AppListTableColumn<ClaimsQueueItem> _claimsReferenceColumn(
     alwaysVisible: true,
     sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
         appListTableCompareText(a.displayId, b.displayId),
+    exportValue: (ClaimsQueueItem item) => item.displayId,
     cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
         Text(item.displayId),
   );
@@ -985,6 +991,7 @@ AppListTableColumn<ClaimsQueueItem> _claimsPatientColumn(
     label: l10n.claimsPatientColumnLabel,
     sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
         appListTableCompareText(a.patientDisplayId, b.patientDisplayId),
+    exportValue: (ClaimsQueueItem item) => item.patientDisplayId,
     cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
         Text(_fallback(context, item.patientDisplayId)),
   );
@@ -1002,6 +1009,7 @@ AppListTableColumn<ClaimsQueueItem> _claimsCoverageColumn(
           a.coveragePlanDisplayId,
           b.coveragePlanDisplayId,
         ),
+    exportValue: (ClaimsQueueItem item) => item.coveragePlanDisplayId,
     cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
         Text(_fallback(context, item.coveragePlanDisplayId)),
   );
@@ -1028,6 +1036,7 @@ AppListTableColumn<ClaimsQueueItem> _claimsInvoiceColumn(
     label: l10n.claimsInvoiceColumnLabel,
     sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
         appListTableCompareText(a.invoiceDisplayId, b.invoiceDisplayId),
+    exportValue: (ClaimsQueueItem item) => item.invoiceDisplayId,
     cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
         Text(_fallback(context, item.invoiceDisplayId)),
   );
@@ -1041,6 +1050,7 @@ AppListTableColumn<ClaimsQueueItem> _claimsClaimAmountColumn(
     id: id,
     label: l10n.claimsAmountColumnLabel,
     numeric: true,
+    exportValue: (ClaimsQueueItem item) => item.claim?.claimAmount,
     cellBuilder: (BuildContext context, ClaimsQueueItem item) {
       final num? amount = item.claim?.claimAmount;
       if (amount == null) return Text(_fallback(context, null));
@@ -1059,6 +1069,7 @@ AppListTableColumn<ClaimsQueueItem> _claimsApprovedAmountColumn(
     id: id,
     label: l10n.claimsAmountColumnLabel,
     numeric: true,
+    exportValue: (ClaimsQueueItem item) => item.authorization?.approvedAmount,
     cellBuilder: (BuildContext context, ClaimsQueueItem item) {
       final num? amount = item.authorization?.approvedAmount;
       if (amount == null) return Text(_fallback(context, null));
@@ -1076,6 +1087,7 @@ AppListTableColumn<ClaimsQueueItem> _claimsSettlementAmountColumn(
     id: 'settled_settlement_amount',
     label: l10n.claimsSettlementAmountColumnLabel,
     numeric: true,
+    exportValue: (ClaimsQueueItem item) => item.claim?.settlementAmount,
     cellBuilder: (BuildContext context, ClaimsQueueItem item) {
       final num? amount = item.claim?.settlementAmount;
       if (amount == null) return Text(_fallback(context, null));
@@ -1098,6 +1110,8 @@ AppListTableColumn<ClaimsQueueItem> _claimsRequestedAtColumn(
           a.authorization?.requestedAt,
           b.authorization?.requestedAt,
         ),
+    exportValue: (ClaimsQueueItem item) =>
+        item.authorization?.requestedAt?.toIso8601String(),
     cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
         Text(_dateTimeLabel(context, item.authorization?.requestedAt)),
   );
@@ -1112,6 +1126,8 @@ AppListTableColumn<ClaimsQueueItem> _claimsSubmittedAtColumn(
     label: l10n.claimsSubmittedAtColumnLabel,
     sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
         appListTableCompareDateTime(a.claim?.submittedAt, b.claim?.submittedAt),
+    exportValue: (ClaimsQueueItem item) =>
+        item.claim?.submittedAt?.toIso8601String(),
     cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
         Text(_dateTimeLabel(context, item.claim?.submittedAt)),
   );
@@ -1126,6 +1142,7 @@ AppListTableColumn<ClaimsQueueItem> _claimsTimelineColumn(
     label: l10n.claimsTimelineColumnLabel,
     sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
         appListTableCompareDateTime(a.timelineAt, b.timelineAt),
+    exportValue: (ClaimsQueueItem item) => item.timelineAt?.toIso8601String(),
     cellBuilder: (BuildContext context, ClaimsQueueItem item) =>
         Text(_dateTimeLabel(context, item.timelineAt)),
   );
@@ -1141,6 +1158,7 @@ AppListTableColumn<ClaimsQueueItem> _claimsNextActionColumn(
     id: 'next_action',
     label: l10n.claimsNextActionColumnLabel,
     alwaysVisible: true,
+    exportable: false,
     sortComparator: (ClaimsQueueItem a, ClaimsQueueItem b) =>
         appListTableCompareText(
           _claimsNextActionLabel(l10n, a),

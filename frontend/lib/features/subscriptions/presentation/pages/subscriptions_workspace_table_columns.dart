@@ -92,6 +92,10 @@ Widget _subscriptionStatusCell(SubscriptionItem item) {
   );
 }
 
+Object? _subscriptionStatusExport(SubscriptionItem item) {
+  return _statusLabel(item.primaryStatus);
+}
+
 String _modulesCountLabel(SubscriptionItem item) {
   final int? active = item.activeModuleCount;
   final int? max = item.maxModules;
@@ -126,14 +130,13 @@ List<AppListTableColumn<SubscriptionItem>> _subscriptionPlanDefaultColumns(
         return appListTableCompareText(left.name, right.name);
       },
       cellBuilder: (BuildContext context, SubscriptionItem item) {
-        return AppListItemText(
-          title: item.name ?? item.title,
-          subtitle: item.code,
-          titleStyle: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.emphasis),
+        return Text(
+          item.name ?? item.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         );
       },
+      exportValue: (SubscriptionItem item) => item.name ?? item.title,
     ),
     AppListTableColumn<SubscriptionItem>(
       id: _SubscriptionColumnIds.monthlyPrice,
@@ -145,6 +148,7 @@ List<AppListTableColumn<SubscriptionItem>> _subscriptionPlanDefaultColumns(
           right.resolvedMonthlyPrice,
         );
       },
+      exportValue: (SubscriptionItem item) => item.resolvedMonthlyPrice,
       cellBuilder: (BuildContext context, SubscriptionItem item) {
         return Text(_money(context, item.resolvedMonthlyPrice, item.currency));
       },
@@ -159,6 +163,7 @@ List<AppListTableColumn<SubscriptionItem>> _subscriptionPlanDefaultColumns(
           right.resolvedAnnualPrice,
         );
       },
+      exportValue: (SubscriptionItem item) => item.resolvedAnnualPrice,
       cellBuilder: (BuildContext context, SubscriptionItem item) {
         return Text(_money(context, item.resolvedAnnualPrice, item.currency));
       },
@@ -169,6 +174,8 @@ List<AppListTableColumn<SubscriptionItem>> _subscriptionPlanDefaultColumns(
       sortComparator: (SubscriptionItem left, SubscriptionItem right) {
         return appListTableCompareText(left.tierCode, right.tierCode);
       },
+      exportValue: (SubscriptionItem item) =>
+          item.tierCode ?? item.code ?? _uniquePlanLabel(item),
       cellBuilder: (BuildContext context, SubscriptionItem item) {
         return _PlanBadge(
           label: _uniquePlanLabel(item),
@@ -186,6 +193,7 @@ List<AppListTableColumn<SubscriptionItem>> _subscriptionPlanDefaultColumns(
           right.activeModuleCount,
         );
       },
+      exportValue: (SubscriptionItem item) => _modulesCountLabel(item),
       cellBuilder: (BuildContext context, SubscriptionItem item) {
         return Text(_modulesCountLabel(item));
       },
@@ -309,12 +317,11 @@ List<AppListTableColumn<SubscriptionItem>> _subscriptionDefaultColumns(
         return appListTableCompareText(left.tenantLabel, right.tenantLabel);
       },
       cellBuilder: (BuildContext context, SubscriptionItem item) {
-        return AppListItemText(
-          title: item.tenantLabel ?? _SubscriptionsText.notRecorded,
-          titleStyle: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.emphasis),
-        );
+        return Text(
+        item.tenantLabel ?? _SubscriptionsText.notRecorded,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
       },
     ),
     AppListTableColumn<SubscriptionItem>(
@@ -327,10 +334,7 @@ List<AppListTableColumn<SubscriptionItem>> _subscriptionDefaultColumns(
         return Text(
           item.planLabel ?? _SubscriptionsText.notRecorded,
           maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.emphasis),
+          overflow: TextOverflow.ellipsis
         );
       },
     ),
@@ -340,6 +344,7 @@ List<AppListTableColumn<SubscriptionItem>> _subscriptionDefaultColumns(
       sortComparator: (SubscriptionItem left, SubscriptionItem right) {
         return appListTableCompareText(left.primaryStatus, right.primaryStatus);
       },
+      exportValue: _subscriptionStatusExport,
       cellBuilder: (BuildContext context, SubscriptionItem item) {
         return _subscriptionStatusCell(item);
       },
@@ -457,13 +462,11 @@ List<AppListTableColumn<SubscriptionItem>> _moduleDefaultColumns(
         return appListTableCompareText(left.name, right.name);
       },
       cellBuilder: (BuildContext context, SubscriptionItem item) {
-        return AppListItemText(
-          title: item.name ?? item.title,
-          subtitle: item.code,
-          titleStyle: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.emphasis),
-        );
+        return Text(
+        item.name ?? item.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
       },
     ),
     AppListTableColumn<SubscriptionItem>(
@@ -472,6 +475,7 @@ List<AppListTableColumn<SubscriptionItem>> _moduleDefaultColumns(
       sortComparator: (SubscriptionItem left, SubscriptionItem right) {
         return appListTableCompareText(left.primaryStatus, right.primaryStatus);
       },
+      exportValue: _subscriptionStatusExport,
       cellBuilder: (BuildContext context, SubscriptionItem item) {
         return _subscriptionStatusCell(item);
       },
@@ -584,12 +588,11 @@ List<AppListTableColumn<SubscriptionItem>> _moduleSubscriptionDefaultColumns(
         return appListTableCompareText(left.moduleLabel, right.moduleLabel);
       },
       cellBuilder: (BuildContext context, SubscriptionItem item) {
-        return AppListItemText(
-          title: item.moduleLabel ?? item.title,
-          titleStyle: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.emphasis),
-        );
+        return Text(
+        item.moduleLabel ?? item.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
       },
     ),
     AppListTableColumn<SubscriptionItem>(
@@ -608,6 +611,7 @@ List<AppListTableColumn<SubscriptionItem>> _moduleSubscriptionDefaultColumns(
       sortComparator: (SubscriptionItem left, SubscriptionItem right) {
         return appListTableCompareText(left.primaryStatus, right.primaryStatus);
       },
+      exportValue: _subscriptionStatusExport,
       cellBuilder: (BuildContext context, SubscriptionItem item) {
         return _subscriptionStatusCell(item);
       },
@@ -717,12 +721,11 @@ List<AppListTableColumn<SubscriptionItem>> _subscriptionInvoiceDefaultColumns(
         );
       },
       cellBuilder: (BuildContext context, SubscriptionItem item) {
-        return AppListItemText(
-          title: item.invoiceDisplayId ?? _SubscriptionsText.notRecorded,
-          titleStyle: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.emphasis),
-        );
+        return Text(
+        item.invoiceDisplayId ?? _SubscriptionsText.notRecorded,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
       },
     ),
     AppListTableColumn<SubscriptionItem>(
@@ -741,6 +744,7 @@ List<AppListTableColumn<SubscriptionItem>> _subscriptionInvoiceDefaultColumns(
       sortComparator: (SubscriptionItem left, SubscriptionItem right) {
         return appListTableCompareText(left.primaryStatus, right.primaryStatus);
       },
+      exportValue: _subscriptionStatusExport,
       cellBuilder: (BuildContext context, SubscriptionItem item) {
         return _subscriptionStatusCell(item);
       },
@@ -835,12 +839,11 @@ List<AppListTableColumn<SubscriptionItem>> _licenseDefaultColumns(
         return appListTableCompareText(left.licenseType, right.licenseType);
       },
       cellBuilder: (BuildContext context, SubscriptionItem item) {
-        return AppListItemText(
-          title: item.licenseType ?? _SubscriptionsText.notRecorded,
-          titleStyle: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: AppFontWeight.emphasis),
-        );
+        return Text(
+        item.licenseType ?? _SubscriptionsText.notRecorded,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      );
       },
     ),
     AppListTableColumn<SubscriptionItem>(
@@ -859,6 +862,7 @@ List<AppListTableColumn<SubscriptionItem>> _licenseDefaultColumns(
       sortComparator: (SubscriptionItem left, SubscriptionItem right) {
         return appListTableCompareText(left.primaryStatus, right.primaryStatus);
       },
+      exportValue: _subscriptionStatusExport,
       cellBuilder: (BuildContext context, SubscriptionItem item) {
         return _subscriptionStatusCell(item);
       },

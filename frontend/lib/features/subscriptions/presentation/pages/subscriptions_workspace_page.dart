@@ -17,6 +17,7 @@ import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_e
 import 'package:hosspi_hms/features/subscriptions/domain/repositories/subscriptions_repository.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/controllers/subscriptions_workspace_controller.dart';
 import 'package:hosspi_hms/features/subscriptions/presentation/subscriptions_access.dart';
+import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscriptions_workspace_print_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -177,6 +178,7 @@ class _SubscriptionsWorkspacePageState
       loadingBody: _SubscriptionsText.loadingBody,
       maxWidth: PageMaxWidth.dataHeavy,
       centerVertically: false,
+      scrollable: false,
       onRetry: () {
         ref.read(subscriptionsWorkspaceControllerProvider.notifier).refresh();
       },
@@ -292,10 +294,12 @@ class _SubscriptionsWorkspaceContentState
         spacing: Theme.of(context).spacing,
       ),
       maxWidth: PageMaxWidth.dataHeavy,
+      scrollable: false,
       child: SizedBox(
         width: double.infinity,
+        height: double.infinity,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             _SubscriptionsPanelTabBar(
               visiblePanels: visiblePanels,
@@ -329,7 +333,7 @@ class _SubscriptionsWorkspaceContentState
                 SizedBox(height: theme.spacing.md),
               ],
               if (isOverview)
-                _SubscriptionOverviewPanel(state: state)
+                Expanded(child: _SubscriptionOverviewPanel(state: state))
               else ...<Widget>[
                 if (panelResources.length > 1) ...<Widget>[
                   _SubscriptionsResourceTabBar(
@@ -350,59 +354,61 @@ class _SubscriptionsWorkspaceContentState
                   ),
                   SizedBox(height: theme.spacing.sm),
                 ],
-                _SubscriptionsWorklistPanel(
-                  state: state,
-                  searchController: _searchController,
-                  columnVisibilityController: _tableColumnController,
-                  onItemSelected: (SubscriptionItem item) {
-                    if (state.query.panel == SubscriptionPanel.billing &&
-                        !SubscriptionsInvoicesAtomPermissions.rowSelect
-                            .isAllowed(accessPolicy)) {
-                      return;
-                    }
-                    if ((state.query.panel == SubscriptionPanel.catalog ||
-                            state.query.panel == SubscriptionPanel.modules) &&
-                        !SubscriptionsPlansAtomPermissions.rowSelect
-                            .isAllowed(accessPolicy)) {
-                      return;
-                    }
-                    if (state.query.panel == SubscriptionPanel.governance &&
-                        !SubscriptionsLicensesAtomPermissions.rowSelect
-                            .isAllowed(accessPolicy)) {
-                      return;
-                    }
-                    if ((state.query.panel == SubscriptionPanel.operations ||
-                            state.query.panel == SubscriptionPanel.denied) &&
-                        !SubscriptionsAtomPermissions.rowSelect
-                            .isAllowed(accessPolicy)) {
-                      return;
-                    }
-                    final bool itemCanWrite = switch (item.resource) {
-                      SubscriptionResource.subscriptionPlans =>
-                        SubscriptionsPlansAtomPermissions.update
-                            .isAllowed(accessPolicy),
-                      // Catalog Modules is read-only; pack edits use Manage modules.
-                      SubscriptionResource.modules => false,
-                      SubscriptionResource.subscriptions ||
-                      SubscriptionResource.moduleSubscriptions =>
-                        SubscriptionsAtomPermissions.update
-                            .isAllowed(accessPolicy),
-                      SubscriptionResource.licenses =>
-                        SubscriptionsLicensesAtomPermissions.update
-                            .isAllowed(accessPolicy),
-                      SubscriptionResource.subscriptionInvoices =>
-                        SubscriptionsInvoicesAtomPermissions.update
-                            .isAllowed(accessPolicy),
-                    };
-                    unawaited(
-                      _openSubscriptionDetailDialog(
-                        context,
-                        ref,
-                        item,
-                        itemCanWrite,
-                      ),
-                    );
-                  },
+                Expanded(
+                  child: _SubscriptionsWorklistPanel(
+                    state: state,
+                    searchController: _searchController,
+                    columnVisibilityController: _tableColumnController,
+                    onItemSelected: (SubscriptionItem item) {
+                      if (state.query.panel == SubscriptionPanel.billing &&
+                          !SubscriptionsInvoicesAtomPermissions.rowSelect
+                              .isAllowed(accessPolicy)) {
+                        return;
+                      }
+                      if ((state.query.panel == SubscriptionPanel.catalog ||
+                              state.query.panel == SubscriptionPanel.modules) &&
+                          !SubscriptionsPlansAtomPermissions.rowSelect
+                              .isAllowed(accessPolicy)) {
+                        return;
+                      }
+                      if (state.query.panel == SubscriptionPanel.governance &&
+                          !SubscriptionsLicensesAtomPermissions.rowSelect
+                              .isAllowed(accessPolicy)) {
+                        return;
+                      }
+                      if ((state.query.panel == SubscriptionPanel.operations ||
+                              state.query.panel == SubscriptionPanel.denied) &&
+                          !SubscriptionsAtomPermissions.rowSelect
+                              .isAllowed(accessPolicy)) {
+                        return;
+                      }
+                      final bool itemCanWrite = switch (item.resource) {
+                        SubscriptionResource.subscriptionPlans =>
+                          SubscriptionsPlansAtomPermissions.update
+                              .isAllowed(accessPolicy),
+                        // Catalog Modules is read-only; pack edits use Manage modules.
+                        SubscriptionResource.modules => false,
+                        SubscriptionResource.subscriptions ||
+                        SubscriptionResource.moduleSubscriptions =>
+                          SubscriptionsAtomPermissions.update
+                              .isAllowed(accessPolicy),
+                        SubscriptionResource.licenses =>
+                          SubscriptionsLicensesAtomPermissions.update
+                              .isAllowed(accessPolicy),
+                        SubscriptionResource.subscriptionInvoices =>
+                          SubscriptionsInvoicesAtomPermissions.update
+                              .isAllowed(accessPolicy),
+                      };
+                      unawaited(
+                        _openSubscriptionDetailDialog(
+                          context,
+                          ref,
+                          item,
+                          itemCanWrite,
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ],
             ],
@@ -647,7 +653,8 @@ class _SubscriptionOverviewPanel extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return Column(
+    return SingleChildScrollView(
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         if (showKpis)
@@ -728,6 +735,7 @@ class _SubscriptionOverviewPanel extends ConsumerWidget {
           _RecommendationList(recommendations: overview.recommendations),
         ],
       ],
+      ),
     );
   }
 }
@@ -1123,17 +1131,61 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
       accessPolicy,
       state,
     );
+    final bool canExport = canExportSubscriptionsWorkspace(accessPolicy);
+    final bool canPrint = canPrintSubscriptionsWorkspace(accessPolicy);
+    final List<AppListTableColumn<SubscriptionItem>> columns =
+        _subscriptionWorklistColumns(context, resource);
+    final List<AppListTableColumn<SubscriptionItem>> columnChoices =
+        _subscriptionWorklistColumnChoices(context, resource);
+    final String sheetName = _resourceLabel(resource);
 
     return AppListTable<SubscriptionItem>(
       page: state.items,
       isLoading: state.isRefreshing,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
       columnVisibilityController: columnVisibilityController,
       columnVisibilityLabel: context.l10n.commonTableSettingsActionLabel,
       columnVisibilityTitle: context.l10n.commonTableSettingsTitle,
+      columnVisibilityApplyLabel: context.l10n.receptionApplyColumnsAction,
+      columnVisibilityResetLabel: context.l10n.receptionResetColumnsAction,
+      columnVisibilityCloseLabel: context.l10n.commonCloseActionLabel,
       columnVisibilityStorageKey: 'subscriptions_ws_$resourceKey',
       columnWidthStorageKey: 'subscriptions_cw_$resourceKey',
+      enableExport: true,
+      canExport: canExport,
+      exportLabel: context.l10n.commonTableExportActionLabel,
+      exportDialogTitle: context.l10n.commonTableExportDialogTitle,
+      exportCancelLabel: context.l10n.commonCancelActionLabel,
+      exportColumnsSectionLabel: context.l10n.commonTableExportColumnsSectionLabel,
+      exportFiltersSectionLabel: context.l10n.commonTableExportFiltersSectionLabel,
+      exportEmptyColumnsMessage: context.l10n.commonTableExportEmptyColumnsMessage,
+      exportEmptyRowsMessage: context.l10n.commonTableExportEmptyRowsMessage,
+      exportSuccessMessage: context.l10n.commonTableExportSuccessMessage,
+      exportFailureMessage: context.l10n.commonTableExportFailureMessage,
+      exportInvalidDateMessage: context.l10n.opdInvalidDateMessage,
+      enablePrint: true,
+      canPrint: canPrint,
+      printLabel: context.l10n.commonPrintActionLabel,
+      onPrint: () => printSubscriptionsListTable<SubscriptionItem>(
+        ref: ref,
+        context: context,
+        title: sheetName,
+        columns: <AppListTableColumn<SubscriptionItem>>[
+          ...columns,
+          ...columnChoices,
+        ],
+        items: state.items.items,
+        emptyText: _SubscriptionsText.emptyTitle,
+      ),
+      goToTopLabel: context.l10n.commonGoToTopActionLabel,
+      loadingMoreLabel: context.l10n.commonLoadingMoreLabel,
+      allRowsLoadedLabel: context.l10n.commonAllRowsLoadedLabel,
+      exportConfig: AppListTableExportConfig<SubscriptionItem>(
+        fileNameStem: 'subscriptions_$resourceKey',
+        dateOf: _timelineDate,
+        sheetName: sheetName,
+        dateFromLabel: context.l10n.commonTableExportDateFromLabel,
+        dateToLabel: context.l10n.commonTableExportDateToLabel,
+      ),
       search: AppListTableSearch<SubscriptionItem>(
         controller: searchController,
         semanticLabel: _SubscriptionsText.searchLabel,
@@ -1152,8 +1204,9 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
         showAdvancedFilterButton: true,
         advancedFilterButtonLabel: context.l10n.commonFiltersActionLabel,
         advancedFilterTitle: context.l10n.commonAdvancedFiltersTitle,
-        advancedFilterApplyLabel: _SubscriptionsText.applyFilters,
-        advancedFilterResetLabel: _SubscriptionsText.clearFilters,
+        advancedFilterApplyLabel: context.l10n.opdApplyFiltersAction,
+        advancedFilterResetLabel: context.l10n.opdClearFiltersAction,
+        advancedFilterCloseLabel: context.l10n.commonCloseActionLabel,
         enableDateFilter: false,
         allFieldsLabel: _SubscriptionsText.all,
         filterGroups: _filterGroups(state),
@@ -1230,8 +1283,8 @@ class _SubscriptionsWorklistPanel extends ConsumerWidget {
               ).rowTint;
             }
           : null,
-      columns: _subscriptionWorklistColumns(context, resource),
-      columnChoices: _subscriptionWorklistColumnChoices(context, resource),
+      columns: columns,
+      columnChoices: columnChoices,
       mobileItemBuilder: (BuildContext context, SubscriptionItem item) {
         final String title = switch (resource) {
           SubscriptionResource.subscriptionPlans =>
@@ -4056,7 +4109,6 @@ Future<void> _openSubscriptionDetailDialog(
             ))
           AppButton.secondary(
             label: _SubscriptionsText.editPlan,
-            leadingIcon: Icons.edit_outlined,
             onPressed: () async {
               final SubscriptionItem? selected =
                   _subscriptionsStateFromAsync(
@@ -4068,7 +4120,6 @@ Future<void> _openSubscriptionDetailDialog(
           ),
         AppButton.secondary(
           label: l10n.commonCloseActionLabel,
-          leadingIcon: Icons.close,
           onPressed: () => Navigator.of(dialogContext).maybePop(),
         ),
       ],
@@ -5802,8 +5853,6 @@ abstract final class _SubscriptionsText {
   static const String searchHint =
       'Tenant, plan, module, invoice, status, or date';
   static const String clearSearch = 'Clear subscription search';
-  static const String applyFilters = 'Apply filters';
-  static const String clearFilters = 'Clear filters';
   static const String all = 'All';
   static const String emptyTitle = 'No subscription records';
   static const String emptyBody =
