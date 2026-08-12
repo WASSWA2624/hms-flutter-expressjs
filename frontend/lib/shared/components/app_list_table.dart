@@ -62,7 +62,17 @@ final class _AppListTableGoToTopController {
 
   void detach() {
     _scrollToTop = null;
-    canGoToTop.value = false;
+    if (canGoToTop.value) {
+      canGoToTop.value = false;
+    }
+  }
+
+  /// Clears the scroll callback without notifying listeners.
+  ///
+  /// Use from widget `dispose` so a locked element tree is not rebuilt while
+  /// unmounting a [ValueListenableBuilder] that listens to [canGoToTop].
+  void detachSilently() {
+    _scrollToTop = null;
   }
 
   void setCanGoToTop(bool value) {
@@ -5077,7 +5087,7 @@ class _GoToTopHostState extends State<_GoToTopHost> {
 
   @override
   void dispose() {
-    widget.controller.detach();
+    widget.controller.detachSilently();
     _detachScrollPosition();
     super.dispose();
   }
