@@ -2,40 +2,42 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/app/theme/app_theme_palette.dart';
 
-/// Light theme palette: a calm, modern medical identity built on a refined
-/// **azure** brand with a fresh **teal** accent and cool-slate neutrals for a
-/// clean, high-contrast blend across text, surfaces, and controls.
+/// Light theme palette: an elegant **white → light blue → blue** identity.
+///
+/// Surfaces stay porcelain-white and powder-blue; brand actions use a refined
+/// clinical blue; accents stay in the same blue family (sky) so the UI reads
+/// as one continuous, soft blend—no competing teal/green hue.
 abstract final class AppLightThemePalette {
-  // Brand — azure
-  static const Color azure50 = Color(0xFFECF3FF);
-  static const Color azure100 = Color(0xFFD6E6FF);
-  static const Color azure200 = Color(0xFFADC9FF);
-  static const Color azure300 = Color(0xFF7FA9FA);
-  static const Color azure400 = Color(0xFF4F87F2);
-  static const Color azure500 = Color(0xFF2C6BE4);
-  static const Color azure600 = Color(0xFF1D59D4);
-  static const Color azure700 = Color(0xFF1549BE);
-  static const Color azure800 = Color(0xFF103A99);
-  static const Color azure900 = Color(0xFF0B2A70);
+  // Brand — blue (white mist → clear blue)
+  static const Color azure50 = Color(0xFFF4F9FE);
+  static const Color azure100 = Color(0xFFE6F1FC);
+  static const Color azure200 = Color(0xFFCBE0F7);
+  static const Color azure300 = Color(0xFFA3C8ED);
+  static const Color azure400 = Color(0xFF6BA6E0);
+  static const Color azure500 = Color(0xFF3B87D4);
+  static const Color azure600 = Color(0xFF2470C2);
+  static const Color azure700 = Color(0xFF1A5CAD);
+  static const Color azure800 = Color(0xFF144A8F);
+  static const Color azure900 = Color(0xFF0E356C);
 
-  // Accent — teal
-  static const Color teal100 = Color(0xFFD3F3EE);
-  static const Color teal300 = Color(0xFF66D6C8);
-  static const Color teal500 = Color(0xFF12A594);
-  static const Color teal600 = Color(0xFF0C8474);
-  static const Color teal700 = Color(0xFF0A6055);
+  // Accent — sky (lighter blue in the same hue family)
+  static const Color sky100 = Color(0xFFEAF5FE);
+  static const Color sky300 = Color(0xFF8DC9F4);
+  static const Color sky500 = Color(0xFF4BA0E6);
+  static const Color sky600 = Color(0xFF2F88D1);
+  static const Color sky700 = Color(0xFF1C6BAE);
 
-  // Neutrals — cool slate
+  // Neutrals — white + blue-tinted cools (never flat gray)
   static const Color transparent = Color(0x00000000);
   static const Color white = Color(0xFFFFFFFF);
-  static const Color ink = Color(0xFF0E1B2A);
-  static const Color inkMuted = Color(0xFF566579);
-  static const Color surfaceBase = Color(0xFFF2F6FC);
+  static const Color ink = Color(0xFF10253D);
+  static const Color inkMuted = Color(0xFF5A7189);
+  static const Color surfaceBase = Color(0xFFF6FAFE);
   static const Color surfaceRaised = white;
-  static const Color surfaceSubtle = Color(0xFFECF3FB);
-  static const Color surfaceMuted = Color(0xFFE1EBF6);
-  static const Color borderSubtle = Color(0xFFD0DFEF);
-  static const Color borderMuted = Color(0xFFE6EEF8);
+  static const Color surfaceSubtle = Color(0xFFEEF5FC);
+  static const Color surfaceMuted = Color(0xFFE3EEF8);
+  static const Color borderSubtle = Color(0xFFD2E2F2);
+  static const Color borderMuted = Color(0xFFE8F1F9);
 
   static const AppStatusColors statusColors = AppStatusColors(
     success: Color(0xFF1C844A),
@@ -56,7 +58,7 @@ abstract final class AppLightThemePalette {
     onDangerContainer: Color(0xFF7C1E14),
     info: azure700,
     onInfo: white,
-    infoContainer: Color(0xFFE9F1FE),
+    infoContainer: azure100,
     onInfoContainer: azure900,
   );
 
@@ -64,7 +66,7 @@ abstract final class AppLightThemePalette {
       ColorScheme.fromSeed(seedColor: azure500).copyWith(
         primary: azure700,
         onPrimary: white,
-        primaryContainer: azure50,
+        primaryContainer: azure100,
         onPrimaryContainer: azure900,
         primaryFixed: azure100,
         primaryFixedDim: azure200,
@@ -78,14 +80,14 @@ abstract final class AppLightThemePalette {
         secondaryFixedDim: azure200,
         onSecondaryFixed: azure900,
         onSecondaryFixedVariant: azure700,
-        tertiary: teal500,
+        tertiary: sky500,
         onTertiary: white,
-        tertiaryContainer: teal100,
-        onTertiaryContainer: teal700,
-        tertiaryFixed: teal100,
-        tertiaryFixedDim: teal300,
-        onTertiaryFixed: teal700,
-        onTertiaryFixedVariant: teal600,
+        tertiaryContainer: sky100,
+        onTertiaryContainer: sky700,
+        tertiaryFixed: sky100,
+        tertiaryFixedDim: sky300,
+        onTertiaryFixed: sky700,
+        onTertiaryFixedVariant: sky600,
         surface: surfaceRaised,
         onSurface: ink,
         surfaceDim: surfaceMuted,

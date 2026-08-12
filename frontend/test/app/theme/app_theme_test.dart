@@ -53,9 +53,9 @@ void main() {
       );
       expect(theme.colorScheme.brightness, Brightness.light);
       expect(theme.colorScheme.primary, AppLightThemePalette.azure700);
-      expect(theme.colorScheme.primaryContainer, AppLightThemePalette.azure50);
+      expect(theme.colorScheme.primaryContainer, AppLightThemePalette.azure100);
       expect(theme.colorScheme.secondary, AppLightThemePalette.azure800);
-      expect(theme.colorScheme.tertiary, AppLightThemePalette.teal500);
+      expect(theme.colorScheme.tertiary, AppLightThemePalette.sky500);
       expect(theme.colorScheme.surface, AppLightThemePalette.surfaceRaised);
       expect(theme.colorScheme.onSurface, AppLightThemePalette.ink);
       expect(theme.colorScheme.surfaceTint, AppLightThemePalette.transparent);
