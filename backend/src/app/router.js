@@ -212,6 +212,10 @@ apiV1Router.use('/accounts', require('../modules/accounts-workspace/routes/accou
 apiV1Router.use('/pricing-rules', require('../modules/pricing-rule/routes/pricing-rule.routes'));
 apiV1Router.use('/price-book-entries', require('../modules/price-book-entry/routes/price-book-entry.routes'));
 apiV1Router.use('/chart-accounts', require('../modules/chart-account/routes/chart-account.routes'));
+apiV1Router.use(
+  '/accounts-invoices',
+  require('../modules/accounts-invoice/routes/accounts-invoice.routes')
+);
 apiV1Router.use('/insurance-companies', require('../modules/insurance-company/routes/insurance-company.routes'));
 apiV1Router.use('/coverage-plans', require('../modules/coverage-plan/routes/coverage-plan.routes'));
 apiV1Router.use('/scheme-offers', require('../modules/scheme-offer/routes/scheme-offer.routes'));

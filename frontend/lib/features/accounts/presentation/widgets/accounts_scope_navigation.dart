@@ -2,28 +2,28 @@ import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.d
 import 'package:hosspi_hms/shared/components/components.dart';
 
 /// Sibling-count model: dedicated unfiltered [AccountsSummary] scope totals
-/// (with live GL / books / ledgers / chart overrides when set).
+/// (with live GL / invoices / ledgers / chart overrides when set).
 ///
 /// Work-queue tabs (`work` / `journals` / `approvals`) share the workspace
 /// query + `workItems` page: when the active tab is narrowed by search or
 /// advanced filters, that badge uses `workItems.totalItemCount`.
 ///
-/// Dedicated panels (`gl` / `ledgers` / `chart` / `books`) push filtered or
+/// Dedicated panels (`gl` / `ledgers` / `chart` / `invoices`) push filtered or
 /// scope totals into their count providers; badges prefer those overrides.
 int accountsSectionTabCount(
   AccountsWorkspaceState state,
   AccountsDeskSection section, {
   AccountsDeskSection? activeSection,
   int? glActivityOverride,
-  int? openPeriodsOverride,
+  int? invoicesOverride,
   int? ledgersBalanceOverride,
   int? chartActiveOverride,
 }) {
   final AccountsSummary summary = state.overview.summary;
   final int scopeTotal = switch (section) {
     AccountsDeskSection.gl => glActivityOverride ?? summary.countFor(section),
-    AccountsDeskSection.books =>
-      openPeriodsOverride ?? summary.countFor(section),
+    AccountsDeskSection.invoices =>
+      invoicesOverride ?? summary.countFor(section),
     AccountsDeskSection.ledgers =>
       ledgersBalanceOverride ?? summary.countFor(section),
     AccountsDeskSection.chart =>
@@ -33,7 +33,7 @@ int accountsSectionTabCount(
 
   final bool isDedicatedPanel =
       section == AccountsDeskSection.gl ||
-      section == AccountsDeskSection.books ||
+      section == AccountsDeskSection.invoices ||
       section == AccountsDeskSection.ledgers ||
       section == AccountsDeskSection.chart;
   if (isDedicatedPanel) {
@@ -56,11 +56,11 @@ bool _accountsWorkQueueNarrowed(AccountsWorkspaceQuery query) {
 AppTabCountTone accountsSectionCountTone(AccountsDeskSection section) {
   return switch (section) {
     AccountsDeskSection.journals ||
-    AccountsDeskSection.approvals ||
-    AccountsDeskSection.books => AppTabCountTone.warning,
+    AccountsDeskSection.approvals => AppTabCountTone.warning,
     AccountsDeskSection.work ||
     AccountsDeskSection.gl ||
     AccountsDeskSection.ledgers ||
-    AccountsDeskSection.chart => AppTabCountTone.info,
+    AccountsDeskSection.chart ||
+    AccountsDeskSection.invoices => AppTabCountTone.info,
   };
 }

@@ -12,10 +12,10 @@ import 'package:hosspi_hms/features/accounts/presentation/accounts_access.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
 import 'package:hosspi_hms/features/accounts/presentation/controllers/accounts_workspace_controller.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_approvals_panel.dart';
-import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_books_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_chart_dialogs.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_chart_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_gl_panel.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_invoices_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_ledgers_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_open_work_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_scope_navigation.dart';
@@ -27,7 +27,7 @@ import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
 /// Accounts desk shell (`/accounts`).
 ///
-/// Open work / To post / Need approval / GL / Ledgers / Chart / Close books.
+/// Open work / To post / Need approval / GL / Ledgers / Chart / Invoices.
 class AccountsWorkspacePage extends ConsumerWidget {
   const AccountsWorkspacePage({super.key, this.initialQuery});
 
@@ -171,26 +171,16 @@ class _AccountsWorkspaceContentState
     if (patientId.isNotEmpty && section == AccountsDeskSection.ledgers) {
       params['patientId'] = patientId;
     }
-    if (section == AccountsDeskSection.books) {
-      final String periodId = (query?.periodId ?? '').trim();
-      if (periodId.isNotEmpty) {
-        params['periodId'] = periodId;
-      }
-    }
     final String search = (query?.search ?? widget.state.query.search).trim();
     if (search.isNotEmpty) {
       params['search'] = search;
     }
     final String action = (query?.action ?? '').trim();
-    if (action.isNotEmpty &&
-        (section == AccountsDeskSection.journals ||
-            section == AccountsDeskSection.books)) {
+    if (action.isNotEmpty && section == AccountsDeskSection.journals) {
       params['action'] = action;
     }
     final String id = (query?.id ?? '').trim();
-    if (id.isNotEmpty &&
-        (section == AccountsDeskSection.journals ||
-            section == AccountsDeskSection.books)) {
+    if (id.isNotEmpty && section == AccountsDeskSection.journals) {
       params['id'] = id;
     }
     syncWorkspaceLocation(
@@ -218,7 +208,7 @@ class _AccountsWorkspaceContentState
       section,
       activeSection: _section,
       glActivityOverride: ref.watch(accountsGlActivityCountProvider),
-      openPeriodsOverride: ref.watch(accountsOpenPeriodsCountProvider),
+      invoicesOverride: ref.watch(accountsInvoicesCountProvider),
       ledgersBalanceOverride: ref.watch(
         accountsPatientLedgersBalanceCountProvider,
       ),
@@ -311,13 +301,7 @@ class _AccountsWorkspaceContentState
         initialSearch: widget.initialQuery?.search ?? '',
       ),
       AccountsDeskSection.chart => const AccountsChartPanel(),
-      AccountsDeskSection.books => AccountsBooksPanel(
-        initialPeriodId:
-            (widget.initialQuery?.periodId ?? widget.initialQuery?.id ?? '')
-                .trim(),
-        initialAction: (widget.initialQuery?.action ?? '').trim(),
-        initialSearch: (widget.initialQuery?.search ?? '').trim(),
-      ),
+      AccountsDeskSection.invoices => const AccountsInvoicesPanel(),
     };
   }
 }

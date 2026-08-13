@@ -42,7 +42,7 @@ const AccountsSummary _summary = AccountsSummary(
   glActivity: 3,
   ledgersWithBalance: 2,
   chartActive: 4,
-  openPeriods: 1,
+  invoices: 1,
 );
 
 AppAccessPolicy _policy({required Set<AppPermission> permissions}) {

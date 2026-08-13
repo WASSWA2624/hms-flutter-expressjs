@@ -15,7 +15,7 @@ class AppLogo extends StatelessWidget {
   final double size;
 
   /// Matches cropped `logo.png` content aspect (width ÷ height).
-  static const double defaultAspectRatio = 1.0;
+  static const double defaultAspectRatio = 1.0044;
 
   /// Cyan-blue from the window/grid features under the medical cross.
   /// Keep in sync with [AppLightThemePalette.brandPrimary] / light `colorScheme.primary`.
@@ -31,13 +31,20 @@ class AppLogo extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final double width = size * aspectRatio;
+    // Decode at device pixels so Flutter web/high-DPI does not soft-scale the
+    // full bitmap down in the compositor (common cause of blurry app-bar marks).
+    final double dpr = MediaQuery.devicePixelRatioOf(context);
+    final int cacheWidth = (width * dpr).round().clamp(1, 4096);
+    final int cacheHeight = (size * dpr).round().clamp(1, 4096);
 
     final Widget image = Image.asset(
       assetPath,
       width: width,
       height: size,
+      cacheWidth: cacheWidth,
+      cacheHeight: cacheHeight,
       fit: BoxFit.contain,
-      filterQuality: FilterQuality.high,
+      filterQuality: FilterQuality.medium,
       isAntiAlias: true,
       errorBuilder: (_, _, _) {
         return ColoredBox(

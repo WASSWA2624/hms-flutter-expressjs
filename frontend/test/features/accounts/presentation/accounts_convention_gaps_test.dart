@@ -7,9 +7,9 @@ import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.d
 import 'package:hosspi_hms/features/accounts/presentation/accounts_access.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_approvals_table_support.dart';
-import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_books_table_support.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_chart_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_gl_table_support.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_invoices_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_ledgers_table_support.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_scope_navigation.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_workspace_table_support.dart';
@@ -81,8 +81,8 @@ void main() {
         AppTabCountTone.warning,
       );
       expect(
-        accountsSectionCountTone(AccountsDeskSection.books),
-        AppTabCountTone.warning,
+        accountsSectionCountTone(AccountsDeskSection.invoices),
+        AppTabCountTone.info,
       );
       expect(
         accountsSectionCountTone(AccountsDeskSection.work),
@@ -110,7 +110,7 @@ void main() {
         glActivity: 9,
         ledgersWithBalance: 5,
         chartActive: 6,
-        openPeriods: 2,
+        invoices: 2,
       );
       final AccountsWorkspaceState state = AccountsWorkspaceState(
         query: const AccountsWorkspaceQuery(
@@ -174,7 +174,27 @@ void main() {
       expect(accountsGlDefaultColumnIds.length, 5);
       expect(accountsLedgersDefaultColumnIds.length, 5);
       expect(accountsChartDefaultColumnIds.length, 5);
-      expect(accountsBooksDefaultColumnIds.length, 5);
+      expect(
+        <String>[
+          accountsInvoicesNumberColumnId,
+          accountsInvoicesPayeeColumnId,
+          accountsInvoicesDateColumnId,
+          accountsInvoicesStatusColumnId,
+          accountsInvoicesTotalColumnId,
+        ].length,
+        5,
+      );
+    });
+
+    test('legacy books section slug resolves to invoices', () {
+      expect(
+        AccountsDeskSection.resolveDeskSlug('books'),
+        AccountsDeskSection.invoices,
+      );
+      expect(
+        AccountsDeskSection.resolveDeskSlug('invoices'),
+        AccountsDeskSection.invoices,
+      );
     });
   });
 }

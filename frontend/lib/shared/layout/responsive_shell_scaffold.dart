@@ -1746,8 +1746,8 @@ final RegExp _whitespacePattern = RegExp(r'\s+');
 
 const double _drawerHeaderHeight = AppShellLayout.headerHeight;
 /// Match icon-only [AppButton] (minInteractive 40 + VisualDensity.compact).
-const double _headerLogoSize = 32;
-const double _mobileHeaderLogoSize = 32;
+const double _headerLogoSize = 40;
+const double _mobileHeaderLogoSize = 40;
 const double _drawerLogoSize = 48;
 const double _avatarRadius = 13;
 const double _focusIndicatorWidth = 2;

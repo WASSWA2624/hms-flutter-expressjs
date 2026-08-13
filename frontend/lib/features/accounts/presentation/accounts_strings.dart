@@ -26,13 +26,13 @@ abstract final class AccountsStrings {
 
   static const String openWorkLabel = 'Open work';
   static const String openWorkTooltip =
-      'All accounting items that still need action across journals, approvals, and period tasks';
+      'All accounting items that still need action across journals and approvals';
   static const String toPostLabel = 'To post';
   static const String toPostTooltip =
       'Draft journal entries ready to post to the books';
   static const String needApprovalLabel = 'Need approval';
   static const String needApprovalTooltip =
-      'Journal posts, voids, reversals, and period close awaiting approval';
+      'Journal posts, voids, and reversals awaiting approval';
   static const String generalLedgerLabel = 'General ledger';
   static const String generalLedgerTooltip =
       'Facility account balances and activity by GL account';
@@ -42,9 +42,9 @@ abstract final class AccountsStrings {
   static const String accountChartLabel = 'Account chart';
   static const String accountChartTooltip =
       'Chart of accounts codes, types, and status';
-  static const String closeBooksLabel = 'Close books';
-  static const String closeBooksTooltip =
-      'Fiscal periods: open, review checklist, and close';
+  static const String invoicesLabel = 'Invoices';
+  static const String invoicesTooltip =
+      'Facility outflow invoices — money leaving the facility';
 
   static const String glEmpty = 'No accounts match.';
   static const String openWorkEmpty = 'No open work.';
@@ -52,7 +52,37 @@ abstract final class AccountsStrings {
   static const String needApprovalEmpty = 'No pending approvals.';
   static const String patientLedgersEmpty = 'No patients match.';
   static const String chartEmpty = 'No accounts match.';
-  static const String booksEmpty = 'No periods match.';
+  static const String invoicesEmpty = 'No invoices match.';
+  static const String invoicesEmptyBody =
+      'Try another search or create an invoice.';
+  static const String invoicesSearchHint = 'Invoice, payee, status…';
+  static const String createInvoiceAction = 'Create invoice';
+  static const String createInvoiceTitle = 'Create invoice';
+  static const String editInvoiceTitle = 'Edit invoice';
+  static const String invoiceDetailsTitle = 'Invoice details';
+  static const String invoicePayeeLabel = 'Payee';
+  static const String invoiceDateLabel = 'Invoice date';
+  static const String invoiceReferenceLabel = 'Reference';
+  static const String invoiceCurrencyLabel = 'Currency';
+  static const String invoiceNumberColumn = 'Invoice';
+  static const String invoicePayeeColumn = 'Payee';
+  static const String invoiceDateColumn = 'Date';
+  static const String invoiceTotalColumn = 'Total';
+  static const String invoiceActionsColumn = 'Actions';
+  static const String invoiceItemNameLabel = 'Item name';
+  static const String invoiceItemDescriptionLabel = 'Description';
+  static const String invoiceItemQuantityLabel = 'Quantity';
+  static const String invoiceItemUnitPriceLabel = 'Unit price';
+  static const String invoiceItemLineTotalLabel = 'Line total';
+  static const String invoiceAddItemAction = 'Add item';
+  static const String invoiceRemoveItemAction = 'Remove';
+  static const String invoiceGrandTotalLabel = 'Total';
+  static const String invoiceItemsRequired = 'Add at least one line item.';
+  static const String invoicePayeeRequired = 'Payee is required.';
+  static const String invoiceVoidTitle = 'Delete invoice';
+  static const String invoiceVoided = 'Invoice deleted.';
+  static const String statusVoided = 'Voided';
+  static const String statusIssued = 'Issued';
 
   static const String patientLedgersSearchHint = 'Patient…';
   static const String patientLedgersSearchSemantic = 'Search patient ledgers';

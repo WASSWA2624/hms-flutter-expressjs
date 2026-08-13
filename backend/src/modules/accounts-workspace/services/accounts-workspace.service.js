@@ -200,6 +200,16 @@ const buildPatientLedgers = async (filters = {}, page = 1, limit = 20, user = {}
 const getWorkspace = async (filters = {}, user = {}) => {
   assertEnabled();
   const ledgers = await buildPatientLedgers(filters, 1, 1, user);
+  let invoicesCount = 0;
+  try {
+    const accountsInvoiceService = require('@services/accounts-invoice/accounts-invoice.service');
+    invoicesCount = await accountsInvoiceService.countActiveInvoices({
+      tenant_id: filters.tenant_id || user.tenant_id,
+      facility_id: filters.facility_id || user.facility_id,
+    });
+  } catch (_) {
+    invoicesCount = 0;
+  }
   return {
     summary: {
       open_work: 0,
@@ -214,8 +224,8 @@ const getWorkspace = async (filters = {}, user = {}) => {
       patient_ledgers_count: ledgers.with_balance_count || 0,
       chart_active: 0,
       chart_active_count: 0,
-      open_periods: 0,
-      open_periods_count: 0,
+      invoices: invoicesCount,
+      invoices_count: invoicesCount,
     },
     generated_at: new Date().toISOString(),
   };

@@ -12,7 +12,7 @@ void main() {
     glActivity: 8,
     ledgersWithBalance: 5,
     chartActive: 20,
-    openPeriods: 1,
+    invoices: 1,
   );
 
   AccountsWorkspaceState stateFor({
@@ -112,8 +112,8 @@ void main() {
       AppTabCountTone.warning,
     );
     expect(
-      accountsSectionCountTone(AccountsDeskSection.books),
-      AppTabCountTone.warning,
+      accountsSectionCountTone(AccountsDeskSection.invoices),
+      AppTabCountTone.info,
     );
     expect(
       accountsSectionCountTone(AccountsDeskSection.work),

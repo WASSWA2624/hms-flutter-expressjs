@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
-/// Accounts workspace desk sections (`accounts.md` §2).
+/// Accounts workspace desk sections (`accounts.md`).
 enum AccountsDeskSection {
   work,
   journals,
@@ -9,7 +9,7 @@ enum AccountsDeskSection {
   gl,
   ledgers,
   chart,
-  books;
+  invoices;
 
   /// Stable `?section=` slug.
   String get sectionQueryValue => name;
@@ -23,7 +23,7 @@ enum AccountsDeskSection {
   /// Fallback when other sections are unauthorized.
   static const AccountsDeskSection fallback = AccountsDeskSection.work;
 
-  /// Resolves `section` / `tab` / legacy aliases (`accounts.md` §2).
+  /// Resolves `section` / `tab` / legacy aliases (`accounts.md`).
   static AccountsDeskSection? resolveDeskSlug(String? raw) {
     final String normalized = (raw ?? '').trim().toLowerCase();
     if (normalized.isEmpty) {
@@ -40,8 +40,13 @@ enum AccountsDeskSection {
       'gl' || 'general-ledger' || 'ledger' => AccountsDeskSection.gl,
       'ledgers' || 'patient-ledgers' => AccountsDeskSection.ledgers,
       'chart' || 'chart-of-accounts' || 'coa' => AccountsDeskSection.chart,
-      'books' || 'periods' || 'period-close' || 'close' =>
-        AccountsDeskSection.books,
+      'invoices' ||
+      // Legacy Close books aliases → Invoices (no books flash).
+      'books' ||
+      'periods' ||
+      'period-close' ||
+      'close' =>
+        AccountsDeskSection.invoices,
       _ => null,
     };
   }
@@ -203,7 +208,7 @@ final class AccountsSummary {
     this.glActivity = 0,
     this.ledgersWithBalance = 0,
     this.chartActive = 0,
-    this.openPeriods = 0,
+    this.invoices = 0,
   });
 
   final int openWork;
@@ -212,7 +217,7 @@ final class AccountsSummary {
   final int glActivity;
   final int ledgersWithBalance;
   final int chartActive;
-  final int openPeriods;
+  final int invoices;
 
   /// Alias used by mutation applier / legacy callers.
   int get approvals => needApproval;
@@ -223,7 +228,7 @@ final class AccountsSummary {
   int get glWithActivityCount => glActivity;
   int get patientLedgersCount => ledgersWithBalance;
   int get chartActiveCount => chartActive;
-  int get openPeriodsCount => openPeriods;
+  int get invoicesCount => invoices;
 
   int get workloadCount => openWork;
 
@@ -235,7 +240,7 @@ final class AccountsSummary {
       AccountsDeskSection.gl => glActivity,
       AccountsDeskSection.ledgers => ledgersWithBalance,
       AccountsDeskSection.chart => chartActive,
-      AccountsDeskSection.books => openPeriods,
+      AccountsDeskSection.invoices => invoices,
     };
   }
 
@@ -246,7 +251,7 @@ final class AccountsSummary {
     int? glActivity,
     int? ledgersWithBalance,
     int? chartActive,
-    int? openPeriods,
+    int? invoices,
     int? approvals,
   }) {
     return AccountsSummary(
@@ -256,7 +261,7 @@ final class AccountsSummary {
       glActivity: glActivity ?? this.glActivity,
       ledgersWithBalance: ledgersWithBalance ?? this.ledgersWithBalance,
       chartActive: chartActive ?? this.chartActive,
-      openPeriods: openPeriods ?? this.openPeriods,
+      invoices: invoices ?? this.invoices,
     );
   }
 }
@@ -850,134 +855,159 @@ final class AccountsGlLedger {
   final List<AccountsGlLedgerEntry> entries;
 }
 
-// --- Close books / fiscal periods ---
+// --- Facility outflow invoices (Accounts Invoices desk) ---
 
 @immutable
-final class AccountsPeriodQuery {
-  const AccountsPeriodQuery({
-    this.search = '',
-    this.openOnly = false,
-    this.overdueOnly = false,
-    this.periodId = '',
-    this.pageRequest = const AppPageRequest(pageSize: AppPageRequest.maxPageSize),
+final class AccountsInvoiceLineItem {
+  const AccountsInvoiceLineItem({
+    this.id = '',
+    required this.name,
+    this.description,
+    required this.quantity,
+    required this.unitPrice,
+    this.lineTotal,
   });
 
-  final String search;
-  final bool openOnly;
-  final bool overdueOnly;
-  final String periodId;
-  final AppPageRequest pageRequest;
+  final String id;
+  final String name;
+  final String? description;
+  final num quantity;
+  final num unitPrice;
+  final num? lineTotal;
 
-  AccountsPeriodQuery copyWith({
-    String? search,
-    bool? openOnly,
-    bool? overdueOnly,
-    String? periodId,
-    AppPageRequest? pageRequest,
-  }) {
-    return AccountsPeriodQuery(
-      search: search ?? this.search,
-      openOnly: openOnly ?? this.openOnly,
-      overdueOnly: overdueOnly ?? this.overdueOnly,
-      periodId: periodId ?? this.periodId,
-      pageRequest: pageRequest ?? this.pageRequest,
-    );
+  num get effectiveLineTotal =>
+      lineTotal ?? (quantity * unitPrice);
+
+  Map<String, Object?> toPayload() {
+    return <String, Object?>{
+      'name': name.trim(),
+      'description': description?.trim(),
+      'quantity': quantity,
+      'unit_price': unitPrice,
+    };
   }
 }
 
 @immutable
-final class AccountsOpenPeriodDraft {
-  const AccountsOpenPeriodDraft({
-    required this.label,
-    required this.startDate,
-    required this.endDate,
-    this.notes,
-  });
-
-  final String label;
-  final DateTime startDate;
-  final DateTime endDate;
-  final String? notes;
-}
-
-@immutable
-final class AccountsFiscalPeriod {
-  const AccountsFiscalPeriod({
+final class AccountsInvoice {
+  const AccountsInvoice({
     required this.id,
-    required this.label,
+    required this.payee,
+    required this.invoiceDate,
+    required this.currency,
+    required this.status,
+    required this.totalAmount,
     this.displayId,
-    this.status = 'OPEN',
-    this.openedAt,
-    this.closedAt,
-    this.startDate,
-    this.endDate,
-    this.facilityLabel,
-    this.openedBy,
-    this.closedBy,
-    this.unpostedJournalCount = 0,
-    this.pendingApprovalsCount = 0,
-    this.pendingApprovalId,
+    this.reference,
     this.notes,
-    this.isOverdue = false,
+    this.voidReason,
+    this.voidedAt,
+    this.items = const <AccountsInvoiceLineItem>[],
   });
 
   final String id;
-  final String label;
   final String? displayId;
-  final String status;
-  final DateTime? openedAt;
-  final DateTime? closedAt;
-  final DateTime? startDate;
-  final DateTime? endDate;
-  final String? facilityLabel;
-  final String? openedBy;
-  final String? closedBy;
-  final int unpostedJournalCount;
-  final int pendingApprovalsCount;
-  final String? pendingApprovalId;
+  final String payee;
+  final DateTime invoiceDate;
+  final String? reference;
   final String? notes;
-  final bool isOverdue;
+  final String currency;
+  final String status;
+  final num totalAmount;
+  final String? voidReason;
+  final DateTime? voidedAt;
+  final List<AccountsInvoiceLineItem> items;
 
-  String get effectiveLabel {
+  String get effectiveNumber {
     final String? display = _accountsPublicDisplayId(displayId);
     if (display != null) {
       return display;
-    }
-    final String? name = _accountsPublicDisplayId(label);
-    if (name != null) {
-      return name;
     }
     return '—';
   }
 
   String get _normalizedStatus => status.trim().toUpperCase();
 
-  bool get isOpen =>
-      _normalizedStatus == 'OPEN' || _normalizedStatus == 'OVERDUE';
+  bool get isVoided => _normalizedStatus == 'VOIDED';
 
-  bool get isPendingApproval =>
-      _normalizedStatus == 'PENDING' ||
-      _normalizedStatus == 'PENDING_APPROVAL' ||
-      _normalizedStatus == 'AWAITING_APPROVAL';
+  bool get canEdit => !isVoided;
 
-  bool get isClosed =>
-      _normalizedStatus == 'CLOSED' || _normalizedStatus == 'COMPLETE';
+  bool get canVoid => !isVoided;
+}
 
-  bool get canClose => isOpen && !isPendingApproval;
+@immutable
+final class AccountsInvoiceQuery {
+  const AccountsInvoiceQuery({
+    this.search = '',
+    this.status = '',
+    this.dateFrom,
+    this.dateTo,
+    this.pageRequest = const AppPageRequest(pageSize: AppPageRequest.maxPageSize),
+  });
 
-  bool get canApproveClose =>
-      isPendingApproval && (pendingApprovalId ?? '').trim().isNotEmpty;
+  final String search;
+  final String status;
+  final DateTime? dateFrom;
+  final DateTime? dateTo;
+  final AppPageRequest pageRequest;
 
-  String get byLabel {
-    final String? closed = _accountsPublicDisplayId(closedBy);
-    if (closed != null) {
-      return closed;
-    }
-    return _accountsPublicDisplayId(openedBy) ?? '';
+  AccountsInvoiceQuery copyWith({
+    String? search,
+    String? status,
+    DateTime? dateFrom,
+    DateTime? dateTo,
+    AppPageRequest? pageRequest,
+    bool clearDateFrom = false,
+    bool clearDateTo = false,
+  }) {
+    return AccountsInvoiceQuery(
+      search: search ?? this.search,
+      status: status ?? this.status,
+      dateFrom: clearDateFrom ? null : dateFrom ?? this.dateFrom,
+      dateTo: clearDateTo ? null : dateTo ?? this.dateTo,
+      pageRequest: pageRequest ?? this.pageRequest,
+    );
   }
+}
 
-  String get publicFacilityLabel =>
-      _accountsPublicDisplayId(facilityLabel) ?? '';
+@immutable
+final class AccountsInvoiceDraft {
+  const AccountsInvoiceDraft({
+    required this.payee,
+    required this.invoiceDate,
+    required this.items,
+    this.reference,
+    this.notes,
+    this.currency = 'UGX',
+    this.status = 'DRAFT',
+  });
+
+  final String payee;
+  final DateTime invoiceDate;
+  final String? reference;
+  final String? notes;
+  final String currency;
+  final String status;
+  final List<AccountsInvoiceLineItem> items;
+
+  Map<String, Object?> toPayload({
+    required String tenantId,
+    String? facilityId,
+  }) {
+    return <String, Object?>{
+      'tenant_id': tenantId,
+      'facility_id': facilityId,
+      'payee': payee.trim(),
+      'invoice_date': invoiceDate.toUtc().toIso8601String(),
+      'reference': reference?.trim(),
+      'notes': notes?.trim(),
+      'currency': currency.trim().toUpperCase(),
+      'status': status.trim().toUpperCase(),
+      'items': items
+          .map((AccountsInvoiceLineItem item) => item.toPayload())
+          .toList(growable: false),
+    };
+  }
 }
 
 final RegExp _accountsUuidPattern = RegExp(

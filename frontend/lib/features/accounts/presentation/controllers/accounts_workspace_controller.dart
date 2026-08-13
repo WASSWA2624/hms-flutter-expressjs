@@ -26,8 +26,8 @@ final accountsWorkspaceControllerProvider =
 /// Live count of GL accounts with activity (panel may override while filtered).
 final accountsGlActivityCountProvider = StateProvider<int?>((Ref ref) => null);
 
-/// Live count of open fiscal periods (Close books strip).
-final accountsOpenPeriodsCountProvider = StateProvider<int?>((Ref ref) => null);
+/// Live count of facility outflow invoices (Invoices strip).
+final accountsInvoicesCountProvider = StateProvider<int?>((Ref ref) => null);
 
 /// Live count of patient ledgers with balance (panel may override while filtered).
 final accountsPatientLedgersBalanceCountProvider = StateProvider<int?>(
@@ -102,8 +102,8 @@ final class AccountsWorkspaceController
       success: (AccountsWorkspaceOverview overview) async {
         ref.read(accountsGlActivityCountProvider.notifier).state =
             overview.summary.glWithActivityCount;
-        ref.read(accountsOpenPeriodsCountProvider.notifier).state =
-            overview.summary.openPeriodsCount;
+        ref.read(accountsInvoicesCountProvider.notifier).state =
+            overview.summary.invoicesCount;
         ref.read(accountsPatientLedgersBalanceCountProvider.notifier).state =
             overview.summary.patientLedgersCount;
         ref.read(accountsChartActiveCountProvider.notifier).state =
@@ -414,18 +414,6 @@ final class AccountsWorkspaceController
         reason: reason,
         notes: notes,
       ),
-    );
-  }
-
-  Future<AppFailure?> closeSelectedPeriod({String? notes}) {
-    final AccountsWorkItem? selected = _currentState?.selectedItem;
-    if (selected == null) {
-      return Future<AppFailure?>.value(
-        AppFailure.validation(validationFields: <String>{'period_id'}),
-      );
-    }
-    return _submitMutation(
-      () => _repository.closePeriod(selected.id, notes: notes),
     );
   }
 

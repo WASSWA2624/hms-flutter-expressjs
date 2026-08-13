@@ -94,12 +94,12 @@ const PERMISSION_OVERRIDES = Object.freeze({
   'accounts:read': {
     displayName: 'Accounts — Read',
     description:
-      'Open Accounts workspace and read books data (queues, GL, patient ledgers, chart, periods).',
+      'Open Accounts workspace and read books data (queues, GL, patient ledgers, chart, facility invoices).',
   },
   'accounts:write': {
     displayName: 'Accounts — Write',
     description:
-      'Create/post journals, reverse/void/send, open/close periods, and mutate chart of accounts.',
+      'Create/post journals, reverse/void/send, manage facility outflow invoices, and mutate chart of accounts.',
   },
   'pricing:pharmacy_read': {
     displayName: 'Pricing — Pharmacy Read',
@@ -361,7 +361,7 @@ const ROLE_OVERRIDES = Object.freeze({
   ACCOUNTANT: {
     displayName: 'Accountant',
     description:
-      'Finance staff managing the Accounts books desk (journals, GL, patient ledgers, chart, period close), reconciliation, and reporting.',
+      'Finance staff managing the Accounts books desk (journals, GL, patient ledgers, chart, facility invoices), reconciliation, and reporting.',
   },
   OPERATIONS: {
     displayName: 'Operations',

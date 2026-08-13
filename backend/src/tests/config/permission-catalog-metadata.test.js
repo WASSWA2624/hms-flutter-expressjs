@@ -13,12 +13,12 @@ describe('permission-catalog-metadata', () => {
     expect(getPermissionMetadata('accounts:read')).toEqual({
       displayName: 'Accounts — Read',
       description:
-        'Open Accounts workspace and read books data (queues, GL, patient ledgers, chart, periods).',
+        'Open Accounts workspace and read books data (queues, GL, patient ledgers, chart, facility invoices).',
     });
     expect(getPermissionMetadata('accounts:write')).toEqual({
       displayName: 'Accounts — Write',
       description:
-        'Create/post journals, reverse/void/send, open/close periods, and mutate chart of accounts.',
+        'Create/post journals, reverse/void/send, manage facility outflow invoices, and mutate chart of accounts.',
     });
   });
 
@@ -32,7 +32,7 @@ describe('permission-catalog-metadata', () => {
     expect(getRoleMetadata('ACCOUNTANT')).toEqual({
       displayName: 'Accountant',
       description:
-        'Finance staff managing the Accounts books desk (journals, GL, patient ledgers, chart, period close), reconciliation, and reporting.',
+        'Finance staff managing the Accounts books desk (journals, GL, patient ledgers, chart, facility invoices), reconciliation, and reporting.',
     });
     expect(getRoleMetadata('HR').description).not.toMatch(/Accounts/i);
     expect(getRoleMetadata('HR_STAFF').description).not.toMatch(/Accounts/i);

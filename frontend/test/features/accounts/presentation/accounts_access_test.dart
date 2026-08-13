@@ -317,7 +317,7 @@ void main() {
       );
       expect(
         identical(
-          AccountsCloseBooksAtomPermissions.openPeriod,
+          AccountsInvoicesAtomPermissions.create,
           accountsWorkspaceWriteRequirement,
         ),
         isTrue,
@@ -344,7 +344,7 @@ void main() {
         isFalse,
       );
       expect(
-        AccountsCloseBooksAtomPermissions.closePeriod.isAllowed(reader),
+        AccountsInvoicesAtomPermissions.voidInvoice.isAllowed(reader),
         isFalse,
       );
       expect(AccountsChartAtomPermissions.update.isAllowed(reader), isFalse);

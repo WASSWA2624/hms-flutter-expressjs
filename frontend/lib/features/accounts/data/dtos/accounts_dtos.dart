@@ -159,7 +159,9 @@ final class AccountsWorkspaceOverviewDto {
             _int(summary['chart_active']) ??
             _int(summary['chart_active_count']) ??
             0,
-        openPeriods:
+        invoices:
+            _int(summary['invoices']) ??
+            _int(summary['invoices_count']) ??
             _int(summary['open_periods']) ??
             _int(summary['open_periods_count']) ??
             0,
@@ -549,114 +551,3 @@ final class AccountsPatientLedgerDto {
   }
 }
 
-final class AccountsFiscalPeriodDto {
-  const AccountsFiscalPeriodDto(this.json);
-
-  final AccountsJsonMap json;
-
-  factory AccountsFiscalPeriodDto.fromResponse(Object? responseData) {
-    final AccountsJsonMap data = _dataMap(responseData);
-    if (data.isNotEmpty) {
-      return AccountsFiscalPeriodDto(data);
-    }
-    return AccountsFiscalPeriodDto(_expectMap(responseData));
-  }
-
-  AccountsFiscalPeriod toEntity() {
-    return AccountsFiscalPeriod(
-      id: _string(json['id']) ?? '',
-      label:
-          _string(json['label']) ??
-          _string(json['name']) ??
-          _string(json['period_label']) ??
-          '',
-      displayId:
-          _string(json['display_id']) ??
-          _string(json['displayId']) ??
-          _string(json['human_friendly_id']),
-      status: _string(json['status']) ?? 'OPEN',
-      openedAt: _date(json['opened_at']) ?? _date(json['openedAt']),
-      closedAt: _date(json['closed_at']) ?? _date(json['closedAt']),
-      startDate: _date(json['start_date']) ?? _date(json['startDate']),
-      endDate: _date(json['end_date']) ?? _date(json['endDate']),
-      facilityLabel:
-          _string(json['facility_label']) ??
-          _string(json['facilityLabel']) ??
-          _string(json['facility_name']),
-      openedBy:
-          _string(json['opened_by']) ??
-          _string(json['openedBy']) ??
-          _string(json['opened_by_display_id']),
-      closedBy:
-          _string(json['closed_by']) ??
-          _string(json['closedBy']) ??
-          _string(json['closed_by_display_id']),
-      unpostedJournalCount:
-          _int(json['unposted_journal_count']) ??
-          _int(json['unpostedJournalCount']) ??
-          _int(json['unposted_count']) ??
-          0,
-      pendingApprovalsCount:
-          _int(json['pending_approvals_count']) ??
-          _int(json['pendingApprovalsCount']) ??
-          0,
-      pendingApprovalId:
-          _string(json['pending_approval_id']) ??
-          _string(json['pendingApprovalId']),
-      notes: _string(json['notes']),
-      isOverdue:
-          _bool(json['is_overdue']) ||
-          _bool(json['isOverdue']) ||
-          (_string(json['status']) ?? '').toUpperCase() == 'OVERDUE',
-    );
-  }
-}
-
-final class AccountsFiscalPeriodPageDto {
-  const AccountsFiscalPeriodPageDto({required this.page});
-
-  final AppPage<AccountsFiscalPeriod> page;
-
-  factory AccountsFiscalPeriodPageDto.fromResponse(
-    Object? responseData,
-    AppPageRequest request,
-  ) {
-    final AccountsJsonMap response = _expectMap(responseData);
-    final Object? rawData = response['data'];
-    final List<AccountsFiscalPeriod> items;
-    if (rawData is List) {
-      items = _list(rawData)
-          .map(AccountsFiscalPeriodDto.new)
-          .map((AccountsFiscalPeriodDto dto) => dto.toEntity())
-          .where((AccountsFiscalPeriod item) => item.id.isNotEmpty)
-          .toList(growable: false);
-    } else {
-      final AccountsJsonMap data = _dataMap(responseData);
-      items = _list(data['items'])
-          .map(AccountsFiscalPeriodDto.new)
-          .map((AccountsFiscalPeriodDto dto) => dto.toEntity())
-          .where((AccountsFiscalPeriod item) => item.id.isNotEmpty)
-          .toList(growable: false);
-    }
-
-    return AccountsFiscalPeriodPageDto(
-      page: AppPage<AccountsFiscalPeriod>(
-        items: items,
-        request: request,
-        totalItemCount:
-            _int(_map(response['pagination'])['total']) ??
-            _int(_map(_dataMap(responseData)['pagination'])['total']) ??
-            items.length,
-      ),
-    );
-  }
-}
-
-AccountsJsonMap accountsOpenPeriodDraftPayload(AccountsOpenPeriodDraft draft) {
-  return _withoutEmpty(<String, Object?>{
-    'label': draft.label.trim(),
-    'start_date': draft.startDate.toUtc().toIso8601String(),
-    'end_date': draft.endDate.toUtc().toIso8601String(),
-    'notes': draft.notes,
-  });
-}

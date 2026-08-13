@@ -48,25 +48,6 @@ abstract interface class AccountsRepository {
     String? notes,
   });
 
-  Future<Result<AccountsMutationResult>> closePeriod(
-    String periodId, {
-    String? notes,
-  });
-
-  Future<Result<AppPage<AccountsFiscalPeriod>>> listPeriods(
-    AccountsPeriodQuery query, {
-    String? facilityId,
-  });
-
-  Future<Result<AccountsFiscalPeriod>> getPeriod(
-    String periodId, {
-    String? facilityId,
-  });
-
-  Future<Result<AccountsMutationResult>> openPeriod(
-    AccountsOpenPeriodDraft draft,
-  );
-
   Future<Result<AppPage<AccountsGlAccount>>> listGlAccounts(
     AccountsGlQuery query, {
     String? facilityId,

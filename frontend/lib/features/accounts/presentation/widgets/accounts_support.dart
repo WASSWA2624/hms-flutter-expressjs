@@ -15,6 +15,8 @@ String accountsStatusLabel(String? status) {
     'REJECTED' || 'DENIED' => AccountsStrings.statusRejected,
     'DRAFT' || 'UNPOSTED' || 'READY' => AccountsStrings.statusDraft,
     'POSTED' => AccountsStrings.statusPosted,
+    'ISSUED' => AccountsStrings.statusIssued,
+    'VOIDED' || 'VOID' => AccountsStrings.statusVoided,
     'OPEN' => AccountsStrings.statusOpen,
     'CLOSED' => AccountsStrings.statusClosed,
     'OVERDUE' => AccountsStrings.statusOverdue,
@@ -151,7 +153,7 @@ String accountsSectionLabel(AccountsDeskSection section) {
     AccountsDeskSection.gl => AccountsStrings.generalLedgerLabel,
     AccountsDeskSection.ledgers => AccountsStrings.patientLedgersLabel,
     AccountsDeskSection.chart => AccountsStrings.accountChartLabel,
-    AccountsDeskSection.books => AccountsStrings.closeBooksLabel,
+    AccountsDeskSection.invoices => AccountsStrings.invoicesLabel,
   };
 }
 
@@ -163,7 +165,7 @@ String? accountsSectionTooltip(AccountsDeskSection section) {
     AccountsDeskSection.gl => AccountsStrings.generalLedgerTooltip,
     AccountsDeskSection.ledgers => AccountsStrings.patientLedgersTooltip,
     AccountsDeskSection.chart => AccountsStrings.accountChartTooltip,
-    AccountsDeskSection.books => AccountsStrings.closeBooksTooltip,
+    AccountsDeskSection.invoices => AccountsStrings.invoicesTooltip,
   };
 }
 
@@ -175,7 +177,7 @@ String accountsTableSettingsKey(AccountsDeskSection section) {
     AccountsDeskSection.gl => 'accounts_gl_v1',
     AccountsDeskSection.ledgers => 'accounts_ledgers_v1',
     AccountsDeskSection.chart => 'accounts_chart_v1',
-    AccountsDeskSection.books => 'accounts_books_v1',
+    AccountsDeskSection.invoices => 'accounts_invoices_v1',
   };
 }
 
@@ -187,7 +189,7 @@ IconData accountsSectionIcon(AccountsDeskSection section) {
     AccountsDeskSection.gl => Icons.account_balance_outlined,
     AccountsDeskSection.ledgers => Icons.person_outline,
     AccountsDeskSection.chart => Icons.list_alt_outlined,
-    AccountsDeskSection.books => Icons.menu_book_outlined,
+    AccountsDeskSection.invoices => Icons.receipt_long_outlined,
   };
 }
 
@@ -199,7 +201,7 @@ String accountsEmptyBody(AccountsDeskSection section) {
     AccountsDeskSection.gl => AccountsStrings.glEmpty,
     AccountsDeskSection.ledgers => AccountsStrings.patientLedgersEmpty,
     AccountsDeskSection.chart => AccountsStrings.chartEmpty,
-    AccountsDeskSection.books => AccountsStrings.booksEmpty,
+    AccountsDeskSection.invoices => AccountsStrings.invoicesEmpty,
   };
 }
 
@@ -221,10 +223,6 @@ String accountsDateTime(BuildContext context, DateTime? value) {
     return AccountsStrings.unknownValue;
   }
   return AppFormatters.dateTime(value, Localizations.localeOf(context));
-}
-
-String accountsPeriodStatusLabel(AccountsFiscalPeriod period) {
-  return accountsStatusLabel(period.status);
 }
 
 String? accountsEmptyToNull(String? value) {

@@ -16,7 +16,6 @@ import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_journ
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_journal_similarity.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_journal_similarity_dialog.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_patient_ledger_dialog.dart';
-import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_period_dialogs.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_detail_widgets.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_workspace_table_support.dart';
@@ -54,8 +53,6 @@ Future<void> runAccountsNextAction(
       await showAccountsReverseDialog(context, ref);
     case AccountsStrings.voidAction:
       await showAccountsVoidDialog(context, ref);
-    case AccountsStrings.closeAction:
-      await showAccountsCloseFromWorkItem(context, ref, item);
     case AccountsStrings.glAction:
       await showAccountsGlFromWorkItem(context, ref, item);
     case AccountsStrings.ledgerAction:
@@ -220,30 +217,6 @@ Future<void> showAccountsVoidDialog(BuildContext context, WidgetRef ref) async {
   final AppFailure? failure = await ref
       .read(accountsWorkspaceControllerProvider.notifier)
       .voidSelectedJournal(reason: draft.reason, notes: draft.notes);
-  if (!context.mounted) {
-    return;
-  }
-  showAccountsMutationSnackBar(context, ref, failure);
-}
-
-Future<void> showAccountsCloseFromWorkItem(
-  BuildContext context,
-  WidgetRef ref,
-  AccountsWorkItem item,
-) async {
-  if (!canWriteAccounts(ref.read(appAccessPolicyProvider))) {
-    return;
-  }
-  final AccountsNotesDraft? draft = await showAccountsClosePeriodDialog(
-    context,
-    period: null,
-  );
-  if (draft == null || !context.mounted) {
-    return;
-  }
-  final AppFailure? failure = await ref
-      .read(accountsWorkspaceControllerProvider.notifier)
-      .closeSelectedPeriod(notes: draft.notes);
   if (!context.mounted) {
     return;
   }
@@ -465,11 +438,6 @@ Future<void> showAccountsWorkItemDetailDialog(
               onVoid: canWrite && live.canVoid
                   ? () => unawaited(
                       showAccountsVoidDialog(hostContext, ref),
-                    )
-                  : null,
-              onClose: canWrite && live.canClose
-                  ? () => unawaited(
-                      showAccountsCloseFromWorkItem(hostContext, ref, live),
                     )
                   : null,
               onOpenGl: live.canOpenGl && canViewAccountsGl(accessPolicy)

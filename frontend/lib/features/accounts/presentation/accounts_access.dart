@@ -148,39 +148,6 @@ bool canOpenAccountsGlNext(AppAccessPolicy policy, AccountsGlAccount account) {
   return canViewAccountsGl(policy) && account.hasActivity;
 }
 
-/// Close books Next: Open → Close · Pending approval → Approve · else → Books.
-String? accountsBooksNextActionLabel({
-  required AppAccessPolicy policy,
-  required AccountsFiscalPeriod period,
-}) {
-  if (period.canClose && canWriteAccounts(policy)) {
-    return 'Close';
-  }
-  if (period.isPendingApproval && canApproveAccountsMutations(policy)) {
-    return 'Approve';
-  }
-  if (canReadAccounts(policy) || canEnterAccounts(policy)) {
-    return 'Books';
-  }
-  return null;
-}
-
-String? accountsBooksNextActionTooltip({
-  required AppAccessPolicy policy,
-  required AccountsFiscalPeriod period,
-}) {
-  final String? label = accountsBooksNextActionLabel(
-    policy: policy,
-    period: period,
-  );
-  return switch (label) {
-    'Close' => 'Close this fiscal period',
-    'Approve' => 'Approve this pending accounting request',
-    'Books' => 'Open period detail and close checklist',
-    _ => null,
-  };
-}
-
 /// Journal from Account ledger — write ∩.
 bool canCreateAccountsJournal(AppAccessPolicy policy) {
   return canWriteAccounts(policy);
@@ -231,14 +198,12 @@ bool accountsSectionShowsNextActionColumn(
       canPayFromAccounts(policy) || canReadAccountsPatientLedgers(policy),
     // To post Next is Post-only — omit the column without accounts:write.
     AccountsDeskSection.journals => canWriteAccounts(policy),
-    AccountsDeskSection.work ||
-    AccountsDeskSection.books ||
-    AccountsDeskSection.gl =>
+    AccountsDeskSection.work || AccountsDeskSection.gl =>
       canWriteAccounts(policy) ||
           canDecideAccountsApproval(policy) ||
           canEnterAccounts(policy),
-    // Account chart uses Actions for mutations — no work-queue Next column.
-    AccountsDeskSection.chart => false,
+    // Account chart / Invoices use Actions — no work-queue Next column.
+    AccountsDeskSection.chart || AccountsDeskSection.invoices => false,
   };
 }
 
@@ -350,7 +315,7 @@ abstract final class AccountsChartAtomPermissions {
   static const AccessRequirement routeEntry = accountsWorkspaceEntryRequirement;
 }
 
-abstract final class AccountsCloseBooksAtomPermissions {
+abstract final class AccountsInvoicesAtomPermissions {
   static const AccessRequirement tab = accountsWorkspaceEntryRequirement;
   static const AccessRequirement listChrome = accountsWorkspaceEntryRequirement;
   static const AccessRequirement detail = accountsWorkspaceEntryRequirement;
@@ -358,9 +323,9 @@ abstract final class AccountsCloseBooksAtomPermissions {
   static const AccessRequirement settings = accountsWorkspaceEntryRequirement;
   static const AccessRequirement export = accountsWorkspaceExportRequirement;
   static const AccessRequirement print = accountsWorkspacePrintRequirement;
-  static const AccessRequirement openPeriod = accountsWorkspaceWriteRequirement;
-  static const AccessRequirement closePeriod = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement create = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement update = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement voidInvoice = accountsWorkspaceWriteRequirement;
   static const AccessRequirement write = accountsWorkspaceWriteRequirement;
-  static const AccessRequirement approve = accountsApprovalDecisionRequirement;
   static const AccessRequirement routeEntry = accountsWorkspaceEntryRequirement;
 }

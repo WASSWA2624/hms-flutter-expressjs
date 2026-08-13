@@ -1,14 +1,15 @@
 """Import repo-root logo.png into Flutter web/app logo assets.
 
 In-app logo keeps the natural aspect (no letterboxing) so AppLogo height
-matches the visible artwork. Favicons/PWA icons stay square.
+matches the visible artwork. Favicons/PWA icons stay square; favicons get
+rounded corners with transparent outside.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageChops, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[2]
 FRONTEND = Path(__file__).resolve().parents[1]
@@ -20,6 +21,9 @@ SRC_CANDIDATES = (
 OUT = FRONTEND / "assets" / "logos"
 WEB = FRONTEND / "web"
 ICONS = WEB / "icons"
+
+# ~iOS-app-icon corner roundness on the square favicon plate.
+_FAVICON_RADIUS_RATIO = 0.22
 
 
 def _fit_square(
@@ -39,6 +43,26 @@ def _fit_square(
     return canvas
 
 
+def _apply_rounded_corners(
+    img: Image.Image,
+    radius_ratio: float = _FAVICON_RADIUS_RATIO,
+) -> Image.Image:
+    """Clip to a rounded rect; corners become transparent (supersampled AA)."""
+    w, h = img.size
+    radius = max(1, int(round(min(w, h) * radius_ratio)))
+    aa = 4
+    mask = Image.new("L", (w * aa, h * aa), 0)
+    ImageDraw.Draw(mask).rounded_rectangle(
+        (0, 0, w * aa - 1, h * aa - 1),
+        radius=radius * aa,
+        fill=255,
+    )
+    mask = mask.resize((w, h), Image.Resampling.LANCZOS)
+    out = img.convert("RGBA")
+    r, g, b, a = out.split()
+    return Image.merge("RGBA", (r, g, b, ImageChops.multiply(a, mask)))
+
+
 _WHITE = (255, 255, 255, 255)
 
 
@@ -46,6 +70,12 @@ def _fit_natural(img: Image.Image, height: int) -> Image.Image:
     aspect = img.size[0] / img.size[1]
     w = max(1, int(round(height * aspect)))
     return img.resize((w, height), Image.Resampling.LANCZOS)
+
+
+def _favicon(img: Image.Image, size: int = 1024) -> Image.Image:
+    return _apply_rounded_corners(
+        _fit_square(img, size, background=_WHITE),
+    )
 
 
 def main() -> None:
@@ -67,15 +97,19 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     ICONS.mkdir(parents=True, exist_ok=True)
 
-    logo = _fit_natural(cropped, 1024)
+    # Bake the in-app mark at master resolution. AppLogo decodes via
+    # device-pixel cacheWidth/cacheHeight so web/high-DPI stays sharp.
     master = _fit_natural(cropped, 2048)
+    logo = master.copy()
+
+    favicon = _favicon(cropped, 1024)
 
     for path, img in {
         OUT / "logo.png": logo,
-        OUT / "favicon.png": _fit_square(cropped, 1024, background=_WHITE),
+        OUT / "favicon.png": favicon,
         OUT / "splash.png": logo.copy(),
         OUT / "logo_master.png": master,
-        WEB / "favicon.png": _fit_square(cropped, 1024, background=_WHITE),
+        WEB / "favicon.png": favicon,
     }.items():
         img.save(path, "PNG", optimize=True)
         print(f"wrote {path.name} {img.size}")
