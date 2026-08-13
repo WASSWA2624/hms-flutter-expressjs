@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
-import 'package:hosspi_hms/shared/layout/app_shell_layout.dart';
 
 abstract final class AppDialogInsets {
   static EdgeInsets paddingFor(
@@ -68,13 +67,13 @@ abstract final class AppDialogInsets {
       return EdgeInsets.zero;
     }
 
-    // Keep a slim side gutter so maximized shells do not flush to the
-    // viewport edges; top still clears the app shell header.
-    final double horizontal = designTokens.dialogInsetMobile;
+    // Keep a slim outer gutter so maximized shells do not flush to the
+    // viewport edges; top matches the horizontal margin.
+    final double gutter = designTokens.dialogInsetMobile;
     return EdgeInsets.only(
-      left: horizontal,
-      top: AppShellLayout.headerHeight,
-      right: horizontal,
+      left: gutter,
+      top: gutter,
+      right: gutter,
     );
   }
 

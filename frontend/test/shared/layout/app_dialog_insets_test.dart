@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/layout/app_dialog_insets.dart';
-import 'package:hosspi_hms/shared/layout/app_shell_layout.dart';
 
 void main() {
   group('AppDialogInsets', () {
@@ -43,19 +42,20 @@ void main() {
     );
 
     test(
-      'maximized desktop padding clears shell header and keeps side gutters',
+      'maximized desktop padding uses equal top and side gutters',
       () {
+        final EdgeInsets expected = EdgeInsets.only(
+          left: tokens.dialogInsetMobile,
+          top: tokens.dialogInsetMobile,
+          right: tokens.dialogInsetMobile,
+        );
         expect(
           AppDialogInsets.paddingFor(
             AppBreakpoint.lg,
             designTokens: tokens,
             maximized: true,
           ),
-          EdgeInsets.only(
-            left: tokens.dialogInsetMobile,
-            top: AppShellLayout.headerHeight,
-            right: tokens.dialogInsetMobile,
-          ),
+          expected,
         );
         expect(
           AppDialogInsets.paddingFor(
@@ -63,11 +63,7 @@ void main() {
             designTokens: tokens,
             maximized: true,
           ),
-          EdgeInsets.only(
-            left: tokens.dialogInsetMobile,
-            top: AppShellLayout.headerHeight,
-            right: tokens.dialogInsetMobile,
-          ),
+          expected,
         );
       },
     );
@@ -85,7 +81,7 @@ void main() {
     });
 
     test(
-      'available size clears shell header and side gutters when maximized',
+      'available size uses equal top and side gutters when maximized',
       () {
         final Size available = AppDialogInsets.availableSizeFor(
           const Size(1000, 700),
@@ -95,7 +91,7 @@ void main() {
         );
 
         expect(available.width, 1000 - tokens.dialogInsetMobile * 2);
-        expect(available.height, 700 - AppShellLayout.headerHeight);
+        expect(available.height, 700 - tokens.dialogInsetMobile);
       },
     );
   });
