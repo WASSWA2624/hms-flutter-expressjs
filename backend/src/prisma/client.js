@@ -107,6 +107,7 @@ const MODEL_PREFIX_OVERRIDES = Object.freeze({
   admission: 'ADM',
   clinical_term_catalog: 'CTC',
   invoice: 'INV',
+  accounts_invoice: 'INV',
   payment: 'PAY',
   role: 'ROL',
   permission: 'PER',
@@ -116,6 +117,12 @@ const MODEL_PREFIX_OVERRIDES = Object.freeze({
   patient_allergy: 'PAL',
   patient_document: 'PDO',
   patient_medical_history: 'PMH'});
+
+/// Models that share a friendly-id counter with another model (same prefix).
+/// Keeps INV… numbers unique across billing and accounts invoices.
+const FRIENDLY_ID_SEQUENCE_MODEL_ALIASES = Object.freeze({
+  accounts_invoice: 'invoice',
+});
 
 const ROLE_PREFIX_MAP = Object.freeze({
   PLATFORM_OWNER: 'OWN',
@@ -289,8 +296,14 @@ const assignFriendlyIdIfMissing = async (prismaClient, model, data) => {
   }
 
   const prefix = normalizePrefix(roleName ? ROLE_PREFIX_MAP[roleName] || roleName : deriveModelPrefix(model));
-  const scopeKey = buildScopeKey(model, data, roleName, prefix);
-  const sequence = await reserveNextFriendlySequence(prismaClient, model, prefix, scopeKey);
+  const counterModel = FRIENDLY_ID_SEQUENCE_MODEL_ALIASES[model] || model;
+  const scopeKey = buildScopeKey(counterModel, data, roleName, prefix);
+  const sequence = await reserveNextFriendlySequence(
+    prismaClient,
+    counterModel,
+    prefix,
+    scopeKey
+  );
 
   data.human_friendly_id = formatFriendlyId(prefix, sequence);
 };

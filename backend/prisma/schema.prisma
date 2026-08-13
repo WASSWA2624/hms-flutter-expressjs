@@ -4928,6 +4928,7 @@ model accounts_invoice {
   @@index([payee])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  @@unique([tenant_id, human_friendly_id])
 }
 
 model accounts_invoice_item {

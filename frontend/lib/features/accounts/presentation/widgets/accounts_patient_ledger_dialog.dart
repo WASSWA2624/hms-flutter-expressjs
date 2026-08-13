@@ -20,6 +20,7 @@ import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_patie
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 
 Future<void> showAccountsPatientLedgerDialog(
   BuildContext context,
@@ -122,6 +123,7 @@ class _AccountsPatientLedgerDialogState
   @override
   Widget build(BuildContext context) {
     final bool canPay = canPayFromAccounts(ref.watch(appAccessPolicyProvider));
+    final l10n = context.l10n;
 
     ref.listen<AsyncValue<RealtimeMessage>>(realtimeMessagesProvider, (
       AsyncValue<RealtimeMessage>? previous,
@@ -145,75 +147,77 @@ class _AccountsPatientLedgerDialogState
     final bool titleHasPatient =
         titleName != AccountsStrings.patientColumn && titleName != '—';
 
-    return AppDialog(
-      title: const Text(AccountsStrings.patientLedgerTitle),
-      icon: const Icon(Icons.account_balance_wallet_outlined),
-      scrollable: true,
-      maxWidth: 860,
-      content: FutureBuilder<Result<AccountsPatientLedger>>(
-        future: _ledgerFuture,
-        builder:
-            (
-              BuildContext context,
-              AsyncSnapshot<Result<AccountsPatientLedger>> snapshot,
-            ) {
-              if (!snapshot.hasData) {
-                return const LinearProgressIndicator(minHeight: 2);
-              }
-              return snapshot.data!.when(
-                success: (AccountsPatientLedger ledger) {
-                  return _AccountsPatientLedgerBody(
-                    ledger: ledger,
-                    currency: widget.currency,
-                    fallbackPatientLabel: titleHasPatient ? titleName : null,
-                  );
-                },
-                failure: (AppFailure failure) {
-                  return AppFailureStateView(
-                    failure: failure,
-                    onRetry: () {
-                      setState(() {
-                        _ledgerFuture = _loadLedger();
-                      });
-                    },
-                  );
-                },
-              );
-            },
-      ),
-      actions: <Widget>[
-        AppButton.secondary(
-          label: AccountsStrings.printAction,
-          onPressed: () => unawaited(_onPrintPressed()),
-        ),
-        FutureBuilder<Result<AccountsPatientLedger>>(
-          future: _ledgerFuture,
-          builder:
-              (
-                BuildContext context,
-                AsyncSnapshot<Result<AccountsPatientLedger>> snapshot,
-              ) {
-                final AccountsPatientLedger? ledger = snapshot.data?.when(
-                  success: (AccountsPatientLedger value) => value,
-                  failure: (_) => null,
-                );
-                final bool showPay =
-                    canPay && ledger != null && ledger.summary.balanceDue > 0;
-                if (!showPay) {
-                  return const SizedBox.shrink();
-                }
-                return AppButton.primary(
+    return FutureBuilder<Result<AccountsPatientLedger>>(
+      future: _ledgerFuture,
+      builder:
+          (
+            BuildContext context,
+            AsyncSnapshot<Result<AccountsPatientLedger>> snapshot,
+          ) {
+            final AccountsPatientLedger? ledger = snapshot.data?.when(
+              success: (AccountsPatientLedger value) => value,
+              failure: (_) => null,
+            );
+            final bool showPay =
+                canPay && ledger != null && ledger.summary.balanceDue > 0;
+
+            final Widget printAction = AppButton.secondary(
+              leadingIcon: Icons.print_outlined,
+              label: AccountsStrings.printAction,
+              onPressed: () => unawaited(_onPrintPressed()),
+            );
+            final Widget closeAction = AppButton.close(
+              label: l10n.commonCloseActionLabel,
+              onPressed: () => Navigator.of(context).maybePop(),
+            );
+            final List<Widget> leadingActions = <Widget>[
+              printAction,
+              if (showPay)
+                AppButton.primary(
+                  leadingIcon: Icons.payments_outlined,
                   label: AccountsStrings.payAction,
                   tooltip: AccountsStrings.payActionTooltip,
                   onPressed: () => unawaited(_pay(ledger)),
-                );
-              },
-        ),
-        AppButton.secondary(
-          label: context.l10n.commonCloseActionLabel,
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
-      ],
+                ),
+            ];
+            // AppDialog reverses exactly-two-action footers authored as
+            // [Close, action] so Close stays extreme-right.
+            final List<Widget> actions = leadingActions.length == 1
+                ? <Widget>[closeAction, leadingActions.first]
+                : <Widget>[...leadingActions, closeAction];
+
+            return AppDialog(
+              title: const Text(AccountsStrings.patientLedgerTitle),
+              icon: const Icon(Icons.menu_book_outlined),
+              scrollable: true,
+              pinActionsToBottom: true,
+              maxWidth: 860,
+              content: !snapshot.hasData
+                  ? const LinearProgressIndicator(minHeight: 2)
+                  : snapshot.data!.when(
+                      success: (AccountsPatientLedger value) {
+                        return _AccountsPatientLedgerBody(
+                          ledger: value,
+                          currency: widget.currency,
+                          fallbackPatientLabel: titleHasPatient
+                              ? titleName
+                              : null,
+                        );
+                      },
+                      failure: (AppFailure failure) {
+                        return AppFailureStateView(
+                          failure: failure,
+                          onRetry: () {
+                            setState(() {
+                              _ledgerFuture = _loadLedger();
+                            });
+                          },
+                        );
+                      },
+                    ),
+              actions: actions,
+            );
+          },
     );
   }
 }
@@ -232,6 +236,7 @@ class _AccountsPatientLedgerBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final AccountsPatientLedgerSummary summary = ledger.summary;
     final String patientLabel =
         accountsPatientPublicLabel(
@@ -240,12 +245,68 @@ class _AccountsPatientLedgerBody extends StatelessWidget {
           patientDisplayId: ledger.patientDisplayId,
           patientId: ledger.patientId,
         );
+    final String? patientIdLabel =
+        accountsPublicLabel(ledger.patientDisplayId) ??
+        accountsPublicLabel(ledger.patientId);
+    final bool balanceOutstanding = summary.balanceDue > 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Text(patientLabel, style: theme.textTheme.titleMedium),
-        SizedBox(height: theme.spacing.sm),
+        AppContentPanel(
+          density: AppContentPanelDensity.compact,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Icon(
+                Icons.person_outline,
+                size: theme.appTokens.listIconSize + 4,
+                color: colorScheme.primary,
+              ),
+              SizedBox(width: theme.spacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      patientLabel,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: AppFontWeight.emphasis,
+                      ),
+                    ),
+                    if (patientIdLabel != null &&
+                        patientIdLabel != patientLabel) ...<Widget>[
+                      SizedBox(height: theme.spacing.xs),
+                      Text(
+                        patientIdLabel,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              if (balanceOutstanding)
+                const AppWorkspaceStatusBadge(
+                  status: AppWorkspaceStatus(
+                    label: AccountsStrings.clearanceOutstanding,
+                    tone: AppWorkspaceStatusTone.warning,
+                    icon: Icons.warning_amber_outlined,
+                  ),
+                )
+              else
+                const AppWorkspaceStatusBadge(
+                  status: AppWorkspaceStatus(
+                    label: AccountsStrings.clearanceCleared,
+                    tone: AppWorkspaceStatusTone.success,
+                    icon: Icons.check_circle_outline,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        SizedBox(height: theme.spacing.md),
         AppReportSummaryGrid(
           records: <AppReportSummaryItem>[
             AppReportSummaryItem(
@@ -267,23 +328,116 @@ class _AccountsPatientLedgerBody extends StatelessWidget {
         ),
         SizedBox(height: theme.spacing.md),
         if (ledger.entries.isEmpty)
-          const Text(AccountsStrings.patientLedgerEmpty)
-        else
-          Column(
-            children: <Widget>[
-              for (final AccountsPatientLedgerEntry entry in ledger.entries)
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.receipt_outlined),
-                  title: Text(_entryTitle(entry)),
-                  subtitle: Text(_entrySubtitle(context, entry)),
-                  trailing: Text(
-                    accountsMoney(context, entry.amount, entry.currency),
+          AppContentPanel(
+            density: AppContentPanelDensity.compact,
+            child: Row(
+              children: <Widget>[
+                Icon(
+                  Icons.inbox_outlined,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                SizedBox(width: theme.spacing.sm),
+                Expanded(
+                  child: Text(
+                    AccountsStrings.patientLedgerEmpty,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
-            ],
+              ],
+            ),
+          )
+        else
+          AppContentPanel(
+            density: AppContentPanelDensity.compact,
+            child: Column(
+              children: <Widget>[
+                for (int index = 0; index < ledger.entries.length; index += 1)
+                  ...<Widget>[
+                    if (index > 0)
+                      Divider(
+                        height: 1,
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: 0.6,
+                        ),
+                      ),
+                    _AccountsPatientLedgerEntryTile(
+                      entry: ledger.entries[index],
+                      fallbackCurrency: currency,
+                    ),
+                  ],
+              ],
+            ),
           ),
       ],
+    );
+  }
+}
+
+class _AccountsPatientLedgerEntryTile extends StatelessWidget {
+  const _AccountsPatientLedgerEntryTile({
+    required this.entry,
+    this.fallbackCurrency,
+  });
+
+  final AccountsPatientLedgerEntry entry;
+  final String? fallbackCurrency;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String title = _entryTitle(entry);
+    final String subtitle = _entrySubtitle(context, entry);
+    final String amount = accountsMoney(
+      context,
+      entry.amount,
+      entry.currency ?? fallbackCurrency,
+    );
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: theme.spacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(
+            _ledgerIcon(entry.kind),
+            size: theme.appTokens.listIconSize,
+            color: colorScheme.primary,
+          ),
+          SizedBox(width: theme.spacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  title,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: AppFontWeight.emphasis,
+                  ),
+                ),
+                if (subtitle.isNotEmpty) ...<Widget>[
+                  SizedBox(height: theme.spacing.xs / 2),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          SizedBox(width: theme.spacing.sm),
+          Text(
+            amount,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: AppFontWeight.emphasis,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -301,5 +455,28 @@ class _AccountsPatientLedgerBody extends StatelessWidget {
       if (entry.timelineAt != null)
         accountsDateTime(context, entry.timelineAt),
     ].whereType<String>().where((String part) => part.isNotEmpty).join(' · ');
+  }
+
+  IconData _ledgerIcon(String kind) {
+    final String normalized = kind.trim().toLowerCase();
+    if (normalized.contains('invoice')) {
+      return Icons.receipt_long_outlined;
+    }
+    if (normalized.contains('payment') || normalized.contains('pay')) {
+      return Icons.payments_outlined;
+    }
+    if (normalized.contains('refund')) {
+      return Icons.assignment_return_outlined;
+    }
+    if (normalized.contains('claim')) {
+      return Icons.health_and_safety_outlined;
+    }
+    if (normalized.contains('adjust')) {
+      return Icons.tune_outlined;
+    }
+    if (normalized.contains('approval')) {
+      return Icons.rule_outlined;
+    }
+    return Icons.receipt_outlined;
   }
 }
