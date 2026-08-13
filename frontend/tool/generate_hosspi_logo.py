@@ -16,7 +16,9 @@ MASTER = 2048
 SCALE = 4
 S = MASTER * SCALE  # supersample for clean edges
 
-AZURE_700 = (26, 92, 173, 255)  # #1A5CAD
+# Brighter brand blues (AppLightThemePalette azure400 / azure500)
+AZURE_400 = (107, 166, 224, 255)  # #6BA6E0 — frame
+AZURE_500 = (59, 135, 212, 255)  # #3B87D4 — plus
 
 
 def _rect(
@@ -78,7 +80,7 @@ def make_logo_master() -> Image.Image:
     draw.rounded_rectangle(
         box,
         radius=corner,
-        outline=AZURE_700,
+        outline=AZURE_400,
         width=stroke,
     )
 
@@ -87,7 +89,7 @@ def make_logo_master() -> Image.Image:
     inner = S - 2 * inset - 2 * stroke
     plus_arm = inner * 0.82
     plus_thickness = plus_arm * 0.22
-    _draw_plus_sharp(draw, cx, cy, plus_arm, plus_thickness, AZURE_700)
+    _draw_plus_sharp(draw, cx, cy, plus_arm, plus_thickness, AZURE_500)
 
     # Downsample supersampled master → MASTER px with AA
     down = layer.resize((MASTER * 2, MASTER * 2), Image.Resampling.LANCZOS)
