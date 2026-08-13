@@ -14,9 +14,9 @@ class AuthShellLayout extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-    final bool isLarge = breakpoint.index >= AppBreakpoint.lg.index;
-    final l10n = context.l10n;
-    final String displayName = isLarge ? l10n.appTitle : l10n.appShortTitle;
+    final bool isCompact =
+        breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm;
+    final String displayName = context.l10n.appTitle;
 
     return Scaffold(
       body: DecoratedBox(
@@ -25,11 +25,11 @@ class AuthShellLayout extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: <Color>[
-              colorScheme.primaryContainer.withValues(alpha: 0.45),
+              colorScheme.primaryContainer.withValues(alpha: 0.35),
               theme.scaffoldBackgroundColor,
               theme.scaffoldBackgroundColor,
             ],
-            stops: const <double>[0, 0.32, 1],
+            stops: const <double>[0, 0.28, 1],
           ),
         ),
         child: SafeArea(
@@ -41,39 +41,36 @@ class AuthShellLayout extends StatelessWidget {
                 _ => constraints.maxWidth.clamp(0, 520),
               };
 
-              final EdgeInsets pagePadding = EdgeInsets.symmetric(
-                horizontal: theme.spacing.lg,
-                vertical: switch (breakpoint) {
-                  AppBreakpoint.xs || AppBreakpoint.sm => theme.spacing.md,
-                  _ => theme.spacing.xl,
-                },
+              final EdgeInsets pagePadding = EdgeInsets.fromLTRB(
+                theme.spacing.lg,
+                isCompact ? theme.spacing.lg : theme.spacing.xl,
+                theme.spacing.lg,
+                theme.spacing.lg,
               );
 
-              // SliverFillRemaining(hasScrollBody: false) probes intrinsic height
-              // through the shell Navigator/Overlay LayoutBuilder and throws.
+              // Prefer a slight upper bias over dead-vertical centering so the
+              // brand and form read as one composed block.
               return SingleChildScrollView(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: maxFormWidth),
-                      child: Padding(
-                        padding: pagePadding,
+                  child: Padding(
+                    padding: pagePadding,
+                    child: Align(
+                      alignment: const Alignment(0, -0.35),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: maxFormWidth),
                         child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: <Widget>[
                             _AuthBrandHeader(
-                              isLarge: isLarge,
                               displayName: displayName,
+                              isCompact: isCompact,
                             ),
                             SizedBox(
-                              height: switch (breakpoint) {
-                                AppBreakpoint.xs ||
-                                AppBreakpoint.sm => theme.spacing.lg,
-                                _ => theme.spacing.xl,
-                              },
+                              height: isCompact
+                                  ? theme.spacing.md
+                                  : theme.spacing.md,
                             ),
                             child,
                           ],
@@ -92,56 +89,53 @@ class AuthShellLayout extends StatelessWidget {
 }
 
 class _AuthBrandHeader extends StatelessWidget {
-  const _AuthBrandHeader({required this.isLarge, required this.displayName});
+  const _AuthBrandHeader({
+    required this.displayName,
+    required this.isCompact,
+  });
 
-  final bool isLarge;
   final String displayName;
+  final bool isCompact;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final double logoSize = isLarge ? 112 : 88;
 
-    final Widget logo = AppLogo(size: logoSize);
+    // Shared row height — logo artwork fills this; wordmark is fitted to it.
+    final double brandHeight = isCompact ? 56.0 : 72.0;
 
-    if (isLarge) {
-      return Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          logo,
-          SizedBox(width: theme.spacing.md),
-          Flexible(
-            child: Text(
-              displayName,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: colorScheme.onSurface,
-                fontWeight: AppFontWeight.emphasis,
-                fontSize: 22,
-                height: 1.2,
-                letterSpacing: -0.2,
+    return Semantics(
+      header: true,
+      label: displayName,
+      child: Center(
+        child: SizedBox(
+          height: brandHeight,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              AppLogo(size: brandHeight),
+              SizedBox(width: theme.spacing.md),
+              FittedBox(
+                fit: BoxFit.fitHeight,
+                child: Text(
+                  displayName,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: AppFontWeight.strong,
+                    fontSize: brandHeight,
+                    height: 1.0,
+                    letterSpacing: -1.0,
+                  ),
+                ),
               ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return Column(
-      children: <Widget>[
-        logo,
-        SizedBox(height: theme.spacing.md),
-        Text(
-          displayName,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.titleSmall?.copyWith(
-            color: colorScheme.onSurface,
-            fontWeight: AppFontWeight.emphasis,
-            fontSize: 16,
-            letterSpacing: -0.1,
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }

@@ -14,8 +14,8 @@ class AppLogo extends StatelessWidget {
   /// Default mark height.
   final double size;
 
-  /// Width ÷ height; source mark is slightly wider than tall.
-  static const double defaultAspectRatio = 1.23;
+  /// Matches cropped `logo.png` content aspect (width ÷ height).
+  static const double defaultAspectRatio = 1.0;
 
   final String assetPath;
   final IconData icon;
@@ -30,8 +30,11 @@ class AppLogo extends StatelessWidget {
 
     final Widget image = Image.asset(
       assetPath,
+      width: width,
+      height: size,
       fit: BoxFit.contain,
-      filterQuality: FilterQuality.medium,
+      filterQuality: FilterQuality.high,
+      isAntiAlias: true,
       errorBuilder: (_, _, _) {
         return ColoredBox(
           color: colorScheme.primaryContainer,
