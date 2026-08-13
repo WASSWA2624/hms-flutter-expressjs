@@ -506,27 +506,31 @@ class _AccountsInvoiceEditorDialogState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                AppTextField(
-                  controller: _payee,
-                  labelText: AccountsStrings.invoicePayeeLabel,
-                  isRequired: true,
-                  validator: AppValidators.requiredText(
-                    AccountsStrings.invoicePayeeRequired,
+                AppResponsiveFieldRow.two(
+                  gap: AppResponsiveFieldRowGap.form,
+                  left: AppTextField(
+                    controller: _payee,
+                    labelText: AccountsStrings.invoicePayeeLabel,
+                    isRequired: true,
+                    validator: AppValidators.requiredText(
+                      AccountsStrings.invoicePayeeRequired,
+                    ),
+                  ),
+                  right: AppDateField(
+                    value: _invoiceDate,
+                    labelText: AccountsStrings.invoiceDateLabel,
+                    isRequired: true,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                    currentDate: DateTime.now(),
+                    pickerButtonLabel: l10n.hrPickDateAction,
+                    invalidDateMessage: l10n.appDateInvalidMessage,
+                    enableSpeechToText: false,
+                    onChanged: (DateTime? value) =>
+                        setState(() => _invoiceDate = value),
                   ),
                 ),
-                AppDateField(
-                  value: _invoiceDate,
-                  labelText: AccountsStrings.invoiceDateLabel,
-                  isRequired: true,
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
-                  currentDate: DateTime.now(),
-                  pickerButtonLabel: l10n.hrPickDateAction,
-                  invalidDateMessage: l10n.appDateInvalidMessage,
-                  enableSpeechToText: false,
-                  onChanged: (DateTime? value) =>
-                      setState(() => _invoiceDate = value),
-                ),
+                SizedBox(height: theme.appTokens.formGapCompact),
                 AppTextField(
                   controller: _notes,
                   labelText: AccountsStrings.notesLabel,
