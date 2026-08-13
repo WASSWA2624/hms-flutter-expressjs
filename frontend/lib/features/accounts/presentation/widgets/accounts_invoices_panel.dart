@@ -135,17 +135,25 @@ class _AccountsInvoicesPanelState extends ConsumerState<AccountsInvoicesPanel> {
   }
 
   Future<void> _createOrEdit({AccountsInvoice? editing}) async {
-    final AccountsInvoiceDialogOutcome outcome =
+    final AccountsInvoiceEditorResult outcome =
         await showAccountsInvoiceEditorDialog(
           context: context,
           ref: ref,
           editing: editing,
         );
-    if (outcome == AccountsInvoiceDialogOutcome.saved && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(AccountsStrings.saved)),
-      );
-      await _reload();
+    if (!outcome.saved || !mounted) {
+      return;
+    }
+    await _reload();
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text(AccountsStrings.saved)),
+    );
+    final AccountsInvoice? invoice = outcome.invoice;
+    if (editing == null && invoice != null) {
+      await _openDetails(invoice);
     }
   }
 

@@ -56,10 +56,13 @@ abstract final class AccountsStrings {
   static const String invoicesEmptyBody =
       'Try another search or create an invoice.';
   static const String invoicesSearchHint = 'Invoice, payee, status…';
-  static const String createInvoiceAction = 'Create invoice';
+  static const String createInvoiceAction = 'Create';
   static const String createInvoiceTitle = 'Create invoice';
   static const String editInvoiceTitle = 'Edit invoice';
+  static const String createInvoiceSubmitAction = 'Create Invoice';
   static const String invoiceDetailsTitle = 'Invoice details';
+  static const String invoicePayeeSectionTitle = 'Payee';
+  static const String invoiceItemsSectionTitle = 'Items';
   static const String invoicePayeeLabel = 'Payee';
   static const String invoiceDateLabel = 'Invoice date';
   static const String invoiceReferenceLabel = 'Reference';
@@ -74,11 +77,18 @@ abstract final class AccountsStrings {
   static const String invoiceItemQuantityLabel = 'Quantity';
   static const String invoiceItemUnitPriceLabel = 'Unit price';
   static const String invoiceItemLineTotalLabel = 'Line total';
-  static const String invoiceAddItemAction = 'Add item';
-  static const String invoiceRemoveItemAction = 'Remove';
+  static const String invoiceAddItemAction = 'Create item';
+  static const String createItemTitle = 'Create item';
+  static const String editItemTitle = 'Edit item';
+  static const String invoiceRemoveItemAction = 'Delete';
   static const String invoiceGrandTotalLabel = 'Total';
   static const String invoiceItemsRequired = 'Add at least one line item.';
+  static const String invoiceItemsEmpty = 'No items yet.';
+  static const String invoiceItemsEmptyBody = 'Create an item to add it here.';
   static const String invoicePayeeRequired = 'Payee is required.';
+  static const String invoiceItemNameRequired = 'Item name is required.';
+  static const String invoiceItemQuantityRequired = 'Quantity is required.';
+  static const String invoiceItemUnitPriceRequired = 'Unit price is required.';
   static const String invoiceVoidTitle = 'Delete invoice';
   static const String invoiceVoided = 'Invoice deleted.';
   static const String statusVoided = 'Voided';
