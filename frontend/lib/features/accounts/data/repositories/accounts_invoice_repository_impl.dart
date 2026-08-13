@@ -59,7 +59,7 @@ final class AccountsInvoiceRepositoryImpl implements AccountsInvoiceRepository {
   Future<Result<AccountsInvoice>> createInvoice(Map<String, Object?> payload) {
     return _apiClient.post<AccountsInvoice>(
       ApiEndpoints.collection(HmsApiResource.accountsInvoices),
-      data: _withoutEmpty(payload),
+      data: _jsonSafeMap(_withoutEmpty(payload)),
       decoder: (Object? data) =>
           AccountsInvoiceDto.fromResponse(data).toEntity(),
     );
@@ -72,7 +72,7 @@ final class AccountsInvoiceRepositoryImpl implements AccountsInvoiceRepository {
   ) {
     return _apiClient.put<AccountsInvoice>(
       ApiEndpoints.byId(HmsApiResource.accountsInvoices, id),
-      data: _withoutEmpty(payload),
+      data: _jsonSafeMap(_withoutEmpty(payload)),
       decoder: (Object? data) =>
           AccountsInvoiceDto.fromResponse(data).toEntity(),
     );
@@ -101,5 +101,25 @@ final class AccountsInvoiceRepositoryImpl implements AccountsInvoiceRepository {
             !(entry.value is String && (entry.value! as String).trim().isEmpty))
           entry.key: entry.value,
     };
+  }
+
+  Map<String, dynamic> _jsonSafeMap(Map<String, Object?> source) {
+    return <String, dynamic>{
+      for (final MapEntry<String, Object?> entry in source.entries)
+        entry.key: _jsonSafeValue(entry.value),
+    };
+  }
+
+  Object? _jsonSafeValue(Object? value) {
+    if (value is Map) {
+      return <String, dynamic>{
+        for (final MapEntry<dynamic, dynamic> entry in value.entries)
+          entry.key.toString(): _jsonSafeValue(entry.value),
+      };
+    }
+    if (value is Iterable && value is! String) {
+      return value.map(_jsonSafeValue).toList(growable: false);
+    }
+    return value;
   }
 }

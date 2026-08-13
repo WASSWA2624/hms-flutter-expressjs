@@ -123,7 +123,8 @@ final class AccountsInvoicePageDto {
           .toList(growable: false);
     } else {
       final _Json data = _dataMap(responseData);
-      items = _list(data['items'])
+      final Object? nestedItems = data['items'] ?? data['accountsInvoices'];
+      items = _list(nestedItems)
           .map((Object? row) => AccountsInvoiceDto(_expectMap(row)).toEntity())
           .where((AccountsInvoice item) => item.id.isNotEmpty)
           .toList(growable: false);

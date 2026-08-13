@@ -144,6 +144,14 @@ class _AccountsInvoicesPanelState extends ConsumerState<AccountsInvoicesPanel> {
     if (!outcome.saved || !mounted) {
       return;
     }
+    final AccountsInvoice? invoice = outcome.invoice;
+    final bool openDetails = editing == null && invoice != null;
+    // Open details first so create success is visible even if list reload lags.
+    if (openDetails) {
+      unawaited(_reload());
+      await _openDetails(invoice);
+      return;
+    }
     await _reload();
     if (!mounted) {
       return;
@@ -151,10 +159,6 @@ class _AccountsInvoicesPanelState extends ConsumerState<AccountsInvoicesPanel> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text(AccountsStrings.saved)),
     );
-    final AccountsInvoice? invoice = outcome.invoice;
-    if (editing == null && invoice != null) {
-      await _openDetails(invoice);
-    }
   }
 
   Future<void> _openDetails(AccountsInvoice invoice) async {

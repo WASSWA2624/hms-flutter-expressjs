@@ -3,10 +3,14 @@
 In-app logo keeps the natural aspect (no letterboxing) so AppLogo height
 matches the visible artwork. Favicons/PWA icons stay square; favicons get
 rounded corners with transparent outside.
+
+Near-white baked plates are knocked out (edge flood-fill) so the in-app /
+splash mark stays transparent on any theme background.
 """
 
 from __future__ import annotations
 
+from collections import deque
 from pathlib import Path
 
 from PIL import Image, ImageChops, ImageDraw
@@ -24,6 +28,80 @@ ICONS = WEB / "icons"
 
 # ~iOS-app-icon corner roundness on the square favicon plate.
 _FAVICON_RADIUS_RATIO = 0.22
+
+
+def _is_near_white_plate(pixel: tuple[int, int, int, int]) -> bool:
+    r, g, b, a = pixel
+    if a < 8:
+        return False
+    if r < 220 or g < 220 or b < 220:
+        return False
+    return max(r, g, b) - min(r, g, b) <= 18
+
+
+def _knockout_near_white_bg(img: Image.Image) -> Image.Image:
+    """Clear connected near-white plate from edges; keep logo highlights."""
+    out = img.convert("RGBA")
+    w, h = out.size
+    corners = (
+        out.getpixel((0, 0)),
+        out.getpixel((w - 1, 0)),
+        out.getpixel((0, h - 1)),
+        out.getpixel((w - 1, h - 1)),
+    )
+    if not any(_is_near_white_plate(c) for c in corners):
+        return out
+
+    px = out.load()
+    visited = [[False] * w for _ in range(h)]
+    q: deque[tuple[int, int]] = deque()
+
+    def try_seed(x: int, y: int) -> None:
+        if visited[y][x]:
+            return
+        if _is_near_white_plate(px[x, y]):
+            visited[y][x] = True
+            q.append((x, y))
+
+    for x in range(w):
+        try_seed(x, 0)
+        try_seed(x, h - 1)
+    for y in range(h):
+        try_seed(0, y)
+        try_seed(w - 1, y)
+
+    while q:
+        x, y = q.popleft()
+        r, g, b, _ = px[x, y]
+        px[x, y] = (r, g, b, 0)
+        for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+            if 0 <= nx < w and 0 <= ny < h and not visited[ny][nx]:
+                if _is_near_white_plate(px[nx, ny]):
+                    visited[ny][nx] = True
+                    q.append((nx, ny))
+
+    # Soften light AA fringe next to cleared plate.
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = px[x, y]
+            if a == 0:
+                continue
+            brightness = (r + g + b) / 3.0
+            chroma = max(r, g, b) - min(r, g, b)
+            if brightness < 200 or chroma > 40:
+                continue
+            if not any(
+                0 <= nx < w
+                and 0 <= ny < h
+                and px[nx, ny][3] == 0
+                for nx, ny in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1))
+            ):
+                continue
+            t = (brightness - 200) / 55.0
+            px[x, y] = (r, g, b, int(max(0, min(255, 255 * (1 - t * 0.85)))))
+
+    print("knocked out near-white background plate")
+    return out
 
 
 def _fit_square(
@@ -85,7 +163,7 @@ def main() -> None:
             f"Missing source logo. Place logo.png at {ROOT / 'logo.png'}."
         )
 
-    cropped = Image.open(src_path).convert("RGBA")
+    cropped = _knockout_near_white_bg(Image.open(src_path).convert("RGBA"))
     bbox = cropped.getbbox()
     if bbox:
         cropped = cropped.crop(bbox)

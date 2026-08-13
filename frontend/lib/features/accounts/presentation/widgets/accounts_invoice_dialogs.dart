@@ -387,6 +387,7 @@ class _AccountsInvoiceEditorDialogState
   late List<AccountsInvoiceLineItem> _items;
   late String _currency;
   bool _saving = false;
+  String? _submitError;
 
   bool get _isCreate => widget.editing == null;
 
@@ -459,23 +460,34 @@ class _AccountsInvoiceEditorDialogState
   }
 
   Future<void> _submit() async {
-    if (_saving || !validateAndSaveAppForm(_formKey)) {
+    setState(() => _submitError = null);
+    if (_saving) {
+      return;
+    }
+    if (!validateAndSaveAppForm(_formKey)) {
+      setState(
+        () => _submitError = AccountsStrings.invoiceFormInvalid,
+      );
       return;
     }
     if (_items.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(AccountsStrings.invoiceItemsRequired)),
-      );
+      setState(() => _submitError = AccountsStrings.invoiceItemsRequired);
+      return;
+    }
+    final String payee = _payee.text.trim();
+    if (payee.isEmpty) {
+      setState(() => _submitError = AccountsStrings.invoicePayeeRequired);
       return;
     }
     final DateTime? date = _invoiceDate;
     if (date == null) {
+      setState(() => _submitError = AccountsStrings.invoiceDateRequired);
       return;
     }
     setState(() => _saving = true);
     final Result<AccountsInvoice> result = await widget.onPersist(
       AccountsInvoiceDraft(
-        payee: _payee.text.trim(),
+        payee: payee,
         invoiceDate: date,
         notes: accountsEmptyToNull(_notes.text),
         currency: _currency,
@@ -486,15 +498,15 @@ class _AccountsInvoiceEditorDialogState
     if (!mounted) {
       return;
     }
-    setState(() => _saving = false);
     result.when(
       success: (AccountsInvoice invoice) {
         Navigator.of(context).pop(AccountsInvoiceEditorResult.saved(invoice));
       },
       failure: (AppFailure failure) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.failureMessage(failure))),
-        );
+        setState(() {
+          _saving = false;
+          _submitError = context.l10n.failureMessage(failure);
+        });
       },
     );
   }
@@ -517,6 +529,14 @@ class _AccountsInvoiceEditorDialogState
       content: AppFormShell(
         formKey: _formKey,
         children: <Widget>[
+          if (_submitError != null) ...<Widget>[
+            Text(
+              _submitError!,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
+          ],
           AppCollapsibleSection(
             title: AccountsStrings.invoicePayeeSectionTitle,
             child: Column(
@@ -542,6 +562,12 @@ class _AccountsInvoiceEditorDialogState
                     pickerButtonLabel: l10n.hrPickDateAction,
                     invalidDateMessage: l10n.appDateInvalidMessage,
                     enableSpeechToText: false,
+                    validator: (DateTime? value) {
+                      if (value == null) {
+                        return AccountsStrings.invoiceDateRequired;
+                      }
+                      return null;
+                    },
                     onChanged: (DateTime? value) =>
                         setState(() => _invoiceDate = value),
                   ),
@@ -727,8 +753,24 @@ class _AccountsInvoiceEditorDialogState
                 label: AccountsStrings.invoiceActionsColumn,
                 alwaysVisible: true,
                 exportable: false,
-                preferredWidth: 180,
+                preferredWidth: 240,
+                fixedWidth: 240,
                 sortable: false,
+                headerBuilder: (BuildContext context) {
+                  final ThemeData headerTheme = Theme.of(context);
+                  return Center(
+                    child: Text(
+                      AccountsStrings.invoiceActionsColumn,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: headerTheme.textTheme.labelLarge?.copyWith(
+                        color: headerTheme.colorScheme.onSurfaceVariant,
+                        fontWeight: AppFontWeight.regular,
+                      ),
+                    ),
+                  );
+                },
                 cellBuilder:
                     (BuildContext context, _InvoiceDraftTableRow row) {
                   if (row.isTotal) {
@@ -737,8 +779,9 @@ class _AccountsInvoiceEditorDialogState
                   final AccountsInvoiceLineItem item = row.item!;
                   final int index = row.index;
                   return Align(
-                    alignment: AlignmentDirectional.centerStart,
+                    alignment: Alignment.center,
                     child: Wrap(
+                      alignment: WrapAlignment.center,
                       spacing: theme.spacing.sm,
                       children: <Widget>[
                         AppButton.tertiary(
@@ -844,7 +887,8 @@ class _AccountsInvoiceEditorDialogState
           label: _isCreate
               ? AccountsStrings.createInvoiceSubmitAction
               : l10n.commonSaveActionLabel,
-          onPressed: _saving ? null : _submit,
+          isLoading: _saving,
+          onPressed: _saving ? null : () => unawaited(_submit()),
         ),
       ],
     );
@@ -907,10 +951,12 @@ class _AccountsInvoiceItemDialogState
     _name = TextEditingController(text: editing?.name ?? '');
     _description = TextEditingController(text: editing?.description ?? '');
     _quantity = TextEditingController(
-      text: editing == null ? '1' : editing.quantity.toString(),
+      text: editing == null ? '' : editing.quantity.toString(),
     );
     _unitPrice = TextEditingController(
-      text: formatCurrencyAmountInput(editing?.unitPrice ?? 0),
+      text: editing == null
+          ? ''
+          : formatCurrencyAmountInput(editing.unitPrice),
     );
     final String incoming = widget.currency.trim();
     _currency = incoming.isNotEmpty
@@ -1032,8 +1078,12 @@ class _AccountsInvoiceItemDialogState
       ),
       actions: buildAppDialogFormActions(
         cancelLabel: l10n.commonCloseActionLabel,
-        submitLabel: l10n.commonSaveActionLabel,
-        submitIcon: Icons.save_outlined,
+        submitLabel: widget.editing == null
+            ? AccountsStrings.createItemSubmitAction
+            : l10n.commonSaveActionLabel,
+        submitIcon: widget.editing == null
+            ? Icons.add_outlined
+            : Icons.save_outlined,
         onCancel: () => Navigator.of(context).maybePop(),
         onSubmit: _submit,
       ),

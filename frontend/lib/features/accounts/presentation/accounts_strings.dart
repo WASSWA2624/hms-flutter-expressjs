@@ -76,16 +76,20 @@ abstract final class AccountsStrings {
   static const String invoiceItemDescriptionLabel = 'Description';
   static const String invoiceItemQuantityLabel = 'Quantity';
   static const String invoiceItemUnitPriceLabel = 'Unit price';
-  static const String invoiceItemLineTotalLabel = 'Line total';
+  static const String invoiceItemLineTotalLabel = 'Amount';
   static const String invoiceAddItemAction = 'Add item';
   static const String createItemTitle = 'Add item';
+  static const String createItemSubmitAction = 'Add';
   static const String editItemTitle = 'Edit item';
-  static const String invoiceRemoveItemAction = 'Delete';
+  static const String invoiceRemoveItemAction = 'Remove';
   static const String invoiceGrandTotalLabel = 'Total';
   static const String invoiceItemsRequired = 'Add at least one line item.';
   static const String invoiceItemsEmpty = 'No items yet.';
   static const String invoiceItemsEmptyBody = 'Add an item to add it here.';
   static const String invoicePayeeRequired = 'Payee is required.';
+  static const String invoiceDateRequired = 'Invoice date is required.';
+  static const String invoiceFormInvalid =
+      'Check the highlighted fields and try again.';
   static const String invoiceItemNameRequired = 'Item name is required.';
   static const String invoiceItemQuantityRequired = 'Quantity is required.';
   static const String invoiceItemUnitPriceRequired = 'Unit price is required.';
