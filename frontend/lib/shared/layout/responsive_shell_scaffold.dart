@@ -1745,8 +1745,9 @@ final RegExp _initialsDelimiterPattern = RegExp(r'[@._-]+');
 final RegExp _whitespacePattern = RegExp(r'\s+');
 
 const double _drawerHeaderHeight = AppShellLayout.headerHeight;
-const double _headerLogoSize = 48;
-const double _mobileHeaderLogoSize = 44;
+/// Match icon-only [AppButton] (minInteractive 40 + VisualDensity.compact).
+const double _headerLogoSize = 32;
+const double _mobileHeaderLogoSize = 32;
 const double _drawerLogoSize = 48;
 const double _avatarRadius = 13;
 const double _focusIndicatorWidth = 2;
