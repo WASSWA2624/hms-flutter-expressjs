@@ -21,7 +21,6 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/layout/layout.dart';
 
 /// Result of create/edit invoice dialog. [invoice] is set when save succeeded.
 final class AccountsInvoiceEditorResult {
@@ -416,11 +415,18 @@ class _AccountsInvoiceEditorDialogState
     return total;
   }
 
-  AppPage<AccountsInvoiceLineItem> get _itemsPage {
-    return AppPage<AccountsInvoiceLineItem>(
-      items: _items,
-      request: const AppPageRequest(pageSize: AppPageRequest.maxPageSize),
-      totalItemCount: _items.length,
+  AppPage<_InvoiceDraftTableRow> get _itemsPage {
+    final List<_InvoiceDraftTableRow> rows = <_InvoiceDraftTableRow>[
+      for (int index = 0; index < _items.length; index += 1)
+        _InvoiceDraftTableRow.item(_items[index], index),
+      _InvoiceDraftTableRow.total(itemCount: _items.length),
+    ];
+    return AppPage<_InvoiceDraftTableRow>(
+      items: rows,
+      request: AppPageRequest(
+        pageSize: rows.isEmpty ? 1 : rows.length,
+      ),
+      totalItemCount: rows.length,
     );
   }
 
@@ -540,9 +546,16 @@ class _AccountsInvoiceEditorDialogState
             ),
           ),
           SizedBox(height: theme.spacing.md),
-          AppCollapsibleSection(
-            title: AccountsStrings.invoiceItemsSectionTitle,
-            headerActions: <Widget>[
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: Text(
+                  AccountsStrings.invoiceItemsSectionTitle,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: AppFontWeight.emphasis,
+                  ),
+                ),
+              ),
               AppButton.tertiary(
                 leadingIcon: Icons.add_outlined,
                 label: AccountsStrings.invoiceAddItemAction,
@@ -550,169 +563,238 @@ class _AccountsInvoiceEditorDialogState
                 onPressed: _saving ? null : () => unawaited(_openItemDialog()),
               ),
             ],
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                SizedBox(
-                  height: 280,
-                  child: AppListTable<AccountsInvoiceLineItem>(
-                    page: _itemsPage,
-                    columns: <AppListTableColumn<AccountsInvoiceLineItem>>[
-                      AppListTableColumn<AccountsInvoiceLineItem>(
-                        id: 'name',
-                        label: AccountsStrings.invoiceItemNameLabel,
-                        alwaysVisible: true,
-                        preferredWidth: 160,
-                        cellBuilder: (_, AccountsInvoiceLineItem item) => Text(
-                          item.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        exportValue: (AccountsInvoiceLineItem item) => item.name,
+          ),
+          SizedBox(height: theme.spacing.sm),
+          AppListTable<_InvoiceDraftTableRow>(
+            page: _itemsPage,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padEmptyRows: false,
+            showRowNumbers: false,
+            enableExport: false,
+            forceCompact: true,
+            displayMode: AppListTableDisplayMode.table,
+            pinToolbar: false,
+            rowColorBuilder: (BuildContext context, _InvoiceDraftTableRow row) {
+              if (!row.isTotal) {
+                return null;
+              }
+              return theme.colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.55,
+              );
+            },
+            columns: <AppListTableColumn<_InvoiceDraftTableRow>>[
+              AppListTableColumn<_InvoiceDraftTableRow>(
+                id: 'name',
+                label: AccountsStrings.invoiceItemNameLabel,
+                alwaysVisible: true,
+                preferredWidth: 160,
+                sortable: false,
+                cellBuilder: (_, _InvoiceDraftTableRow row) {
+                  if (row.isTotal) {
+                    return Text(
+                      AccountsStrings.invoiceGrandTotalLabel,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: AppFontWeight.emphasis,
                       ),
-                      AppListTableColumn<AccountsInvoiceLineItem>(
-                        id: 'description',
-                        label: AccountsStrings.invoiceItemDescriptionLabel,
-                        preferredWidth: 180,
-                        cellBuilder: (_, AccountsInvoiceLineItem item) => Text(
-                          item.description?.trim().isNotEmpty == true
-                              ? item.description!
-                              : AccountsStrings.unknownValue,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        exportValue: (AccountsInvoiceLineItem item) =>
-                            item.description ?? '',
+                    );
+                  }
+                  return Text(
+                    row.item!.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  );
+                },
+                exportValue: (_InvoiceDraftTableRow row) =>
+                    row.isTotal
+                    ? AccountsStrings.invoiceGrandTotalLabel
+                    : row.item!.name,
+              ),
+              AppListTableColumn<_InvoiceDraftTableRow>(
+                id: 'description',
+                label: AccountsStrings.invoiceItemDescriptionLabel,
+                preferredWidth: 180,
+                sortable: false,
+                cellBuilder: (_, _InvoiceDraftTableRow row) {
+                  if (row.isTotal) {
+                    return Text(
+                      AccountsStrings.invoiceItemsCountLabel(row.itemCount),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: AppFontWeight.emphasis,
                       ),
-                      AppListTableColumn<AccountsInvoiceLineItem>(
-                        id: 'quantity',
-                        label: AccountsStrings.invoiceItemQuantityLabel,
-                        preferredWidth: 90,
-                        cellBuilder: (_, AccountsInvoiceLineItem item) =>
-                            Text('${item.quantity}'),
-                        exportValue: (AccountsInvoiceLineItem item) =>
-                            item.quantity.toString(),
+                    );
+                  }
+                  final String? description = row.item!.description?.trim();
+                  return Text(
+                    description != null && description.isNotEmpty
+                        ? description
+                        : AccountsStrings.unknownValue,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  );
+                },
+                exportValue: (_InvoiceDraftTableRow row) => row.isTotal
+                    ? AccountsStrings.invoiceItemsCountLabel(row.itemCount)
+                    : row.item!.description ?? '',
+              ),
+              AppListTableColumn<_InvoiceDraftTableRow>(
+                id: 'quantity',
+                label: AccountsStrings.invoiceItemQuantityLabel,
+                preferredWidth: 90,
+                sortable: false,
+                cellBuilder: (_, _InvoiceDraftTableRow row) {
+                  if (row.isTotal) {
+                    return const Text('');
+                  }
+                  return Text('${row.item!.quantity}');
+                },
+                exportValue: (_InvoiceDraftTableRow row) =>
+                    row.isTotal ? '' : row.item!.quantity.toString(),
+              ),
+              AppListTableColumn<_InvoiceDraftTableRow>(
+                id: 'unit_price',
+                label: AccountsStrings.invoiceItemUnitPriceLabel,
+                preferredWidth: 110,
+                sortable: false,
+                cellBuilder:
+                    (BuildContext context, _InvoiceDraftTableRow row) {
+                  if (row.isTotal) {
+                    return const Text('');
+                  }
+                  return Text(
+                    accountsMoney(context, row.item!.unitPrice, currency),
+                  );
+                },
+                exportValue: (_InvoiceDraftTableRow row) =>
+                    row.isTotal ? '' : row.item!.unitPrice.toString(),
+              ),
+              AppListTableColumn<_InvoiceDraftTableRow>(
+                id: 'line_total',
+                label: AccountsStrings.invoiceItemLineTotalLabel,
+                preferredWidth: 120,
+                sortable: false,
+                cellBuilder:
+                    (BuildContext context, _InvoiceDraftTableRow row) {
+                  if (row.isTotal) {
+                    return Text(
+                      accountsMoney(context, _grandTotal, currency),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: AppFontWeight.emphasis,
                       ),
-                      AppListTableColumn<AccountsInvoiceLineItem>(
-                        id: 'unit_price',
-                        label: AccountsStrings.invoiceItemUnitPriceLabel,
-                        preferredWidth: 110,
-                        cellBuilder: (BuildContext context, AccountsInvoiceLineItem item) =>
-                            Text(
-                              accountsMoney(context, item.unitPrice, currency),
-                            ),
-                        exportValue: (AccountsInvoiceLineItem item) =>
-                            item.unitPrice.toString(),
-                      ),
-                      AppListTableColumn<AccountsInvoiceLineItem>(
-                        id: 'line_total',
-                        label: AccountsStrings.invoiceItemLineTotalLabel,
-                        preferredWidth: 110,
-                        cellBuilder: (BuildContext context, AccountsInvoiceLineItem item) =>
-                            Text(
-                              accountsMoney(
-                                context,
-                                item.effectiveLineTotal,
-                                currency,
-                              ),
-                            ),
-                        exportValue: (AccountsInvoiceLineItem item) =>
-                            item.effectiveLineTotal.toString(),
-                      ),
-                      AppListTableColumn<AccountsInvoiceLineItem>(
-                        id: 'actions',
-                        label: AccountsStrings.invoiceActionsColumn,
-                        alwaysVisible: true,
-                        exportable: false,
-                        preferredWidth: 180,
-                        cellBuilder:
-                            (BuildContext context, AccountsInvoiceLineItem item) {
-                          final int index = _items.indexOf(item);
-                          return Align(
-                            alignment: AlignmentDirectional.centerStart,
-                            child: Wrap(
-                              spacing: theme.spacing.sm,
-                              children: <Widget>[
-                                AppButton.tertiary(
-                                  leadingIcon: Icons.edit_outlined,
-                                  label: l10n.commonEditActionLabel,
-                                  dense: true,
-                                  onPressed: _saving
-                                      ? null
-                                      : () => unawaited(
-                                          _openItemDialog(
-                                            editing: item,
-                                            index: index,
-                                          ),
-                                        ),
-                                ),
-                                AppButton.tertiary(
-                                  leadingIcon: Icons.delete_outline,
-                                  label:
-                                      AccountsStrings.invoiceRemoveItemAction,
-                                  dense: true,
-                                  color: theme.colorScheme.error,
-                                  onPressed: _saving
-                                      ? null
-                                      : () => setState(() {
-                                          if (index >= 0) {
-                                            _items.removeAt(index);
-                                          }
-                                        }),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                    emptyBuilder: (_) => const AppWorkspaceStatePanel.empty(
-                      title: AccountsStrings.invoiceItemsEmpty,
-                      body: AccountsStrings.invoiceItemsEmptyBody,
-                      minHeight: 160,
+                    );
+                  }
+                  return Text(
+                    accountsMoney(
+                      context,
+                      row.item!.effectiveLineTotal,
+                      currency,
                     ),
-                    enableExport: false,
-                    mobileItemBuilder:
-                        (BuildContext context, AccountsInvoiceLineItem item) {
-                      return AppListTableMobileItem(
-                        title: item.name,
-                        caption:
-                            item.description?.trim().isNotEmpty == true
-                            ? item.description
-                            : null,
-                        meta: <AppListTableMobileMeta>[
-                          AppListTableMobileMeta(
-                            label: '${item.quantity}',
-                            icon: Icons.numbers_outlined,
-                          ),
-                          AppListTableMobileMeta(
-                            label: accountsMoney(
-                              context,
-                              item.effectiveLineTotal,
-                              currency,
-                            ),
-                            icon: Icons.payments_outlined,
-                          ),
-                        ],
-                      );
-                    },
-                    itemKeyBuilder: (AccountsInvoiceLineItem item) {
-                      final int index = _items.indexOf(item);
-                      return ValueKey<String>(
-                        item.id.isNotEmpty
-                            ? item.id
-                            : 'draft-$index-${item.name}',
-                      );
-                    },
+                  );
+                },
+                exportValue: (_InvoiceDraftTableRow row) => row.isTotal
+                    ? _grandTotal.toString()
+                    : row.item!.effectiveLineTotal.toString(),
+              ),
+              AppListTableColumn<_InvoiceDraftTableRow>(
+                id: 'actions',
+                label: AccountsStrings.invoiceActionsColumn,
+                alwaysVisible: true,
+                exportable: false,
+                preferredWidth: 180,
+                sortable: false,
+                cellBuilder:
+                    (BuildContext context, _InvoiceDraftTableRow row) {
+                  if (row.isTotal) {
+                    return const SizedBox.shrink();
+                  }
+                  final AccountsInvoiceLineItem item = row.item!;
+                  final int index = row.index;
+                  return Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: Wrap(
+                      spacing: theme.spacing.sm,
+                      children: <Widget>[
+                        AppButton.tertiary(
+                          leadingIcon: Icons.edit_outlined,
+                          label: l10n.commonEditActionLabel,
+                          dense: true,
+                          onPressed: _saving
+                              ? null
+                              : () => unawaited(
+                                  _openItemDialog(
+                                    editing: item,
+                                    index: index,
+                                  ),
+                                ),
+                        ),
+                        AppButton.tertiary(
+                          leadingIcon: Icons.delete_outline,
+                          label: AccountsStrings.invoiceRemoveItemAction,
+                          dense: true,
+                          color: theme.colorScheme.error,
+                          onPressed: _saving
+                              ? null
+                              : () => setState(() {
+                                  if (index >= 0 && index < _items.length) {
+                                    _items.removeAt(index);
+                                  }
+                                }),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+            mobileItemBuilder:
+                (BuildContext context, _InvoiceDraftTableRow row) {
+              if (row.isTotal) {
+                return AppListTableMobileItem(
+                  title: AccountsStrings.invoiceGrandTotalLabel,
+                  caption: AccountsStrings.invoiceItemsCountLabel(
+                    row.itemCount,
                   ),
-                ),
-                SizedBox(height: theme.spacing.sm),
-                Text(
-                  '${AccountsStrings.invoiceGrandTotalLabel}: ${accountsMoney(context, _grandTotal, currency)}',
-                  style: theme.textTheme.titleSmall,
-                ),
-              ],
-            ),
+                  meta: <AppListTableMobileMeta>[
+                    AppListTableMobileMeta(
+                      label: accountsMoney(context, _grandTotal, currency),
+                      icon: Icons.payments_outlined,
+                    ),
+                  ],
+                );
+              }
+              final AccountsInvoiceLineItem item = row.item!;
+              return AppListTableMobileItem(
+                title: item.name,
+                caption: item.description?.trim().isNotEmpty == true
+                    ? item.description
+                    : null,
+                meta: <AppListTableMobileMeta>[
+                  AppListTableMobileMeta(
+                    label: '${item.quantity}',
+                    icon: Icons.numbers_outlined,
+                  ),
+                  AppListTableMobileMeta(
+                    label: accountsMoney(
+                      context,
+                      item.effectiveLineTotal,
+                      currency,
+                    ),
+                    icon: Icons.payments_outlined,
+                  ),
+                ],
+              );
+            },
+            itemKeyBuilder: (_InvoiceDraftTableRow row) {
+              if (row.isTotal) {
+                return const ValueKey<String>('invoice-draft-total');
+              }
+              final AccountsInvoiceLineItem item = row.item!;
+              return ValueKey<String>(
+                item.id.isNotEmpty
+                    ? item.id
+                    : 'draft-${row.index}-${item.name}',
+              );
+            },
           ),
         ],
       ),
@@ -738,6 +820,22 @@ class _AccountsInvoiceEditorDialogState
       ],
     );
   }
+}
+
+final class _InvoiceDraftTableRow {
+  const _InvoiceDraftTableRow.item(this.item, this.index)
+    : isTotal = false,
+      itemCount = 0;
+
+  const _InvoiceDraftTableRow.total({required this.itemCount})
+    : item = null,
+      index = -1,
+      isTotal = true;
+
+  final AccountsInvoiceLineItem? item;
+  final int index;
+  final bool isTotal;
+  final int itemCount;
 }
 
 class _AccountsInvoiceItemDialog extends StatefulWidget {

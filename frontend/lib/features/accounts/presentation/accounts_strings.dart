@@ -77,18 +77,22 @@ abstract final class AccountsStrings {
   static const String invoiceItemQuantityLabel = 'Quantity';
   static const String invoiceItemUnitPriceLabel = 'Unit price';
   static const String invoiceItemLineTotalLabel = 'Line total';
-  static const String invoiceAddItemAction = 'Create item';
-  static const String createItemTitle = 'Create item';
+  static const String invoiceAddItemAction = 'Add item';
+  static const String createItemTitle = 'Add item';
   static const String editItemTitle = 'Edit item';
   static const String invoiceRemoveItemAction = 'Delete';
   static const String invoiceGrandTotalLabel = 'Total';
   static const String invoiceItemsRequired = 'Add at least one line item.';
   static const String invoiceItemsEmpty = 'No items yet.';
-  static const String invoiceItemsEmptyBody = 'Create an item to add it here.';
+  static const String invoiceItemsEmptyBody = 'Add an item to add it here.';
   static const String invoicePayeeRequired = 'Payee is required.';
   static const String invoiceItemNameRequired = 'Item name is required.';
   static const String invoiceItemQuantityRequired = 'Quantity is required.';
   static const String invoiceItemUnitPriceRequired = 'Unit price is required.';
+
+  static String invoiceItemsCountLabel(int count) {
+    return count == 1 ? '1 item' : '$count items';
+  }
   static const String invoiceVoidTitle = 'Delete invoice';
   static const String invoiceVoided = 'Invoice deleted.';
   static const String statusVoided = 'Voided';
