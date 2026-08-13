@@ -165,6 +165,10 @@ final class AccountsWorkspaceOverviewDto {
             _int(summary['open_periods']) ??
             _int(summary['open_periods_count']) ??
             0,
+        fiscalPeriodsActive:
+            _int(summary['fiscal_years_and_periods']) ??
+            _int(summary['fiscal_periods_active_count']) ??
+            0,
       ),
       generatedAt: _date(json['generated_at']),
     );

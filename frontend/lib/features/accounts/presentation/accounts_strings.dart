@@ -46,6 +46,119 @@ abstract final class AccountsStrings {
   static const String invoicesTooltip =
       'Facility outflow invoices — money leaving the facility';
 
+  // Accounts & Finance submenu folders (billing-accounts-finance.md §9.3).
+  static const String booksCategoryLabel = 'Books';
+  static const String booksCategoryTooltip =
+      'Day-to-day accounting queues, ledgers, and facility invoices';
+  static const String setupAndControlsCategoryLabel = 'Setup & Controls';
+  static const String setupAndControlsCategoryTooltip =
+      'Fiscal calendar and accounting control settings';
+
+  // Setup & Controls → Fiscal Years & Periods.
+  static const String fiscalPeriodsLabel = 'Fiscal Years & Periods';
+  static const String fiscalPeriodsTooltip =
+      'Fiscal calendar periods, their open, close, and lock milestones';
+  static const String fiscalPeriodsEmpty = 'No fiscal periods match.';
+  static const String fiscalPeriodsEmptyBody =
+      'Try another search or add a fiscal period.';
+  static const String fiscalPeriodsSearchHint =
+      'Reference, fiscal year, period name…';
+
+  static const String fiscalReferenceColumn = 'Reference';
+  static const String fiscalYearColumn = 'Fiscal Year';
+  static const String fiscalPeriodNoColumn = 'Period No.';
+  static const String fiscalPeriodNameColumn = 'Period Name';
+  static const String fiscalStartDateColumn = 'Start Date';
+  static const String fiscalEndDateColumn = 'End Date';
+  static const String fiscalEntityAndFacilityColumn = 'Entity/Facility';
+  static const String fiscalModuleColumn = 'Module';
+  static const String fiscalOpenDateColumn = 'Open Date';
+  static const String fiscalSoftCloseDateColumn = 'Soft-close Date';
+  static const String fiscalCloseDateColumn = 'Close Date';
+  static const String fiscalLockDateColumn = 'Lock Date';
+  static const String fiscalReopenedAtColumn = 'Reopened At';
+  static const String fiscalReopenedByColumn = 'Reopened By';
+  static const String fiscalPeriodStatusColumn = 'Period Status';
+  static const String fiscalActionsColumn = 'Actions';
+
+  static const String fiscalStatusDraft = 'Draft';
+  static const String fiscalStatusActive = 'Active';
+  static const String fiscalStatusInactive = 'Inactive';
+  static const String fiscalStatusArchived = 'Archived';
+  static const String fiscalStatusLocked = 'Locked';
+  static const String fiscalDateRangeFilterLabel = 'Period date range';
+  static const String fiscalNewRecordAction = 'New record';
+
+  static const String fiscalCreateTitle = 'Add fiscal period';
+  static const String fiscalEditTitle = 'Edit fiscal period';
+  static const String fiscalCloneTitle = 'Clone fiscal period';
+  static const String fiscalDetailTitle = 'Fiscal period details';
+  static const String fiscalCreateAction = 'Add';
+  static const String fiscalSaveAction = 'Save';
+  static const String fiscalCloneAction = 'Clone';
+  static const String fiscalViewAction = 'View';
+  static const String fiscalActivateAction = 'Activate';
+  static const String fiscalDeactivateAction = 'Deactivate';
+  static const String fiscalArchiveAction = 'Archive';
+  static const String fiscalRestoreAction = 'Restore';
+
+  static const String fiscalSummarySection = 'Summary';
+  static const String fiscalRelatedSection = 'Related records';
+  static const String fiscalAttachmentsSection = 'Attachments';
+  static const String fiscalActivitySection = 'Activity & audit';
+  static const String fiscalRelatedEmpty = 'No related records.';
+  static const String fiscalAttachmentsEmpty = 'No attachments.';
+  static const String fiscalActivityEmpty = 'No recorded activity.';
+  static const String fiscalActivityCreated = 'Created';
+  static const String fiscalActivityUpdated = 'Last updated';
+  static const String fiscalActivityReopened = 'Reopened';
+  static const String fiscalActivityArchived = 'Archived';
+  static const String fiscalVersionLabel = 'Record version';
+  static const String fiscalLockedNotice =
+      'This period is locked. Posting, close, reversal, and adjustment actions are blocked.';
+
+  static const String fiscalYearLabel = 'Fiscal Year';
+  static const String fiscalPeriodNoLabel = 'Period No.';
+  static const String fiscalPeriodNameLabel = 'Period Name';
+  static const String fiscalStartDateLabel = 'Start Date';
+  static const String fiscalEndDateLabel = 'End Date';
+  static const String fiscalEntityAndFacilityLabel = 'Entity/Facility';
+  static const String fiscalModuleLabel = 'Module';
+  static const String fiscalOpenDateLabel = 'Open Date';
+  static const String fiscalSoftCloseDateLabel = 'Soft-close Date';
+  static const String fiscalCloseDateLabel = 'Close Date';
+  static const String fiscalNotesLabel = 'Notes';
+
+  static const String fiscalRequiredField = 'This field is required.';
+  static const String fiscalPeriodNoInvalid =
+      'Enter a period number between 1 and 366.';
+  static const String fiscalEndBeforeStart =
+      'End date must not be earlier than the start date.';
+  static const String fiscalMilestoneOutOfOrder =
+      'Open, soft-close, and close dates must be in order.';
+
+  static const String fiscalActivateConfirmTitle = 'Activate fiscal period?';
+  static const String fiscalDeactivateConfirmTitle = 'Deactivate fiscal period?';
+  static const String fiscalArchiveConfirmTitle = 'Archive fiscal period?';
+  static const String fiscalRestoreConfirmTitle = 'Restore fiscal period?';
+  static const String fiscalArchiveConfirmBody =
+      'The period is archived, not deleted. Posted history stays available and the record can be restored.';
+  static const String fiscalBulkActivateAction = 'Activate selected';
+  static const String fiscalBulkDeactivateAction = 'Deactivate selected';
+  static const String fiscalBulkArchiveAction = 'Archive selected';
+
+  static String fiscalActivateConfirmBody(String reference) =>
+      'Activate $reference so permitted workflows can select it?';
+  static String fiscalDeactivateConfirmBody(String reference) =>
+      'Deactivate $reference so it is no longer selectable for new work?';
+  static String fiscalRestoreConfirmBody(String reference) =>
+      'Restore $reference and record the reopen in the audit trail?';
+  static String fiscalBulkConfirmBody(int count, String action) =>
+      'Apply $action to $count matching fiscal period(s)? '
+      'Records that do not allow the change are skipped.';
+  static String fiscalBulkPartialFailure(int failed) =>
+      '$failed record(s) could not be changed.';
+
   static const String glEmpty = 'No accounts match.';
   static const String openWorkEmpty = 'No open work.';
   static const String toPostEmpty = 'No drafts to post.';

@@ -577,6 +577,13 @@ enum AccountsInvoiceStatus {
   VOIDED
 }
 
+enum FiscalPeriodStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
 enum PatientInsuranceEnrollmentStatus {
   ACTIVE
   EXPIRED
@@ -1063,6 +1070,7 @@ model tenant {
   price_book_entries              price_book_entry[]
   chart_accounts                  chart_account[]
   accounts_invoices               accounts_invoice[]
+  fiscal_periods                  fiscal_period[]
   billable_charge_events          billable_charge_event[]
   insurance_companies             insurance_company[]
   coverage_plans                  coverage_plan[]
@@ -1148,6 +1156,7 @@ model facility {
   price_book_entries              price_book_entry[]
   chart_accounts                  chart_account[]
   accounts_invoices               accounts_invoice[]
+  fiscal_periods                  fiscal_period[]
   billable_charge_events          billable_charge_event[]
   patient_insurance_enrollments   patient_insurance_enrollment[]
   insurer_integrations            insurer_integration[]
@@ -1513,6 +1522,7 @@ model user {
   patient_report_jobs_requested patient_report_job[]      @relation("patient_report_job_requested_by")
   unit_management_assignments   unit_management_assignment[]
   radiology_orders_assigned     radiology_order[]             @relation("radiology_order_assigned_user")
+  fiscal_periods_reopened       fiscal_period[]               @relation("FiscalPeriodReopenedBy")
 
   @@unique([tenant_id, email])
   @@unique([tenant_id, human_friendly_id])
@@ -4895,6 +4905,52 @@ model chart_account {
   @@index([deleted_at])
   @@index([human_friendly_id])
   @@index([effective_from])
+}
+
+/// Fiscal calendar rows for Accounts & Finance → Setup & Controls → Fiscal Years & Periods.
+/// One row per fiscal year + period number + module, scoped to a tenant and optional facility.
+model fiscal_period {
+  id                String             @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id String?            @db.VarChar(32)
+  tenant_id         String             @db.VarChar(36)
+  facility_id       String?            @db.VarChar(36)
+  fiscal_year       String             @db.VarChar(32)
+  period_no         Int
+  period_name       String             @db.VarChar(120)
+  start_date        DateTime
+  end_date          DateTime
+  module            String             @default("ALL") @db.VarChar(32)
+  open_date         DateTime?
+  soft_close_date   DateTime?
+  close_date        DateTime?
+  lock_date         DateTime?
+  reopened_at       DateTime?
+  reopened_by       String?            @db.VarChar(36)
+  status            FiscalPeriodStatus @default(DRAFT)
+  notes             String?            @db.VarChar(500)
+  created_by        String?            @db.VarChar(36)
+  updated_by        String?            @db.VarChar(36)
+  archived_at       DateTime?
+  created_at        DateTime           @default(now())
+  updated_at        DateTime           @updatedAt
+  deleted_at        DateTime?
+  version           Int                @default(1)
+
+  tenant       tenant    @relation(fields: [tenant_id], references: [id])
+  facility     facility? @relation(fields: [facility_id], references: [id])
+  reopened_user user?    @relation("FiscalPeriodReopenedBy", fields: [reopened_by], references: [id])
+
+  // Explicit name: the generated one exceeds the 64-char MySQL identifier cap.
+  @@unique([tenant_id, facility_id, fiscal_year, period_no, module], map: "fiscal_period_scope_period_key")
+  @@index([tenant_id])
+  @@index([facility_id])
+  @@index([fiscal_year])
+  @@index([status])
+  @@index([start_date])
+  @@index([end_date])
+  @@index([module])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
 }
 
 /// Facility outflow invoices for the Accounts Invoices desk (not Billing patient invoices).

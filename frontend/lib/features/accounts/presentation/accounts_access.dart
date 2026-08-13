@@ -87,8 +87,22 @@ bool canPrintAccountsWorkspace(AppAccessPolicy policy) {
 AccessRequirement accountsSectionTabRequirement(AccountsDeskSection section) {
   return switch (section) {
     AccountsDeskSection.ledgers => accountsPatientLedgersReadRequirement,
+    // Setup & Controls is read-gated, not entry-gated: a write-only grant must
+    // not surface the fiscal calendar.
+    AccountsDeskSection.fiscalYearsAndPeriods =>
+      accountsWorkspaceReadRequirement,
     _ => accountsWorkspaceEntryRequirement,
   };
+}
+
+/// A folder is visible when at least one of its leaf tabs is authorized.
+bool canViewAccountsCategory(
+  AppAccessPolicy policy,
+  AccountsDeskCategory category,
+) {
+  return category.sections.any(
+    (AccountsDeskSection section) => canViewAccountsSection(policy, section),
+  );
 }
 
 bool canEnterAccounts(AppAccessPolicy policy) {
@@ -202,8 +216,11 @@ bool accountsSectionShowsNextActionColumn(
       canWriteAccounts(policy) ||
           canDecideAccountsApproval(policy) ||
           canEnterAccounts(policy),
-    // Account chart / Invoices use Actions — no work-queue Next column.
-    AccountsDeskSection.chart || AccountsDeskSection.invoices => false,
+    // Account chart / Invoices / Fiscal periods use Actions — no work-queue
+    // Next column.
+    AccountsDeskSection.chart ||
+    AccountsDeskSection.invoices ||
+    AccountsDeskSection.fiscalYearsAndPeriods => false,
   };
 }
 
@@ -313,6 +330,33 @@ abstract final class AccountsChartAtomPermissions {
   static const AccessRequirement deactivate = accountsChartWriteRequirement;
   static const AccessRequirement write = accountsChartWriteRequirement;
   static const AccessRequirement routeEntry = accountsWorkspaceEntryRequirement;
+}
+
+/// Setup & Controls → Fiscal Years & Periods atom → permission mapping
+/// (`.cursor/finance/accounts-and-finance/setup-and-controls/fiscal-years-and-periods.md`).
+abstract final class AccountsFiscalPeriodsAtomPermissions {
+  static const AccessRequirement tab = accountsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = accountsWorkspaceReadRequirement;
+  static const AccessRequirement detail = accountsWorkspaceReadRequirement;
+  static const AccessRequirement filters = accountsWorkspaceReadRequirement;
+  static const AccessRequirement settings = accountsWorkspaceReadRequirement;
+  static const AccessRequirement export = accountsWorkspaceExportRequirement;
+  static const AccessRequirement print = accountsWorkspacePrintRequirement;
+  static const AccessRequirement create = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement update = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement clone = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement activate = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement deactivate = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement archive = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement restore = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement write = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement approve = accountsApprovalDecisionRequirement;
+  static const AccessRequirement routeEntry = accountsWorkspaceReadRequirement;
+}
+
+/// Fiscal Years & Periods mutations — `accounts:write` ∩ `facility-accounts`.
+bool canWriteAccountsFiscalPeriods(AppAccessPolicy policy) {
+  return AccountsFiscalPeriodsAtomPermissions.write.isAllowed(policy);
 }
 
 abstract final class AccountsInvoicesAtomPermissions {

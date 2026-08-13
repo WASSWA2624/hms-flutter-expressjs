@@ -1,6 +1,43 @@
 import 'package:flutter/foundation.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
+/// Expandable submenu folders under `Accounts & Finance`
+/// (`billing-accounts-finance.md` §9.3).
+///
+/// A folder never opens a tab itself; selecting a folder reveals its leaf tabs.
+/// [books] holds the sections that predate the finance menu refactor.
+enum AccountsDeskCategory {
+  books,
+  setupAndControls;
+
+  /// Leaf sections belonging to this folder, in menu order.
+  List<AccountsDeskSection> get sections {
+    return switch (this) {
+      AccountsDeskCategory.books => const <AccountsDeskSection>[
+        AccountsDeskSection.work,
+        AccountsDeskSection.journals,
+        AccountsDeskSection.approvals,
+        AccountsDeskSection.gl,
+        AccountsDeskSection.ledgers,
+        AccountsDeskSection.chart,
+        AccountsDeskSection.invoices,
+      ],
+      AccountsDeskCategory.setupAndControls => const <AccountsDeskSection>[
+        AccountsDeskSection.fiscalYearsAndPeriods,
+      ],
+    };
+  }
+
+  static AccountsDeskCategory of(AccountsDeskSection section) {
+    for (final AccountsDeskCategory category in AccountsDeskCategory.values) {
+      if (category.sections.contains(section)) {
+        return category;
+      }
+    }
+    return AccountsDeskCategory.books;
+  }
+}
+
 /// Accounts workspace desk sections (`accounts.md`).
 enum AccountsDeskSection {
   work,
@@ -9,10 +46,16 @@ enum AccountsDeskSection {
   gl,
   ledgers,
   chart,
-  invoices;
+  invoices,
+  fiscalYearsAndPeriods('fiscal-years-and-periods');
+
+  const AccountsDeskSection([this.canonicalSlug]);
+
+  /// Canonical kebab-case slug when it differs from the enum name.
+  final String? canonicalSlug;
 
   /// Stable `?section=` slug.
-  String get sectionQueryValue => name;
+  String get sectionQueryValue => canonicalSlug ?? name;
 
   /// Alias for [sectionQueryValue] (table settings keys / URL writers).
   String get routeQueryValue => sectionQueryValue;
@@ -43,13 +86,22 @@ enum AccountsDeskSection {
       'invoices' ||
       // Legacy Close books aliases → Invoices (no books flash).
       'books' ||
-      'periods' ||
       'period-close' ||
       'close' =>
         AccountsDeskSection.invoices,
+      'fiscal-years-and-periods' ||
+      'fiscalyearsandperiods' ||
+      'fiscal-periods' ||
+      // Legacy `periods` deep links now resolve to the owning Setup & Controls
+      // tab rather than Invoices.
+      'periods' =>
+        AccountsDeskSection.fiscalYearsAndPeriods,
       _ => null,
     };
   }
+
+  /// Folder this leaf tab lives under.
+  AccountsDeskCategory get category => AccountsDeskCategory.of(this);
 
   static AccountsDeskSection? resolveSlug(String? raw) => resolveDeskSlug(raw);
 
@@ -209,6 +261,7 @@ final class AccountsSummary {
     this.ledgersWithBalance = 0,
     this.chartActive = 0,
     this.invoices = 0,
+    this.fiscalPeriodsActive = 0,
   });
 
   final int openWork;
@@ -218,6 +271,7 @@ final class AccountsSummary {
   final int ledgersWithBalance;
   final int chartActive;
   final int invoices;
+  final int fiscalPeriodsActive;
 
   /// Alias used by mutation applier / legacy callers.
   int get approvals => needApproval;
@@ -229,6 +283,7 @@ final class AccountsSummary {
   int get patientLedgersCount => ledgersWithBalance;
   int get chartActiveCount => chartActive;
   int get invoicesCount => invoices;
+  int get fiscalPeriodsActiveCount => fiscalPeriodsActive;
 
   int get workloadCount => openWork;
 
@@ -241,6 +296,7 @@ final class AccountsSummary {
       AccountsDeskSection.ledgers => ledgersWithBalance,
       AccountsDeskSection.chart => chartActive,
       AccountsDeskSection.invoices => invoices,
+      AccountsDeskSection.fiscalYearsAndPeriods => fiscalPeriodsActive,
     };
   }
 
@@ -252,6 +308,7 @@ final class AccountsSummary {
     int? ledgersWithBalance,
     int? chartActive,
     int? invoices,
+    int? fiscalPeriodsActive,
     int? approvals,
   }) {
     return AccountsSummary(
@@ -262,6 +319,7 @@ final class AccountsSummary {
       ledgersWithBalance: ledgersWithBalance ?? this.ledgersWithBalance,
       chartActive: chartActive ?? this.chartActive,
       invoices: invoices ?? this.invoices,
+      fiscalPeriodsActive: fiscalPeriodsActive ?? this.fiscalPeriodsActive,
     );
   }
 }

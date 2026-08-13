@@ -307,7 +307,7 @@ void main() {
       );
 
       final AppTabStrip strip = tester.widget<AppTabStrip>(
-        find.byType(AppTabStrip),
+        find.byKey(accountsSectionTabsKey),
       );
       final AppTabItem journals = strip.tabs.firstWhere(
         (AppTabItem tab) => tab.label == AccountsStrings.toPostLabel,

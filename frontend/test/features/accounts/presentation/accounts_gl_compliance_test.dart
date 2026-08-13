@@ -316,7 +316,7 @@ void main() {
       );
 
       final AppTabStrip strip = tester.widget<AppTabStrip>(
-        find.byType(AppTabStrip),
+        find.byKey(accountsSectionTabsKey),
       );
       final AppTabItem gl = strip.tabs.firstWhere(
         (AppTabItem tab) => tab.label == AccountsStrings.generalLedgerLabel,

@@ -18,6 +18,7 @@ int accountsSectionTabCount(
   int? invoicesOverride,
   int? ledgersBalanceOverride,
   int? chartActiveOverride,
+  int? fiscalPeriodsOverride,
 }) {
   final AccountsSummary summary = state.overview.summary;
   final int scopeTotal = switch (section) {
@@ -28,6 +29,8 @@ int accountsSectionTabCount(
       ledgersBalanceOverride ?? summary.countFor(section),
     AccountsDeskSection.chart =>
       chartActiveOverride ?? summary.countFor(section),
+    AccountsDeskSection.fiscalYearsAndPeriods =>
+      fiscalPeriodsOverride ?? summary.countFor(section),
     _ => summary.countFor(section),
   };
 
@@ -35,7 +38,8 @@ int accountsSectionTabCount(
       section == AccountsDeskSection.gl ||
       section == AccountsDeskSection.invoices ||
       section == AccountsDeskSection.ledgers ||
-      section == AccountsDeskSection.chart;
+      section == AccountsDeskSection.chart ||
+      section == AccountsDeskSection.fiscalYearsAndPeriods;
   if (isDedicatedPanel) {
     return scopeTotal;
   }
@@ -61,6 +65,38 @@ AppTabCountTone accountsSectionCountTone(AccountsDeskSection section) {
     AccountsDeskSection.gl ||
     AccountsDeskSection.ledgers ||
     AccountsDeskSection.chart ||
-    AccountsDeskSection.invoices => AppTabCountTone.info,
+    AccountsDeskSection.invoices ||
+    AccountsDeskSection.fiscalYearsAndPeriods => AppTabCountTone.info,
   };
+}
+
+/// Folder badge = sum of its visible leaf tab counts.
+int accountsCategoryTabCount(
+  AccountsWorkspaceState state,
+  AccountsDeskCategory category,
+  List<AccountsDeskSection> visibleSections, {
+  AccountsDeskSection? activeSection,
+  int? glActivityOverride,
+  int? invoicesOverride,
+  int? ledgersBalanceOverride,
+  int? chartActiveOverride,
+  int? fiscalPeriodsOverride,
+}) {
+  int total = 0;
+  for (final AccountsDeskSection section in category.sections) {
+    if (!visibleSections.contains(section)) {
+      continue;
+    }
+    total += accountsSectionTabCount(
+      state,
+      section,
+      activeSection: activeSection,
+      glActivityOverride: glActivityOverride,
+      invoicesOverride: invoicesOverride,
+      ledgersBalanceOverride: ledgersBalanceOverride,
+      chartActiveOverride: chartActiveOverride,
+      fiscalPeriodsOverride: fiscalPeriodsOverride,
+    );
+  }
+  return total;
 }

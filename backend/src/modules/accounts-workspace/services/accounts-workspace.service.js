@@ -4,6 +4,7 @@ const { resolveModelRecordByIdentifier } = require('@lib/identifiers/resolve-ent
 const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const { toDecimalNumber, toMoneyString } = require('@lib/billing/financials');
 const billingService = require('@services/billing/billing.service');
+const fiscalPeriodService = require('@services/accounts-workspace/fiscal-period.service');
 const repo = require('@repositories/accounts-workspace/accounts-workspace.repository');
 
 const clean = (value) => String(value ?? '').trim();
@@ -210,6 +211,11 @@ const getWorkspace = async (filters = {}, user = {}) => {
   } catch (_) {
     invoicesCount = 0;
   }
+  const fiscalPeriodsCount = await fiscalPeriodService.countActiveFiscalPeriods(
+    filters,
+    user
+  );
+
   return {
     summary: {
       open_work: 0,
@@ -226,14 +232,34 @@ const getWorkspace = async (filters = {}, user = {}) => {
       chart_active_count: 0,
       invoices: invoicesCount,
       invoices_count: invoicesCount,
+      fiscal_years_and_periods: fiscalPeriodsCount,
+      fiscal_periods_active_count: fiscalPeriodsCount,
     },
     generated_at: new Date().toISOString(),
   };
 };
 
-const listWorkItems = async (filters = {}, page = 1, limit = 20, _user = {}) => {
+/**
+ * Section-scoped work items.
+ *
+ * Sections that own a dedicated resource delegate to that service so the
+ * worklist and the resource tab always agree on rows, filters, and totals.
+ */
+const WORK_ITEM_SECTION_HANDLERS = {
+  [fiscalPeriodService.SECTION_SLUG]: (filters, page, limit, user) =>
+    fiscalPeriodService.listFiscalPeriods(filters, page, limit, user),
+};
+
+const listWorkItems = async (filters = {}, page = 1, limit = 20, user = {}) => {
   assertEnabled();
-  void filters;
+  const section = clean(filters.section).toLowerCase();
+  const handler = WORK_ITEM_SECTION_HANDLERS[section];
+  if (handler) {
+    const { section: _section, ...sectionFilters } = filters;
+    const result = await handler(sectionFilters, page, limit, user);
+    return { items: result.items, pagination: result.pagination };
+  }
+
   const items = [];
   return {
     items,

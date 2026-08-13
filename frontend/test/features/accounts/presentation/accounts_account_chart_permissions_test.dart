@@ -195,7 +195,7 @@ void main() {
     );
 
     expect(find.byType(AccountsWorkspacePage), findsOneWidget);
-    expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.byKey(accountsSectionTabsKey), findsOneWidget);
     expect(find.byType(AccountsChartPanel), findsOneWidget);
     expect(find.text('Cash'), findsWidgets);
     expect(find.byTooltip('Add'), findsNothing);

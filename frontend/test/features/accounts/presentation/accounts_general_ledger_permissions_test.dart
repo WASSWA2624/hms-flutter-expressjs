@@ -214,7 +214,7 @@ void main() {
     await _pumpGl(tester, accessPolicy: reader);
 
     expect(find.byType(AccountsWorkspacePage), findsOneWidget);
-    expect(find.byType(AppTabStrip), findsOneWidget);
+    expect(find.byKey(accountsSectionTabsKey), findsOneWidget);
     expect(find.text(AccountsStrings.generalLedgerLabel), findsWidgets);
     expect(
       find.byTooltip(AccountsStrings.generalLedgerTooltip),

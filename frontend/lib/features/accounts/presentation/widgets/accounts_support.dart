@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.dart';
+import 'package:hosspi_hms/features/accounts/domain/entities/accounts_fiscal_period.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
@@ -154,6 +155,31 @@ String accountsSectionLabel(AccountsDeskSection section) {
     AccountsDeskSection.ledgers => AccountsStrings.patientLedgersLabel,
     AccountsDeskSection.chart => AccountsStrings.accountChartLabel,
     AccountsDeskSection.invoices => AccountsStrings.invoicesLabel,
+    AccountsDeskSection.fiscalYearsAndPeriods =>
+      AccountsStrings.fiscalPeriodsLabel,
+  };
+}
+
+String accountsCategoryLabel(AccountsDeskCategory category) {
+  return switch (category) {
+    AccountsDeskCategory.books => AccountsStrings.booksCategoryLabel,
+    AccountsDeskCategory.setupAndControls =>
+      AccountsStrings.setupAndControlsCategoryLabel,
+  };
+}
+
+String? accountsCategoryTooltip(AccountsDeskCategory category) {
+  return switch (category) {
+    AccountsDeskCategory.books => AccountsStrings.booksCategoryTooltip,
+    AccountsDeskCategory.setupAndControls =>
+      AccountsStrings.setupAndControlsCategoryTooltip,
+  };
+}
+
+IconData accountsCategoryIcon(AccountsDeskCategory category) {
+  return switch (category) {
+    AccountsDeskCategory.books => Icons.menu_book_outlined,
+    AccountsDeskCategory.setupAndControls => Icons.tune_outlined,
   };
 }
 
@@ -166,6 +192,8 @@ String? accountsSectionTooltip(AccountsDeskSection section) {
     AccountsDeskSection.ledgers => AccountsStrings.patientLedgersTooltip,
     AccountsDeskSection.chart => AccountsStrings.accountChartTooltip,
     AccountsDeskSection.invoices => AccountsStrings.invoicesTooltip,
+    AccountsDeskSection.fiscalYearsAndPeriods =>
+      AccountsStrings.fiscalPeriodsTooltip,
   };
 }
 
@@ -178,6 +206,7 @@ String accountsTableSettingsKey(AccountsDeskSection section) {
     AccountsDeskSection.ledgers => 'accounts_ledgers_v1',
     AccountsDeskSection.chart => 'accounts_chart_v1',
     AccountsDeskSection.invoices => 'accounts_invoices_v1',
+    AccountsDeskSection.fiscalYearsAndPeriods => 'accounts_fiscal_periods_v1',
   };
 }
 
@@ -190,6 +219,7 @@ IconData accountsSectionIcon(AccountsDeskSection section) {
     AccountsDeskSection.ledgers => Icons.person_outline,
     AccountsDeskSection.chart => Icons.list_alt_outlined,
     AccountsDeskSection.invoices => Icons.receipt_long_outlined,
+    AccountsDeskSection.fiscalYearsAndPeriods => Icons.event_note_outlined,
   };
 }
 
@@ -202,7 +232,46 @@ String accountsEmptyBody(AccountsDeskSection section) {
     AccountsDeskSection.ledgers => AccountsStrings.patientLedgersEmpty,
     AccountsDeskSection.chart => AccountsStrings.chartEmpty,
     AccountsDeskSection.invoices => AccountsStrings.invoicesEmpty,
+    AccountsDeskSection.fiscalYearsAndPeriods =>
+      AccountsStrings.fiscalPeriodsEmpty,
   };
+}
+
+String accountsFiscalPeriodStatusLabel(AccountsFiscalPeriodStatus status) {
+  return switch (status) {
+    AccountsFiscalPeriodStatus.draft => AccountsStrings.fiscalStatusDraft,
+    AccountsFiscalPeriodStatus.active => AccountsStrings.fiscalStatusActive,
+    AccountsFiscalPeriodStatus.inactive => AccountsStrings.fiscalStatusInactive,
+    AccountsFiscalPeriodStatus.archived => AccountsStrings.fiscalStatusArchived,
+  };
+}
+
+AppWorkspaceStatusTone accountsFiscalPeriodStatusTone(
+  AccountsFiscalPeriodStatus status,
+) {
+  return switch (status) {
+    AccountsFiscalPeriodStatus.active => AppWorkspaceStatusTone.success,
+    AccountsFiscalPeriodStatus.draft => AppWorkspaceStatusTone.warning,
+    AccountsFiscalPeriodStatus.inactive => AppWorkspaceStatusTone.neutral,
+    AccountsFiscalPeriodStatus.archived => AppWorkspaceStatusTone.neutral,
+  };
+}
+
+IconData accountsFiscalPeriodStatusIcon(AccountsFiscalPeriodStatus status) {
+  return switch (status) {
+    AccountsFiscalPeriodStatus.draft => Icons.edit_note_outlined,
+    AccountsFiscalPeriodStatus.active => Icons.check_circle_outline,
+    AccountsFiscalPeriodStatus.inactive => Icons.pause_circle_outline,
+    AccountsFiscalPeriodStatus.archived => Icons.inventory_2_outlined,
+  };
+}
+
+/// Localized date-only display; the API keeps ISO-8601.
+String accountsDate(BuildContext context, DateTime? value) {
+  if (value == null) {
+    return AccountsStrings.unknownValue;
+  }
+  return AppFormatters.mediumDate(value, Localizations.localeOf(context));
 }
 
 /// Alias used by workspace empty panels.

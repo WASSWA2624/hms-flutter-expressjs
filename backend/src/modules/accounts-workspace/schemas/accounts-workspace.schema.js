@@ -32,6 +32,12 @@ const workItemsQuerySchema = listQuerySchema.extend({
   section: z.string().trim().optional(),
   source: z.string().trim().optional(),
   status: z.string().trim().optional(),
+  // Section-specific filters forwarded to the owning resource service.
+  fiscal_year: z.string().trim().max(32).optional(),
+  module: z.string().trim().max(32).optional(),
+  period_name: z.string().trim().max(120).optional(),
+  from: z.string().trim().optional(),
+  to: z.string().trim().optional(),
 });
 
 const glAccountsQuerySchema = listQuerySchema.extend({

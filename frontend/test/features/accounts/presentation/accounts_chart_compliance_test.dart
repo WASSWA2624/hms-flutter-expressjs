@@ -328,7 +328,7 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       final AppTabStrip strip = tester.widget<AppTabStrip>(
-        find.byType(AppTabStrip),
+        find.byKey(accountsSectionTabsKey),
       );
       final AppTabItem chart = strip.tabs.firstWhere(
         (AppTabItem tab) => tab.label == AccountsStrings.accountChartLabel,
