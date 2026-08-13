@@ -14173,8 +14173,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyDrugScanProcessingPhotosBody => 'Reading all pack photos…';
 
   @override
-  String get pharmacyDrugScanProcessingAiBody =>
-      'Mapping pack details with AI…';
+  String get pharmacyDrugScanProcessingAiBody => 'Reading pack photos with AI…';
 
   @override
   String get pharmacyDrugScanAiUnavailableBody =>

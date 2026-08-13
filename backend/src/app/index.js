@@ -26,7 +26,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const { corsOptions } = require('@config/cors');
 const { TRUST_PROXY } = require('@config/env');
-const { LOCAL_STORAGE_DIR } = require('@config/constants');
+const { AI_JSON_BODY_LIMIT, LOCAL_STORAGE_DIR } = require('@config/constants');
 const securityHeaders = require('@middlewares/security.middleware');
 const sessionMiddleware = require('@middlewares/session.middleware');
 const csrfMiddleware = require('@middlewares/csrf.middleware');
@@ -88,8 +88,14 @@ const createApp = () => {
     // 4. Session middleware (for CSRF token storage)
     app.use(sessionMiddleware());
     
-    // 5. JSON parser middleware
-    app.use(express.json());
+    // 5. JSON parser middleware. AI vision tasks send pack photos as base64.
+    app.use((req, res, next) => {
+      const url = String(req.originalUrl || req.url || '');
+      const isAi = url.includes('/api/v1/ai/');
+      return express.json({
+        limit: isAi ? AI_JSON_BODY_LIMIT : '100kb',
+      })(req, res, next);
+    });
     app.use(express.urlencoded({ extended: true }));
     
     // 6. i18n locale detection middleware

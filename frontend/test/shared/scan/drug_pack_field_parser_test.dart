@@ -63,6 +63,30 @@ Paracetamol Tablets B.P. 500mg
       expect(result.strength?.toLowerCase(), contains('500'));
     });
 
+    test('maps AI JSON output into candidates', () {
+      final DrugPackFieldCandidates result = DrugPackFieldCandidates.fromAiOutput(
+        <String, Object?>{
+          'generic_name': 'Paracetamol',
+          'brand_name': 'AGOMO',
+          'form': 'Tablet',
+          'strength': '500 mg',
+          'batch_number': 'LOT-9',
+          'expiry_date': '2027-12-01',
+          'barcode': '8901234567890',
+          'raw_text': 'AGOMO Paracetamol Tablets 500 mg',
+        },
+      );
+
+      expect(result.genericName, 'Paracetamol');
+      expect(result.brandName, 'AGOMO');
+      expect(result.form, 'Tablet');
+      expect(result.strength, '500 mg');
+      expect(result.batchNumber, 'LOT-9');
+      expect(result.expiryDate, DateTime(2027, 12, 1));
+      expect(result.barcode, '8901234567890');
+      expect(result.hasAnyIdentityField, isTrue);
+    });
+
     test('rejects OCR garbage as brand or generic names', () {
       final DrugPackFieldCandidates result = parser.parse(
         ocrText: ''': S137189VL0LX0\nbw 005 '4'g s191ge] joweiadesel\nTablet\n500 mg''',

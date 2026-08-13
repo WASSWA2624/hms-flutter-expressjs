@@ -38,6 +38,42 @@ final class DrugPackFieldCandidates {
       expiryDate != null ||
       manufacturedAt != null;
 
+  factory DrugPackFieldCandidates.fromAiOutput(Map<String, Object?> json) {
+    return DrugPackFieldCandidates(
+      brandName: _aiString(json['brand_name']),
+      genericName: _aiString(json['generic_name']),
+      form: _aiString(json['form']),
+      strength: _aiString(json['strength']),
+      code: _aiString(json['code']),
+      batchNumber: _aiString(json['batch_number']),
+      expiryDate: DateTime.tryParse(_aiString(json['expiry_date']) ?? ''),
+      manufacturedAt: DateTime.tryParse(
+        _aiString(json['manufactured_at']) ?? '',
+      ),
+      barcode: _aiString(json['barcode']),
+      rawText: _aiString(json['raw_text']),
+    );
+  }
+
+  static String? _aiString(Object? value) {
+    if (value is! String) {
+      return null;
+    }
+    final String trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      return null;
+    }
+    final String lower = trimmed.toLowerCase();
+    if (lower == 'null' ||
+        lower == 'unknown' ||
+        lower == 'n/a' ||
+        lower == 'none' ||
+        lower == '-') {
+      return null;
+    }
+    return trimmed;
+  }
+
   DrugPackFieldCandidates merge(DrugPackFieldCandidates other) {
     return DrugPackFieldCandidates(
       brandName: _prefer(brandName, other.brandName),

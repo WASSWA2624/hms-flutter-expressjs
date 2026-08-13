@@ -34,4 +34,17 @@ void main() {
       expect(img.decodeImage(flipped), isNotNull);
     });
   });
+
+  test('encodeAppImageForAi downscales to jpeg', () {
+    final img.Image source = img.Image(width: 1200, height: 800);
+    for (int x = 0; x < 1200; x++) {
+      source.setPixelRgb(x, 0, 255, 0, 0);
+    }
+    final Uint8List png = Uint8List.fromList(img.encodePng(source));
+    final Uint8List encoded = encodeAppImageForAi(png, maxEdge: 320, quality: 60);
+    final img.Image? decoded = img.decodeImage(encoded);
+    expect(decoded, isNotNull);
+    expect(decoded!.width, 320);
+    expect(decoded.height, 213);
+  });
 }

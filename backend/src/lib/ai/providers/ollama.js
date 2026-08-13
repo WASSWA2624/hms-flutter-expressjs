@@ -15,6 +15,24 @@ const { logger } = require('@lib/logging');
 
 const PROVIDER_NAME = 'ollama';
 
+const stripDataUrl = (value) => {
+  const text = String(value || '').trim();
+  if (!text) {
+    return '';
+  }
+  const match = text.match(/^data:image\/[a-zA-Z0-9.+-]+;base64,(.+)$/s);
+  return String(match ? match[1] : text).replace(/\s+/g, '');
+};
+
+const normalizeOllamaImages = (images) => {
+  if (!Array.isArray(images)) {
+    return [];
+  }
+  return images
+    .map((item) => stripDataUrl(item))
+    .filter((item) => item.length > 0);
+};
+
 const normalizeBaseUrl = (value) =>
   String(value || '').trim().replace(/\/+$/, '');
 
@@ -104,12 +122,22 @@ const createOllamaProvider = (overrides = {}) => {
     async complete({
       system,
       user,
+      images,
       model,
       temperature,
       timeoutMs,
       signal,
     } = {}) {
       const resolvedModel = String(model || defaultModel).trim();
+      const userMessage = {
+        role: 'user',
+        content: String(user || ''),
+      };
+      const normalizedImages = normalizeOllamaImages(images);
+      if (normalizedImages.length > 0) {
+        userMessage.images = normalizedImages;
+      }
+
       const payload = await request('/api/chat', {
         method: 'POST',
         timeoutMs,
@@ -119,7 +147,7 @@ const createOllamaProvider = (overrides = {}) => {
           stream: false,
           messages: [
             { role: 'system', content: String(system || '') },
-            { role: 'user', content: String(user || '') },
+            userMessage,
           ],
           options: {
             temperature:

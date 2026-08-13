@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/ai/ai_drug_pack_extractor.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
@@ -241,7 +242,10 @@ class _PharmacyDrugEditDialogState
 
   Future<void> _openPackScan() async {
     final DrugPackFieldCandidates? candidates =
-        await showPharmacyDrugPackScanDialog(context);
+        await showPharmacyDrugPackScanDialog(
+          context,
+          aiMapper: ref.read(drugPackAiMapperProvider),
+        );
     if (!mounted || candidates == null || !candidates.hasAnyIdentityField) {
       return;
     }

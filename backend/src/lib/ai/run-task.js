@@ -5,9 +5,11 @@
 const {
   AI_ENABLED,
   AI_MODEL,
+  AI_VISION_MODEL,
   AI_TEMPERATURE,
   AI_TIMEOUT_MS,
   AI_CLINICAL_NOTE_FORMAT_TIMEOUT_MS,
+  AI_DRUG_PACK_EXTRACT_TIMEOUT_MS,
 } = require('@config/env');
 const { createAiProvider } = require('@lib/ai/factory');
 const { getAiTask } = require('@lib/ai/tasks');
@@ -25,10 +27,35 @@ const resolveTaskTimeoutMs = (task) => {
   if (task.key === 'clinical_note_format') {
     return AI_CLINICAL_NOTE_FORMAT_TIMEOUT_MS;
   }
+  if (task.key === 'drug_pack_extract') {
+    return AI_DRUG_PACK_EXTRACT_TIMEOUT_MS;
+  }
   if (Number(task.timeoutMs) > 0) {
     return Number(task.timeoutMs);
   }
   return AI_TIMEOUT_MS;
+};
+
+const resolveTaskModel = (task) => {
+  const taskModel = String(task.model || '').trim();
+  if (taskModel) {
+    return taskModel;
+  }
+  if (task.usesVision) {
+    return String(AI_VISION_MODEL || AI_MODEL).trim() || AI_MODEL;
+  }
+  return AI_MODEL;
+};
+
+const resolveTaskImages = (task, input) => {
+  if (typeof task.buildImages !== 'function') {
+    return undefined;
+  }
+  const images = task.buildImages(input);
+  if (!Array.isArray(images) || images.length === 0) {
+    return undefined;
+  }
+  return images;
 };
 
 const resolveTaskTemperature = (task) => {
@@ -54,10 +81,12 @@ const runTask = async (taskKey, rawInput, { signal, provider } = {}) => {
   const startedAt = Date.now();
 
   try {
+    const images = resolveTaskImages(task, input);
     const completion = await activeProvider.complete({
       system: task.systemPrompt,
       user: task.buildUserPrompt(input),
-      model: AI_MODEL,
+      images,
+      model: resolveTaskModel(task),
       temperature: resolveTaskTemperature(task),
       timeoutMs: resolveTaskTimeoutMs(task),
       signal,
@@ -74,12 +103,13 @@ const runTask = async (taskKey, rawInput, { signal, provider } = {}) => {
     logger.info('AI task completed', {
       task_key: task.key,
       elapsed_ms: Date.now() - startedAt,
+      image_count: Array.isArray(images) ? images.length : 0,
       degraded: false,
     });
     return {
       task_key: task.key,
       output: task.outputParser(text, input),
-      model: completion.model || AI_MODEL,
+      model: completion.model || resolveTaskModel(task),
       provider: completion.provider || activeProvider.name,
       degraded: false,
     };

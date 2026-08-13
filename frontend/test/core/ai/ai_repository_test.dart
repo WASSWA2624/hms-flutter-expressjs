@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/ai/ai_clinical_note_formatter.dart';
+import 'package:hosspi_hms/core/ai/ai_drug_pack_extractor.dart';
 import 'package:hosspi_hms/core/ai/ai_models.dart';
 import 'package:hosspi_hms/core/ai/ai_remote_data_source.dart';
 import 'package:hosspi_hms/core/ai/ai_repository.dart';
@@ -8,6 +11,7 @@ import 'package:hosspi_hms/core/ai/ai_speech_formatter.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/network/api_result.dart';
 import 'package:hosspi_hms/shared/components/app_speech_ai.dart';
+import 'package:hosspi_hms/shared/scan/scan.dart';
 
 final class _FakeAiRemoteDataSource implements AiRemoteDataSource {
   _FakeAiRemoteDataSource({
@@ -267,5 +271,86 @@ void main() {
         expect(failure.category, AppFailureCategory.validation);
       },
     );
+  });
+
+  test('drug pack mapper posts photos to drug_pack_extract', () async {
+    final _FakeAiRemoteDataSource remote = _FakeAiRemoteDataSource(
+      taskResult: const Result.success(
+        AiTaskResult(
+          taskKey: 'drug_pack_extract',
+          output: <String, Object?>{
+            'generic_name': 'Paracetamol',
+            'brand_name': 'AGOMO',
+            'form': 'Tablet',
+            'strength': '500 mg',
+            'raw_text': 'AGOMO Paracetamol Tablets 500 mg',
+          },
+          degraded: false,
+          model: 'gemma3:4b',
+          provider: 'ollama',
+        ),
+      ),
+    );
+    final DrugPackRemoteAiMapper mapper = DrugPackRemoteAiMapper(
+      repository: AiRepositoryImpl(remoteDataSource: remote),
+    );
+
+    final DrugPackAiMapResult mapped = await mapper.map(
+      rawText: '',
+      images: <DrugPackAiImage>[
+        DrugPackAiImage(
+          bytes: Uint8List.fromList(<int>[
+            0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00,
+            0x0D, 0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00,
+            0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89,
+            0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63,
+            0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4,
+            0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60,
+            0x82,
+          ]),
+          mimeType: 'image/png',
+        ),
+      ],
+    );
+
+    expect(mapped.unavailable, isFalse);
+    expect(mapped.candidates?.genericName, 'Paracetamol');
+    expect(mapped.candidates?.brandName, 'AGOMO');
+    expect(remote.lastTaskKey, 'drug_pack_extract');
+    final Object? images = remote.lastBody?['images'];
+    expect(images, isA<List<Object?>>());
+    expect((images! as List<Object?>).single, isA<Map<String, Object?>>());
+    final Map<String, Object?> encoded =
+        (images as List<Object?>).single as Map<String, Object?>;
+    expect(encoded['mime_type'], 'image/jpeg');
+    expect(encoded['data'], isA<String>());
+    expect((encoded['data']! as String).length, greaterThan(8));
+  });
+
+  test('drug pack mapper is unavailable when the task is degraded', () async {
+    final _FakeAiRemoteDataSource remote = _FakeAiRemoteDataSource(
+      taskResult: const Result.success(
+        AiTaskResult(
+          taskKey: 'drug_pack_extract',
+          output: <String, Object?>{
+            'generic_name': null,
+            'raw_text': 'Paracetamol',
+          },
+          degraded: true,
+        ),
+      ),
+    );
+    final DrugPackRemoteAiMapper mapper = DrugPackRemoteAiMapper(
+      repository: AiRepositoryImpl(remoteDataSource: remote),
+    );
+
+    final DrugPackAiMapResult mapped = await mapper.map(
+      rawText: 'Paracetamol Tablets 500 mg',
+    );
+
+    expect(mapped.unavailable, isTrue);
+    expect(mapped.hasCandidates, isFalse);
+    expect(remote.lastTaskKey, 'drug_pack_extract');
+    expect(remote.lastBody?['ocr_text'], 'Paracetamol Tablets 500 mg');
   });
 }

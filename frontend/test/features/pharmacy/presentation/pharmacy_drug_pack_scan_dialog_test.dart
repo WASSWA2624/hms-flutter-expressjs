@@ -173,4 +173,70 @@ void main() {
     expect(find.text('Suggested values'), findsOneWidget);
     expect(find.text('Process with OCR'), findsOneWidget);
   });
+
+  testWidgets('process with AI sends photos and prefers AI fields over OCR', (
+    WidgetTester tester,
+  ) async {
+    final Uint8List tinyPng = Uint8List.fromList(<int>[
+      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
+      0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+      0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00,
+      0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
+      0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49,
+      0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
+    ]);
+    final _RecordingAiMapper aiMapper = _RecordingAiMapper(
+      candidates: const DrugPackFieldCandidates(
+        genericName: 'Paracetamol',
+        brandName: 'AGOMO',
+        form: 'Tablet',
+        strength: '500 mg',
+        rawText: 'AGOMO\nParacetamol Tablets 500 mg',
+      ),
+    );
+    DrugPackFieldCandidates? closedWith;
+    await pumpScan(
+      tester,
+      onClosed: (DrugPackFieldCandidates? r) {
+        closedWith = r;
+      },
+      ocrService: const AppFixedOcrService('GARBAGE OCR LINE\nzzz 00s'),
+      aiMapper: aiMapper,
+      seedPhotos: <Uint8List>[tinyPng],
+    );
+
+    await tester.tap(find.text('Process with AI').first);
+    await tester.pumpAndSettle();
+
+    expect(aiMapper.lastImages, isNotEmpty);
+    expect(find.text('Suggested values'), findsOneWidget);
+    expect(find.text('AGOMO'), findsWidgets);
+    expect(find.text('Paracetamol'), findsWidgets);
+
+    await tester.tap(find.text('Prefill form'));
+    await tester.pumpAndSettle();
+    expect(closedWith, isNotNull);
+    expect(closedWith!.genericName, 'Paracetamol');
+    expect(closedWith!.brandName, 'AGOMO');
+    expect(closedWith!.form, 'Tablet');
+    expect(closedWith!.strength, '500 mg');
+  });
+}
+
+class _RecordingAiMapper implements DrugPackAiMapper {
+  _RecordingAiMapper({required this.candidates});
+
+  final DrugPackFieldCandidates candidates;
+  List<DrugPackAiImage> lastImages = const <DrugPackAiImage>[];
+
+  @override
+  Future<DrugPackAiMapResult> map({
+    required String rawText,
+    String? barcode,
+    List<String> ocrLines = const <String>[],
+    List<DrugPackAiImage> images = const <DrugPackAiImage>[],
+  }) async {
+    lastImages = images;
+    return DrugPackAiMapResult(candidates: candidates);
+  }
 }

@@ -47,7 +47,9 @@ final class DioAiRemoteDataSource implements AiRemoteDataSource {
     Map<String, Object?> body, {
     CancelToken? cancelToken,
   }) {
-    final bool longRunning = taskKey.trim() == 'clinical_note_format';
+    final bool longRunning =
+        taskKey.trim() == 'clinical_note_format' ||
+        taskKey.trim() == 'drug_pack_extract';
     // Browser XHR aborts when connectTimeout elapses before response headers.
     // The backend only writes headers after Ollama finishes (often 30–60s),
     // so connect and receive must both be raised for this task.

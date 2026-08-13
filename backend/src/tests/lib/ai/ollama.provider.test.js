@@ -48,6 +48,32 @@ describe('ollama provider', () => {
     expect(JSON.stringify(body)).not.toMatch(/password|api_key/i);
   });
 
+  test('attaches pack photos on the user message', async () => {
+    global.fetch.mockResolvedValue({
+      ok: true,
+      text: async () =>
+        JSON.stringify({
+          model: 'gemma3:4b',
+          message: { role: 'assistant', content: '{"generic_name":"Paracetamol"}' },
+        }),
+    });
+
+    const provider = createOllamaProvider({
+      baseUrl: 'http://127.0.0.1:11434',
+      model: 'gemma3:4b',
+      timeoutMs: 90000,
+    });
+    await provider.complete({
+      system: 'extract json',
+      user: 'read the pack',
+      images: ['data:image/jpeg;base64,packbytes'],
+    });
+
+    const body = JSON.parse(global.fetch.mock.calls[0][1].body);
+    expect(body.messages[1].images).toEqual(['packbytes']);
+    expect(JSON.stringify(body)).not.toMatch(/password|api_key/i);
+  });
+
   test('probe returns false when the host is unreachable', async () => {
     global.fetch.mockRejectedValue(new Error('ECONNREFUSED'));
     const provider = createOllamaProvider({

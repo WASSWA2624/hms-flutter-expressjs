@@ -30,6 +30,69 @@ describe('AI factory and runTask', () => {
     });
   });
 
+  test('completes drug_pack_extract through a mocked provider with images', async () => {
+    const photo = 'packphoto'.padEnd(32, 'x');
+    const provider = createAiProvider({
+      name: 'mock-vision',
+      complete: async ({ images, timeoutMs, model }) => {
+        expect(images).toEqual([photo]);
+        expect(timeoutMs).toBeGreaterThanOrEqual(60000);
+        expect(String(model || '')).toBeTruthy();
+        return {
+          text: JSON.stringify({
+            generic_name: 'Paracetamol',
+            brand_name: 'AGOMO',
+            form: 'Tablet',
+            strength: '500 mg',
+            code: null,
+            batch_number: 'LOT-9',
+            manufactured_at: null,
+            expiry_date: '2027-12-01',
+            barcode: null,
+            raw_text: 'AGOMO Paracetamol Tablets 500 mg',
+          }),
+          model: 'mock-vision-model',
+          provider: 'mock-vision',
+        };
+      },
+    });
+
+    const result = await runTask(
+      'drug_pack_extract',
+      {
+        images: [{ mime_type: 'image/jpeg', data: photo }],
+      },
+      { provider }
+    );
+
+    expect(result.degraded).toBe(false);
+    expect(result.provider).toBe('mock-vision');
+    expect(result.output.generic_name).toBe('Paracetamol');
+    expect(result.output.brand_name).toBe('AGOMO');
+    expect(result.output.form).toBe('Tablet');
+    expect(result.output.strength).toBe('500 mg');
+    expect(getAiTask('drug_pack_extract')).not.toBeNull();
+  });
+
+  test('drug_pack_extract fails open without inventing fields', async () => {
+    const result = await runTask(
+      'drug_pack_extract',
+      { ocr_text: 'Paracetamol Tablets' },
+      {
+        provider: {
+          name: 'down',
+          complete: async () => {
+            throw new Error('ECONNREFUSED');
+          },
+        },
+      }
+    );
+
+    expect(result.degraded).toBe(true);
+    expect(result.output.generic_name).toBeNull();
+    expect(result.output.raw_text).toBe('Paracetamol Tablets');
+  });
+
   test('completes clinical_note_format through a mocked provider', async () => {
     const provider = createAiProvider({
       name: 'mock-clinical',

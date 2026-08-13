@@ -6,11 +6,13 @@
  */
 
 const { clinicalNoteFormatTask } = require('./clinical-note-format');
+const { drugPackExtractTask } = require('./drug-pack-extract');
 const { speechFormatTask } = require('./speech-format');
 
 const TASKS = Object.freeze({
   [speechFormatTask.key]: speechFormatTask,
   [clinicalNoteFormatTask.key]: clinicalNoteFormatTask,
+  [drugPackExtractTask.key]: drugPackExtractTask,
 });
 
 const getAiTask = (taskKey) => TASKS[String(taskKey || '').trim()] || null;

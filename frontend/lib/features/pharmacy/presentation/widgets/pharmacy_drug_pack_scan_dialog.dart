@@ -155,6 +155,10 @@ class _PharmacyDrugPackScanDialogState
     _expiryController.text = candidates.expiryDate == null
         ? ''
         : _dateFormat.format(candidates.expiryDate!);
+    if ((candidates.rawText ?? '').trim().isNotEmpty &&
+        _packTextController.text.trim().isEmpty) {
+      _packTextController.text = candidates.rawText!.trim();
+    }
     _hasSuggestions = candidates.hasAnyIdentityField;
   }
 
@@ -401,19 +405,23 @@ class _PharmacyDrugPackScanDialogState
           : context.l10n.pharmacyDrugScanProcessingPhotosBody;
     });
     try {
-      final ({List<String> chunks, List<String> lines, DrugPackFieldCandidates? merged})
-      ocrPass = await _runOcrAcrossPhotos();
-      DrugPackFieldCandidates? merged = ocrPass.merged;
+      DrugPackFieldCandidates? merged;
+      List<String> chunks = <String>[];
+      List<String> lines = <String>[];
 
       if (engine == _PhotoEngine.ai) {
+        await _decodeBarcodesFromPhotos();
         final DrugPackAiMapResult ai = await widget.aiMapper.map(
-          rawText: <String>[
-            ...ocrPass.chunks,
-            if (_packTextController.text.trim().isNotEmpty)
-              _packTextController.text.trim(),
-          ].join('\n'),
+          rawText: _packTextController.text.trim(),
           barcode: _barcodeOrNull,
-          ocrLines: ocrPass.lines,
+          images: _photos
+              .map(
+                (_SessionPhoto photo) => DrugPackAiImage(
+                  bytes: photo.bytes,
+                  mimeType: photo.mimeType,
+                ),
+              )
+              .toList(growable: false),
         );
         if (!mounted) {
           return;
@@ -424,23 +432,39 @@ class _PharmacyDrugPackScanDialogState
                 ? ai.message
                 : context.l10n.pharmacyDrugScanAiUnavailableBody;
           });
-          // Fall back to OCR merge already computed.
-        } else if (ai.hasCandidates) {
-          merged = merged == null
-              ? ai.candidates
-              : merged.merge(ai.candidates!);
+        } else {
+          merged = ai.candidates;
+          final String? aiText = ai.candidates?.rawText?.trim();
+          if (aiText != null && aiText.isNotEmpty) {
+            _packTextController.text = aiText;
+          }
         }
+      }
+
+      final ({
+        List<String> chunks,
+        List<String> lines,
+        DrugPackFieldCandidates? merged,
+      })
+      ocrPass = await _runOcrAcrossPhotos();
+      chunks = ocrPass.chunks;
+      lines = ocrPass.lines;
+      if (merged == null) {
+        merged = ocrPass.merged;
+      } else if (ocrPass.merged != null) {
+        merged = merged.merge(ocrPass.merged!);
+      }
+
+      if (_packTextController.text.trim().isEmpty && chunks.isNotEmpty) {
+        _packTextController.text = chunks.join('\n');
       }
 
       final String packText = _packTextController.text.trim();
       if (packText.isNotEmpty || _barcodeOrNull != null) {
         final DrugPackFieldCandidates fromText = widget.parser.parse(
           barcode: _barcodeOrNull,
-          ocrText: <String>[
-            ...ocrPass.chunks,
-            if (packText.isNotEmpty) packText,
-          ].join('\n'),
-          ocrLines: ocrPass.lines,
+          ocrText: packText.isNotEmpty ? packText : chunks.join('\n'),
+          ocrLines: lines,
         );
         merged = merged == null ? fromText : merged.merge(fromText);
       }
@@ -453,10 +477,8 @@ class _PharmacyDrugPackScanDialogState
         _lastProcessedPhotoCount = _photos.length;
         if (merged != null && merged.hasAnyIdentityField) {
           _seedEditors(merged);
-          if (_statusMessage == context.l10n.pharmacyDrugScanAiUnavailableBody ||
-              (_statusMessage?.contains('AI') ?? false)) {
-            // Keep AI-unavailable notice if set above.
-          } else {
+          if (_statusMessage != context.l10n.pharmacyDrugScanAiUnavailableBody &&
+              !(_statusMessage?.contains('AI') ?? false)) {
             _statusMessage = null;
           }
         } else {
@@ -473,6 +495,20 @@ class _PharmacyDrugPackScanDialogState
     } finally {
       if (mounted) {
         setState(() => _busy = false);
+      }
+    }
+  }
+
+  Future<void> _decodeBarcodesFromPhotos() async {
+    for (final _SessionPhoto photo in _photos) {
+      if (_barcodeController.text.trim().isNotEmpty) {
+        return;
+      }
+      final AppBarcodeCaptureResult? barcode = await widget.barcodeDecoder
+          .decodeFromImage(photo.bytes, mimeType: photo.mimeType);
+      if (barcode?.code != null && barcode!.code.trim().isNotEmpty) {
+        _barcodeController.text = barcode.code.trim();
+        return;
       }
     }
   }
@@ -602,7 +638,7 @@ class _PharmacyDrugPackScanDialogState
                 : context.l10n.pharmacyDrugScanAiUnavailableBody;
           });
         } else if (ai.hasCandidates) {
-          merged = merged.merge(ai.candidates!);
+          merged = ai.candidates!.merge(merged);
           _statusMessage = null;
         }
       }

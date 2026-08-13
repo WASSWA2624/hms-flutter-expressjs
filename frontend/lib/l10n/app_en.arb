@@ -18128,9 +18128,9 @@
   "@pharmacyDrugScanProcessingPhotosBody": {
     "description": "Busy status while OCR runs across collected pack photos."
   },
-  "pharmacyDrugScanProcessingAiBody": "Mapping pack details with AI…",
+  "pharmacyDrugScanProcessingAiBody": "Reading pack photos with AI…",
   "@pharmacyDrugScanProcessingAiBody": {
-    "description": "Busy status while AI/structured assist maps pack details."
+    "description": "Busy status while the vision model extracts drug fields from pack photos."
   },
   "pharmacyDrugScanAiUnavailableBody": "AI assist is unavailable right now. Try Process with OCR, or check connectivity.",
   "@pharmacyDrugScanAiUnavailableBody": {

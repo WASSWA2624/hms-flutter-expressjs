@@ -26032,10 +26032,10 @@ abstract class AppLocalizations {
   /// **'Reading all pack photos…'**
   String get pharmacyDrugScanProcessingPhotosBody;
 
-  /// Busy status while AI/structured assist maps pack details.
+  /// Busy status while the vision model extracts drug fields from pack photos.
   ///
   /// In en, this message translates to:
-  /// **'Mapping pack details with AI…'**
+  /// **'Reading pack photos with AI…'**
   String get pharmacyDrugScanProcessingAiBody;
 
   /// Shown when the AI mapper cannot run and OCR fallback is offered.

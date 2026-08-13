@@ -5,6 +5,9 @@ const {
 const {
   clinicalNoteFormatTask,
 } = require('@lib/ai/tasks/clinical-note-format');
+const {
+  drugPackExtractTask,
+} = require('@lib/ai/tasks/drug-pack-extract');
 const { speechFormatTask } = require('@lib/ai/tasks/speech-format');
 
 describe('ai schemas', () => {
@@ -16,6 +19,11 @@ describe('ai schemas', () => {
       aiTaskKeyParamsSchema.parse({ task_key: 'clinical_note_format' })
     ).toEqual({
       task_key: 'clinical_note_format',
+    });
+    expect(
+      aiTaskKeyParamsSchema.parse({ task_key: 'drug_pack_extract' })
+    ).toEqual({
+      task_key: 'drug_pack_extract',
     });
   });
 
@@ -48,6 +56,21 @@ describe('ai schemas', () => {
       text: 'patient febrile',
       locale: 'en',
       hint: 'SOAP style',
+    });
+  });
+
+  test('drug_pack_extract body requires images or ocr_text', () => {
+    expect(() => drugPackExtractTask.inputSchema.parse({})).toThrow();
+    expect(
+      drugPackExtractTask.inputSchema.parse({
+        ocr_text: '  Amoxil capsules  ',
+        barcode: '8901',
+      })
+    ).toEqual({
+      images: [],
+      ocr_text: 'Amoxil capsules',
+      barcode: '8901',
+      locale: 'en',
     });
   });
 

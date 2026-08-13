@@ -1,4 +1,14 @@
+import 'dart:typed_data';
+
 import 'package:hosspi_hms/shared/scan/drug_pack_field_parser.dart';
+
+/// One in-memory pack photo for a vision extract request.
+final class DrugPackAiImage {
+  const DrugPackAiImage({required this.bytes, this.mimeType});
+
+  final Uint8List bytes;
+  final String? mimeType;
+}
 
 /// Result of an AI (or local structured-assist) map into drug candidates.
 final class DrugPackAiMapResult {
@@ -21,13 +31,14 @@ final class DrugPackAiMapResult {
       candidates != null && candidates!.hasAnyIdentityField;
 }
 
-/// Maps pack OCR / raw text into structured drug create candidates.
+/// Maps pack photos / OCR / raw text into structured drug create candidates.
 /// Implementations must not persist pack images.
 abstract class DrugPackAiMapper {
   Future<DrugPackAiMapResult> map({
     required String rawText,
     String? barcode,
     List<String> ocrLines = const <String>[],
+    List<DrugPackAiImage> images = const <DrugPackAiImage>[],
   });
 }
 
@@ -42,14 +53,14 @@ final class DrugPackUnavailableAiMapper implements DrugPackAiMapper {
     required String rawText,
     String? barcode,
     List<String> ocrLines = const <String>[],
+    List<DrugPackAiImage> images = const <DrugPackAiImage>[],
   }) async {
     return DrugPackAiMapResult.unavailable(message: message);
   }
 }
 
 /// Local structured assist (no network): cleans OCR noise, then runs the
-/// shared [DrugPackFieldParser]. Used as the default AI path until a remote
-/// endpoint is configured.
+/// shared [DrugPackFieldParser]. Used in tests and as an offline fallback.
 final class DrugPackLocalAiMapper implements DrugPackAiMapper {
   const DrugPackLocalAiMapper({
     this.parser = const DrugPackFieldParser(),
@@ -68,6 +79,7 @@ final class DrugPackLocalAiMapper implements DrugPackAiMapper {
     required String rawText,
     String? barcode,
     List<String> ocrLines = const <String>[],
+    List<DrugPackAiImage> images = const <DrugPackAiImage>[],
   }) async {
     final List<String> sourceLines = ocrLines.isNotEmpty
         ? ocrLines
