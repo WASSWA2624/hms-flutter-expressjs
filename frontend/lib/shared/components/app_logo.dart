@@ -18,6 +18,7 @@ class AppLogo extends StatelessWidget {
   static const double defaultAspectRatio = 1.0;
 
   /// Cyan-blue from the window/grid features under the medical cross.
+  /// Keep in sync with [AppLightThemePalette.brandPrimary] / light `colorScheme.primary`.
   static const Color brandBlue = Color(0xFF0079FD);
 
   final String assetPath;

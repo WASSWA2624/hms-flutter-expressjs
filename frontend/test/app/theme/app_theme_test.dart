@@ -52,7 +52,7 @@ void main() {
         theme.borders.side(),
       );
       expect(theme.colorScheme.brightness, Brightness.light);
-      expect(theme.colorScheme.primary, AppLightThemePalette.azure700);
+      expect(theme.colorScheme.primary, AppLightThemePalette.brandPrimary);
       expect(theme.colorScheme.primaryContainer, AppLightThemePalette.azure100);
       expect(theme.colorScheme.secondary, AppLightThemePalette.azure800);
       expect(theme.colorScheme.tertiary, AppLightThemePalette.sky500);

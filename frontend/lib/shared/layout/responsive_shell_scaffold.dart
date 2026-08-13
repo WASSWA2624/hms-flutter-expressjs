@@ -525,7 +525,7 @@ class AppMenuBar extends StatelessWidget {
                         effectiveTitle,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleMedium?.copyWith(
-                          color: AppLogo.brandBlue,
+                          color: colorScheme.primary,
                           fontWeight: AppFontWeight.emphasis,
                         ),
                       ),
@@ -1103,7 +1103,7 @@ class _MobileShellDrawer extends StatelessWidget {
                         title,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleMedium?.copyWith(
-                          color: AppLogo.brandBlue,
+                          color: colorScheme.primary,
                           fontWeight: AppFontWeight.emphasis,
                         ),
                       ),

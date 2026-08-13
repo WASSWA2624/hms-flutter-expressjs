@@ -122,7 +122,7 @@ class _AuthBrandHeader extends StatelessWidget {
       header: true,
       label: displayName,
       child: ColoredBox(
-        color: AppLogo.brandBlue.withValues(alpha: 0.06),
+        color: theme.colorScheme.primary.withValues(alpha: 0.06),
         child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: theme.spacing.lg,
@@ -130,7 +130,7 @@ class _AuthBrandHeader extends StatelessWidget {
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
               AppLogo(size: logoHeight),
               SizedBox(width: theme.spacing.md),
@@ -141,7 +141,7 @@ class _AuthBrandHeader extends StatelessWidget {
                   softWrap: false,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.headlineSmall?.copyWith(
-                    color: AppLogo.brandBlue,
+                    color: theme.colorScheme.primary,
                     fontWeight: AppFontWeight.strong,
                     fontSize: titleSize,
                     height: 1.0,

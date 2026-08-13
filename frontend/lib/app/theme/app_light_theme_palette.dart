@@ -4,21 +4,24 @@ import 'package:hosspi_hms/app/theme/app_theme_palette.dart';
 
 /// Light theme palette: an elegant **white → light blue → blue** identity.
 ///
-/// Surfaces stay porcelain-white and powder-blue; brand actions use a refined
-/// clinical blue; accents stay in the same blue family (sky) so the UI reads
-/// as one continuous, soft blend—no competing teal/green hue.
+/// Surfaces stay porcelain-white and powder-blue; brand actions use the HOSSPI
+/// window cyan (same as auth app-name text); accents stay in the same blue
+/// family so the UI reads as one continuous, soft blend.
 abstract final class AppLightThemePalette {
-  // Brand — blue (white mist → clear blue)
-  static const Color azure50 = Color(0xFFF4F9FE);
-  static const Color azure100 = Color(0xFFE6F1FC);
-  static const Color azure200 = Color(0xFFCBE0F7);
-  static const Color azure300 = Color(0xFFA3C8ED);
-  static const Color azure400 = Color(0xFF6BA6E0);
-  static const Color azure500 = Color(0xFF3B87D4);
-  static const Color azure600 = Color(0xFF2470C2);
-  static const Color azure700 = Color(0xFF1A5CAD);
-  static const Color azure800 = Color(0xFF144A8F);
-  static const Color azure900 = Color(0xFF0E356C);
+  /// HOSSPI logo window cyan — primary CTA / auth app-name text.
+  static const Color brandPrimary = Color(0xFF0079FD);
+
+  // Brand scale — tinted around [brandPrimary]
+  static const Color azure50 = Color(0xFFF3F8FF);
+  static const Color azure100 = Color(0xFFE5F1FF);
+  static const Color azure200 = Color(0xFFC5DEFF);
+  static const Color azure300 = Color(0xFF9AC6FF);
+  static const Color azure400 = Color(0xFF5AA3FF);
+  static const Color azure500 = Color(0xFF2B8BFF);
+  static const Color azure600 = Color(0xFF0F7FF8);
+  static const Color azure700 = brandPrimary;
+  static const Color azure800 = Color(0xFF0062D1);
+  static const Color azure900 = Color(0xFF004A9E);
 
   // Accent — sky (lighter blue in the same hue family)
   static const Color sky100 = Color(0xFFEAF5FE);
@@ -56,22 +59,22 @@ abstract final class AppLightThemePalette {
     onDanger: white,
     dangerContainer: Color(0xFFFEE6E2),
     onDangerContainer: Color(0xFF7C1E14),
-    info: azure700,
+    info: brandPrimary,
     onInfo: white,
     infoContainer: azure100,
     onInfoContainer: azure900,
   );
 
   static final ColorScheme colorScheme =
-      ColorScheme.fromSeed(seedColor: azure500).copyWith(
-        primary: azure700,
+      ColorScheme.fromSeed(seedColor: brandPrimary).copyWith(
+        primary: brandPrimary,
         onPrimary: white,
         primaryContainer: azure100,
         onPrimaryContainer: azure900,
         primaryFixed: azure100,
         primaryFixedDim: azure200,
         onPrimaryFixed: azure900,
-        onPrimaryFixedVariant: azure700,
+        onPrimaryFixedVariant: brandPrimary,
         secondary: azure800,
         onSecondary: white,
         secondaryContainer: surfaceSubtle,
@@ -79,7 +82,7 @@ abstract final class AppLightThemePalette {
         secondaryFixed: azure100,
         secondaryFixedDim: azure200,
         onSecondaryFixed: azure900,
-        onSecondaryFixedVariant: azure700,
+        onSecondaryFixedVariant: brandPrimary,
         tertiary: sky500,
         onTertiary: white,
         tertiaryContainer: sky100,
@@ -114,18 +117,18 @@ abstract final class AppLightThemePalette {
     scaffoldBackgroundColor: surfaceBase,
     canvasColor: surfaceRaised,
     hoverColor: surfaceMuted,
-    splashColor: azure700.withValues(alpha: 0.08),
-    highlightColor: azure700.withValues(alpha: 0.06),
+    splashColor: brandPrimary.withValues(alpha: 0.08),
+    highlightColor: brandPrimary.withValues(alpha: 0.06),
     bodyTextColor: ink,
     displayTextColor: ink,
     borderColor: borderSubtle,
     disabledBorderColor: borderMuted,
-    focusedBorderColor: azure600,
+    focusedBorderColor: brandPrimary,
     inputFillColor: surfaceRaised,
-    inputHoverColor: azure700.withValues(alpha: 0.04),
+    inputHoverColor: brandPrimary.withValues(alpha: 0.04),
     inputHintColor: inkMuted.withValues(alpha: 0.78),
     inputLabelColor: inkMuted,
-    inputFloatingLabelColor: azure700,
+    inputFloatingLabelColor: brandPrimary,
     appBarBackgroundColor: surfaceRaised,
     appBarForegroundColor: ink,
     appBarSurfaceTintColor: transparent,
