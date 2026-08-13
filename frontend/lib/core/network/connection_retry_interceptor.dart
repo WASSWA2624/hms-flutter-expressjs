@@ -43,6 +43,9 @@ final class ConnectionRetryInterceptor extends Interceptor {
   }
 
   bool _shouldRetry(DioException err) {
+    if (err.requestOptions.extra['ai_long_running'] == true) {
+      return false;
+    }
     if (err.type == DioExceptionType.connectionError ||
         err.type == DioExceptionType.connectionTimeout) {
       return true;

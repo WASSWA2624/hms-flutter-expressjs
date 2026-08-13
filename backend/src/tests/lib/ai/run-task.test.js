@@ -106,6 +106,28 @@ describe('AI factory and runTask', () => {
     expect(result.output.formatted_text).toBe('hello comma world');
   });
 
+  test('fails open when the caller aborts the request', async () => {
+    const abort = new AbortController();
+    abort.abort();
+    const complete = jest.fn(async ({ signal }) => {
+      if (signal?.aborted) {
+        const error = new Error('aborted');
+        error.name = 'AbortError';
+        throw error;
+      }
+      return { text: 'should not run', model: 'mock', provider: 'mock' };
+    });
+
+    const result = await runTask(
+      'clinical_note_format',
+      { text: 'pt febrile' },
+      { provider: { name: 'mock', complete }, signal: abort.signal }
+    );
+
+    expect(result.degraded).toBe(true);
+    expect(result.output.formatted_text).toBe('pt febrile');
+  });
+
   test('fails open when the provider throws', async () => {
     const result = await runTask(
       'speech_format',

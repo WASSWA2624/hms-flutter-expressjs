@@ -6,6 +6,7 @@
 
 const aiService = require('@services/ai/ai.service');
 const { asyncHandler } = require('@lib/async');
+const { createClientDisconnectSignal } = require('@lib/ai/client-disconnect-signal');
 const { sendSuccess } = require('@lib/response');
 
 const getAiStatus = asyncHandler(async (req, res) => {
@@ -15,7 +16,7 @@ const getAiStatus = asyncHandler(async (req, res) => {
 
 const runAiTask = asyncHandler(async (req, res) => {
   const result = await aiService.runAiTask(req.params.task_key, req.body, {
-    signal: req.signal,
+    signal: createClientDisconnectSignal(req, res),
   });
   return sendSuccess(res, 200, 'messages.ai.task.success', result);
 });

@@ -25,6 +25,7 @@ const combineSignals = (timeoutMs, externalSignal) => {
     timer.unref();
   }
 
+  // Do not pass Node's req.signal here. It aborts after the body is read.
   const onExternalAbort = () => controller.abort();
   if (externalSignal) {
     if (externalSignal.aborted) {

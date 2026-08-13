@@ -1,3 +1,4 @@
+const { EventEmitter } = require('events');
 const controller = require('../../../../modules/ai/controllers/ai.controller');
 const service = require('../../../../modules/ai/services/ai.service');
 const { sendSuccess } = require('@lib/response');
@@ -10,8 +11,12 @@ describe('ai controller', () => {
   let res;
 
   beforeEach(() => {
-    req = { params: {}, body: {}, user: { id: 'user-1' } };
-    res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+    req = { params: {}, body: {}, user: { id: 'user-1' }, signal: AbortSignal.abort() };
+    res = Object.assign(new EventEmitter(), {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      writableEnded: false,
+    });
   });
 
   afterEach(() => {
@@ -46,11 +51,15 @@ describe('ai controller', () => {
 
     await controller.runAiTask(req, res);
 
+    const options = service.runAiTask.mock.calls[0][2];
     expect(service.runAiTask).toHaveBeenCalledWith(
       'speech_format',
       req.body,
-      { signal: undefined }
+      options
     );
+    expect(options.signal).toBeInstanceOf(AbortSignal);
+    expect(options.signal.aborted).toBe(false);
+    expect(req.signal.aborted).toBe(true);
     expect(sendSuccess).toHaveBeenCalledWith(
       res,
       200,
