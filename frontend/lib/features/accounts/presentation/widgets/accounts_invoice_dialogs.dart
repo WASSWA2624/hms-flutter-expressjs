@@ -530,17 +530,17 @@ class _InvoiceDetailFactLines extends StatelessWidget {
       fontWeight: AppFontWeight.regular,
     );
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Wrap(
+      spacing: theme.spacing.md,
+      runSpacing: theme.spacing.sm,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: <Widget>[
-        for (int index = 0; index < visible.length; index += 1) ...<Widget>[
-          if (index > 0) SizedBox(height: theme.spacing.sm),
+        for (final AppWorkspacePatientContextField field in visible)
           _InvoiceDetailFactLine(
-            field: visible[index],
+            field: field,
             labelStyle: labelStyle,
             valueStyle: valueStyle,
           ),
-        ],
       ],
     );
   }
@@ -564,7 +564,8 @@ class _InvoiceDetailFactLine extends StatelessWidget {
     return Semantics(
       label: '${field.label}: ${field.value}',
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
           if (field.icon != null) ...<Widget>[
             Icon(
@@ -574,29 +575,27 @@ class _InvoiceDetailFactLine extends StatelessWidget {
             ),
             SizedBox(width: theme.spacing.xs),
           ],
-          Expanded(
-            child: Text.rich(
-              TextSpan(
-                children: <InlineSpan>[
-                  TextSpan(text: '${field.label}: ', style: labelStyle),
-                  if (field.copyable)
-                    WidgetSpan(
-                      alignment: PlaceholderAlignment.baseline,
-                      baseline: TextBaseline.alphabetic,
-                      child: AppCopyableIdentifier(
-                        value: field.value,
-                        tooltip: field.copyTooltip,
-                        copiedMessage: field.copiedMessage,
-                        semanticLabel: field.copySemanticLabel,
-                        showCopyIcon: field.showCopyIcon,
-                        placeholderValues: field.copyPlaceholderValues,
-                        textStyle: valueStyle,
-                      ),
-                    )
-                  else
-                    TextSpan(text: field.value, style: valueStyle),
-                ],
-              ),
+          Text.rich(
+            TextSpan(
+              children: <InlineSpan>[
+                TextSpan(text: '${field.label}: ', style: labelStyle),
+                if (field.copyable)
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.baseline,
+                    baseline: TextBaseline.alphabetic,
+                    child: AppCopyableIdentifier(
+                      value: field.value,
+                      tooltip: field.copyTooltip,
+                      copiedMessage: field.copiedMessage,
+                      semanticLabel: field.copySemanticLabel,
+                      showCopyIcon: field.showCopyIcon,
+                      placeholderValues: field.copyPlaceholderValues,
+                      textStyle: valueStyle,
+                    ),
+                  )
+                else
+                  TextSpan(text: field.value, style: valueStyle),
+              ],
             ),
           ),
         ],

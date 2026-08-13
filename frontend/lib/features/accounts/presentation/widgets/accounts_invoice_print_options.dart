@@ -7,7 +7,6 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 
 enum AccountsInvoicePrintSection {
-  summary,
   items,
   notes,
   footer,
@@ -17,7 +16,6 @@ enum AccountsInvoicePrintSection {
 final class AccountsInvoicePrintOptionsController extends ChangeNotifier {
   AccountsInvoicePrintOptionsController({bool hasNotes = false}) {
     _selected = <AccountsInvoicePrintSection>{
-      AccountsInvoicePrintSection.summary,
       AccountsInvoicePrintSection.items,
       if (hasNotes) AccountsInvoicePrintSection.notes,
       AccountsInvoicePrintSection.footer,
@@ -28,9 +26,6 @@ final class AccountsInvoicePrintOptionsController extends ChangeNotifier {
 
   Set<Object> get selectedIds => Set<Object>.unmodifiable(_selected);
 
-  bool get includeSummary =>
-      _selected.contains(AccountsInvoicePrintSection.summary);
-
   bool get includeItems =>
       _selected.contains(AccountsInvoicePrintSection.items);
 
@@ -40,7 +35,7 @@ final class AccountsInvoicePrintOptionsController extends ChangeNotifier {
   bool get includeFooter =>
       _selected.contains(AccountsInvoicePrintSection.footer);
 
-  bool get canPrint => includeSummary || includeItems || includeNotes;
+  bool get canPrint => includeItems || includeNotes;
 
   void setSelection(Set<Object> selected) {
     final Set<AccountsInvoicePrintSection> next = selected
@@ -78,11 +73,6 @@ class AccountsInvoicePrintOptionsSection extends StatelessWidget {
             AppReportSectionPicker(
               compact: true,
               sections: <AppReportSectionData>[
-                const AppReportSectionData(
-                  id: AccountsInvoicePrintSection.summary,
-                  title: AccountsStrings.invoiceSummarySectionTitle,
-                  icon: Icons.receipt_long_outlined,
-                ),
                 const AppReportSectionData(
                   id: AccountsInvoicePrintSection.items,
                   title: AccountsStrings.invoiceItemsSectionTitle,

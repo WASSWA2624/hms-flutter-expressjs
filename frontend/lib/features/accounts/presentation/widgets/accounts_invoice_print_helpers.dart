@@ -17,13 +17,6 @@ Future<void> printAccountsInvoice({
   final AccountsInvoicePrintOptionsController options =
       AccountsInvoicePrintOptionsController(hasNotes: hasNotes);
 
-  String? buildSubtitle() {
-    if (!options.includeSummary) {
-      return null;
-    }
-    return accountsInvoiceSubtitle(context, invoice);
-  }
-
   String buildBodyHtml() {
     return accountsInvoiceHtml(context, invoice, options: options);
   }
@@ -34,8 +27,6 @@ Future<void> printAccountsInvoice({
       context: context,
       title: AccountsStrings.invoicePrintTitle,
       previewDialogTitle: context.l10n.printPreviewTitle,
-      subtitle: buildSubtitle(),
-      subtitleBuilder: buildSubtitle,
       patientContext: buildPrintFormPatientContext(
         context.l10n,
         patientName: invoice.payee,
@@ -67,47 +58,21 @@ Future<void> printAccountsInvoice({
   }
 }
 
-String accountsInvoiceSubtitle(BuildContext context, AccountsInvoice invoice) {
-  return _invoiceSubtitleItems(context, invoice)
-      .map((PrintFormMetadataItem entry) => '${entry.label}: ${entry.value};')
-      .join(' , ');
-}
-
 String accountsInvoiceHtml(
   BuildContext context,
   AccountsInvoice invoice, {
   AccountsInvoicePrintOptionsController? options,
 }) {
-  final bool includeSummary = options?.includeSummary ?? true;
   final bool includeItems = options?.includeItems ?? true;
   final bool includeNotes = options?.includeNotes ?? true;
   final StringBuffer buffer = StringBuffer();
-
-  if (includeSummary) {
-    // Flat "Label: value" lines — no card-like key/value grid.
-    buffer.write(
-      PrintFormTemplate.section(
-        title: AccountsStrings.invoiceSummarySectionTitle,
-        bodyHtml: PrintFormTemplate.unorderedList(
-          <String>[
-            for (final PrintFormMetadataItem item
-                in _invoiceSummaryItems(context, invoice))
-              '${item.label}: ${item.value}',
-          ],
-          emptyText: AccountsStrings.unknownValue,
-        ),
-      ),
-    );
-  }
 
   if (includeItems) {
     // Unwrapped table — no surrounding Items section chrome.
     buffer.write(_invoiceItemsTableHtml(context, invoice));
   }
 
-  if (includeNotes &&
-      !includeSummary &&
-      (invoice.notes ?? '').trim().isNotEmpty) {
+  if (includeNotes && (invoice.notes ?? '').trim().isNotEmpty) {
     buffer.write(
       PrintFormTemplate.section(
         title: AccountsStrings.notesLabel,
@@ -118,69 +83,6 @@ String accountsInvoiceHtml(
   }
 
   return buffer.toString();
-}
-
-List<PrintFormMetadataItem> _invoiceSubtitleItems(
-  BuildContext context,
-  AccountsInvoice invoice,
-) {
-  return <PrintFormMetadataItem>[
-    PrintFormMetadataItem(
-      label: AccountsStrings.statusColumn,
-      value: accountsStatusLabel(invoice.status),
-    ),
-    PrintFormMetadataItem(
-      label: AccountsStrings.invoiceGrandTotalLabel,
-      value: accountsMoney(context, invoice.totalAmount, invoice.currency),
-    ),
-  ];
-}
-
-List<PrintFormMetadataItem> _invoiceSummaryItems(
-  BuildContext context,
-  AccountsInvoice invoice,
-) {
-  return <PrintFormMetadataItem>[
-    PrintFormMetadataItem(
-      label: AccountsStrings.invoiceNumberColumn,
-      value: invoice.effectiveNumber,
-    ),
-    PrintFormMetadataItem(
-      label: AccountsStrings.invoicePayeeLabel,
-      value: invoice.payee,
-    ),
-    PrintFormMetadataItem(
-      label: AccountsStrings.invoiceDateLabel,
-      value: accountsDateTime(context, invoice.invoiceDate),
-    ),
-    PrintFormMetadataItem(
-      label: AccountsStrings.statusColumn,
-      value: accountsStatusLabel(invoice.status),
-    ),
-    PrintFormMetadataItem(
-      label: AccountsStrings.invoiceCurrencyLabel,
-      value: invoice.currency,
-    ),
-    PrintFormMetadataItem(
-      label: AccountsStrings.invoiceGrandTotalLabel,
-      value: accountsMoney(context, invoice.totalAmount, invoice.currency),
-    ),
-    if ((invoice.reference ?? '').trim().isNotEmpty)
-      PrintFormMetadataItem(
-        label: AccountsStrings.invoiceReferenceLabel,
-        value: invoice.reference!.trim(),
-      ),
-    if ((invoice.notes ?? '').trim().isNotEmpty)
-      PrintFormMetadataItem(
-        label: AccountsStrings.notesLabel,
-        value: invoice.notes!.trim(),
-      ),
-    if (invoice.isVoided && (invoice.voidReason ?? '').trim().isNotEmpty)
-      PrintFormMetadataItem(
-        label: AccountsStrings.reasonLabel,
-        value: invoice.voidReason!.trim(),
-      ),
-  ];
 }
 
 String _invoiceItemsTableHtml(BuildContext context, AccountsInvoice invoice) {
