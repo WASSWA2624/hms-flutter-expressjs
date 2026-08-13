@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const accountsWorkspaceController = require('@controllers/accounts-workspace/accounts-workspace.controller');
 const fiscalPeriodController = require('@controllers/accounts-workspace/fiscal-period.controller');
+const currencyRateController = require('@controllers/accounts-workspace/currency-rate.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
 const { authenticate, authorize } = require('@middlewares/auth.middleware');
 const { HttpError } = require('@lib/errors');
@@ -25,6 +26,14 @@ const {
   updateFiscalPeriodSchema,
   fiscalPeriodActionSchema,
 } = require('@validations/accounts-workspace/fiscal-period.schema');
+const {
+  currencyRatesQuerySchema,
+  currencyRateIdentifierParamsSchema,
+  currencyRateActionParamsSchema,
+  createCurrencyRateSchema,
+  updateCurrencyRateSchema,
+  currencyRateActionSchema,
+} = require('@validations/accounts-workspace/currency-rate.schema');
 
 /**
  * Route / queue reads — (`accounts:read` ∪ `accounts:write`).
@@ -126,6 +135,53 @@ router.post(
   }),
   authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
   fiscalPeriodController.applyFiscalPeriodAction
+);
+
+/**
+ * Setup & Controls → Currencies & Exchange Rates.
+ *
+ * Records are addressed by their public `human_friendly_id`. Archive is a
+ * status transition, not a delete, so there is no DELETE route.
+ */
+router.get(
+  '/currencies-and-exchange-rates',
+  validateRequest({ query: currencyRatesQuerySchema }),
+  authorize(ACCOUNTS_READ_SCOPES, 'permission'),
+  currencyRateController.listCurrencyRates
+);
+
+router.get(
+  '/currencies-and-exchange-rates/:currencyRateIdentifier',
+  validateRequest({ params: currencyRateIdentifierParamsSchema }),
+  authorize(ACCOUNTS_READ_SCOPES, 'permission'),
+  currencyRateController.getCurrencyRate
+);
+
+router.post(
+  '/currencies-and-exchange-rates',
+  validateRequest({ body: createCurrencyRateSchema }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  currencyRateController.createCurrencyRate
+);
+
+router.put(
+  '/currencies-and-exchange-rates/:currencyRateIdentifier',
+  validateRequest({
+    params: currencyRateIdentifierParamsSchema,
+    body: updateCurrencyRateSchema,
+  }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  currencyRateController.updateCurrencyRate
+);
+
+router.post(
+  '/currencies-and-exchange-rates/:currencyRateIdentifier/:action',
+  validateRequest({
+    params: currencyRateActionParamsSchema,
+    body: currencyRateActionSchema,
+  }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  currencyRateController.applyCurrencyRateAction
 );
 
 router.get(

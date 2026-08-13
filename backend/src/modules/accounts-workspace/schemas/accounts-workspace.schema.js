@@ -36,6 +36,9 @@ const workItemsQuerySchema = listQuerySchema.extend({
   fiscal_year: z.string().trim().max(32).optional(),
   module: z.string().trim().max(32).optional(),
   period_name: z.string().trim().max(120).optional(),
+  currency_code: z.string().trim().max(3).optional(),
+  rate_type: z.string().trim().max(64).optional(),
+  base_currency: z.enum(['true', 'false']).optional(),
   from: z.string().trim().optional(),
   to: z.string().trim().optional(),
 });

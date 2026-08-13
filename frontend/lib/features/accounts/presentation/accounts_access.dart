@@ -89,7 +89,8 @@ AccessRequirement accountsSectionTabRequirement(AccountsDeskSection section) {
     AccountsDeskSection.ledgers => accountsPatientLedgersReadRequirement,
     // Setup & Controls is read-gated, not entry-gated: a write-only grant must
     // not surface the fiscal calendar.
-    AccountsDeskSection.fiscalYearsAndPeriods =>
+    AccountsDeskSection.fiscalYearsAndPeriods ||
+    AccountsDeskSection.currenciesAndExchangeRates =>
       accountsWorkspaceReadRequirement,
     _ => accountsWorkspaceEntryRequirement,
   };
@@ -220,7 +221,8 @@ bool accountsSectionShowsNextActionColumn(
     // Next column.
     AccountsDeskSection.chart ||
     AccountsDeskSection.invoices ||
-    AccountsDeskSection.fiscalYearsAndPeriods => false,
+    AccountsDeskSection.fiscalYearsAndPeriods ||
+    AccountsDeskSection.currenciesAndExchangeRates => false,
   };
 }
 
@@ -357,6 +359,33 @@ abstract final class AccountsFiscalPeriodsAtomPermissions {
 /// Fiscal Years & Periods mutations — `accounts:write` ∩ `facility-accounts`.
 bool canWriteAccountsFiscalPeriods(AppAccessPolicy policy) {
   return AccountsFiscalPeriodsAtomPermissions.write.isAllowed(policy);
+}
+
+/// Setup & Controls → Currencies & Exchange Rates atom → permission mapping
+/// (`.cursor/finance/accounts-and-finance/setup-and-controls/currencies-and-exchange-rates.md`).
+abstract final class AccountsCurrencyRatesAtomPermissions {
+  static const AccessRequirement tab = accountsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = accountsWorkspaceReadRequirement;
+  static const AccessRequirement detail = accountsWorkspaceReadRequirement;
+  static const AccessRequirement filters = accountsWorkspaceReadRequirement;
+  static const AccessRequirement settings = accountsWorkspaceReadRequirement;
+  static const AccessRequirement export = accountsWorkspaceExportRequirement;
+  static const AccessRequirement print = accountsWorkspacePrintRequirement;
+  static const AccessRequirement create = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement update = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement clone = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement activate = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement deactivate = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement archive = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement restore = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement write = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement approve = accountsApprovalDecisionRequirement;
+  static const AccessRequirement routeEntry = accountsWorkspaceReadRequirement;
+}
+
+/// Currencies & Exchange Rates mutations — `accounts:write` ∩ `facility-accounts`.
+bool canWriteAccountsCurrencyRates(AppAccessPolicy policy) {
+  return AccountsCurrencyRatesAtomPermissions.write.isAllowed(policy);
 }
 
 abstract final class AccountsInvoicesAtomPermissions {

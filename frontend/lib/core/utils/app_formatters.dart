@@ -19,8 +19,14 @@ abstract final class AppFormatters {
     return DateFormat.yMMMd(_localeName(locale)).add_jm().format(value);
   }
 
-  static String decimal(num value, Locale locale) {
-    return NumberFormat.decimalPattern(_localeName(locale)).format(value);
+  static String decimal(num value, Locale locale, {int? decimalDigits}) {
+    if (decimalDigits == null) {
+      return NumberFormat.decimalPattern(_localeName(locale)).format(value);
+    }
+    return NumberFormat.decimalPatternDigits(
+      locale: _localeName(locale),
+      decimalDigits: decimalDigits,
+    ).format(value);
   }
 
   static String compactNumber(num value, Locale locale) {
