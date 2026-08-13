@@ -22,8 +22,14 @@ WEB = FRONTEND / "web"
 ICONS = WEB / "icons"
 
 
-def _fit_square(img: Image.Image, size: int, pad_ratio: float = 0.02) -> Image.Image:
-    canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+def _fit_square(
+    img: Image.Image,
+    size: int,
+    pad_ratio: float = 0.02,
+    *,
+    background: tuple[int, int, int, int] = (0, 0, 0, 0),
+) -> Image.Image:
+    canvas = Image.new("RGBA", (size, size), background)
     max_side = int(size * (1 - 2 * pad_ratio))
     scale = min(max_side / img.size[0], max_side / img.size[1])
     nw = max(1, int(round(img.size[0] * scale)))
@@ -31,6 +37,9 @@ def _fit_square(img: Image.Image, size: int, pad_ratio: float = 0.02) -> Image.I
     scaled = img.resize((nw, nh), Image.Resampling.LANCZOS)
     canvas.alpha_composite(scaled, ((size - nw) // 2, (size - nh) // 2))
     return canvas
+
+
+_WHITE = (255, 255, 255, 255)
 
 
 def _fit_natural(img: Image.Image, height: int) -> Image.Image:
@@ -63,19 +72,19 @@ def main() -> None:
 
     for path, img in {
         OUT / "logo.png": logo,
-        OUT / "favicon.png": _fit_square(cropped, 1024),
+        OUT / "favicon.png": _fit_square(cropped, 1024, background=_WHITE),
         OUT / "splash.png": logo.copy(),
         OUT / "logo_master.png": master,
-        WEB / "favicon.png": _fit_square(cropped, 1024),
+        WEB / "favicon.png": _fit_square(cropped, 1024, background=_WHITE),
     }.items():
         img.save(path, "PNG", optimize=True)
         print(f"wrote {path.name} {img.size}")
 
     for size in (192, 512):
-        _fit_square(cropped, size, pad_ratio=0.03).save(
+        _fit_square(cropped, size, pad_ratio=0.03, background=_WHITE).save(
             ICONS / f"Icon-{size}.png", "PNG", optimize=True
         )
-        maskable = Image.new("RGBA", (size, size), (244, 249, 254, 255))
+        maskable = Image.new("RGBA", (size, size), _WHITE)
         pad = int(size * 0.10)
         inner = size - 2 * pad
         maskable.alpha_composite(
