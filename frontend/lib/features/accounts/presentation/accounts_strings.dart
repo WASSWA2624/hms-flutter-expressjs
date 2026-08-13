@@ -61,6 +61,11 @@ abstract final class AccountsStrings {
   static const String editInvoiceTitle = 'Edit invoice';
   static const String createInvoiceSubmitAction = 'Create Invoice';
   static const String invoiceDetailsTitle = 'Invoice details';
+  static const String invoicePrintTitle = 'Invoice';
+  static const String invoicePrintFooterNote = 'Accounts invoice print';
+  static const String invoicePrintSectionFooter = 'Signatures';
+  static const String invoicePrintRowNumberColumn = '#';
+  static const String invoiceSummarySectionTitle = 'Summary';
   static const String invoicePayeeSectionTitle = 'Payee';
   static const String invoiceItemsSectionTitle = 'Items';
   static const String invoicePayeeLabel = 'Payee';

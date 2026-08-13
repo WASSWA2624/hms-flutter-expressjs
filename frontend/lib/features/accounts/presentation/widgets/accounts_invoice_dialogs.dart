@@ -15,13 +15,14 @@ import 'package:hosspi_hms/features/accounts/presentation/accounts_access.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
 import 'package:hosspi_hms/features/accounts/presentation/controllers/accounts_workspace_controller.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_form_dialogs.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_invoice_print_helpers.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart'
     hide accountsEmptyToNull;
-import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_workspace_print_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 
 /// Result of create/edit invoice dialog. [invoice] is set when save succeeded.
 final class AccountsInvoiceEditorResult {
@@ -105,8 +106,126 @@ Future<void> showAccountsInvoiceDetailsDialog({
               final accessPolicy = dialogRef.watch(appAccessPolicyProvider);
               final bool canWrite = canWriteAccounts(accessPolicy);
               final bool canPrint = canPrintAccountsWorkspace(accessPolicy);
+              final bool canEdit = canWrite && current.canEdit;
+              final bool canDelete = canWrite && current.canVoid;
               final ThemeData theme = Theme.of(context);
               final l10n = context.l10n;
+              final String currency = current.currency;
+
+              Future<void> editInvoice() async {
+                final AccountsInvoiceEditorResult outcome =
+                    await showAccountsInvoiceEditorDialog(
+                      context: context,
+                      ref: dialogRef,
+                      editing: current,
+                    );
+                if (!outcome.saved) {
+                  return;
+                }
+                final AccountsInvoice? updated = outcome.invoice;
+                if (updated != null) {
+                  current = updated;
+                } else {
+                  final Result<AccountsInvoice> refreshed = await dialogRef
+                      .read(accountsInvoiceRepositoryProvider)
+                      .getInvoice(current.id);
+                  refreshed.when(
+                    success: (AccountsInvoice value) => current = value,
+                    failure: (_) {},
+                  );
+                }
+                await onChanged();
+                setDialogState(() {});
+              }
+
+              Future<void> deleteInvoice() async {
+                final AccountsReasonDraft? draft =
+                    await showAppDialog<AccountsReasonDraft>(
+                      context: context,
+                      builder: (_) => AccountsReasonForm(
+                        dialogTitle: const Text(
+                          AccountsStrings.invoiceVoidTitle,
+                        ),
+                        submitLabel: l10n.commonDeleteActionLabel,
+                      ),
+                    );
+                if (draft == null) {
+                  return;
+                }
+                final Result<AccountsInvoice> voided = await dialogRef
+                    .read(accountsInvoiceRepositoryProvider)
+                    .voidInvoice(
+                      current.id,
+                      reason: draft.reason,
+                      notes: draft.notes,
+                    );
+                final AppFailure? failure = voided.when(
+                  success: (_) => null,
+                  failure: (AppFailure f) => f,
+                );
+                if (!context.mounted) {
+                  return;
+                }
+                if (failure != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(l10n.failureMessage(failure))),
+                  );
+                  return;
+                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text(AccountsStrings.invoiceVoided)),
+                );
+                dialogRef.read(accountsInvoicesCountProvider.notifier).state =
+                    null;
+                await onChanged();
+                if (dialogContext.mounted) {
+                  await Navigator.of(dialogContext).maybePop();
+                }
+              }
+
+              final List<_InvoiceDraftTableRow> itemRows =
+                  <_InvoiceDraftTableRow>[
+                    for (int index = 0; index < current.items.length; index += 1)
+                      _InvoiceDraftTableRow.item(current.items[index], index),
+                    _InvoiceDraftTableRow.total(itemCount: current.items.length),
+                  ];
+
+              final List<Widget> leadingActions = <Widget>[
+                if (canPrint)
+                  AppButton.secondary(
+                    leadingIcon: Icons.print_outlined,
+                    label: l10n.commonPrintActionLabel,
+                    onPressed: () => _printInvoiceDetails(
+                      context: context,
+                      ref: dialogRef,
+                      invoice: current,
+                    ),
+                  ),
+                if (canEdit)
+                  AppButton.secondary(
+                    leadingIcon: Icons.edit_outlined,
+                    label: l10n.commonEditActionLabel,
+                    onPressed: () => unawaited(editInvoice()),
+                  ),
+                if (canDelete)
+                  AppButton.secondary(
+                    leadingIcon: Icons.delete_outline,
+                    label: l10n.commonDeleteActionLabel,
+                    color: theme.colorScheme.error,
+                    onPressed: () => unawaited(deleteInvoice()),
+                  ),
+              ];
+              final Widget closeAction = AppButton.close(
+                leadingIcon: Icons.close,
+                label: l10n.commonCloseActionLabel,
+                onPressed: () => Navigator.of(dialogContext).maybePop(),
+              );
+              // AppDialog reverses exactly-two-action footers authored as
+              // [Close, action] so Close stays extreme-right.
+              final List<Widget> actions = leadingActions.length == 1
+                  ? <Widget>[closeAction, leadingActions.first]
+                  : <Widget>[...leadingActions, closeAction];
+
               return AppDialog(
                 title: const Text(AccountsStrings.invoiceDetailsTitle),
                 icon: const Icon(Icons.receipt_long_outlined),
@@ -115,185 +234,255 @@ Future<void> showAccountsInvoiceDetailsDialog({
                 content: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    Text(
-                      current.effectiveNumber,
-                      style: theme.textTheme.titleMedium,
-                    ),
-                    SizedBox(height: theme.spacing.sm),
-                    Text(
-                      '${AccountsStrings.invoicePayeeLabel}: ${current.payee}',
-                    ),
-                    Text(
-                      '${AccountsStrings.invoiceDateLabel}: ${accountsDateTime(context, current.invoiceDate)}',
-                    ),
-                    Text(
-                      '${AccountsStrings.statusColumn}: ${accountsStatusLabel(current.status)}',
-                    ),
-                    Text(
-                      '${AccountsStrings.invoiceGrandTotalLabel}: ${accountsMoney(context, current.totalAmount, current.currency)}',
-                    ),
-                    if ((current.notes ?? '').isNotEmpty)
-                      Text('${AccountsStrings.notesLabel}: ${current.notes}'),
-                    if (current.isVoided &&
-                        (current.voidReason ?? '').isNotEmpty)
-                      Text(
-                        '${AccountsStrings.reasonLabel}: ${current.voidReason}',
-                      ),
-                    SizedBox(height: theme.spacing.md),
-                AppCollapsibleSection(
-                  title: AccountsStrings.invoiceItemsSectionTitle,
-                  child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: <Widget>[
-                          if (current.items.isEmpty)
-                            const Text(AccountsStrings.invoiceItemsEmpty)
-                          else
-                            for (final AccountsInvoiceLineItem item
-                                in current.items)
-                              Padding(
-                                padding: EdgeInsets.only(
-                                  bottom: theme.spacing.xs,
-                                ),
-                                child: Text(
-                                  '${item.name} · ${item.quantity} × ${accountsMoney(context, item.unitPrice, current.currency)} = ${accountsMoney(context, item.effectiveLineTotal, current.currency)}',
-                                ),
-                              ),
+                    AppCollapsibleSection(
+                      title: AccountsStrings.invoiceSummarySectionTitle,
+                      titleIcon: Icons.receipt_long_outlined,
+                      child: _InvoiceDetailFactLines(
+                        fields: <AppWorkspacePatientContextField>[
+                          AppWorkspacePatientContextField(
+                            label: AccountsStrings.invoiceNumberColumn,
+                            value: current.effectiveNumber,
+                            icon: Icons.tag_outlined,
+                            copyable: current.effectiveNumber != '—',
+                          ),
+                          AppWorkspacePatientContextField(
+                            label: AccountsStrings.invoicePayeeLabel,
+                            value: current.payee,
+                            icon: Icons.storefront_outlined,
+                          ),
+                          AppWorkspacePatientContextField(
+                            label: AccountsStrings.invoiceDateLabel,
+                            value: accountsDateTime(
+                              context,
+                              current.invoiceDate,
+                            ),
+                            icon: Icons.event_outlined,
+                          ),
+                          AppWorkspacePatientContextField(
+                            label: AccountsStrings.statusColumn,
+                            value: accountsStatusLabel(current.status),
+                            icon: Icons.flag_outlined,
+                          ),
+                          AppWorkspacePatientContextField(
+                            label: AccountsStrings.invoiceGrandTotalLabel,
+                            value: accountsMoney(
+                              context,
+                              current.totalAmount,
+                              currency,
+                            ),
+                            icon: Icons.payments_outlined,
+                          ),
+                          if ((current.notes ?? '').trim().isNotEmpty)
+                            AppWorkspacePatientContextField(
+                              label: AccountsStrings.notesLabel,
+                              value: current.notes!.trim(),
+                              icon: Icons.notes_outlined,
+                            ),
+                          if (current.isVoided &&
+                              (current.voidReason ?? '').trim().isNotEmpty)
+                            AppWorkspacePatientContextField(
+                              label: AccountsStrings.reasonLabel,
+                              value: current.voidReason!.trim(),
+                              icon: Icons.info_outline,
+                            ),
                         ],
                       ),
                     ),
-                    if (canWrite &&
-                        (current.canEdit || current.canVoid)) ...<Widget>[
-                      SizedBox(height: theme.spacing.md),
-                      Wrap(
-                        spacing: theme.spacing.sm,
-                        runSpacing: theme.spacing.xs,
-                        children: <Widget>[
-                          if (current.canEdit)
-                            AppButton.tertiary(
-                              leadingIcon: Icons.edit_outlined,
-                              label: l10n.commonEditActionLabel,
-                              dense: true,
-                              onPressed: () async {
-                                final AccountsInvoiceEditorResult outcome =
-                                    await showAccountsInvoiceEditorDialog(
-                                      context: context,
-                                      ref: dialogRef,
-                                      editing: current,
-                                    );
-                                if (!outcome.saved) {
-                                  return;
-                                }
-                                final AccountsInvoice? updated =
-                                    outcome.invoice;
-                                if (updated != null) {
-                                  current = updated;
-                                } else {
-                                  final Result<AccountsInvoice> refreshed =
-                                      await dialogRef
-                                          .read(
-                                            accountsInvoiceRepositoryProvider,
-                                          )
-                                          .getInvoice(current.id);
-                                  refreshed.when(
-                                    success: (AccountsInvoice value) =>
-                                        current = value,
-                                    failure: (_) {},
-                                  );
-                                }
-                                await onChanged();
-                                setDialogState(() {});
-                              },
-                            ),
-                          if (current.canVoid)
-                            AppButton.tertiary(
-                              leadingIcon: Icons.delete_outline,
-                              label: l10n.commonDeleteActionLabel,
-                              dense: true,
-                              color: theme.colorScheme.error,
-                              onPressed: () async {
-                                final AccountsReasonDraft? draft =
-                                    await showAppDialog<AccountsReasonDraft>(
-                                      context: context,
-                                      builder: (_) => AccountsReasonForm(
-                                        dialogTitle: const Text(
-                                          AccountsStrings.invoiceVoidTitle,
-                                        ),
-                                        submitLabel:
-                                            l10n.commonDeleteActionLabel,
-                                      ),
-                                    );
-                                if (draft == null) {
-                                  return;
-                                }
-                                final Result<AccountsInvoice> voided =
-                                    await dialogRef
-                                        .read(
-                                          accountsInvoiceRepositoryProvider,
-                                        )
-                                        .voidInvoice(
-                                          current.id,
-                                          reason: draft.reason,
-                                          notes: draft.notes,
-                                        );
-                                final AppFailure? failure = voided.when(
-                                  success: (_) => null,
-                                  failure: (AppFailure f) => f,
-                                );
-                                if (!context.mounted) {
-                                  return;
-                                }
-                                if (failure != null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        l10n.failureMessage(failure),
-                                      ),
-                                    ),
-                                  );
-                                  return;
-                                }
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      AccountsStrings.invoiceVoided,
-                                    ),
+                    SizedBox(height: theme.spacing.md),
+                    AppListTable<_InvoiceDraftTableRow>(
+                      page: AppPage<_InvoiceDraftTableRow>(
+                        items: itemRows,
+                        request: AppPageRequest(
+                          pageSize: itemRows.isEmpty ? 1 : itemRows.length,
+                        ),
+                        totalItemCount: itemRows.length,
+                      ),
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padEmptyRows: false,
+                      showRowNumbers: false,
+                      enableExport: false,
+                      forceCompact: true,
+                      displayMode: AppListTableDisplayMode.table,
+                      pinToolbar: false,
+                      rowColorBuilder:
+                          (BuildContext context, _InvoiceDraftTableRow row) {
+                        if (!row.isTotal) {
+                          return null;
+                        }
+                        return theme.colorScheme.surfaceContainerHighest
+                            .withValues(alpha: 0.55);
+                      },
+                      columns: <AppListTableColumn<_InvoiceDraftTableRow>>[
+                          AppListTableColumn<_InvoiceDraftTableRow>(
+                            id: 'name',
+                            label: AccountsStrings.invoiceItemNameLabel,
+                            alwaysVisible: true,
+                            preferredWidth: 160,
+                            sortable: false,
+                            cellBuilder: (_, _InvoiceDraftTableRow row) {
+                              if (row.isTotal) {
+                                return Text(
+                                  AccountsStrings.invoiceGrandTotalLabel,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: AppFontWeight.emphasis,
                                   ),
                                 );
-                                dialogRef
-                                        .read(
-                                          accountsInvoicesCountProvider
-                                              .notifier,
-                                        )
-                                        .state =
-                                    null;
-                                await onChanged();
-                                if (dialogContext.mounted) {
-                                  await Navigator.of(dialogContext).maybePop();
-                                }
-                              },
-                            ),
+                              }
+                              return Text(
+                                row.item!.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              );
+                            },
+                          ),
+                          AppListTableColumn<_InvoiceDraftTableRow>(
+                            id: 'description',
+                            label: AccountsStrings.invoiceItemDescriptionLabel,
+                            preferredWidth: 180,
+                            sortable: false,
+                            cellBuilder: (_, _InvoiceDraftTableRow row) {
+                              if (row.isTotal) {
+                                return Text(
+                                  AccountsStrings.invoiceItemsCountLabel(
+                                    row.itemCount,
+                                  ),
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: AppFontWeight.emphasis,
+                                  ),
+                                );
+                              }
+                              final String? description =
+                                  row.item!.description?.trim();
+                              return Text(
+                                description != null && description.isNotEmpty
+                                    ? description
+                                    : AccountsStrings.unknownValue,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              );
+                            },
+                          ),
+                          AppListTableColumn<_InvoiceDraftTableRow>(
+                            id: 'quantity',
+                            label: AccountsStrings.invoiceItemQuantityLabel,
+                            preferredWidth: 90,
+                            sortable: false,
+                            cellBuilder: (_, _InvoiceDraftTableRow row) {
+                              if (row.isTotal) {
+                                return const Text('');
+                              }
+                              return Text('${row.item!.quantity}');
+                            },
+                          ),
+                          AppListTableColumn<_InvoiceDraftTableRow>(
+                            id: 'unit_price',
+                            label: AccountsStrings.invoiceItemUnitPriceLabel,
+                            preferredWidth: 110,
+                            sortable: false,
+                            cellBuilder:
+                                (BuildContext context, _InvoiceDraftTableRow row) {
+                              if (row.isTotal) {
+                                return const Text('');
+                              }
+                              return Text(
+                                accountsMoney(
+                                  context,
+                                  row.item!.unitPrice,
+                                  currency,
+                                ),
+                              );
+                            },
+                          ),
+                          AppListTableColumn<_InvoiceDraftTableRow>(
+                            id: 'line_total',
+                            label: AccountsStrings.invoiceItemLineTotalLabel,
+                            preferredWidth: 120,
+                            sortable: false,
+                            cellBuilder:
+                                (BuildContext context, _InvoiceDraftTableRow row) {
+                              if (row.isTotal) {
+                                return Text(
+                                  accountsMoney(
+                                    context,
+                                    current.totalAmount,
+                                    currency,
+                                  ),
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: AppFontWeight.emphasis,
+                                  ),
+                                );
+                              }
+                              return Text(
+                                accountsMoney(
+                                  context,
+                                  row.item!.effectiveLineTotal,
+                                  currency,
+                                ),
+                              );
+                            },
+                          ),
                         ],
+                        mobileItemBuilder:
+                            (BuildContext context, _InvoiceDraftTableRow row) {
+                          if (row.isTotal) {
+                            return AppListTableMobileItem(
+                              title: AccountsStrings.invoiceGrandTotalLabel,
+                              caption: AccountsStrings.invoiceItemsCountLabel(
+                                row.itemCount,
+                              ),
+                              meta: <AppListTableMobileMeta>[
+                                AppListTableMobileMeta(
+                                  label: accountsMoney(
+                                    context,
+                                    current.totalAmount,
+                                    currency,
+                                  ),
+                                  icon: Icons.payments_outlined,
+                                ),
+                              ],
+                            );
+                          }
+                          final AccountsInvoiceLineItem item = row.item!;
+                          return AppListTableMobileItem(
+                            title: item.name,
+                            caption:
+                                item.description?.trim().isNotEmpty == true
+                                ? item.description
+                                : null,
+                            meta: <AppListTableMobileMeta>[
+                              AppListTableMobileMeta(
+                                label: '${item.quantity}',
+                                icon: Icons.numbers_outlined,
+                              ),
+                              AppListTableMobileMeta(
+                                label: accountsMoney(
+                                  context,
+                                  item.effectiveLineTotal,
+                                  currency,
+                                ),
+                                icon: Icons.payments_outlined,
+                              ),
+                            ],
+                          );
+                        },
+                        itemKeyBuilder: (_InvoiceDraftTableRow row) {
+                          if (row.isTotal) {
+                            return const ValueKey<String>(
+                              'invoice-details-total',
+                            );
+                          }
+                          final AccountsInvoiceLineItem item = row.item!;
+                          return ValueKey<String>(
+                            item.id.isNotEmpty
+                                ? item.id
+                                : 'details-${row.index}-${item.name}',
+                          );
+                        },
                       ),
-                    ],
                   ],
                 ),
-                actions: <Widget>[
-                  if (canPrint)
-                    AppButton.secondary(
-                      leadingIcon: Icons.print_outlined,
-                      label: l10n.commonPrintActionLabel,
-                      onPressed: () => _printInvoiceDetails(
-                        context: context,
-                        ref: dialogRef,
-                        invoice: current,
-                      ),
-                    ),
-                  AppButton.secondary(
-                    leadingIcon: Icons.close,
-                    label: l10n.commonCloseActionLabel,
-                    onPressed: () => Navigator.of(dialogContext).maybePop(),
-                  ),
-                ],
+                actions: actions,
               );
             },
           );
@@ -308,59 +497,112 @@ Future<void> _printInvoiceDetails({
   required WidgetRef ref,
   required AccountsInvoice invoice,
 }) {
-  return printAccountsListTable<_InvoicePrintRow>(
+  return printAccountsInvoice(
     ref: ref,
     context: context,
-    title: AccountsStrings.invoiceDetailsTitle,
-    columns: <AppListTableColumn<_InvoicePrintRow>>[
-      AppListTableColumn<_InvoicePrintRow>(
-        id: 'field',
-        label: AccountsStrings.typeColumn,
-        cellBuilder: (_, _InvoicePrintRow row) => Text(row.label),
-        exportValue: (_InvoicePrintRow row) => row.label,
-      ),
-      AppListTableColumn<_InvoicePrintRow>(
-        id: 'value',
-        label: AccountsStrings.invoiceItemDescriptionLabel,
-        cellBuilder: (_, _InvoicePrintRow row) => Text(row.value),
-        exportValue: (_InvoicePrintRow row) => row.value,
-      ),
-    ],
-    items: <_InvoicePrintRow>[
-      _InvoicePrintRow(
-        AccountsStrings.invoiceNumberColumn,
-        invoice.effectiveNumber,
-      ),
-      _InvoicePrintRow(AccountsStrings.invoicePayeeLabel, invoice.payee),
-      _InvoicePrintRow(
-        AccountsStrings.invoiceDateLabel,
-        accountsDateTime(context, invoice.invoiceDate),
-      ),
-      _InvoicePrintRow(
-        AccountsStrings.statusColumn,
-        accountsStatusLabel(invoice.status),
-      ),
-      if ((invoice.notes ?? '').isNotEmpty)
-        _InvoicePrintRow(AccountsStrings.notesLabel, invoice.notes!),
-      for (final AccountsInvoiceLineItem item in invoice.items)
-        _InvoicePrintRow(
-          item.name,
-          '${item.quantity} × ${accountsMoney(context, item.unitPrice, invoice.currency)} = ${accountsMoney(context, item.effectiveLineTotal, invoice.currency)}${(item.description ?? '').isEmpty ? '' : ' · ${item.description}'}',
-        ),
-      _InvoicePrintRow(
-        AccountsStrings.invoiceGrandTotalLabel,
-        accountsMoney(context, invoice.totalAmount, invoice.currency),
-      ),
-    ],
-    emptyText: AccountsStrings.invoicesEmpty,
+    invoice: invoice,
   );
 }
 
-final class _InvoicePrintRow {
-  const _InvoicePrintRow(this.label, this.value);
+/// Flat summary lines: icon + "Label: value" (no nested cards).
+class _InvoiceDetailFactLines extends StatelessWidget {
+  const _InvoiceDetailFactLines({required this.fields});
 
-  final String label;
-  final String value;
+  final List<AppWorkspacePatientContextField> fields;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final List<AppWorkspacePatientContextField> visible = fields
+        .where((AppWorkspacePatientContextField field) => field.hasValue)
+        .toList(growable: false);
+    if (visible.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final TextStyle? labelStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: colorScheme.onSurfaceVariant,
+      fontWeight: AppFontWeight.emphasis,
+    );
+    final TextStyle? valueStyle = theme.textTheme.bodyMedium?.copyWith(
+      color: colorScheme.onSurface,
+      fontWeight: AppFontWeight.regular,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        for (int index = 0; index < visible.length; index += 1) ...<Widget>[
+          if (index > 0) SizedBox(height: theme.spacing.sm),
+          _InvoiceDetailFactLine(
+            field: visible[index],
+            labelStyle: labelStyle,
+            valueStyle: valueStyle,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _InvoiceDetailFactLine extends StatelessWidget {
+  const _InvoiceDetailFactLine({
+    required this.field,
+    required this.labelStyle,
+    required this.valueStyle,
+  });
+
+  final AppWorkspacePatientContextField field;
+  final TextStyle? labelStyle;
+  final TextStyle? valueStyle;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
+    return Semantics(
+      label: '${field.label}: ${field.value}',
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          if (field.icon != null) ...<Widget>[
+            Icon(
+              field.icon,
+              size: theme.appTokens.listIconSize,
+              color: theme.colorScheme.primary,
+            ),
+            SizedBox(width: theme.spacing.xs),
+          ],
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                children: <InlineSpan>[
+                  TextSpan(text: '${field.label}: ', style: labelStyle),
+                  if (field.copyable)
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.baseline,
+                      baseline: TextBaseline.alphabetic,
+                      child: AppCopyableIdentifier(
+                        value: field.value,
+                        tooltip: field.copyTooltip,
+                        copiedMessage: field.copiedMessage,
+                        semanticLabel: field.copySemanticLabel,
+                        showCopyIcon: field.showCopyIcon,
+                        placeholderValues: field.copyPlaceholderValues,
+                        textStyle: valueStyle,
+                      ),
+                    )
+                  else
+                    TextSpan(text: field.value, style: valueStyle),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _AccountsInvoiceEditorDialog extends ConsumerStatefulWidget {
