@@ -1,10 +1,10 @@
-# HMS Financial Modules: Billing & Receivables, Accounts & Finance, and Insurance & Claims
+# HMS Financial Modules: Billing, Accounts & Finance, and Insurance & Claims
 
 ## 1. Purpose and scope
 
 A comprehensive Hospital Management System (HMS) needs more than journals, ledgers, invoices, and receipts. Its financial capabilities should be exposed through three separate top-level menu items:
 
-1. **Billing & Receivables** — rename the existing **Billing** menu.
+1. **Billing** — retain the existing menu name.
 2. **Accounts & Finance** — rename the existing **Accounts** menu.
 3. **Insurance & Claims** — rename the existing **Insurance Claims** menu.
 
@@ -544,89 +544,55 @@ Finance features should not operate as isolated screens. Recommended end-to-end 
 
 ### 9.1 Navigation rules
 
-The application sidebar should expose **Billing & Receivables**, **Accounts & Finance**, and **Insurance & Claims** as three independent first-level menu items. Billing and insurance must not be nested under Accounts & Finance.
+The application sidebar should expose **Billing**, **Accounts & Finance**, and **Insurance & Claims** as three independent first-level menu items. Billing and insurance must not be nested under Accounts & Finance.
 
 Apply these rules consistently:
 
-1. Every named menu or submenu entry opens a tab with the same name.
-2. Selecting the label of an expandable entry opens its overview/worklist tab; selecting its chevron expands or collapses its children.
-3. Reopening the same destination focuses its existing tab instead of creating a duplicate.
-4. Record-specific tabs may open from a worklist, for example `Invoice INV-000123` or `Claim CLM-000045`.
-5. Tabs should preserve filters, pagination, and unsaved form state while open.
-6. Tabs should be closable, reorderable, deep-linkable, and restorable after an accidental refresh where practical.
-7. The active sidebar entry, active tab, page title, and breadcrumb must remain synchronized.
-8. Menu entries, tabs, actions, totals, and badges must respect role and facility permissions.
-9. Worklist tabs may show useful badges such as pending approvals, overdue balances, rejected claims, or unreconciled transactions.
-10. Cross-module links must open the authoritative record's tab instead of creating a duplicate copy in another module.
+1. **Billing** and **Insurance & Claims** open dedicated workspaces whose named entries are tabs.
+2. **Accounts & Finance** is an expandable main menu. Its category labels expand or collapse nested submenu items, and each leaf submenu item opens a tab with the same name.
+3. Every permanent tab represents a searchable, filterable data table or worklist. The required columns are defined in Section 10.
+4. Create, edit, approve, post, allocate, reconcile, close, and reverse operations are actions from a table row or toolbar; they are not permanent menu tabs.
+5. Forms open in a drawer, modal, or contextual record tab, then return the user to the originating table after completion.
+6. Reopening the same destination focuses its existing tab instead of creating a duplicate.
+7. Record-specific tabs may open from a table, for example `Invoice INV-000123` or `Claim CLM-000045`.
+8. Tabs preserve filters, sorting, pagination, selected columns, and unsaved state while open.
+9. Tabs are closable, reorderable, deep-linkable, and restorable after an accidental refresh where practical.
+10. The active sidebar entry, active tab, page title, and breadcrumb remain synchronized.
+11. Menu entries, tabs, actions, totals, and badges respect role, tenant, and facility permissions.
+12. Worklist tabs may show badges such as pending approvals, overdue balances, rejected claims, or unreconciled transactions.
+13. Cross-module links open the authoritative record's tab instead of creating a duplicate copy in another module.
 
-### 9.2 Billing & Receivables
+### 9.2 Billing
 
-Rename the existing **Billing** menu to **Billing & Receivables**. It owns patient and customer charging, invoicing, collection, allocation, adjustment, and receivable follow-up.
+Keep the existing menu name **Billing**. It opens a tabbed billing workspace and owns patient and customer charging, invoicing, collection, allocation, adjustment, and receivable follow-up.
 
 ```text
-BILLING & RECEIVABLES
+BILLING
 │
 ├── Overview
-│
-├── Charge Management
-│   ├── Charge Entry
-│   ├── Unbilled Charges
-│   ├── Charge Review
-│   ├── Estimates & Quotations
-│   └── Packages & Bundles
-│
+├── Charges
+├── Unbilled Charges
+├── Estimates & Quotations
+├── Packages & Bundles
 ├── Invoices
-│   ├── All Invoices
-│   ├── Create Invoice
-│   ├── Draft Invoices
-│   ├── Issued Invoices
-│   ├── Outstanding & Overdue
-│   └── Cancelled & Written-off
-│
-├── Payments & Receipts
-│   ├── Receive Payment
-│   ├── Payment Transactions
-│   ├── Payment Allocations
-│   ├── Unallocated Payments
-│   ├── Receipts
-│   └── Advances & Deposits
-│
-├── Adjustments & Refunds
-│   ├── Credit Notes
-│   ├── Debit Notes
-│   ├── Refund Requests
-│   ├── Approved Refunds
-│   └── Write-offs
-│
+├── Payments
+├── Payment Allocations
+├── Receipts
+├── Advances & Deposits
+├── Credit Notes
+├── Debit Notes
+├── Refunds
+├── Write-offs
 ├── Patient Accounts
-│   ├── Account Search
-│   ├── Patient Statements
-│   ├── Encounter Balances
-│   ├── Guarantors & Sponsors
-│   └── Credit Balances
-│
-├── Accounts Receivable
-│   ├── Receivable Worklist
-│   ├── Aging Analysis
-│   ├── Collection Follow-up
-│   ├── Payer Statements
-│   └── Receivable Reconciliation
-│
-├── Billing Reports
-│   ├── Daily Billing
-│   ├── Collections
-│   ├── Outstanding Balances
-│   ├── Revenue by Service
-│   ├── Discounts & Adjustments
-│   └── Payment Allocation
-│
-└── Billing Setup
-    ├── Price Lists & Tariffs
-    ├── Billing Rules
-    ├── Discount Rules
-    ├── Tax Rules
-    ├── Invoice Templates
-    └── Receipt Templates
+├── Patient Statements
+├── Receivables
+├── Collection Follow-up
+├── Price Lists & Tariffs
+├── Billing Rules
+├── Discount Rules
+├── Tax Rules
+├── Document Templates
+└── Billing Reports
 ```
 
 ### 9.3 Accounts & Finance
@@ -639,7 +605,6 @@ ACCOUNTS & FINANCE
 ├── Overview
 │
 ├── General Accounting
-│   ├── Accounting Overview
 │   ├── Chart of Accounts
 │   ├── Journal Entries
 │   │   ├── All Journal Entries
@@ -658,7 +623,6 @@ ACCOUNTS & FINANCE
 │   └── Reversing Entries
 │
 ├── Purchases & Payables
-│   ├── Payables Overview
 │   ├── Suppliers
 │   ├── Purchase Requisitions
 │   ├── Purchase Orders
@@ -666,23 +630,21 @@ ACCOUNTS & FINANCE
 │   ├── Supplier Invoices
 │   ├── Supplier Adjustments
 │   ├── Payment Runs
-│   ├── Make Payment
+│   ├── Supplier Payments
 │   ├── Supplier Statements
 │   ├── AP Aging
 │   └── AP Reconciliation
 │
 ├── Expenses
-│   ├── Expense Overview
 │   ├── Expense Entries
 │   ├── Expense Requests
-│   ├── Approval Worklist
+│   ├── Expense Approvals
 │   ├── Recurring Expenses
 │   ├── Staff Reimbursements
 │   ├── Expense Categories
 │   └── Expense Analysis
 │
 ├── Cash Management
-│   ├── Cash Overview
 │   ├── Cash Points
 │   ├── Cashier Sessions
 │   ├── Cash Transactions
@@ -693,21 +655,19 @@ ACCOUNTS & FINANCE
 │   └── Cash Reconciliation
 │
 ├── Bank Management
-│   ├── Bank Overview
 │   ├── Bank Accounts
 │   ├── Bank Transactions
-│   ├── Deposits
+│   ├── Bank Deposits
 │   ├── Withdrawals & Charges
 │   ├── Bank Transfers
 │   ├── Statement Imports
 │   ├── Matching Workbench
-│   └── Bank Reconciliation
+│   └── Bank Reconciliations
 │
 ├── Fixed Assets
-│   ├── Asset Overview
 │   ├── Asset Register
 │   ├── Asset Categories
-│   ├── Acquisitions
+│   ├── Asset Acquisitions
 │   ├── Depreciation Runs
 │   ├── Asset Transfers
 │   ├── Revaluations
@@ -715,7 +675,6 @@ ACCOUNTS & FINANCE
 │   └── Asset Ledger
 │
 ├── Budgets & Cost Control
-│   ├── Budget Overview
 │   ├── Annual Budgets
 │   ├── Department Budgets
 │   ├── Project Budgets
@@ -725,7 +684,6 @@ ACCOUNTS & FINANCE
 │   └── Variance Analysis
 │
 ├── Tax & Compliance
-│   ├── Tax Overview
 │   ├── Tax Codes & Rates
 │   ├── Tax Transactions
 │   ├── Withholding Tax
@@ -734,12 +692,12 @@ ACCOUNTS & FINANCE
 │   └── Audit Schedules
 │
 ├── Period Close
-│   ├── Close Dashboard
+│   ├── Close Checklist
 │   ├── Reconciliation Checklist
 │   ├── Period Adjustments
-│   ├── Close Period
 │   ├── Reopen Requests
-│   └── Year-end Close
+│   ├── Close History
+│   └── Year-end Close Runs
 │
 ├── Financial Reports
 │   ├── Trial Balance
@@ -779,94 +737,272 @@ Rename the existing **Insurance Claims** menu to **Insurance & Claims**. It owns
 INSURANCE & CLAIMS
 │
 ├── Overview
-│
-├── Payers & Contracts
-│   ├── Insurance Providers
-│   ├── Corporate Payers
-│   ├── Plans & Products
-│   ├── Corporate Contracts
-│   ├── Tariffs & Price Lists
-│   ├── Coverage Rules
-│   ├── Exclusions & Limits
-│   └── Contract Expiry
-│
-├── Membership & Eligibility
-│   ├── Patient Policies
-│   ├── Member Enrolment
-│   ├── Dependants
-│   ├── Eligibility Checks
-│   ├── Coverage Balances
-│   └── Expiring & Inactive Policies
-│
+├── Insurance Providers
+├── Corporate Payers
+├── Plans & Products
+├── Contracts
+├── Tariffs & Price Lists
+├── Coverage Rules
+├── Exclusions & Limits
+├── Patient Policies
+├── Members & Dependants
+├── Eligibility Checks
+├── Coverage Balances
 ├── Pre-authorizations
-│   ├── All Pre-authorizations
-│   ├── New Request
-│   ├── Pending
-│   ├── Approved
-│   ├── Rejected
-│   └── Expiring
-│
 ├── Claims
-│   ├── Claim Worklist
-│   ├── New & Generated Claims
-│   ├── Draft Claims
-│   ├── Validation Errors
-│   ├── Ready for Submission
-│   ├── Submitted & In Review
-│   ├── Approved & Partially Approved
-│   ├── Rejected & Denied
-│   ├── Resubmissions & Appeals
-│   └── Claim Batches
-│
-├── Remittances & Collections
-│   ├── Remittance Advice
-│   ├── Insurer Payments
-│   ├── Remittance Allocations
-│   ├── Underpayments & Overpayments
-│   ├── Unallocated Remittances
-│   └── Outstanding Payer Balances
-│
-├── Reconciliation & Follow-up
-│   ├── Claim Reconciliation
-│   ├── Payer Statements
-│   ├── Claims Aging
-│   ├── Denial Follow-up
-│   ├── Collection Notes
-│   └── Disputes
-│
-├── Insurance Reports
-│   ├── Claims Summary
-│   ├── Claims Aging
-│   ├── Approval & Rejection Rates
-│   ├── Revenue by Payer
-│   ├── Turnaround Time
-│   ├── Denial Reasons
-│   └── Outstanding Claims
-│
-└── Insurance Setup
-    ├── Claim Numbering
-    ├── Claim Rules
-    ├── Required Documents
-    ├── Denial Codes
-    ├── Submission Channels
-    ├── Claim Templates
-    └── Approval Rules
+├── Claim Validations
+├── Claim Batches
+├── Claim Submissions
+├── Adjudications
+├── Denials
+├── Resubmissions & Appeals
+├── Remittance Advice
+├── Insurer Payments
+├── Remittance Allocations
+├── Payer Balances
+├── Claim Reconciliation
+├── Payer Statements
+├── Claims Aging
+├── Collection Follow-up
+├── Disputes
+├── Claim Rules
+├── Required Documents
+├── Denial Codes
+├── Submission Channels
+├── Claim Templates
+└── Insurance Reports
 ```
 
 ### 9.5 Module boundaries and hand-offs
 
-- **Billing & Receivables → Accounts & Finance:** Posted invoices, payments, allocations, credit/debit notes, refunds, and write-offs create balanced accounting events.
-- **Billing & Receivables → Insurance & Claims:** Insured charges and supporting clinical documents become pre-authorization or claim inputs.
-- **Insurance & Claims → Billing & Receivables:** Coverage decisions determine patient, insurer, and corporate-payer responsibility.
+- **Billing → Accounts & Finance:** Posted invoices, payments, allocations, credit/debit notes, refunds, and write-offs create balanced accounting events.
+- **Billing → Insurance & Claims:** Insured charges and supporting clinical documents become pre-authorization or claim inputs.
+- **Insurance & Claims → Billing:** Coverage decisions determine patient, insurer, and corporate-payer responsibility.
 - **Insurance & Claims → Accounts & Finance:** Approved claims, remittances, denials, and adjustments update receivable control accounts and journals.
 - **Accounts & Finance → all financial modules:** Accounts, periods, currencies, payment methods, posting rules, and close status are shared as controlled reference data.
 - A cross-module link should open the source record in its owning module's tab while preserving the user's current tabs.
 
-## 10. Module ownership and core data relationships
+## 10. Tabular workspaces and table columns
+
+### 10.1 Shared table requirements
+
+Every permanent tab defined in Section 9 must render a primary table or worklist. Creation and processing forms are launched from the table toolbar or row actions rather than being permanent tabs.
+
+All tables should provide:
+
+- Server-side search, filtering, sorting, and pagination
+- Sticky headers and frozen identifying columns
+- Column chooser, column reordering, density control, and saved views
+- Date-range, facility, department, payer, currency, owner, and status filters where applicable
+- Bulk selection and permission-aware bulk actions
+- Subtotals and grand totals for monetary columns
+- Export to CSV/XLSX/PDF, subject to permissions
+- Print support where the record is a formal document
+- Loading, empty, error, and partial-data states
+- Responsive layouts with horizontal scrolling for wide financial tables
+- A consistent row-action column for view, edit, approve, post, print, export, reverse, void, or reconcile actions as permitted
+
+Unless inapplicable, operational tables should also include **Select**, **Reference**, **Facility**, **Status**, **Created At**, **Created By**, **Updated At**, **Updated By**, and **Actions**. Monetary tables must show **Currency**, right-align amounts, use the configured decimal precision, and display totals for the current filtered result.
+
+### 10.2 Billing tab tables
+
+- **Overview** — Queue/Metric, Current Count, Total Value, Currency, Today, Month to Date, Overdue Count, Oldest Item Age, Assigned Team, SLA Status, Trend, Last Refreshed
+- **Charges** — Charge No., Charge Date/Time, Patient No., Patient Name, Encounter No., Visit Type, Department, Service/Item Code, Service/Item Description, Quantity, Unit Price, Discount, Tax, Net Amount, Payer Type, Payer, Invoice No., Charge Status, Charged By
+- **Unbilled Charges** — Charge No., Charge Date/Time, Patient No., Patient Name, Encounter No., Department, Service/Item, Quantity, Net Amount, Payer, Eligibility Status, Billing Hold Reason, Age, Responsible User, Selected for Billing
+- **Estimates & Quotations** — Estimate No., Estimate Date, Valid Until, Patient/Customer, Encounter No., Payer, Item Count, Subtotal, Discount, Tax, Total, Currency, Approval Status, Conversion Status, Invoice No., Prepared By
+- **Packages & Bundles** — Package Code, Package Name, Category, Included Services, Included Quantity, Standard Price, Package Price, Discount Value, Payer/Price List, Effective From, Effective To, Usage Limit, Status
+- **Invoices** — Invoice No., Invoice Date, Due Date, Patient/Customer, Patient No., Encounter No., Payer Type, Payer, Subtotal, Discount, Tax, Total, Paid Amount, Allocated Amount, Balance, Currency, Aging Days, Invoice Status, Issued By
+- **Payments** — Payment No., Payment Date/Time, Patient/Customer, Payer, Payment Method, Provider/Bank, External Reference, Amount, Allocated Amount, Unallocated Amount, Currency, Cash Point/Bank Account, Receipt No., Reversal Status, Payment Status, Received By
+- **Payment Allocations** — Allocation No., Allocation Date, Payment No., Invoice No., Patient/Customer, Payer, Invoice Total, Balance Before, Allocated Amount, Balance After, Currency, Allocation Status, Allocated By, Reversal Reference, Reversal Reason
+- **Receipts** — Receipt No., Receipt Date/Time, Payment No., Invoice Reference(s), Patient/Customer, Payer, Payment Method, External Reference, Amount, Currency, Cash Point, Cashier, Remaining Balance, Print Count, Delivery Method, Receipt Status
+- **Advances & Deposits** — Advance No., Receipt Date, Patient/Customer, Payer, Payment No., Original Amount, Allocated Amount, Refunded Amount, Available Balance, Currency, Expiry Date, Last Allocation Date, Advance Status, Received By
+- **Credit Notes** — Credit Note No., Note Date, Original Invoice No., Patient/Customer, Payer, Reason Code, Reason, Subtotal, Tax, Total Credit, Applied Amount, Remaining Credit, Currency, Approval Status, Journal Entry No., Approved By
+- **Debit Notes** — Debit Note No., Note Date, Original Invoice No., Patient/Customer, Payer, Reason Code, Reason, Subtotal, Tax, Total Debit, Applied Amount, Remaining Debit, Currency, Approval Status, Journal Entry No., Approved By
+- **Refunds** — Refund No., Request Date, Original Payment No., Receipt No., Patient/Customer, Payer, Reason Code, Requested Amount, Approved Amount, Refunded Amount, Currency, Refund Method, External Reference, Refund Status, Requested By, Approved By, Processed By, Journal Entry No.
+- **Write-offs** — Write-off No., Request Date, Invoice No., Patient/Customer, Payer, Invoice Balance, Requested Amount, Approved Amount, Currency, Write-off Category, Reason, Approval Status, Approved By, Journal Entry No., Posted Date
+- **Patient Accounts** — Account No., Patient No., Patient Name, Primary Payer, Last Encounter No., Last Encounter Date, Total Charges, Adjustments, Payments, Credits, Current Balance, Current, 1–30 Days, 31–60 Days, 61–90 Days, Over 90 Days, Last Activity, Account Status
+- **Patient Statements** — Transaction Date/Time, Account No., Patient No., Patient Name, Encounter No., Transaction Type, Document Reference, Description, Payer, Debit, Credit, Running Balance, Currency, Posting Status
+- **Receivables** — Debtor Account No., Patient/Customer/Payer, Debtor Type, Open Invoice Count, Current Amount, 1–30 Days, 31–60 Days, 61–90 Days, Over 90 Days, Total Outstanding, Currency, Oldest Due Date, Days Overdue, Credit Limit, Collection Status, Assigned Collector
+- **Collection Follow-up** — Collection Case No., Debtor, Debtor Type, Outstanding Amount, Currency, Oldest Invoice No., Maximum Days Overdue, Priority, Last Contact Date, Last Contact Method, Promise Date, Promise Amount, Next Follow-up Date, Assigned Collector, Follow-up Status, Notes
+- **Price Lists & Tariffs** — Price List Code, Price List Name, Payer/Customer Group, Service/Item Code, Service/Item Name, Department, Standard Price, Contract Price, Discount Ceiling, Tax Code, Currency, Effective From, Effective To, Version, Status
+- **Billing Rules** — Rule Code, Rule Name, Rule Type, Facility Scope, Payer Scope, Service Scope, Trigger Event, Condition Summary, Action Summary, Priority, Effective From, Effective To, Version, Status, Last Changed By
+- **Discount Rules** — Rule Code, Rule Name, Discount Type, Percentage/Fixed Value, Maximum Amount, Patient/Payer Scope, Service/Department Scope, Minimum Amount, Approval Required, Approver Role, Effective From, Effective To, Status
+- **Tax Rules** — Tax Code, Tax Name, Tax Type, Rate, Inclusive/Exclusive, Recoverable, Service/Item Scope, Payer Exemption, GL Account, Effective From, Effective To, Jurisdiction, Status
+- **Document Templates** — Template Code, Template Name, Document Type, Facility, Language, Page Size, Header/Footer Version, Numbering Sequence, Default Template, Effective From, Effective To, Last Published At, Published By, Status
+- **Billing Reports** — Report Name, Report Category, Description, Default Period, Available Filters, Default Grouping, Last Generated At, Generated By, Output Format, Row Count, Schedule, Delivery Recipients, Report Status
+
+### 10.3 Accounts & Finance tab tables
+
+#### 10.3.1 Overview and general accounting
+
+- **Overview** — Queue/Metric, Current Count, Debit Value, Credit Value, Net Value, Currency, Current Period, Exceptions, Pending Approvals, Unposted Items, Unreconciled Items, Oldest Item Age, Responsible Team, Last Refreshed
+- **Chart of Accounts** — Account Code, Account Name, Account Type, Parent Account, Normal Balance, Control Account, Subledger Type, Currency, Department/Cost Centre Required, Opening Balance, Current Balance, Posting Allowed, Reconciliation Required, Effective From, Status
+- **All Journal Entries, General Journal, Sales Journal, Purchase Journal, Cash Receipts Journal, Cash Payments Journal, Adjustment Journal, Payroll Journal, Inventory Journal, and Asset Journal** — Entry No., Journal Type, Entry Date, Posting Date, Fiscal Period, Source Module, Source Document Type, Source Reference, Description, Total Debit, Total Credit, Difference, Currency, Department, Cost Centre, Entry Status, Approval Status, Created By, Approved By, Posted By
+- **General Ledger** — Posting Date, Fiscal Period, Account Code, Account Name, Entry No., Journal Type, Source Module, Document Reference, Line Description, Party Type, Party, Department, Cost Centre, Debit, Credit, Running Balance, Currency, Posted By
+- **Control Accounts** — Control Account Code, Control Account Name, Subledger, GL Balance, Subledger Balance, Difference, Currency, Last Reconciled At, Reconciliation Reference, Exception Count, Responsible Owner, Reconciliation Status
+- **Recurring Entries** — Template No., Template Name, Journal Type, Description, Frequency, Start Date, Next Run Date, End Date, Total Debit, Total Credit, Currency, Auto-post, Approval Required, Last Generated Entry, Last Run Status, Template Status
+- **Reversing Entries** — Reversal No., Original Entry No., Original Posting Date, Reversal Date, Fiscal Period, Journal Type, Reason Code, Reason, Debit, Credit, Currency, Reversal Entry No., Requested By, Approved By, Reversal Status
+
+#### 10.3.2 Purchases and payables
+
+- **Suppliers** — Supplier No., Supplier Name, Supplier Type, Tax ID, Contact Person, Phone, Email, Address, Payment Terms, Default Currency, Credit Limit, Current AP Balance, Bank Account Summary, On Hold, Last Transaction Date, Supplier Status
+- **Purchase Requisitions** — Requisition No., Request Date, Requested By, Department, Cost Centre, Required Date, Item Count, Estimated Amount, Currency, Budget Reference, Available Budget, Priority, Approval Level, Approval Status, Purchase Order No., Requisition Status
+- **Purchase Orders** — PO No., PO Date, Supplier, Requisition Reference(s), Buyer, Expected Delivery Date, Item Count, Subtotal, Discount, Tax, Total, Currency, Received Amount, Invoiced Amount, Remaining Amount, Approval Status, PO Status
+- **Goods Received Notes** — GRN No., Receipt Date, Supplier, PO No., Delivery Note No., Warehouse/Store, Item Count, Ordered Quantity, Received Quantity, Rejected Quantity, Accepted Value, Currency, Inspection Status, Received By, Posted Status
+- **Supplier Invoices** — Supplier Invoice No., Internal Reference, Invoice Date, Due Date, Supplier, PO No., GRN No., Subtotal, Tax, Withholding Tax, Total, Paid Amount, Balance, Currency, Aging Days, Matching Status, Approval Status, Posting Status
+- **Supplier Adjustments** — Adjustment No., Adjustment Type, Adjustment Date, Supplier, Supplier Invoice No., Reason Code, Description, Debit Amount, Credit Amount, Tax Effect, Currency, Approval Status, Journal Entry No., Posted Date
+- **Payment Runs** — Run No., Run Date, Payment Date, Bank/Cash Account, Supplier Count, Invoice Count, Gross Amount, Discounts, Withholding Tax, Net Amount, Currency, Prepared By, Approval Status, Processing Status, Export Reference
+- **Supplier Payments** — Payment No., Payment Date, Supplier, Payment Run No., Invoice Reference(s), Payment Method, Bank/Cash Account, External Reference, Gross Amount, Withholding Tax, Net Amount, Allocated Amount, Unallocated Amount, Currency, Approval Status, Payment Status, Processed By
+- **Supplier Statements** — Transaction Date, Supplier, Document Type, Document Reference, Description, Due Date, Debit, Credit, Running Balance, Currency, Matching Reference, Posting Status
+- **AP Aging** — Supplier No., Supplier Name, Open Invoice Count, Current Amount, 1–30 Days, 31–60 Days, 61–90 Days, Over 90 Days, Total Outstanding, Currency, Oldest Due Date, Maximum Days Overdue, On Hold, Payment Priority, Account Owner
+- **AP Reconciliation** — Reconciliation No., Reconciliation Date, Supplier, Statement Balance, Subledger Balance, GL Balance, Unmatched Invoice Amount, Unmatched Payment Amount, Difference, Currency, Exception Count, Prepared By, Reviewed By, Reconciliation Status
+
+#### 10.3.3 Expenses
+
+- **Expense Entries** — Expense No., Expense Date, Expense Category, GL Account, Supplier/Payee, Department, Cost Centre, Project, Description, Net Amount, Tax, Gross Amount, Currency, Payment Method, Payment Reference, Receipt Attached, Approval Status, Posting Status
+- **Expense Requests** — Request No., Request Date, Requested By, Payee, Expense Category, Department, Cost Centre, Purpose, Required Date, Requested Amount, Currency, Available Budget, Priority, Attachment Count, Current Approver, Request Status
+- **Expense Approvals** — Request No., Request Date, Requester, Department, Expense Category, Purpose, Requested Amount, Currency, Approval Level, Current Approver, Submitted At, Waiting Time, Budget Check, Policy Exceptions, Decision Due, Approval Status
+- **Recurring Expenses** — Schedule No., Expense Name, Supplier/Payee, Expense Category, GL Account, Department, Frequency, Next Due Date, End Date, Expected Amount, Currency, Auto-create, Approval Required, Last Expense No., Last Run Status, Schedule Status
+- **Staff Reimbursements** — Claim No., Claim Date, Employee No., Employee Name, Department, Expense Category, Travel/Activity Reference, Claimed Amount, Approved Amount, Paid Amount, Currency, Receipt Count, Policy Exceptions, Approval Status, Payment No., Reimbursement Status
+- **Expense Categories** — Category Code, Category Name, Parent Category, Default GL Account, Tax Code, Budget Required, Receipt Required, Approval Rule, Spending Limit, Allowed Payment Methods, Effective From, Effective To, Category Status
+- **Expense Analysis** — Period, Expense Category, GL Account, Department, Cost Centre, Project, Supplier/Payee, Transaction Count, Actual Amount, Budget Amount, Committed Amount, Variance Amount, Variance Percentage, Currency, Prior-period Amount
+
+#### 10.3.4 Cash management
+
+- **Cash Points** — Cash Point Code, Cash Point Name, Facility, Department, Location, Default Currency, GL Account, Custodian, Allowed Payment Methods, Opening Float Limit, Maximum Balance, Active Session Count, Last Reconciled At, Cash Point Status
+- **Cashier Sessions** — Session No., Business Date, Cash Point, Cashier, Opened At, Opening Float, Receipt Count, Cash Receipts, Non-cash Receipts, Cash Payments, Refunds, Transfers In, Transfers Out, Expected Cash, Counted Cash, Variance, Currency, Closed At, Session Status
+- **Cash Transactions** — Transaction No., Date/Time, Session No., Cash Point, Cashier, Transaction Type, Source Module, Source Document, Patient/Payee, Description, Cash In, Cash Out, Running Balance, Currency, Receipt/Payment No., Transaction Status
+- **Cash Transfers** — Transfer No., Request Date/Time, From Cash Point, From Session, To Cash Point/Bank, Transfer Amount, Currency, Reason, Requested By, Released By, Received By, Released At, Received At, Difference, Transfer Status
+- **Cash Counts** — Count No., Count Date/Time, Session No., Cash Point, Cashier, Currency, Denomination, Quantity, Counted Value, System Expected Value, Total Counted, Variance, Counted By, Witnessed By, Count Status
+- **Session Closures** — Closure No., Business Date, Session No., Cash Point, Cashier, Expected Cash, Counted Cash, Variance, Currency, Receipt Sequence From, Receipt Sequence To, Refund Total, Transfer Total, Variance Reason, Closed By, Approved By, Closure Status
+- **Cash Variances** — Variance No., Business Date, Session No., Cash Point, Cashier, Expected Amount, Counted Amount, Variance Amount, Currency, Variance Type, Reason Code, Explanation, Investigation Owner, Resolution, Journal Entry No., Approval Status
+- **Cash Reconciliation** — Reconciliation No., Business Date, Cash Point, Session Count, Receipt Total, System Cash Total, Counted Cash Total, Deposit Total, Outstanding Deposit, Difference, Currency, Exception Count, Prepared By, Reviewed By, Reconciliation Status
+
+#### 10.3.5 Bank management
+
+- **Bank Accounts** — Account Code, Bank Name, Branch, Account Name, Masked Account No., Account Type, Currency, GL Account, Opening Balance, Book Balance, Statement Balance, Available Balance, Last Statement Date, Last Reconciled Date, Signatory Rule, Account Status
+- **Bank Transactions** — Transaction No., Value Date, Posting Date, Bank Account, Transaction Type, Description, Counterparty, External Reference, Source Document, Debit, Credit, Running Balance, Currency, Match Status, Reconciliation No., Posting Status
+- **Bank Deposits** — Deposit No., Deposit Date, Bank Account, Source Cash Point(s), Cashier Session(s), Deposit Slip No., Receipt Count, Cash Amount, Cheque Amount, Total Deposit, Currency, Deposited By, Confirmed Date, Bank Reference, Match Status, Deposit Status
+- **Withdrawals & Charges** — Transaction No., Value Date, Bank Account, Type, Payee/Bank, Description, External Reference, Gross Amount, Tax, Net Amount, Currency, GL Account, Journal Entry No., Approval Status, Reconciliation Status
+- **Bank Transfers** — Transfer No., Transfer Date, From Account, To Account, From Amount, From Currency, Exchange Rate, To Amount, To Currency, Bank Charges, External Reference, Requested By, Approved By, Processed At, Transfer Status
+- **Statement Imports** — Import No., Bank Account, Statement From, Statement To, File Name, File Format, Imported At, Imported By, Opening Balance, Closing Balance, Row Count, Duplicate Rows, Invalid Rows, Matched Rows, Unmatched Rows, Import Status
+- **Matching Workbench** — Statement Line No., Value Date, Description, External Reference, Statement Amount, Currency, Suggested System Transaction, Suggested Reference, Suggested Amount, Match Score, Difference, Match Rule, Assigned To, Match Status, Reconciliation No.
+- **Bank Reconciliations** — Reconciliation No., Bank Account, Period From, Period To, Statement Opening Balance, Statement Closing Balance, Book Balance, Deposits in Transit, Unpresented Payments, Bank-only Items, Adjusted Balance, Difference, Currency, Prepared By, Reviewed By, Reconciliation Status
+
+#### 10.3.6 Fixed assets
+
+- **Asset Register** — Asset No., Asset Name, Asset Category, Serial No., Tag No., Acquisition Date, In-service Date, Supplier, Location, Department, Custodian, Acquisition Cost, Accumulated Depreciation, Net Book Value, Currency, Useful Life, Depreciation Method, Asset Status
+- **Asset Categories** — Category Code, Category Name, Parent Category, Asset GL Account, Accumulated Depreciation Account, Depreciation Expense Account, Disposal Gain/Loss Account, Default Useful Life, Depreciation Method, Residual Value Rule, Capitalization Threshold, Status
+- **Asset Acquisitions** — Acquisition No., Acquisition Date, Asset No./Count, Supplier, PO No., Supplier Invoice No., Department, Location, Gross Cost, Tax, Capitalized Cost, Currency, In-service Date, Approval Status, Journal Entry No., Acquisition Status
+- **Depreciation Runs** — Run No., Fiscal Period, Run Date, Asset Category, Asset Count, Opening Cost, Depreciable Base, Period Depreciation, Accumulated Depreciation, Net Book Value, Currency, Exception Count, Calculated By, Approved By, Journal Entry No., Run Status
+- **Asset Transfers** — Transfer No., Transfer Date, Asset No., Asset Name, From Facility, From Location, From Department/Custodian, To Facility, To Location, To Department/Custodian, Reason, Requested By, Approved By, Received By, Transfer Status
+- **Revaluations** — Revaluation No., Revaluation Date, Asset No., Asset Name, Previous Cost, Previous Net Book Value, Revalued Amount, Increase/Decrease, Currency, Valuer, Valuation Reference, Reason, Approval Status, Journal Entry No., Revaluation Status
+- **Disposals** — Disposal No., Disposal Date, Asset No., Asset Name, Disposal Method, Buyer/Recipient, Proceeds, Net Book Value, Gain/Loss, Currency, Reason, Approval Status, Receipt Reference, Journal Entry No., Disposal Status
+- **Asset Ledger** — Posting Date, Fiscal Period, Asset No., Asset Name, Transaction Type, Document Reference, Description, Cost Debit, Cost Credit, Depreciation Debit, Depreciation Credit, Net Book Value, Currency, Journal Entry No., Posting Status
+
+#### 10.3.7 Budgets and cost control
+
+- **Annual Budgets** — Budget No., Fiscal Year, Budget Version, Entity/Facility, Currency, Department Count, Line Count, Original Budget, Approved Revisions, Current Budget, Commitments, Actual Amount, Available Amount, Utilization Percentage, Prepared By, Approved By, Budget Status
+- **Department Budgets** — Budget No., Fiscal Year, Department, Cost Centre, Budget Owner, Currency, Original Budget, Revised Budget, Commitments, Actual Amount, Available Amount, Utilization Percentage, Forecast Amount, Variance, Approval Status
+- **Project Budgets** — Budget No., Project Code, Project Name, Sponsor/Funder, Start Date, End Date, Project Manager, Currency, Approved Budget, Revisions, Commitments, Actual Amount, Available Amount, Burn Rate, Forecast at Completion, Budget Status
+- **Budget Revisions** — Revision No., Revision Date, Budget No., Fiscal Year, Department/Project, Revision Type, Source Line, Destination Line, Increase, Decrease, Net Change, Currency, Reason, Requested By, Approved By, Approval Status
+- **Commitments** — Commitment No., Commitment Date, Source Type, Source Reference, Supplier/Payee, Budget No., Budget Line, Department, Description, Original Amount, Liquidated Amount, Open Amount, Currency, Expected Date, Commitment Status
+- **Budget vs Actual** — Fiscal Period, Budget No., Department, Cost Centre, Project, Account Code, Account Name, Original Budget, Revised Budget, Commitments, Actual Amount, Available Amount, Variance Amount, Variance Percentage, Currency, Forecast
+- **Variance Analysis** — Fiscal Period, Department, Cost Centre, Project, Account, Budget Amount, Actual Amount, Variance Amount, Variance Percentage, Favorable/Unfavorable, Threshold, Explanation, Corrective Action, Responsible Owner, Review Status
+
+#### 10.3.8 Tax and compliance
+
+- **Tax Codes & Rates** — Tax Code, Tax Name, Tax Type, Jurisdiction, Rate, Inclusive/Exclusive, Recoverable Percentage, Input Tax Account, Output Tax Account, Payable Account, Effective From, Effective To, Filing Category, Tax Authority, Status
+- **Tax Transactions** — Tax Date, Tax Period, Tax Code, Transaction Type, Source Document, Document Reference, Party, Taxable Amount, Tax Rate, Input Tax, Output Tax, Withheld Tax, Currency, GL Account, Filing Status, Journal Entry No.
+- **Withholding Tax** — Certificate No., Transaction Date, Supplier/Payee, Tax ID, Source Invoice/Payment, Withholding Code, Gross Amount, Rate, Withheld Amount, Net Paid, Currency, Certificate Date, Filing Period, Remittance Reference, Filing Status
+- **Tax Returns** — Return No., Tax Type, Filing Period, Due Date, Taxable Sales/Purchases, Input Tax, Output Tax, Tax Withheld, Adjustments, Tax Payable/Refundable, Currency, Submitted Date, Submission Reference, Payment Reference, Prepared By, Approved By, Return Status
+- **Regulatory Reports** — Report Name, Regulator, Report Type, Reporting Period, Due Date, Entity/Facility, Currency, Record Count, Reported Amount, Generated At, Generated By, Submission Date, Submission Reference, Acknowledgement, Report Status
+- **Audit Schedules** — Schedule No., Schedule Name, Fiscal Period, Account/Area, Prepared Balance, Supporting Balance, Difference, Currency, Attachment Count, Prepared By, Reviewed By, Review Notes, Prepared At, Reviewed At, Schedule Status
+
+#### 10.3.9 Period close
+
+- **Close Checklist** — Fiscal Period, Checklist Item, Category, Description, Dependency, Responsible Role/User, Due Date, Completion Date, Evidence Required, Evidence Attached, Exception Count, Reviewed By, Review Date, Checklist Status
+- **Reconciliation Checklist** — Fiscal Period, Reconciliation Type, Account/Subledger, Responsible Owner, GL Balance, Supporting Balance, Difference, Currency, Last Reconciled At, Reconciliation Reference, Exception Count, Reviewer, Reconciliation Status
+- **Period Adjustments** — Adjustment No., Fiscal Period, Entry Date, Adjustment Type, Description, Total Debit, Total Credit, Currency, Supporting Reference, Requested By, Approved By, Journal Entry No., Posting Date, Adjustment Status
+- **Reopen Requests** — Request No., Fiscal Period, Requested At, Requested By, Reason, Affected Module, Affected Document(s), Risk Assessment, Current Approver, Approved At, Reopen From, Reopen Until, Reclosed At, Request Status
+- **Close History** — Fiscal Period, Entity/Facility, Close Type, Closed At, Closed By, Reopened Count, Last Reopened At, Reclosed At, Journal Count, Adjustment Count, Exception Count, Lock Status, Audit Reference
+- **Year-end Close Runs** — Run No., Fiscal Year, Entity/Facility, Run Date, Closing Period, Profit/Loss Amount, Retained Earnings Account, Closing Entry No., Opening Entry No., Currency, Exception Count, Prepared By, Approved By, Completed At, Run Status
+
+#### 10.3.10 Financial reports
+
+- **Trial Balance** — Account Code, Account Name, Account Type, Opening Debit, Opening Credit, Period Debit, Period Credit, Closing Debit, Closing Credit, Currency, Comparative Closing Balance, Difference
+- **Income Statement** — Section, Account Group, Account Code, Account Name, Current Period, Year to Date, Prior Period, Prior Year, Budget, Variance Amount, Variance Percentage, Currency
+- **Balance Sheet** — Section, Account Group, Account Code, Account Name, Current Balance, Prior-period Balance, Prior-year Balance, Movement, Currency, Supporting Schedule, Reconciliation Status
+- **Cash Flow Statement** — Cash Flow Section, Line Item, Source Account(s), Current-period Inflow, Current-period Outflow, Net Cash Flow, Year-to-date Amount, Prior-period Amount, Budget Amount, Variance, Currency
+- **General Ledger Report** — Posting Date, Fiscal Period, Account Code, Account Name, Journal Entry No., Source Module, Document Reference, Description, Party, Department, Cost Centre, Debit, Credit, Running Balance, Currency
+- **Revenue & Expense Analysis** — Fiscal Period, Account Type, Account Group, Account, Facility, Department, Cost Centre, Service/Expense Category, Actual Amount, Budget Amount, Variance, Prior-period Amount, Growth Percentage, Currency
+- **Department Performance** — Fiscal Period, Facility, Department, Revenue, Direct Costs, Allocated Costs, Gross Margin, Operating Margin, Budget, Variance, Patient/Activity Volume, Revenue per Activity, Cost per Activity, Currency
+- **Cashier & Bank Reports** — Report Date, Facility, Cash Point/Bank Account, Session/Statement Count, Opening Balance, Receipts, Payments, Refunds, Transfers, Deposits, Closing Balance, Variance, Unreconciled Amount, Currency, Report Status
+- **Consolidated Reports** — Reporting Period, Entity/Facility, Consolidation Group, Local Currency, Reporting Currency, Exchange Rate, Revenue, Expenses, Assets, Liabilities, Equity, Eliminations, Consolidated Amount, Validation Difference, Consolidation Status
+
+#### 10.3.11 Setup and controls
+
+- **Fiscal Years & Periods** — Fiscal Year, Period No., Period Name, Start Date, End Date, Entity/Facility, Module, Open Date, Soft-close Date, Close Date, Lock Date, Reopened At, Reopened By, Period Status
+- **Currencies & Exchange Rates** — Currency Code, Currency Name, Symbol, Decimal Places, Base Currency, Rate Type, Exchange Rate, Effective Date, Source, Buy Rate, Sell Rate, Last Updated At, Updated By, Currency Status
+- **Payment Methods** — Method Code, Method Name, Method Type, Incoming/Outgoing, Provider, Settlement Account, Clearing Account, Requires External Reference, Requires Approval, Fee Rule, Facility Scope, Effective From, Effective To, Status
+- **Document Numbering** — Sequence Code, Document Type, Module, Facility, Prefix, Suffix, Date Pattern, Next Number, Minimum Length, Reset Frequency, Last Issued Number, Last Issued At, Gap Policy, Sequence Status
+- **Departments & Cost Centres** — Department Code, Department Name, Cost Centre Code, Cost Centre Name, Parent, Facility, Manager, Default Revenue Account, Default Expense Account, Budget Owner, Effective From, Effective To, Status
+- **Posting Rules** — Rule Code, Rule Name, Source Module, Event Type, Debit Account Rule, Credit Account Rule, Tax Rule, Department Rule, Cost Centre Rule, Priority, Effective From, Effective To, Version, Test Status, Rule Status
+- **Approval Rules** — Rule Code, Rule Name, Module, Document Type, Facility/Department Scope, Minimum Amount, Maximum Amount, Currency, Approval Levels, Approver Role(s), Escalation Time, Segregation Rule, Effective From, Effective To, Rule Status
+- **Opening Balances** — Import/Batch No., Effective Date, Account/Party/Asset, Reference, Description, Debit, Credit, Currency, Department, Cost Centre, Source File, Validation Status, Error Message, Approved By, Journal Entry No., Posting Status
+- **Integration Mappings** — Mapping Code, Integration/System, Source Entity, Source Event, Source Value, Target Entity, Target Value/Account, Facility Scope, Direction, Transformation Rule, Last Synced At, Error Count, Version, Mapping Status
+
+#### 10.3.12 Audit trail
+
+- **Transaction History** — Event Date/Time, Module, Entity Type, Entity Reference, Event Type, Before Summary, After Summary, Amount, Currency, Facility, Performed By, Role, Source IP/Device, Correlation ID, Outcome
+- **Approval History** — Decision Date/Time, Module, Document Type, Document Reference, Amount, Currency, Approval Level, Decision, Decision Reason, Approver, Delegated From, Waiting Time, SLA Status, Correlation ID
+- **Posting History** — Posting Date/Time, Source Module, Document Type, Document Reference, Journal Entry No., Fiscal Period, Debit, Credit, Currency, Posting Rule, Posted By, Repost/Reversal Reference, Posting Outcome
+- **Reversals & Voids** — Action Date/Time, Module, Document Type, Original Reference, Action Type, Reason Code, Reason, Original Amount, Reversed/Voided Amount, Currency, Replacement Reference, Requested By, Approved By, Journal Entry No., Action Status
+- **Data Exports** — Export No., Requested At, Requested By, Module, Tab/Report, Filter Summary, Date Range, Facility Scope, Column Count, Row Count, File Format, File Size, Completed At, Download Count, Expires At, Export Status
+
+### 10.4 Insurance & Claims tab tables
+
+- **Overview** — Queue/Metric, Current Count, Submitted Amount, Approved Amount, Rejected Amount, Paid Amount, Outstanding Amount, Currency, Average Turnaround Time, Oldest Item Age, SLA Status, Assigned Team, Trend, Last Refreshed
+- **Insurance Providers** — Provider Code, Provider Name, Provider Type, Tax/Registration No., Contact Person, Phone, Email, Address, Default Submission Channel, Settlement Terms, Default Currency, Active Plan Count, Open Claim Count, Outstanding Balance, Contract Expiry, Provider Status
+- **Corporate Payers** — Payer Code, Corporate Name, Registration/Tax No., Industry, Contact Person, Phone, Email, Billing Address, Contract No., Credit Limit, Payment Terms, Currency, Employee/Member Count, Open Invoice/Claim Count, Outstanding Balance, Account Manager, Payer Status
+- **Plans & Products** — Plan Code, Plan Name, Provider/Corporate Payer, Product Type, Coverage Class, Network Type, Annual Limit, Co-pay Rule, Deductible Rule, Default Tariff, Currency, Effective From, Effective To, Active Member Count, Plan Status
+- **Contracts** — Contract No., Payer, Contract Type, Start Date, End Date, Renewal Date, Payment Terms, Claim Submission Deadline, Reimbursement Method, Tariff/Price List, Currency, Credit Limit, SLA, Document Count, Account Manager, Approval Status, Contract Status
+- **Tariffs & Price Lists** — Tariff Code, Tariff Name, Payer, Plan, Service/Item Code, Service/Item Name, Department, Standard Price, Contract Price, Co-pay Amount/Rate, Tax Code, Currency, Effective From, Effective To, Version, Tariff Status
+- **Coverage Rules** — Rule Code, Rule Name, Payer, Plan, Benefit Category, Service/Item Scope, Coverage Percentage, Co-pay, Deductible, Per-visit Limit, Annual Limit, Waiting Period, Pre-authorization Required, Referral Required, Effective From, Effective To, Rule Status
+- **Exclusions & Limits** — Rule Code, Payer, Plan, Exclusion/Limit Type, Service/Diagnosis/Category, Description, Limit Quantity, Limit Amount, Frequency, Currency, Waiting Period, Exception Conditions, Effective From, Effective To, Rule Status
+- **Patient Policies** — Policy No., Member No., Patient No., Patient Name, Payer, Plan, Principal Member, Relationship, Start Date, End Date, Coverage Status, Eligibility Status, Remaining Limit, Currency, Employer/Corporate, Last Verified At, Policy Status
+- **Members & Dependants** — Member No., Patient No., Member Name, Payer, Plan, Policy No., Principal Member No., Relationship, Date of Birth, National ID, Employer/Corporate, Enrolment Date, Coverage Start, Coverage End, Eligibility Status, Member Status
+- **Eligibility Checks** — Check No., Check Date/Time, Patient/Member, Policy No., Payer, Plan, Encounter No., Service/Benefit, Coverage Status, Available Limit, Co-pay, Deductible, Currency, Response Code, Response Message, External Reference, Checked By
+- **Coverage Balances** — Member No., Patient Name, Policy No., Payer, Plan, Benefit Category, Coverage Period, Annual/Period Limit, Used Amount, Reserved Amount, Remaining Amount, Currency, Last Claim Date, Last Updated At, Balance Status
+- **Pre-authorizations** — Authorization No., Request Date, Patient/Member, Policy No., Payer, Plan, Encounter No., Requested Service/Procedure, Diagnosis, Provider/Doctor, Requested Amount, Approved Amount, Patient Share, Currency, Valid From, Valid Until, External Reference, Decision Reason, Authorization Status
+- **Claims** — Claim No., Claim Date, Service From, Service To, Patient/Member, Policy No., Payer, Plan, Encounter/Admission No., Invoice No., Diagnosis Summary, Item Count, Submitted Amount, Approved Amount, Rejected Amount, Patient Share, Paid Amount, Outstanding Amount, Currency, Submission Date, Claim Status, Assigned To
+- **Claim Validations** — Validation No., Claim No., Patient/Member, Payer, Validation Date/Time, Rule Code, Validation Category, Severity, Field/Item, Error Code, Error Message, Suggested Resolution, Resolved By, Resolved At, Validation Status
+- **Claim Batches** — Batch No., Batch Date, Payer, Plan/Contract, Facility, Claim Count, Submitted Amount, Currency, Service Period From, Service Period To, Submission Channel, Submission File, External Batch Reference, Accepted Count, Rejected Count, Prepared By, Batch Status
+- **Claim Submissions** — Submission No., Submission Date/Time, Claim/Batch No., Payer, Submission Channel, External Reference, Submitted Amount, Currency, Document Count, Payload/File Name, Response Code, Response Message, Acknowledged At, Retry Count, Next Retry At, Submitted By, Submission Status
+- **Adjudications** — Adjudication No., Adjudication Date, Claim No., Claim Item No., Payer, Service/Item, Submitted Amount, Allowed Amount, Approved Amount, Rejected Amount, Patient Share, Co-pay, Deductible, Currency, Decision Code, Decision Reason, Adjudicator Reference, Decision Status
+- **Denials** — Denial No., Decision Date, Claim No., Claim Item No., Patient/Member, Payer, Submitted Amount, Denied Amount, Currency, Denial Code, Denial Category, Denial Reason, Correctable, Appeal Deadline, Assigned Owner, Follow-up Date, Denial Status
+- **Resubmissions & Appeals** — Appeal/Resubmission No., Type, Original Claim No., Payer, Patient/Member, Original Denied Amount, Requested Amount, Currency, Reason, Supporting Document Count, Submitted Date, External Reference, Appeal Deadline, Decision Date, Approved Amount, Assigned Owner, Appeal Status
+- **Remittance Advice** — Remittance No., Remittance Date, Payer, Payment Reference, Service Period, Claim Count, Gross Approved Amount, Deductions, Net Remittance Amount, Currency, File/Document Name, Imported At, Matched Claim Count, Unmatched Claim Count, Exception Amount, Remittance Status
+- **Insurer Payments** — Payment No., Payment Date, Payer, Remittance No., Payment Method, Bank Account, External Reference, Gross Amount, Deductions, Net Amount, Allocated Amount, Unallocated Amount, Currency, Value Date, Journal Entry No., Reconciliation Status, Payment Status
+- **Remittance Allocations** — Allocation No., Allocation Date, Remittance No., Payment No., Claim No., Invoice No., Patient/Member, Payer, Approved Amount, Allocated Amount, Short/Over Amount, Currency, Adjustment Code, Allocation Status, Allocated By
+- **Payer Balances** — Payer Code, Payer Name, Payer Type, Open Claim Count, Submitted Amount, Approved Unpaid Amount, Denied Amount Under Appeal, Unallocated Payments, Current Amount, 1–30 Days, 31–60 Days, 61–90 Days, Over 90 Days, Total Outstanding, Currency, Credit Limit, Account Status
+- **Claim Reconciliation** — Reconciliation No., Reconciliation Date, Payer, Period From, Period To, Submitted Claim Amount, Adjudicated Amount, Remittance Amount, Payment Amount, Allocated Amount, GL Receivable Balance, Difference, Currency, Exception Count, Prepared By, Reviewed By, Reconciliation Status
+- **Payer Statements** — Transaction Date, Payer, Document Type, Claim/Invoice/Payment Reference, Patient/Member, Description, Due Date, Debit, Credit, Running Balance, Currency, Allocation Reference, Posting Status
+- **Claims Aging** — Payer, Plan/Contract, Claim Count, Current Amount, 1–30 Days, 31–60 Days, 61–90 Days, Over 90 Days, Total Outstanding, Currency, Oldest Claim Date, Maximum Age, Denied Amount, Under-appeal Amount, Assigned Owner
+- **Collection Follow-up** — Follow-up No., Payer, Claim/Batch Reference, Outstanding Amount, Currency, Maximum Age, Priority, Last Contact Date, Contact Person, Contact Method, Promise Date, Promise Amount, Next Follow-up Date, Assigned Owner, Escalation Level, Follow-up Status, Notes
+- **Disputes** — Dispute No., Opened Date, Payer, Claim/Payment Reference, Dispute Type, Disputed Amount, Currency, Issue Summary, Evidence Count, Assigned Owner, Payer Contact, Response Due Date, Last Response Date, Resolution, Resolved Amount, Closed Date, Dispute Status
+- **Claim Rules** — Rule Code, Rule Name, Payer/Plan Scope, Rule Category, Trigger Stage, Condition Summary, Validation/Action, Severity, Auto-reject, Override Role, Priority, Effective From, Effective To, Version, Last Tested At, Rule Status
+- **Required Documents** — Requirement Code, Document Type, Payer, Plan, Claim/Service Type, Required Stage, Mandatory, Minimum Count, Accepted Format(s), Maximum Size, Validity Period, Conditional Rule, Effective From, Effective To, Requirement Status
+- **Denial Codes** — Denial Code, External Code, Denial Name, Category, Description, Correctable, Default Action, Appeal Allowed, Appeal Deadline Days, Responsible Team, GL Adjustment Rule, Effective From, Effective To, Code Status
+- **Submission Channels** — Channel Code, Channel Name, Payer, Channel Type, Endpoint/Portal, File Format, Authentication Profile, Submission Schedule, Acknowledgement Expected, Retry Policy, Last Successful Submission, Last Failure, Error Count, Channel Status
+- **Claim Templates** — Template Code, Template Name, Payer, Plan/Contract, Claim Type, File/Message Format, Version, Required Sections, Item Grouping, Currency Rule, Effective From, Effective To, Last Published At, Published By, Template Status
+- **Insurance Reports** — Report Name, Report Category, Description, Payer/Plan Scope, Default Period, Available Filters, Default Grouping, Last Generated At, Generated By, Output Format, Row Count, Schedule, Delivery Recipients, Report Status
+
+## 11. Module ownership and core data relationships
 
 The records below are tightly related but must retain a clear authoritative owner:
 
-- **Billing & Receivables:** Charge, Estimate, Invoice, Invoice Item, Credit Note, Debit Note, Patient Account, Payment, Payment Allocation, Receipt, Refund, Advance, Statement, and Write-off
+- **Billing:** Charge, Estimate, Invoice, Invoice Item, Credit Note, Debit Note, Patient Account, Payment, Payment Allocation, Receipt, Refund, Advance, Statement, and Write-off
 - **Accounts & Finance — accounting:** Account, Fiscal Period, Journal, Journal Entry, Journal Line, Control Account, and Reconciliation
 - **Accounts & Finance — procurement and payables:** Supplier, Requisition, Purchase Order, Goods Receipt, Supplier Invoice, Supplier Payment, and AP Allocation
 - **Accounts & Finance — treasury and planning:** Cash Point, Cashier Session, Bank Account, Bank Transaction, Fixed Asset, Depreciation Run, Budget, Budget Line, Commitment, and Variance
