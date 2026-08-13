@@ -555,51 +555,62 @@ class _AccountsInvoiceEditorDialogState
               ],
             ),
           ),
-          SizedBox(height: theme.spacing.md),
-          Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Icon(
-                Icons.list_alt_outlined,
-                size: theme.appTokens.listIconSize,
-                color: theme.colorScheme.primary,
-              ),
-              SizedBox(width: theme.spacing.sm),
-              Expanded(
-                child: Text(
-                  AccountsStrings.invoiceItemsSectionTitle,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: AppFontWeight.emphasis,
+              Row(
+                children: <Widget>[
+                  Icon(
+                    Icons.list_alt_outlined,
+                    size: theme.appTokens.listIconSize,
+                    color: theme.colorScheme.primary,
                   ),
-                ),
+                  SizedBox(width: theme.spacing.sm),
+                  Expanded(
+                    child: Text(
+                      AccountsStrings.invoiceItemsSectionTitle,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: AppFontWeight.emphasis,
+                      ),
+                    ),
+                  ),
+                  AppActionLabelScope(
+                    showLabels: true,
+                    forceIconOnly: false,
+                    plainChrome: true,
+                    dense: true,
+                    child: AppButton.tertiary(
+                      leadingIcon: Icons.add_outlined,
+                      label: AccountsStrings.invoiceAddItemAction,
+                      dense: true,
+                      onPressed: _saving
+                          ? null
+                          : () => unawaited(_openItemDialog()),
+                    ),
+                  ),
+                ],
               ),
-              AppButton.tertiary(
-                leadingIcon: Icons.add_outlined,
-                label: AccountsStrings.invoiceAddItemAction,
-                dense: true,
-                onPressed: _saving ? null : () => unawaited(_openItemDialog()),
-              ),
-            ],
-          ),
-          SizedBox(height: theme.spacing.sm),
-          AppListTable<_InvoiceDraftTableRow>(
-            page: _itemsPage,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padEmptyRows: false,
-            showRowNumbers: false,
-            enableExport: false,
-            forceCompact: true,
-            displayMode: AppListTableDisplayMode.table,
-            pinToolbar: false,
-            rowColorBuilder: (BuildContext context, _InvoiceDraftTableRow row) {
-              if (!row.isTotal) {
-                return null;
-              }
-              return theme.colorScheme.surfaceContainerHighest.withValues(
-                alpha: 0.55,
-              );
-            },
-            columns: <AppListTableColumn<_InvoiceDraftTableRow>>[
+              SizedBox(height: theme.spacing.xs),
+              AppListTable<_InvoiceDraftTableRow>(
+                page: _itemsPage,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padEmptyRows: false,
+                showRowNumbers: false,
+                enableExport: false,
+                forceCompact: true,
+                displayMode: AppListTableDisplayMode.table,
+                pinToolbar: false,
+                rowColorBuilder:
+                    (BuildContext context, _InvoiceDraftTableRow row) {
+                  if (!row.isTotal) {
+                    return null;
+                  }
+                  return theme.colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.55,
+                  );
+                },
+                columns: <AppListTableColumn<_InvoiceDraftTableRow>>[
               AppListTableColumn<_InvoiceDraftTableRow>(
                 id: 'name',
                 label: AccountsStrings.invoiceItemNameLabel,
@@ -811,19 +822,12 @@ class _AccountsInvoiceEditorDialogState
                     : 'draft-${row.index}-${item.name}',
               );
             },
+              ),
+            ],
           ),
         ],
       ),
       actions: <Widget>[
-        AppButton.primary(
-          leadingIcon: _isCreate
-              ? Icons.add_outlined
-              : Icons.save_outlined,
-          label: _isCreate
-              ? AccountsStrings.createInvoiceSubmitAction
-              : l10n.commonSaveActionLabel,
-          onPressed: _saving ? null : _submit,
-        ),
         AppButton.secondary(
           leadingIcon: Icons.close,
           label: l10n.commonCloseActionLabel,
@@ -832,6 +836,15 @@ class _AccountsInvoiceEditorDialogState
               : () => Navigator.of(context).pop(
                   const AccountsInvoiceEditorResult.cancelled(),
                 ),
+        ),
+        AppButton.primary(
+          leadingIcon: _isCreate
+              ? Icons.add_outlined
+              : Icons.save_outlined,
+          label: _isCreate
+              ? AccountsStrings.createInvoiceSubmitAction
+              : l10n.commonSaveActionLabel,
+          onPressed: _saving ? null : _submit,
         ),
       ],
     );
