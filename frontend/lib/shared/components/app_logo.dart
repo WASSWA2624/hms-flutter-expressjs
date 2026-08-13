@@ -17,8 +17,8 @@ class AppLogo extends StatelessWidget {
   /// Matches cropped `logo.png` content aspect (width ÷ height).
   static const double defaultAspectRatio = 1.0;
 
-  /// Primary blue sampled from the HOSSPI mark (wordmark / house / tubing).
-  static const Color brandBlue = Color(0xFF0038A8);
+  /// Cyan-blue from the window/grid features under the medical cross.
+  static const Color brandBlue = Color(0xFF0079FD);
 
   final String assetPath;
   final IconData icon;

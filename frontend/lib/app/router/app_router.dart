@@ -409,38 +409,57 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.login.path,
             name: AppRoutes.login.name,
-            builder: (_, GoRouterState state) {
-              return LoginPage(from: state.uri.queryParameters['from']);
+            pageBuilder: (_, GoRouterState state) {
+              return NoTransitionPage<void>(
+                key: state.pageKey,
+                child: LoginPage(from: state.uri.queryParameters['from']),
+              );
             },
           ),
           GoRoute(
             path: AppRoutes.register.path,
             name: AppRoutes.register.name,
-            builder: (_, _) => const RegisterPage(),
+            pageBuilder: (_, GoRouterState state) {
+              return NoTransitionPage<void>(
+                key: state.pageKey,
+                child: const RegisterPage(),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.verifyEmail.path,
             name: AppRoutes.verifyEmail.name,
-            builder: (_, GoRouterState state) {
-              return VerifyEmailPage(
-                token: state.uri.queryParameters['token'],
-                email: state.uri.queryParameters['email'],
-                reason: state.uri.queryParameters['reason'],
+            pageBuilder: (_, GoRouterState state) {
+              return NoTransitionPage<void>(
+                key: state.pageKey,
+                child: VerifyEmailPage(
+                  token: state.uri.queryParameters['token'],
+                  email: state.uri.queryParameters['email'],
+                  reason: state.uri.queryParameters['reason'],
+                ),
               );
             },
           ),
           GoRoute(
             path: AppRoutes.forgotPassword.path,
             name: AppRoutes.forgotPassword.name,
-            builder: (_, _) => const ForgotPasswordPage(),
+            pageBuilder: (_, GoRouterState state) {
+              return NoTransitionPage<void>(
+                key: state.pageKey,
+                child: const ForgotPasswordPage(),
+              );
+            },
           ),
           GoRoute(
             path: AppRoutes.resetPassword.path,
             name: AppRoutes.resetPassword.name,
-            builder: (_, GoRouterState state) {
-              return ResetPasswordPage(
-                token: state.uri.queryParameters['token'],
-                email: state.uri.queryParameters['email'],
+            pageBuilder: (_, GoRouterState state) {
+              return NoTransitionPage<void>(
+                key: state.pageKey,
+                child: ResetPasswordPage(
+                  token: state.uri.queryParameters['token'],
+                  email: state.uri.queryParameters['email'],
+                ),
               );
             },
           ),

@@ -4,11 +4,19 @@ import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_logo.dart';
 
-class AuthShellLayout extends StatelessWidget {
+/// Persistent chrome for auth routes (logo, brand, page backdrop).
+///
+/// Only [child] swaps when navigating between login / register / etc.
+class AuthShellLayout extends StatefulWidget {
   const AuthShellLayout({required this.child, super.key});
 
   final Widget child;
 
+  @override
+  State<AuthShellLayout> createState() => _AuthShellLayoutState();
+}
+
+class _AuthShellLayoutState extends State<AuthShellLayout> {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
@@ -16,7 +24,6 @@ class AuthShellLayout extends StatelessWidget {
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
     final bool isCompact =
         breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm;
-    final String displayName = context.l10n.appTitle;
 
     return Scaffold(
       body: DecoratedBox(
@@ -48,31 +55,22 @@ class AuthShellLayout extends StatelessWidget {
                 theme.spacing.lg,
               );
 
-              // Prefer a slight upper bias over dead-vertical centering so the
-              // brand and form read as one composed block.
               return SingleChildScrollView(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minHeight: constraints.maxHeight),
                   child: Padding(
                     padding: pagePadding,
                     child: Align(
-                      alignment: const Alignment(0, -0.35),
+                      alignment: Alignment.topCenter,
                       child: ConstrainedBox(
                         constraints: BoxConstraints(maxWidth: maxFormWidth),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: <Widget>[
-                            _AuthBrandHeader(
-                              displayName: displayName,
-                              isCompact: isCompact,
-                            ),
-                            SizedBox(
-                              height: isCompact
-                                  ? theme.spacing.md
-                                  : theme.spacing.md,
-                            ),
-                            child,
+                            const _AuthBrandHeader(),
+                            SizedBox(height: theme.spacing.md),
+                            widget.child,
                           ],
                         ),
                       ),
@@ -89,46 +87,61 @@ class AuthShellLayout extends StatelessWidget {
 }
 
 class _AuthBrandHeader extends StatelessWidget {
-  const _AuthBrandHeader({
-    required this.displayName,
-    required this.isCompact,
-  });
-
-  final String displayName;
-  final bool isCompact;
+  const _AuthBrandHeader();
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final AppBreakpoint breakpoint = AppBreakpoints.of(context);
+    final bool isCompact =
+        breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm;
+    final String displayName = context.l10n.appTitle;
 
     final double logoHeight = isCompact ? 56.0 : 72.0;
-    // App name is 3/4 of the logo height.
-    final double titleSize = logoHeight * 0.75;
+    // App name is half the logo height, bottom-aligned with the mark.
+    final double titleSize = logoHeight * 0.5;
 
     return Semantics(
       header: true,
       label: displayName,
       child: Center(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: <Widget>[
-            AppLogo(size: logoHeight),
-            SizedBox(width: theme.spacing.md),
-            Text(
-              displayName,
-              maxLines: 1,
-              softWrap: false,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                color: AppLogo.brandBlue,
-                fontWeight: AppFontWeight.strong,
-                fontSize: titleSize,
-                height: 1.0,
-                letterSpacing: -0.8,
-              ),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: AppLogo.brandBlue.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(
+              context.responsiveRadius(theme.radius.lg),
             ),
-          ],
+            border: Border.all(
+              color: AppLogo.brandBlue.withValues(alpha: 0.10),
+            ),
+          ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: theme.spacing.lg,
+              vertical: theme.spacing.md,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: <Widget>[
+                AppLogo(size: logoHeight),
+                SizedBox(width: theme.spacing.md),
+                Text(
+                  displayName,
+                  maxLines: 1,
+                  softWrap: false,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    color: AppLogo.brandBlue,
+                    fontWeight: AppFontWeight.strong,
+                    fontSize: titleSize,
+                    height: 1.0,
+                    letterSpacing: -0.6,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
