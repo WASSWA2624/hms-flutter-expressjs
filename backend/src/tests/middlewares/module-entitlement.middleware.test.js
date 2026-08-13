@@ -175,6 +175,7 @@ describe('module entitlement middleware', () => {
     ['/accounts/workspace', 'facility-accounts'],
     ['/accounts', 'facility-accounts'],
     ['/chart-accounts', 'facility-accounts'],
+    ['/accounts-invoices', 'facility-accounts'],
     ['/pre-authorizations', 'insurance-claims'],
     ['/insurance-claims', 'insurance-claims'],
     ['/api-keys', 'developer-tools'],

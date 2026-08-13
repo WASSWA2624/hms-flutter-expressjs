@@ -146,10 +146,11 @@ const MODULE_SEGMENT_SLUG_OVERRIDES = Object.freeze({
   billing: 'billing-payments',
   'pricing-rules': 'billing-payments',
   'price-book-entries': 'billing-payments',
-  // Singularization would turn "accounts" into "account" — map the books desk
-  // and chart routes onto the commercial facility-accounts package.
+  // Singularization would turn "accounts" into "account" — map the books desk,
+  // chart, and outflow-invoice routes onto the commercial facility-accounts package.
   accounts: 'facility-accounts',
   'chart-accounts': 'facility-accounts',
+  'accounts-invoices': 'facility-accounts',
   'billing-adjustments': 'billing-payments',
   'insurance-companies': 'insurance-claims',
   'coverage-plans': 'insurance-claims',
