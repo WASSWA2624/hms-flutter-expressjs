@@ -1,163 +1,119 @@
-# Accounts — replace Close books with Invoices
+# Accounts Invoices — Create Invoice dialog UX
 
 ## Context
 
 ### Current implementation (baseline)
 
-Accounts workspace at `/accounts` (screenshot: `prompts/image/accounts/1786611991553.png`, live URL `?section=chart`) uses nested `AppTabStrip` desks with live counts:
+Accounts **Invoices** desk (`/accounts?section=invoices`) is live: list with search / Filters / Settings / Export / Print / primary **+ Create invoice**, empty state (“No invoices match.”), create/edit via `showAccountsInvoiceEditorDialog`, details via `showAccountsInvoiceDetailsDialog`, void-with-reason, and backend `/api/v1/accounts-invoices`.
 
-| Tab (UI) | `AccountsDeskSection` | `?section=` |
-| --- | --- | --- |
-| Open work | `work` | `work` |
-| To post | `journals` | `journals` |
-| Need approval | `approvals` | `approvals` |
-| General ledger | `gl` | `gl` |
-| Patient ledgers | `ledgers` | `ledgers` |
-| Account chart | `chart` | `chart` |
-| **Close books** | **`books`** | **`books`** (+ aliases `periods` / `period-close` / `close`) |
+Screenshots of the current create flow (flat form, not yet sectioned):
 
-Account chart (and sibling list desks) already ship the target chrome: `AppSearchBar` + Filters → Settings → Export → Print → primary create (`+ Add`), empty/loading/error states, RBAC omission, print/export via evidence-export, mutations via maximized `AppDialog`s. Close books is implemented as `AccountsBooksPanel` plus period open/close/approve dialogs, similarity helpers, print options, summary `openPeriods`, and books Next-action helpers in `accounts_access.dart`.
+- Toolbar primary: **+ Create invoice**
+- Create dialog title: **CREATE INVOICE** (maximized `AppDialog` / workspace action dialog)
+- Single flat body: Payee*, Invoice date*, Reference, Currency (UGX), Notes, then inline “Item name” / Add item fields (not an items table)
+- Footer: **Save** (not “Create Invoice”); no dedicated dialog Close in the action row beyond header X
+- After save: snackbar + list refresh; does **not** auto-open Invoice details
+- Details: Print / Edit / Delete / Close as tertiary actions; Print uses list-table print helper, not a dedicated invoice print-preview surface
 
-Billing already owns **patient** invoices under `/billing`. Accounts has no Invoices desk today.
+Preserve the Invoices desk list, filters, export/print of the table, edit/void flows, RBAC, and API contracts unless a requirement below forces a glue change.
+
+Follow `prompts/.cursor/` (`prompt.mdc`, `dialogs.mdc`, `forms.mdc`, `tables.mdc`, `printing.mdc`, localization / theming / responsiveness). Reference those files; do not restate them.
 
 ### Intended behavior (delta only)
 
-1. **Remove** the Close books desk and all Close-books-only code paths.
-2. **Add** an **Invoices** desk that lists facility **outflow** invoices (money leaving the facility), with create/detail/edit/print/delete-with-reason — matching existing Accounts list-desk patterns (especially Account chart).
-3. **Preserve** Open work, To post, Need approval, General ledger, Patient ledgers, Account chart, and all non-books journal/GL/ledger/chart behavior unless a touch is required for enum/routing/tab-strip glue.
-
-Follow `prompts/.cursor/` (`prompt.mdc`, `tabs.mdc`, `tables.mdc`, `dialogs.mdc`, `forms.mdc`, `printing.mdc`, localization / theming / responsiveness). Reference those files; do not restate them.
+Tighten Create Invoice UX: shorter primary label, branded dialog chrome, two `AppCollapsibleSection`s (Payee + Items), line items managed via table + nested Add/Edit Item dialog, footer Create Invoice + Close, and post-create → details → print preview.
 
 ## Definitions
 
-- **Accounts invoice** — facility-scoped document for amounts leaving the facility (payee/vendor, line items, totals, status). **Not** a Billing patient/encounter invoice.
-- **Line item** — name, description, quantity, unit price; line total and invoice total derived.
-- **Delete with reason** — void/cancel that requires a non-empty reason before commit (same pattern as other Accounts destructive mutations).
+- **Create button (toolbar)** — Invoices desk primary action; label **Create** (no “invoice” word).
+- **Payee section** — Collapsible block with payee, invoice date, notes only (no currency field, no reference field).
+- **Items section** — Collapsible block hosting an `AppListTable` of draft line items plus **Create item** / row Edit / Delete.
+- **Create Item dialog** — Nested dialog to add or edit one line: item name*, description (optional), quantity*, unit price*.
+- **Invoice details (post-create)** — Dialog shown immediately after successful create; footer **Print** and **Close**.
+- **Print preview** — Existing print-preview path opened from details Print; shows the invoice content to print.
 
 ## Requirements
 
-### A. Preserve existing desks
+### A. Preserve desk
 
-1. Keep Open work, To post, Need approval, General ledger, Patient ledgers, and Account chart behavior, routes, panels, filters, prints, and permissions unchanged except where Required B–F force shared enum / strip / summary / test updates.
-2. Keep GL (and other desks’) existing **period** text/filter fields if they are posting-period labels or list filters — remove only Close-books **desk**, period **open/close/approve** flows, and books-only UI.
+1. Keep Invoices list, search, Filters, Settings, Export, list Print, empty/loading/error, row→details, Edit, Delete-with-reason, and write/export RBAC omission unchanged except where Required B–F require dialog or label glue.
+2. Keep facility-outflow invoice API payloads working: if currency/reference are removed from the UI, still send safe defaults (e.g. facility/default currency such as `UGX`; omit or null reference) so create/update does not break the backend schema.
 
-### B. Remove Close books
+### B. Toolbar primary label
 
-3. Remove the Close books tab from the Accounts strip; stop rendering `AccountsBooksPanel`.
-4. Remove `AccountsDeskSection.books` and slug aliases (`books` / `periods` / `period-close` / `close`) as a live desk target.
-5. Delete Close-books-only presentation: books panel, books table support, books print helpers/options, period open/close/approve forms and similarity dialogs used only for period close, Close books strings/tooltips/empty copy, and books-only Next-action helpers.
-6. Remove workspace summary / count wiring for `openPeriods` / books badges, and frontend repository/DTO methods used solely to list/get/open/close/approve fiscal periods. Do not leave dead UI entry points.
-7. Legacy `?section=books` (or former aliases) must resolve to an authorized remaining section via existing `resolveAccountsSection` (prefer Invoices when present and allowed) with **no** Close books flash.
-8. Update permission-catalog copy, workspace comments, and tests that still describe period close / Close books as an Accounts desk.
+3. Rename the Invoices desk primary action from **Create invoice** / **+ Create invoice** to **Create** (short label; keep icon if the toolbar pattern uses one). Update `AccountsStrings` / any l10n keys used by that control.
 
-### C. Add Invoices desk
+### C. Create Invoice dialog structure
 
-9. Add `AccountsDeskSection.invoices` with slug `invoices` → `/accounts?section=invoices`. Place the tab in the former Close books position (after Account chart).
-10. Label the tab **Invoices**. Show an authoritative count badge per `tabs.mdc` (workspace/server total; filtered total when this tab’s search/filters narrow the set).
-11. Implement an Invoices panel mirroring Account chart desk chrome: search, Filters, Settings, Export, Print, primary **Create invoice** — omit Export/Print/Create when unauthorized (reuse Accounts export/write gates).
-12. Search covers operator identity fields (e.g. number, payee, status). Filters include at least status and date range; use the shared Advanced filters pattern already used on Accounts desks.
-13. Cover loading, empty, and error states (empty copy style aligned with Account chart: clear title + short next step). No silent stale table after failed load or filter apply.
-14. Table columns must support scanning (at least number/id, payee, date, status, total; row actions when write is allowed). Keep cells short; put full identity in the detail dialog.
+4. Opening **Create** opens the Create Invoice dialog (generic title such as `Create invoice` — no instance id in the title). Use maximized dialog defaults per `dialogs.mdc`.
+5. Give the dialog appropriate branded chrome consistent with other Accounts workspace dialogs (existing dialog icon/logo pattern if the shell already supports one; do not invent a one-off header brand system).
+6. Split the body into exactly two sibling `AppCollapsibleSection`s (do not nest sections):
+   - **Payee** (or equivalent short title): payee*, invoice date*, notes (optional).
+   - **Items**: draft line-items table + create control.
+7. Remove **Currency** and **Reference** fields from the Create (and Edit) invoice UI.
+8. Dialog footer actions (right-aligned, one row per `dialogs.mdc`): primary **Create Invoice** (create mode) / **Save** or existing edit submit label (edit mode), and **Close** / Cancel that dismisses without saving. Omit unauthorized submit; header close remains.
 
-### D. Create / edit dialog
+### D. Items table and Create Item dialog
 
-15. **Create invoice** opens a maximized `AppDialog` with a generic title (`Create invoice` / `Edit invoice` — no instance id in the title).
-16. Capture payee (or vendor), invoice date, optional reference/notes, and currency consistent with existing facility defaults when available.
-17. Support add/remove line items: item name, description, quantity, unit price; show derived line totals and grand total. Block save on missing required fields or invalid amounts.
-18. On successful save, refresh the Invoices table and tab/summary counts and show existing success/error feedback.
-19. Offer Edit only when status allows mutation and the user has Accounts write; omit otherwise.
+9. In the Items section, render draft lines with `AppListTable` (not stacked free-form fields). Columns: item name, description, quantity, unit price (and derived line total if the desk already shows totals—keep cells short).
+10. Items section `headerActions` (or equivalent section action): **Create item** (short label). Clicking opens the Create Item dialog.
+11. Create Item dialog fields: item name* (required), description (optional), quantity* (required, > 0), unit price* (required, ≥ 0). Validate before accept; block empty name / invalid qty / invalid price.
+12. Confirming Create Item appends a row to the draft table and closes the item dialog; cancel/close leaves the table unchanged.
+13. Each items-table row exposes **Edit** and **Delete** when the user can mutate the draft (create/edit invoice). Edit reopens the Create Item dialog with that row; Delete removes the row from the draft (no server call until invoice create/save). Unauthorized or locked invoices omit these controls.
+14. Creating the invoice requires ≥ 1 valid line item; show validation feedback if the items table is empty on Create Invoice.
 
-### E. Detail, print, delete
+### E. Post-create details and print
 
-20. Row activation opens **Invoice details** (generic title) with header, lines, totals, and status.
-21. From details and/or row actions, authorized users get **Print**, **Edit**, and **Delete** (void/cancel). Omit each when unauthorized or status-forbidden.
-22. Print follows existing Accounts desk print helpers and `printing.mdc` (same export permission gate as sibling desks).
-23. Delete requires a reason; empty reason must not submit. After success, refresh list + counts and close detail if open.
+15. On successful **Create Invoice**, persist via the existing repository, refresh the Invoices list and tab counts, then open **Invoice details** for the new invoice (do not stop at snackbar-only).
+16. Invoice details footer (or pinned actions): **Print** and **Close**. Print opens the print preview for this invoice; Close dismisses details (and does not reopen create). Keep Edit / Delete-with-reason on details only when already allowed today—do not remove them unless they conflict with the Print/Close footer; prefer progressive disclosure consistent with sibling Accounts detail dialogs.
+17. Print preview shows the invoice content operators expect to print (payee, date, notes if any, line items, totals) using existing Accounts/`printing.mdc` helpers and the same export/print permission gate as other Accounts prints. Omit Print when unauthorized.
 
-### F. Outflow meaning and optional cross-desk create
+### F. Edit parity and states
 
-24. Persisted Accounts invoices must represent **facility outflow** (payee + amount leaving). Prefer posting/linking through existing Accounts journal/GL mechanisms when that is how facility expenses are already recorded — do not invent a parallel ledger or reuse Billing patient invoice APIs/UI.
-25. **Optional enhancement (in scope only if low-cost):** expose **Create invoice** from another Accounts desk’s existing primary/secondary or Next action slot where it fits without clutter (same dialog + permissions as the Invoices tab). Do **not** add Create invoice to every tab by default.
-
-### G. Localization, access, sync
-
-26. Add Invoices strings via l10n (`app_en.arb` + generated localizations). Remove unused Close books strings after deletion.
-27. Browse Invoices with existing Accounts entry/read; Create/Edit/Delete with Accounts write; Export/Print with existing evidence-export. Unauthorized controls must not render (no disabled stubs).
-28. After invoice mutations, synchronize table rows, visible tab counts, and any workspace summary fields that include invoice counts.
+18. Edit Invoice reuses the same two-section layout (Payee + Items table + Create Item dialog); submit updates then refreshes list/counts (opening details after edit is optional—default: close editor and refresh, preserving today’s edit outcome unless create’s post-save details flow is trivially shared).
+19. Cover permission-omit, loading, empty items table, validation, error, and success feedback for create, add-item, and print. No silent no-ops.
 
 ## Constraints
 
-- Reuse Accounts workspace shell, `AppTabStrip`, `AppListTable`, `AppSearchBar`, `AppDialog`, print/export helpers, and `accounts_access.dart` — no parallel chrome.
-- Prefer new Accounts invoice entities/DTOs/repository methods over cloning Billing invoice models.
-- No drive-by refactors outside Close books removal and Invoices addition (plus required shared glue).
+- Reuse `AppDialog` / `showAppWorkspaceActionDialog`, `AppCollapsibleSection`, `AppListTable`, `AppDateField`, Accounts invoice repository/DTOs, and print helpers—no parallel chrome.
+- Do not redesign the Invoices list desk, Billing patient invoices, or unrelated Accounts tabs.
+- No drive-by refactors outside this Create Invoice UX delta.
 - Backend RBAC/ABAC remains authoritative.
-- Required UI states: permission-omit, loading, empty, error, validation, success feedback.
 
 ## Out of scope
 
-- Redesigning Billing patient invoices or merging Billing and Accounts invoice products.
-- Changing unrelated Accounts queue/GL/ledger/chart workflows beyond books removal glue.
-- Rebuilding fiscal-period close as a different UI unless a later prompt asks for it.
+- App bar logo / hamburger sizing (separate workstream).
+- Reintroducing currency/reference UI.
+- Cross-desk Create entry points.
+- Changing invoice void/reason semantics.
 
 ## Acceptance Criteria
 
-- [ ] AC1 (Req 1–2): Non-books desks still behave as before aside from shared strip/enum/summary updates.
-- [ ] AC2 (Req 3–8): Close books tab and books-only code/tests are gone; `?section=books` does not show Close books.
-- [ ] AC3 (Req 9–14): `/accounts?section=invoices` shows Invoices with search, Filters, Settings, Export, Print, Create invoice (when allowed), count badge, and loading/empty/error states.
-- [ ] AC4 (Req 15–19): Create/Edit dialog supports payee/meta + line items with validation and post-save refresh.
-- [ ] AC5 (Req 20–23): Row opens details; Print / Edit / Delete-with-reason appear only when allowed.
-- [ ] AC6 (Req 24–25): Invoices model facility outflow and stay separate from Billing; optional cross-desk create, if implemented, reuses the same dialog.
-- [ ] AC7 (Req 26–28): Strings localized; unauthorized UI omitted; mutations refresh list and counts.
-- [ ] AC8: Tests updated — books compliance/period-close desk tests removed or rewritten; section resolution, tab presence, access omission, and Invoices smoke covered.
+- [ ] AC1 (Req 1–2): Invoices desk list/RBAC/API still work; create succeeds without currency/reference fields in the UI.
+- [ ] AC2 (Req 3): Desk primary label is **Create**.
+- [ ] AC3 (Req 4–8): Create Invoice dialog has two collapsible sections; Payee has payee, date, notes only; footer Create Invoice + Close.
+- [ ] AC4 (Req 9–14): Items use `AppListTable`; Create item opens nested form with required name/qty/unit price; row Edit/Delete work; empty items block create.
+- [ ] AC5 (Req 15–17): Successful create opens Invoice details; Print opens print preview; Close dismisses; Print omitted when unauthorized.
+- [ ] AC6 (Req 18–19): Edit uses the same sectioned layout; validation/error/success states are visible.
 
 ## Verification
 
-- Manual: `/accounts` tab order ends with Account chart → **Invoices** (no Close books). Create an invoice with ≥2 lines; open details; print; edit; delete with reason; confirm empty and filter states.
-- Manual: `/accounts?section=books` lands on an allowed section without Close books UI.
-- Manual: light/dark and a narrow viewport — strip overflow, toolbar, and dialogs remain usable.
-- Tests: Accounts workspace / section / access / convention tests; add Invoices panel or dialog coverage as needed; drop `accounts_books_*` / period-close desk tests that only served Close books.
-- Analyze touched frontend paths; run the affected Accounts test files.
+- Manual: Invoices → **Create** → fill payee/date/notes → **Create item** (two lines) → Edit one line → Delete one → **Create Invoice** → details opens → **Print** preview → **Close**.
+- Manual: Create with zero items → blocked with validation; unauthorized write → no Create; unauthorized export → no Print on details.
+- Manual: light/dark and a narrow viewport — sections, table, and footer actions remain usable.
+- Tests: update/add coverage for create dialog section structure, item dialog validation, and post-create details handoff if existing Accounts dialog tests can host it; run touched Accounts tests + analyze changed paths.
 
 ## Relevant Files
 
-### Current Close books surface (remove / unlink)
-
-- `frontend/lib/features/accounts/presentation/pages/accounts_workspace_page.dart`
-- `frontend/lib/features/accounts/presentation/widgets/accounts_books_panel.dart`
-- `frontend/lib/features/accounts/presentation/widgets/accounts_books_table_support.dart`
-- `frontend/lib/features/accounts/presentation/widgets/accounts_books_print_helpers.dart`
-- `frontend/lib/features/accounts/presentation/widgets/accounts_books_print_options.dart`
-- `frontend/lib/features/accounts/presentation/widgets/accounts_period_dialogs.dart`
-- `frontend/lib/features/accounts/presentation/widgets/accounts_period_similarity.dart`
-- `frontend/lib/features/accounts/presentation/widgets/accounts_period_similarity_dialog.dart`
-- `frontend/lib/features/accounts/presentation/widgets/accounts_form_dialogs.dart` (period open/close forms only)
-- `frontend/lib/features/accounts/presentation/widgets/accounts_scope_navigation.dart`
-- `frontend/lib/features/accounts/presentation/widgets/accounts_support.dart`
-- `frontend/lib/features/accounts/presentation/accounts_access.dart`
+- `frontend/lib/features/accounts/presentation/widgets/accounts_invoices_panel.dart` (primary **Create** label)
+- `frontend/lib/features/accounts/presentation/widgets/accounts_invoice_dialogs.dart` (create/edit/details)
 - `frontend/lib/features/accounts/presentation/accounts_strings.dart`
-- `frontend/lib/features/accounts/presentation/controllers/accounts_workspace_controller.dart`
-- `frontend/lib/features/accounts/domain/entities/accounts_entities.dart`
-- `frontend/lib/features/accounts/data/dtos/accounts_dtos.dart`
-- `frontend/lib/features/accounts/data/repositories/accounts_repository_impl.dart`
-- `frontend/lib/features/accounts/domain/repositories/accounts_repository.dart`
-- `frontend/test/features/accounts/presentation/accounts_books_compliance_test.dart`
-- `frontend/test/features/accounts/presentation/accounts_period_similarity_test.dart`
-- `backend/src/config/permission-catalog-metadata.js` (desk copy mentioning period close)
-- `backend/src/modules/accounts-workspace/services/accounts-workspace.service.js` (`open_periods*` summary fields)
-
-### Patterns to mirror for Invoices
-
-- `frontend/lib/features/accounts/presentation/widgets/accounts_chart_panel.dart`
-- `frontend/lib/features/accounts/presentation/widgets/accounts_chart_dialogs.dart`
-- `frontend/lib/l10n/app_en.arb`
-- Accounts API / workspace module — add invoice list/create/update/void only as required
-
-### Reference
-
-- `prompts/image/accounts/1786611991553.png`
-- `prompts/.cursor/prompt.mdc`
-- `prompts/.cursor/tabs.mdc`
-- `prompts/.cursor/tables.mdc`
+- `frontend/lib/features/accounts/domain/entities/accounts_entities.dart` (`AccountsInvoiceDraft` / line items)
+- `frontend/lib/features/accounts/data/repositories/accounts_invoice_repository_impl.dart`
+- `frontend/lib/shared/components/app_collapsible_section.dart` (or shared export via `components.dart`)
+- `frontend/lib/shared/components/app_list_table.dart`
+- `frontend/lib/features/accounts/presentation/widgets/accounts_workspace_print_helpers.dart`
 - `prompts/.cursor/dialogs.mdc`
+- `prompts/.cursor/tables.mdc`
 - `prompts/.cursor/forms.mdc`
 - `prompts/.cursor/printing.mdc`
