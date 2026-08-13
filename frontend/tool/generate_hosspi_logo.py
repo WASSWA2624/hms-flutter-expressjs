@@ -83,10 +83,10 @@ def make_logo_master() -> Image.Image:
     )
 
     cx = cy = S / 2
-    # Plus sized to sit boldly inside the frame
+    # Plus sized to sit boldly inside the frame — long arms, still clear of stroke
     inner = S - 2 * inset - 2 * stroke
-    plus_arm = inner * 0.62
-    plus_thickness = plus_arm * 0.28
+    plus_arm = inner * 0.82
+    plus_thickness = plus_arm * 0.22
     _draw_plus_sharp(draw, cx, cy, plus_arm, plus_thickness, AZURE_700)
 
     # Downsample supersampled master → MASTER px with AA
