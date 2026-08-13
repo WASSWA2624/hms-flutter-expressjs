@@ -58,7 +58,6 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     return AuthPageFrame(
       title: l10n.authForgotPasswordTitle,
       subtitle: l10n.authForgotPasswordBody,
-      maxWidth: 460,
       child: Form(
         key: _formKey,
         autovalidateMode: _autovalidateMode,

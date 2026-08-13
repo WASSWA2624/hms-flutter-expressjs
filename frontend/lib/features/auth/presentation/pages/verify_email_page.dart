@@ -75,7 +75,6 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
     return AuthPageFrame(
       title: l10n.authVerifyEmailTitle,
       subtitle: _bodyText(l10n, email),
-      maxWidth: 460,
       child: Form(
         key: _formKey,
         autovalidateMode: _autovalidateMode,

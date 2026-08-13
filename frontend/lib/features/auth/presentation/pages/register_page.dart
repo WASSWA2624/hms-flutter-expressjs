@@ -79,7 +79,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     return AuthPageFrame(
       title: l10n.authRegisterTitle,
       subtitle: l10n.authRegisterBody,
-      maxWidth: 520,
       child: AutofillGroup(
         child: Form(
           key: _formKey,

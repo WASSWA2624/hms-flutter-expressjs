@@ -24,6 +24,7 @@ class _AuthShellLayoutState extends State<AuthShellLayout> {
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
     final bool isCompact =
         breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm;
+    final double panelRadius = context.responsiveRadius(theme.radius.lg);
 
     return Scaffold(
       body: DecoratedBox(
@@ -64,14 +65,31 @@ class _AuthShellLayoutState extends State<AuthShellLayout> {
                       alignment: Alignment.topCenter,
                       child: ConstrainedBox(
                         constraints: BoxConstraints(maxWidth: maxFormWidth),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            const _AuthBrandHeader(),
-                            SizedBox(height: theme.spacing.md),
-                            widget.child,
-                          ],
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(panelRadius),
+                            border: theme.borders.all(),
+                            boxShadow: <BoxShadow>[
+                              BoxShadow(
+                                color: colorScheme.shadow.withValues(
+                                  alpha: 0.07,
+                                ),
+                                blurRadius: 28,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(panelRadius),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: <Widget>[
+                                const _AuthBrandHeader(),
+                                widget.child,
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -98,35 +116,26 @@ class _AuthBrandHeader extends StatelessWidget {
     final String displayName = context.l10n.appTitle;
 
     final double logoHeight = isCompact ? 56.0 : 72.0;
-    // App name is half the logo height, bottom-aligned with the mark.
     final double titleSize = logoHeight * 0.5;
 
     return Semantics(
       header: true,
       label: displayName,
-      child: Center(
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: AppLogo.brandBlue.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(
-              context.responsiveRadius(theme.radius.lg),
-            ),
-            border: Border.all(
-              color: AppLogo.brandBlue.withValues(alpha: 0.10),
-            ),
+      child: ColoredBox(
+        color: AppLogo.brandBlue.withValues(alpha: 0.06),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: theme.spacing.lg,
+            vertical: theme.spacing.md,
           ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: theme.spacing.lg,
-              vertical: theme.spacing.md,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: <Widget>[
-                AppLogo(size: logoHeight),
-                SizedBox(width: theme.spacing.md),
-                Text(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: <Widget>[
+              AppLogo(size: logoHeight),
+              SizedBox(width: theme.spacing.md),
+              Flexible(
+                child: Text(
                   displayName,
                   maxLines: 1,
                   softWrap: false,
@@ -139,8 +148,8 @@ class _AuthBrandHeader extends StatelessWidget {
                     letterSpacing: -0.6,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

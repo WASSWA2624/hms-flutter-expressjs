@@ -3,12 +3,13 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
 
+/// Form panel for auth routes. Sits flush under [AuthShellLayout] branding
+/// and fills the shared panel width (no separate card chrome).
 class AuthPageFrame extends StatelessWidget {
   const AuthPageFrame({
     required this.title,
     required this.child,
     this.subtitle,
-    this.maxWidth = 420,
     this.useCard = true,
     super.key,
   });
@@ -16,7 +17,6 @@ class AuthPageFrame extends StatelessWidget {
   final String title;
   final String? subtitle;
   final Widget child;
-  final double maxWidth;
   final bool useCard;
 
   @override
@@ -30,7 +30,7 @@ class AuthPageFrame extends StatelessWidget {
       _ => theme.spacing.xl,
     });
 
-    Widget content = Column(
+    final Widget content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
@@ -65,32 +65,18 @@ class AuthPageFrame extends StatelessWidget {
       ],
     );
 
-    if (useCard) {
-      content = DecoratedBox(
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(
-            context.responsiveRadius(theme.radius.lg),
-          ),
-          border: theme.borders.all(),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: colorScheme.shadow.withValues(alpha: 0.07),
-              blurRadius: 28,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Padding(padding: panelPadding, child: content),
-      );
-    }
+    // Surface fill only — outer border/radius/shadow live on AuthShellLayout
+    // so branding and form read as one connected panel.
+    final Widget panel = useCard
+        ? ColoredBox(
+            color: colorScheme.surface,
+            child: Padding(padding: panelPadding, child: content),
+          )
+        : Padding(padding: panelPadding, child: content);
 
     return AppFieldRequirementScope(
       showOptionalIndicators: true,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: maxWidth),
-        child: content,
-      ),
+      child: panel,
     );
   }
 }

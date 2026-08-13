@@ -91,7 +91,6 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
       subtitle: _usesLinkToken
           ? l10n.authResetPasswordBody
           : l10n.authResetPasswordCodeModeBody,
-      maxWidth: 460,
       child: Form(
         key: _formKey,
         autovalidateMode: _autovalidateMode,
