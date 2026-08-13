@@ -714,7 +714,7 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
         focusedBorder?.borderSide.color ?? colorScheme.primary;
     final double focusedBorderWidth = focusedBorder?.borderSide.width ?? 1.4;
     final Color enabledBorderColor =
-        enabledBorder?.borderSide.color ?? theme.borders.faint;
+        enabledBorder?.borderSide.color ?? theme.borders.inputIdle;
     final double enabledBorderWidth =
         enabledBorder?.borderSide.width ?? theme.appTokens.dividerThickness;
 

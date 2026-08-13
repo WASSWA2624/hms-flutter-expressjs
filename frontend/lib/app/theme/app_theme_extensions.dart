@@ -860,6 +860,9 @@ final class AppBorderTokens extends ThemeExtension<AppBorderTokens> {
   final Color disabled;
   final Color error;
 
+  /// Unfocused input outline — [focused]/primary) at reduced opacity.
+  Color get inputIdle => focused.withValues(alpha: 0.36);
+
   double widthOf(AppBorderWeight weight) {
     return switch (weight) {
       AppBorderWeight.thin => thin,

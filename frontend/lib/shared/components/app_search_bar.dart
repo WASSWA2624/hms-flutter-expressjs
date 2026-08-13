@@ -647,7 +647,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
     }
 
     return _sideFromBorder(theme.inputDecorationTheme.enabledBorder) ??
-        theme.borders.side();
+        theme.borders.side(color: theme.borders.inputIdle);
   }
 
   BorderSide? _sideFromBorder(InputBorder? border) {

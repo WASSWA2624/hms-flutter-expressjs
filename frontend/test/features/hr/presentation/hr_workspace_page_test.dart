@@ -325,7 +325,7 @@ void main() {
     );
 
     expect(find.byType(ManageUsersPanel), findsOneWidget);
-    expect(_searchAction('Create user'), findsOneWidget);
+    expect(_searchAction('Create staff'), findsOneWidget);
     expect(find.text('Ada User'), findsOneWidget);
     expect(_tabToolbarRefresh(), findsNothing);
     expect(find.byTooltip('HR activity'), findsNothing);
@@ -348,7 +348,7 @@ void main() {
     expect(find.byType(AppTabToolbarPrimary), findsNothing);
   });
 
-  testWidgets('read-only HR hides Create user on ManageUsersPanel', (
+  testWidgets('read-only HR hides Create staff on ManageUsersPanel', (
     WidgetTester tester,
   ) async {
     _stubHrWorkspace(repository);
@@ -361,7 +361,7 @@ void main() {
     );
 
     expect(find.byType(ManageUsersPanel), findsOneWidget);
-    expect(_searchAction('Create user'), findsNothing);
+    expect(_searchAction('Create staff'), findsNothing);
     expect(find.text('Ada User'), findsOneWidget);
   });
 
@@ -404,7 +404,7 @@ void main() {
         'lib/features/hr/presentation/pages/hr_workspace_dialog_actions.dart',
       ).readAsStringSync().contains('accessAdminDeleteUserAction'),
       isTrue,
-      reason: 'Staff Details footer includes Delete user like Access Admin',
+      reason: 'Staff Details footer includes Delete staff like Access Admin',
     );
     expect(
       RegExp(

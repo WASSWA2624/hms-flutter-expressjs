@@ -8998,7 +8998,7 @@
   "@homeFacilityManagementTitle": {
     "description": "Section title for tenant-admin facility management actions on the home dashboard."
   },
-  "homeManageUsersTitle": "Manage users",
+  "homeManageUsersTitle": "Manage staff",
   "@homeManageUsersTitle": {
     "description": "Title for the focused user management dialog."
   },
@@ -10654,11 +10654,11 @@
       }
     }
   },
-  "tenantFacilitySoftDeleteUserTitle": "Delete user",
+  "tenantFacilitySoftDeleteUserTitle": "Delete staff",
   "@tenantFacilitySoftDeleteUserTitle": {
     "description": "Soft-delete user confirmation dialog title."
   },
-  "tenantFacilitySoftDeleteUserBody": "Soft-delete user \"{name}\"? Hidden from pickers; still visible here to restore.",
+  "tenantFacilitySoftDeleteUserBody": "Soft-delete staff \"{name}\"? Hidden from pickers; still visible here to restore.",
   "@tenantFacilitySoftDeleteUserBody": {
     "description": "Soft-delete user confirmation body.",
     "placeholders": {
@@ -10667,11 +10667,11 @@
       }
     }
   },
-  "tenantFacilityRestoreUserTitle": "Restore user",
+  "tenantFacilityRestoreUserTitle": "Restore staff",
   "@tenantFacilityRestoreUserTitle": {
     "description": "Restore soft-deleted user confirmation dialog title."
   },
-  "tenantFacilityRestoreUserBody": "Restore user \"{name}\"?",
+  "tenantFacilityRestoreUserBody": "Restore staff \"{name}\"?",
   "@tenantFacilityRestoreUserBody": {
     "description": "Restore soft-deleted user confirmation body.",
     "placeholders": {
@@ -10680,7 +10680,7 @@
       }
     }
   },
-  "accessAdminRestoreUserAction": "Restore user",
+  "accessAdminRestoreUserAction": "Restore staff",
   "@accessAdminRestoreUserAction": {
     "description": "Restore soft-deleted user action label in access admin."
   },
@@ -27282,11 +27282,11 @@
   "@hrStaffOnboardingEmploymentSectionTitle": {
     "description": "Section title for staff onboarding employment fields."
   },
-  "hrStaffOnboardingCreateNewUserLabel": "Create new user",
+  "hrStaffOnboardingCreateNewUserLabel": "Create new staff",
   "@hrStaffOnboardingCreateNewUserLabel": {
     "description": "Toggle label to create a new sign-in account during staff onboarding."
   },
-  "hrStaffOnboardingLinkExistingUserLabel": "Link existing user",
+  "hrStaffOnboardingLinkExistingUserLabel": "Link existing staff",
   "@hrStaffOnboardingLinkExistingUserLabel": {
     "description": "Toggle label to link an existing internal user during staff onboarding."
   },
@@ -29372,11 +29372,11 @@
   "@hrStaffPermissionsSectionTitle": {
     "description": "Permissions section title in the HR staff details dialog."
   },
-  "hrStaffPermissionsSectionBody": "Read-only view of roles and effective access for this linked user.",
+  "hrStaffPermissionsSectionBody": "Read-only view of roles and effective access for this linked staff.",
   "@hrStaffPermissionsSectionBody": {
     "description": "Permissions section body in the HR staff details dialog."
   },
-  "hrStaffPermissionsManageHint": "To grant, revoke, or fine-tune permissions, open Manage users and roles.",
+  "hrStaffPermissionsManageHint": "To grant, revoke, or fine-tune permissions, open Manage staff and roles.",
   "@hrStaffPermissionsManageHint": {
     "description": "Guidance pointing HR to the Access tab for permission edits."
   },
@@ -29393,7 +29393,7 @@
   "@hrManageRolesAction": {
     "description": "Header action opening the roles management surface from staff details."
   },
-  "hrManageUserPermissionsAction": "Manage user permissions",
+  "hrManageUserPermissionsAction": "Manage staff permissions",
   "@hrManageUserPermissionsAction": {
     "description": "Header action opening the linked user permissions surface from staff details."
   },
@@ -29405,7 +29405,7 @@
   "@hrStaffPermissionsEmptyTitle": {
     "description": "Empty title for the staff permissions section."
   },
-  "hrStaffPermissionsEmptyBody": "Effective permissions appear here when the linked user account has access grants.",
+  "hrStaffPermissionsEmptyBody": "Effective permissions appear here when the linked staff account has access grants.",
   "@hrStaffPermissionsEmptyBody": {
     "description": "Empty body for the staff permissions section."
   },
@@ -29549,15 +29549,15 @@
   "@hrClearRoomsAction": {
     "description": "Clears selected rooms in the assign-department dialog."
   },
-  "hrUserIdLabel": "User ID",
+  "hrUserIdLabel": "Staff ID",
   "@hrUserIdLabel": {
     "description": "Human resources workspace text for hrUserIdLabel."
   },
-  "hrLinkedUserLabel": "Linked user",
+  "hrLinkedUserLabel": "Linked staff",
   "@hrLinkedUserLabel": {
     "description": "Label for the user account linked to a staff profile."
   },
-  "hrSelectUserLabel": "Link user account",
+  "hrSelectUserLabel": "Link staff account",
   "@hrSelectUserLabel": {
     "description": "Label for selecting an existing user when onboarding staff."
   },
@@ -29565,7 +29565,7 @@
   "@hrCreateUserAction": {
     "description": "Action to create a new user account during staff onboarding."
   },
-  "hrCreateUserDialogTitle": "Create user account",
+  "hrCreateUserDialogTitle": "Create staff account",
   "@hrCreateUserDialogTitle": {
     "description": "Dialog title for creating a user account from HR."
   },
@@ -29705,11 +29705,11 @@
   "@hrNoModuleAccessLabel": {
     "description": "Empty state for module access."
   },
-  "hrOpenAccessAdminAction": "Open in Users/Roles",
+  "hrOpenAccessAdminAction": "Open in Staff/Roles",
   "@hrOpenAccessAdminAction": {
     "description": "Deep link to access admin for advanced permission editing."
   },
-  "hrManageAccessAction": "Manage users and roles",
+  "hrManageAccessAction": "Manage staff and roles",
   "@hrManageAccessAction": {
     "description": "Opens the in-HR access management workspace."
   },
@@ -29955,7 +29955,7 @@
   "@hrAccessCreatePermissionAction": {
     "description": "Create permission action in HR access workspace."
   },
-  "hrAccessEditUserAction": "Edit user",
+  "hrAccessEditUserAction": "Edit staff account",
   "@hrAccessEditUserAction": {
     "description": "Edit user action in HR access workspace."
   },
@@ -30042,7 +30042,7 @@
       }
     }
   },
-  "hrAccessUserDetailTitle": "User account",
+  "hrAccessUserDetailTitle": "Staff account",
   "@hrAccessUserDetailTitle": {
     "description": "Title for the HR staff access user detail dialog."
   },
@@ -30633,11 +30633,11 @@
   "@hrEmailLabel": {
     "description": "Label for email field in HR dialogs."
   },
-  "hrOnboardingModeExistingUser": "Link existing user",
+  "hrOnboardingModeExistingUser": "Link existing staff",
   "@hrOnboardingModeExistingUser": {
     "description": "Onboarding option to link an existing user account."
   },
-  "hrOnboardingModeCreateUser": "Create new user",
+  "hrOnboardingModeCreateUser": "Create new staff",
   "@hrOnboardingModeCreateUser": {
     "description": "Onboarding option to create a new user account."
   },
@@ -34041,7 +34041,7 @@
   "@accessAdminEmptyTitle": {
     "description": "Access admin empty state title."
   },
-  "accessAdminEmptyBody": "Adjust filters or create users and roles.",
+  "accessAdminEmptyBody": "Adjust filters or create staff and roles.",
   "@accessAdminEmptyBody": {
     "description": "Access admin empty state body."
   },
@@ -34117,7 +34117,7 @@
   "@accessAdminColumnFacility": {
     "description": "Facility column header on the manage users table."
   },
-  "accessAdminManageUserAction": "Manage user",
+  "accessAdminManageUserAction": "Manage staff",
   "@accessAdminManageUserAction": {
     "description": "Next-action column header for user rows on the access admin workspace."
   },
@@ -34177,15 +34177,15 @@
   "@accessAdminDetailTitle": {
     "description": "Access admin detail dialog title."
   },
-  "accessAdminCreateUserAction": "Create user",
+  "accessAdminCreateUserAction": "Create staff",
   "@accessAdminCreateUserAction": {
     "description": "Access admin create user action."
   },
-  "accessAdminEditUserAction": "Edit user",
+  "accessAdminEditUserAction": "Edit staff account",
   "@accessAdminEditUserAction": {
     "description": "Access admin edit user action."
   },
-  "accessAdminDeleteUserAction": "Delete user",
+  "accessAdminDeleteUserAction": "Delete staff",
   "@accessAdminDeleteUserAction": {
     "description": "Access admin delete user action."
   },
@@ -34210,7 +34210,7 @@
     "description": "Tooltip when user detail fields are disabled until organization scope is ready."
   },
 
-  "accessAdminCreateUserDetailsSectionTitle": "User details",
+  "accessAdminCreateUserDetailsSectionTitle": "Staff details",
   "@accessAdminCreateUserDetailsSectionTitle": {
     "description": "Section title for user profile fields."
   },
@@ -34242,7 +34242,7 @@
   "@accessAdminCreateUserNoFacilitiesTitle": {
     "description": "Title when no facilities exist for the selected tenant."
   },
-  "accessAdminCreateUserNoFacilitiesMessage": "Create a facility for this tenant before adding users.",
+  "accessAdminCreateUserNoFacilitiesMessage": "Create a facility for this tenant before adding staff.",
   "@accessAdminCreateUserNoFacilitiesMessage": {
     "description": "Message when no facilities exist for the selected tenant."
   },
@@ -34250,7 +34250,7 @@
   "@accessAdminCreateUserNoRolesTitle": {
     "description": "Title when no roles exist for the selected tenant."
   },
-  "accessAdminCreateUserNoRolesMessage": "Create roles for this organization before assigning them to users.",
+  "accessAdminCreateUserNoRolesMessage": "Create roles for this organization before assigning them to staff.",
   "@accessAdminCreateUserNoRolesMessage": {
     "description": "Message when no roles exist for the selected tenant."
   },
@@ -34270,7 +34270,7 @@
   "@accessAdminUserDetailProfileSectionDescription": {
     "description": "Section description for user account details in the user detail dialog."
   },
-  "accessAdminUserDetailRolesSectionDescription": "Roles set the baseline permissions for this user.",
+  "accessAdminUserDetailRolesSectionDescription": "Roles set the baseline permissions for this staff member.",
   "@accessAdminUserDetailRolesSectionDescription": {
     "description": "Section description for assigned roles in the user detail dialog."
   },
@@ -34282,11 +34282,11 @@
   "@accessAdminUserDetailRolePermissionsLabel": {
     "description": "Label for permissions inherited from assigned roles."
   },
-  "accessAdminUserDetailNoRolesMessage": "No roles are assigned to this user yet.",
+  "accessAdminUserDetailNoRolesMessage": "No roles are assigned to this staff member yet.",
   "@accessAdminUserDetailNoRolesMessage": {
     "description": "Empty state when a user has no assigned roles."
   },
-  "accessAdminUserDetailNoPermissionsMessage": "No permissions are currently effective for this user.",
+  "accessAdminUserDetailNoPermissionsMessage": "No permissions are currently effective for this staff member.",
   "@accessAdminUserDetailNoPermissionsMessage": {
     "description": "Empty state when a user has no effective permissions."
   },
@@ -34553,7 +34553,7 @@
   "@accessAdminRoleDetailNoPermissionsMessage": {
     "description": "Empty state when a role has no attached permissions."
   },
-  "accessAdminRoleDetailUsersLabel": "Assigned users",
+  "accessAdminRoleDetailUsersLabel": "Assigned staff",
   "@accessAdminRoleDetailUsersLabel": {
     "description": "Label for the number of users assigned to a role."
   },
@@ -34698,11 +34698,11 @@
   "@accessAdminUseExistingRoleAction": {
     "description": "Open an existing similar role instead of creating."
   },
-  "accessAdminSimilarUserDialogTitle": "Similar user found",
+  "accessAdminSimilarUserDialogTitle": "Similar staff found",
   "@accessAdminSimilarUserDialogTitle": {
     "description": "Title for user similarity review dialog when matches exist."
   },
-  "accessAdminNoSimilarUserDialogTitle": "No similar user found",
+  "accessAdminNoSimilarUserDialogTitle": "No similar staff found",
   "@accessAdminNoSimilarUserDialogTitle": {
     "description": "Title for user similarity review dialog when no matches exist."
   },
@@ -34710,11 +34710,11 @@
   "@accessAdminUserContactAlreadyInUse": {
     "description": "Banner title when an exact user email or phone conflict is found."
   },
-  "accessAdminSimilarUserWarningTitle": "Potential duplicate user",
+  "accessAdminSimilarUserWarningTitle": "Potential duplicate staff",
   "@accessAdminSimilarUserWarningTitle": {
     "description": "Banner title when similar users are found."
   },
-  "accessAdminSimilarUserWarningBody": "Review the similar users below before saving.",
+  "accessAdminSimilarUserWarningBody": "Review the similar staff below before saving.",
   "@accessAdminSimilarUserWarningBody": {
     "description": "Banner body when similar users are found."
   },
@@ -34727,7 +34727,7 @@
       }
     }
   },
-  "accessAdminSimilarUserExistingHeading": "Existing user",
+  "accessAdminSimilarUserExistingHeading": "Existing staff",
   "@accessAdminSimilarUserExistingHeading": {
     "description": "Heading for an existing user match card."
   },
@@ -34763,11 +34763,11 @@
   "@accessAdminNoSimilarUserBannerTitle": {
     "description": "Banner title when no similar users are found."
   },
-  "accessAdminNoSimilarUserDialogBody": "Review the proposed user details below. No similar users were found in this organization.",
+  "accessAdminNoSimilarUserDialogBody": "Review the proposed staff details below. No similar staff were found in this organization.",
   "@accessAdminNoSimilarUserDialogBody": {
     "description": "Banner body when no similar users are found."
   },
-  "accessAdminSimilarUserProposedHeading": "Proposed user",
+  "accessAdminSimilarUserProposedHeading": "Proposed staff",
   "@accessAdminSimilarUserProposedHeading": {
     "description": "Heading for the proposed user card in similarity review."
   },
@@ -34787,7 +34787,7 @@
   "@accessAdminContinueEditUserAction": {
     "description": "Continue edit when no similar users are found."
   },
-  "accessAdminUseExistingUserAction": "Use existing user",
+  "accessAdminUseExistingUserAction": "Use existing staff",
   "@accessAdminUseExistingUserAction": {
     "description": "Open an existing similar user instead of creating."
   },
@@ -34831,11 +34831,11 @@
   "@accessAdminClinicalRoleHint": {
     "description": "Access admin clinical role hint."
   },
-  "accessAdminDeactivateAction": "Deactivate user",
+  "accessAdminDeactivateAction": "Deactivate staff",
   "@accessAdminDeactivateAction": {
     "description": "Access admin deactivate user action."
   },
-  "accessAdminActivateAction": "Activate user",
+  "accessAdminActivateAction": "Activate staff",
   "@accessAdminActivateAction": {
     "description": "Access admin activate user action."
   },
@@ -34854,7 +34854,7 @@
       "name": { "type": "String" }
     }
   },
-  "accessAdminDeleteRoleAssignedBody": "Role \"{name}\" is assigned to {userCount, plural, =1{1 user} other{{userCount} users}}. Soft-delete detaches it from {userCount, plural, =1{that user} other{those users}}; the role stays listed so you can restore it.",
+  "accessAdminDeleteRoleAssignedBody": "Role \"{name}\" is assigned to {userCount, plural, =1{1 staff member} other{{userCount} staff}}. Soft-delete detaches it from {userCount, plural, =1{that staff member} other{those staff}}; the role stays listed so you can restore it.",
   "@accessAdminDeleteRoleAssignedBody": {
     "description": "Confirmation body when soft-deleting a role that is assigned to users.",
     "placeholders": {
@@ -34869,7 +34869,7 @@
       "name": { "type": "String" }
     }
   },
-  "accessAdminSoftDeleteRoleAssignedBody": "Role \"{name}\" is assigned to {userCount, plural, =1{1 user} other{{userCount} users}}. Soft-delete detaches it from {userCount, plural, =1{that user} other{those users}}; the role stays listed so you can restore it.",
+  "accessAdminSoftDeleteRoleAssignedBody": "Role \"{name}\" is assigned to {userCount, plural, =1{1 staff member} other{{userCount} staff}}. Soft-delete detaches it from {userCount, plural, =1{that staff member} other{those staff}}; the role stays listed so you can restore it.",
   "@accessAdminSoftDeleteRoleAssignedBody": {
     "description": "Soft-delete confirmation body for a role assigned to users.",
     "placeholders": {
@@ -34877,14 +34877,14 @@
       "userCount": { "type": "int" }
     }
   },
-  "accessAdminPermanentDeleteRoleWarningBody": "WARNING: Permanently deleting \"{name}\" will remove this role from every user it is attached to, erase related permission links, and delete the role forever. This cannot be recovered.",
+  "accessAdminPermanentDeleteRoleWarningBody": "WARNING: Permanently deleting \"{name}\" will remove this role from every staff member it is attached to, erase related permission links, and delete the role forever. This cannot be recovered.",
   "@accessAdminPermanentDeleteRoleWarningBody": {
     "description": "Warning before permanently deleting a soft-deleted role.",
     "placeholders": {
       "name": { "type": "String" }
     }
   },
-  "accessAdminPermanentDeleteRoleConfirmationBody": "Final confirmation: permanently delete role \"{name}\", remove it from all attached users, and erase related permission links? This action is irreversible.",
+  "accessAdminPermanentDeleteRoleConfirmationBody": "Final confirmation: permanently delete role \"{name}\", remove it from all attached staff, and erase related permission links? This action is irreversible.",
   "@accessAdminPermanentDeleteRoleConfirmationBody": {
     "description": "Final confirmation body for permanent role delete.",
     "placeholders": {
@@ -34895,7 +34895,7 @@
   "@accessAdminTenantContextRequiredTitle": {
     "description": "Access admin tenant context required title."
   },
-  "accessAdminTenantContextRequiredBody": "Select a tenant and facility before managing users and roles.",
+  "accessAdminTenantContextRequiredBody": "Select a tenant and facility before managing staff and roles.",
   "@accessAdminTenantContextRequiredBody": {
     "description": "Access admin tenant context required body."
   },

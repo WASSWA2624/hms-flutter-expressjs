@@ -13,7 +13,7 @@ enum HrManageUsersRolesFinancialClass {
   noCharge,
 }
 
-/// One financially relevant atom on Manage users and roles (`access`).
+/// One financially relevant atom on Manage staff and roles (`access`).
 class HrManageUsersRolesFinancialAtom {
   const HrManageUsersRolesFinancialAtom({
     required this.id,
@@ -30,7 +30,7 @@ class HrManageUsersRolesFinancialAtom {
   final bool mounted;
 }
 
-/// Canonical inventory for `/hr?section=access` (Manage users and roles).
+/// Canonical inventory for `/hr?section=access` (Manage staff and roles).
 ///
 /// Scope: embedded access panel chrome, Staff/Roles/Permissions worklists,
 /// user/role/permission detail dialogs, create/edit/assign/remove mutations,
@@ -43,7 +43,7 @@ abstract final class HrManageUsersRolesBillingInventory {
       <HrManageUsersRolesFinancialAtom>[
         HrManageUsersRolesFinancialAtom(
           id: 'tab_navigate',
-          label: 'Manage users and roles tab',
+          label: 'Manage staff and roles tab',
           financialClass: HrManageUsersRolesFinancialClass.notRequired,
           auditCode: 'NOT_REQUIRED',
         ),
@@ -74,7 +74,7 @@ abstract final class HrManageUsersRolesBillingInventory {
         ),
         HrManageUsersRolesFinancialAtom(
           id: 'row_select_user_detail',
-          label: 'Row select → user detail',
+          label: 'Row select → staff detail',
           financialClass: HrManageUsersRolesFinancialClass.notRequired,
           auditCode: 'NOT_REQUIRED',
         ),
@@ -128,7 +128,7 @@ abstract final class HrManageUsersRolesBillingInventory {
         ),
         HrManageUsersRolesFinancialAtom(
           id: 'edit_user',
-          label: 'Edit user / sync roles & direct permissions',
+          label: 'Edit staff / sync roles & direct permissions',
           financialClass: HrManageUsersRolesFinancialClass.noCharge,
           auditCode: 'NO_CHARGE',
         ),
@@ -228,7 +228,7 @@ abstract final class HrManageUsersRolesBillingInventory {
 
 /// Documents ledger isolation for this tab.
 const String hrManageUsersRolesBillingScopeNote =
-    'Manage users and roles adjusts identity and RBAC only. Staff compensation '
+    'Manage staff and roles adjusts identity and RBAC only. Staff compensation '
     'and consultation-fee fields are payroll/price catalog (NOT_BILLED / '
     'NOT_REQUIRED); patient charges post later via Billing clinical-request '
     'paths. Granting billing permissions must not mutate historical patient '

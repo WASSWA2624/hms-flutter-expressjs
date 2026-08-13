@@ -354,7 +354,7 @@ class _HrWorkspaceContentState extends ConsumerState<_HrWorkspaceContent> {
   /// Search-bar trailing actions after Export (Settings → Export → actions).
   ///
   /// Human resources hosts [ManageUsersPanel] (Facility setup Users CRUD), so
-  /// Create user lives on that panel. Access creates live on the embedded
+  /// Create staff lives on that panel. Access creates live on the embedded
   /// Access panel; payroll runs from staff detail so the desk never guesses a
   /// staff member.
   List<AppSearchBarAction> _searchTrailingActions(

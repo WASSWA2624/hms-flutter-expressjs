@@ -501,7 +501,7 @@ void main() {
   });
 
   testWidgets(
-    'read-only ∩ denial: ManageUsersPanel visible; Create user / Staff actions absent',
+    'read-only ∩ denial: ManageUsersPanel visible; Create staff / Staff actions absent',
     (WidgetTester tester) async {
       final AppAccessPolicy reader = _policy(
         permissions: <AppPermission>{AppPermissions.hrRead},
@@ -521,7 +521,7 @@ void main() {
       expect(find.byType(ManageUsersPanel), findsOneWidget);
       expect(find.text('Ada User'), findsOneWidget);
       expect(find.byTooltip('Filters'), findsOneWidget);
-      expect(_searchAction('Create user'), findsNothing);
+      expect(_searchAction('Create staff'), findsNothing);
       expect(_searchAction('Add staff'), findsNothing);
       expect(find.text('Assign department'), findsNothing);
       expect(find.text('Review profile'), findsNothing);
@@ -535,7 +535,7 @@ void main() {
   );
 
   testWidgets(
-    'full write ∩: Create user, Staff actions, Manage payroll via staff deep-link',
+    'full write ∩: Create staff, Staff actions, Manage payroll via staff deep-link',
     (WidgetTester tester) async {
       final AppAccessPolicy writer = _policy(
         permissions: <AppPermission>{
@@ -557,7 +557,7 @@ void main() {
       );
 
       expect(find.byType(ManageUsersPanel), findsOneWidget);
-      expect(_searchAction('Create user'), findsOneWidget);
+      expect(_searchAction('Create staff'), findsOneWidget);
       expect(_searchAction('Add staff'), findsNothing);
       expect(find.text('Review profile'), findsNothing);
 
@@ -601,7 +601,7 @@ void main() {
         initialLocation: '/hr?section=staff&staff=STF-2',
       );
 
-      expect(_searchAction('Create user'), findsOneWidget);
+      expect(_searchAction('Create staff'), findsOneWidget);
 
       expect(find.text('Staff actions'), findsOneWidget);
       expect(
@@ -623,7 +623,7 @@ void main() {
   );
 
   testWidgets(
-    '∪ roster:write shows Add roster without Create user',
+    '∪ roster:write shows Add roster without Create staff',
     (WidgetTester tester) async {
       final AppAccessPolicy rosterWriter = _policy(
         permissions: <AppPermission>{
@@ -643,7 +643,7 @@ void main() {
         initialLocation: '/hr?section=staff&staff=STF-2',
       );
 
-      expect(_searchAction('Create user'), findsNothing);
+      expect(_searchAction('Create staff'), findsNothing);
       expect(_searchAction('Add staff'), findsNothing);
 
       expect(find.text('Staff actions'), findsOneWidget);
@@ -683,7 +683,7 @@ void main() {
 
       expect(find.byType(AppTabStrip), findsNothing);
       expect(find.byType(ManageUsersPanel), findsNothing);
-      expect(_searchAction('Create user'), findsNothing);
+      expect(_searchAction('Create staff'), findsNothing);
       expect(find.text('Ada User'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
@@ -709,7 +709,7 @@ void main() {
 
       expect(find.byType(AppTabStrip), findsNothing);
       expect(find.byType(ManageUsersPanel), findsNothing);
-      expect(_searchAction('Create user'), findsNothing);
+      expect(_searchAction('Create staff'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
@@ -758,7 +758,7 @@ void main() {
 
     expect(_tab('Staff members'), findsOneWidget);
     expect(find.byType(ManageUsersPanel), findsOneWidget);
-    expect(_searchAction('Create user'), findsOneWidget);
+    expect(_searchAction('Create staff'), findsOneWidget);
     expect(find.textContaining('Ada'), findsWidgets);
     expect(find.textContaining('no access'), findsNothing);
   });
@@ -784,12 +784,12 @@ void main() {
 
     expect(_tab('Staff members'), findsOneWidget);
     expect(find.byType(ManageUsersPanel), findsOneWidget);
-    expect(find.byTooltip('Create user'), findsOneWidget);
+    expect(find.byTooltip('Create staff'), findsOneWidget);
     expect(find.textContaining('Ada'), findsWidgets);
     expect(find.textContaining('no access'), findsNothing);
   });
 
-  testWidgets('authorized search trailing Create user remains available', (
+  testWidgets('authorized search trailing Create staff remains available', (
     WidgetTester tester,
   ) async {
     final AppAccessPolicy writer = _policy(
@@ -807,7 +807,7 @@ void main() {
     );
 
     expect(find.byType(ManageUsersPanel), findsOneWidget);
-    expect(find.byTooltip('Create user'), findsOneWidget);
+    expect(find.byTooltip('Create staff'), findsOneWidget);
     expect(find.byTooltip('Add staff'), findsNothing);
     expect(find.byTooltip('HR activity'), findsNothing);
   });

@@ -380,7 +380,7 @@ class _AppRadioOptionTile<T> extends StatelessWidget {
         weight: AppBorderWeight.medium,
       );
     } else {
-      borderSide = theme.borders.side();
+      borderSide = theme.borders.side(color: theme.borders.inputIdle);
     }
 
     final Color fillColor;

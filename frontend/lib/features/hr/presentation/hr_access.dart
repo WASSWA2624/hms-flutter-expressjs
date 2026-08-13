@@ -121,7 +121,7 @@ const AccessRequirement hrPayrollNestedWriteMatrixRequirement =
 const AccessRequirement hrWorkspaceEntryRequirement = RouteAccessCatalog.hrEntry;
 
 // ---------------------------------------------------------------------------
-// Access tab (Manage users and roles) — embeds admin-access rules
+// Access tab (Manage staff and roles) — embeds admin-access rules
 // ---------------------------------------------------------------------------
 
 /// Admin union for Access tab read (matrix ∪).
@@ -479,19 +479,19 @@ abstract final class HrPayrollDraftsAtomPermissions {
   static const AccessRequirement entry = hrWorkspaceEntryRequirement;
 }
 
-/// Manage users and roles tab atom → permission mapping (inventory + matrix).
+/// Manage staff and roles tab atom → permission mapping (inventory + matrix).
 ///
 /// | Atom | Kind | Gate |
 /// | --- | --- | --- |
-/// | Manage users and roles tab | navigate | read ∩ `hr:read` + ∪ admin |
+/// | Manage staff and roles tab | navigate | read ∩ `hr:read` + ∪ admin |
 /// | Tab-strip / search trailing primary | — | _(none — creates live on panel)_ |
 /// | Panel toggle (Staff / Roles / Permissions) | progressive-disclosure | read |
 /// | Search / filters / columns / pagination / Refresh | read chrome | read |
 /// | Empty / error / retry / tenant-required | read chrome | read |
 /// | Success snackbar / form validation | feedback | update ∩ + source `hr:write` |
-/// | Row select → user / role / permission detail | read | read |
+/// | Row select → staff / role / permission detail | read | read |
 /// | Create staff / role / permission | create | [canCreateHrAccess] |
-/// | Edit user / role / permission; assign; add role/permission | update | [canUpdateHrAccess] |
+/// | Edit staff / role / permission; assign; add role/permission | update | [canUpdateHrAccess] |
 /// | Remove role / remove direct permission | delete | [canDeleteHrAccess] |
 /// | Open staff profile | navigate | read (linked profile) |
 /// | Detail Close | progressive-disclosure | read |

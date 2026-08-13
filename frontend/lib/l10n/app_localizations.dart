@@ -13174,7 +13174,7 @@ abstract class AppLocalizations {
   /// Title for the focused user management dialog.
   ///
   /// In en, this message translates to:
-  /// **'Manage users'**
+  /// **'Manage staff'**
   String get homeManageUsersTitle;
 
   /// Title for the focused roles and permissions management dialog.
@@ -15418,31 +15418,31 @@ abstract class AppLocalizations {
   /// Soft-delete user confirmation dialog title.
   ///
   /// In en, this message translates to:
-  /// **'Delete user'**
+  /// **'Delete staff'**
   String get tenantFacilitySoftDeleteUserTitle;
 
   /// Soft-delete user confirmation body.
   ///
   /// In en, this message translates to:
-  /// **'Soft-delete user \"{name}\"? Hidden from pickers; still visible here to restore.'**
+  /// **'Soft-delete staff \"{name}\"? Hidden from pickers; still visible here to restore.'**
   String tenantFacilitySoftDeleteUserBody(String name);
 
   /// Restore soft-deleted user confirmation dialog title.
   ///
   /// In en, this message translates to:
-  /// **'Restore user'**
+  /// **'Restore staff'**
   String get tenantFacilityRestoreUserTitle;
 
   /// Restore soft-deleted user confirmation body.
   ///
   /// In en, this message translates to:
-  /// **'Restore user \"{name}\"?'**
+  /// **'Restore staff \"{name}\"?'**
   String tenantFacilityRestoreUserBody(String name);
 
   /// Restore soft-deleted user action label in access admin.
   ///
   /// In en, this message translates to:
-  /// **'Restore user'**
+  /// **'Restore staff'**
   String get accessAdminRestoreUserAction;
 
   /// Permanent delete facility confirmation dialog title.
@@ -39152,13 +39152,13 @@ abstract class AppLocalizations {
   /// Toggle label to create a new sign-in account during staff onboarding.
   ///
   /// In en, this message translates to:
-  /// **'Create new user'**
+  /// **'Create new staff'**
   String get hrStaffOnboardingCreateNewUserLabel;
 
   /// Toggle label to link an existing internal user during staff onboarding.
   ///
   /// In en, this message translates to:
-  /// **'Link existing user'**
+  /// **'Link existing staff'**
   String get hrStaffOnboardingLinkExistingUserLabel;
 
   /// Hint for the facility-scoped user picker in staff onboarding.
@@ -42158,13 +42158,13 @@ abstract class AppLocalizations {
   /// Permissions section body in the HR staff details dialog.
   ///
   /// In en, this message translates to:
-  /// **'Read-only view of roles and effective access for this linked user.'**
+  /// **'Read-only view of roles and effective access for this linked staff.'**
   String get hrStaffPermissionsSectionBody;
 
   /// Guidance pointing HR to the Access tab for permission edits.
   ///
   /// In en, this message translates to:
-  /// **'To grant, revoke, or fine-tune permissions, open Manage users and roles.'**
+  /// **'To grant, revoke, or fine-tune permissions, open Manage staff and roles.'**
   String get hrStaffPermissionsManageHint;
 
   /// Chip label when effective permissions are truncated.
@@ -42182,7 +42182,7 @@ abstract class AppLocalizations {
   /// Header action opening the linked user permissions surface from staff details.
   ///
   /// In en, this message translates to:
-  /// **'Manage user permissions'**
+  /// **'Manage staff permissions'**
   String get hrManageUserPermissionsAction;
 
   /// Empty body for the staff roles section.
@@ -42200,7 +42200,7 @@ abstract class AppLocalizations {
   /// Empty body for the staff permissions section.
   ///
   /// In en, this message translates to:
-  /// **'Effective permissions appear here when the linked user account has access grants.'**
+  /// **'Effective permissions appear here when the linked staff account has access grants.'**
   String get hrStaffPermissionsEmptyBody;
 
   /// Title for the staff details print preview dialog.
@@ -42416,19 +42416,19 @@ abstract class AppLocalizations {
   /// Human resources workspace text for hrUserIdLabel.
   ///
   /// In en, this message translates to:
-  /// **'User ID'**
+  /// **'Staff ID'**
   String get hrUserIdLabel;
 
   /// Label for the user account linked to a staff profile.
   ///
   /// In en, this message translates to:
-  /// **'Linked user'**
+  /// **'Linked staff'**
   String get hrLinkedUserLabel;
 
   /// Label for selecting an existing user when onboarding staff.
   ///
   /// In en, this message translates to:
-  /// **'Link user account'**
+  /// **'Link staff account'**
   String get hrSelectUserLabel;
 
   /// Action to create a new user account during staff onboarding.
@@ -42440,7 +42440,7 @@ abstract class AppLocalizations {
   /// Dialog title for creating a user account from HR.
   ///
   /// In en, this message translates to:
-  /// **'Create user account'**
+  /// **'Create staff account'**
   String get hrCreateUserDialogTitle;
 
   /// Action to assign a role to a linked user.
@@ -42620,13 +42620,13 @@ abstract class AppLocalizations {
   /// Deep link to access admin for advanced permission editing.
   ///
   /// In en, this message translates to:
-  /// **'Open in Users/Roles'**
+  /// **'Open in Staff/Roles'**
   String get hrOpenAccessAdminAction;
 
   /// Opens the in-HR access management workspace.
   ///
   /// In en, this message translates to:
-  /// **'Manage users and roles'**
+  /// **'Manage staff and roles'**
   String get hrManageAccessAction;
 
   /// Title for the HR access management dialog.
@@ -43232,7 +43232,7 @@ abstract class AppLocalizations {
   /// Edit user action in HR access workspace.
   ///
   /// In en, this message translates to:
-  /// **'Edit user'**
+  /// **'Edit staff account'**
   String get hrAccessEditUserAction;
 
   /// Edit role action in HR access workspace.
@@ -43328,7 +43328,7 @@ abstract class AppLocalizations {
   /// Title for the HR staff access user detail dialog.
   ///
   /// In en, this message translates to:
-  /// **'User account'**
+  /// **'Staff account'**
   String get hrAccessUserDetailTitle;
 
   /// Action to open a user detail dialog from the staff access list.
@@ -44186,13 +44186,13 @@ abstract class AppLocalizations {
   /// Onboarding option to link an existing user account.
   ///
   /// In en, this message translates to:
-  /// **'Link existing user'**
+  /// **'Link existing staff'**
   String get hrOnboardingModeExistingUser;
 
   /// Onboarding option to create a new user account.
   ///
   /// In en, this message translates to:
-  /// **'Create new user'**
+  /// **'Create new staff'**
   String get hrOnboardingModeCreateUser;
 
   /// Human resources workspace text for hrWednesdayLabel.
@@ -48779,7 +48779,7 @@ abstract class AppLocalizations {
   /// Access admin empty state body.
   ///
   /// In en, this message translates to:
-  /// **'Adjust filters or create users and roles.'**
+  /// **'Adjust filters or create staff and roles.'**
   String get accessAdminEmptyBody;
 
   /// Access admin table ID column.
@@ -48893,7 +48893,7 @@ abstract class AppLocalizations {
   /// Next-action column header for user rows on the access admin workspace.
   ///
   /// In en, this message translates to:
-  /// **'Manage user'**
+  /// **'Manage staff'**
   String get accessAdminManageUserAction;
 
   /// Plan column header for module entitlement rows.
@@ -48983,19 +48983,19 @@ abstract class AppLocalizations {
   /// Access admin create user action.
   ///
   /// In en, this message translates to:
-  /// **'Create user'**
+  /// **'Create staff'**
   String get accessAdminCreateUserAction;
 
   /// Access admin edit user action.
   ///
   /// In en, this message translates to:
-  /// **'Edit user'**
+  /// **'Edit staff account'**
   String get accessAdminEditUserAction;
 
   /// Access admin delete user action.
   ///
   /// In en, this message translates to:
-  /// **'Delete user'**
+  /// **'Delete staff'**
   String get accessAdminDeleteUserAction;
 
   /// Access admin view user detail action.
@@ -49031,7 +49031,7 @@ abstract class AppLocalizations {
   /// Section title for user profile fields.
   ///
   /// In en, this message translates to:
-  /// **'User details'**
+  /// **'Staff details'**
   String get accessAdminCreateUserDetailsSectionTitle;
 
   /// Section description for user profile fields.
@@ -49079,7 +49079,7 @@ abstract class AppLocalizations {
   /// Message when no facilities exist for the selected tenant.
   ///
   /// In en, this message translates to:
-  /// **'Create a facility for this tenant before adding users.'**
+  /// **'Create a facility for this tenant before adding staff.'**
   String get accessAdminCreateUserNoFacilitiesMessage;
 
   /// Title when no roles exist for the selected tenant.
@@ -49091,7 +49091,7 @@ abstract class AppLocalizations {
   /// Message when no roles exist for the selected tenant.
   ///
   /// In en, this message translates to:
-  /// **'Create roles for this organization before assigning them to users.'**
+  /// **'Create roles for this organization before assigning them to staff.'**
   String get accessAdminCreateUserNoRolesMessage;
 
   /// Optional password field label when editing a user.
@@ -49121,7 +49121,7 @@ abstract class AppLocalizations {
   /// Section description for assigned roles in the user detail dialog.
   ///
   /// In en, this message translates to:
-  /// **'Roles set the baseline permissions for this user.'**
+  /// **'Roles set the baseline permissions for this staff member.'**
   String get accessAdminUserDetailRolesSectionDescription;
 
   /// Section description for permissions in the user detail dialog.
@@ -49139,13 +49139,13 @@ abstract class AppLocalizations {
   /// Empty state when a user has no assigned roles.
   ///
   /// In en, this message translates to:
-  /// **'No roles are assigned to this user yet.'**
+  /// **'No roles are assigned to this staff member yet.'**
   String get accessAdminUserDetailNoRolesMessage;
 
   /// Empty state when a user has no effective permissions.
   ///
   /// In en, this message translates to:
-  /// **'No permissions are currently effective for this user.'**
+  /// **'No permissions are currently effective for this staff member.'**
   String get accessAdminUserDetailNoPermissionsMessage;
 
   /// Action to assign an additional role on the user access panel.
@@ -49495,7 +49495,7 @@ abstract class AppLocalizations {
   /// Label for the number of users assigned to a role.
   ///
   /// In en, this message translates to:
-  /// **'Assigned users'**
+  /// **'Assigned staff'**
   String get accessAdminRoleDetailUsersLabel;
 
   /// Validation message when no permissions are selected for a role.
@@ -49705,13 +49705,13 @@ abstract class AppLocalizations {
   /// Title for user similarity review dialog when matches exist.
   ///
   /// In en, this message translates to:
-  /// **'Similar user found'**
+  /// **'Similar staff found'**
   String get accessAdminSimilarUserDialogTitle;
 
   /// Title for user similarity review dialog when no matches exist.
   ///
   /// In en, this message translates to:
-  /// **'No similar user found'**
+  /// **'No similar staff found'**
   String get accessAdminNoSimilarUserDialogTitle;
 
   /// Banner title when an exact user email or phone conflict is found.
@@ -49723,13 +49723,13 @@ abstract class AppLocalizations {
   /// Banner title when similar users are found.
   ///
   /// In en, this message translates to:
-  /// **'Potential duplicate user'**
+  /// **'Potential duplicate staff'**
   String get accessAdminSimilarUserWarningTitle;
 
   /// Banner body when similar users are found.
   ///
   /// In en, this message translates to:
-  /// **'Review the similar users below before saving.'**
+  /// **'Review the similar staff below before saving.'**
   String get accessAdminSimilarUserWarningBody;
 
   /// Banner body showing the closest user similarity score.
@@ -49741,7 +49741,7 @@ abstract class AppLocalizations {
   /// Heading for an existing user match card.
   ///
   /// In en, this message translates to:
-  /// **'Existing user'**
+  /// **'Existing staff'**
   String get accessAdminSimilarUserExistingHeading;
 
   /// Heading for user field comparison table.
@@ -49795,13 +49795,13 @@ abstract class AppLocalizations {
   /// Banner body when no similar users are found.
   ///
   /// In en, this message translates to:
-  /// **'Review the proposed user details below. No similar users were found in this organization.'**
+  /// **'Review the proposed staff details below. No similar staff were found in this organization.'**
   String get accessAdminNoSimilarUserDialogBody;
 
   /// Heading for the proposed user card in similarity review.
   ///
   /// In en, this message translates to:
-  /// **'Proposed user'**
+  /// **'Proposed staff'**
   String get accessAdminSimilarUserProposedHeading;
 
   /// Confirm create despite similar users.
@@ -49831,7 +49831,7 @@ abstract class AppLocalizations {
   /// Open an existing similar user instead of creating.
   ///
   /// In en, this message translates to:
-  /// **'Use existing user'**
+  /// **'Use existing staff'**
   String get accessAdminUseExistingUserAction;
 
   /// Action to assign permissions to a role from details when none are assigned.
@@ -49897,13 +49897,13 @@ abstract class AppLocalizations {
   /// Access admin deactivate user action.
   ///
   /// In en, this message translates to:
-  /// **'Deactivate user'**
+  /// **'Deactivate staff'**
   String get accessAdminDeactivateAction;
 
   /// Access admin activate user action.
   ///
   /// In en, this message translates to:
-  /// **'Activate user'**
+  /// **'Activate staff'**
   String get accessAdminActivateAction;
 
   /// Access admin reset demo password action.
@@ -49927,7 +49927,7 @@ abstract class AppLocalizations {
   /// Confirmation body when soft-deleting a role that is assigned to users.
   ///
   /// In en, this message translates to:
-  /// **'Role \"{name}\" is assigned to {userCount, plural, =1{1 user} other{{userCount} users}}. Soft-delete detaches it from {userCount, plural, =1{that user} other{those users}}; the role stays listed so you can restore it.'**
+  /// **'Role \"{name}\" is assigned to {userCount, plural, =1{1 staff member} other{{userCount} staff}}. Soft-delete detaches it from {userCount, plural, =1{that staff member} other{those staff}}; the role stays listed so you can restore it.'**
   String accessAdminDeleteRoleAssignedBody(String name, int userCount);
 
   /// Soft-delete confirmation body for a role with no user assignments.
@@ -49939,19 +49939,19 @@ abstract class AppLocalizations {
   /// Soft-delete confirmation body for a role assigned to users.
   ///
   /// In en, this message translates to:
-  /// **'Role \"{name}\" is assigned to {userCount, plural, =1{1 user} other{{userCount} users}}. Soft-delete detaches it from {userCount, plural, =1{that user} other{those users}}; the role stays listed so you can restore it.'**
+  /// **'Role \"{name}\" is assigned to {userCount, plural, =1{1 staff member} other{{userCount} staff}}. Soft-delete detaches it from {userCount, plural, =1{that staff member} other{those staff}}; the role stays listed so you can restore it.'**
   String accessAdminSoftDeleteRoleAssignedBody(String name, int userCount);
 
   /// Warning before permanently deleting a soft-deleted role.
   ///
   /// In en, this message translates to:
-  /// **'WARNING: Permanently deleting \"{name}\" will remove this role from every user it is attached to, erase related permission links, and delete the role forever. This cannot be recovered.'**
+  /// **'WARNING: Permanently deleting \"{name}\" will remove this role from every staff member it is attached to, erase related permission links, and delete the role forever. This cannot be recovered.'**
   String accessAdminPermanentDeleteRoleWarningBody(String name);
 
   /// Final confirmation body for permanent role delete.
   ///
   /// In en, this message translates to:
-  /// **'Final confirmation: permanently delete role \"{name}\", remove it from all attached users, and erase related permission links? This action is irreversible.'**
+  /// **'Final confirmation: permanently delete role \"{name}\", remove it from all attached staff, and erase related permission links? This action is irreversible.'**
   String accessAdminPermanentDeleteRoleConfirmationBody(String name);
 
   /// Access admin tenant context required title.
@@ -49963,7 +49963,7 @@ abstract class AppLocalizations {
   /// Access admin tenant context required body.
   ///
   /// In en, this message translates to:
-  /// **'Select a tenant and facility before managing users and roles.'**
+  /// **'Select a tenant and facility before managing staff and roles.'**
   String get accessAdminTenantContextRequiredBody;
 
   /// Settings link to access admin workspace.

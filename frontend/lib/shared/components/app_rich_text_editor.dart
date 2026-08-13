@@ -479,7 +479,7 @@ class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
         widget.showToolbar && widget.tools.isNotEmpty && widget.enabled;
     final Color borderColor = widget.errorText != null
         ? colors.error
-        : theme.borders.faint;
+        : theme.borders.inputIdle;
     final OutlineInputBorder fieldBorder = OutlineInputBorder(
       borderRadius: BorderRadius.zero,
       borderSide: theme.borders.side(color: borderColor),
@@ -642,7 +642,7 @@ class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
             border: fieldBorder,
             enabledBorder: fieldBorder,
             disabledBorder: fieldBorder.copyWith(
-              borderSide: theme.borders.side(),
+              borderSide: theme.borders.side(tone: AppBorderTone.disabled),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.zero,

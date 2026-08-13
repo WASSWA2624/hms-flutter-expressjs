@@ -467,7 +467,7 @@ void main() {
       );
 
       expect(find.byType(ManageUsersPanel), findsOneWidget);
-      expect(_searchAction('Create user'), findsNothing);
+      expect(_searchAction('Create staff'), findsNothing);
       expect(_searchAction('Add staff'), findsNothing);
       expect(find.textContaining('Receive payment'), findsNothing);
 
@@ -491,7 +491,7 @@ void main() {
       expectFlatSections(tester);
     });
 
-    testWidgets('Create user primary is present without Billing chrome', (
+    testWidgets('Create staff primary is present without Billing chrome', (
       WidgetTester tester,
     ) async {
       await _pumpStaffTab(
@@ -507,7 +507,7 @@ void main() {
       );
 
       expect(find.byType(ManageUsersPanel), findsOneWidget);
-      expect(_searchAction('Create user'), findsOneWidget);
+      expect(_searchAction('Create staff'), findsOneWidget);
       expect(_searchAction('Add staff'), findsNothing);
       expect(find.textContaining('Receive payment'), findsNothing);
       expect(find.textContaining('Issue invoice'), findsNothing);

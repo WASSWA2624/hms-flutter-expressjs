@@ -7010,7 +7010,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeFacilityManagementTitle => 'Facility management';
 
   @override
-  String get homeManageUsersTitle => 'Manage users';
+  String get homeManageUsersTitle => 'Manage staff';
 
   @override
   String get homeManageRolesPermissionsTitle => 'Manage roles and permissions';
@@ -8352,23 +8352,23 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get tenantFacilitySoftDeleteUserTitle => 'Delete user';
+  String get tenantFacilitySoftDeleteUserTitle => 'Delete staff';
 
   @override
   String tenantFacilitySoftDeleteUserBody(String name) {
-    return 'Soft-delete user \"$name\"? Hidden from pickers; still visible here to restore.';
+    return 'Soft-delete staff \"$name\"? Hidden from pickers; still visible here to restore.';
   }
 
   @override
-  String get tenantFacilityRestoreUserTitle => 'Restore user';
+  String get tenantFacilityRestoreUserTitle => 'Restore staff';
 
   @override
   String tenantFacilityRestoreUserBody(String name) {
-    return 'Restore user \"$name\"?';
+    return 'Restore staff \"$name\"?';
   }
 
   @override
-  String get accessAdminRestoreUserAction => 'Restore user';
+  String get accessAdminRestoreUserAction => 'Restore staff';
 
   @override
   String get tenantFacilityPermanentDeleteFacilityConfirmationTitle =>
@@ -21165,10 +21165,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrStaffOnboardingEmploymentSectionTitle => 'Employment';
 
   @override
-  String get hrStaffOnboardingCreateNewUserLabel => 'Create new user';
+  String get hrStaffOnboardingCreateNewUserLabel => 'Create new staff';
 
   @override
-  String get hrStaffOnboardingLinkExistingUserLabel => 'Link existing user';
+  String get hrStaffOnboardingLinkExistingUserLabel => 'Link existing staff';
 
   @override
   String get hrStaffOnboardingSelectUserHint => 'Search staff by name or email';
@@ -22778,11 +22778,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrStaffPermissionsSectionBody =>
-      'Read-only view of roles and effective access for this linked user.';
+      'Read-only view of roles and effective access for this linked staff.';
 
   @override
   String get hrStaffPermissionsManageHint =>
-      'To grant, revoke, or fine-tune permissions, open Manage users and roles.';
+      'To grant, revoke, or fine-tune permissions, open Manage staff and roles.';
 
   @override
   String hrStaffPermissionsMoreLabel(int count) {
@@ -22793,7 +22793,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrManageRolesAction => 'Manage roles';
 
   @override
-  String get hrManageUserPermissionsAction => 'Manage user permissions';
+  String get hrManageUserPermissionsAction => 'Manage staff permissions';
 
   @override
   String get hrStaffRolesEmptyBody =>
@@ -22804,7 +22804,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrStaffPermissionsEmptyBody =>
-      'Effective permissions appear here when the linked user account has access grants.';
+      'Effective permissions appear here when the linked staff account has access grants.';
 
   @override
   String get hrStaffPrintDialogTitle => 'Print staff details';
@@ -22915,19 +22915,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrClearRoomsAction => 'Clear';
 
   @override
-  String get hrUserIdLabel => 'User ID';
+  String get hrUserIdLabel => 'Staff ID';
 
   @override
-  String get hrLinkedUserLabel => 'Linked user';
+  String get hrLinkedUserLabel => 'Linked staff';
 
   @override
-  String get hrSelectUserLabel => 'Link user account';
+  String get hrSelectUserLabel => 'Link staff account';
 
   @override
   String get hrCreateUserAction => 'Create staff';
 
   @override
-  String get hrCreateUserDialogTitle => 'Create user account';
+  String get hrCreateUserDialogTitle => 'Create staff account';
 
   @override
   String get hrAssignRoleAction => 'Assign Role';
@@ -23036,10 +23036,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrNoModuleAccessLabel => 'No active module entitlements.';
 
   @override
-  String get hrOpenAccessAdminAction => 'Open in Users/Roles';
+  String get hrOpenAccessAdminAction => 'Open in Staff/Roles';
 
   @override
-  String get hrManageAccessAction => 'Manage users and roles';
+  String get hrManageAccessAction => 'Manage staff and roles';
 
   @override
   String get hrAccessWorkspaceTitle => 'Staff access';
@@ -23353,7 +23353,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrAccessCreatePermissionAction => 'Create permission';
 
   @override
-  String get hrAccessEditUserAction => 'Edit user';
+  String get hrAccessEditUserAction => 'Edit staff account';
 
   @override
   String get hrAccessEditRoleAction => 'Edit role';
@@ -23439,7 +23439,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get hrAccessUserDetailTitle => 'User account';
+  String get hrAccessUserDetailTitle => 'Staff account';
 
   @override
   String get hrAccessViewUserAction => 'View';
@@ -23895,10 +23895,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get hrEmailLabel => 'Email';
 
   @override
-  String get hrOnboardingModeExistingUser => 'Link existing user';
+  String get hrOnboardingModeExistingUser => 'Link existing staff';
 
   @override
-  String get hrOnboardingModeCreateUser => 'Create new user';
+  String get hrOnboardingModeCreateUser => 'Create new staff';
 
   @override
   String get hrWednesdayLabel => 'Wednesday';
@@ -26522,7 +26522,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accessAdminEmptyBody =>
-      'Adjust filters or create users and roles.';
+      'Adjust filters or create staff and roles.';
 
   @override
   String get accessAdminColumnId => 'ID';
@@ -26579,7 +26579,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminColumnFacility => 'Facility';
 
   @override
-  String get accessAdminManageUserAction => 'Manage user';
+  String get accessAdminManageUserAction => 'Manage staff';
 
   @override
   String get accessAdminEntitlementPlanColumnLabel => 'Plan';
@@ -26624,13 +26624,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminDetailTitle => 'Access record';
 
   @override
-  String get accessAdminCreateUserAction => 'Create user';
+  String get accessAdminCreateUserAction => 'Create staff';
 
   @override
-  String get accessAdminEditUserAction => 'Edit user';
+  String get accessAdminEditUserAction => 'Edit staff account';
 
   @override
-  String get accessAdminDeleteUserAction => 'Delete user';
+  String get accessAdminDeleteUserAction => 'Delete staff';
 
   @override
   String get accessAdminViewUserAction => 'View';
@@ -26652,7 +26652,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Select tenant and facility above to continue.';
 
   @override
-  String get accessAdminCreateUserDetailsSectionTitle => 'User details';
+  String get accessAdminCreateUserDetailsSectionTitle => 'Staff details';
 
   @override
   String get accessAdminCreateUserDetailsSectionDescription =>
@@ -26683,14 +26683,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accessAdminCreateUserNoFacilitiesMessage =>
-      'Create a facility for this tenant before adding users.';
+      'Create a facility for this tenant before adding staff.';
 
   @override
   String get accessAdminCreateUserNoRolesTitle => 'No roles available';
 
   @override
   String get accessAdminCreateUserNoRolesMessage =>
-      'Create roles for this organization before assigning them to users.';
+      'Create roles for this organization before assigning them to staff.';
 
   @override
   String get accessAdminPasswordOptionalLabel => 'New password (optional)';
@@ -26708,7 +26708,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accessAdminUserDetailRolesSectionDescription =>
-      'Roles set the baseline permissions for this user.';
+      'Roles set the baseline permissions for this staff member.';
 
   @override
   String get accessAdminUserDetailPermissionsSectionDescription =>
@@ -26719,11 +26719,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accessAdminUserDetailNoRolesMessage =>
-      'No roles are assigned to this user yet.';
+      'No roles are assigned to this staff member yet.';
 
   @override
   String get accessAdminUserDetailNoPermissionsMessage =>
-      'No permissions are currently effective for this user.';
+      'No permissions are currently effective for this staff member.';
 
   @override
   String get accessAdminUserAccessAddRoleAction => 'Add role';
@@ -26958,7 +26958,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'This role has no permissions assigned yet.';
 
   @override
-  String get accessAdminRoleDetailUsersLabel => 'Assigned users';
+  String get accessAdminRoleDetailUsersLabel => 'Assigned staff';
 
   @override
   String get accessAdminRolePermissionsRequired =>
@@ -27075,20 +27075,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminUseExistingRoleAction => 'Use existing role';
 
   @override
-  String get accessAdminSimilarUserDialogTitle => 'Similar user found';
+  String get accessAdminSimilarUserDialogTitle => 'Similar staff found';
 
   @override
-  String get accessAdminNoSimilarUserDialogTitle => 'No similar user found';
+  String get accessAdminNoSimilarUserDialogTitle => 'No similar staff found';
 
   @override
   String get accessAdminUserContactAlreadyInUse => 'Contact already in use';
 
   @override
-  String get accessAdminSimilarUserWarningTitle => 'Potential duplicate user';
+  String get accessAdminSimilarUserWarningTitle => 'Potential duplicate staff';
 
   @override
   String get accessAdminSimilarUserWarningBody =>
-      'Review the similar users below before saving.';
+      'Review the similar staff below before saving.';
 
   @override
   String accessAdminSimilarUserReviewBannerBody(int score) {
@@ -27096,7 +27096,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get accessAdminSimilarUserExistingHeading => 'Existing user';
+  String get accessAdminSimilarUserExistingHeading => 'Existing staff';
 
   @override
   String get accessAdminSimilarUserComparisonHeading => 'Field comparison';
@@ -27126,10 +27126,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accessAdminNoSimilarUserDialogBody =>
-      'Review the proposed user details below. No similar users were found in this organization.';
+      'Review the proposed staff details below. No similar staff were found in this organization.';
 
   @override
-  String get accessAdminSimilarUserProposedHeading => 'Proposed user';
+  String get accessAdminSimilarUserProposedHeading => 'Proposed staff';
 
   @override
   String get accessAdminProceedCreateUserAction => 'Create anyway';
@@ -27144,7 +27144,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminContinueEditUserAction => 'Continue edit';
 
   @override
-  String get accessAdminUseExistingUserAction => 'Use existing user';
+  String get accessAdminUseExistingUserAction => 'Use existing staff';
 
   @override
   String get accessAdminAddRolePermissionsAction => 'Add permissions';
@@ -27180,10 +27180,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'This role unlocks OPD/IPD clinical workflow actions.';
 
   @override
-  String get accessAdminDeactivateAction => 'Deactivate user';
+  String get accessAdminDeactivateAction => 'Deactivate staff';
 
   @override
-  String get accessAdminActivateAction => 'Activate user';
+  String get accessAdminActivateAction => 'Activate staff';
 
   @override
   String get accessAdminResetDemoPasswordAction => 'Reset demo password';
@@ -27201,14 +27201,14 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       userCount,
       locale: localeName,
-      other: '$userCount users',
-      one: '1 user',
+      other: '$userCount staff',
+      one: '1 staff member',
     );
     String _temp1 = intl.Intl.pluralLogic(
       userCount,
       locale: localeName,
-      other: 'those users',
-      one: 'that user',
+      other: 'those staff',
+      one: 'that staff member',
     );
     return 'Role \"$name\" is assigned to $_temp0. Soft-delete detaches it from $_temp1; the role stays listed so you can restore it.';
   }
@@ -27223,26 +27223,26 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       userCount,
       locale: localeName,
-      other: '$userCount users',
-      one: '1 user',
+      other: '$userCount staff',
+      one: '1 staff member',
     );
     String _temp1 = intl.Intl.pluralLogic(
       userCount,
       locale: localeName,
-      other: 'those users',
-      one: 'that user',
+      other: 'those staff',
+      one: 'that staff member',
     );
     return 'Role \"$name\" is assigned to $_temp0. Soft-delete detaches it from $_temp1; the role stays listed so you can restore it.';
   }
 
   @override
   String accessAdminPermanentDeleteRoleWarningBody(String name) {
-    return 'WARNING: Permanently deleting \"$name\" will remove this role from every user it is attached to, erase related permission links, and delete the role forever. This cannot be recovered.';
+    return 'WARNING: Permanently deleting \"$name\" will remove this role from every staff member it is attached to, erase related permission links, and delete the role forever. This cannot be recovered.';
   }
 
   @override
   String accessAdminPermanentDeleteRoleConfirmationBody(String name) {
-    return 'Final confirmation: permanently delete role \"$name\", remove it from all attached users, and erase related permission links? This action is irreversible.';
+    return 'Final confirmation: permanently delete role \"$name\", remove it from all attached staff, and erase related permission links? This action is irreversible.';
   }
 
   @override
@@ -27250,7 +27250,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accessAdminTenantContextRequiredBody =>
-      'Select a tenant and facility before managing users and roles.';
+      'Select a tenant and facility before managing staff and roles.';
 
   @override
   String get settingsAccessAdminActionTitle => 'Users and access';

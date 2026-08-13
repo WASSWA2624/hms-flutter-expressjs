@@ -43,8 +43,12 @@ void main() {
       );
       final OutlineInputBorder enabledBorder =
           theme.inputDecorationTheme.enabledBorder! as OutlineInputBorder;
-      expect(enabledBorder.borderSide.color, theme.borders.faint);
+      expect(enabledBorder.borderSide.color, theme.borders.inputIdle);
       expect(enabledBorder.borderSide.width, theme.borders.thin);
+      final OutlineInputBorder focusedBorder =
+          theme.inputDecorationTheme.focusedBorder! as OutlineInputBorder;
+      expect(focusedBorder.borderSide.color, theme.colorScheme.primary);
+      expect(focusedBorder.borderSide.width, theme.borders.medium);
       expect(theme.chipTheme.side?.color, theme.borders.faint);
       expect(theme.chipTheme.side?.width, theme.borders.thin);
       expect(
@@ -143,7 +147,7 @@ void main() {
       expect(theme.borders.thick, 2);
       expect(theme.borders.faint, AppLightThemePalette.palette.disabledBorderColor);
       expect(theme.borders.subtle, AppLightThemePalette.palette.borderColor);
-      expect(theme.borders.focused, AppLightThemePalette.palette.focusedBorderColor);
+      expect(theme.borders.focused, theme.colorScheme.primary);
       expect(theme.borders.selected, theme.colorScheme.primary);
       expect(theme.borders.side().width, theme.borders.thin);
       expect(theme.borders.side().color, theme.borders.faint);

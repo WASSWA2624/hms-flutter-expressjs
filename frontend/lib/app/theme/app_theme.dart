@@ -54,7 +54,7 @@ abstract final class AppTheme {
       faint: palette.disabledBorderColor,
       subtle: palette.borderColor,
       strong: colorScheme.outline,
-      focused: palette.focusedBorderColor,
+      focused: colorScheme.primary,
       selected: colorScheme.primary,
       disabled: palette.disabledBorderColor,
       error: statusColors.error,
@@ -69,8 +69,7 @@ abstract final class AppTheme {
     };
     final OutlineInputBorder inputBorder = OutlineInputBorder(
       borderRadius: controlRadius,
-      // Resting controls: thin + faint (default AppBorderTokens.side).
-      borderSide: borders.side(),
+      borderSide: borders.side(color: borders.inputIdle),
     );
     final OutlineInputBorder focusedInputBorder = OutlineInputBorder(
       borderRadius: controlRadius,

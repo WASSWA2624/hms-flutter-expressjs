@@ -123,7 +123,7 @@ void main() {
     expect(find.text('Overview'), findsOneWidget);
     expect(find.text('EMP-AVERY'), findsOneWidget);
     expect(find.text('Registered Nurse'), findsOneWidget);
-    expect(find.text('Linked user'), findsOneWidget);
+    expect(find.text('Linked staff'), findsOneWidget);
     expect(find.text('USR-1'), findsOneWidget);
     expect(find.text('avery@example.com'), findsOneWidget);
     expect(find.text('Avery Demo'), findsNothing);

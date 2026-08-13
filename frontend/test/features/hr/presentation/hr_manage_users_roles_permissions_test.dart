@@ -492,7 +492,7 @@ void main() {
         accessPolicy: policy,
       );
 
-      expect(_tab('Manage users and roles'), findsOneWidget);
+      expect(_tab('Manage staff and roles'), findsOneWidget);
       expect(find.text('HR Admin'), findsOneWidget);
       expect(find.text('Create staff'), findsOneWidget);
       expect(find.text('Refresh'), findsOneWidget);
@@ -518,7 +518,7 @@ void main() {
         accessPolicy: policy,
       );
 
-      expect(_tab('Manage users and roles'), findsNothing);
+      expect(_tab('Manage staff and roles'), findsNothing);
       expect(find.text('Create staff'), findsNothing);
       expect(find.byType(HrAccessWorkspacePanel), findsNothing);
       // Falls back to an authorized section (staff directory).
@@ -528,7 +528,7 @@ void main() {
   );
 
   testWidgets(
-    'facility ∪ read shows panel; create ∩ tenant:admin absent',
+    'facility ∪ + hr:write: Access create staff available (same write gate)',
     (WidgetTester tester) async {
       final AppAccessPolicy policy = _policy(
         permissions: <AppPermission>{
@@ -545,16 +545,16 @@ void main() {
         accessPolicy: policy,
       );
 
-      expect(_tab('Manage users and roles'), findsOneWidget);
+      expect(_tab('Manage staff and roles'), findsOneWidget);
       expect(find.text('HR Admin'), findsOneWidget);
-      expect(find.text('Create staff'), findsNothing);
+      expect(find.text('Create staff'), findsOneWidget);
       expect(find.text('Create role'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'facility ∪ + hr:write: detail shows Remove role; Edit user absent',
+    'facility ∪ + hr:write: detail shows Edit staff account, Add role, Remove role',
     (WidgetTester tester) async {
       final AppAccessPolicy policy = _policy(
         permissions: <AppPermission>{
@@ -574,15 +574,15 @@ void main() {
       await tester.tap(find.text('HR Admin'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Edit user'), findsNothing);
-      expect(find.text('Add role'), findsNothing);
+      expect(find.text('Edit staff account'), findsOneWidget);
+      expect(find.text('Add role'), findsOneWidget);
       expect(find.text('Remove role'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
     },
   );
 
   testWidgets(
-    'tenant create ∩: detail Edit user present; Remove role present',
+    'tenant create ∩: detail Edit staff account present; Remove role present',
     (WidgetTester tester) async {
       final AppAccessPolicy policy = _policy(
         permissions: <AppPermission>{
@@ -601,7 +601,7 @@ void main() {
       await tester.tap(find.text('HR Admin'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Edit user'), findsOneWidget);
+      expect(find.text('Edit staff account'), findsOneWidget);
       expect(find.text('Add role'), findsOneWidget);
       expect(find.text('Remove role'), findsOneWidget);
       expect(find.textContaining('no access'), findsNothing);
@@ -630,7 +630,7 @@ void main() {
       await tester.tap(find.text('HR Admin'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Edit user'), findsNothing);
+      expect(find.text('Edit staff account'), findsNothing);
       expect(find.text('Add role'), findsNothing);
       expect(find.text('Remove role'), findsNothing);
       expect(find.textContaining('no access'), findsNothing);
