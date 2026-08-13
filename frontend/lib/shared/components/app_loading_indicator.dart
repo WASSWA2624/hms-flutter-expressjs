@@ -404,7 +404,9 @@ class _AnimatedLogoMark extends StatelessWidget {
     final double scale = 0.96 + (0.04 * breath);
     final double outerOpacity = 0.18 + (0.22 * breath);
     final double midOpacity = 0.28 + (0.24 * (1 - breath));
-    final double markSize = logoSize + (ringPadding * 2);
+    final double logoWidth = logoSize * AppLogo.defaultAspectRatio;
+    final double markSize =
+        math.max(logoWidth, logoSize) + (ringPadding * 2);
 
     return SizedBox.square(
       dimension: markSize + 16,

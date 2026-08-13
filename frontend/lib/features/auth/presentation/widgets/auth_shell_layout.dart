@@ -101,7 +101,7 @@ class _AuthBrandHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final double logoSize = isLarge ? 56 : 48;
+    final double logoSize = isLarge ? 112 : 88;
 
     final Widget logo = AppLogo(size: logoSize);
 

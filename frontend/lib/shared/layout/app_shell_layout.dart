@@ -3,7 +3,7 @@
 /// Sidebar widths follow [`layouts.mdc`](../../../.cursor/layouts.mdc):
 /// collapsed `64–80`, expanded `220–280`.
 abstract final class AppShellLayout {
-  static const double headerHeight = 44;
+  static const double headerHeight = 56;
 
   static const double collapsedSidebarWidth = 72;
   static const double defaultSidebarWidth = 240;

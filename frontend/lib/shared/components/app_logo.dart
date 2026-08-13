@@ -6,22 +6,32 @@ class AppLogo extends StatelessWidget {
     this.assetPath = _defaultLogoAssetPath,
     this.icon = Icons.local_hospital_outlined,
     this.backgroundColor,
+    /// Width ÷ height for the wordmark asset. Keep in sync with logo art.
+    this.aspectRatio = defaultAspectRatio,
     super.key,
   });
 
+  /// Default mark height.
   final double size;
+
+  /// Wordmark is wider than tall; sizing by height keeps it readable.
+  static const double defaultAspectRatio = 1.6;
+
   final String assetPath;
   final IconData icon;
   final Color? backgroundColor;
+  final double aspectRatio;
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final double width = size * aspectRatio;
 
     final Widget image = Image.asset(
       assetPath,
       fit: BoxFit.contain,
+      filterQuality: FilterQuality.medium,
       errorBuilder: (_, _, _) {
         return ColoredBox(
           color: colorScheme.primaryContainer,
@@ -34,8 +44,9 @@ class AppLogo extends StatelessWidget {
       },
     );
 
-    return SizedBox.square(
-      dimension: size,
+    return SizedBox(
+      width: width,
+      height: size,
       child: backgroundColor == null
           ? image
           : ColoredBox(color: backgroundColor!, child: image),
