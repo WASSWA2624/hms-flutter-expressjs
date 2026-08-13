@@ -1020,3 +1020,20 @@ Key relationship rules:
 7. Subledger balances must reconcile with their corresponding general-ledger control accounts.
 
 Together, these rules make the HMS financial modules an integrated accounting system rather than a collection of unrelated billing, accounting, and claim screens.
+
+## 12. Derived tab implementation specifications
+
+The implementation-ready decomposition of Sections 9 and 10 lives in [`.cursor/finance/`](finance/README.md).
+
+- Each main menu is represented by a folder.
+- Each Accounts & Finance submenu is represented by a nested folder.
+- Each permanent tab is represented by one Markdown file.
+- Every tab file defines its table columns, filters, toolbar buttons, row buttons, bulk actions, CRUD behavior, forms, nested detail tables, statuses, permissions, API contract, validation, audit requirements, implementation references, and acceptance criteria.
+- Shared Pharmacy-guided workspace conventions live in [`.cursor/finance/_shared/`](finance/_shared/README.md).
+
+This document remains the source of truth for scope, menu hierarchy, tab labels, and table columns. After changing Sections 9 or 10, regenerate and verify the derived specifications:
+
+```powershell
+python tool/generate_finance_tab_docs.py
+python tool/generate_finance_tab_docs.py --check
+```
