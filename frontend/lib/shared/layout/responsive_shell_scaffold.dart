@@ -517,7 +517,7 @@ class AppMenuBar extends StatelessWidget {
               ),
               SizedBox(width: theme.spacing.xs),
               AppLogo(size: logoSize),
-              if (!hideTitle) SizedBox(width: theme.spacing.sm),
+              if (!hideTitle) SizedBox(width: theme.spacing.xs),
               Expanded(
                 child: hideTitle
                     ? const SizedBox.shrink()
@@ -525,7 +525,7 @@ class AppMenuBar extends StatelessWidget {
                         effectiveTitle,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleMedium?.copyWith(
-                          color: colorScheme.onSurface,
+                          color: AppLogo.brandBlue,
                           fontWeight: AppFontWeight.emphasis,
                         ),
                       ),
@@ -1097,13 +1097,13 @@ class _MobileShellDrawer extends StatelessWidget {
                 child: Row(
                   children: <Widget>[
                     const AppLogo(size: _drawerLogoSize),
-                    SizedBox(width: theme.spacing.sm),
+                    SizedBox(width: theme.spacing.xs),
                     Expanded(
                       child: Text(
                         title,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleMedium?.copyWith(
-                          color: colorScheme.onSurface,
+                          color: AppLogo.brandBlue,
                           fontWeight: AppFontWeight.emphasis,
                         ),
                       ),

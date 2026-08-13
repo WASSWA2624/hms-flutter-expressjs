@@ -100,40 +100,35 @@ class _AuthBrandHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
 
-    // Shared row height — logo artwork fills this; wordmark is fitted to it.
-    final double brandHeight = isCompact ? 56.0 : 72.0;
+    final double logoHeight = isCompact ? 56.0 : 72.0;
+    // App name is 3/4 of the logo height.
+    final double titleSize = logoHeight * 0.75;
 
     return Semantics(
       header: true,
       label: displayName,
       child: Center(
-        child: SizedBox(
-          height: brandHeight,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: <Widget>[
-              AppLogo(size: brandHeight),
-              SizedBox(width: theme.spacing.md),
-              FittedBox(
-                fit: BoxFit.fitHeight,
-                child: Text(
-                  displayName,
-                  maxLines: 1,
-                  softWrap: false,
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    color: colorScheme.onSurface,
-                    fontWeight: AppFontWeight.strong,
-                    fontSize: brandHeight,
-                    height: 1.0,
-                    letterSpacing: -1.0,
-                  ),
-                ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            AppLogo(size: logoHeight),
+            SizedBox(width: theme.spacing.md),
+            Text(
+              displayName,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                color: AppLogo.brandBlue,
+                fontWeight: AppFontWeight.strong,
+                fontSize: titleSize,
+                height: 1.0,
+                letterSpacing: -0.8,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
