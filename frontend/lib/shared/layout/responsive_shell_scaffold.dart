@@ -527,7 +527,9 @@ class AppMenuBar extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: colorScheme.primary,
-                          fontWeight: AppFontWeight.emphasis,
+                          fontSize: logoSize * _appBarTitleToLogoRatio,
+                          height: 1,
+                          fontWeight: AppFontWeight.bold,
                         ),
                       ),
               ),
@@ -1749,6 +1751,7 @@ const double _drawerHeaderHeight = AppShellLayout.headerHeight;
 /// Match dense icon-only [AppButton] (40 min − VisualDensity.compact → 32).
 const double _headerLogoSize = 32;
 const double _mobileHeaderLogoSize = 32;
+const double _appBarTitleToLogoRatio = 0.9;
 const double _drawerLogoSize = 48;
 const double _avatarRadius = 13;
 const double _focusIndicatorWidth = 2;

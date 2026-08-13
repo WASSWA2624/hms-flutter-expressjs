@@ -16,6 +16,7 @@ import 'package:hosspi_hms/features/accounts/data/repositories/accounts_reposito
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_access.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_detail_fact_lines.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_patient_ledger_print_helpers.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -249,87 +250,65 @@ class _AccountsPatientLedgerBody extends StatelessWidget {
         accountsPublicLabel(ledger.patientDisplayId) ??
         accountsPublicLabel(ledger.patientId);
     final bool balanceOutstanding = summary.balanceDue > 0;
+    final bool showSeparatePatientId =
+        patientIdLabel != null && patientIdLabel != patientLabel;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        AppContentPanel(
-          density: AppContentPanelDensity.compact,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Icon(
-                Icons.person_outline,
-                size: theme.appTokens.listIconSize + 4,
-                color: colorScheme.primary,
+        AppCollapsibleSection(
+          title: AccountsStrings.invoiceSummarySectionTitle,
+          titleIcon: Icons.receipt_long_outlined,
+          child: AccountsDetailFactLines(
+            fields: <AppWorkspacePatientContextField>[
+              AppWorkspacePatientContextField(
+                label: AccountsStrings.patientColumn,
+                value: patientLabel,
+                icon: Icons.person_outline,
               ),
-              SizedBox(width: theme.spacing.sm),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      patientLabel,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: AppFontWeight.emphasis,
-                      ),
-                    ),
-                    if (patientIdLabel != null &&
-                        patientIdLabel != patientLabel) ...<Widget>[
-                      SizedBox(height: theme.spacing.xs),
-                      Text(
-                        patientIdLabel,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ],
+              if (showSeparatePatientId)
+                AppWorkspacePatientContextField(
+                  label: AccountsStrings.patientIdColumn,
+                  value: patientIdLabel,
+                  icon: Icons.badge_outlined,
+                  copyable: true,
                 ),
+              AppWorkspacePatientContextField(
+                label: AccountsStrings.invoicedColumn,
+                value: accountsMoney(
+                  context,
+                  summary.totalInvoiced,
+                  currency,
+                ),
+                icon: Icons.receipt_long_outlined,
               ),
-              if (balanceOutstanding)
-                const AppWorkspaceStatusBadge(
-                  status: AppWorkspaceStatus(
-                    label: AccountsStrings.clearanceOutstanding,
-                    tone: AppWorkspaceStatusTone.warning,
-                    icon: Icons.warning_amber_outlined,
-                  ),
-                )
-              else
-                const AppWorkspaceStatusBadge(
-                  status: AppWorkspaceStatus(
-                    label: AccountsStrings.clearanceCleared,
-                    tone: AppWorkspaceStatusTone.success,
-                    icon: Icons.check_circle_outline,
-                  ),
-                ),
+              AppWorkspacePatientContextField(
+                label: AccountsStrings.paidColumn,
+                value: accountsMoney(context, summary.netPaid, currency),
+                icon: Icons.payments_outlined,
+              ),
+              AppWorkspacePatientContextField(
+                label: AccountsStrings.balanceColumn,
+                value: accountsMoney(context, summary.balanceDue, currency),
+                icon: Icons.account_balance_wallet_outlined,
+              ),
+              AppWorkspacePatientContextField(
+                label: AccountsStrings.clearanceColumn,
+                value: balanceOutstanding
+                    ? AccountsStrings.clearanceOutstanding
+                    : AccountsStrings.clearanceCleared,
+                icon: balanceOutstanding
+                    ? Icons.warning_amber_outlined
+                    : Icons.check_circle_outline,
+              ),
             ],
           ),
-        ),
-        SizedBox(height: theme.spacing.md),
-        AppReportSummaryGrid(
-          records: <AppReportSummaryItem>[
-            AppReportSummaryItem(
-              label: AccountsStrings.invoicedColumn,
-              value: accountsMoney(context, summary.totalInvoiced, currency),
-              icon: Icons.receipt_long_outlined,
-            ),
-            AppReportSummaryItem(
-              label: AccountsStrings.paidColumn,
-              value: accountsMoney(context, summary.netPaid, currency),
-              icon: Icons.payments_outlined,
-            ),
-            AppReportSummaryItem(
-              label: AccountsStrings.balanceColumn,
-              value: accountsMoney(context, summary.balanceDue, currency),
-              icon: Icons.account_balance_wallet_outlined,
-            ),
-          ],
         ),
         SizedBox(height: theme.spacing.md),
         if (ledger.entries.isEmpty)
           AppContentPanel(
             density: AppContentPanelDensity.compact,
+            borderRadius: BorderRadius.zero,
             child: Row(
               children: <Widget>[
                 Icon(
@@ -351,6 +330,7 @@ class _AccountsPatientLedgerBody extends StatelessWidget {
         else
           AppContentPanel(
             density: AppContentPanelDensity.compact,
+            borderRadius: BorderRadius.zero,
             child: Column(
               children: <Widget>[
                 for (int index = 0; index < ledger.entries.length; index += 1)

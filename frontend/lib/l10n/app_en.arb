@@ -34181,7 +34181,7 @@
   "@accessAdminCreateUserAction": {
     "description": "Access admin create user action."
   },
-  "accessAdminEditUserAction": "Edit staff account",
+  "accessAdminEditUserAction": "Edit staff",
   "@accessAdminEditUserAction": {
     "description": "Access admin edit user action."
   },
