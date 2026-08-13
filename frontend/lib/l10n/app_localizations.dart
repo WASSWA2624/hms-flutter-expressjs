@@ -48989,7 +48989,7 @@ abstract class AppLocalizations {
   /// Access admin edit user action.
   ///
   /// In en, this message translates to:
-  /// **'Edit staff account'**
+  /// **'Edit staff'**
   String get accessAdminEditUserAction;
 
   /// Access admin delete user action.

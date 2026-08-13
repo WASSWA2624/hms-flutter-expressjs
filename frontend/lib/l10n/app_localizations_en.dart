@@ -26627,7 +26627,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accessAdminCreateUserAction => 'Create staff';
 
   @override
-  String get accessAdminEditUserAction => 'Edit staff account';
+  String get accessAdminEditUserAction => 'Edit staff';
 
   @override
   String get accessAdminDeleteUserAction => 'Delete staff';

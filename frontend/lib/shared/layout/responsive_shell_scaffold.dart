@@ -518,7 +518,7 @@ class AppMenuBar extends StatelessWidget {
               ),
               SizedBox(width: theme.spacing.xs),
               AppLogo(size: logoSize),
-              if (!hideTitle) SizedBox(width: theme.spacing.xs),
+              if (!hideTitle) SizedBox(width: theme.spacing.sm),
               Expanded(
                 child: hideTitle
                     ? const SizedBox.shrink()
