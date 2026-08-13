@@ -408,7 +408,7 @@ class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
     final AppClinicalNoteAiFormatResult outcome = await formatter(
       text: source,
       abort: abort,
-      hint: widget.aiFormatHint ?? widget.labelText,
+      hint: widget.aiFormatHint ?? l10n.commonAiFormatHint,
     );
 
     if (!mounted) {
@@ -457,8 +457,9 @@ class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
     );
     widget.onChanged?.call(next);
     setState(() {
-      _aiFeedbackTitle = null;
-      _aiFeedback = null;
+      _aiFeedbackTitle = l10n.commonAiFormatSuccessTitle;
+      _aiFeedback = l10n.commonAiFormatSuccessMessage;
+      _aiFeedbackVariant = AppFormInformationVariant.success;
     });
     _focusNode.requestFocus();
   }
@@ -617,7 +618,12 @@ class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
           textCapitalization: TextCapitalization.sentences,
           keyboardType: TextInputType.multiline,
           textInputAction: TextInputAction.newline,
-          style: theme.textTheme.bodyMedium,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: colors.onSurface,
+            fontWeight: AppFontWeight.regular,
+            fontSize: 16,
+            height: 1.5,
+          ),
           onChanged: widget.onChanged,
           decoration: InputDecoration(
             isDense: true,
@@ -627,8 +633,11 @@ class _AppRichTextEditorState extends ConsumerState<AppRichTextEditor> {
               vertical: theme.spacing.sm,
             ),
             hintText: widget.hintText,
-            hintStyle: theme.textTheme.bodyMedium?.copyWith(
+            hintStyle: theme.textTheme.bodyLarge?.copyWith(
               color: colors.onSurfaceVariant,
+              fontWeight: AppFontWeight.label,
+              fontSize: 16,
+              height: 1.5,
             ),
             border: fieldBorder,
             enabledBorder: fieldBorder,

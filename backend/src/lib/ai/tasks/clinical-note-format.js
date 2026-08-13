@@ -38,12 +38,23 @@ const stripClinicalNoteCompletion = (raw) => {
       ''
     )
     .trim();
+  // Drop scare-quotes around fragments. Keep contractions such as patient's.
+  text = text.replace(
+    /['\u2018\u2019]([^'\u2018\u2019\n]{1,80})['\u2018\u2019]/g,
+    (full, inner) => {
+      if (/\s/.test(inner) || /[.,;:!?]$/.test(String(inner).trim())) {
+        return inner;
+      }
+      return full;
+    }
+  );
   return text;
 };
 
 const clinicalNoteFormatTask = {
   key: 'clinical_note_format',
   failOpen: true,
+  temperature: 0.2,
   get timeoutMs() {
     return AI_CLINICAL_NOTE_FORMAT_TIMEOUT_MS;
   },
@@ -53,16 +64,18 @@ const clinicalNoteFormatTask = {
     hint: z.string().trim().max(200).optional(),
   }),
   systemPrompt: [
-    'You rewrite clinician draft notes into clear, professional medical language.',
-    'Preserve every clinical fact, symptom, finding, medication, dose, time, identifier, and question exactly as stated.',
-    'Do not invent diagnoses, assessments, plans, medications, vitals, identifiers, imaging orders, or missing details.',
-    'Do not add template headers, placeholders, Patient ID, Date, or sections that were not in the draft.',
-    'Improve grammar, punctuation, spelling, and clinical phrasing only. Keep the rewrite concise.',
-    'You may correct only unambiguous dictation/typo errors when the intended clinical term is obvious.',
-    'Use concise clinical prose with paragraph breaks when helpful. Prefer plain text.',
-    'Do not wrap the answer in markdown fences, quotes, labels, or explanations.',
-    'If the note is already professional, return it unchanged.',
-    'If you cannot improve it confidently, return the input text unchanged.',
+    'You are a clinical documentation editor. Rewrite the draft into clear professional medical prose.',
+    'Output only the rewritten note. No title, markdown, JSON, labels, or explanation.',
+    'Use complete sentences. Use a new paragraph when the draft moves between history, findings, and plan.',
+    'Expand common abbreviations (pt, c/o, SOB) into clinical phrasing.',
+    'Correct obvious speech-to-text errors when the intended term is clear (immortal accident → motor accident; reading through the mouth → bleeding from the mouth).',
+    'Remove filler (um, okay, just, like). Do not wrap words or fragments in quotation marks.',
+    'If a fragment has no clinical meaning, omit it. Do not quote it.',
+    'Preserve every concrete symptom, finding, medication, dose, time, and identifier that is present.',
+    'Do not invent diagnoses, assessments, plans, vitals, imaging, or words such as unremarkable.',
+    'Do not add SOAP headings, Patient ID, Date, or placeholders unless they already appear in the draft.',
+    'Example draft: pt c/o fever since yesterday reading through the mouth we will observe',
+    'Example rewrite: The patient reports fever since yesterday and bleeding from the mouth. Observation is planned.',
   ].join(' '),
   buildUserPrompt: (input) => {
     const lines = [`locale: ${input.locale || 'en'}`];

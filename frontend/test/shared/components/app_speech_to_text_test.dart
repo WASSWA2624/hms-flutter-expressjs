@@ -674,6 +674,8 @@ void main() {
 
     expect(formatCalls, 1);
     expect(controller.text, 'The patient reports fever since yesterday.');
+    expect(find.text(l10n.commonAiFormatSuccessTitle), findsOneWidget);
+    expect(find.text(l10n.commonAiFormatSuccessMessage), findsOneWidget);
   });
 
   testWidgets('rich text AI format shows a color-coded warning banner', (

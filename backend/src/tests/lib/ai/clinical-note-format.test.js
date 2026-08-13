@@ -32,6 +32,21 @@ describe('clinical_note_format', () => {
     });
   });
 
+  test('strips scare-quotes around fragments', () => {
+    const input = { text: 'he had an accident the complete about just okay' };
+    expect(
+      parse(
+        "Patient reports an 'accident.' He states, 'the complete about just okay'.",
+        input
+      ).formatted_text
+    ).toBe(
+      'Patient reports an accident. He states, the complete about just okay.'
+    );
+    expect(
+      parse("The patient's fever resolved.", input).formatted_text
+    ).toBe("The patient's fever resolved.");
+  });
+
   test('strips markdown fences and leading labels', () => {
     const input = { text: 'sob and chest pain' };
     expect(

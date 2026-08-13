@@ -31,6 +31,14 @@ const resolveTaskTimeoutMs = (task) => {
   return AI_TIMEOUT_MS;
 };
 
+const resolveTaskTemperature = (task) => {
+  const taskTemperature = Number(task.temperature);
+  if (Number.isFinite(taskTemperature)) {
+    return taskTemperature;
+  }
+  return AI_TEMPERATURE;
+};
+
 const runTask = async (taskKey, rawInput, { signal, provider } = {}) => {
   const task = getAiTask(taskKey);
   if (!task) {
@@ -50,7 +58,7 @@ const runTask = async (taskKey, rawInput, { signal, provider } = {}) => {
       system: task.systemPrompt,
       user: task.buildUserPrompt(input),
       model: AI_MODEL,
-      temperature: AI_TEMPERATURE,
+      temperature: resolveTaskTemperature(task),
       timeoutMs: resolveTaskTimeoutMs(task),
       signal,
     });

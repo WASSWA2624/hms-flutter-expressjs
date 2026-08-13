@@ -31053,6 +31053,18 @@
   "@commonAiFormatBusyMessage": {
     "description": "Inline banner body while AI is rewriting a clinical note."
   },
+  "commonAiFormatSuccessTitle": "Note formatted",
+  "@commonAiFormatSuccessTitle": {
+    "description": "Inline banner title after AI successfully rewrites a clinical note."
+  },
+  "commonAiFormatSuccessMessage": "Review the professional rewrite before saving. Facts were not added.",
+  "@commonAiFormatSuccessMessage": {
+    "description": "Inline banner body after AI successfully rewrites a clinical note."
+  },
+  "commonAiFormatHint": "Clear clinical sentences. No title.",
+  "@commonAiFormatHint": {
+    "description": "Format hint sent with clinical note AI rewrite requests."
+  },
   "commonAiFormatUnavailableTitle": "AI formatting unavailable",
   "@commonAiFormatUnavailableTitle": {
     "description": "Inline banner title when AI clinical note formatting cannot complete."

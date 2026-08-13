@@ -44813,6 +44813,24 @@ abstract class AppLocalizations {
   /// **'Rewriting into professional medical language. This can take up to a minute.'**
   String get commonAiFormatBusyMessage;
 
+  /// Inline banner title after AI successfully rewrites a clinical note.
+  ///
+  /// In en, this message translates to:
+  /// **'Note formatted'**
+  String get commonAiFormatSuccessTitle;
+
+  /// Inline banner body after AI successfully rewrites a clinical note.
+  ///
+  /// In en, this message translates to:
+  /// **'Review the professional rewrite before saving. Facts were not added.'**
+  String get commonAiFormatSuccessMessage;
+
+  /// Format hint sent with clinical note AI rewrite requests.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear clinical sentences. No title.'**
+  String get commonAiFormatHint;
+
   /// Inline banner title when AI clinical note formatting cannot complete.
   ///
   /// In en, this message translates to:

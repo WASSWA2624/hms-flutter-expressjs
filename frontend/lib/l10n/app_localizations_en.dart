@@ -24228,6 +24228,16 @@ class AppLocalizationsEn extends AppLocalizations {
       'Rewriting into professional medical language. This can take up to a minute.';
 
   @override
+  String get commonAiFormatSuccessTitle => 'Note formatted';
+
+  @override
+  String get commonAiFormatSuccessMessage =>
+      'Review the professional rewrite before saving. Facts were not added.';
+
+  @override
+  String get commonAiFormatHint => 'Clear clinical sentences. No title.';
+
+  @override
   String get commonAiFormatUnavailableTitle => 'AI formatting unavailable';
 
   @override
