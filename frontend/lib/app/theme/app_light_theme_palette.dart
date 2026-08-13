@@ -2,45 +2,46 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/app/theme/app_theme_palette.dart';
 
-/// Light theme palette: an elegant **white → light blue → blue** identity.
+/// Light theme palette: porcelain surfaces + HOSSPI window cyan brand.
 ///
-/// Surfaces stay porcelain-white and powder-blue; brand actions use the HOSSPI
-/// window cyan (same as auth app-name text); accents stay in the same blue
-/// family so the UI reads as one continuous, soft blend.
+/// All azure / sky / surface / border / ink tokens are tinted from
+/// [brandPrimary] (`#0079FD`) so the white theme reads as one continuous
+/// family with `colorScheme.primary`.
 abstract final class AppLightThemePalette {
   /// HOSSPI logo window cyan — primary CTA / auth app-name text.
   static const Color brandPrimary = Color(0xFF0079FD);
 
-  // Brand scale — tinted around [brandPrimary]
-  static const Color azure50 = Color(0xFFF3F8FF);
-  static const Color azure100 = Color(0xFFE5F1FF);
-  static const Color azure200 = Color(0xFFC5DEFF);
-  static const Color azure300 = Color(0xFF9AC6FF);
-  static const Color azure400 = Color(0xFF5AA3FF);
-  static const Color azure500 = Color(0xFF2B8BFF);
-  static const Color azure600 = Color(0xFF0F7FF8);
+  // Brand scale — progressive tints/shades of [brandPrimary]
+  static const Color azure50 = Color(0xFFF5FAFF);
+  static const Color azure100 = Color(0xFFEBF4FF);
+  static const Color azure200 = Color(0xFFD1E7FF);
+  static const Color azure300 = Color(0xFFADD4FE);
+  static const Color azure400 = Color(0xFF80BCFE);
+  static const Color azure500 = Color(0xFF52A4FE);
+  static const Color azure600 = Color(0xFF268DFD);
   static const Color azure700 = brandPrimary;
-  static const Color azure800 = Color(0xFF0062D1);
-  static const Color azure900 = Color(0xFF004A9E);
+  static const Color azure800 = Color(0xFF0267D9);
+  static const Color azure900 = Color(0xFF0455B4);
+  static const Color azure950 = Color(0xFF054493);
 
-  // Accent — sky (lighter blue in the same hue family)
-  static const Color sky100 = Color(0xFFEAF5FE);
-  static const Color sky300 = Color(0xFF8DC9F4);
-  static const Color sky500 = Color(0xFF4BA0E6);
-  static const Color sky600 = Color(0xFF2F88D1);
-  static const Color sky700 = Color(0xFF1C6BAE);
+  // Accent — lighter companions in the same cyan-blue hue
+  static const Color sky100 = Color(0xFFF0F7FF);
+  static const Color sky300 = Color(0xFF99C9FE);
+  static const Color sky500 = Color(0xFF61ACFE);
+  static const Color sky600 = Color(0xFF409AFE);
+  static const Color sky700 = Color(0xFF035DC4);
 
-  // Neutrals — white + blue-tinted cools (never flat gray)
+  // Neutrals — white + primary-tinted cools (never flat gray)
   static const Color transparent = Color(0x00000000);
   static const Color white = Color(0xFFFFFFFF);
-  static const Color ink = Color(0xFF10253D);
-  static const Color inkMuted = Color(0xFF5A7189);
-  static const Color surfaceBase = Color(0xFFF6FAFE);
+  static const Color ink = Color(0xFF0D2744);
+  static const Color inkMuted = Color(0xFF4F6B88);
+  static const Color surfaceBase = Color(0xFFF7FBFF);
   static const Color surfaceRaised = white;
-  static const Color surfaceSubtle = Color(0xFFEEF5FC);
-  static const Color surfaceMuted = Color(0xFFE3EEF8);
-  static const Color borderSubtle = Color(0xFFD2E2F2);
-  static const Color borderMuted = Color(0xFFE8F1F9);
+  static const Color surfaceSubtle = Color(0xFFF1F8FF);
+  static const Color surfaceMuted = Color(0xFFE8F3FF);
+  static const Color borderSubtle = Color(0xFFD0E3F7);
+  static const Color borderMuted = Color(0xFFE8F1FA);
 
   static const AppStatusColors statusColors = AppStatusColors(
     success: Color(0xFF1C844A),
@@ -77,12 +78,12 @@ abstract final class AppLightThemePalette {
         onPrimaryFixedVariant: brandPrimary,
         secondary: azure800,
         onSecondary: white,
-        secondaryContainer: surfaceSubtle,
+        secondaryContainer: azure50,
         onSecondaryContainer: azure900,
         secondaryFixed: azure100,
         secondaryFixedDim: azure200,
         onSecondaryFixed: azure900,
-        onSecondaryFixedVariant: brandPrimary,
+        onSecondaryFixedVariant: azure800,
         tertiary: sky500,
         onTertiary: white,
         tertiaryContainer: sky100,
@@ -91,6 +92,10 @@ abstract final class AppLightThemePalette {
         tertiaryFixedDim: sky300,
         onTertiaryFixed: sky700,
         onTertiaryFixedVariant: sky600,
+        error: statusColors.error,
+        onError: statusColors.onError,
+        errorContainer: statusColors.errorContainer,
+        onErrorContainer: statusColors.onErrorContainer,
         surface: surfaceRaised,
         onSurface: ink,
         surfaceDim: surfaceMuted,
@@ -105,7 +110,7 @@ abstract final class AppLightThemePalette {
         outlineVariant: borderSubtle,
         shadow: ink,
         scrim: ink,
-        inverseSurface: azure900,
+        inverseSurface: azure950,
         onInverseSurface: surfaceRaised,
         inversePrimary: azure200,
         surfaceTint: transparent,
