@@ -15,7 +15,7 @@ class AppLogo extends StatelessWidget {
   final double size;
 
   /// Matches cropped `logo.png` content aspect (width ÷ height).
-  static const double defaultAspectRatio = 1.0044;
+  static const double defaultAspectRatio = 1.0;
 
   /// Cyan-blue from the window/grid features under the medical cross.
   /// Keep in sync with [AppLightThemePalette.brandPrimary] / light `colorScheme.primary`.
