@@ -6,7 +6,7 @@ class AppLogo extends StatelessWidget {
     this.assetPath = _defaultLogoAssetPath,
     this.icon = Icons.local_hospital_outlined,
     this.backgroundColor,
-    /// Width ÷ height for the wordmark asset. Keep in sync with logo art.
+    /// Width ÷ height for the mark asset. Keep in sync with logo art.
     this.aspectRatio = defaultAspectRatio,
     super.key,
   });
@@ -14,8 +14,8 @@ class AppLogo extends StatelessWidget {
   /// Default mark height.
   final double size;
 
-  /// Wordmark is wider than tall; sizing by height keeps it readable.
-  static const double defaultAspectRatio = 1.6;
+  /// Square mark; sizing by [size] keeps height and width equal.
+  static const double defaultAspectRatio = 1.0;
 
   final String assetPath;
   final IconData icon;
