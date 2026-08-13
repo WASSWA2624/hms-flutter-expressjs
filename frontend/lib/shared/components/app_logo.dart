@@ -14,8 +14,8 @@ class AppLogo extends StatelessWidget {
   /// Default mark height.
   final double size;
 
-  /// Square mark; sizing by [size] keeps height and width equal.
-  static const double defaultAspectRatio = 1.0;
+  /// Width ÷ height; source mark is slightly wider than tall.
+  static const double defaultAspectRatio = 1.23;
 
   final String assetPath;
   final IconData icon;
