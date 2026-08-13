@@ -1,11 +1,9 @@
-"""Import repo-root logo.png into Flutter web/app logo assets.
+"""Import repo-root logo.png into transparent Flutter/web logo assets.
 
-In-app logo keeps the natural aspect (no letterboxing) so AppLogo height
-matches the visible artwork. Favicons/PWA icons stay square; favicons get
-rounded corners with transparent outside.
-
-Near-white baked plates are knocked out (edge flood-fill) so the in-app /
-splash mark stays transparent on any theme background.
+The source is cleaned before export: near-white plates are knocked out,
+isolated dark specks are repaired, and the alpha edge is supersampled for a
+smooth silhouette. Every generated asset uses transparent padding so the mark
+works on light, dark, and custom theme surfaces.
 """
 
 from __future__ import annotations
@@ -13,7 +11,7 @@ from __future__ import annotations
 from collections import deque
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageDraw
+from PIL import Image, ImageChops, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[2]
 FRONTEND = Path(__file__).resolve().parents[1]
@@ -25,10 +23,6 @@ SRC_CANDIDATES = (
 OUT = FRONTEND / "assets" / "logos"
 WEB = FRONTEND / "web"
 ICONS = WEB / "icons"
-
-# ~iOS-app-icon corner roundness on the square favicon plate.
-_FAVICON_RADIUS_RATIO = 0.22
-
 
 def _is_near_white_plate(pixel: tuple[int, int, int, int]) -> bool:
     r, g, b, a = pixel
@@ -104,6 +98,123 @@ def _knockout_near_white_bg(img: Image.Image) -> Image.Image:
     return out
 
 
+def _is_dark_spot(pixel: tuple[int, int, int, int]) -> bool:
+    r, g, b, a = pixel
+    # Any near-black visible pixel reads as damage on a light theme, including
+    # blue-tinted black produced by resampling a dark shadow.
+    return a >= 16 and max(r, g, b) < 72
+
+
+def _average_nearby_color(
+    px: object,
+    x: int,
+    y: int,
+    w: int,
+    h: int,
+    *,
+    radius: int = 3,
+) -> tuple[int, int, int] | None:
+    colors: list[tuple[int, int, int]] = []
+    for ny in range(max(0, y - radius), min(h, y + radius + 1)):
+        for nx in range(max(0, x - radius), min(w, x + radius + 1)):
+            candidate = px[nx, ny]
+            if candidate[3] < 96 or _is_dark_spot(candidate):
+                continue
+            colors.append(candidate[:3])
+    if not colors:
+        return None
+    count = len(colors)
+    return tuple(sum(color[channel] for color in colors) // count for channel in range(3))
+
+
+def _repair_dark_spots(img: Image.Image) -> Image.Image:
+    """Remove isolated black specks without erasing deliberate 3D shading."""
+    out = img.convert("RGBA")
+    w, h = out.size
+    px = out.load()
+    dark = {
+        (x, y)
+        for y in range(h)
+        for x in range(w)
+        if _is_dark_spot(px[x, y])
+    }
+    repaired = 0
+
+    while dark:
+        seed = dark.pop()
+        component = [seed]
+        q: deque[tuple[int, int]] = deque([seed])
+        while q:
+            x, y = q.popleft()
+            for ny in range(max(0, y - 1), min(h, y + 2)):
+                for nx in range(max(0, x - 1), min(w, x + 2)):
+                    neighbor = (nx, ny)
+                    if neighbor in dark:
+                        dark.remove(neighbor)
+                        component.append(neighbor)
+                        q.append(neighbor)
+
+        center_x = sum(point[0] for point in component) / len(component)
+        center_y = sum(point[1] for point in component) / len(component)
+        is_book_detail = center_x >= w * 0.55 and center_y <= h * 0.58
+
+        for x, y in component:
+            _, _, _, alpha = px[x, y]
+            if is_book_detail:
+                # Keep page separation visible, but use warm ink instead of
+                # harsh black pixels that look like raster damage.
+                px[x, y] = (112, 82, 52, alpha)
+            elif len(component) <= 32:
+                replacement = _average_nearby_color(px, x, y, w, h)
+                if replacement is not None:
+                    px[x, y] = (*replacement, alpha)
+            repaired += 1
+
+    if repaired:
+        print(f"repaired {repaired} dark pixels")
+    return out
+
+
+def _smooth_alpha_edges(img: Image.Image) -> Image.Image:
+    """Supersample the alpha edge and extend clean RGB into the AA fringe."""
+    out = img.convert("RGBA")
+    w, h = out.size
+    alpha = out.getchannel("A")
+
+    aa = 4
+    smooth_alpha = alpha.resize(
+        (w * aa, h * aa),
+        Image.Resampling.LANCZOS,
+    ).filter(
+        ImageFilter.GaussianBlur(radius=1.8),
+    ).resize(
+        (w, h),
+        Image.Resampling.LANCZOS,
+    ).point(lambda value: 0 if value < 5 else (255 if value > 250 else value))
+
+    # The smoothed mask extends by a fraction of a pixel. Supply real logo
+    # color there rather than transparent black, which otherwise creates a
+    # dark halo on light themes.
+    rgb = out.convert("RGB")
+    expanded_rgb = Image.merge(
+        "RGB",
+        tuple(channel.filter(ImageFilter.MaxFilter(5)) for channel in rgb.split()),
+    )
+    edge_fill_mask = ImageChops.invert(alpha)
+    clean_rgb = Image.composite(expanded_rgb, rgb, edge_fill_mask)
+
+    result = Image.merge("RGBA", (*clean_rgb.split(), smooth_alpha))
+    visible_mask = smooth_alpha.point(lambda value: 255 if value else 0)
+    transparent_rgb = Image.new("RGB", (w, h), (0, 0, 0))
+    normalized_rgb = Image.composite(clean_rgb, transparent_rgb, visible_mask)
+    return Image.merge("RGBA", (*normalized_rgb.split(), smooth_alpha))
+
+
+def _clean_logo(img: Image.Image) -> Image.Image:
+    cleaned = _repair_dark_spots(_knockout_near_white_bg(img))
+    return _repair_dark_spots(_smooth_alpha_edges(cleaned))
+
+
 def _fit_square(
     img: Image.Image,
     size: int,
@@ -121,29 +232,6 @@ def _fit_square(
     return canvas
 
 
-def _apply_rounded_corners(
-    img: Image.Image,
-    radius_ratio: float = _FAVICON_RADIUS_RATIO,
-) -> Image.Image:
-    """Clip to a rounded rect; corners become transparent (supersampled AA)."""
-    w, h = img.size
-    radius = max(1, int(round(min(w, h) * radius_ratio)))
-    aa = 4
-    mask = Image.new("L", (w * aa, h * aa), 0)
-    ImageDraw.Draw(mask).rounded_rectangle(
-        (0, 0, w * aa - 1, h * aa - 1),
-        radius=radius * aa,
-        fill=255,
-    )
-    mask = mask.resize((w, h), Image.Resampling.LANCZOS)
-    out = img.convert("RGBA")
-    r, g, b, a = out.split()
-    return Image.merge("RGBA", (r, g, b, ImageChops.multiply(a, mask)))
-
-
-_WHITE = (255, 255, 255, 255)
-
-
 def _fit_natural(img: Image.Image, height: int) -> Image.Image:
     aspect = img.size[0] / img.size[1]
     w = max(1, int(round(height * aspect)))
@@ -151,9 +239,7 @@ def _fit_natural(img: Image.Image, height: int) -> Image.Image:
 
 
 def _favicon(img: Image.Image, size: int = 1024) -> Image.Image:
-    return _apply_rounded_corners(
-        _fit_square(img, size, background=_WHITE),
-    )
+    return _fit_square(img, size, pad_ratio=0.05)
 
 
 def main() -> None:
@@ -163,7 +249,7 @@ def main() -> None:
             f"Missing source logo. Place logo.png at {ROOT / 'logo.png'}."
         )
 
-    cropped = _knockout_near_white_bg(Image.open(src_path).convert("RGBA"))
+    cropped = _clean_logo(Image.open(src_path).convert("RGBA"))
     bbox = cropped.getbbox()
     if bbox:
         cropped = cropped.crop(bbox)
@@ -175,12 +261,15 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     ICONS.mkdir(parents=True, exist_ok=True)
 
+    # Keep the repo-root source clean and transparent as well.
+    cropped.save(ROOT / "logo.png", "PNG", optimize=True)
+
     # Bake the in-app mark at master resolution. AppLogo decodes via
     # device-pixel cacheWidth/cacheHeight so web/high-DPI stays sharp.
-    master = _fit_natural(cropped, 2048)
+    master = _repair_dark_spots(_fit_natural(cropped, 2048))
     logo = master.copy()
 
-    favicon = _favicon(cropped, 1024)
+    favicon = _repair_dark_spots(_favicon(cropped, 1024))
 
     for path, img in {
         OUT / "logo.png": logo,
@@ -193,17 +282,17 @@ def main() -> None:
         print(f"wrote {path.name} {img.size}")
 
     for size in (192, 512):
-        _fit_square(cropped, size, pad_ratio=0.03, background=_WHITE).save(
+        _repair_dark_spots(_fit_square(cropped, size, pad_ratio=0.05)).save(
             ICONS / f"Icon-{size}.png", "PNG", optimize=True
         )
-        maskable = Image.new("RGBA", (size, size), _WHITE)
-        pad = int(size * 0.10)
-        inner = size - 2 * pad
-        maskable.alpha_composite(
-            _fit_square(cropped, inner, pad_ratio=0.02), (pad, pad)
+        # Retain the legacy filenames, but keep them transparent too. They are
+        # no longer declared as maskable because maskable icons require an
+        # opaque plate and would violate the theme-neutral logo requirement.
+        maskable = _repair_dark_spots(
+            _fit_square(cropped, size, pad_ratio=0.12),
         )
         maskable.save(ICONS / f"Icon-maskable-{size}.png", "PNG", optimize=True)
-        print(f"wrote Icon-{size}.png + maskable")
+        print(f"wrote Icon-{size}.png + transparent legacy icon")
 
     print(f"APP_LOGO_ASPECT={aspect:.4f}")
 

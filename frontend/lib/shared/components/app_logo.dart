@@ -15,7 +15,7 @@ class AppLogo extends StatelessWidget {
   final double size;
 
   /// Matches cropped `logo.png` content aspect (width ÷ height).
-  static const double defaultAspectRatio = 1.7861;
+  static const double defaultAspectRatio = 1.7883;
 
   /// Cyan-blue from the window/grid features under the medical cross.
   /// Keep in sync with [AppLightThemePalette.brandPrimary] / light `colorScheme.primary`.
@@ -44,7 +44,7 @@ class AppLogo extends StatelessWidget {
       cacheWidth: cacheWidth,
       cacheHeight: cacheHeight,
       fit: BoxFit.contain,
-      filterQuality: FilterQuality.medium,
+      filterQuality: FilterQuality.high,
       isAntiAlias: true,
       errorBuilder: (_, _, _) {
         return ColoredBox(
