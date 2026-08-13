@@ -97,13 +97,13 @@ abstract class AppLocalizations {
   /// Application title shown in app bars and platform task lists.
   ///
   /// In en, this message translates to:
-  /// **'HOSSPI Hospital Management System'**
+  /// **'HOSSPI HMS'**
   String get appTitle;
 
   /// Short application title shown in compact headers.
   ///
   /// In en, this message translates to:
-  /// **'HOSSPI HMS'**
+  /// **'HOSSPI'**
   String get appShortTitle;
 
   /// Title shown while startup dependencies initialize.

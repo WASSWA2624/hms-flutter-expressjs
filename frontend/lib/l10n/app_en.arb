@@ -1,10 +1,10 @@
 {
   "@@locale": "en",
-  "appTitle": "HOSSPI Hospital Management System",
+  "appTitle": "HOSSPI HMS",
   "@appTitle": {
     "description": "Application title shown in app bars and platform task lists."
   },
-  "appShortTitle": "HOSSPI HMS",
+  "appShortTitle": "HOSSPI",
   "@appShortTitle": {
     "description": "Short application title shown in compact headers."
   },

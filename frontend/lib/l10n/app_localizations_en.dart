@@ -9,10 +9,10 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get appTitle => 'HOSSPI Hospital Management System';
+  String get appTitle => 'HOSSPI HMS';
 
   @override
-  String get appShortTitle => 'HOSSPI HMS';
+  String get appShortTitle => 'HOSSPI';
 
   @override
   String get startupLoadingTitle => 'Starting HOSSPI';
