@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/core/currency/effective_default_currency_provider.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
@@ -362,7 +363,7 @@ final class _InvoicePrintRow {
   final String value;
 }
 
-class _AccountsInvoiceEditorDialog extends StatefulWidget {
+class _AccountsInvoiceEditorDialog extends ConsumerStatefulWidget {
   const _AccountsInvoiceEditorDialog({
     required this.onPersist,
     this.editing,
@@ -373,17 +374,18 @@ class _AccountsInvoiceEditorDialog extends StatefulWidget {
   onPersist;
 
   @override
-  State<_AccountsInvoiceEditorDialog> createState() =>
+  ConsumerState<_AccountsInvoiceEditorDialog> createState() =>
       _AccountsInvoiceEditorDialogState();
 }
 
 class _AccountsInvoiceEditorDialogState
-    extends State<_AccountsInvoiceEditorDialog> {
+    extends ConsumerState<_AccountsInvoiceEditorDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _payee;
   late final TextEditingController _notes;
   DateTime? _invoiceDate;
   late List<AccountsInvoiceLineItem> _items;
+  late String _currency;
   bool _saving = false;
 
   bool get _isCreate => widget.editing == null;
@@ -398,6 +400,10 @@ class _AccountsInvoiceEditorDialogState
     _items = List<AccountsInvoiceLineItem>.from(
       editing?.items ?? const <AccountsInvoiceLineItem>[],
     );
+    final String? editingCurrency = editing?.currency.trim();
+    _currency = (editingCurrency != null && editingCurrency.isNotEmpty)
+        ? editingCurrency.toUpperCase()
+        : ref.read(effectiveDefaultCurrencyProvider);
   }
 
   @override
@@ -431,19 +437,23 @@ class _AccountsInvoiceEditorDialogState
   }
 
   Future<void> _openItemDialog({AccountsInvoiceLineItem? editing, int? index}) async {
-    final AccountsInvoiceLineItem? result =
-        await showAppDialog<AccountsInvoiceLineItem>(
+    final _AccountsInvoiceItemDialogResult? result =
+        await showAppDialog<_AccountsInvoiceItemDialogResult>(
           context: context,
-          builder: (_) => _AccountsInvoiceItemDialog(editing: editing),
+          builder: (_) => _AccountsInvoiceItemDialog(
+            editing: editing,
+            currency: _currency,
+          ),
         );
     if (result == null || !mounted) {
       return;
     }
     setState(() {
+      _currency = result.currency;
       if (index != null && index >= 0 && index < _items.length) {
-        _items[index] = result;
+        _items[index] = result.item;
       } else {
-        _items.add(result);
+        _items.add(result.item);
       }
     });
   }
@@ -468,7 +478,7 @@ class _AccountsInvoiceEditorDialogState
         payee: _payee.text.trim(),
         invoiceDate: date,
         notes: accountsEmptyToNull(_notes.text),
-        currency: widget.editing?.currency ?? 'UGX',
+        currency: _currency,
         status: widget.editing?.status == 'ISSUED' ? 'ISSUED' : 'DRAFT',
         items: List<AccountsInvoiceLineItem>.unmodifiable(_items),
       ),
@@ -493,7 +503,7 @@ class _AccountsInvoiceEditorDialogState
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final l10n = context.l10n;
-    final String currency = widget.editing?.currency ?? 'UGX';
+    final String currency = _currency;
 
     return AppDialog(
       title: Text(
@@ -548,6 +558,12 @@ class _AccountsInvoiceEditorDialogState
           SizedBox(height: theme.spacing.md),
           Row(
             children: <Widget>[
+              Icon(
+                Icons.list_alt_outlined,
+                size: theme.appTokens.listIconSize,
+                color: theme.colorScheme.primary,
+              ),
+              SizedBox(width: theme.spacing.sm),
               Expanded(
                 child: Text(
                   AccountsStrings.invoiceItemsSectionTitle,
@@ -838,22 +854,38 @@ final class _InvoiceDraftTableRow {
   final int itemCount;
 }
 
-class _AccountsInvoiceItemDialog extends StatefulWidget {
-  const _AccountsInvoiceItemDialog({this.editing});
+final class _AccountsInvoiceItemDialogResult {
+  const _AccountsInvoiceItemDialogResult({
+    required this.item,
+    required this.currency,
+  });
+
+  final AccountsInvoiceLineItem item;
+  final String currency;
+}
+
+class _AccountsInvoiceItemDialog extends ConsumerStatefulWidget {
+  const _AccountsInvoiceItemDialog({
+    required this.currency,
+    this.editing,
+  });
 
   final AccountsInvoiceLineItem? editing;
+  final String currency;
 
   @override
-  State<_AccountsInvoiceItemDialog> createState() =>
+  ConsumerState<_AccountsInvoiceItemDialog> createState() =>
       _AccountsInvoiceItemDialogState();
 }
 
-class _AccountsInvoiceItemDialogState extends State<_AccountsInvoiceItemDialog> {
+class _AccountsInvoiceItemDialogState
+    extends ConsumerState<_AccountsInvoiceItemDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _name;
   late final TextEditingController _description;
   late final TextEditingController _quantity;
   late final TextEditingController _unitPrice;
+  late String _currency;
 
   @override
   void initState() {
@@ -865,8 +897,12 @@ class _AccountsInvoiceItemDialogState extends State<_AccountsInvoiceItemDialog> 
       text: editing == null ? '1' : editing.quantity.toString(),
     );
     _unitPrice = TextEditingController(
-      text: editing == null ? '0' : editing.unitPrice.toString(),
+      text: formatCurrencyAmountInput(editing?.unitPrice ?? 0),
     );
+    final String incoming = widget.currency.trim();
+    _currency = incoming.isNotEmpty
+        ? incoming.toUpperCase()
+        : ref.read(effectiveDefaultCurrencyProvider);
   }
 
   @override
@@ -883,17 +919,22 @@ class _AccountsInvoiceItemDialogState extends State<_AccountsInvoiceItemDialog> 
       return;
     }
     final num? qty = num.tryParse(_quantity.text.trim());
-    final num? price = num.tryParse(_unitPrice.text.trim());
+    final num? price = num.tryParse(
+      normalizeCurrencyAmount(_unitPrice.text),
+    );
     if (qty == null || qty <= 0 || price == null || price < 0) {
       return;
     }
     Navigator.of(context).pop(
-      AccountsInvoiceLineItem(
-        id: widget.editing?.id ?? '',
-        name: _name.text.trim(),
-        description: accountsEmptyToNull(_description.text),
-        quantity: qty,
-        unitPrice: price,
+      _AccountsInvoiceItemDialogResult(
+        currency: _currency,
+        item: AccountsInvoiceLineItem(
+          id: widget.editing?.id ?? '',
+          name: _name.text.trim(),
+          description: accountsEmptyToNull(_description.text),
+          quantity: qty,
+          unitPrice: price,
+        ),
       ),
     );
   }
@@ -921,42 +962,58 @@ class _AccountsInvoiceItemDialogState extends State<_AccountsInvoiceItemDialog> 
               AccountsStrings.invoiceItemNameRequired,
             ),
           ),
+          AppResponsiveFieldRow.two(
+            gap: AppResponsiveFieldRowGap.form,
+            left: AppTextField(
+              controller: _quantity,
+              labelText: AccountsStrings.invoiceItemQuantityLabel,
+              isRequired: true,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+              ],
+              validator: (String? value) {
+                final num? qty = num.tryParse((value ?? '').trim());
+                if (qty == null || qty <= 0) {
+                  return AccountsStrings.invoiceItemQuantityRequired;
+                }
+                return null;
+              },
+            ),
+            right: AppCurrencyAmountField(
+              amountController: _unitPrice,
+              currency: _currency,
+              amountLabelText: AccountsStrings.invoiceItemUnitPriceLabel,
+              currencyLabelText: l10n.opdCurrencyLabel,
+              isRequired: true,
+              requiredMessage: AccountsStrings.invoiceItemUnitPriceRequired,
+              amountInvalidMessage:
+                  AccountsStrings.invoiceItemUnitPriceRequired,
+              onCurrencyChanged: (String? value) {
+                final String next = value?.trim() ?? '';
+                setState(() {
+                  _currency = next.isNotEmpty
+                      ? next.toUpperCase()
+                      : ref.read(effectiveDefaultCurrencyProvider);
+                });
+              },
+              validator: (String? value) {
+                final num? price = num.tryParse(
+                  normalizeCurrencyAmount(value ?? ''),
+                );
+                if (price == null || price < 0) {
+                  return AccountsStrings.invoiceItemUnitPriceRequired;
+                }
+                return null;
+              },
+            ),
+          ),
           AppTextField(
             controller: _description,
             labelText: AccountsStrings.invoiceItemDescriptionLabel,
             maxLines: 2,
-          ),
-          AppTextField(
-            controller: _quantity,
-            labelText: AccountsStrings.invoiceItemQuantityLabel,
-            isRequired: true,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: <TextInputFormatter>[
-              FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-            ],
-            validator: (String? value) {
-              final num? qty = num.tryParse((value ?? '').trim());
-              if (qty == null || qty <= 0) {
-                return AccountsStrings.invoiceItemQuantityRequired;
-              }
-              return null;
-            },
-          ),
-          AppTextField(
-            controller: _unitPrice,
-            labelText: AccountsStrings.invoiceItemUnitPriceLabel,
-            isRequired: true,
-            keyboardType: const TextInputType.numberWithOptions(decimal: true),
-            inputFormatters: <TextInputFormatter>[
-              FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-            ],
-            validator: (String? value) {
-              final num? price = num.tryParse((value ?? '').trim());
-              if (price == null || price < 0) {
-                return AccountsStrings.invoiceItemUnitPriceRequired;
-              }
-              return null;
-            },
           ),
         ],
       ),
