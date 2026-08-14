@@ -2,9 +2,10 @@
 
 ## Context
 
-- **Sequence:** 003 of 158
+- **Sequence:** 003 of 008 in `prompts/01-accounts-and-finance/01-setup-and-controls/`
+- **Overall step:** 003 of 158
 - **Phase:** Accounts foundation — setup and controls
-- **Prerequisite:** Prompt 002 — Departments & Cost Centres (`prompts/01-accounts-and-finance/01-setup-and-controls/002-departments-and-cost-centres.md`).
+- **Prerequisite:** `Accounts & Finance → Setup & Controls → Departments & Cost Centres` (`prompts/01-accounts-and-finance/01-setup-and-controls/002-departments-and-cost-centres.md`).
 - **Menu path:** `Accounts & Finance → Setup & Controls → Payment Methods`
 - **Canonical route:** `/accounts?section=payment-methods`
 - **Surface profile:** `master` table/worklist opened from a nested menu item
@@ -96,7 +97,7 @@ Implement this prompt only after the prerequisite prompt passes its acceptance c
     - Add focused widget/controller tests for route restoration, columns, filters, counts, buttons, CRUD/workflow states, dialogs, authorization omission, export/print, and targeted refresh.
     - Add backend route/service tests for validation, pagination, ABAC scope, permission denial, status transitions, idempotency, concurrency, rollback, and audit.
     - Run `flutter analyze`, the focused Flutter tests, relevant backend tests, and any generator/contract checks affected by the change.
-    - Do not proceed to Prompt 004 until all acceptance criteria below pass.
+    - Do not proceed to `Accounts & Finance → Setup & Controls → Document Numbering` (`prompts/01-accounts-and-finance/01-setup-and-controls/004-document-numbering.md`) until all acceptance criteria below pass.
 
 ## Constraints
 

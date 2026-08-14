@@ -2,9 +2,10 @@
 
 ## Context
 
-- **Sequence:** 007 of 158
+- **Sequence:** 007 of 008 in `prompts/01-accounts-and-finance/01-setup-and-controls/`
+- **Overall step:** 007 of 158
 - **Phase:** Accounts foundation — setup and controls
-- **Prerequisite:** Prompt 006 — Approval Rules (`prompts/01-accounts-and-finance/01-setup-and-controls/006-approval-rules.md`).
+- **Prerequisite:** `Accounts & Finance → Setup & Controls → Approval Rules` (`prompts/01-accounts-and-finance/01-setup-and-controls/006-approval-rules.md`).
 - **Menu path:** `Accounts & Finance → Setup & Controls → Opening Balances`
 - **Canonical route:** `/accounts?section=opening-balances`
 - **Surface profile:** `analysis` table/worklist opened from a nested menu item
@@ -91,7 +92,7 @@ Implement this prompt only after the prerequisite prompt passes its acceptance c
     - Add focused widget/controller tests for route restoration, columns, filters, counts, buttons, CRUD/workflow states, dialogs, authorization omission, export/print, and targeted refresh.
     - Add backend route/service tests for validation, pagination, ABAC scope, permission denial, status transitions, idempotency, concurrency, rollback, and audit.
     - Run `flutter analyze`, the focused Flutter tests, relevant backend tests, and any generator/contract checks affected by the change.
-    - Do not proceed to Prompt 008 until all acceptance criteria below pass.
+    - Do not proceed to `Accounts & Finance → Setup & Controls → Integration Mappings` (`prompts/01-accounts-and-finance/01-setup-and-controls/008-integration-mappings.md`) until all acceptance criteria below pass.
 
 ## Constraints
 
