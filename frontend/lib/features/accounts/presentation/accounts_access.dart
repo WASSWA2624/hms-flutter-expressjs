@@ -88,8 +88,9 @@ AccessRequirement accountsSectionTabRequirement(AccountsDeskSection section) {
   return switch (section) {
     AccountsDeskSection.ledgers => accountsPatientLedgersReadRequirement,
     // Setup & Controls is read-gated, not entry-gated: a write-only grant must
-    // not surface the fiscal calendar.
-    AccountsDeskSection.fiscalYearsAndPeriods =>
+    // not surface the fiscal calendar or the cost-centre structure.
+    AccountsDeskSection.fiscalYearsAndPeriods ||
+    AccountsDeskSection.departmentsAndCostCentres =>
       accountsWorkspaceReadRequirement,
     _ => accountsWorkspaceEntryRequirement,
   };
@@ -216,11 +217,12 @@ bool accountsSectionShowsNextActionColumn(
       canWriteAccounts(policy) ||
           canDecideAccountsApproval(policy) ||
           canEnterAccounts(policy),
-    // Account chart / Invoices / Fiscal periods use Actions — no work-queue
-    // Next column.
+    // Account chart / Invoices / Setup & Controls tabs use Actions — no
+    // work-queue Next column.
     AccountsDeskSection.chart ||
     AccountsDeskSection.invoices ||
-    AccountsDeskSection.fiscalYearsAndPeriods => false,
+    AccountsDeskSection.fiscalYearsAndPeriods ||
+    AccountsDeskSection.departmentsAndCostCentres => false,
   };
 }
 
@@ -357,6 +359,33 @@ abstract final class AccountsFiscalPeriodsAtomPermissions {
 /// Fiscal Years & Periods mutations — `accounts:write` ∩ `facility-accounts`.
 bool canWriteAccountsFiscalPeriods(AppAccessPolicy policy) {
   return AccountsFiscalPeriodsAtomPermissions.write.isAllowed(policy);
+}
+
+/// Setup & Controls → Departments & Cost Centres atom → permission mapping
+/// (`.cursor/finance/accounts-and-finance/setup-and-controls/departments-and-cost-centres.md`).
+abstract final class AccountsDepartmentsAtomPermissions {
+  static const AccessRequirement tab = accountsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = accountsWorkspaceReadRequirement;
+  static const AccessRequirement detail = accountsWorkspaceReadRequirement;
+  static const AccessRequirement filters = accountsWorkspaceReadRequirement;
+  static const AccessRequirement settings = accountsWorkspaceReadRequirement;
+  static const AccessRequirement export = accountsWorkspaceExportRequirement;
+  static const AccessRequirement print = accountsWorkspacePrintRequirement;
+  static const AccessRequirement create = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement update = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement clone = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement activate = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement deactivate = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement archive = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement restore = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement write = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement approve = accountsApprovalDecisionRequirement;
+  static const AccessRequirement routeEntry = accountsWorkspaceReadRequirement;
+}
+
+/// Departments & Cost Centres mutations — `accounts:write` ∩ `facility-accounts`.
+bool canWriteAccountsDepartments(AppAccessPolicy policy) {
+  return AccountsDepartmentsAtomPermissions.write.isAllowed(policy);
 }
 
 abstract final class AccountsInvoicesAtomPermissions {

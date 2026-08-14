@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const accountsWorkspaceController = require('@controllers/accounts-workspace/accounts-workspace.controller');
 const fiscalPeriodController = require('@controllers/accounts-workspace/fiscal-period.controller');
+const departmentController = require('@controllers/accounts-workspace/department-cost-centre.controller');
 const documentSequenceController = require('@controllers/accounts-workspace/document-number-sequence.controller');
 const postingRuleController = require('@controllers/accounts-workspace/posting-rule.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
@@ -27,6 +28,14 @@ const {
   updateFiscalPeriodSchema,
   fiscalPeriodActionSchema,
 } = require('@validations/accounts-workspace/fiscal-period.schema');
+const {
+  departmentsQuerySchema,
+  departmentIdentifierParamsSchema,
+  departmentActionParamsSchema,
+  createDepartmentSchema,
+  updateDepartmentSchema,
+  departmentActionSchema,
+} = require('@validations/accounts-workspace/department-cost-centre.schema');
 const {
   documentSequencesQuerySchema,
   documentSequenceIdentifierParamsSchema,
@@ -144,6 +153,55 @@ router.post(
   }),
   authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
   fiscalPeriodController.applyFiscalPeriodAction
+);
+
+/**
+ * Setup & Controls → Departments & Cost Centres.
+ *
+ * The department record is owned by `modules/department`; these routes expose
+ * its finance projection. Records are addressed by their public
+ * `human_friendly_id`, and archive is a status transition rather than a
+ * delete, so there is no DELETE route.
+ */
+router.get(
+  '/departments-and-cost-centres',
+  validateRequest({ query: departmentsQuerySchema }),
+  authorize(ACCOUNTS_READ_SCOPES, 'permission'),
+  departmentController.listDepartments
+);
+
+router.get(
+  '/departments-and-cost-centres/:departmentIdentifier',
+  validateRequest({ params: departmentIdentifierParamsSchema }),
+  authorize(ACCOUNTS_READ_SCOPES, 'permission'),
+  departmentController.getDepartment
+);
+
+router.post(
+  '/departments-and-cost-centres',
+  validateRequest({ body: createDepartmentSchema }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  departmentController.createDepartment
+);
+
+router.put(
+  '/departments-and-cost-centres/:departmentIdentifier',
+  validateRequest({
+    params: departmentIdentifierParamsSchema,
+    body: updateDepartmentSchema,
+  }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  departmentController.updateDepartment
+);
+
+router.post(
+  '/departments-and-cost-centres/:departmentIdentifier/:action',
+  validateRequest({
+    params: departmentActionParamsSchema,
+    body: departmentActionSchema,
+  }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  departmentController.applyDepartmentAction
 );
 
 /**

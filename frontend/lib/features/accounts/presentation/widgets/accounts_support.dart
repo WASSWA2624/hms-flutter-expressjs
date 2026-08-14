@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/accounts/domain/entities/accounts_department.dart';
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.dart';
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_fiscal_period.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
@@ -160,6 +161,8 @@ String accountsSectionLabel(
     AccountsDeskSection.chart => AccountsStrings.accountChartLabel,
     AccountsDeskSection.invoices => AccountsStrings.invoicesLabel,
     AccountsDeskSection.fiscalYearsAndPeriods => l10n.accountsFiscalPeriodsLabel,
+    AccountsDeskSection.departmentsAndCostCentres =>
+      l10n.accountsDepartmentsLabel,
   };
 }
 
@@ -200,6 +203,8 @@ String? accountsSectionTooltip(
     AccountsDeskSection.invoices => AccountsStrings.invoicesTooltip,
     AccountsDeskSection.fiscalYearsAndPeriods =>
       l10n.accountsFiscalPeriodsTooltip,
+    AccountsDeskSection.departmentsAndCostCentres =>
+      l10n.accountsDepartmentsTooltip,
   };
 }
 
@@ -213,6 +218,7 @@ String accountsTableSettingsKey(AccountsDeskSection section) {
     AccountsDeskSection.chart => 'accounts_chart_v1',
     AccountsDeskSection.invoices => 'accounts_invoices_v1',
     AccountsDeskSection.fiscalYearsAndPeriods => 'accounts_fiscal_periods_v1',
+    AccountsDeskSection.departmentsAndCostCentres => 'accounts_departments_v1',
   };
 }
 
@@ -226,6 +232,8 @@ IconData accountsSectionIcon(AccountsDeskSection section) {
     AccountsDeskSection.chart => Icons.list_alt_outlined,
     AccountsDeskSection.invoices => Icons.receipt_long_outlined,
     AccountsDeskSection.fiscalYearsAndPeriods => Icons.event_note_outlined,
+    AccountsDeskSection.departmentsAndCostCentres =>
+      Icons.account_tree_outlined,
   };
 }
 
@@ -239,6 +247,8 @@ String accountsEmptyBody(AppLocalizations l10n, AccountsDeskSection section) {
     AccountsDeskSection.chart => AccountsStrings.chartEmpty,
     AccountsDeskSection.invoices => AccountsStrings.invoicesEmpty,
     AccountsDeskSection.fiscalYearsAndPeriods => l10n.accountsFiscalPeriodsEmpty,
+    AccountsDeskSection.departmentsAndCostCentres =>
+      l10n.accountsDepartmentsEmpty,
   };
 }
 
@@ -262,6 +272,38 @@ AppWorkspaceStatusTone accountsFiscalPeriodStatusTone(
     AccountsFiscalPeriodStatus.draft => AppWorkspaceStatusTone.warning,
     AccountsFiscalPeriodStatus.inactive => AppWorkspaceStatusTone.neutral,
     AccountsFiscalPeriodStatus.archived => AppWorkspaceStatusTone.neutral,
+  };
+}
+
+String accountsDepartmentStatusLabel(
+  AppLocalizations l10n,
+  AccountsDepartmentStatus status,
+) {
+  return switch (status) {
+    AccountsDepartmentStatus.draft => l10n.accountsDepartmentStatusDraft,
+    AccountsDepartmentStatus.active => l10n.accountsDepartmentStatusActive,
+    AccountsDepartmentStatus.inactive => l10n.accountsDepartmentStatusInactive,
+    AccountsDepartmentStatus.archived => l10n.accountsDepartmentStatusArchived,
+  };
+}
+
+AppWorkspaceStatusTone accountsDepartmentStatusTone(
+  AccountsDepartmentStatus status,
+) {
+  return switch (status) {
+    AccountsDepartmentStatus.active => AppWorkspaceStatusTone.success,
+    AccountsDepartmentStatus.draft => AppWorkspaceStatusTone.warning,
+    AccountsDepartmentStatus.inactive => AppWorkspaceStatusTone.neutral,
+    AccountsDepartmentStatus.archived => AppWorkspaceStatusTone.neutral,
+  };
+}
+
+IconData accountsDepartmentStatusIcon(AccountsDepartmentStatus status) {
+  return switch (status) {
+    AccountsDepartmentStatus.draft => Icons.edit_note_outlined,
+    AccountsDepartmentStatus.active => Icons.check_circle_outline,
+    AccountsDepartmentStatus.inactive => Icons.pause_circle_outline,
+    AccountsDepartmentStatus.archived => Icons.inventory_2_outlined,
   };
 }
 

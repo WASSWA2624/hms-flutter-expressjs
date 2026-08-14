@@ -18,38 +18,39 @@ Implement this prompt only after the prerequisite prompt passes its acceptance c
 ## Requirements
 
 1. **Audit the existing implementation before writing code.**
+
    - Run the five-step reuse audit in `.cursor/finance/_shared/existing-implementation.md`: backend module/model/service/route, frontend panel/table/dialog/DTO/entity/repository/controller, permission key/entitlement/ABAC scope/access atom, localized string/formatter/print helper/export mapping, then the residual gap list.
    - Extend the module that already owns each record. Do not add a parallel model, route family, controller, panel, permission key, or formatter for something another module owns.
    - Reuse the existing currency stack (`frontend/lib/shared/components/app_currency.dart`, `frontend/lib/core/currency/`) for resolution, precision, rounding, conversion, and formatting. Never add a currency registry, rate table, or second conversion path.
    - Reuse the existing Accounts & Finance workspace, controller, entities, DTOs, and repositories in `frontend/lib/features/accounts/` and `backend/src/modules/accounts-workspace/`.
    - State the audit outcome in the change description: what already existed, what is extended, and what genuinely did not exist.
-
 2. **Register and scope the tab.**
+
    - Implement the `Departments & Cost Centres` tab at `Accounts & Finance → Setup & Controls → Departments & Cost Centres` with canonical section slug `departments-and-cost-centres`.
    - Preserve compatible existing deep-link aliases, but generate new links only with the canonical slug.
    - Reopening the route must focus the existing tab and restore committed search, filters, sorting, pagination, and column settings.
    - Add this tab to the flat `AppTabStrip` (`frontend/lib/shared/components/app_tab_strip.dart`) of the `Setup & Controls` sidebar menu item. Every finance menu nests exactly one level: never add a second sidebar level, a category `AppTabStrip` above the section strip, or an `AppTabStripVariant.nested` layer. See `.cursor/finance/_shared/navigation-model.md`.
-
 3. **Implement the backend and data contract.**
+
    - Implement every list, detail, CRUD, workflow, report, or reconciliation operation defined under **Target API contract** in `.cursor/finance/accounts-and-finance/setup-and-controls/departments-and-cost-centres.md`.
    - Extend the existing workspace route/service/repository rather than creating a parallel API.
    - Use Zod validation, `snake_case` JSON, public `human_friendly_id`, paginated `data` plus `meta`, optimistic versions, idempotency for financial mutations, and database transactions.
    - Enforce status transitions, period locks, source-document integrity, and audit logging server-side.
-
 4. **Build the primary table with the exact source columns.**
+
    - Use `AppListTable`; do not create custom table chrome.
    - Preserve this source order in Settings/export while applying the default/optional visibility defined in `.cursor/finance/accounts-and-finance/setup-and-controls/departments-and-cost-centres.md`:
      `Department Code`, `Department Name`, `Cost Centre Code`, `Cost Centre Name`, `Parent`, `Facility`, `Manager`, `Default Revenue Account`, `Default Expense Account`, `Budget Owner`, `Effective From`, `Effective To`, `Status`.
    - Implement server sort keys, atomic cells, localized formatting, status badges, monetary alignment/precision, server-filtered totals, a mobile item builder, horizontal overflow, pinned footer, and empty-row padding.
-
 5. **Implement filters and table controls.**
+
    - Implement these domain filters in addition to comprehensive field filters from the specification: `Search`, `Status`, `Facility`, `Department / cost centre`, `Amount range`, `Owner / assigned user`.
    - Follow `prompts/.cursor/tables.mdc` for Search and the standard Filters → Settings → Export → Print toolbar sequence.
    - Use one committed query model for the tab count badge, table rows, Advanced filters, export, print, URL restoration, and saved views.
    - Implement these context-specific toolbar buttons:
      - **New record:** gate `accounts:write` ∩ `facility-accounts`; enable when write permitted; Opens the Departments & Cost Centres create dialog.
-
 6. **Implement row actions, bulk actions, and CRUD.**
+
    - Row buttons:
      - **View:** gate `accounts:read` ∩ `facility-accounts`; enable when always; Opens a detail `AppDialog` using the human-friendly reference.
      - **Edit:** gate `accounts:write` ∩ `facility-accounts`; enable when record active/draft and version current; Opens prefilled edit dialog.
@@ -62,14 +63,14 @@ Implement this prompt only after the prerequisite prompt passes its acceptance c
      - **Export selected:** gate `accounts:read` ∩ `evidence:export` ∩ `facility-accounts`; Exports selected rows in visible-column order.
    - Hide actions that fail entitlement, permission, ABAC, status, period, or source-state checks.
    - Never hard-delete posted/finalized financial records; use archive, cancel, reversal, void, credit/debit note, refund, or audited reopening as defined by the tab specification.
-
 7. **Implement forms, detail dialogs, and nested tables.**
+
    - Create/edit fields: `Department Code`, `Department Name`, `Cost Centre Code`, `Cost Centre Name`, `Parent`, `Facility`, `Manager`, `Default Revenue Account`, `Default Expense Account`, `Budget Owner`.
    - Detail sections: `Summary`, `Related records`, `Attachments`, `Activity & audit`.
    - Use `showAppDialog` / `AppWorkspaceMutationDialog`, `AppWorkspaceDetailPanel`, shared form controls, responsive field rows, pinned footer actions, and the dialog/table selection conventions.
    - Keep forms in the current workspace. Cross-module handoffs may open only the authoritative owning module.
-
 8. **Implement workflow, validation, permissions, and audit.**
+
    - Statuses represented by this tab: `Draft`, `Active`, `Inactive`, `Archived`.
    - Read gate: `accounts:read` ∩ `facility-accounts`; mutate gate: `accounts:write` ∩ `facility-accounts`; approval gate: `accounts:write` ∩ `financial:approve` ∩ `facility-accounts`; export/print gate: `accounts:read` ∩ `evidence:export` ∩ `facility-accounts`.
    - Apply these tab-specific validation requirements:
@@ -79,20 +80,20 @@ Implement this prompt only after the prerequisite prompt passes its acceptance c
      - Duplicate submission is prevented with an idempotency key for financial mutations.
      - Posting, close, reversal, and adjustment actions are blocked when the fiscal period is locked.
    - Keep backend authorization authoritative and log all applicable create, update, submit, approve/reject, post/process, allocate, reconcile, reverse/void, archive/restore, export, and print events.
-
 9. **Implement state synchronization and feedback.**
+
    - Extend the existing Riverpod workspace controller, entities, DTOs, and repository.
    - After mutations, refresh the affected row, open detail, active filtered count, affected sibling counts, and shell badge without reloading unrelated tabs.
    - Treat realtime events as reconciliation hints and defer conflicting refresh while saving.
    - Show observable loading, empty, partial, error, conflict, forbidden, validation, retry, and success states.
-
 10. **Apply shared UI contracts.**
+
     - Follow `prompts/.cursor/screens.mdc`, `tabs.mdc`, `tables.mdc`, `dialogs.mdc`, `forms.mdc`, `printing.mdc`, `localization.mdc`, `theming.mdc`, and `responsiveness.mdc`.
     - Reuse Pharmacy's route → query → flat `AppTabStrip` → `AppListTable` → detail dialog → mutation dialog → targeted refresh pattern, reached through the category menu item.
     - Add all user-facing copy and accessibility text to English localization; do not hard-code UI strings.
     - Verify mobile, tablet, and desktop layouts in light and dark themes.
-
 11. **Add and run verification.**
+
     - Add focused widget/controller tests for route restoration, columns, filters, counts, buttons, CRUD/workflow states, dialogs, authorization omission, export/print, and targeted refresh.
     - Add backend route/service tests for validation, pagination, ABAC scope, permission denial, status transitions, idempotency, concurrency, rollback, and audit.
     - Run `flutter analyze`, the focused Flutter tests, relevant backend tests, and any generator/contract checks affected by the change.

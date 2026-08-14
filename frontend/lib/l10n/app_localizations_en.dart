@@ -28016,4 +28016,250 @@ class AppLocalizationsEn extends AppLocalizations {
   String accountsFiscalMobileDateRange(String startDate, String endDate) {
     return '$startDate – $endDate';
   }
+
+  @override
+  String get accountsDepartmentsLabel => 'Departments & Cost Centres';
+
+  @override
+  String get accountsDepartmentsTooltip =>
+      'Departments, their cost centres, default posting accounts, and ownership';
+
+  @override
+  String get accountsDepartmentsEmpty => 'No departments match.';
+
+  @override
+  String get accountsDepartmentsEmptyBody =>
+      'Try another search or add a department.';
+
+  @override
+  String get accountsDepartmentsSearchHint =>
+      'Reference, department, cost centre…';
+
+  @override
+  String get accountsDepartmentReferenceColumn => 'Reference';
+
+  @override
+  String get accountsDepartmentCodeColumn => 'Department Code';
+
+  @override
+  String get accountsDepartmentNameColumn => 'Department Name';
+
+  @override
+  String get accountsDepartmentCostCentreCodeColumn => 'Cost Centre Code';
+
+  @override
+  String get accountsDepartmentCostCentreNameColumn => 'Cost Centre Name';
+
+  @override
+  String get accountsDepartmentParentColumn => 'Parent';
+
+  @override
+  String get accountsDepartmentFacilityColumn => 'Facility';
+
+  @override
+  String get accountsDepartmentManagerColumn => 'Manager';
+
+  @override
+  String get accountsDepartmentRevenueAccountColumn =>
+      'Default Revenue Account';
+
+  @override
+  String get accountsDepartmentExpenseAccountColumn =>
+      'Default Expense Account';
+
+  @override
+  String get accountsDepartmentBudgetOwnerColumn => 'Budget Owner';
+
+  @override
+  String get accountsDepartmentEffectiveFromColumn => 'Effective From';
+
+  @override
+  String get accountsDepartmentEffectiveToColumn => 'Effective To';
+
+  @override
+  String get accountsDepartmentStatusColumn => 'Status';
+
+  @override
+  String get accountsDepartmentActionsColumn => 'Actions';
+
+  @override
+  String get accountsDepartmentStatusDraft => 'Draft';
+
+  @override
+  String get accountsDepartmentStatusActive => 'Active';
+
+  @override
+  String get accountsDepartmentStatusInactive => 'Inactive';
+
+  @override
+  String get accountsDepartmentStatusArchived => 'Archived';
+
+  @override
+  String get accountsDepartmentDateRangeFilterLabel => 'Effective period';
+
+  @override
+  String get accountsDepartmentFacilityFilterLabel => 'Facility';
+
+  @override
+  String get accountsDepartmentCostCentreFilterLabel =>
+      'Department / cost centre';
+
+  @override
+  String get accountsDepartmentOwnerFilterLabel => 'Owner / assigned user';
+
+  @override
+  String get accountsDepartmentNewRecordAction => 'New record';
+
+  @override
+  String get accountsDepartmentViewAction => 'View';
+
+  @override
+  String get accountsDepartmentCloneAction => 'Clone';
+
+  @override
+  String get accountsDepartmentActivateAction => 'Activate';
+
+  @override
+  String get accountsDepartmentDeactivateAction => 'Deactivate';
+
+  @override
+  String get accountsDepartmentArchiveAction => 'Archive';
+
+  @override
+  String get accountsDepartmentRestoreAction => 'Restore';
+
+  @override
+  String get accountsDepartmentBulkActivateAction => 'Activate selected';
+
+  @override
+  String get accountsDepartmentBulkDeactivateAction => 'Deactivate selected';
+
+  @override
+  String get accountsDepartmentBulkArchiveAction => 'Archive selected';
+
+  @override
+  String get accountsDepartmentCreateTitle => 'Add department';
+
+  @override
+  String get accountsDepartmentEditTitle => 'Edit department';
+
+  @override
+  String get accountsDepartmentCloneTitle => 'Clone department';
+
+  @override
+  String get accountsDepartmentDetailTitle => 'Department details';
+
+  @override
+  String get accountsDepartmentIdentitySection => 'Department identity';
+
+  @override
+  String get accountsDepartmentStructureSection => 'Structure';
+
+  @override
+  String get accountsDepartmentPostingSection => 'Default posting accounts';
+
+  @override
+  String get accountsDepartmentSummarySection => 'Summary';
+
+  @override
+  String get accountsDepartmentRelatedSection => 'Related records';
+
+  @override
+  String get accountsDepartmentAttachmentsSection => 'Attachments';
+
+  @override
+  String get accountsDepartmentActivitySection => 'Activity & audit';
+
+  @override
+  String get accountsDepartmentRelatedEmpty => 'No related records.';
+
+  @override
+  String get accountsDepartmentAttachmentsEmpty => 'No attachments.';
+
+  @override
+  String get accountsDepartmentActivityCreated => 'Created';
+
+  @override
+  String get accountsDepartmentActivityUpdated => 'Last updated';
+
+  @override
+  String get accountsDepartmentActivityArchived => 'Archived';
+
+  @override
+  String get accountsDepartmentVersionLabel => 'Record version';
+
+  @override
+  String get accountsDepartmentOwnedNotice =>
+      'This department is maintained with facility setup. Editing here updates the same record.';
+
+  @override
+  String get accountsDepartmentRequiredField => 'This field is required.';
+
+  @override
+  String get accountsDepartmentEffectiveToBeforeFrom =>
+      'Effective To must not be earlier than Effective From.';
+
+  @override
+  String get accountsDepartmentActivateConfirmTitle => 'Activate department?';
+
+  @override
+  String get accountsDepartmentDeactivateConfirmTitle =>
+      'Deactivate department?';
+
+  @override
+  String get accountsDepartmentArchiveConfirmTitle => 'Archive department?';
+
+  @override
+  String get accountsDepartmentRestoreConfirmTitle => 'Restore department?';
+
+  @override
+  String get accountsDepartmentArchiveConfirmBody =>
+      'The department is archived, not deleted. History stays available and the record can be restored. Archiving is refused while live child departments, units, or wards still reference it.';
+
+  @override
+  String accountsDepartmentActivateConfirmBody(String reference) {
+    return 'Activate $reference so permitted workflows can select it?';
+  }
+
+  @override
+  String accountsDepartmentDeactivateConfirmBody(String reference) {
+    return 'Deactivate $reference so it is no longer selectable for new work?';
+  }
+
+  @override
+  String accountsDepartmentRestoreConfirmBody(String reference) {
+    return 'Restore $reference and record the change in the audit trail?';
+  }
+
+  @override
+  String accountsDepartmentBulkConfirmBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Apply this change to $count matching departments? Records that do not allow the change are skipped.',
+      one:
+          'Apply this change to $count matching department? Records that do not allow the change are skipped.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountsDepartmentBulkPartialFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count records could not be changed.',
+      one: '$count record could not be changed.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountsDepartmentMobileCaption(
+    String departmentCode,
+    String costCentreCode,
+  ) {
+    return '$departmentCode · $costCentreCode';
+  }
 }

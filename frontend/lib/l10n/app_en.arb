@@ -35871,5 +35871,314 @@
         "type": "String"
       }
     }
+  },
+  "accountsDepartmentsLabel": "Departments & Cost Centres",
+  "@accountsDepartmentsLabel": {
+    "description": "Accounts & Finance -> Setup & Controls -> Departments & Cost Centres tab label."
+  },
+  "accountsDepartmentsTooltip": "Departments, their cost centres, default posting accounts, and ownership",
+  "@accountsDepartmentsTooltip": {
+    "description": "Tooltip for the Departments & Cost Centres tab."
+  },
+  "accountsDepartmentsEmpty": "No departments match.",
+  "@accountsDepartmentsEmpty": {
+    "description": "Empty-state title for the departments table."
+  },
+  "accountsDepartmentsEmptyBody": "Try another search or add a department.",
+  "@accountsDepartmentsEmptyBody": {
+    "description": "Empty-state body for the departments table."
+  },
+  "accountsDepartmentsSearchHint": "Reference, department, cost centre…",
+  "@accountsDepartmentsSearchHint": {
+    "description": "Search field hint and accessibility label for the departments table."
+  },
+  "accountsDepartmentReferenceColumn": "Reference",
+  "@accountsDepartmentReferenceColumn": {
+    "description": "Human-friendly reference column of the departments table."
+  },
+  "accountsDepartmentCodeColumn": "Department Code",
+  "@accountsDepartmentCodeColumn": {
+    "description": "Department code column of the departments table."
+  },
+  "accountsDepartmentNameColumn": "Department Name",
+  "@accountsDepartmentNameColumn": {
+    "description": "Department name column of the departments table."
+  },
+  "accountsDepartmentCostCentreCodeColumn": "Cost Centre Code",
+  "@accountsDepartmentCostCentreCodeColumn": {
+    "description": "Cost centre code column of the departments table."
+  },
+  "accountsDepartmentCostCentreNameColumn": "Cost Centre Name",
+  "@accountsDepartmentCostCentreNameColumn": {
+    "description": "Cost centre name column of the departments table."
+  },
+  "accountsDepartmentParentColumn": "Parent",
+  "@accountsDepartmentParentColumn": {
+    "description": "Parent department column of the departments table."
+  },
+  "accountsDepartmentFacilityColumn": "Facility",
+  "@accountsDepartmentFacilityColumn": {
+    "description": "Facility column of the departments table."
+  },
+  "accountsDepartmentManagerColumn": "Manager",
+  "@accountsDepartmentManagerColumn": {
+    "description": "Manager column of the departments table."
+  },
+  "accountsDepartmentRevenueAccountColumn": "Default Revenue Account",
+  "@accountsDepartmentRevenueAccountColumn": {
+    "description": "Default revenue posting account column of the departments table."
+  },
+  "accountsDepartmentExpenseAccountColumn": "Default Expense Account",
+  "@accountsDepartmentExpenseAccountColumn": {
+    "description": "Default expense posting account column of the departments table."
+  },
+  "accountsDepartmentBudgetOwnerColumn": "Budget Owner",
+  "@accountsDepartmentBudgetOwnerColumn": {
+    "description": "Budget owner column of the departments table."
+  },
+  "accountsDepartmentEffectiveFromColumn": "Effective From",
+  "@accountsDepartmentEffectiveFromColumn": {
+    "description": "Effective-from column of the departments table (optional column)."
+  },
+  "accountsDepartmentEffectiveToColumn": "Effective To",
+  "@accountsDepartmentEffectiveToColumn": {
+    "description": "Effective-to column of the departments table (optional column)."
+  },
+  "accountsDepartmentStatusColumn": "Status",
+  "@accountsDepartmentStatusColumn": {
+    "description": "Status column of the departments table."
+  },
+  "accountsDepartmentActionsColumn": "Actions",
+  "@accountsDepartmentActionsColumn": {
+    "description": "Row actions column of the departments table."
+  },
+  "accountsDepartmentStatusDraft": "Draft",
+  "@accountsDepartmentStatusDraft": {
+    "description": "Department status: not yet available to downstream workflows."
+  },
+  "accountsDepartmentStatusActive": "Active",
+  "@accountsDepartmentStatusActive": {
+    "description": "Department status: selectable by permitted workflows."
+  },
+  "accountsDepartmentStatusInactive": "Inactive",
+  "@accountsDepartmentStatusInactive": {
+    "description": "Department status: retained but not selectable for new work."
+  },
+  "accountsDepartmentStatusArchived": "Archived",
+  "@accountsDepartmentStatusArchived": {
+    "description": "Department status: soft-deleted historical record."
+  },
+  "accountsDepartmentDateRangeFilterLabel": "Effective period",
+  "@accountsDepartmentDateRangeFilterLabel": {
+    "description": "Advanced filter label for the department effective window."
+  },
+  "accountsDepartmentFacilityFilterLabel": "Facility",
+  "@accountsDepartmentFacilityFilterLabel": {
+    "description": "Advanced filter label for the facility that owns a department."
+  },
+  "accountsDepartmentCostCentreFilterLabel": "Department / cost centre",
+  "@accountsDepartmentCostCentreFilterLabel": {
+    "description": "Advanced filter label for the hierarchical department and cost centre picker."
+  },
+  "accountsDepartmentOwnerFilterLabel": "Owner / assigned user",
+  "@accountsDepartmentOwnerFilterLabel": {
+    "description": "Advanced filter label matching a department manager or budget owner."
+  },
+  "accountsDepartmentNewRecordAction": "New record",
+  "@accountsDepartmentNewRecordAction": {
+    "description": "Toolbar action that opens the department create dialog."
+  },
+  "accountsDepartmentViewAction": "View",
+  "@accountsDepartmentViewAction": {
+    "description": "Row action that opens the department detail dialog."
+  },
+  "accountsDepartmentCloneAction": "Clone",
+  "@accountsDepartmentCloneAction": {
+    "description": "Row action that copies a department into a new unsaved draft."
+  },
+  "accountsDepartmentActivateAction": "Activate",
+  "@accountsDepartmentActivateAction": {
+    "description": "Row action that moves a department to Active."
+  },
+  "accountsDepartmentDeactivateAction": "Deactivate",
+  "@accountsDepartmentDeactivateAction": {
+    "description": "Row action that moves a department to Inactive."
+  },
+  "accountsDepartmentArchiveAction": "Archive",
+  "@accountsDepartmentArchiveAction": {
+    "description": "Row action that soft-archives a department."
+  },
+  "accountsDepartmentRestoreAction": "Restore",
+  "@accountsDepartmentRestoreAction": {
+    "description": "Row action that restores an archived department."
+  },
+  "accountsDepartmentBulkActivateAction": "Activate selected",
+  "@accountsDepartmentBulkActivateAction": {
+    "description": "Bulk action that activates every eligible matching department."
+  },
+  "accountsDepartmentBulkDeactivateAction": "Deactivate selected",
+  "@accountsDepartmentBulkDeactivateAction": {
+    "description": "Bulk action that deactivates every eligible matching department."
+  },
+  "accountsDepartmentBulkArchiveAction": "Archive selected",
+  "@accountsDepartmentBulkArchiveAction": {
+    "description": "Bulk action that archives every eligible matching department."
+  },
+  "accountsDepartmentCreateTitle": "Add department",
+  "@accountsDepartmentCreateTitle": {
+    "description": "Title of the department create dialog."
+  },
+  "accountsDepartmentEditTitle": "Edit department",
+  "@accountsDepartmentEditTitle": {
+    "description": "Title of the department edit dialog."
+  },
+  "accountsDepartmentCloneTitle": "Clone department",
+  "@accountsDepartmentCloneTitle": {
+    "description": "Title of the department clone dialog."
+  },
+  "accountsDepartmentDetailTitle": "Department details",
+  "@accountsDepartmentDetailTitle": {
+    "description": "Title of the department detail dialog."
+  },
+  "accountsDepartmentIdentitySection": "Department identity",
+  "@accountsDepartmentIdentitySection": {
+    "description": "Form section grouping the identifying fields of a department."
+  },
+  "accountsDepartmentStructureSection": "Structure",
+  "@accountsDepartmentStructureSection": {
+    "description": "Form section grouping the parent, facility, and manager of a department."
+  },
+  "accountsDepartmentPostingSection": "Default posting accounts",
+  "@accountsDepartmentPostingSection": {
+    "description": "Form section grouping the default revenue and expense accounts."
+  },
+  "accountsDepartmentSummarySection": "Summary",
+  "@accountsDepartmentSummarySection": {
+    "description": "Detail dialog section holding the key department fields."
+  },
+  "accountsDepartmentRelatedSection": "Related records",
+  "@accountsDepartmentRelatedSection": {
+    "description": "Detail dialog section holding cross-module references."
+  },
+  "accountsDepartmentAttachmentsSection": "Attachments",
+  "@accountsDepartmentAttachmentsSection": {
+    "description": "Detail dialog section holding department attachments."
+  },
+  "accountsDepartmentActivitySection": "Activity & audit",
+  "@accountsDepartmentActivitySection": {
+    "description": "Detail dialog section holding the immutable department timeline."
+  },
+  "accountsDepartmentRelatedEmpty": "No related records.",
+  "@accountsDepartmentRelatedEmpty": {
+    "description": "Empty state for the department related-records section."
+  },
+  "accountsDepartmentAttachmentsEmpty": "No attachments.",
+  "@accountsDepartmentAttachmentsEmpty": {
+    "description": "Empty state for the department attachments section."
+  },
+  "accountsDepartmentActivityCreated": "Created",
+  "@accountsDepartmentActivityCreated": {
+    "description": "Activity timeline label for the department creation timestamp."
+  },
+  "accountsDepartmentActivityUpdated": "Last updated",
+  "@accountsDepartmentActivityUpdated": {
+    "description": "Activity timeline label for the department update timestamp."
+  },
+  "accountsDepartmentActivityArchived": "Archived",
+  "@accountsDepartmentActivityArchived": {
+    "description": "Activity timeline label for the department archive timestamp."
+  },
+  "accountsDepartmentVersionLabel": "Record version",
+  "@accountsDepartmentVersionLabel": {
+    "description": "Activity timeline label for the optimistic record version."
+  },
+  "accountsDepartmentOwnedNotice": "This department is maintained with facility setup. Editing here updates the same record.",
+  "@accountsDepartmentOwnedNotice": {
+    "description": "Notice clarifying that the finance tab edits the shared department record."
+  },
+  "accountsDepartmentRequiredField": "This field is required.",
+  "@accountsDepartmentRequiredField": {
+    "description": "Validation message for a missing required department value."
+  },
+  "accountsDepartmentEffectiveToBeforeFrom": "Effective To must not be earlier than Effective From.",
+  "@accountsDepartmentEffectiveToBeforeFrom": {
+    "description": "Validation message for a department effective window that ends before it starts."
+  },
+  "accountsDepartmentActivateConfirmTitle": "Activate department?",
+  "@accountsDepartmentActivateConfirmTitle": {
+    "description": "Confirmation title for activating a department."
+  },
+  "accountsDepartmentDeactivateConfirmTitle": "Deactivate department?",
+  "@accountsDepartmentDeactivateConfirmTitle": {
+    "description": "Confirmation title for deactivating a department."
+  },
+  "accountsDepartmentArchiveConfirmTitle": "Archive department?",
+  "@accountsDepartmentArchiveConfirmTitle": {
+    "description": "Confirmation title for archiving a department."
+  },
+  "accountsDepartmentRestoreConfirmTitle": "Restore department?",
+  "@accountsDepartmentRestoreConfirmTitle": {
+    "description": "Confirmation title for restoring an archived department."
+  },
+  "accountsDepartmentArchiveConfirmBody": "The department is archived, not deleted. History stays available and the record can be restored. Archiving is refused while live child departments, units, or wards still reference it.",
+  "@accountsDepartmentArchiveConfirmBody": {
+    "description": "Confirmation body clarifying that archive is a soft, reference-guarded state change."
+  },
+  "accountsDepartmentActivateConfirmBody": "Activate {reference} so permitted workflows can select it?",
+  "@accountsDepartmentActivateConfirmBody": {
+    "description": "Confirmation body for activating a department.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsDepartmentDeactivateConfirmBody": "Deactivate {reference} so it is no longer selectable for new work?",
+  "@accountsDepartmentDeactivateConfirmBody": {
+    "description": "Confirmation body for deactivating a department.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsDepartmentRestoreConfirmBody": "Restore {reference} and record the change in the audit trail?",
+  "@accountsDepartmentRestoreConfirmBody": {
+    "description": "Confirmation body for restoring an archived department.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsDepartmentBulkConfirmBody": "{count, plural, one{Apply this change to {count} matching department? Records that do not allow the change are skipped.} other{Apply this change to {count} matching departments? Records that do not allow the change are skipped.}}",
+  "@accountsDepartmentBulkConfirmBody": {
+    "description": "Confirmation body for a bulk department workflow action.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsDepartmentBulkPartialFailure": "{count, plural, one{{count} record could not be changed.} other{{count} records could not be changed.}}",
+  "@accountsDepartmentBulkPartialFailure": {
+    "description": "Feedback shown when part of a bulk department action failed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsDepartmentMobileCaption": "{departmentCode} · {costCentreCode}",
+  "@accountsDepartmentMobileCaption": {
+    "description": "Compact mobile row caption pairing the department code with the cost centre code.",
+    "placeholders": {
+      "departmentCode": {
+        "type": "String"
+      },
+      "costCentreCode": {
+        "type": "String"
+      }
+    }
   }
 }

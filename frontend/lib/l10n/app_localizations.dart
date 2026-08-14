@@ -51363,6 +51363,423 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{startDate} – {endDate}'**
   String accountsFiscalMobileDateRange(String startDate, String endDate);
+
+  /// Accounts & Finance -> Setup & Controls -> Departments & Cost Centres tab label.
+  ///
+  /// In en, this message translates to:
+  /// **'Departments & Cost Centres'**
+  String get accountsDepartmentsLabel;
+
+  /// Tooltip for the Departments & Cost Centres tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Departments, their cost centres, default posting accounts, and ownership'**
+  String get accountsDepartmentsTooltip;
+
+  /// Empty-state title for the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'No departments match.'**
+  String get accountsDepartmentsEmpty;
+
+  /// Empty-state body for the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another search or add a department.'**
+  String get accountsDepartmentsEmptyBody;
+
+  /// Search field hint and accessibility label for the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference, department, cost centre…'**
+  String get accountsDepartmentsSearchHint;
+
+  /// Human-friendly reference column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference'**
+  String get accountsDepartmentReferenceColumn;
+
+  /// Department code column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Department Code'**
+  String get accountsDepartmentCodeColumn;
+
+  /// Department name column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Department Name'**
+  String get accountsDepartmentNameColumn;
+
+  /// Cost centre code column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Centre Code'**
+  String get accountsDepartmentCostCentreCodeColumn;
+
+  /// Cost centre name column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Centre Name'**
+  String get accountsDepartmentCostCentreNameColumn;
+
+  /// Parent department column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent'**
+  String get accountsDepartmentParentColumn;
+
+  /// Facility column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get accountsDepartmentFacilityColumn;
+
+  /// Manager column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Manager'**
+  String get accountsDepartmentManagerColumn;
+
+  /// Default revenue posting account column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Default Revenue Account'**
+  String get accountsDepartmentRevenueAccountColumn;
+
+  /// Default expense posting account column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Default Expense Account'**
+  String get accountsDepartmentExpenseAccountColumn;
+
+  /// Budget owner column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget Owner'**
+  String get accountsDepartmentBudgetOwnerColumn;
+
+  /// Effective-from column of the departments table (optional column).
+  ///
+  /// In en, this message translates to:
+  /// **'Effective From'**
+  String get accountsDepartmentEffectiveFromColumn;
+
+  /// Effective-to column of the departments table (optional column).
+  ///
+  /// In en, this message translates to:
+  /// **'Effective To'**
+  String get accountsDepartmentEffectiveToColumn;
+
+  /// Status column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get accountsDepartmentStatusColumn;
+
+  /// Row actions column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get accountsDepartmentActionsColumn;
+
+  /// Department status: not yet available to downstream workflows.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get accountsDepartmentStatusDraft;
+
+  /// Department status: selectable by permitted workflows.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get accountsDepartmentStatusActive;
+
+  /// Department status: retained but not selectable for new work.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get accountsDepartmentStatusInactive;
+
+  /// Department status: soft-deleted historical record.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get accountsDepartmentStatusArchived;
+
+  /// Advanced filter label for the department effective window.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective period'**
+  String get accountsDepartmentDateRangeFilterLabel;
+
+  /// Advanced filter label for the facility that owns a department.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get accountsDepartmentFacilityFilterLabel;
+
+  /// Advanced filter label for the hierarchical department and cost centre picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Department / cost centre'**
+  String get accountsDepartmentCostCentreFilterLabel;
+
+  /// Advanced filter label matching a department manager or budget owner.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner / assigned user'**
+  String get accountsDepartmentOwnerFilterLabel;
+
+  /// Toolbar action that opens the department create dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'New record'**
+  String get accountsDepartmentNewRecordAction;
+
+  /// Row action that opens the department detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get accountsDepartmentViewAction;
+
+  /// Row action that copies a department into a new unsaved draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Clone'**
+  String get accountsDepartmentCloneAction;
+
+  /// Row action that moves a department to Active.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate'**
+  String get accountsDepartmentActivateAction;
+
+  /// Row action that moves a department to Inactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate'**
+  String get accountsDepartmentDeactivateAction;
+
+  /// Row action that soft-archives a department.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get accountsDepartmentArchiveAction;
+
+  /// Row action that restores an archived department.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get accountsDepartmentRestoreAction;
+
+  /// Bulk action that activates every eligible matching department.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate selected'**
+  String get accountsDepartmentBulkActivateAction;
+
+  /// Bulk action that deactivates every eligible matching department.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate selected'**
+  String get accountsDepartmentBulkDeactivateAction;
+
+  /// Bulk action that archives every eligible matching department.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive selected'**
+  String get accountsDepartmentBulkArchiveAction;
+
+  /// Title of the department create dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Add department'**
+  String get accountsDepartmentCreateTitle;
+
+  /// Title of the department edit dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit department'**
+  String get accountsDepartmentEditTitle;
+
+  /// Title of the department clone dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Clone department'**
+  String get accountsDepartmentCloneTitle;
+
+  /// Title of the department detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Department details'**
+  String get accountsDepartmentDetailTitle;
+
+  /// Form section grouping the identifying fields of a department.
+  ///
+  /// In en, this message translates to:
+  /// **'Department identity'**
+  String get accountsDepartmentIdentitySection;
+
+  /// Form section grouping the parent, facility, and manager of a department.
+  ///
+  /// In en, this message translates to:
+  /// **'Structure'**
+  String get accountsDepartmentStructureSection;
+
+  /// Form section grouping the default revenue and expense accounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Default posting accounts'**
+  String get accountsDepartmentPostingSection;
+
+  /// Detail dialog section holding the key department fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get accountsDepartmentSummarySection;
+
+  /// Detail dialog section holding cross-module references.
+  ///
+  /// In en, this message translates to:
+  /// **'Related records'**
+  String get accountsDepartmentRelatedSection;
+
+  /// Detail dialog section holding department attachments.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachments'**
+  String get accountsDepartmentAttachmentsSection;
+
+  /// Detail dialog section holding the immutable department timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity & audit'**
+  String get accountsDepartmentActivitySection;
+
+  /// Empty state for the department related-records section.
+  ///
+  /// In en, this message translates to:
+  /// **'No related records.'**
+  String get accountsDepartmentRelatedEmpty;
+
+  /// Empty state for the department attachments section.
+  ///
+  /// In en, this message translates to:
+  /// **'No attachments.'**
+  String get accountsDepartmentAttachmentsEmpty;
+
+  /// Activity timeline label for the department creation timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get accountsDepartmentActivityCreated;
+
+  /// Activity timeline label for the department update timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated'**
+  String get accountsDepartmentActivityUpdated;
+
+  /// Activity timeline label for the department archive timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get accountsDepartmentActivityArchived;
+
+  /// Activity timeline label for the optimistic record version.
+  ///
+  /// In en, this message translates to:
+  /// **'Record version'**
+  String get accountsDepartmentVersionLabel;
+
+  /// Notice clarifying that the finance tab edits the shared department record.
+  ///
+  /// In en, this message translates to:
+  /// **'This department is maintained with facility setup. Editing here updates the same record.'**
+  String get accountsDepartmentOwnedNotice;
+
+  /// Validation message for a missing required department value.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required.'**
+  String get accountsDepartmentRequiredField;
+
+  /// Validation message for a department effective window that ends before it starts.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective To must not be earlier than Effective From.'**
+  String get accountsDepartmentEffectiveToBeforeFrom;
+
+  /// Confirmation title for activating a department.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate department?'**
+  String get accountsDepartmentActivateConfirmTitle;
+
+  /// Confirmation title for deactivating a department.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate department?'**
+  String get accountsDepartmentDeactivateConfirmTitle;
+
+  /// Confirmation title for archiving a department.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive department?'**
+  String get accountsDepartmentArchiveConfirmTitle;
+
+  /// Confirmation title for restoring an archived department.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore department?'**
+  String get accountsDepartmentRestoreConfirmTitle;
+
+  /// Confirmation body clarifying that archive is a soft, reference-guarded state change.
+  ///
+  /// In en, this message translates to:
+  /// **'The department is archived, not deleted. History stays available and the record can be restored. Archiving is refused while live child departments, units, or wards still reference it.'**
+  String get accountsDepartmentArchiveConfirmBody;
+
+  /// Confirmation body for activating a department.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate {reference} so permitted workflows can select it?'**
+  String accountsDepartmentActivateConfirmBody(String reference);
+
+  /// Confirmation body for deactivating a department.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate {reference} so it is no longer selectable for new work?'**
+  String accountsDepartmentDeactivateConfirmBody(String reference);
+
+  /// Confirmation body for restoring an archived department.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore {reference} and record the change in the audit trail?'**
+  String accountsDepartmentRestoreConfirmBody(String reference);
+
+  /// Confirmation body for a bulk department workflow action.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Apply this change to {count} matching department? Records that do not allow the change are skipped.} other{Apply this change to {count} matching departments? Records that do not allow the change are skipped.}}'**
+  String accountsDepartmentBulkConfirmBody(int count);
+
+  /// Feedback shown when part of a bulk department action failed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} record could not be changed.} other{{count} records could not be changed.}}'**
+  String accountsDepartmentBulkPartialFailure(int count);
+
+  /// Compact mobile row caption pairing the department code with the cost centre code.
+  ///
+  /// In en, this message translates to:
+  /// **'{departmentCode} · {costCentreCode}'**
+  String accountsDepartmentMobileCaption(
+    String departmentCode,
+    String costCentreCode,
+  );
 }
 
 class _AppLocalizationsDelegate

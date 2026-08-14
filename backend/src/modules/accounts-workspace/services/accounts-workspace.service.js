@@ -6,6 +6,7 @@ const { toDecimalNumber, toMoneyString } = require('@lib/billing/financials');
 const billingService = require('@services/billing/billing.service');
 const fiscalPeriodService = require('@services/accounts-workspace/fiscal-period.service');
 const postingRuleService = require('@services/accounts-workspace/posting-rule.service');
+const departmentService = require('@services/accounts-workspace/department-cost-centre.service');
 const repo = require('@repositories/accounts-workspace/accounts-workspace.repository');
 
 const clean = (value) => String(value ?? '').trim();
@@ -220,6 +221,10 @@ const getWorkspace = async (filters = {}, user = {}) => {
     filters,
     user
   );
+  const departmentsCount = await departmentService.countActiveDepartments(
+    filters,
+    user
+  );
 
   return {
     summary: {
@@ -241,6 +246,8 @@ const getWorkspace = async (filters = {}, user = {}) => {
       fiscal_periods_active_count: fiscalPeriodsCount,
       posting_rules: postingRulesCount,
       posting_rules_active_count: postingRulesCount,
+      departments_and_cost_centres: departmentsCount,
+      departments_active_count: departmentsCount,
     },
     generated_at: new Date().toISOString(),
   };
@@ -257,6 +264,8 @@ const WORK_ITEM_SECTION_HANDLERS = {
     fiscalPeriodService.listFiscalPeriods(filters, page, limit, user),
   [postingRuleService.SECTION_SLUG]: (filters, page, limit, user) =>
     postingRuleService.listPostingRules(filters, page, limit, user),
+  [departmentService.SECTION_SLUG]: (filters, page, limit, user) =>
+    departmentService.listDepartments(filters, page, limit, user),
 };
 
 const listWorkItems = async (filters = {}, page = 1, limit = 20, user = {}) => {
