@@ -119,13 +119,14 @@ makes `src/config/env.js` load `.env.production` instead of `.env.development`:
 npm start
 ```
 
-For reverse-proxy deployments such as `api.hosspi.com` behind Nginx, `.env.production` should set:
+For reverse-proxy deployments such as `api.hosspi.com` (backend) behind Nginx, `.env.production`
+should set:
 
 - `NODE_ENV="production"`
 - `HOST="127.0.0.1"` so Node only listens locally
 - `TRUST_PROXY="1"` so Express honors forwarded IP/protocol headers correctly
-- `CORS_ORIGINS` to your HTTPS frontend origins
-- `APP_PUBLIC_URL` to your public frontend URL, for example `https://www.hosspi.com`
+- `CORS_ORIGINS` to your HTTPS frontend origins, for example `https://app.hosspi.com`
+- `APP_PUBLIC_URL` to your public frontend URL, for example `https://app.hosspi.com`
 - Run `npm ci --omit=dev`, `npm run prisma:generate`, and `npx prisma migrate deploy` before starting the service
 - Keep `@prisma/client` installed in production; the backend runtime loads the generated client from `node_modules/.prisma/client`
 
@@ -137,11 +138,11 @@ so the same codebase behaves correctly on your machine and on the server:
 1. On the cPanel "Setup Node.js App" screen, set **Application mode** to **Production**. cPanel
    injects `NODE_ENV=production` for the app process based on this setting, which is what makes
    `src/config/env.js` pick `.env.production`.
-2. Copy `.env.production.example` to `.env.production`, fill in the real production values
-   (database credentials, `JWT_SECRET`, `CSRF_SECRET`, `CORS_ORIGINS`, `APP_PUBLIC_URL`, etc.),
-   and upload the resulting `.env.production` file to the backend's directory on the server (via
-   cPanel File Manager or SFTP). **Never commit `.env.production`** - it is already excluded by
-   `.gitignore` (`.env.*`).
+2. Copy `env.template.txt` to `.env.production`, fill in the real production values (database
+   credentials, `JWT_SECRET`, `CSRF_SECRET`, `CORS_ORIGINS`, `APP_PUBLIC_URL`, etc.), and upload
+   the resulting `.env.production` file to the backend's directory on the server (via cPanel File
+   Manager or SFTP). **Never commit `.env.production`** - it is already excluded by `.gitignore`
+   (`.env.*`).
 3. cPanel's Node.js Selector assigns and injects its own `PORT` for the app - the `PORT` value in
    `.env.production` is only a fallback for manual (non-Passenger) runs.
 4. Run the install/build steps from the cPanel "Setup Node.js App" terminal (or SSH, if
