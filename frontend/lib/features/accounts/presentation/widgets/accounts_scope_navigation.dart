@@ -19,7 +19,6 @@ int accountsSectionTabCount(
   int? ledgersBalanceOverride,
   int? chartActiveOverride,
   int? fiscalPeriodsOverride,
-  int? currencyRatesOverride,
 }) {
   final AccountsSummary summary = state.overview.summary;
   final int scopeTotal = switch (section) {
@@ -32,8 +31,6 @@ int accountsSectionTabCount(
       chartActiveOverride ?? summary.countFor(section),
     AccountsDeskSection.fiscalYearsAndPeriods =>
       fiscalPeriodsOverride ?? summary.countFor(section),
-    AccountsDeskSection.currenciesAndExchangeRates =>
-      currencyRatesOverride ?? summary.countFor(section),
     _ => summary.countFor(section),
   };
 
@@ -42,8 +39,7 @@ int accountsSectionTabCount(
       section == AccountsDeskSection.invoices ||
       section == AccountsDeskSection.ledgers ||
       section == AccountsDeskSection.chart ||
-      section == AccountsDeskSection.fiscalYearsAndPeriods ||
-      section == AccountsDeskSection.currenciesAndExchangeRates;
+      section == AccountsDeskSection.fiscalYearsAndPeriods;
   if (isDedicatedPanel) {
     return scopeTotal;
   }
@@ -70,8 +66,7 @@ AppTabCountTone accountsSectionCountTone(AccountsDeskSection section) {
     AccountsDeskSection.ledgers ||
     AccountsDeskSection.chart ||
     AccountsDeskSection.invoices ||
-    AccountsDeskSection.fiscalYearsAndPeriods ||
-    AccountsDeskSection.currenciesAndExchangeRates => AppTabCountTone.info,
+    AccountsDeskSection.fiscalYearsAndPeriods => AppTabCountTone.info,
   };
 }
 
@@ -86,7 +81,6 @@ int accountsCategoryTabCount(
   int? ledgersBalanceOverride,
   int? chartActiveOverride,
   int? fiscalPeriodsOverride,
-  int? currencyRatesOverride,
 }) {
   int total = 0;
   for (final AccountsDeskSection section in category.sections) {
@@ -102,7 +96,6 @@ int accountsCategoryTabCount(
       ledgersBalanceOverride: ledgersBalanceOverride,
       chartActiveOverride: chartActiveOverride,
       fiscalPeriodsOverride: fiscalPeriodsOverride,
-      currencyRatesOverride: currencyRatesOverride,
     );
   }
   return total;

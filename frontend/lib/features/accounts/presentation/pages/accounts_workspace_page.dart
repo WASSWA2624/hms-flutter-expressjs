@@ -14,8 +14,6 @@ import 'package:hosspi_hms/features/accounts/presentation/controllers/accounts_w
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_approvals_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_chart_dialogs.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_chart_panel.dart';
-import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_currency_rate_dialogs.dart';
-import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_currency_rates_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_fiscal_period_dialogs.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_fiscal_periods_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_gl_panel.dart';
@@ -225,7 +223,6 @@ class _AccountsWorkspaceContentState
       ),
       chartActiveOverride: ref.watch(accountsChartActiveCountProvider),
       fiscalPeriodsOverride: ref.watch(accountsFiscalPeriodCountProvider),
-      currencyRatesOverride: ref.watch(accountsCurrencyRateCountProvider),
     );
   }
 
@@ -245,7 +242,6 @@ class _AccountsWorkspaceContentState
       ),
       chartActiveOverride: ref.watch(accountsChartActiveCountProvider),
       fiscalPeriodsOverride: ref.watch(accountsFiscalPeriodCountProvider),
-      currencyRatesOverride: ref.watch(accountsCurrencyRateCountProvider),
     );
   }
 
@@ -392,8 +388,6 @@ class _AccountsWorkspaceContentState
       AccountsDeskSection.invoices => const AccountsInvoicesPanel(),
       AccountsDeskSection.fiscalYearsAndPeriods =>
         const AccountsFiscalPeriodsPanel(),
-      AccountsDeskSection.currenciesAndExchangeRates =>
-        const AccountsCurrencyRatesPanel(),
     };
   }
 }

@@ -1,8 +1,5 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
-import 'package:hosspi_hms/features/accounts/domain/entities/accounts_currency_rate.dart';
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.dart';
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_fiscal_period.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
@@ -160,8 +157,6 @@ String accountsSectionLabel(AccountsDeskSection section) {
     AccountsDeskSection.invoices => AccountsStrings.invoicesLabel,
     AccountsDeskSection.fiscalYearsAndPeriods =>
       AccountsStrings.fiscalPeriodsLabel,
-    AccountsDeskSection.currenciesAndExchangeRates =>
-      AccountsStrings.currenciesLabel,
   };
 }
 
@@ -199,8 +194,6 @@ String? accountsSectionTooltip(AccountsDeskSection section) {
     AccountsDeskSection.invoices => AccountsStrings.invoicesTooltip,
     AccountsDeskSection.fiscalYearsAndPeriods =>
       AccountsStrings.fiscalPeriodsTooltip,
-    AccountsDeskSection.currenciesAndExchangeRates =>
-      AccountsStrings.currenciesTooltip,
   };
 }
 
@@ -214,8 +207,6 @@ String accountsTableSettingsKey(AccountsDeskSection section) {
     AccountsDeskSection.chart => 'accounts_chart_v1',
     AccountsDeskSection.invoices => 'accounts_invoices_v1',
     AccountsDeskSection.fiscalYearsAndPeriods => 'accounts_fiscal_periods_v1',
-    AccountsDeskSection.currenciesAndExchangeRates =>
-      'accounts_currency_rates_v1',
   };
 }
 
@@ -229,8 +220,6 @@ IconData accountsSectionIcon(AccountsDeskSection section) {
     AccountsDeskSection.chart => Icons.list_alt_outlined,
     AccountsDeskSection.invoices => Icons.receipt_long_outlined,
     AccountsDeskSection.fiscalYearsAndPeriods => Icons.event_note_outlined,
-    AccountsDeskSection.currenciesAndExchangeRates =>
-      Icons.currency_exchange_outlined,
   };
 }
 
@@ -245,8 +234,6 @@ String accountsEmptyBody(AccountsDeskSection section) {
     AccountsDeskSection.invoices => AccountsStrings.invoicesEmpty,
     AccountsDeskSection.fiscalYearsAndPeriods =>
       AccountsStrings.fiscalPeriodsEmpty,
-    AccountsDeskSection.currenciesAndExchangeRates =>
-      AccountsStrings.currenciesEmpty,
   };
 }
 
@@ -277,76 +264,6 @@ IconData accountsFiscalPeriodStatusIcon(AccountsFiscalPeriodStatus status) {
     AccountsFiscalPeriodStatus.inactive => Icons.pause_circle_outline,
     AccountsFiscalPeriodStatus.archived => Icons.inventory_2_outlined,
   };
-}
-
-String accountsCurrencyStatusLabel(AccountsCurrencyStatus status) {
-  return switch (status) {
-    AccountsCurrencyStatus.draft => AccountsStrings.currencyStatusDraft,
-    AccountsCurrencyStatus.active => AccountsStrings.currencyStatusActive,
-    AccountsCurrencyStatus.inactive => AccountsStrings.currencyStatusInactive,
-    AccountsCurrencyStatus.archived => AccountsStrings.currencyStatusArchived,
-  };
-}
-
-AppWorkspaceStatusTone accountsCurrencyStatusTone(
-  AccountsCurrencyStatus status,
-) {
-  return switch (status) {
-    AccountsCurrencyStatus.active => AppWorkspaceStatusTone.success,
-    AccountsCurrencyStatus.draft => AppWorkspaceStatusTone.warning,
-    AccountsCurrencyStatus.inactive => AppWorkspaceStatusTone.neutral,
-    AccountsCurrencyStatus.archived => AppWorkspaceStatusTone.neutral,
-  };
-}
-
-IconData accountsCurrencyStatusIcon(AccountsCurrencyStatus status) {
-  return switch (status) {
-    AccountsCurrencyStatus.draft => Icons.edit_note_outlined,
-    AccountsCurrencyStatus.active => Icons.check_circle_outline,
-    AccountsCurrencyStatus.inactive => Icons.pause_circle_outline,
-    AccountsCurrencyStatus.archived => Icons.inventory_2_outlined,
-  };
-}
-
-String accountsCurrencyRateTypeLabel(AccountsCurrencyRateType type) {
-  return switch (type) {
-    AccountsCurrencyRateType.spot => AccountsStrings.currencyRateTypeSpot,
-    AccountsCurrencyRateType.daily => AccountsStrings.currencyRateTypeDaily,
-    AccountsCurrencyRateType.monthly => AccountsStrings.currencyRateTypeMonthly,
-    AccountsCurrencyRateType.budget => AccountsStrings.currencyRateTypeBudget,
-    AccountsCurrencyRateType.contract =>
-      AccountsStrings.currencyRateTypeContract,
-  };
-}
-
-String accountsCurrencyRateActionLabel(AccountsCurrencyRateAction action) {
-  return switch (action) {
-    AccountsCurrencyRateAction.activate => AccountsStrings.currencyActivateAction,
-    AccountsCurrencyRateAction.deactivate =>
-      AccountsStrings.currencyDeactivateAction,
-    AccountsCurrencyRateAction.archive => AccountsStrings.currencyArchiveAction,
-    AccountsCurrencyRateAction.restore => AccountsStrings.currencyRestoreAction,
-  };
-}
-
-/// Right-aligned rate display at the currency's configured precision.
-///
-/// Rates carry more precision than money, so the currency's own
-/// `decimal_places` is the floor and four fraction digits the minimum.
-String accountsRate(
-  BuildContext context,
-  double? value, {
-  int decimalPlaces = 2,
-}) {
-  if (value == null) {
-    return AccountsStrings.unknownValue;
-  }
-  final int digits = math.max(decimalPlaces, 4);
-  return AppFormatters.decimal(
-    value,
-    Localizations.localeOf(context),
-    decimalDigits: digits,
-  );
 }
 
 /// Localized date-only display; the API keeps ISO-8601.

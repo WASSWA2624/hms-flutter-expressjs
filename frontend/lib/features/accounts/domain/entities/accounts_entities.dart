@@ -24,7 +24,6 @@ enum AccountsDeskCategory {
       ],
       AccountsDeskCategory.setupAndControls => const <AccountsDeskSection>[
         AccountsDeskSection.fiscalYearsAndPeriods,
-        AccountsDeskSection.currenciesAndExchangeRates,
       ],
     };
   }
@@ -48,8 +47,7 @@ enum AccountsDeskSection {
   ledgers,
   chart,
   invoices,
-  fiscalYearsAndPeriods('fiscal-years-and-periods'),
-  currenciesAndExchangeRates('currencies-and-exchange-rates');
+  fiscalYearsAndPeriods('fiscal-years-and-periods');
 
   const AccountsDeskSection([this.canonicalSlug]);
 
@@ -98,11 +96,6 @@ enum AccountsDeskSection {
       // tab rather than Invoices.
       'periods' =>
         AccountsDeskSection.fiscalYearsAndPeriods,
-      'currencies-and-exchange-rates' ||
-      'currenciesandexchangerates' ||
-      'currencies' ||
-      'exchange-rates' =>
-        AccountsDeskSection.currenciesAndExchangeRates,
       _ => null,
     };
   }
@@ -269,7 +262,6 @@ final class AccountsSummary {
     this.chartActive = 0,
     this.invoices = 0,
     this.fiscalPeriodsActive = 0,
-    this.currencyRatesActive = 0,
   });
 
   final int openWork;
@@ -280,7 +272,6 @@ final class AccountsSummary {
   final int chartActive;
   final int invoices;
   final int fiscalPeriodsActive;
-  final int currencyRatesActive;
 
   /// Alias used by mutation applier / legacy callers.
   int get approvals => needApproval;
@@ -293,7 +284,6 @@ final class AccountsSummary {
   int get chartActiveCount => chartActive;
   int get invoicesCount => invoices;
   int get fiscalPeriodsActiveCount => fiscalPeriodsActive;
-  int get currencyRatesActiveCount => currencyRatesActive;
 
   int get workloadCount => openWork;
 
@@ -307,7 +297,6 @@ final class AccountsSummary {
       AccountsDeskSection.chart => chartActive,
       AccountsDeskSection.invoices => invoices,
       AccountsDeskSection.fiscalYearsAndPeriods => fiscalPeriodsActive,
-      AccountsDeskSection.currenciesAndExchangeRates => currencyRatesActive,
     };
   }
 
@@ -320,7 +309,6 @@ final class AccountsSummary {
     int? chartActive,
     int? invoices,
     int? fiscalPeriodsActive,
-    int? currencyRatesActive,
     int? approvals,
   }) {
     return AccountsSummary(
@@ -332,7 +320,6 @@ final class AccountsSummary {
       chartActive: chartActive ?? this.chartActive,
       invoices: invoices ?? this.invoices,
       fiscalPeriodsActive: fiscalPeriodsActive ?? this.fiscalPeriodsActive,
-      currencyRatesActive: currencyRatesActive ?? this.currencyRatesActive,
     );
   }
 }

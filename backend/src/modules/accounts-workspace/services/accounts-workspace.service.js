@@ -5,7 +5,6 @@ const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const { toDecimalNumber, toMoneyString } = require('@lib/billing/financials');
 const billingService = require('@services/billing/billing.service');
 const fiscalPeriodService = require('@services/accounts-workspace/fiscal-period.service');
-const currencyRateService = require('@services/accounts-workspace/currency-rate.service');
 const repo = require('@repositories/accounts-workspace/accounts-workspace.repository');
 
 const clean = (value) => String(value ?? '').trim();
@@ -216,10 +215,6 @@ const getWorkspace = async (filters = {}, user = {}) => {
     filters,
     user
   );
-  const currencyRatesCount = await currencyRateService.countActiveCurrencyRates(
-    filters,
-    user
-  );
 
   return {
     summary: {
@@ -239,8 +234,6 @@ const getWorkspace = async (filters = {}, user = {}) => {
       invoices_count: invoicesCount,
       fiscal_years_and_periods: fiscalPeriodsCount,
       fiscal_periods_active_count: fiscalPeriodsCount,
-      currencies_and_exchange_rates: currencyRatesCount,
-      currency_rates_active_count: currencyRatesCount,
     },
     generated_at: new Date().toISOString(),
   };
@@ -255,8 +248,6 @@ const getWorkspace = async (filters = {}, user = {}) => {
 const WORK_ITEM_SECTION_HANDLERS = {
   [fiscalPeriodService.SECTION_SLUG]: (filters, page, limit, user) =>
     fiscalPeriodService.listFiscalPeriods(filters, page, limit, user),
-  [currencyRateService.SECTION_SLUG]: (filters, page, limit, user) =>
-    currencyRateService.listCurrencyRates(filters, page, limit, user),
 };
 
 const listWorkItems = async (filters = {}, page = 1, limit = 20, user = {}) => {

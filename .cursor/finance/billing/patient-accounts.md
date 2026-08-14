@@ -19,13 +19,29 @@ Provides a read-oriented patient accounts table for analysis, reconciliation, dr
 
 This is a target-state specification. Existing Billing, Accounts, or Claims code may implement only a subset; the source-of-truth document and this specification define the intended refactor.
 
+## Existing implementation to reuse
+
+Run the reuse audit in [../_shared/existing-implementation.md](../_shared/existing-implementation.md) before writing code. This surface is a refactor of existing code unless the audit proves a genuine gap.
+
+- Billing workspace and desk queues (all work / needs issue / collect / claims pending / approvals): `frontend/lib/features/billing/presentation/pages/billing_workspace_page.dart`, `frontend/lib/features/billing/domain/entities/billing_entities.dart`
+- Billing backend: `backend/src/modules/billing/`, `backend/src/modules/billing-adjustment/`, `backend/src/lib/billing/`
+- Currency defaults, formatting, precision, and conversion: `frontend/lib/shared/components/app_currency.dart`, `frontend/lib/core/currency/effective_default_currency_provider.dart`, `frontend/lib/core/currency/fx_currency_utils.dart`, `frontend/lib/shared/components/app_currency_amount_field.dart`, `frontend/lib/shared/components/app_currency_select_field.dart`
+- Workspace shell, tables, dialogs, forms, toolbars, and print: `frontend/lib/shared/components/`, `frontend/lib/shared/layout/`
+- Permissions, entitlement, ABAC, and access gating: `frontend/lib/core/permissions/`, `backend/src/modules/abac-policy/`, `backend/src/modules/permission/`
+- Report definitions, runs, schedules, and exports: `backend/src/modules/report-definition/`, `backend/src/modules/report-run/`, `backend/src/modules/report-schedule/`, `backend/src/modules/reports-workspace/`, `frontend/lib/features/reports/presentation/pages/reports_workspace_page.dart`
+- Audit, change, and PHI-access history: `backend/src/modules/audit-log/`, `backend/src/modules/system-change-log/`, `backend/src/modules/phi-access-log/`
+
+Extend the owning module in place. Do not add a parallel model, route family, controller, panel, permission key, or formatter for a record something above already owns, and do not create a second source of truth for it.
+
 ## Navigation and workspace placement
 
 - **Menu path:** `Billing → Patient Accounts`
 - **Canonical URL:** `/billing?section=patient-accounts`
-- **Tab kind:** permanent `analysis` table/worklist
-- **Reopen behavior:** focus the existing tab and preserve search, filters, sort, page, and selected columns
+- **Surface kind:** permanent `analysis` table/worklist tab
+- **Reopen behavior:** focus the existing surface and preserve search, filters, sort, page, and selected columns
 - **Parent behavior:** The Billing menu opens this flat workspace tab
+- **Forbidden:** a category tab row above the section strip, or nested menu items for a flat workspace
+- **Navigation contract:** [../_shared/navigation-model.md](../_shared/navigation-model.md)
 - **Source:** [billing-accounts-finance.md](../../billing-accounts-finance.md) §§9.2 / 10.2
 
 ## Pharmacy-guided UI implementation
@@ -33,13 +49,13 @@ This is a target-state specification. Existing Billing, Accounts, or Claims code
 Follow the `/pharmacy` workspace conventions:
 
 - `AsyncStateScaffold` → `ResponsivePage` → `AppWorkspace`
-- `AppTabStrip` for Billing and Insurance tabs; Accounts leaf submenu selection opens the same tab model
+- One flat `AppTabStrip` for workspace sections; no nested tab variant
 - `AppListTable` for the primary table, server pagination, saved columns, export, and print
 - Row click opens `showAppDialog` / `AppDialog`; sections use `AppWorkspaceDetailPanel`
 - Mutations use `AppWorkspaceMutationDialog` or `AppDialog`, not permanent create/edit tabs
-- `AppAccessActionGate` hides unauthorized buttons; unavailable menu/tabs are omitted
+- `AppAccessActionGate` hides unauthorized buttons; unavailable menu items and tabs are omitted
 - `syncWorkspaceLocation` keeps the section slug, filters, and deep links synchronized
-- Active tab count comes from the filtered server total; inactive badge counts come from the workspace summary
+- The active surface's count badge comes from the filtered server total; sibling badge counts come from the workspace summary
 
 See [../_shared/workspace-pattern.md](../_shared/workspace-pattern.md) for exact Pharmacy references and the target extraction pattern.
 
@@ -189,8 +205,9 @@ Warnings are visibly distinct from blocking errors. Override actions require an 
 
 ## Refactor work breakdown
 
+0. **Reuse audit:** complete the five steps in [../_shared/existing-implementation.md](../_shared/existing-implementation.md) and record which of the steps below collapse into extending existing code.
 1. **Navigation:** add `patient-accounts` to the workspace section enum/query parser, canonical slug map, localized label, permission filter, and count-badge mapper.
-2. **Presentation:** extract `frontend/lib/features/billing/presentation/widgets/patient_accounts_tab.dart`; compose it from `AppListTable` and shared workspace components.
+2. **Presentation:** extract `frontend/lib/features/billing/presentation/widgets/billing_patient_accounts_panel.dart`; compose it from `AppListTable` and shared workspace components.
 3. **Table support:** define typed column IDs, default/optional columns, server sort keys, filters, export mapping, print mapping, empty/error states, and count semantics.
 4. **Details and CRUD:** add focused detail and mutation dialogs; include the nested tables and buttons in this specification.
 5. **State:** extend the workspace query/state/controller with a paginated result for this tab and targeted mutation refresh.
@@ -212,8 +229,10 @@ Warnings are visibly distinct from blocking errors. Override actions require an 
 
 ## Acceptance criteria
 
-- [ ] Tab appears at `Billing → Patient Accounts` only with the required entitlement and read access.
-- [ ] Canonical section slug `patient-accounts` deep-links and restores the selected tab.
+- [ ] The reuse audit ran and its outcome is recorded; no parallel model, route, panel, permission key, or formatter was added for something already owned elsewhere.
+- [ ] The Billing workspace exposes one flat tab strip with no nested tab layer and no sidebar submenu for its sections.
+- [ ] The surface appears at `Billing → Patient Accounts` only with the required entitlement and read access.
+- [ ] Canonical section slug `patient-accounts` deep-links and restores the selected surface.
 - [ ] Primary `AppListTable` exposes every tab-specific and applicable baseline column.
 - [ ] Search, filters, server sort, pagination, column chooser, saved views, export, and print work.
 - [ ] Buttons match this specification and are hidden when permission, status, or scope denies them.

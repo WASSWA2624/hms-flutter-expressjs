@@ -286,11 +286,10 @@ void main() {
   });
 
   group('navigation and scoping', () {
-    test('the tab is the first leaf under Setup & Controls', () {
-      expect(
-        AccountsDeskCategory.setupAndControls.sections.first,
-        AccountsDeskSection.fiscalYearsAndPeriods,
-      );
+    test('the tab is the only leaf under Setup & Controls', () {
+      expect(AccountsDeskCategory.setupAndControls.sections, <
+        AccountsDeskSection
+      >[AccountsDeskSection.fiscalYearsAndPeriods]);
       expect(
         AccountsDeskSection.fiscalYearsAndPeriods.category,
         AccountsDeskCategory.setupAndControls,
@@ -333,7 +332,7 @@ void main() {
       final AppTabStrip sections = tester.widget<AppTabStrip>(
         find.byKey(accountsSectionTabsKey),
       );
-      expect(sections.tabs.first.label, AccountsStrings.fiscalPeriodsLabel);
+      expect(sections.tabs.single.label, AccountsStrings.fiscalPeriodsLabel);
       expect(sections.variant, AppTabStripVariant.nested);
     });
 
@@ -342,20 +341,15 @@ void main() {
     ) async {
       await _pumpFiscalPeriods(tester, accessPolicy: _readerPolicy);
 
-      AppTabItem tab() => tester
-          .widget<AppTabStrip>(find.byKey(accountsSectionTabsKey))
-          .tabs
-          .firstWhere(
-            (AppTabItem item) =>
-                item.label == AccountsStrings.fiscalPeriodsLabel,
-          );
-      expect(tab().count, _summary.fiscalPeriodsActive);
+      AppTabStrip strip() =>
+          tester.widget<AppTabStrip>(find.byKey(accountsSectionTabsKey));
+      expect(strip().tabs.single.count, _summary.fiscalPeriodsActive);
 
       await tester.enterText(find.byType(TextField).first, 'January');
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pump(const Duration(seconds: 1));
 
-      expect(tab().count, 2);
+      expect(strip().tabs.single.count, 2);
     });
   });
 

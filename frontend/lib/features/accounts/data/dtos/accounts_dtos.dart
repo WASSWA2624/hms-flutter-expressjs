@@ -169,10 +169,6 @@ final class AccountsWorkspaceOverviewDto {
             _int(summary['fiscal_years_and_periods']) ??
             _int(summary['fiscal_periods_active_count']) ??
             0,
-        currencyRatesActive:
-            _int(summary['currencies_and_exchange_rates']) ??
-            _int(summary['currency_rates_active_count']) ??
-            0,
       ),
       generatedAt: _date(json['generated_at']),
     );

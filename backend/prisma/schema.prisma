@@ -584,21 +584,6 @@ enum FiscalPeriodStatus {
   ARCHIVED
 }
 
-enum CurrencyRateStatus {
-  DRAFT
-  ACTIVE
-  INACTIVE
-  ARCHIVED
-}
-
-enum CurrencyRateType {
-  SPOT
-  DAILY
-  MONTHLY
-  BUDGET
-  CONTRACT
-}
-
 enum PatientInsuranceEnrollmentStatus {
   ACTIVE
   EXPIRED
@@ -1086,7 +1071,6 @@ model tenant {
   chart_accounts                  chart_account[]
   accounts_invoices               accounts_invoice[]
   fiscal_periods                  fiscal_period[]
-  accounts_currency_rates         accounts_currency_rate[]
   billable_charge_events          billable_charge_event[]
   insurance_companies             insurance_company[]
   coverage_plans                  coverage_plan[]
@@ -1173,7 +1157,6 @@ model facility {
   chart_accounts                  chart_account[]
   accounts_invoices               accounts_invoice[]
   fiscal_periods                  fiscal_period[]
-  accounts_currency_rates         accounts_currency_rate[]
   billable_charge_events          billable_charge_event[]
   patient_insurance_enrollments   patient_insurance_enrollment[]
   insurer_integrations            insurer_integration[]
@@ -1540,7 +1523,6 @@ model user {
   unit_management_assignments   unit_management_assignment[]
   radiology_orders_assigned     radiology_order[]             @relation("radiology_order_assigned_user")
   fiscal_periods_reopened       fiscal_period[]               @relation("FiscalPeriodReopenedBy")
-  currency_rates_updated        accounts_currency_rate[]      @relation("CurrencyRateUpdatedBy")
 
   @@unique([tenant_id, email])
   @@unique([tenant_id, human_friendly_id])
@@ -4967,51 +4949,6 @@ model fiscal_period {
   @@index([start_date])
   @@index([end_date])
   @@index([module])
-  @@index([deleted_at])
-  @@index([human_friendly_id])
-}
-
-/// Currency registry plus its dated exchange rate for Accounts & Finance →
-/// Setup & Controls. One row per currency + rate type + effective date.
-model accounts_currency_rate {
-  id                String             @id @default(uuid()) @db.VarChar(36)
-  human_friendly_id String?            @db.VarChar(32)
-  tenant_id         String             @db.VarChar(36)
-  facility_id       String?            @db.VarChar(36)
-  currency_code     String             @db.VarChar(3)
-  currency_name     String             @db.VarChar(120)
-  symbol            String             @db.VarChar(8)
-  decimal_places    Int                @default(2)
-  is_base_currency  Boolean            @default(false)
-  rate_type         CurrencyRateType   @default(SPOT)
-  exchange_rate     Decimal            @db.Decimal(18, 8)
-  effective_date    DateTime
-  source            String?            @db.VarChar(120)
-  buy_rate          Decimal?           @db.Decimal(18, 8)
-  sell_rate         Decimal?           @db.Decimal(18, 8)
-  status            CurrencyRateStatus @default(DRAFT)
-  notes             String?            @db.VarChar(500)
-  created_by        String?            @db.VarChar(36)
-  updated_by        String?            @db.VarChar(36)
-  archived_at       DateTime?
-  created_at        DateTime           @default(now())
-  updated_at        DateTime           @updatedAt
-  deleted_at        DateTime?
-  version           Int                @default(1)
-
-  tenant       tenant    @relation(fields: [tenant_id], references: [id])
-  facility     facility? @relation(fields: [facility_id], references: [id])
-  updated_user user?     @relation("CurrencyRateUpdatedBy", fields: [updated_by], references: [id])
-
-  // Explicit name: the generated one exceeds the 64-char MySQL identifier cap.
-  @@unique([tenant_id, facility_id, currency_code, rate_type, effective_date], map: "currency_rate_scope_effective_key")
-  @@index([tenant_id])
-  @@index([facility_id])
-  @@index([currency_code])
-  @@index([rate_type])
-  @@index([status])
-  @@index([effective_date])
-  @@index([is_base_currency])
   @@index([deleted_at])
   @@index([human_friendly_id])
 }
