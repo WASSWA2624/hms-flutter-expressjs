@@ -20,7 +20,7 @@ Cross-cutting: [localization.mdc](localization.mdc), [theming.mdc](theming.mdc),
 
 ## Layout and nesting
 
-1. Keep the dialog body **flat**: one primary content flow, not stacked dialogs, nested scroll shells, or deep widget trees that feel like dialogs-inside-dialogs.
+1. Keep the dialog body **flat**: one primary content flow, not stacked dialogs, nested scroll shells, or deep widget trees that feel like dialogs-inside-dialogs or sections inside sections.
 2. Prefer progressive disclosure with `AppCollapsibleSection` over nesting another dialog or a second table inside a cell.
 3. **Do not nest** `AppCollapsibleSection` inside another `AppCollapsibleSection`. Sibling sections in a single scroll column are fine.
 4. Prefer reusable shared controls from `frontend/lib/shared/components/` (and shared forms) over one-off layout widgets.
@@ -42,7 +42,7 @@ When the dialog’s job is to browse or pick from a list (patients, roles, items
 4. **Selection mode must match intent:**
    - **Single-select:** one active row (radio-style or exclusive checkbox); no header “select all”.
    - **Multi-select:** per-row checkboxes plus a header checkbox that selects all visible/filtered rows or clears all.
-5. **No indeterminate header checkbox:** the header control is only checked (all selected) or unchecked (none / partial treated as unchecked for display). Toggling when unchecked selects all; toggling when checked clears all. Do not use `tristate` / null value for partial selection.
+5. **Indeterminate header checkbox allowed:** The header checkbox may display an indeterminate or partial (tristate) state when only some rows are selected. Toggling the header when unchecked or indeterminate should select all; toggling when checked should clear all. Support for the indeterminate visual state is encouraged for user clarity.
 6. After confirm, return the selected id(s) (or domain objects) via the dialog result; do not leave selection only in ephemeral UI state the caller cannot read.
 
 ## Size and maximize

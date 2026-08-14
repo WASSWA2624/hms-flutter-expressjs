@@ -47,7 +47,7 @@ Cross-cutting: [localization.mdc](localization.mdc), [theming.mdc](theming.mdc),
 
 ## Submit, sync, and alerts
 
-1. Validate with shared validators / `validateAndSaveAppForm` before submit; show field errors and form-level banners (`AppFormInformationBanner`) rather than silent failure.
+1. Validate with shared validators / `validateAndSaveAppForm` before submit; show field specific errors and form-level banners (`AppFormInformationBanner`) rather than silent failure.
 2. After successful mutations, synchronize affected lists, detail panes, and workflow state so the UI reflects the new record.
 3. For money and other high-impact actions (payments, allocations, status changes), update the relevant account/workflow state and surface clear success/error feedback so operators know what changed.
 4. Cover loading, empty option lists, validation, conflict, cancelled similarity, and success states explicitly.

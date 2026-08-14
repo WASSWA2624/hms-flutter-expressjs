@@ -13,10 +13,8 @@ Cross-cutting: [localization.mdc](localization.mdc), [theming.mdc](theming.mdc),
 
 1. Render section / scope tabs with `AppTabStrip` and `AppTabItem`—not raw `TabBar`, chip rows, or one-off underline strips—unless an existing shared nested pattern already covers the case.
 2. Keep tab labels short and generic (scope or section name). Put identity and detail in the table / body, not on the tab.
-3. Use `AppTabStripVariant.nested` only for subordinate category tabs under a desk section; use `standard` for primary workspace section tabs.
-   - **Finance rule:** `Billing`, `Accounts & Finance`, and `Insurance & Claims` each split their hierarchy across two surfaces — one sidebar nesting level for the menu's categories, then one flat `standard` `AppTabStrip` per category holding that category's sections. Never nest the sidebar a second level, never add a category strip above the section strip, and never use `nested` to express a menu level. See `.cursor/finance/_shared/navigation-model.md`.
-4. Optional leading icons and tooltips are fine when they aid scanning; do not replace the label with icon-only tabs on desktop.
-5. Omit tabs the user cannot access (RBAC/ABAC per [prompt.mdc](prompt.mdc)).
+3. Optional leading icons and tooltips are fine when they aid scanning; do not replace the label with icon-only tabs on desktop.
+4. Omit tabs the user cannot access (RBAC/ABAC per [prompt.mdc](prompt.mdc)).
 
 ## Counts (every tab)
 
