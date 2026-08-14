@@ -23,6 +23,8 @@ import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_open_
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_scope_navigation.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_to_post_panel.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
@@ -219,6 +221,7 @@ class _AccountsWorkspaceContentState
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
     final accessPolicy = ref.watch(appAccessPolicyProvider);
     final List<AccountsDeskSection> visibleSections = AccountsDeskSection.values
         .where(
@@ -266,8 +269,8 @@ class _AccountsWorkspaceContentState
                 AppTabItem(
                   id: section.name,
                   icon: accountsSectionIcon(section),
-                  label: accountsSectionLabel(section),
-                  tooltip: accountsSectionTooltip(section),
+                  label: accountsSectionLabel(l10n, section),
+                  tooltip: accountsSectionTooltip(l10n, section),
                   count: _sectionCount(section),
                   countTone: accountsSectionCountTone(section),
                 ),

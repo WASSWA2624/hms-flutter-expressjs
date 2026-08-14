@@ -35526,5 +35526,350 @@
   "hrReferenceLeaveHalfDayPeriodAfternoon": "Afternoon",
   "@hrReferenceLeaveHalfDayPeriodAfternoon": {
     "description": "Localized label for labels.hr.reference.leave_half_day_period.afternoon."
+  },
+  "accountsFiscalPeriodsLabel": "Fiscal Years & Periods",
+  "@accountsFiscalPeriodsLabel": {
+    "description": "Accounts & Finance -> Setup & Controls -> Fiscal Years & Periods tab label."
+  },
+  "accountsFiscalPeriodsTooltip": "Fiscal calendar periods, their open, close, and lock milestones",
+  "@accountsFiscalPeriodsTooltip": {
+    "description": "Tooltip for the Fiscal Years & Periods tab."
+  },
+  "accountsFiscalPeriodsEmpty": "No fiscal periods match.",
+  "@accountsFiscalPeriodsEmpty": {
+    "description": "Empty-state title for the fiscal periods table."
+  },
+  "accountsFiscalPeriodsEmptyBody": "Try another search or add a fiscal period.",
+  "@accountsFiscalPeriodsEmptyBody": {
+    "description": "Empty-state body for the fiscal periods table."
+  },
+  "accountsFiscalPeriodsSearchHint": "Reference, fiscal year, period name…",
+  "@accountsFiscalPeriodsSearchHint": {
+    "description": "Search field hint and accessibility label for the fiscal periods table."
+  },
+  "accountsFiscalReferenceColumn": "Reference",
+  "@accountsFiscalReferenceColumn": {
+    "description": "Human-friendly reference column of the fiscal periods table."
+  },
+  "accountsFiscalYearColumn": "Fiscal Year",
+  "@accountsFiscalYearColumn": {
+    "description": "Fiscal Year column of the fiscal periods table."
+  },
+  "accountsFiscalPeriodNoColumn": "Period No.",
+  "@accountsFiscalPeriodNoColumn": {
+    "description": "Period number column of the fiscal periods table."
+  },
+  "accountsFiscalPeriodNameColumn": "Period Name",
+  "@accountsFiscalPeriodNameColumn": {
+    "description": "Period name column of the fiscal periods table."
+  },
+  "accountsFiscalStartDateColumn": "Start Date",
+  "@accountsFiscalStartDateColumn": {
+    "description": "Start date column of the fiscal periods table."
+  },
+  "accountsFiscalEndDateColumn": "End Date",
+  "@accountsFiscalEndDateColumn": {
+    "description": "End date column of the fiscal periods table."
+  },
+  "accountsFiscalEntityAndFacilityColumn": "Entity/Facility",
+  "@accountsFiscalEntityAndFacilityColumn": {
+    "description": "Entity and facility column of the fiscal periods table."
+  },
+  "accountsFiscalModuleColumn": "Module",
+  "@accountsFiscalModuleColumn": {
+    "description": "Module column of the fiscal periods table."
+  },
+  "accountsFiscalOpenDateColumn": "Open Date",
+  "@accountsFiscalOpenDateColumn": {
+    "description": "Open date column of the fiscal periods table."
+  },
+  "accountsFiscalSoftCloseDateColumn": "Soft-close Date",
+  "@accountsFiscalSoftCloseDateColumn": {
+    "description": "Soft-close date column of the fiscal periods table."
+  },
+  "accountsFiscalCloseDateColumn": "Close Date",
+  "@accountsFiscalCloseDateColumn": {
+    "description": "Close date column of the fiscal periods table."
+  },
+  "accountsFiscalLockDateColumn": "Lock Date",
+  "@accountsFiscalLockDateColumn": {
+    "description": "Lock date column of the fiscal periods table (optional column)."
+  },
+  "accountsFiscalReopenedAtColumn": "Reopened At",
+  "@accountsFiscalReopenedAtColumn": {
+    "description": "Reopened-at column of the fiscal periods table (optional column)."
+  },
+  "accountsFiscalReopenedByColumn": "Reopened By",
+  "@accountsFiscalReopenedByColumn": {
+    "description": "Reopened-by column of the fiscal periods table (optional column)."
+  },
+  "accountsFiscalPeriodStatusColumn": "Period Status",
+  "@accountsFiscalPeriodStatusColumn": {
+    "description": "Period status column of the fiscal periods table."
+  },
+  "accountsFiscalActionsColumn": "Actions",
+  "@accountsFiscalActionsColumn": {
+    "description": "Row actions column of the fiscal periods table."
+  },
+  "accountsFiscalStatusDraft": "Draft",
+  "@accountsFiscalStatusDraft": {
+    "description": "Fiscal period status: not yet available to downstream workflows."
+  },
+  "accountsFiscalStatusActive": "Active",
+  "@accountsFiscalStatusActive": {
+    "description": "Fiscal period status: selectable by permitted workflows."
+  },
+  "accountsFiscalStatusInactive": "Inactive",
+  "@accountsFiscalStatusInactive": {
+    "description": "Fiscal period status: retained but not selectable for new work."
+  },
+  "accountsFiscalStatusArchived": "Archived",
+  "@accountsFiscalStatusArchived": {
+    "description": "Fiscal period status: soft-deleted historical record."
+  },
+  "accountsFiscalStatusLocked": "Locked",
+  "@accountsFiscalStatusLocked": {
+    "description": "Marker shown when a fiscal period is past its lock date."
+  },
+  "accountsFiscalDateRangeFilterLabel": "Period date range",
+  "@accountsFiscalDateRangeFilterLabel": {
+    "description": "Advanced filter label for the fiscal period date range."
+  },
+  "accountsFiscalFacilityFilterLabel": "Facility",
+  "@accountsFiscalFacilityFilterLabel": {
+    "description": "Advanced filter label for the facility that owns a fiscal period."
+  },
+  "accountsFiscalNewRecordAction": "New record",
+  "@accountsFiscalNewRecordAction": {
+    "description": "Toolbar action that opens the fiscal period create dialog."
+  },
+  "accountsFiscalViewAction": "View",
+  "@accountsFiscalViewAction": {
+    "description": "Row action that opens the fiscal period detail dialog."
+  },
+  "accountsFiscalCloneAction": "Clone",
+  "@accountsFiscalCloneAction": {
+    "description": "Row action that copies a fiscal period into a new unsaved draft."
+  },
+  "accountsFiscalActivateAction": "Activate",
+  "@accountsFiscalActivateAction": {
+    "description": "Row action that moves a fiscal period to Active."
+  },
+  "accountsFiscalDeactivateAction": "Deactivate",
+  "@accountsFiscalDeactivateAction": {
+    "description": "Row action that moves a fiscal period to Inactive."
+  },
+  "accountsFiscalArchiveAction": "Archive",
+  "@accountsFiscalArchiveAction": {
+    "description": "Row action that soft-archives a fiscal period."
+  },
+  "accountsFiscalRestoreAction": "Restore",
+  "@accountsFiscalRestoreAction": {
+    "description": "Row action that restores an archived fiscal period."
+  },
+  "accountsFiscalBulkActivateAction": "Activate selected",
+  "@accountsFiscalBulkActivateAction": {
+    "description": "Bulk action that activates every eligible matching fiscal period."
+  },
+  "accountsFiscalBulkDeactivateAction": "Deactivate selected",
+  "@accountsFiscalBulkDeactivateAction": {
+    "description": "Bulk action that deactivates every eligible matching fiscal period."
+  },
+  "accountsFiscalBulkArchiveAction": "Archive selected",
+  "@accountsFiscalBulkArchiveAction": {
+    "description": "Bulk action that archives every eligible matching fiscal period."
+  },
+  "accountsFiscalCreateTitle": "Add fiscal period",
+  "@accountsFiscalCreateTitle": {
+    "description": "Title of the fiscal period create dialog."
+  },
+  "accountsFiscalEditTitle": "Edit fiscal period",
+  "@accountsFiscalEditTitle": {
+    "description": "Title of the fiscal period edit dialog."
+  },
+  "accountsFiscalCloneTitle": "Clone fiscal period",
+  "@accountsFiscalCloneTitle": {
+    "description": "Title of the fiscal period clone dialog."
+  },
+  "accountsFiscalDetailTitle": "Fiscal period details",
+  "@accountsFiscalDetailTitle": {
+    "description": "Title of the fiscal period detail dialog."
+  },
+  "accountsFiscalIdentitySection": "Period identity",
+  "@accountsFiscalIdentitySection": {
+    "description": "Form section grouping the identifying fields of a fiscal period."
+  },
+  "accountsFiscalCalendarSection": "Calendar",
+  "@accountsFiscalCalendarSection": {
+    "description": "Form section grouping the start and end dates of a fiscal period."
+  },
+  "accountsFiscalMilestonesSection": "Close milestones",
+  "@accountsFiscalMilestonesSection": {
+    "description": "Form section grouping the open, soft-close, and close dates of a fiscal period."
+  },
+  "accountsFiscalSummarySection": "Summary",
+  "@accountsFiscalSummarySection": {
+    "description": "Detail dialog section holding the key fiscal period fields."
+  },
+  "accountsFiscalRelatedSection": "Related records",
+  "@accountsFiscalRelatedSection": {
+    "description": "Detail dialog section holding cross-module references."
+  },
+  "accountsFiscalAttachmentsSection": "Attachments",
+  "@accountsFiscalAttachmentsSection": {
+    "description": "Detail dialog section holding fiscal period attachments."
+  },
+  "accountsFiscalActivitySection": "Activity & audit",
+  "@accountsFiscalActivitySection": {
+    "description": "Detail dialog section holding the immutable fiscal period timeline."
+  },
+  "accountsFiscalRelatedEmpty": "No related records.",
+  "@accountsFiscalRelatedEmpty": {
+    "description": "Empty state for the fiscal period related-records section."
+  },
+  "accountsFiscalAttachmentsEmpty": "No attachments.",
+  "@accountsFiscalAttachmentsEmpty": {
+    "description": "Empty state for the fiscal period attachments section."
+  },
+  "accountsFiscalActivityEmpty": "No recorded activity.",
+  "@accountsFiscalActivityEmpty": {
+    "description": "Empty state for the fiscal period activity section."
+  },
+  "accountsFiscalActivityCreated": "Created",
+  "@accountsFiscalActivityCreated": {
+    "description": "Activity timeline label for the fiscal period creation timestamp."
+  },
+  "accountsFiscalActivityUpdated": "Last updated",
+  "@accountsFiscalActivityUpdated": {
+    "description": "Activity timeline label for the fiscal period update timestamp."
+  },
+  "accountsFiscalActivityReopened": "Reopened",
+  "@accountsFiscalActivityReopened": {
+    "description": "Activity timeline label for the fiscal period reopen timestamp."
+  },
+  "accountsFiscalActivityReopenedBy": "Reopened by",
+  "@accountsFiscalActivityReopenedBy": {
+    "description": "Activity timeline label for the actor who reopened a fiscal period."
+  },
+  "accountsFiscalActivityArchived": "Archived",
+  "@accountsFiscalActivityArchived": {
+    "description": "Activity timeline label for the fiscal period archive timestamp."
+  },
+  "accountsFiscalVersionLabel": "Record version",
+  "@accountsFiscalVersionLabel": {
+    "description": "Activity timeline label for the optimistic record version."
+  },
+  "accountsFiscalLockedNotice": "This period is locked. Posting, close, reversal, and adjustment actions are blocked.",
+  "@accountsFiscalLockedNotice": {
+    "description": "Warning banner shown on a locked fiscal period."
+  },
+  "accountsFiscalNotesLabel": "Notes",
+  "@accountsFiscalNotesLabel": {
+    "description": "Notes field label of the fiscal period form."
+  },
+  "accountsFiscalRequiredField": "This field is required.",
+  "@accountsFiscalRequiredField": {
+    "description": "Validation message for a missing required fiscal period value."
+  },
+  "accountsFiscalPeriodNoInvalid": "Enter a period number between 1 and 366.",
+  "@accountsFiscalPeriodNoInvalid": {
+    "description": "Validation message for an out-of-range fiscal period number."
+  },
+  "accountsFiscalEndBeforeStart": "End date must not be earlier than the start date.",
+  "@accountsFiscalEndBeforeStart": {
+    "description": "Validation message for a fiscal period whose end date precedes its start date."
+  },
+  "accountsFiscalMilestoneOutOfOrder": "Open, soft-close, and close dates must be in order.",
+  "@accountsFiscalMilestoneOutOfOrder": {
+    "description": "Validation message for out-of-order fiscal period milestones."
+  },
+  "accountsFiscalActivateConfirmTitle": "Activate fiscal period?",
+  "@accountsFiscalActivateConfirmTitle": {
+    "description": "Confirmation title for activating a fiscal period."
+  },
+  "accountsFiscalDeactivateConfirmTitle": "Deactivate fiscal period?",
+  "@accountsFiscalDeactivateConfirmTitle": {
+    "description": "Confirmation title for deactivating a fiscal period."
+  },
+  "accountsFiscalArchiveConfirmTitle": "Archive fiscal period?",
+  "@accountsFiscalArchiveConfirmTitle": {
+    "description": "Confirmation title for archiving a fiscal period."
+  },
+  "accountsFiscalRestoreConfirmTitle": "Restore fiscal period?",
+  "@accountsFiscalRestoreConfirmTitle": {
+    "description": "Confirmation title for restoring an archived fiscal period."
+  },
+  "accountsFiscalArchiveConfirmBody": "The period is archived, not deleted. Posted history stays available and the record can be restored.",
+  "@accountsFiscalArchiveConfirmBody": {
+    "description": "Confirmation body clarifying that archive is a soft state change."
+  },
+  "accountsFiscalActivateConfirmBody": "Activate {reference} so permitted workflows can select it?",
+  "@accountsFiscalActivateConfirmBody": {
+    "description": "Confirmation body for activating a fiscal period.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsFiscalDeactivateConfirmBody": "Deactivate {reference} so it is no longer selectable for new work?",
+  "@accountsFiscalDeactivateConfirmBody": {
+    "description": "Confirmation body for deactivating a fiscal period.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsFiscalRestoreConfirmBody": "Restore {reference} and record the reopen in the audit trail?",
+  "@accountsFiscalRestoreConfirmBody": {
+    "description": "Confirmation body for restoring an archived fiscal period.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsFiscalBulkConfirmBody": "{count, plural, one{Apply this change to {count} matching fiscal period? Records that do not allow the change are skipped.} other{Apply this change to {count} matching fiscal periods? Records that do not allow the change are skipped.}}",
+  "@accountsFiscalBulkConfirmBody": {
+    "description": "Confirmation body for a bulk fiscal period workflow action.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsFiscalBulkPartialFailure": "{count, plural, one{{count} record could not be changed.} other{{count} records could not be changed.}}",
+  "@accountsFiscalBulkPartialFailure": {
+    "description": "Feedback shown when part of a bulk fiscal period action failed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsFiscalMobileCaption": "{fiscalYear} · Period {periodNo}",
+  "@accountsFiscalMobileCaption": {
+    "description": "Compact mobile row caption pairing the fiscal year with the period number.",
+    "placeholders": {
+      "fiscalYear": {
+        "type": "String"
+      },
+      "periodNo": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsFiscalMobileDateRange": "{startDate} – {endDate}",
+  "@accountsFiscalMobileDateRange": {
+    "description": "Compact mobile row meta pairing the already-formatted start and end dates.",
+    "placeholders": {
+      "startDate": {
+        "type": "String"
+      },
+      "endDate": {
+        "type": "String"
+      }
+    }
   }
 }

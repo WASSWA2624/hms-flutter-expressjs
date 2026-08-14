@@ -3,6 +3,7 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.dart';
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_fiscal_period.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
@@ -146,7 +147,10 @@ bool accountsWorkItemMatchesSearch(
   return false;
 }
 
-String accountsSectionLabel(AccountsDeskSection section) {
+String accountsSectionLabel(
+  AppLocalizations l10n,
+  AccountsDeskSection section,
+) {
   return switch (section) {
     AccountsDeskSection.work => AccountsStrings.openWorkLabel,
     AccountsDeskSection.journals => AccountsStrings.toPostLabel,
@@ -155,8 +159,7 @@ String accountsSectionLabel(AccountsDeskSection section) {
     AccountsDeskSection.ledgers => AccountsStrings.patientLedgersLabel,
     AccountsDeskSection.chart => AccountsStrings.accountChartLabel,
     AccountsDeskSection.invoices => AccountsStrings.invoicesLabel,
-    AccountsDeskSection.fiscalYearsAndPeriods =>
-      AccountsStrings.fiscalPeriodsLabel,
+    AccountsDeskSection.fiscalYearsAndPeriods => l10n.accountsFiscalPeriodsLabel,
   };
 }
 
@@ -183,7 +186,10 @@ IconData accountsCategoryIcon(AccountsDeskCategory category) {
   };
 }
 
-String? accountsSectionTooltip(AccountsDeskSection section) {
+String? accountsSectionTooltip(
+  AppLocalizations l10n,
+  AccountsDeskSection section,
+) {
   return switch (section) {
     AccountsDeskSection.work => AccountsStrings.openWorkTooltip,
     AccountsDeskSection.journals => AccountsStrings.toPostTooltip,
@@ -193,7 +199,7 @@ String? accountsSectionTooltip(AccountsDeskSection section) {
     AccountsDeskSection.chart => AccountsStrings.accountChartTooltip,
     AccountsDeskSection.invoices => AccountsStrings.invoicesTooltip,
     AccountsDeskSection.fiscalYearsAndPeriods =>
-      AccountsStrings.fiscalPeriodsTooltip,
+      l10n.accountsFiscalPeriodsTooltip,
   };
 }
 
@@ -223,7 +229,7 @@ IconData accountsSectionIcon(AccountsDeskSection section) {
   };
 }
 
-String accountsEmptyBody(AccountsDeskSection section) {
+String accountsEmptyBody(AppLocalizations l10n, AccountsDeskSection section) {
   return switch (section) {
     AccountsDeskSection.work => AccountsStrings.openWorkEmpty,
     AccountsDeskSection.journals => AccountsStrings.toPostEmpty,
@@ -232,17 +238,19 @@ String accountsEmptyBody(AccountsDeskSection section) {
     AccountsDeskSection.ledgers => AccountsStrings.patientLedgersEmpty,
     AccountsDeskSection.chart => AccountsStrings.chartEmpty,
     AccountsDeskSection.invoices => AccountsStrings.invoicesEmpty,
-    AccountsDeskSection.fiscalYearsAndPeriods =>
-      AccountsStrings.fiscalPeriodsEmpty,
+    AccountsDeskSection.fiscalYearsAndPeriods => l10n.accountsFiscalPeriodsEmpty,
   };
 }
 
-String accountsFiscalPeriodStatusLabel(AccountsFiscalPeriodStatus status) {
+String accountsFiscalPeriodStatusLabel(
+  AppLocalizations l10n,
+  AccountsFiscalPeriodStatus status,
+) {
   return switch (status) {
-    AccountsFiscalPeriodStatus.draft => AccountsStrings.fiscalStatusDraft,
-    AccountsFiscalPeriodStatus.active => AccountsStrings.fiscalStatusActive,
-    AccountsFiscalPeriodStatus.inactive => AccountsStrings.fiscalStatusInactive,
-    AccountsFiscalPeriodStatus.archived => AccountsStrings.fiscalStatusArchived,
+    AccountsFiscalPeriodStatus.draft => l10n.accountsFiscalStatusDraft,
+    AccountsFiscalPeriodStatus.active => l10n.accountsFiscalStatusActive,
+    AccountsFiscalPeriodStatus.inactive => l10n.accountsFiscalStatusInactive,
+    AccountsFiscalPeriodStatus.archived => l10n.accountsFiscalStatusArchived,
   };
 }
 
@@ -275,8 +283,10 @@ String accountsDate(BuildContext context, DateTime? value) {
 }
 
 /// Alias used by workspace empty panels.
-String accountsSectionEmptyCopy(AccountsDeskSection section) =>
-    accountsEmptyBody(section);
+String accountsSectionEmptyCopy(
+  AppLocalizations l10n,
+  AccountsDeskSection section,
+) => accountsEmptyBody(l10n, section);
 
 String accountsMoney(BuildContext context, num value, String? currencyCode) {
   return AppFormatters.currency(

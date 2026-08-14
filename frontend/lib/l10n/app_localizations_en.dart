@@ -27751,4 +27751,269 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrReferenceLeaveHalfDayPeriodAfternoon => 'Afternoon';
+
+  @override
+  String get accountsFiscalPeriodsLabel => 'Fiscal Years & Periods';
+
+  @override
+  String get accountsFiscalPeriodsTooltip =>
+      'Fiscal calendar periods, their open, close, and lock milestones';
+
+  @override
+  String get accountsFiscalPeriodsEmpty => 'No fiscal periods match.';
+
+  @override
+  String get accountsFiscalPeriodsEmptyBody =>
+      'Try another search or add a fiscal period.';
+
+  @override
+  String get accountsFiscalPeriodsSearchHint =>
+      'Reference, fiscal year, period name…';
+
+  @override
+  String get accountsFiscalReferenceColumn => 'Reference';
+
+  @override
+  String get accountsFiscalYearColumn => 'Fiscal Year';
+
+  @override
+  String get accountsFiscalPeriodNoColumn => 'Period No.';
+
+  @override
+  String get accountsFiscalPeriodNameColumn => 'Period Name';
+
+  @override
+  String get accountsFiscalStartDateColumn => 'Start Date';
+
+  @override
+  String get accountsFiscalEndDateColumn => 'End Date';
+
+  @override
+  String get accountsFiscalEntityAndFacilityColumn => 'Entity/Facility';
+
+  @override
+  String get accountsFiscalModuleColumn => 'Module';
+
+  @override
+  String get accountsFiscalOpenDateColumn => 'Open Date';
+
+  @override
+  String get accountsFiscalSoftCloseDateColumn => 'Soft-close Date';
+
+  @override
+  String get accountsFiscalCloseDateColumn => 'Close Date';
+
+  @override
+  String get accountsFiscalLockDateColumn => 'Lock Date';
+
+  @override
+  String get accountsFiscalReopenedAtColumn => 'Reopened At';
+
+  @override
+  String get accountsFiscalReopenedByColumn => 'Reopened By';
+
+  @override
+  String get accountsFiscalPeriodStatusColumn => 'Period Status';
+
+  @override
+  String get accountsFiscalActionsColumn => 'Actions';
+
+  @override
+  String get accountsFiscalStatusDraft => 'Draft';
+
+  @override
+  String get accountsFiscalStatusActive => 'Active';
+
+  @override
+  String get accountsFiscalStatusInactive => 'Inactive';
+
+  @override
+  String get accountsFiscalStatusArchived => 'Archived';
+
+  @override
+  String get accountsFiscalStatusLocked => 'Locked';
+
+  @override
+  String get accountsFiscalDateRangeFilterLabel => 'Period date range';
+
+  @override
+  String get accountsFiscalFacilityFilterLabel => 'Facility';
+
+  @override
+  String get accountsFiscalNewRecordAction => 'New record';
+
+  @override
+  String get accountsFiscalViewAction => 'View';
+
+  @override
+  String get accountsFiscalCloneAction => 'Clone';
+
+  @override
+  String get accountsFiscalActivateAction => 'Activate';
+
+  @override
+  String get accountsFiscalDeactivateAction => 'Deactivate';
+
+  @override
+  String get accountsFiscalArchiveAction => 'Archive';
+
+  @override
+  String get accountsFiscalRestoreAction => 'Restore';
+
+  @override
+  String get accountsFiscalBulkActivateAction => 'Activate selected';
+
+  @override
+  String get accountsFiscalBulkDeactivateAction => 'Deactivate selected';
+
+  @override
+  String get accountsFiscalBulkArchiveAction => 'Archive selected';
+
+  @override
+  String get accountsFiscalCreateTitle => 'Add fiscal period';
+
+  @override
+  String get accountsFiscalEditTitle => 'Edit fiscal period';
+
+  @override
+  String get accountsFiscalCloneTitle => 'Clone fiscal period';
+
+  @override
+  String get accountsFiscalDetailTitle => 'Fiscal period details';
+
+  @override
+  String get accountsFiscalIdentitySection => 'Period identity';
+
+  @override
+  String get accountsFiscalCalendarSection => 'Calendar';
+
+  @override
+  String get accountsFiscalMilestonesSection => 'Close milestones';
+
+  @override
+  String get accountsFiscalSummarySection => 'Summary';
+
+  @override
+  String get accountsFiscalRelatedSection => 'Related records';
+
+  @override
+  String get accountsFiscalAttachmentsSection => 'Attachments';
+
+  @override
+  String get accountsFiscalActivitySection => 'Activity & audit';
+
+  @override
+  String get accountsFiscalRelatedEmpty => 'No related records.';
+
+  @override
+  String get accountsFiscalAttachmentsEmpty => 'No attachments.';
+
+  @override
+  String get accountsFiscalActivityEmpty => 'No recorded activity.';
+
+  @override
+  String get accountsFiscalActivityCreated => 'Created';
+
+  @override
+  String get accountsFiscalActivityUpdated => 'Last updated';
+
+  @override
+  String get accountsFiscalActivityReopened => 'Reopened';
+
+  @override
+  String get accountsFiscalActivityReopenedBy => 'Reopened by';
+
+  @override
+  String get accountsFiscalActivityArchived => 'Archived';
+
+  @override
+  String get accountsFiscalVersionLabel => 'Record version';
+
+  @override
+  String get accountsFiscalLockedNotice =>
+      'This period is locked. Posting, close, reversal, and adjustment actions are blocked.';
+
+  @override
+  String get accountsFiscalNotesLabel => 'Notes';
+
+  @override
+  String get accountsFiscalRequiredField => 'This field is required.';
+
+  @override
+  String get accountsFiscalPeriodNoInvalid =>
+      'Enter a period number between 1 and 366.';
+
+  @override
+  String get accountsFiscalEndBeforeStart =>
+      'End date must not be earlier than the start date.';
+
+  @override
+  String get accountsFiscalMilestoneOutOfOrder =>
+      'Open, soft-close, and close dates must be in order.';
+
+  @override
+  String get accountsFiscalActivateConfirmTitle => 'Activate fiscal period?';
+
+  @override
+  String get accountsFiscalDeactivateConfirmTitle =>
+      'Deactivate fiscal period?';
+
+  @override
+  String get accountsFiscalArchiveConfirmTitle => 'Archive fiscal period?';
+
+  @override
+  String get accountsFiscalRestoreConfirmTitle => 'Restore fiscal period?';
+
+  @override
+  String get accountsFiscalArchiveConfirmBody =>
+      'The period is archived, not deleted. Posted history stays available and the record can be restored.';
+
+  @override
+  String accountsFiscalActivateConfirmBody(String reference) {
+    return 'Activate $reference so permitted workflows can select it?';
+  }
+
+  @override
+  String accountsFiscalDeactivateConfirmBody(String reference) {
+    return 'Deactivate $reference so it is no longer selectable for new work?';
+  }
+
+  @override
+  String accountsFiscalRestoreConfirmBody(String reference) {
+    return 'Restore $reference and record the reopen in the audit trail?';
+  }
+
+  @override
+  String accountsFiscalBulkConfirmBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Apply this change to $count matching fiscal periods? Records that do not allow the change are skipped.',
+      one:
+          'Apply this change to $count matching fiscal period? Records that do not allow the change are skipped.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountsFiscalBulkPartialFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count records could not be changed.',
+      one: '$count record could not be changed.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountsFiscalMobileCaption(String fiscalYear, int periodNo) {
+    return '$fiscalYear · Period $periodNo';
+  }
+
+  @override
+  String accountsFiscalMobileDateRange(String startDate, String endDate) {
+    return '$startDate – $endDate';
+  }
 }

@@ -50907,6 +50907,462 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Afternoon'**
   String get hrReferenceLeaveHalfDayPeriodAfternoon;
+
+  /// Accounts & Finance -> Setup & Controls -> Fiscal Years & Periods tab label.
+  ///
+  /// In en, this message translates to:
+  /// **'Fiscal Years & Periods'**
+  String get accountsFiscalPeriodsLabel;
+
+  /// Tooltip for the Fiscal Years & Periods tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Fiscal calendar periods, their open, close, and lock milestones'**
+  String get accountsFiscalPeriodsTooltip;
+
+  /// Empty-state title for the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'No fiscal periods match.'**
+  String get accountsFiscalPeriodsEmpty;
+
+  /// Empty-state body for the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another search or add a fiscal period.'**
+  String get accountsFiscalPeriodsEmptyBody;
+
+  /// Search field hint and accessibility label for the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference, fiscal year, period name…'**
+  String get accountsFiscalPeriodsSearchHint;
+
+  /// Human-friendly reference column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference'**
+  String get accountsFiscalReferenceColumn;
+
+  /// Fiscal Year column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Fiscal Year'**
+  String get accountsFiscalYearColumn;
+
+  /// Period number column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Period No.'**
+  String get accountsFiscalPeriodNoColumn;
+
+  /// Period name column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Period Name'**
+  String get accountsFiscalPeriodNameColumn;
+
+  /// Start date column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Date'**
+  String get accountsFiscalStartDateColumn;
+
+  /// End date column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'End Date'**
+  String get accountsFiscalEndDateColumn;
+
+  /// Entity and facility column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Entity/Facility'**
+  String get accountsFiscalEntityAndFacilityColumn;
+
+  /// Module column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Module'**
+  String get accountsFiscalModuleColumn;
+
+  /// Open date column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Date'**
+  String get accountsFiscalOpenDateColumn;
+
+  /// Soft-close date column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Soft-close Date'**
+  String get accountsFiscalSoftCloseDateColumn;
+
+  /// Close date column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Close Date'**
+  String get accountsFiscalCloseDateColumn;
+
+  /// Lock date column of the fiscal periods table (optional column).
+  ///
+  /// In en, this message translates to:
+  /// **'Lock Date'**
+  String get accountsFiscalLockDateColumn;
+
+  /// Reopened-at column of the fiscal periods table (optional column).
+  ///
+  /// In en, this message translates to:
+  /// **'Reopened At'**
+  String get accountsFiscalReopenedAtColumn;
+
+  /// Reopened-by column of the fiscal periods table (optional column).
+  ///
+  /// In en, this message translates to:
+  /// **'Reopened By'**
+  String get accountsFiscalReopenedByColumn;
+
+  /// Period status column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Period Status'**
+  String get accountsFiscalPeriodStatusColumn;
+
+  /// Row actions column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get accountsFiscalActionsColumn;
+
+  /// Fiscal period status: not yet available to downstream workflows.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get accountsFiscalStatusDraft;
+
+  /// Fiscal period status: selectable by permitted workflows.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get accountsFiscalStatusActive;
+
+  /// Fiscal period status: retained but not selectable for new work.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get accountsFiscalStatusInactive;
+
+  /// Fiscal period status: soft-deleted historical record.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get accountsFiscalStatusArchived;
+
+  /// Marker shown when a fiscal period is past its lock date.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked'**
+  String get accountsFiscalStatusLocked;
+
+  /// Advanced filter label for the fiscal period date range.
+  ///
+  /// In en, this message translates to:
+  /// **'Period date range'**
+  String get accountsFiscalDateRangeFilterLabel;
+
+  /// Advanced filter label for the facility that owns a fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get accountsFiscalFacilityFilterLabel;
+
+  /// Toolbar action that opens the fiscal period create dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'New record'**
+  String get accountsFiscalNewRecordAction;
+
+  /// Row action that opens the fiscal period detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get accountsFiscalViewAction;
+
+  /// Row action that copies a fiscal period into a new unsaved draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Clone'**
+  String get accountsFiscalCloneAction;
+
+  /// Row action that moves a fiscal period to Active.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate'**
+  String get accountsFiscalActivateAction;
+
+  /// Row action that moves a fiscal period to Inactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate'**
+  String get accountsFiscalDeactivateAction;
+
+  /// Row action that soft-archives a fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get accountsFiscalArchiveAction;
+
+  /// Row action that restores an archived fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get accountsFiscalRestoreAction;
+
+  /// Bulk action that activates every eligible matching fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate selected'**
+  String get accountsFiscalBulkActivateAction;
+
+  /// Bulk action that deactivates every eligible matching fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate selected'**
+  String get accountsFiscalBulkDeactivateAction;
+
+  /// Bulk action that archives every eligible matching fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive selected'**
+  String get accountsFiscalBulkArchiveAction;
+
+  /// Title of the fiscal period create dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Add fiscal period'**
+  String get accountsFiscalCreateTitle;
+
+  /// Title of the fiscal period edit dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit fiscal period'**
+  String get accountsFiscalEditTitle;
+
+  /// Title of the fiscal period clone dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Clone fiscal period'**
+  String get accountsFiscalCloneTitle;
+
+  /// Title of the fiscal period detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Fiscal period details'**
+  String get accountsFiscalDetailTitle;
+
+  /// Form section grouping the identifying fields of a fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Period identity'**
+  String get accountsFiscalIdentitySection;
+
+  /// Form section grouping the start and end dates of a fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get accountsFiscalCalendarSection;
+
+  /// Form section grouping the open, soft-close, and close dates of a fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Close milestones'**
+  String get accountsFiscalMilestonesSection;
+
+  /// Detail dialog section holding the key fiscal period fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get accountsFiscalSummarySection;
+
+  /// Detail dialog section holding cross-module references.
+  ///
+  /// In en, this message translates to:
+  /// **'Related records'**
+  String get accountsFiscalRelatedSection;
+
+  /// Detail dialog section holding fiscal period attachments.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachments'**
+  String get accountsFiscalAttachmentsSection;
+
+  /// Detail dialog section holding the immutable fiscal period timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity & audit'**
+  String get accountsFiscalActivitySection;
+
+  /// Empty state for the fiscal period related-records section.
+  ///
+  /// In en, this message translates to:
+  /// **'No related records.'**
+  String get accountsFiscalRelatedEmpty;
+
+  /// Empty state for the fiscal period attachments section.
+  ///
+  /// In en, this message translates to:
+  /// **'No attachments.'**
+  String get accountsFiscalAttachmentsEmpty;
+
+  /// Empty state for the fiscal period activity section.
+  ///
+  /// In en, this message translates to:
+  /// **'No recorded activity.'**
+  String get accountsFiscalActivityEmpty;
+
+  /// Activity timeline label for the fiscal period creation timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get accountsFiscalActivityCreated;
+
+  /// Activity timeline label for the fiscal period update timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated'**
+  String get accountsFiscalActivityUpdated;
+
+  /// Activity timeline label for the fiscal period reopen timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopened'**
+  String get accountsFiscalActivityReopened;
+
+  /// Activity timeline label for the actor who reopened a fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopened by'**
+  String get accountsFiscalActivityReopenedBy;
+
+  /// Activity timeline label for the fiscal period archive timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get accountsFiscalActivityArchived;
+
+  /// Activity timeline label for the optimistic record version.
+  ///
+  /// In en, this message translates to:
+  /// **'Record version'**
+  String get accountsFiscalVersionLabel;
+
+  /// Warning banner shown on a locked fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'This period is locked. Posting, close, reversal, and adjustment actions are blocked.'**
+  String get accountsFiscalLockedNotice;
+
+  /// Notes field label of the fiscal period form.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get accountsFiscalNotesLabel;
+
+  /// Validation message for a missing required fiscal period value.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required.'**
+  String get accountsFiscalRequiredField;
+
+  /// Validation message for an out-of-range fiscal period number.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a period number between 1 and 366.'**
+  String get accountsFiscalPeriodNoInvalid;
+
+  /// Validation message for a fiscal period whose end date precedes its start date.
+  ///
+  /// In en, this message translates to:
+  /// **'End date must not be earlier than the start date.'**
+  String get accountsFiscalEndBeforeStart;
+
+  /// Validation message for out-of-order fiscal period milestones.
+  ///
+  /// In en, this message translates to:
+  /// **'Open, soft-close, and close dates must be in order.'**
+  String get accountsFiscalMilestoneOutOfOrder;
+
+  /// Confirmation title for activating a fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate fiscal period?'**
+  String get accountsFiscalActivateConfirmTitle;
+
+  /// Confirmation title for deactivating a fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate fiscal period?'**
+  String get accountsFiscalDeactivateConfirmTitle;
+
+  /// Confirmation title for archiving a fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive fiscal period?'**
+  String get accountsFiscalArchiveConfirmTitle;
+
+  /// Confirmation title for restoring an archived fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore fiscal period?'**
+  String get accountsFiscalRestoreConfirmTitle;
+
+  /// Confirmation body clarifying that archive is a soft state change.
+  ///
+  /// In en, this message translates to:
+  /// **'The period is archived, not deleted. Posted history stays available and the record can be restored.'**
+  String get accountsFiscalArchiveConfirmBody;
+
+  /// Confirmation body for activating a fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate {reference} so permitted workflows can select it?'**
+  String accountsFiscalActivateConfirmBody(String reference);
+
+  /// Confirmation body for deactivating a fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate {reference} so it is no longer selectable for new work?'**
+  String accountsFiscalDeactivateConfirmBody(String reference);
+
+  /// Confirmation body for restoring an archived fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore {reference} and record the reopen in the audit trail?'**
+  String accountsFiscalRestoreConfirmBody(String reference);
+
+  /// Confirmation body for a bulk fiscal period workflow action.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Apply this change to {count} matching fiscal period? Records that do not allow the change are skipped.} other{Apply this change to {count} matching fiscal periods? Records that do not allow the change are skipped.}}'**
+  String accountsFiscalBulkConfirmBody(int count);
+
+  /// Feedback shown when part of a bulk fiscal period action failed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} record could not be changed.} other{{count} records could not be changed.}}'**
+  String accountsFiscalBulkPartialFailure(int count);
+
+  /// Compact mobile row caption pairing the fiscal year with the period number.
+  ///
+  /// In en, this message translates to:
+  /// **'{fiscalYear} · Period {periodNo}'**
+  String accountsFiscalMobileCaption(String fiscalYear, int periodNo);
+
+  /// Compact mobile row meta pairing the already-formatted start and end dates.
+  ///
+  /// In en, this message translates to:
+  /// **'{startDate} – {endDate}'**
+  String accountsFiscalMobileDateRange(String startDate, String endDate);
 }
 
 class _AppLocalizationsDelegate

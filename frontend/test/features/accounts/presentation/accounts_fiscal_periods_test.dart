@@ -19,18 +19,22 @@ import 'package:hosspi_hms/features/accounts/domain/entities/accounts_fiscal_per
 import 'package:hosspi_hms/features/accounts/domain/repositories/accounts_fiscal_period_repository.dart';
 import 'package:hosspi_hms/features/accounts/domain/repositories/accounts_repository.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_access.dart';
-import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
 import 'package:hosspi_hms/features/accounts/presentation/pages/accounts_workspace_page.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_fiscal_period_dialogs.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_fiscal_periods_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_scope_navigation.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/l10n/app_localizations_en.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+/// All fiscal copy comes from `app_en.arb`; the tests assert against the same
+/// generated strings the UI renders, never against literals.
+final AppLocalizations _l10n = AppLocalizationsEn();
 
 class _MockAccountsRepository extends Mock implements AccountsRepository {}
 
@@ -315,6 +319,23 @@ void main() {
       expect(accountsFiscalPeriodColumnIds.last, accountsFiscalStatusColumnId);
     });
 
+    test('the three Optional columns are not part of the default set', () {
+      expect(accountsFiscalPeriodOptionalColumnIds, <String>[
+        accountsFiscalReferenceColumnId,
+        accountsFiscalLockDateColumnId,
+        accountsFiscalReopenedAtColumnId,
+        accountsFiscalReopenedByColumnId,
+      ]);
+      // Every optional id except the baseline Reference column still belongs to
+      // the documented source order, so Settings and export keep that order.
+      for (final String id in accountsFiscalPeriodOptionalColumnIds) {
+        if (id == accountsFiscalReferenceColumnId) {
+          continue;
+        }
+        expect(accountsFiscalPeriodColumnIds, contains(id));
+      }
+    });
+
     testWidgets(
       'deep link opens the Setup & Controls menu item and its tab strip',
       (WidgetTester tester) async {
@@ -338,7 +359,7 @@ void main() {
         final AppTabStrip sections = tester.widget<AppTabStrip>(
           find.byKey(accountsSectionTabsKey),
         );
-        expect(sections.tabs.single.label, AccountsStrings.fiscalPeriodsLabel);
+        expect(sections.tabs.single.label, _l10n.accountsFiscalPeriodsLabel);
         expect(sections.variant, AppTabStripVariant.standard);
       },
     );
@@ -365,6 +386,128 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
 
       expect(strip().tabs.single.count, 2);
+    });
+  });
+
+  group('columns and filters', () {
+    testWidgets('Optional columns stay out of the default visible set', (
+      WidgetTester tester,
+    ) async {
+      await _pumpFiscalPeriods(tester, accessPolicy: _readerPolicy);
+
+      final AppListTable<AccountsFiscalPeriod> table = tester
+          .widget<AppListTable<AccountsFiscalPeriod>>(
+            find.byType(AppListTable<AccountsFiscalPeriod>),
+          );
+      final List<String> defaultKeys = table.columns
+          .map((AppListTableColumn<AccountsFiscalPeriod> column) => column.key)
+          .toList();
+      final List<String> optionalKeys = table.columnChoices!
+          .map((AppListTableColumn<AccountsFiscalPeriod> column) => column.key)
+          .toList();
+
+      // Default set: the ten `Default` columns plus Period Status.
+      expect(defaultKeys, contains(accountsFiscalYearColumnId));
+      expect(defaultKeys, contains(accountsFiscalCloseDateColumnId));
+      expect(defaultKeys, contains(accountsFiscalStatusColumnId));
+
+      // Optional set: offered in Settings and export, hidden until enabled.
+      expect(optionalKeys, accountsFiscalPeriodOptionalColumnIds);
+      for (final String id in accountsFiscalPeriodOptionalColumnIds) {
+        expect(defaultKeys, isNot(contains(id)));
+      }
+
+      // Optional columns are still exportable, so Settings/export keep the
+      // full source-of-truth inventory.
+      for (final AppListTableColumn<AccountsFiscalPeriod> column
+          in table.columnChoices!) {
+        expect(column.includesInExport, isTrue);
+      }
+
+      // Nothing optional is painted before the operator turns it on.
+      expect(find.text(_l10n.accountsFiscalLockDateColumn), findsNothing);
+      expect(find.text(_l10n.accountsFiscalReopenedByColumn), findsNothing);
+      expect(find.text(_l10n.accountsFiscalReferenceColumn), findsNothing);
+    });
+
+    testWidgets('the period name cell holds one fact, not name plus reference', (
+      WidgetTester tester,
+    ) async {
+      await _pumpFiscalPeriods(tester, accessPolicy: _readerPolicy);
+
+      expect(find.text('January 2026'), findsWidgets);
+      // The human-friendly reference belongs to its own optional column.
+      expect(find.text('FY-2026-P01'), findsNothing);
+    });
+
+    testWidgets('the Facility filter narrows the same committed query', (
+      WidgetTester tester,
+    ) async {
+      final AccountsFiscalPeriod otherFacility = AccountsFiscalPeriod(
+        humanFriendlyId: 'FY-2026-P02',
+        fiscalYear: 'FY2026',
+        periodNo: 2,
+        periodName: 'February 2026',
+        startDate: DateTime.utc(2026, 2, 1),
+        endDate: DateTime.utc(2026, 2, 28),
+        entityAndFacility: 'Entebbe Annex',
+        facilityHumanFriendlyId: 'FAC-002',
+        module: 'ALL',
+        status: AccountsFiscalPeriodStatus.active,
+        version: 1,
+      );
+      final AccountsFiscalPeriod homeFacility = AccountsFiscalPeriod(
+        humanFriendlyId: _draftPeriod.humanFriendlyId,
+        fiscalYear: _draftPeriod.fiscalYear,
+        periodNo: _draftPeriod.periodNo,
+        periodName: _draftPeriod.periodName,
+        startDate: _draftPeriod.startDate,
+        endDate: _draftPeriod.endDate,
+        entityAndFacility: _draftPeriod.entityAndFacility,
+        facilityHumanFriendlyId: 'FAC-001',
+        module: _draftPeriod.module,
+        status: _draftPeriod.status,
+        version: _draftPeriod.version,
+      );
+
+      final _MockFiscalPeriodRepository periods = await _pumpFiscalPeriods(
+        tester,
+        accessPolicy: _readerPolicy,
+        items: <AccountsFiscalPeriod>[homeFacility, otherFacility],
+      );
+
+      // Two facilities in scope, so the filter is offered.
+      final AppListTable<AccountsFiscalPeriod> table = tester
+          .widget<AppListTable<AccountsFiscalPeriod>>(
+            find.byType(AppListTable<AccountsFiscalPeriod>),
+          );
+      final AppSearchBarFilterGroup facilityGroup = table.search!.filterGroups
+          .firstWhere(
+            (AppSearchBarFilterGroup group) => group.key == 'facility',
+          );
+      expect(facilityGroup.label, _l10n.accountsFiscalFacilityFilterLabel);
+      expect(
+        facilityGroup.choices
+            .map((AppSearchBarFilterChoice choice) => choice.value)
+            .toList(),
+        <String>['FAC-002', 'FAC-001'],
+      );
+
+      // Committing the filter reaches the repository query the table, badge,
+      // export, and print all share.
+      table.search!.onFilterChanged!(
+        const AppSearchBarFilterValue(
+          options: <String, String>{'facility': 'FAC-002'},
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      final List<AccountsFiscalPeriodQuery> queries =
+          verify(() => periods.listPeriods(captureAny())).captured
+              .cast<AccountsFiscalPeriodQuery>();
+      expect(queries.last.facilityId, 'FAC-002');
+      expect(queries.last.hasActiveFilters, isTrue);
     });
   });
 
@@ -412,11 +555,11 @@ void main() {
       await _pumpFiscalPeriods(tester, accessPolicy: _readerPolicy);
 
       expect(find.text('January 2026'), findsWidgets);
-      expect(find.text(AccountsStrings.fiscalNewRecordAction), findsNothing);
-      expect(find.text(AccountsStrings.fiscalActionsColumn), findsNothing);
-      expect(find.text(AccountsStrings.fiscalActivateAction), findsNothing);
-      expect(find.text(AccountsStrings.fiscalArchiveAction), findsNothing);
-      expect(find.text(AccountsStrings.fiscalBulkArchiveAction), findsNothing);
+      expect(find.text(_l10n.accountsFiscalNewRecordAction), findsNothing);
+      expect(find.text(_l10n.accountsFiscalActionsColumn), findsNothing);
+      expect(find.text(_l10n.accountsFiscalActivateAction), findsNothing);
+      expect(find.text(_l10n.accountsFiscalArchiveAction), findsNothing);
+      expect(find.text(_l10n.accountsFiscalBulkArchiveAction), findsNothing);
     });
 
     testWidgets('write access shows the toolbar and per-row actions', (
@@ -424,9 +567,9 @@ void main() {
     ) async {
       await _pumpFiscalPeriods(tester, accessPolicy: _writerPolicy);
 
-      expect(find.text(AccountsStrings.fiscalActionsColumn), findsOneWidget);
-      expect(find.text(AccountsStrings.fiscalViewAction), findsWidgets);
-      expect(find.text(AccountsStrings.fiscalActivateAction), findsWidgets);
+      expect(find.text(_l10n.accountsFiscalActionsColumn), findsOneWidget);
+      expect(find.text(_l10n.accountsFiscalViewAction), findsWidgets);
+      expect(find.text(_l10n.accountsFiscalActivateAction), findsWidgets);
     });
   });
 
@@ -460,8 +603,8 @@ void main() {
       );
 
       expect(find.text('December 2025'), findsWidgets);
-      expect(find.text(AccountsStrings.fiscalArchiveAction), findsNothing);
-      expect(find.text(AccountsStrings.fiscalViewAction), findsOneWidget);
+      expect(find.text(_l10n.accountsFiscalArchiveAction), findsNothing);
+      expect(find.text(_l10n.accountsFiscalViewAction), findsOneWidget);
     });
   });
 
@@ -488,12 +631,12 @@ void main() {
               find.byType(AppConfirmActionDialog),
             )
             .title,
-        AccountsStrings.fiscalActivateConfirmTitle,
+        _l10n.accountsFiscalActivateConfirmTitle,
       );
 
       await tester.tap(
         find
-            .widgetWithText(AppButton, AccountsStrings.fiscalActivateAction)
+            .widgetWithText(AppButton, _l10n.accountsFiscalActivateAction)
             .last,
       );
       await tester.pumpAndSettle();
@@ -525,7 +668,7 @@ void main() {
 
       final AppConfirmActionDialog dialog = tester
           .widget<AppConfirmActionDialog>(find.byType(AppConfirmActionDialog));
-      expect(dialog.title, AccountsStrings.fiscalArchiveConfirmTitle);
+      expect(dialog.title, _l10n.accountsFiscalArchiveConfirmTitle);
       expect(dialog.body, contains('archived, not deleted'));
       expect(find.textContaining('archived, not deleted'), findsOneWidget);
     });
@@ -542,7 +685,7 @@ void main() {
         findsNothing,
       );
       expect(find.text('DRAFT'), findsNothing);
-      expect(find.text(AccountsStrings.fiscalStatusDraft), findsWidgets);
+      expect(find.text(_l10n.accountsFiscalStatusDraft), findsWidgets);
     });
   });
 }
