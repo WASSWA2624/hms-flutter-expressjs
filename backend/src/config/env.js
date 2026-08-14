@@ -6,16 +6,62 @@
  *
  * Validates required environment variables on application boot
  * Throws errors if required variables are missing or invalid
+ *
+ * Which env file gets loaded is driven by NODE_ENV:
+ *   - NODE_ENV=production  -> .env.production  (uploaded directly to the cPanel server,
+ *                                                never committed to git)
+ *   - NODE_ENV=development -> .env.development (local machine, never committed to git)
+ *   - NODE_ENV=test        -> .env.test         (scripts/test-env.js already pre-populates
+ *                                                 process.env before this module loads, so
+ *                                                 this is mostly a fallback for ad-hoc runs)
+ *   - anything else, or the resolved file doesn't exist -> falls back to a shared .env for
+ *     back-compat with deployments that haven't split their env files yet
+ * Set ENV_FILE (absolute path, or relative to backend/) to force an explicit file, e.g.
+ * `ENV_FILE=.env.production npx prisma migrate deploy` when a shell doesn't have NODE_ENV set.
  */
 
-// Load .env once here (no other file should read process.env)
 const path = require('path');
+const fs = require('fs');
+
+const BACKEND_ROOT = path.resolve(__dirname, '../..');
+
+const ENV_FILE_BY_NODE_ENV = {
+  production: '.env.production',
+  staging: '.env.staging',
+  test: '.env.test',
+  development: '.env.development'
+};
+
+const resolveEnvFilePath = () => {
+  if (process.env.ENV_FILE) {
+    return path.isAbsolute(process.env.ENV_FILE)
+      ? process.env.ENV_FILE
+      : path.resolve(BACKEND_ROOT, process.env.ENV_FILE);
+  }
+
+  const normalizedNodeEnv = String(process.env.NODE_ENV || 'development').trim().toLowerCase();
+  const candidateName = ENV_FILE_BY_NODE_ENV[normalizedNodeEnv] || '.env.development';
+  const candidatePath = path.resolve(BACKEND_ROOT, candidateName);
+
+  return fs.existsSync(candidatePath) ? candidatePath : path.resolve(BACKEND_ROOT, '.env');
+};
+
+const RESOLVED_ENV_FILE = resolveEnvFilePath();
+
+// Load the resolved env file once here (no other file should read process.env)
 require('dotenv').config({
-  path: path.resolve(__dirname, '../../.env'),
-  // Dotenv's runtime tips are useful for local manual runs, but they add heavy
-  // noise/overhead during automated test runs.
-  quiet: process.env.NODE_ENV === 'test' || process.env.DOTENV_QUIET === 'true'
+  path: RESOLVED_ENV_FILE,
+  // Always suppress dotenv's own console output (including its randomized
+  // promotional "tips" lines) - the breadcrumb below already reports which
+  // file loaded, and we don't want ad text mixed into production/cPanel logs.
+  quiet: true
 });
+
+if (process.env.NODE_ENV !== 'test' && process.env.DOTENV_QUIET !== 'true') {
+  // Cheap breadcrumb for deploy debugging - confirms which file actually loaded
+  // (e.g. catches a missing .env.production silently falling back to .env on cPanel).
+  console.log(`[env] loaded ${path.relative(BACKEND_ROOT, RESOLVED_ENV_FILE) || RESOLVED_ENV_FILE}`);
+}
 
 /**
  * Required environment variables

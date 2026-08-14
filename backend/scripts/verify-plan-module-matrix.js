@@ -8,6 +8,7 @@ const path = require('path');
 try {
   const moduleAlias = require('module-alias');
   moduleAlias.addAliases({
+    '@config': path.join(__dirname, '..', 'src', 'config'),
     '@lib': path.join(__dirname, '..', 'src', 'lib'),
     '@prisma/client': path.join(__dirname, '..', 'src', 'prisma', 'client.js'),
   });
@@ -20,7 +21,10 @@ try {
   process.exit(1);
 }
 
-require('dotenv').config();
+// Loads the environment-specific file (.env.development / .env.production / .env.test)
+// via the centralized resolver in @config/env, instead of a bare dotenv.config() that
+// only ever reads a plain .env - matters if this check is ever run in production.
+require('@config/env');
 const prisma = require('@prisma/client');
 const {
   modulesForPlanTier,

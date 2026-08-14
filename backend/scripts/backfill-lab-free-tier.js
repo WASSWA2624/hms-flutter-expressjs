@@ -34,7 +34,10 @@ try {
   process.exit(1);
 }
 
-require('dotenv').config();
+// Loads the environment-specific file (.env.development / .env.production / .env.test)
+// via the centralized resolver in @config/env, instead of a bare dotenv.config() that
+// only ever reads a plain .env - matters if this backfill is ever run in production.
+require('@config/env');
 
 const prisma = require('@prisma/client');
 

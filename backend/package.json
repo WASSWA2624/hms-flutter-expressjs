@@ -4,10 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon src/server.js",
-    "predev": "node scripts/release-port.js 3000 && prisma generate",
-    "start": "node src/server.js",
-    "prestart": "node scripts/release-port.js 3000",
+    "dev": "cross-env NODE_ENV=development nodemon src/server.js",
+    "predev": "cross-env NODE_ENV=development node scripts/release-port.js 3000 && cross-env NODE_ENV=development prisma generate",
+    "start": "cross-env NODE_ENV=production node src/server.js",
+    "prestart": "cross-env NODE_ENV=production node scripts/release-port.js 3000",
     "postinstall": "prisma generate",
     "test": "npm run test:backend",
     "test:watch": "npm run test:backend:watch",
@@ -102,6 +102,7 @@
   "devDependencies": {
     "@apidevtools/swagger-parser": "^12.1.0",
     "@faker-js/faker": "^10.3.0",
+    "cross-env": "^10.1.0",
     "eslint": "^9.39.2",
     "jest": "^30.2.0",
     "nodemon": "^3.1.11",

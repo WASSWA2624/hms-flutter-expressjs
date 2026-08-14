@@ -56,24 +56,28 @@ The project follows a strict MVC architecture with modules organized by business
    npm install
    ```
 3. Review the tracked `env.template.txt` placeholders and update the values you will need locally (see `dev-plan/P000_setup.md` for the authoritative list).
-4. Copy `env.template.txt` to `.env` and configure:
-   
+4. Copy `env.template.txt` to `.env.development` and configure it. `src/config/env.js` loads
+   `.env.development` automatically whenever `NODE_ENV` is `development` (the default when
+   `NODE_ENV` isn't set at all, which is the normal case on a local machine):
+
    **Bash/Unix:**
    ```bash
-   cp env.template.txt .env
+   cp env.template.txt .env.development
    ```
-   
+
    **PowerShell:**
    ```powershell
-   Copy-Item env.template.txt .env
+   Copy-Item env.template.txt .env.development
    ```
-   
+
    **Cross-platform (Node.js):**
    ```bash
-   node -e "require('fs').copyFileSync('env.template.txt', '.env')"
+   node -e "require('fs').copyFileSync('env.template.txt', '.env.development')"
    ```
-5. Update `.env` with your database credentials and other required variables.
-   - Do **not** commit `.env`
+5. Update `.env.development` with your database credentials and other required variables.
+   - Do **not** commit `.env.development` (already covered by `.gitignore`)
+   - A legacy single `.env` file still works as a fallback if `.env.development` /
+     `.env.production` aren't present, but new setups should use the split files above.
 6. Run Prisma migrations:
    ```bash
    npx prisma migrate dev
@@ -100,7 +104,7 @@ npm run dev
 
 To access the API from phones/tablets on the same network:
 
-1. Set `HOST="0.0.0.0"` in `.env`.
+1. Set `HOST="0.0.0.0"` in `.env.development`.
 2. Keep `ALLOW_PRIVATE_NETWORK_ORIGINS="true"` for local development.
 3. Add your frontend origin(s) to `CORS_ORIGINS` (for example `http://192.168.1.15:8081`).
 4. Start the backend and use one of the printed `LAN access URLs`.
@@ -108,20 +112,49 @@ To access the API from phones/tablets on the same network:
 
 ### Production
 
-Start the production server:
+`npm start` and `npm run prestart` now set `NODE_ENV=production` for you (via `cross-env`), which
+makes `src/config/env.js` load `.env.production` instead of `.env.development`:
+
 ```bash
 npm start
 ```
 
-For reverse-proxy deployments such as `api.hosspi.com` behind Nginx:
+For reverse-proxy deployments such as `api.hosspi.com` behind Nginx, `.env.production` should set:
 
-- Set `NODE_ENV="production"`
-- Set `HOST="127.0.0.1"` so Node only listens locally
-- Set `TRUST_PROXY="1"` so Express honors forwarded IP/protocol headers correctly
-- Set `CORS_ORIGINS` to your HTTPS frontend origins
-- Set `APP_PUBLIC_URL` to your public frontend URL, for example `https://www.hosspi.com`
+- `NODE_ENV="production"`
+- `HOST="127.0.0.1"` so Node only listens locally
+- `TRUST_PROXY="1"` so Express honors forwarded IP/protocol headers correctly
+- `CORS_ORIGINS` to your HTTPS frontend origins
+- `APP_PUBLIC_URL` to your public frontend URL, for example `https://www.hosspi.com`
 - Run `npm ci --omit=dev`, `npm run prisma:generate`, and `npx prisma migrate deploy` before starting the service
 - Keep `@prisma/client` installed in production; the backend runtime loads the generated client from `node_modules/.prisma/client`
+
+### Deploying to cPanel
+
+The backend can run on cPanel's "Setup Node.js App" (Passenger). Environment variables are split
+so the same codebase behaves correctly on your machine and on the server:
+
+1. On the cPanel "Setup Node.js App" screen, set **Application mode** to **Production**. cPanel
+   injects `NODE_ENV=production` for the app process based on this setting, which is what makes
+   `src/config/env.js` pick `.env.production`.
+2. Copy `.env.production.example` to `.env.production`, fill in the real production values
+   (database credentials, `JWT_SECRET`, `CSRF_SECRET`, `CORS_ORIGINS`, `APP_PUBLIC_URL`, etc.),
+   and upload the resulting `.env.production` file to the backend's directory on the server (via
+   cPanel File Manager or SFTP). **Never commit `.env.production`** - it is already excluded by
+   `.gitignore` (`.env.*`).
+3. cPanel's Node.js Selector assigns and injects its own `PORT` for the app - the `PORT` value in
+   `.env.production` is only a fallback for manual (non-Passenger) runs.
+4. Run the install/build steps from the cPanel "Setup Node.js App" terminal (or SSH, if
+   available): `npm ci --omit=dev`, then `npm run prisma:generate`. If `NODE_ENV` isn't already
+   exported in that shell, force the right file explicitly instead of relying on the default:
+   ```bash
+   ENV_FILE=.env.production npx prisma migrate deploy
+   ```
+5. Restart the Node.js app from the cPanel UI after uploading a new `.env.production` or
+   deploying new code - Passenger does not pick up file changes automatically.
+6. Confirm the deployed database name/user/password in `.env.production` matches the database
+   created via cPanel's MySQL Database Wizard exactly (cPanel typically prefixes both the
+   database name and username with your cPanel account name).
 
 Deployment templates are available in [`../deploy`](../deploy).
 
