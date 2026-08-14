@@ -30,6 +30,15 @@ const {
   withTenantGuard,
   buildTenantGuardModelMetadata
 } = require('./tenant-guard');
+// Relative, not aliased: this file also loads from scripts/CI where the
+// runtime path aliases are not registered.
+const {
+  buildCounterScopeKey,
+  deriveModelPrefix,
+  formatFriendlyId,
+  normalizePrefix,
+  resolveCounterModel
+} = require('../lib/identifiers/friendly-id-sequence');
 
 const loadEnvConfig = () => {
   try {
@@ -57,10 +66,7 @@ const {
   PRISMA_POOL_ACQUIRE_TIMEOUT_MS,
   PRISMA_MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL} = loadEnvConfig();
 
-const FRIENDLY_ID_PREFIX_LENGTH = 3;
-const DEFAULT_FRIENDLY_ID_PADDING = 7;
 const FRIENDLY_ID_COUNTER_RETRIES = 8;
-const UNKNOWN_MODEL_PREFIX = 'XXX';
 
 const isUniqueConstraintError = (error) => {
   if (!error) return false;
@@ -84,45 +90,6 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-
 const FRIENDLY_ID_REGEX = /^[A-Z]{3}\d{7}$/;
 
 const SYSTEM_MODELS = new Set(['human_id_counter']);
-
-const MODEL_PREFIX_OVERRIDES = Object.freeze({
-  pharmacy_order: 'PHA',
-  pharmacy_order_item: 'POI',
-  tenant: 'TEN',
-  facility: 'FAC',
-  branch: 'BRA',
-  department: 'DEP',
-  unit: 'UNI',
-  ward: 'WRD',
-  room: 'ROM',
-  bed: 'BED',
-  user: 'USR',
-  user_profile: 'UPR',
-  user_role: 'URO',
-  staff_position: 'SPO',
-  patient: 'PAT',
-  staff_profile: 'STF',
-  appointment: 'APT',
-  encounter: 'ENC',
-  admission: 'ADM',
-  clinical_term_catalog: 'CTC',
-  invoice: 'INV',
-  accounts_invoice: 'INV',
-  payment: 'PAY',
-  role: 'ROL',
-  permission: 'PER',
-  patient_identifier: 'PID',
-  patient_contact: 'PCO',
-  patient_guardian: 'PGU',
-  patient_allergy: 'PAL',
-  patient_document: 'PDO',
-  patient_medical_history: 'PMH'});
-
-/// Models that share a friendly-id counter with another model (same prefix).
-/// Keeps INV… numbers unique across billing and accounts invoices.
-const FRIENDLY_ID_SEQUENCE_MODEL_ALIASES = Object.freeze({
-  accounts_invoice: 'invoice',
-});
 
 const ROLE_PREFIX_MAP = Object.freeze({
   PLATFORM_OWNER: 'OWN',
@@ -176,26 +143,6 @@ const FACILITY_SCOPED_ROLES = new Set([
 const isUuid = (value) => typeof value === 'string' && UUID_REGEX.test(value);
 const isFriendlyId = (value) => typeof value === 'string' && FRIENDLY_ID_REGEX.test(value);
 
-const normalizePrefix = (value) =>
-  (String(value || '')
-    .replace(/[^a-zA-Z0-9]/g, '')
-    .toUpperCase()
-    .slice(0, FRIENDLY_ID_PREFIX_LENGTH)
-    .padEnd(FRIENDLY_ID_PREFIX_LENGTH, 'X'));
-
-const deriveModelPrefix = (model) => {
-  if (!model) return UNKNOWN_MODEL_PREFIX;
-  if (MODEL_PREFIX_OVERRIDES[model]) return normalizePrefix(MODEL_PREFIX_OVERRIDES[model]);
-
-  const alphaNumericModelName = String(model).replace(/[^a-zA-Z0-9]/g, '');
-  return normalizePrefix(alphaNumericModelName);
-};
-
-const formatFriendlyId = (prefix, sequence) => {
-  const safePrefix = normalizePrefix(prefix);
-  return `${safePrefix}${String(sequence).padStart(DEFAULT_FRIENDLY_ID_PADDING, '0')}`;
-};
-
 const resolveRoleIdFromUserRoleData = (data = {}) => {
   if (typeof data.role_id === 'string' && data.role_id) return data.role_id;
   if (typeof data.role?.connect?.id === 'string' && data.role.connect.id) return data.role.connect.id;
@@ -228,15 +175,11 @@ const buildScopeKey = (model, data, roleName, prefix) => {
     return `global:role:${roleName}:prefix:${prefix}`;
   }
 
-  if (typeof data.facility_id === 'string' && data.facility_id) {
-    return `facility:${data.facility_id}:model:${model}:prefix:${prefix}`;
-  }
-
-  if (typeof data.tenant_id === 'string' && data.tenant_id) {
-    return `tenant:${data.tenant_id}:model:${model}:prefix:${prefix}`;
-  }
-
-  return `global:model:${model}:prefix:${prefix}`;
+  return buildCounterScopeKey(
+    model,
+    { tenantId: data.tenant_id, facilityId: data.facility_id },
+    prefix
+  );
 };
 
 const reserveNextFriendlySequence = async (prismaClient, model, prefix, scopeKey, retryCount = 0) => {
@@ -296,7 +239,7 @@ const assignFriendlyIdIfMissing = async (prismaClient, model, data) => {
   }
 
   const prefix = normalizePrefix(roleName ? ROLE_PREFIX_MAP[roleName] || roleName : deriveModelPrefix(model));
-  const counterModel = FRIENDLY_ID_SEQUENCE_MODEL_ALIASES[model] || model;
+  const counterModel = resolveCounterModel(model);
   const scopeKey = buildScopeKey(counterModel, data, roleName, prefix);
   const sequence = await reserveNextFriendlySequence(
     prismaClient,

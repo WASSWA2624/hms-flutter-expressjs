@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const accountsWorkspaceController = require('@controllers/accounts-workspace/accounts-workspace.controller');
 const fiscalPeriodController = require('@controllers/accounts-workspace/fiscal-period.controller');
+const documentSequenceController = require('@controllers/accounts-workspace/document-number-sequence.controller');
+const postingRuleController = require('@controllers/accounts-workspace/posting-rule.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
 const { authenticate, authorize } = require('@middlewares/auth.middleware');
 const { HttpError } = require('@lib/errors');
@@ -25,6 +27,22 @@ const {
   updateFiscalPeriodSchema,
   fiscalPeriodActionSchema,
 } = require('@validations/accounts-workspace/fiscal-period.schema');
+const {
+  documentSequencesQuerySchema,
+  documentSequenceIdentifierParamsSchema,
+  documentSequenceActionParamsSchema,
+  createDocumentSequenceSchema,
+  updateDocumentSequenceSchema,
+  documentSequenceActionSchema,
+} = require('@validations/accounts-workspace/document-number-sequence.schema');
+const {
+  postingRulesQuerySchema,
+  postingRuleIdentifierParamsSchema,
+  postingRuleActionParamsSchema,
+  createPostingRuleSchema,
+  updatePostingRuleSchema,
+  postingRuleActionSchema,
+} = require('@validations/accounts-workspace/posting-rule.schema');
 
 /**
  * Route / queue reads — (`accounts:read` ∪ `accounts:write`).
@@ -126,6 +144,53 @@ router.post(
   }),
   authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
   fiscalPeriodController.applyFiscalPeriodAction
+);
+
+/**
+ * Setup & Controls → Posting Rules.
+ *
+ * Records are addressed by their public `human_friendly_id`. Archive is a
+ * status transition, not a delete, so there is no DELETE route.
+ */
+router.get(
+  '/posting-rules',
+  validateRequest({ query: postingRulesQuerySchema }),
+  authorize(ACCOUNTS_READ_SCOPES, 'permission'),
+  postingRuleController.listPostingRules
+);
+
+router.get(
+  '/posting-rules/:postingRuleIdentifier',
+  validateRequest({ params: postingRuleIdentifierParamsSchema }),
+  authorize(ACCOUNTS_READ_SCOPES, 'permission'),
+  postingRuleController.getPostingRule
+);
+
+router.post(
+  '/posting-rules',
+  validateRequest({ body: createPostingRuleSchema }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  postingRuleController.createPostingRule
+);
+
+router.put(
+  '/posting-rules/:postingRuleIdentifier',
+  validateRequest({
+    params: postingRuleIdentifierParamsSchema,
+    body: updatePostingRuleSchema,
+  }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  postingRuleController.updatePostingRule
+);
+
+router.post(
+  '/posting-rules/:postingRuleIdentifier/:action',
+  validateRequest({
+    params: postingRuleActionParamsSchema,
+    body: postingRuleActionSchema,
+  }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  postingRuleController.applyPostingRuleAction
 );
 
 router.get(
