@@ -10,7 +10,7 @@ Every user-facing string in the UI must come from localization—not literals in
 ## Frontend rules
 
 1. Add keys to `frontend/lib/l10n/app_en.arb` and use `context.l10n` / `AppLocalizations` after `flutter gen-l10n`.
-2. Must not hard-code user-facing text in features or shared UI; must not invent private string-holder classes (`_FooText`, etc.).
+2. Must not invent private string-holder classes (`_FooText`, etc.) as a substitute for ARB keys.
 3. Prefer descriptive, stable keys (`commonSaveButton`, `validationRequired`, `networkTimeoutMessage`).
 4. Use placeholders / pluralization for dynamic copy—must not concatenate translated fragments.
 5. Format dates, times, numbers, and currency with locale-aware helpers ([`date_time_formatting.mdc`](../../frontend/.cursor/date_time_formatting.mdc)).

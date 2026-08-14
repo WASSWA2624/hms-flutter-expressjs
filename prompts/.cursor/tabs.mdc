@@ -14,7 +14,6 @@ Cross-cutting: [localization.mdc](localization.mdc), [theming.mdc](theming.mdc),
 1. Render section / scope tabs with `AppTabStrip` and `AppTabItem`—not raw `TabBar`, chip rows, or one-off underline strips—unless an existing shared nested pattern already covers the case.
 2. Keep tab labels short and generic (scope or section name). Put identity and detail in the table / body, not on the tab.
 3. Optional leading icons and tooltips are fine when they aid scanning; do not replace the label with icon-only tabs on desktop.
-4. Omit tabs the user cannot access (RBAC/ABAC per [prompt.mdc](prompt.mdc)).
 
 ## Counts (every tab)
 
@@ -34,7 +33,7 @@ Tabs, the list table, and Filters / Advanced filters are one synchronized query 
 1. **Selecting a tab** updates the table’s scope/query and loads rows for that tab. Do not leave the previous tab’s rows visible under a new label.
 2. **Filters and search** apply to the table for the **current tab**. The Advanced filters dialog ([tables.mdc](tables.mdc)) must edit the **same filter model** the table and tab counts use—not a parallel draft that never reaches the query.
 3. Opening Advanced filters must show values that match the filters currently applied to the active tab/table (including dates, lookups, and status fields already in the query).
-4. **Apply filters** commits into that shared model, refreshes table data, and refreshes affected tab counts. **Clear filters** resets the shared model the same way. **Close** without apply must not leave the dialog and the live query out of sync on the next open (draft vs committed behavior follows the shared filters dialog API in [tables.mdc](tables.mdc)).
+4. Apply and Clear (semantics per [tables.mdc](tables.mdc)) must refresh table data **and** affected tab counts; Close without apply must not leave the dialog and the live query out of sync on the next open.
 5. After mutations that change membership of a scope (create, status change, assign, close, etc.), refresh the table and **all visible tab counts** that can change—not only the active tab.
 6. URL / deep-link scope (when the workspace uses query params) must stay aligned with the selected tab and the filters restored into the table/search bar.
 
@@ -54,6 +53,7 @@ Tabs, the list table, and Filters / Advanced filters are one synchronized query 
 - Pair tabs with `AppListTable` / `AppSearchBar` per [tables.mdc](tables.mdc); filter dialogs follow [dialogs.mdc](dialogs.mdc) for titles and chrome.
 - Do not fork one-off tab bars, count chips, or per-feature filter state that drifts from the table query.
 - Prefer extending workspace controllers / summary count fields so inactive tabs can show totals without fetching every tab’s full row page.
+- This file owns the tab strip, counts, and tab ↔ table ↔ filter sync—not table toolbar anatomy or dialog chrome.
 
 ## Relevant files
 

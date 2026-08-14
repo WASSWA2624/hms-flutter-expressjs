@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Theming
 
-Every UI surface must render correctly in light and dark themes. Source color, spacing, radius, elevation, and typography from the app theme—must not hard-code visual values unless a platform API forces a literal and no token exists.
+Every UI surface must render correctly in light and dark themes. Source color, spacing, radius, elevation, and typography from the app theme.
 
 ## Token usage
 
