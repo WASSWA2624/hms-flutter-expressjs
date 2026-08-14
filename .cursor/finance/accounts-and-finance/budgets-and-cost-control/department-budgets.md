@@ -69,7 +69,7 @@ The baseline table columns and behavior in [../../_shared/table-contract.md](../
 | 2 | `fiscal_year` | Fiscal Year | text | Yes | Yes | No | Localized text; null values render as an em dash. |
 | 3 | `department` | Department | text | Yes | Yes | Yes | Localized text; null values render as an em dash. |
 | 4 | `cost_centre` | Cost Centre | reference | Yes | Yes | No | Human-friendly reference; opens the authoritative detail. |
-| 5 | `budget_owner` | Budget Owner | money | Yes | Yes | Yes | Right-aligned; currency precision; subtotal when meaningful. |
+| 5 | `budget_owner` | Budget Owner | text | Yes | Yes | Yes | Localized text; null values render as an em dash. |
 | 6 | `currency` | Currency | currency | Yes | Yes | Yes | Localized text; null values render as an em dash. |
 | 7 | `original_budget` | Original Budget | money | Yes | Yes | No | Right-aligned; currency precision; subtotal when meaningful. |
 | 8 | `revised_budget` | Revised Budget | money | Yes | Yes | No | Right-aligned; currency precision; subtotal when meaningful. |
@@ -151,7 +151,7 @@ The baseline table columns and behavior in [../../_shared/table-contract.md](../
 | Fiscal Year | text | Yes | Trimmed; length and domain constraints enforced. |
 | Department | text | Yes | Trimmed; length and domain constraints enforced. |
 | Cost Centre | reference | Yes | Existing visible human-friendly reference. |
-| Budget Owner | money | Yes | Non-negative; currency required; configured precision. |
+| Budget Owner | text | Yes | Trimmed; length and domain constraints enforced. |
 | Currency | currency | Conditional | Trimmed; length and domain constraints enforced. |
 | Original Budget | money | Conditional | Non-negative; currency required; configured precision. |
 | Revised Budget | money | Conditional | Non-negative; currency required; configured precision. |

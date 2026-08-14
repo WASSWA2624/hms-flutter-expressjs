@@ -68,14 +68,14 @@ The baseline table columns and behavior in [../../_shared/table-contract.md](../
 | # | Column ID | Label | Type | Default | Sortable | Filterable | Display behavior |
 |---:|---|---|---|:---:|:---:|:---:|---|
 | 1 | `method_code` | Method Code | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
-| 2 | `method_name` | Method Name | enum | Yes | Yes | Yes | Searchable display value; opens permitted source context. |
+| 2 | `method_name` | Method Name | text | Yes | Yes | Yes | Searchable display value; opens permitted source context. |
 | 3 | `method_type` | Method Type | enum | Yes | Yes | Yes | Localized text; null values render as an em dash. |
 | 4 | `incoming_and_outgoing` | Incoming/Outgoing | text | Yes | Yes | No | Localized text; null values render as an em dash. |
 | 5 | `provider` | Provider | text | Yes | Yes | No | Localized text; null values render as an em dash. |
 | 6 | `settlement_account` | Settlement Account | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
 | 7 | `clearing_account` | Clearing Account | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
-| 8 | `requires_external_reference` | Requires External Reference | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
-| 9 | `requires_approval` | Requires Approval | text | Yes | Yes | No | Localized text; null values render as an em dash. |
+| 8 | `requires_external_reference` | Requires External Reference | boolean | Yes | Yes | Yes | Localized Yes/No or active/inactive chip. |
+| 9 | `requires_approval` | Requires Approval | boolean | Yes | Yes | No | Localized Yes/No or active/inactive chip. |
 | 10 | `fee_rule` | Fee Rule | text | Yes | Yes | No | Localized text; null values render as an em dash. |
 | 11 | `facility_scope` | Facility Scope | text | Optional | Yes | Yes | Localized text; null values render as an em dash. |
 | 12 | `effective_from` | Effective From | date | Optional | Yes | No | Localized display; API remains ISO-8601; date filter enabled. |
@@ -144,14 +144,14 @@ The baseline table columns and behavior in [../../_shared/table-contract.md](../
 | Field | Control/type | Required | Validation |
 |---|---|:---:|---|
 | Method Code | reference | Yes | Existing visible human-friendly reference. |
-| Method Name | enum | Yes | Value from controlled localized options. |
+| Method Name | text | Yes | Trimmed; length and domain constraints enforced. |
 | Method Type | enum | Yes | Value from controlled localized options. |
 | Incoming/Outgoing | text | Yes | Trimmed; length and domain constraints enforced. |
 | Provider | text | Conditional | Trimmed; length and domain constraints enforced. |
 | Settlement Account | reference | Conditional | Existing visible human-friendly reference. |
 | Clearing Account | reference | Conditional | Existing visible human-friendly reference. |
-| Requires External Reference | reference | Conditional | Existing visible human-friendly reference. |
-| Requires Approval | text | Conditional | Trimmed; length and domain constraints enforced. |
+| Requires External Reference | boolean | Conditional | Explicit true/false selection. |
+| Requires Approval | boolean | Conditional | Explicit true/false selection. |
 | Fee Rule | text | Conditional | Trimmed; length and domain constraints enforced. |
 
 - The backend assigns the human-friendly reference and initial status.

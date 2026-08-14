@@ -80,7 +80,7 @@ The baseline table columns and behavior in [../../_shared/table-contract.md](../
 | 12 | `maximum_days_overdue` | Maximum Days Overdue | number | Optional | Yes | No | Localized text; null values render as an em dash. |
 | 13 | `on_hold` | On Hold | boolean | Optional | Yes | No | Localized Yes/No or active/inactive chip. |
 | 14 | `payment_priority` | Payment Priority | number | Optional | Yes | No | Localized text; null values render as an em dash. |
-| 15 | `account_owner` | Account Owner | reference | Optional | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
+| 15 | `account_owner` | Account Owner | text | Optional | Yes | Yes | Localized text; null values render as an em dash. |
 
 ### Column defaults
 

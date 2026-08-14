@@ -963,14 +963,24 @@ def infer_column_type(column: str) -> str:
         return "boolean"
     if name.endswith(" required"):
         return "boolean"
+    # "Requires External Reference" is a flag, not a reference column.
+    if name.startswith("requires "):
+        return "boolean"
     if name in {
         "deposits in transit",
         "unpresented payments",
         "bank-only items",
     }:
         return "money"
-    if any(token in name for token in ("cost centre", "cost center")):
+    # A person, not an amount — guards "Budget Owner" against the money tokens.
+    if name.endswith(" owner"):
+        return "text"
+    # A ledger account, not an amount — guards "Default Revenue Account" and
+    # "Default Expense Account" against the "revenue" / "expense" tokens.
+    if name.endswith(" account") or name == "account":
         return "reference"
+    if any(token in name for token in ("cost centre", "cost center")):
+        return "text" if name.endswith(" name") else "reference"
     if re.search(r"(^|[\s/])(no\.?|number|code|reference)(\b|$)", name):
         return "reference"
     if any(
@@ -1049,10 +1059,12 @@ def infer_column_type(column: str) -> str:
         return "money"
     if re.search(r"\b(count|quantity|days|age|level|priority)\b", name):
         return "number"
-    if any(token in name for token in ("status", "type", "method", "category")):
-        return "status" if "status" in name else "enum"
+    # A display name is text even when the domain word is an enum elsewhere
+    # ("Method Name", "Category Name"), so this outranks the enum tokens.
     if name.endswith(" name") or name in {"name", "description", "reason", "notes"}:
         return "text"
+    if any(token in name for token in ("status", "type", "method", "category")):
+        return "status" if "status" in name else "enum"
     if any(
         token in name
         for token in (

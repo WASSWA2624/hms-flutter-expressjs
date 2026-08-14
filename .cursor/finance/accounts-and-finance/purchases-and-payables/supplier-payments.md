@@ -72,7 +72,7 @@ The baseline table columns and behavior in [../../_shared/table-contract.md](../
 | 4 | `payment_run_no` | Payment Run No. | reference | Yes | Yes | No | Human-friendly reference; opens the authoritative detail. |
 | 5 | `invoice_reference_s` | Invoice Reference(s) | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
 | 6 | `payment_method` | Payment Method | enum | Yes | Yes | Yes | Localized text; null values render as an em dash. |
-| 7 | `bank_and_cash_account` | Bank/Cash Account | money | Yes | Yes | Yes | Right-aligned; currency precision; subtotal when meaningful. |
+| 7 | `bank_and_cash_account` | Bank/Cash Account | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
 | 8 | `external_reference` | External Reference | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
 | 9 | `gross_amount` | Gross Amount | money | Yes | Yes | No | Right-aligned; currency precision; subtotal when meaningful. |
 | 10 | `withholding_tax` | Withholding Tax | money | Yes | Yes | No | Right-aligned; currency precision; subtotal when meaningful. |
@@ -156,7 +156,7 @@ The baseline table columns and behavior in [../../_shared/table-contract.md](../
 | Payment Run No. | reference | Yes | Existing visible human-friendly reference. |
 | Invoice Reference(s) | reference | Yes | Existing visible human-friendly reference. |
 | Payment Method | enum | Conditional | Value from controlled localized options. |
-| Bank/Cash Account | money | Conditional | Non-negative; currency required; configured precision. |
+| Bank/Cash Account | reference | Conditional | Existing visible human-friendly reference. |
 | External Reference | reference | Conditional | Existing visible human-friendly reference. |
 | Gross Amount | money | Conditional | Non-negative; currency required; configured precision. |
 | Withholding Tax | money | Conditional | Non-negative; currency required; configured precision. |

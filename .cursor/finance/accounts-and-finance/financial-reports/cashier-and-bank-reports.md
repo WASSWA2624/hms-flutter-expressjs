@@ -68,7 +68,7 @@ The baseline table columns and behavior in [../../_shared/table-contract.md](../
 |---:|---|---|---|:---:|:---:|:---:|---|
 | 1 | `report_date` | Report Date | date | Yes | Yes | Yes | Localized display; API remains ISO-8601; date filter enabled. |
 | 2 | `facility` | Facility | text | Yes | Yes | Yes | Localized text; null values render as an em dash. |
-| 3 | `cash_point_and_bank_account` | Cash Point/Bank Account | money | Yes | Yes | Yes | Right-aligned; currency precision; subtotal when meaningful. |
+| 3 | `cash_point_and_bank_account` | Cash Point/Bank Account | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
 | 4 | `session_and_statement_count` | Session/Statement Count | number | Yes | Yes | No | Localized text; null values render as an em dash. |
 | 5 | `opening_balance` | Opening Balance | money | Yes | Yes | No | Right-aligned; currency precision; subtotal when meaningful. |
 | 6 | `receipts` | Receipts | text | Yes | Yes | No | Localized text; null values render as an em dash. |

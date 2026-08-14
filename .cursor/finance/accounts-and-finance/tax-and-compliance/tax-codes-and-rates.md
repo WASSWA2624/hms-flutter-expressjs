@@ -72,8 +72,8 @@ The baseline table columns and behavior in [../../_shared/table-contract.md](../
 | 5 | `rate` | Rate | percentage | Yes | Yes | No | Right-aligned percentage with configured precision. |
 | 6 | `inclusive_and_exclusive` | Inclusive/Exclusive | text | Yes | Yes | No | Localized text; null values render as an em dash. |
 | 7 | `recoverable_percentage` | Recoverable Percentage | percentage | Yes | Yes | No | Right-aligned percentage with configured precision. |
-| 8 | `input_tax_account` | Input Tax Account | money | Yes | Yes | Yes | Right-aligned; currency precision; subtotal when meaningful. |
-| 9 | `output_tax_account` | Output Tax Account | money | Yes | Yes | Yes | Right-aligned; currency precision; subtotal when meaningful. |
+| 8 | `input_tax_account` | Input Tax Account | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
+| 9 | `output_tax_account` | Output Tax Account | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
 | 10 | `payable_account` | Payable Account | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
 | 11 | `effective_from` | Effective From | date | Optional | Yes | No | Localized display; API remains ISO-8601; date filter enabled. |
 | 12 | `effective_to` | Effective To | date | Optional | Yes | No | Localized display; API remains ISO-8601; date filter enabled. |
@@ -148,8 +148,8 @@ The baseline table columns and behavior in [../../_shared/table-contract.md](../
 | Rate | percentage | Conditional | Within configured percentage range. |
 | Inclusive/Exclusive | text | Conditional | Trimmed; length and domain constraints enforced. |
 | Recoverable Percentage | percentage | Conditional | Within configured percentage range. |
-| Input Tax Account | money | Conditional | Non-negative; currency required; configured precision. |
-| Output Tax Account | money | Conditional | Non-negative; currency required; configured precision. |
+| Input Tax Account | reference | Conditional | Existing visible human-friendly reference. |
+| Output Tax Account | reference | Conditional | Existing visible human-friendly reference. |
 | Payable Account | reference | Conditional | Existing visible human-friendly reference. |
 
 - The backend assigns the human-friendly reference and initial status.

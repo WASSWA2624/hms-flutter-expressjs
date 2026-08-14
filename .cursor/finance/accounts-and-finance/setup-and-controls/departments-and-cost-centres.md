@@ -70,13 +70,13 @@ The baseline table columns and behavior in [../../_shared/table-contract.md](../
 | 1 | `department_code` | Department Code | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
 | 2 | `department_name` | Department Name | text | Yes | Yes | Yes | Searchable display value; opens permitted source context. |
 | 3 | `cost_centre_code` | Cost Centre Code | reference | Yes | Yes | No | Human-friendly reference; opens the authoritative detail. |
-| 4 | `cost_centre_name` | Cost Centre Name | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
+| 4 | `cost_centre_name` | Cost Centre Name | text | Yes | Yes | Yes | Searchable display value; opens permitted source context. |
 | 5 | `parent` | Parent | text | Yes | Yes | No | Localized text; null values render as an em dash. |
 | 6 | `facility` | Facility | text | Yes | Yes | Yes | Localized text; null values render as an em dash. |
 | 7 | `manager` | Manager | text | Yes | Yes | No | Localized text; null values render as an em dash. |
-| 8 | `default_revenue_account` | Default Revenue Account | money | Yes | Yes | Yes | Right-aligned; currency precision; subtotal when meaningful. |
-| 9 | `default_expense_account` | Default Expense Account | money | Yes | Yes | Yes | Right-aligned; currency precision; subtotal when meaningful. |
-| 10 | `budget_owner` | Budget Owner | money | Yes | Yes | Yes | Right-aligned; currency precision; subtotal when meaningful. |
+| 8 | `default_revenue_account` | Default Revenue Account | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
+| 9 | `default_expense_account` | Default Expense Account | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
+| 10 | `budget_owner` | Budget Owner | text | Yes | Yes | Yes | Localized text; null values render as an em dash. |
 | 11 | `effective_from` | Effective From | date | Optional | Yes | No | Localized display; API remains ISO-8601; date filter enabled. |
 | 12 | `effective_to` | Effective To | date | Optional | Yes | No | Localized display; API remains ISO-8601; date filter enabled. |
 | 13 | `status` | Status | status | Yes | Yes | Yes | Localized `AppWorkspaceStatusBadge`; never expose raw enum text. |
@@ -148,13 +148,13 @@ The baseline table columns and behavior in [../../_shared/table-contract.md](../
 | Department Code | reference | Yes | Existing visible human-friendly reference. |
 | Department Name | text | Yes | Trimmed; length and domain constraints enforced. |
 | Cost Centre Code | reference | Yes | Existing visible human-friendly reference. |
-| Cost Centre Name | reference | Yes | Existing visible human-friendly reference. |
+| Cost Centre Name | text | Yes | Trimmed; length and domain constraints enforced. |
 | Parent | text | Conditional | Trimmed; length and domain constraints enforced. |
 | Facility | text | Conditional | Trimmed; length and domain constraints enforced. |
 | Manager | text | Conditional | Trimmed; length and domain constraints enforced. |
-| Default Revenue Account | money | Conditional | Non-negative; currency required; configured precision. |
-| Default Expense Account | money | Conditional | Non-negative; currency required; configured precision. |
-| Budget Owner | money | Conditional | Non-negative; currency required; configured precision. |
+| Default Revenue Account | reference | Conditional | Existing visible human-friendly reference. |
+| Default Expense Account | reference | Conditional | Existing visible human-friendly reference. |
+| Budget Owner | text | Conditional | Trimmed; length and domain constraints enforced. |
 
 - The backend assigns the human-friendly reference and initial status.
 - Add/remove line-item controls use a nested `AppListTable` where the record has lines.

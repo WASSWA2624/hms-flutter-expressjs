@@ -69,7 +69,7 @@ The baseline table columns and behavior in [../../_shared/table-contract.md](../
 | 1 | `run_no` | Run No. | reference | Yes | Yes | No | Human-friendly reference; opens the authoritative detail. |
 | 2 | `run_date` | Run Date | date | Yes | Yes | Yes | Localized display; API remains ISO-8601; date filter enabled. |
 | 3 | `payment_date` | Payment Date | date | Yes | Yes | Yes | Localized display; API remains ISO-8601; date filter enabled. |
-| 4 | `bank_and_cash_account` | Bank/Cash Account | money | Yes | Yes | Yes | Right-aligned; currency precision; subtotal when meaningful. |
+| 4 | `bank_and_cash_account` | Bank/Cash Account | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
 | 5 | `supplier_count` | Supplier Count | number | Yes | Yes | Yes | Searchable display value; opens permitted source context. |
 | 6 | `invoice_count` | Invoice Count | number | Yes | Yes | No | Localized text; null values render as an em dash. |
 | 7 | `gross_amount` | Gross Amount | money | Yes | Yes | No | Right-aligned; currency precision; subtotal when meaningful. |
@@ -152,7 +152,7 @@ The baseline table columns and behavior in [../../_shared/table-contract.md](../
 |---|---|:---:|---|
 | Run Date | date | Yes | Valid ISO date; obeys start/end and period rules. |
 | Payment Date | date | Yes | Valid ISO date; obeys start/end and period rules. |
-| Bank/Cash Account | money | Yes | Non-negative; currency required; configured precision. |
+| Bank/Cash Account | reference | Yes | Existing visible human-friendly reference. |
 | Gross Amount | money | Yes | Non-negative; currency required; configured precision. |
 | Discounts | money | Conditional | Non-negative; currency required; configured precision. |
 | Withholding Tax | money | Conditional | Non-negative; currency required; configured precision. |

@@ -77,7 +77,7 @@ The baseline table columns and behavior in [../../_shared/table-contract.md](../
 | 9 | `allocated_amount` | Allocated Amount | money | Yes | Yes | No | Right-aligned; currency precision; subtotal when meaningful. |
 | 10 | `unallocated_amount` | Unallocated Amount | money | Yes | Yes | No | Right-aligned; currency precision; subtotal when meaningful. |
 | 11 | `currency` | Currency | currency | Optional | Yes | Yes | Localized text; null values render as an em dash. |
-| 12 | `cash_point_and_bank_account` | Cash Point/Bank Account | money | Optional | Yes | Yes | Right-aligned; currency precision; subtotal when meaningful. |
+| 12 | `cash_point_and_bank_account` | Cash Point/Bank Account | reference | Optional | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
 | 13 | `receipt_no` | Receipt No. | reference | Optional | Yes | No | Human-friendly reference; opens the authoritative detail. |
 | 14 | `reversal_status` | Reversal Status | status | Yes | Yes | Yes | Localized `AppWorkspaceStatusBadge`; never expose raw enum text. |
 | 15 | `payment_status` | Payment Status | status | Yes | Yes | Yes | Localized `AppWorkspaceStatusBadge`; never expose raw enum text. |
@@ -158,7 +158,7 @@ The baseline table columns and behavior in [../../_shared/table-contract.md](../
 | External Reference | reference | Conditional | Existing visible human-friendly reference. |
 | Amount | money | Conditional | Non-negative; currency required; configured precision. |
 | Currency | currency | Conditional | Trimmed; length and domain constraints enforced. |
-| Cash Point/Bank Account | money | Conditional | Non-negative; currency required; configured precision. |
+| Cash Point/Bank Account | reference | Conditional | Existing visible human-friendly reference. |
 | Receipt No. | reference | Conditional | Existing visible human-friendly reference. |
 
 - The backend assigns the human-friendly reference and initial status.

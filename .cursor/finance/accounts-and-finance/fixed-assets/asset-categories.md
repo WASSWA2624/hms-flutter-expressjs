@@ -67,11 +67,11 @@ The baseline table columns and behavior in [../../_shared/table-contract.md](../
 | # | Column ID | Label | Type | Default | Sortable | Filterable | Display behavior |
 |---:|---|---|---|:---:|:---:|:---:|---|
 | 1 | `category_code` | Category Code | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
-| 2 | `category_name` | Category Name | enum | Yes | Yes | Yes | Searchable display value; opens permitted source context. |
+| 2 | `category_name` | Category Name | text | Yes | Yes | Yes | Searchable display value; opens permitted source context. |
 | 3 | `parent_category` | Parent Category | enum | Yes | Yes | Yes | Localized text; null values render as an em dash. |
 | 4 | `asset_gl_account` | Asset GL Account | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
 | 5 | `accumulated_depreciation_account` | Accumulated Depreciation Account | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
-| 6 | `depreciation_expense_account` | Depreciation Expense Account | money | Yes | Yes | Yes | Right-aligned; currency precision; subtotal when meaningful. |
+| 6 | `depreciation_expense_account` | Depreciation Expense Account | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
 | 7 | `disposal_gain_and_loss_account` | Disposal Gain/Loss Account | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
 | 8 | `default_useful_life` | Default Useful Life | text | Yes | Yes | No | Localized text; null values render as an em dash. |
 | 9 | `depreciation_method` | Depreciation Method | enum | Yes | Yes | Yes | Localized text; null values render as an em dash. |
@@ -140,10 +140,10 @@ The baseline table columns and behavior in [../../_shared/table-contract.md](../
 | Field | Control/type | Required | Validation |
 |---|---|:---:|---|
 | Category Code | reference | Yes | Existing visible human-friendly reference. |
-| Category Name | enum | Yes | Value from controlled localized options. |
+| Category Name | text | Yes | Trimmed; length and domain constraints enforced. |
 | Parent Category | enum | Yes | Value from controlled localized options. |
 | Asset GL Account | reference | Yes | Existing visible human-friendly reference. |
-| Depreciation Expense Account | money | Conditional | Non-negative; currency required; configured precision. |
+| Depreciation Expense Account | reference | Conditional | Existing visible human-friendly reference. |
 | Disposal Gain/Loss Account | reference | Conditional | Existing visible human-friendly reference. |
 | Default Useful Life | text | Conditional | Trimmed; length and domain constraints enforced. |
 | Depreciation Method | enum | Conditional | Value from controlled localized options. |

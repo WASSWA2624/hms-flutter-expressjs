@@ -66,7 +66,7 @@ The baseline table columns and behavior in [../../_shared/table-contract.md](../
 | # | Column ID | Label | Type | Default | Sortable | Filterable | Display behavior |
 |---:|---|---|---|:---:|:---:|:---:|---|
 | 1 | `category_code` | Category Code | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
-| 2 | `category_name` | Category Name | enum | Yes | Yes | Yes | Searchable display value; opens permitted source context. |
+| 2 | `category_name` | Category Name | text | Yes | Yes | Yes | Searchable display value; opens permitted source context. |
 | 3 | `parent_category` | Parent Category | enum | Yes | Yes | Yes | Localized text; null values render as an em dash. |
 | 4 | `default_gl_account` | Default GL Account | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
 | 5 | `tax_code` | Tax Code | reference | Yes | Yes | No | Human-friendly reference; opens the authoritative detail. |
@@ -140,7 +140,7 @@ The baseline table columns and behavior in [../../_shared/table-contract.md](../
 | Field | Control/type | Required | Validation |
 |---|---|:---:|---|
 | Category Code | reference | Yes | Existing visible human-friendly reference. |
-| Category Name | enum | Yes | Value from controlled localized options. |
+| Category Name | text | Yes | Trimmed; length and domain constraints enforced. |
 | Parent Category | enum | Yes | Value from controlled localized options. |
 | Default GL Account | reference | Yes | Existing visible human-friendly reference. |
 | Tax Code | reference | Conditional | Existing visible human-friendly reference. |
