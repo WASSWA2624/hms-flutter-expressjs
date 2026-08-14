@@ -23,10 +23,12 @@ import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart'
 import 'package:hosspi_hms/features/accounts/presentation/pages/accounts_workspace_page.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_fiscal_period_dialogs.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_fiscal_periods_panel.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_scope_navigation.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -313,27 +315,40 @@ void main() {
       expect(accountsFiscalPeriodColumnIds.last, accountsFiscalStatusColumnId);
     });
 
-    testWidgets('deep link opens the tab under the Setup & Controls folder', (
+    testWidgets(
+      'deep link opens the Setup & Controls menu item and its tab strip',
+      (WidgetTester tester) async {
+        await _pumpFiscalPeriods(tester, accessPolicy: _readerPolicy);
+
+        expect(find.byType(AccountsFiscalPeriodsPanel), findsOneWidget);
+
+        // Menu depth stops at the category: it is a sidebar item, not a tab row.
+        expect(
+          AccountsDeskCategory.of(AccountsDeskSection.fiscalYearsAndPeriods),
+          AccountsDeskCategory.setupAndControls,
+        );
+        expect(
+          accountsShellMenuChildren(
+            accessPolicy: _readerPolicy,
+          ).map((ShellSubmenuItem item) => item.id),
+          contains(AccountsDeskCategory.setupAndControls.name),
+        );
+
+        // The category's sections are this page's tabs, in one flat strip.
+        final AppTabStrip sections = tester.widget<AppTabStrip>(
+          find.byKey(accountsSectionTabsKey),
+        );
+        expect(sections.tabs.single.label, AccountsStrings.fiscalPeriodsLabel);
+        expect(sections.variant, AppTabStripVariant.standard);
+      },
+    );
+
+    testWidgets('the workspace renders no category tab row', (
       WidgetTester tester,
     ) async {
       await _pumpFiscalPeriods(tester, accessPolicy: _readerPolicy);
 
-      expect(find.byType(AccountsFiscalPeriodsPanel), findsOneWidget);
-      expect(find.byKey(accountsCategoryTabsKey), findsOneWidget);
-
-      final AppTabStrip categories = tester.widget<AppTabStrip>(
-        find.byKey(accountsCategoryTabsKey),
-      );
-      expect(
-        categories.selectedId,
-        AccountsDeskCategory.setupAndControls.name,
-      );
-
-      final AppTabStrip sections = tester.widget<AppTabStrip>(
-        find.byKey(accountsSectionTabsKey),
-      );
-      expect(sections.tabs.single.label, AccountsStrings.fiscalPeriodsLabel);
-      expect(sections.variant, AppTabStripVariant.nested);
+      expect(find.byType(AppTabStrip), findsOneWidget);
     });
 
     testWidgets('the badge uses the summary until the query is narrowed', (

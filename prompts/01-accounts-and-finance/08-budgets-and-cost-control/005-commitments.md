@@ -8,8 +8,8 @@
 - **Prerequisite:** `Accounts & Finance → Budgets & Cost Control → Budget Revisions` (`prompts/01-accounts-and-finance/08-budgets-and-cost-control/004-budget-revisions.md`).
 - **Menu path:** `Accounts & Finance → Budgets & Cost Control → Commitments`
 - **Canonical route:** `/accounts?section=commitments`
-- **Surface profile:** `transaction` table/worklist opened from a nested menu item
-- **Navigation model:** nested sidebar menu items under `Accounts & Finance`; no category or nested tab strip
+- **Surface profile:** `transaction` table/worklist tab
+- **Navigation model:** `Accounts & Finance → Budgets & Cost Control` are the two sidebar menu levels; this surface is a tab in that menu item's flat tab strip
 - **Authoritative tab specification:** `.cursor/finance/accounts-and-finance/budgets-and-cost-control/commitments.md`
 - **Finance source of truth:** `.cursor/billing-accounts-finance.md`
 
@@ -24,11 +24,11 @@ Implement this prompt only after the prerequisite prompt passes its acceptance c
    - Reuse the existing Accounts & Finance workspace, controller, entities, DTOs, and repositories in `frontend/lib/features/accounts/` and `backend/src/modules/accounts-workspace/`.
    - State the audit outcome in the change description: what already existed, what is extended, and what genuinely did not exist.
 
-2. **Register and scope the menu item.**
-   - Implement the `Commitments` leaf menu item at `Accounts & Finance → Budgets & Cost Control → Commitments` with canonical section slug `commitments`.
+2. **Register and scope the tab.**
+   - Implement the `Commitments` tab at `Accounts & Finance → Budgets & Cost Control → Commitments` with canonical section slug `commitments`.
    - Preserve compatible existing deep-link aliases, but generate new links only with the canonical slug.
-   - Reopening the route must focus the existing menu item and restore committed search, filters, sorting, pagination, and column settings.
-   - Register this leaf as a nested sidebar menu item under its `Accounts & Finance` category. The category level is a menu level: do not add an in-page category `AppTabStrip`, an `AppTabStripVariant.nested` strip, or any other tab layer that repeats a menu level. See `.cursor/finance/_shared/navigation-model.md`.
+   - Reopening the route must focus the existing tab and restore committed search, filters, sorting, pagination, and column settings.
+   - Add this tab to the flat `AppTabStrip` of the `Budgets & Cost Control` sidebar menu item. The menu nests exactly one level: never add a second sidebar level, a category `AppTabStrip` above the section strip, or an `AppTabStripVariant.nested` layer. See `.cursor/finance/_shared/navigation-model.md`.
 
 3. **Implement the backend and data contract.**
    - Implement every list, detail, CRUD, workflow, report, or reconciliation operation defined under **Target API contract** in `.cursor/finance/accounts-and-finance/budgets-and-cost-control/commitments.md`.
@@ -45,7 +45,7 @@ Implement this prompt only after the prerequisite prompt passes its acceptance c
 5. **Implement filters and table controls.**
    - Implement these domain filters in addition to comprehensive field filters from the specification: `Search`, `Status`, `Date/period`, `Department / cost centre`, `Party`, `Currency`, `Amount range`.
    - Follow `prompts/.cursor/tables.mdc` for Search and the standard Filters → Settings → Export → Print toolbar sequence.
-   - Use one committed query model for the menu-item count badge, table rows, Advanced filters, export, print, URL restoration, and saved views.
+   - Use one committed query model for the tab count badge, table rows, Advanced filters, export, print, URL restoration, and saved views.
    - Implement these context-specific toolbar buttons:
      - **New record:** gate `accounts:write` ∩ `facility-accounts`; enable when write permitted and source prerequisites met; Opens the Commitments mutation dialog.
 
@@ -91,7 +91,7 @@ Implement this prompt only after the prerequisite prompt passes its acceptance c
 
 10. **Apply shared UI contracts.**
     - Follow `prompts/.cursor/screens.mdc`, `tabs.mdc`, `tables.mdc`, `dialogs.mdc`, `forms.mdc`, `printing.mdc`, `localization.mdc`, `theming.mdc`, and `responsiveness.mdc`.
-    - Reuse Pharmacy's route → query → `AppListTable` → detail dialog → mutation dialog → targeted refresh pattern, with the nested sidebar menu item in place of a tab strip.
+    - Reuse Pharmacy's route → query → flat `AppTabStrip` → `AppListTable` → detail dialog → mutation dialog → targeted refresh pattern.
     - Add all user-facing copy and accessibility text to English localization; do not hard-code UI strings.
     - Verify mobile, tablet, and desktop layouts in light and dark themes.
 
@@ -103,8 +103,8 @@ Implement this prompt only after the prerequisite prompt passes its acceptance c
 
 ## Constraints
 
-- Implement only this menu item and directly required shared support; exclude unrelated refactoring.
-- Do not change the menu label, menu ownership, column inventory, button intent, or module boundary without first updating `.cursor/billing-accounts-finance.md` and regenerating `.cursor/finance`.
+- Implement only this tab and directly required shared support; exclude unrelated refactoring.
+- Do not change the tab label, menu ownership, column inventory, button intent, or module boundary without first updating `.cursor/billing-accounts-finance.md` and regenerating `.cursor/finance`.
 - Reuse existing routes, controllers, repositories, validation, permissions, design-system components, dialogs, print paths, and localization patterns.
 - Do not expose raw database IDs, raw enums, secrets, unnecessary PHI, or unauthorized rows/actions.
 - Do not duplicate source records across Billing, Accounts & Finance, and Insurance & Claims.
@@ -114,7 +114,7 @@ Implement this prompt only after the prerequisite prompt passes its acceptance c
 ## Acceptance Criteria
 
 - **AC1 (R1):** The reuse audit is documented, and the change adds no parallel model, route, panel, permission key, or formatter for a capability another module already owns.
-- **AC2 (R2):** `/accounts?section=commitments` opens the correct authorized menu item, restores state, and omits it when access is denied.
+- **AC2 (R2):** `/accounts?section=commitments` opens the correct authorized tab, restores state, and omits it when access is denied.
 - **AC3 (R3):** All API operations in `.cursor/finance/accounts-and-finance/budgets-and-cost-control/commitments.md` use validated, scoped, versioned contracts and pass success, denial, conflict, rollback, and audit tests.
 - **AC4 (R4):** The table exposes every specified column with correct default/optional visibility, formatting, sorting, filtering, totals, responsive behavior, and Settings/export availability.
 - **AC5 (R5):** Filters, counts, rows, URL state, export, print, and saved views share one committed query and remain synchronized.

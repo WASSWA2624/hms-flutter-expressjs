@@ -37,10 +37,10 @@ Extend the owning module in place. Do not add a parallel model, route family, co
 
 - **Menu path:** `Accounts & Finance → Tax & Compliance → Audit Schedules`
 - **Canonical URL:** `/accounts?section=audit-schedules`
-- **Surface kind:** leaf **menu item**, opening a permanent `transaction` table/worklist
+- **Surface kind:** permanent `transaction` table/worklist **tab**, inside the `Tax & Compliance` menu item
 - **Reopen behavior:** focus the existing surface and preserve search, filters, sort, page, and selected columns
-- **Parent behavior:** The `Accounts & Finance` sidebar entry expands into nested menu items; selecting this leaf menu item opens the workspace on this section. The category level is a menu level, never an in-page tab strip
-- **Forbidden:** a category `AppTabStrip`, an `AppTabStripVariant.nested` strip, or any other in-page tab layer that repeats a sidebar menu level
+- **Parent behavior:** The `Accounts & Finance` sidebar entry expands one level into its category menu items; `Tax & Compliance` opens the workspace, and this tab is one of that category's tabs
+- **Forbidden:** a second menu nesting level, a category `AppTabStrip` above the section strip, or `AppTabStripVariant.nested`
 - **Navigation contract:** [../../_shared/navigation-model.md](../../_shared/navigation-model.md)
 - **Source:** [billing-accounts-finance.md](../../../billing-accounts-finance.md) §§9.3 / 10.3
 
@@ -49,7 +49,7 @@ Extend the owning module in place. Do not add a parallel model, route family, co
 Follow the `/pharmacy` workspace conventions:
 
 - `AsyncStateScaffold` → `ResponsivePage` → `AppWorkspace`
-- No `AppTabStrip` for the Accounts & Finance hierarchy: the sidebar renders the nested menu items and the page renders the resolved section
+- One flat `AppTabStrip` holding the sections of the active category; the category itself is a sidebar menu item, not a tab
 - `AppListTable` for the primary table, server pagination, saved columns, export, and print
 - Row click opens `showAppDialog` / `AppDialog`; sections use `AppWorkspaceDetailPanel`
 - Mutations use `AppWorkspaceMutationDialog` or `AppDialog`, not permanent create/edit tabs
@@ -230,7 +230,7 @@ Warnings are visibly distinct from blocking errors. Override actions require an 
 ## Refactor work breakdown
 
 0. **Reuse audit:** complete the five steps in [../../_shared/existing-implementation.md](../../_shared/existing-implementation.md) and record which of the steps below collapse into extending existing code.
-1. **Navigation:** add `audit-schedules` to the workspace section enum/query parser, canonical slug map, localized label, permission filter, and count-badge mapper. Register it as a nested sidebar menu item under its category; do not add an in-page category or nested tab strip.
+1. **Navigation:** add `audit-schedules` to the workspace section enum/query parser, canonical slug map, localized label, permission filter, and count-badge mapper. Add it to its category's flat tab strip; the category is the sidebar menu item and must not become a tab row.
 2. **Presentation:** extract `frontend/lib/features/accounts/presentation/widgets/accounts_audit_schedules_panel.dart`; compose it from `AppListTable` and shared workspace components.
 3. **Table support:** define typed column IDs, default/optional columns, server sort keys, filters, export mapping, print mapping, empty/error states, and count semantics.
 4. **Details and CRUD:** add focused detail and mutation dialogs; include the nested tables and buttons in this specification.
@@ -254,7 +254,7 @@ Warnings are visibly distinct from blocking errors. Override actions require an 
 ## Acceptance criteria
 
 - [ ] The reuse audit ran and its outcome is recorded; no parallel model, route, panel, permission key, or formatter was added for something already owned elsewhere.
-- [ ] The leaf is reachable as a nested sidebar menu item under `Accounts & Finance → Tax & Compliance`, and the workspace renders no category or nested tab strip for that hierarchy.
+- [ ] `Accounts & Finance → Tax & Compliance` resolves through exactly two sidebar menu levels, and this tab appears in the category's single flat tab strip with no category tab row and no nested variant.
 - [ ] The surface appears at `Accounts & Finance → Tax & Compliance → Audit Schedules` only with the required entitlement and read access.
 - [ ] Canonical section slug `audit-schedules` deep-links and restores the selected surface.
 - [ ] Primary `AppListTable` exposes every tab-specific and applicable baseline column.

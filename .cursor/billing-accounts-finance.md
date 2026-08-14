@@ -549,9 +549,9 @@ The application sidebar should expose **Billing**, **Accounts & Finance**, and *
 Apply these rules consistently:
 
 1. **Billing** and **Insurance & Claims** open dedicated workspaces whose named entries are tabs. Their tab strips stay flat: no category tab row above the section tab row.
-2. **Accounts & Finance** is an expandable main menu. Its category labels expand or collapse **nested sidebar menu items**, and each leaf menu item opens the Accounts & Finance workspace on that section.
-3. The Accounts & Finance category hierarchy belongs to the sidebar menu, never to an in-page tab strip. Do not render a category tab row, a `nested` tab-strip variant, or any other in-page tab layer to represent `Accounts & Finance → Category → Leaf`. The workspace page receives an already-resolved leaf section and renders that section's table directly.
-4. Every permanent leaf represents a searchable, filterable data table or worklist. The required columns are defined in Section 10.
+2. **Accounts & Finance** is an expandable main menu with exactly **one nesting level**. Expanding it reveals its category menu items; selecting a category opens the workspace on that category's first authorized section.
+3. The third level is a **tab in the workspace**, not a menu item. Each category renders one flat tab strip holding its sections. Never add a second sidebar nesting level, a category tab row above the section strip, or a `nested` tab-strip variant. Where the menu tree shows a fourth level (`General Accounting → Journal Entries → …`), those entries flatten into the same tab strip.
+4. Every permanent tab represents a searchable, filterable data table or worklist. The required columns are defined in Section 10.
 5. Create, edit, approve, post, allocate, reconcile, close, and reverse operations are actions from a table row or toolbar; they are not permanent menu tabs.
 6. Forms open in a drawer, modal, or contextual record tab, then return the user to the originating table after completion.
 7. Reopening the same destination focuses its existing tab or menu item instead of creating a duplicate.
@@ -601,7 +601,7 @@ BILLING
 
 Rename the existing **Accounts** menu to **Accounts & Finance**. It must be an expandable first-level menu with nested, permission-aware submenu entries. It owns the accounting books, payables, expenditure, treasury, assets, budgets, period close, compliance, and financial reporting.
 
-The tree below is the **sidebar menu structure**, not an in-page tab tree. Each indentation level is a nested menu item; only the leaf level opens a workspace section. Rendering any of these levels as a tab strip inside the workspace page violates rule 3 in Section 9.1.
+The tree below spans two surfaces. The first indentation level is a **nested sidebar menu item** — the only nesting the menu allows. Everything below it is a **tab in the workspace page**, rendered as one flat strip per category. Adding a second menu level, or a category tab row above the section strip, violates rule 3 in Section 9.1.
 
 Currency handling is deliberately absent from this menu. The application already resolves currency from the tenant/facility setup defaults and formats and converts amounts through existing shared code; Accounts & Finance must reuse that, not introduce a currency registry tab of its own.
 

@@ -32,7 +32,7 @@ See [`_shared/workspace-pattern.md`](_shared/workspace-pattern.md).
 
 - Run the [reuse audit](_shared/existing-implementation.md) before implementing any tab. Most of this scope already exists; extend the owning module instead of adding a parallel one.
 - Billing keeps the **Billing** menu name and exposes a flat tab workspace.
-- Accounts becomes **Accounts & Finance** and is the only expandable finance main menu. Its category folders are **nested sidebar menu items** and its leaf files are leaf menu items — never an in-page category or nested tab strip. See [navigation-model.md](_shared/navigation-model.md).
+- Accounts becomes **Accounts & Finance** and is the only expandable finance main menu. Its category folders are **nested sidebar menu items** (one level only) and the leaf files inside them are **tabs** in the workspace. See [navigation-model.md](_shared/navigation-model.md).
 - Insurance Claims becomes **Insurance & Claims** and exposes a flat tab workspace.
 - Every permanent tab is a table/worklist. Create/edit/approve/post/reconcile actions are buttons and dialogs, not permanent tabs.
 - There is no Currencies & Exchange Rates tab. Currency resolution, precision, and conversion already exist in shared code.

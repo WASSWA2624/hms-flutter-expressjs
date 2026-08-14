@@ -1,5 +1,71 @@
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.dart';
+import 'package:hosspi_hms/features/accounts/presentation/accounts_access.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
+import 'package:hosspi_hms/shared/layout/layout.dart';
+
+/// Accounts & Finance submenu — its categories, one nesting level deep.
+///
+/// The menu carries exactly two levels: `Accounts & Finance` and its
+/// categories. The sections inside a category are the workspace tab strip, not
+/// menu items. Categories with no authorized section are omitted.
+List<ShellSubmenuItem> accountsShellMenuChildren({
+  required AppAccessPolicy accessPolicy,
+  int? Function(AccountsDeskCategory category)? badgeCount,
+}) {
+  return <ShellSubmenuItem>[
+    for (final AccountsDeskCategory category in AccountsDeskCategory.values)
+      if (accountsVisibleCategorySections(accessPolicy, category).isNotEmpty)
+        ShellSubmenuItem(
+          id: category.name,
+          label: accountsCategoryLabel(category),
+          icon: accountsCategoryIcon(category),
+          tooltip: accountsCategoryTooltip(category),
+          badgeCount: badgeCount?.call(category),
+        ),
+  ];
+}
+
+/// Sections of [category] the user may open, in menu order.
+List<AccountsDeskSection> accountsVisibleCategorySections(
+  AppAccessPolicy accessPolicy,
+  AccountsDeskCategory category,
+) {
+  return category.sections
+      .where(
+        (AccountsDeskSection section) =>
+            canViewAccountsSection(accessPolicy, section),
+      )
+      .toList(growable: false);
+}
+
+/// Scope total for a category badge: the sum of its visible sections.
+///
+/// Reads the unfiltered workspace summary so the sidebar never depends on a
+/// panel's live query state.
+int accountsCategorySummaryCount(
+  AccountsSummary summary,
+  List<AccountsDeskSection> visibleSections,
+) {
+  int total = 0;
+  for (final AccountsDeskSection section in visibleSections) {
+    total += summary.countFor(section);
+  }
+  return total;
+}
+
+/// First section a category opens on, or null when none is authorized.
+AccountsDeskSection? accountsCategoryLandingSection(
+  AppAccessPolicy accessPolicy,
+  AccountsDeskCategory category,
+) {
+  final List<AccountsDeskSection> sections = accountsVisibleCategorySections(
+    accessPolicy,
+    category,
+  );
+  return sections.isEmpty ? null : sections.first;
+}
 
 /// Sibling-count model: dedicated unfiltered [AccountsSummary] scope totals
 /// (with live GL / invoices / ledgers / chart overrides when set).

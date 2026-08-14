@@ -543,37 +543,46 @@ Two different navigation shapes, one workspace pattern.
 - No category tab row above the section tab row, and no `AppTabStripVariant.nested`
   layer for the menu hierarchy.
 
-## Accounts & Finance — nested menu items
+## Accounts & Finance — one nesting level, then tabs
 
-- The `Accounts & Finance` sidebar entry is **expandable**.
-- Expanding it reveals its category menu items (`General Accounting`,
-  `Purchases & Payables`, `Expenses`, `Cash Management`, `Bank Management`,
-  `Fixed Assets`, `Budgets & Cost Control`, `Tax & Compliance`, `Period Close`,
-  `Financial Reports`, `Setup & Controls`, `Audit Trail`), plus the standalone
-  `Overview` leaf.
-- `General Accounting → Journal Entries` is a second nesting level, and it is still a
-  menu level.
-- Only leaf menu items navigate. A leaf opens `/accounts?section=<slug>`.
-- The workspace page receives an already-resolved leaf section and renders that
-  section's `AppListTable` directly.
+The hierarchy splits across exactly two surfaces:
+
+| Level | Example | Surface |
+|---|---|---|
+| 1 | `Accounts & Finance` | Expandable sidebar menu item |
+| 2 | `General Accounting` | Nested sidebar menu item — the only nesting level |
+| 3 | `Chart of Accounts` | Tab in the workspace page |
+
+- Expanding `Accounts & Finance` reveals its category menu items (`General
+  Accounting`, `Purchases & Payables`, `Expenses`, `Cash Management`,
+  `Bank Management`, `Fixed Assets`, `Budgets & Cost Control`,
+  `Tax & Compliance`, `Period Close`, `Financial Reports`, `Setup & Controls`,
+  `Audit Trail`), plus `Overview`.
+- Selecting a category opens `/accounts?section=<its first authorized section>`.
+- The workspace then renders **one flat `AppTabStrip`** holding that category's
+  sections. Selecting a tab moves to `/accounts?section=<slug>`.
+- A fourth conceptual level (`General Accounting → Journal Entries → …`)
+  flattens into the same tab strip; it does not add a menu level or a tab layer.
 
 ### Explicitly forbidden
 
-- A category `AppTabStrip` above the section content.
-- An `AppTabStripVariant.nested` strip used to represent the category → leaf hierarchy.
-- Any in-page tab layer that duplicates a level of the sidebar menu.
+- A second sidebar nesting level below a category.
+- A category `AppTabStrip` above the section strip.
+- `AppTabStripVariant.nested` used to represent the category → section hierarchy.
 
 ### Required behavior
 
-- Menu items the user cannot access are omitted, not disabled.
-- A category is hidden when none of its leaves are visible.
-- The expanded category, the active leaf, the canonical `?section=` slug, the page
-  title, and the breadcrumb stay synchronized.
-- Leaf menu items carry the same count badges the tab strips would have carried:
-  the active leaf shows the filtered server total, siblings show their own scope total.
-- Deep-linking to `/accounts?section=<slug>` expands the owning category and selects
-  the leaf.
-- Reopening a leaf restores its committed search, filters, sort, page, and columns.
+- Menu items and tabs the user cannot access are omitted, not disabled.
+- A category is hidden when none of its sections is visible.
+- The expanded menu item, the active tab, the canonical `?section=` slug, the
+  page title, and the breadcrumb stay synchronized.
+- Category menu items carry the summed scope total of their visible sections,
+  read from the workspace summary — the menu never depends on panel query state.
+- Section tabs keep the established count semantics: the active tab shows the
+  filtered server total, siblings show their own scope total.
+- Deep-linking to `/accounts?section=<slug>` expands and selects the owning
+  category menu item and activates that tab.
+- Reopening a tab restores its committed search, filters, sort, page, and columns.
 """
 
 
@@ -1680,21 +1689,23 @@ def render_tab(tab: Tab, columns: list[str]) -> str:
         else ""
     )
     if tab.module_key == "accounts":
+        category = tab.group_labels[0] if tab.group_labels else "Accounts & Finance"
         surface_kind = (
-            f"leaf **menu item**, opening a permanent `{profile}` table/worklist"
+            f"permanent `{profile}` table/worklist **tab**, inside the "
+            f"`{category}` menu item"
         )
         parent_behavior = (
-            "The `Accounts & Finance` sidebar entry expands into nested menu items; "
-            "selecting this leaf menu item opens the workspace on this section. "
-            "The category level is a menu level, never an in-page tab strip"
+            "The `Accounts & Finance` sidebar entry expands one level into its "
+            f"category menu items; `{category}` opens the workspace, and this tab "
+            "is one of that category's tabs"
         )
         forbidden_navigation = (
-            "- **Forbidden:** a category `AppTabStrip`, an `AppTabStripVariant.nested` "
-            "strip, or any other in-page tab layer that repeats a sidebar menu level\n"
+            "- **Forbidden:** a second menu nesting level, a category "
+            "`AppTabStrip` above the section strip, or `AppTabStripVariant.nested`\n"
         )
         tab_strip_bullet = (
-            "- No `AppTabStrip` for the Accounts & Finance hierarchy: the sidebar "
-            "renders the nested menu items and the page renders the resolved section"
+            "- One flat `AppTabStrip` holding the sections of the active category; "
+            "the category itself is a sidebar menu item, not a tab"
         )
     else:
         surface_kind = f"permanent `{profile}` table/worklist tab"
@@ -1711,15 +1722,15 @@ def render_tab(tab: Tab, columns: list[str]) -> str:
     reuse_block = "\n".join(f"- {entry}" for entry in reuse_targets(tab))
     panel_path = panel_file_path(tab)
     accounts_navigation_note = (
-        " Register it as a nested sidebar menu item under its category; do not add an "
-        "in-page category or nested tab strip."
+        " Add it to its category's flat tab strip; the category is the sidebar menu "
+        "item and must not become a tab row."
         if tab.module_key == "accounts"
         else ""
     )
     navigation_acceptance = (
-        "The leaf is reachable as a nested sidebar menu item under "
-        f"`{' → '.join(('Accounts & Finance',) + tab.group_labels)}`, and the "
-        "workspace renders no category or nested tab strip for that hierarchy."
+        f"`{' → '.join(('Accounts & Finance',) + tab.group_labels)}` resolves through "
+        "exactly two sidebar menu levels, and this tab appears in the category's "
+        "single flat tab strip with no category tab row and no nested variant."
         if tab.module_key == "accounts"
         else (
             f"The {tab.module['menu']} workspace exposes one flat tab strip with no "
@@ -1945,7 +1956,7 @@ def render_folder_readme(
     is_accounts_tree = folder == OUTPUT_ROOT / MODULES["accounts"]["folder"] or (
         OUTPUT_ROOT / MODULES["accounts"]["folder"]
     ) in folder.parents
-    surface_word = "leaf menu item" if is_accounts_tree else "workspace tab"
+    surface_word = "workspace tab"
 
     parts = [
         GENERATED_MARKER,
@@ -1957,8 +1968,9 @@ def render_folder_readme(
     if is_accounts_tree:
         parts.extend(
             [
-                "Folder nesting mirrors **sidebar menu nesting**, not an in-page tab tree. "
-                "Do not render these levels as a category or nested `AppTabStrip`.",
+                "The first folder level is a **sidebar menu item**; the files inside "
+                "it are that menu item's **workspace tabs**. The menu never nests "
+                "deeper, and the tabs never gain a category row above them.",
                 "",
             ]
         )
@@ -2032,7 +2044,7 @@ Use Pharmacy as the interaction and component exemplar, not as a monolithic file
 1. `AsyncStateScaffold`
 2. `ResponsivePage`
 3. `AppWorkspace`
-4. One flat `AppTabStrip` for Billing and Insurance & Claims sections; for Accounts & Finance, nested sidebar menu items instead of any tab strip (see [navigation-model.md](navigation-model.md))
+4. One flat `AppTabStrip` in every workspace; for Accounts & Finance it holds the active category's sections, reached through one sidebar nesting level (see [navigation-model.md](navigation-model.md))
 5. `AppListTable` for every permanent tab
 6. `showAppDialog` + `AppDialog` / `AppWorkspaceMutationDialog` for details and mutations
 7. `AppWorkspaceDetailPanel` for collapsible detail sections
@@ -2188,7 +2200,7 @@ See [`_shared/workspace-pattern.md`](_shared/workspace-pattern.md).
 
 - Run the [reuse audit](_shared/existing-implementation.md) before implementing any tab. Most of this scope already exists; extend the owning module instead of adding a parallel one.
 - Billing keeps the **Billing** menu name and exposes a flat tab workspace.
-- Accounts becomes **Accounts & Finance** and is the only expandable finance main menu. Its category folders are **nested sidebar menu items** and its leaf files are leaf menu items — never an in-page category or nested tab strip. See [navigation-model.md](_shared/navigation-model.md).
+- Accounts becomes **Accounts & Finance** and is the only expandable finance main menu. Its category folders are **nested sidebar menu items** (one level only) and the leaf files inside them are **tabs** in the workspace. See [navigation-model.md](_shared/navigation-model.md).
 - Insurance Claims becomes **Insurance & Claims** and exposes a flat tab workspace.
 - Every permanent tab is a table/worklist. Create/edit/approve/post/reconcile actions are buttons and dialogs, not permanent tabs.
 - There is no Currencies & Exchange Rates tab. Currency resolution, precision, and conversion already exist in shared code.

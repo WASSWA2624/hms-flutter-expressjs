@@ -10,34 +10,43 @@ Two different navigation shapes, one workspace pattern.
 - No category tab row above the section tab row, and no `AppTabStripVariant.nested`
   layer for the menu hierarchy.
 
-## Accounts & Finance — nested menu items
+## Accounts & Finance — one nesting level, then tabs
 
-- The `Accounts & Finance` sidebar entry is **expandable**.
-- Expanding it reveals its category menu items (`General Accounting`,
-  `Purchases & Payables`, `Expenses`, `Cash Management`, `Bank Management`,
-  `Fixed Assets`, `Budgets & Cost Control`, `Tax & Compliance`, `Period Close`,
-  `Financial Reports`, `Setup & Controls`, `Audit Trail`), plus the standalone
-  `Overview` leaf.
-- `General Accounting → Journal Entries` is a second nesting level, and it is still a
-  menu level.
-- Only leaf menu items navigate. A leaf opens `/accounts?section=<slug>`.
-- The workspace page receives an already-resolved leaf section and renders that
-  section's `AppListTable` directly.
+The hierarchy splits across exactly two surfaces:
+
+| Level | Example | Surface |
+|---|---|---|
+| 1 | `Accounts & Finance` | Expandable sidebar menu item |
+| 2 | `General Accounting` | Nested sidebar menu item — the only nesting level |
+| 3 | `Chart of Accounts` | Tab in the workspace page |
+
+- Expanding `Accounts & Finance` reveals its category menu items (`General
+  Accounting`, `Purchases & Payables`, `Expenses`, `Cash Management`,
+  `Bank Management`, `Fixed Assets`, `Budgets & Cost Control`,
+  `Tax & Compliance`, `Period Close`, `Financial Reports`, `Setup & Controls`,
+  `Audit Trail`), plus `Overview`.
+- Selecting a category opens `/accounts?section=<its first authorized section>`.
+- The workspace then renders **one flat `AppTabStrip`** holding that category's
+  sections. Selecting a tab moves to `/accounts?section=<slug>`.
+- A fourth conceptual level (`General Accounting → Journal Entries → …`)
+  flattens into the same tab strip; it does not add a menu level or a tab layer.
 
 ### Explicitly forbidden
 
-- A category `AppTabStrip` above the section content.
-- An `AppTabStripVariant.nested` strip used to represent the category → leaf hierarchy.
-- Any in-page tab layer that duplicates a level of the sidebar menu.
+- A second sidebar nesting level below a category.
+- A category `AppTabStrip` above the section strip.
+- `AppTabStripVariant.nested` used to represent the category → section hierarchy.
 
 ### Required behavior
 
-- Menu items the user cannot access are omitted, not disabled.
-- A category is hidden when none of its leaves are visible.
-- The expanded category, the active leaf, the canonical `?section=` slug, the page
-  title, and the breadcrumb stay synchronized.
-- Leaf menu items carry the same count badges the tab strips would have carried:
-  the active leaf shows the filtered server total, siblings show their own scope total.
-- Deep-linking to `/accounts?section=<slug>` expands the owning category and selects
-  the leaf.
-- Reopening a leaf restores its committed search, filters, sort, page, and columns.
+- Menu items and tabs the user cannot access are omitted, not disabled.
+- A category is hidden when none of its sections is visible.
+- The expanded menu item, the active tab, the canonical `?section=` slug, the
+  page title, and the breadcrumb stay synchronized.
+- Category menu items carry the summed scope total of their visible sections,
+  read from the workspace summary — the menu never depends on panel query state.
+- Section tabs keep the established count semantics: the active tab shows the
+  filtered server total, siblings show their own scope total.
+- Deep-linking to `/accounts?section=<slug>` expands and selects the owning
+  category menu item and activates that tab.
+- Reopening a tab restores its committed search, filters, sort, page, and columns.
