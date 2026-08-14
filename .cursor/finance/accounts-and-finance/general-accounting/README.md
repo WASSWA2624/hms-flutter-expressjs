@@ -3,23 +3,25 @@
 
 This folder is derived from [billing-accounts-finance.md](../../../billing-accounts-finance.md) and represents a menu or nested menu item. Each non-README Markdown file represents one permanent table workspace tab.
 
-The first folder level is a **sidebar menu item**; the files inside it are that menu item's **workspace tabs**. The menu never nests deeper, and the tabs never gain a category row above them.
+## Tabs
 
-## Nested menu items
-
-| Menu item | Purpose |
-|---|---|
-| [Journal Entries](journal-entries/README.md) | Nested menu item with its own leaf specifications. |
-
-## Leaf menu items
-
-| Menu item | Section slug | Purpose |
+| Tab | Section slug | Purpose |
 |---|---|---|
+| [Adjustment Journal](adjustment-journal.md) | `adjustment-journal` | Manages the end-to-end adjustment journal workflow for General Accounting. |
+| [All Journal Entries](all-journal-entries.md) | `all-journal-entries` | Manages the end-to-end all journal entries workflow for General Accounting. |
+| [Asset Journal](asset-journal.md) | `asset-journal` | Manages the end-to-end asset journal workflow for General Accounting. |
+| [Cash Payments Journal](cash-payments-journal.md) | `cash-payments-journal` | Manages the end-to-end cash payments journal workflow for General Accounting. |
+| [Cash Receipts Journal](cash-receipts-journal.md) | `cash-receipts-journal` | Manages the end-to-end cash receipts journal workflow for General Accounting. |
 | [Chart of Accounts](chart-of-accounts.md) | `chart-of-accounts` | Maintains the authoritative chart of accounts records used by General Accounting. |
 | [Control Accounts](control-accounts.md) | `control-accounts` | Provides a read-oriented control accounts table for analysis, reconciliation, drill-down, printing, and export without duplicating the authoritative source transactions. |
+| [General Journal](general-journal.md) | `general-journal` | Manages the end-to-end general journal workflow for General Accounting. |
 | [General Ledger](general-ledger.md) | `general-ledger` | Provides a read-oriented general ledger table for analysis, reconciliation, drill-down, printing, and export without duplicating the authoritative source transactions. |
+| [Inventory Journal](inventory-journal.md) | `inventory-journal` | Manages the end-to-end inventory journal workflow for General Accounting. |
+| [Payroll Journal](payroll-journal.md) | `payroll-journal` | Manages the end-to-end payroll journal workflow for General Accounting. |
+| [Purchase Journal](purchase-journal.md) | `purchase-journal` | Manages the end-to-end purchase journal workflow for General Accounting. |
 | [Recurring Entries](recurring-entries.md) | `recurring-entries` | Manages the end-to-end recurring entries workflow for General Accounting. |
 | [Reversing Entries](reversing-entries.md) | `reversing-entries` | Manages the end-to-end reversing entries workflow for General Accounting. |
+| [Sales Journal](sales-journal.md) | `sales-journal` | Manages the end-to-end sales journal workflow for General Accounting. |
 
 ## Implementation contract
 

@@ -548,9 +548,9 @@ The application sidebar should expose **Billing**, **Accounts & Finance**, and *
 
 Apply these rules consistently:
 
-1. **Billing** and **Insurance & Claims** open dedicated workspaces whose named entries are tabs. Their tab strips stay flat: no category tab row above the section tab row.
-2. **Accounts & Finance** is an expandable main menu with exactly **one nesting level**. Expanding it reveals its category menu items; selecting a category opens the workspace on that category's first authorized section.
-3. The third level is a **tab in the workspace**, not a menu item. Each category renders one flat tab strip holding its sections. Never add a second sidebar nesting level, a category tab row above the section strip, or a `nested` tab-strip variant. Where the menu tree shows a fourth level (`General Accounting → Journal Entries → …`), those entries flatten into the same tab strip.
+1. **Every** finance menu — Billing, Accounts & Finance, and Insurance & Claims — is expandable and nests exactly **one level**. Expanding a menu reveals its category menu items; selecting a category opens the workspace on that category's first authorized section.
+2. The third level is a **tab in the workspace**, not a menu item. Each category renders one flat tab strip built from `frontend/lib/shared/components/app_tab_strip.dart`, holding that category's sections.
+3. Never add a second sidebar nesting level, a category tab row above the section strip, or the `nested` tab-strip variant. Where a menu tree shows a fourth level (`General Accounting → Journal Entries → …`), those entries flatten into the same tab strip.
 4. Every permanent tab represents a searchable, filterable data table or worklist. The required columns are defined in Section 10.
 5. Create, edit, approve, post, allocate, reconcile, close, and reverse operations are actions from a table row or toolbar; they are not permanent menu tabs.
 6. Forms open in a drawer, modal, or contextual record tab, then return the user to the originating table after completion.
@@ -566,35 +566,48 @@ Apply these rules consistently:
 
 ### 9.2 Billing
 
-Keep the existing menu name **Billing**. It opens a tabbed billing workspace and owns patient and customer charging, invoicing, collection, allocation, adjustment, and receivable follow-up.
+Keep the existing menu name **Billing**. It owns patient and customer charging, invoicing, collection, allocation, adjustment, and receivable follow-up.
+
+Like every finance menu, it nests exactly one level. The first indentation level below the menu is a **category menu item**; its children are **tabs** in the workspace tab strip.
 
 ```text
 BILLING
 │
 ├── Overview
-├── Charges
-├── Unbilled Charges
-├── Estimates & Quotations
-├── Packages & Bundles
-├── Invoices
-├── Payments
-├── Payment Allocations
-├── Receipts
-├── Advances & Deposits
-├── Credit Notes
-├── Debit Notes
-├── Refunds
-├── Write-offs
-├── Patient Accounts
-├── Patient Statements
-├── Receivables
-├── Collection Follow-up
-├── Price Lists & Tariffs
-├── Billing Rules
-├── Discount Rules
-├── Tax Rules
-├── Document Templates
+│   └── Overview
+│
+├── Setup & Pricing
+│   ├── Price Lists & Tariffs
+│   ├── Packages & Bundles
+│   ├── Billing Rules
+│   ├── Discount Rules
+│   ├── Tax Rules
+│   └── Document Templates
+│
+├── Charges & Invoicing
+│   ├── Charges
+│   ├── Unbilled Charges
+│   ├── Estimates & Quotations
+│   ├── Invoices
+│   ├── Credit Notes
+│   └── Debit Notes
+│
+├── Payments & Receipts
+│   ├── Payments
+│   ├── Payment Allocations
+│   ├── Receipts
+│   ├── Advances & Deposits
+│   ├── Refunds
+│   └── Write-offs
+│
+├── Accounts & Collections
+│   ├── Patient Accounts
+│   ├── Patient Statements
+│   ├── Receivables
+│   └── Collection Follow-up
+│
 └── Billing Reports
+    └── Billing Reports
 ```
 
 ### 9.3 Accounts & Finance
@@ -609,10 +622,11 @@ Currency handling is deliberately absent from this menu. The application already
 ACCOUNTS & FINANCE
 │
 ├── Overview
+│   └── Overview
 │
 ├── General Accounting
 │   ├── Chart of Accounts
-│   ├── Journal Entries
+│   ├── Journal Entries (flattened into the General Accounting tab strip)
 │   │   ├── All Journal Entries
 │   │   ├── General Journal
 │   │   ├── Sales Journal
@@ -738,44 +752,61 @@ ACCOUNTS & FINANCE
 
 Rename the existing **Insurance Claims** menu to **Insurance & Claims**. It owns insurer and corporate-payer administration, eligibility, pre-authorization, claims, adjudication results, remittances, denials, and payer follow-up.
 
+It nests exactly one level: category menu items, then tabs.
+
 ```text
 INSURANCE & CLAIMS
 │
 ├── Overview
-├── Insurance Providers
-├── Corporate Payers
-├── Plans & Products
-├── Contracts
-├── Tariffs & Price Lists
-├── Coverage Rules
-├── Exclusions & Limits
-├── Patient Policies
-├── Members & Dependants
-├── Eligibility Checks
-├── Coverage Balances
-├── Pre-authorizations
-├── Claims
-├── Claim Validations
-├── Claim Batches
-├── Claim Submissions
-├── Adjudications
-├── Denials
-├── Resubmissions & Appeals
-├── Remittance Advice
-├── Insurer Payments
-├── Remittance Allocations
-├── Payer Balances
-├── Claim Reconciliation
-├── Payer Statements
-├── Claims Aging
-├── Collection Follow-up
-├── Disputes
-├── Claim Rules
-├── Required Documents
-├── Denial Codes
-├── Submission Channels
-├── Claim Templates
+│   └── Overview
+│
+├── Payers & Contracts
+│   ├── Insurance Providers
+│   ├── Corporate Payers
+│   ├── Plans & Products
+│   ├── Contracts
+│   └── Tariffs & Price Lists
+│
+├── Coverage & Claim Rules
+│   ├── Coverage Rules
+│   ├── Exclusions & Limits
+│   ├── Required Documents
+│   ├── Denial Codes
+│   ├── Submission Channels
+│   ├── Claim Templates
+│   └── Claim Rules
+│
+├── Membership & Eligibility
+│   ├── Patient Policies
+│   ├── Members & Dependants
+│   ├── Eligibility Checks
+│   ├── Coverage Balances
+│   └── Pre-authorizations
+│
+├── Claims Processing
+│   ├── Claims
+│   ├── Claim Validations
+│   ├── Claim Batches
+│   ├── Claim Submissions
+│   ├── Adjudications
+│   ├── Denials
+│   └── Resubmissions & Appeals
+│
+├── Remittances & Reconciliation
+│   ├── Remittance Advice
+│   ├── Insurer Payments
+│   ├── Remittance Allocations
+│   ├── Payer Balances
+│   └── Claim Reconciliation
+│
+├── Payer Follow-up
+│   ├── Payer Statements
+│   ├── Claims Aging
+│   ├── Collection Follow-up
+│   └── Disputes
+│
 └── Insurance Reports
+    └── Insurance Reports
 ```
 
 ### 9.5 Module boundaries and hand-offs

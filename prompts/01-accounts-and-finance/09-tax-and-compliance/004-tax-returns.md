@@ -9,7 +9,7 @@
 - **Menu path:** `Accounts & Finance → Tax & Compliance → Tax Returns`
 - **Canonical route:** `/accounts?section=tax-returns`
 - **Surface profile:** `transaction` table/worklist tab
-- **Navigation model:** `Accounts & Finance → Tax & Compliance` are the two sidebar menu levels; this surface is a tab in that menu item's flat tab strip
+- **Navigation model:** `Accounts & Finance → Tax & Compliance` are the two sidebar menu levels; this surface is a tab in that category's flat `AppTabStrip`
 - **Authoritative tab specification:** `.cursor/finance/accounts-and-finance/tax-and-compliance/tax-returns.md`
 - **Finance source of truth:** `.cursor/billing-accounts-finance.md`
 
@@ -28,7 +28,7 @@ Implement this prompt only after the prerequisite prompt passes its acceptance c
    - Implement the `Tax Returns` tab at `Accounts & Finance → Tax & Compliance → Tax Returns` with canonical section slug `tax-returns`.
    - Preserve compatible existing deep-link aliases, but generate new links only with the canonical slug.
    - Reopening the route must focus the existing tab and restore committed search, filters, sorting, pagination, and column settings.
-   - Add this tab to the flat `AppTabStrip` of the `Tax & Compliance` sidebar menu item. The menu nests exactly one level: never add a second sidebar level, a category `AppTabStrip` above the section strip, or an `AppTabStripVariant.nested` layer. See `.cursor/finance/_shared/navigation-model.md`.
+   - Add this tab to the flat `AppTabStrip` (`frontend/lib/shared/components/app_tab_strip.dart`) of the `Tax & Compliance` sidebar menu item. Every finance menu nests exactly one level: never add a second sidebar level, a category `AppTabStrip` above the section strip, or an `AppTabStripVariant.nested` layer. See `.cursor/finance/_shared/navigation-model.md`.
 
 3. **Implement the backend and data contract.**
    - Implement every list, detail, CRUD, workflow, report, or reconciliation operation defined under **Target API contract** in `.cursor/finance/accounts-and-finance/tax-and-compliance/tax-returns.md`.
@@ -92,7 +92,7 @@ Implement this prompt only after the prerequisite prompt passes its acceptance c
 
 10. **Apply shared UI contracts.**
     - Follow `prompts/.cursor/screens.mdc`, `tabs.mdc`, `tables.mdc`, `dialogs.mdc`, `forms.mdc`, `printing.mdc`, `localization.mdc`, `theming.mdc`, and `responsiveness.mdc`.
-    - Reuse Pharmacy's route → query → flat `AppTabStrip` → `AppListTable` → detail dialog → mutation dialog → targeted refresh pattern.
+    - Reuse Pharmacy's route → query → flat `AppTabStrip` → `AppListTable` → detail dialog → mutation dialog → targeted refresh pattern, reached through the category menu item.
     - Add all user-facing copy and accessibility text to English localization; do not hard-code UI strings.
     - Verify mobile, tablet, and desktop layouts in light and dark themes.
 

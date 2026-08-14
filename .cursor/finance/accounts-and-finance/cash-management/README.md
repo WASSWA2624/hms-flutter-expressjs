@@ -3,11 +3,9 @@
 
 This folder is derived from [billing-accounts-finance.md](../../../billing-accounts-finance.md) and represents a menu or nested menu item. Each non-README Markdown file represents one permanent table workspace tab.
 
-The first folder level is a **sidebar menu item**; the files inside it are that menu item's **workspace tabs**. The menu never nests deeper, and the tabs never gain a category row above them.
+## Tabs
 
-## Leaf menu items
-
-| Menu item | Section slug | Purpose |
+| Tab | Section slug | Purpose |
 |---|---|---|
 | [Cash Counts](cash-counts.md) | `cash-counts` | Manages the end-to-end cash counts workflow for Cash Management. |
 | [Cash Points](cash-points.md) | `cash-points` | Maintains the authoritative cash points records used by Cash Management. |

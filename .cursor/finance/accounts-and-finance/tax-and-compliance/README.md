@@ -3,11 +3,9 @@
 
 This folder is derived from [billing-accounts-finance.md](../../../billing-accounts-finance.md) and represents a menu or nested menu item. Each non-README Markdown file represents one permanent table workspace tab.
 
-The first folder level is a **sidebar menu item**; the files inside it are that menu item's **workspace tabs**. The menu never nests deeper, and the tabs never gain a category row above them.
+## Tabs
 
-## Leaf menu items
-
-| Menu item | Section slug | Purpose |
+| Tab | Section slug | Purpose |
 |---|---|---|
 | [Audit Schedules](audit-schedules.md) | `audit-schedules` | Manages the end-to-end audit schedules workflow for Tax & Compliance. |
 | [Regulatory Reports](regulatory-reports.md) | `regulatory-reports` | Provides the authoritative regulatory reports worklist for Tax & Compliance, with repeatable filters, drill-down, export, print, and scheduling. |

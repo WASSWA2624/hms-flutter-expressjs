@@ -50,7 +50,7 @@ Extend the owning module in place. Do not add a parallel model, route family, co
 Follow the `/pharmacy` workspace conventions:
 
 - `AsyncStateScaffold` → `ResponsivePage` → `AppWorkspace`
-- One flat `AppTabStrip` holding the sections of the active category; the category itself is a sidebar menu item, not a tab
+- One flat `AppTabStrip` (`frontend/lib/shared/components/app_tab_strip.dart`) holding the sections of the active category; the category itself is a sidebar menu item, not a tab
 - `AppListTable` for the primary table, server pagination, saved columns, export, and print
 - Row click opens `showAppDialog` / `AppDialog`; sections use `AppWorkspaceDetailPanel`
 - Mutations use `AppWorkspaceMutationDialog` or `AppDialog`, not permanent create/edit tabs
@@ -254,7 +254,7 @@ Warnings are visibly distinct from blocking errors. Override actions require an 
 ## Acceptance criteria
 
 - [ ] The reuse audit ran and its outcome is recorded; no parallel model, route, panel, permission key, or formatter was added for something already owned elsewhere.
-- [ ] `Accounts & Finance → Cash Management` resolves through exactly two sidebar menu levels, and this tab appears in the category's single flat tab strip with no category tab row and no nested variant.
+- [ ] `Accounts & Finance → Cash Management` resolves through exactly two sidebar menu levels, and this tab appears in the category's single flat `AppTabStrip` with no category tab row and no nested variant.
 - [ ] The surface appears at `Accounts & Finance → Cash Management → Cash Reconciliation` only with the required entitlement and read access.
 - [ ] Canonical section slug `cash-reconciliation` deep-links and restores the selected surface.
 - [ ] Primary `AppListTable` exposes every tab-specific and applicable baseline column.

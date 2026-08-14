@@ -17,16 +17,11 @@ The first folder level is a **sidebar menu item**; the files inside it are that 
 | [Financial Reports](financial-reports/README.md) | Nested menu item with its own leaf specifications. |
 | [Fixed Assets](fixed-assets/README.md) | Nested menu item with its own leaf specifications. |
 | [General Accounting](general-accounting/README.md) | Nested menu item with its own leaf specifications. |
+| [Overview](overview/README.md) | Nested menu item with its own leaf specifications. |
 | [Period Close](period-close/README.md) | Nested menu item with its own leaf specifications. |
 | [Purchases & Payables](purchases-and-payables/README.md) | Nested menu item with its own leaf specifications. |
 | [Setup & Controls](setup-and-controls/README.md) | Nested menu item with its own leaf specifications. |
 | [Tax & Compliance](tax-and-compliance/README.md) | Nested menu item with its own leaf specifications. |
-
-## Leaf menu items
-
-| Menu item | Section slug | Purpose |
-|---|---|---|
-| [Overview](overview.md) | `overview` | Provides the Accounts & Finance operational summary as a table of queues, values, exceptions, ownership, service levels, and drill-down destinations. |
 
 ## Implementation contract
 

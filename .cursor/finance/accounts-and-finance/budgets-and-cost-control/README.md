@@ -3,11 +3,9 @@
 
 This folder is derived from [billing-accounts-finance.md](../../../billing-accounts-finance.md) and represents a menu or nested menu item. Each non-README Markdown file represents one permanent table workspace tab.
 
-The first folder level is a **sidebar menu item**; the files inside it are that menu item's **workspace tabs**. The menu never nests deeper, and the tabs never gain a category row above them.
+## Tabs
 
-## Leaf menu items
-
-| Menu item | Section slug | Purpose |
+| Tab | Section slug | Purpose |
 |---|---|---|
 | [Annual Budgets](annual-budgets.md) | `annual-budgets` | Manages the end-to-end annual budgets workflow for Budgets & Cost Control. |
 | [Budget Revisions](budget-revisions.md) | `budget-revisions` | Manages the end-to-end budget revisions workflow for Budgets & Cost Control. |

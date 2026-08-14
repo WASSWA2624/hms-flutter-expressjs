@@ -3,11 +3,9 @@
 
 This folder is derived from [billing-accounts-finance.md](../../../billing-accounts-finance.md) and represents a menu or nested menu item. Each non-README Markdown file represents one permanent table workspace tab.
 
-The first folder level is a **sidebar menu item**; the files inside it are that menu item's **workspace tabs**. The menu never nests deeper, and the tabs never gain a category row above them.
+## Tabs
 
-## Leaf menu items
-
-| Menu item | Section slug | Purpose |
+| Tab | Section slug | Purpose |
 |---|---|---|
 | [Approval Rules](approval-rules.md) | `approval-rules` | Maintains the authoritative approval rules records used by Setup & Controls. |
 | [Departments & Cost Centres](departments-and-cost-centres.md) | `departments-and-cost-centres` | Maintains the authoritative departments & cost centres records used by Setup & Controls. |

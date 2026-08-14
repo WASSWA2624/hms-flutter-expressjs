@@ -39,50 +39,74 @@ JOURNAL_TABS = [
     "Asset Journal",
 ]
 
-BILLING_TABS = [
-    "Overview",
-    "Charges",
-    "Unbilled Charges",
-    "Estimates & Quotations",
-    "Packages & Bundles",
-    "Invoices",
-    "Payments",
-    "Payment Allocations",
-    "Receipts",
-    "Advances & Deposits",
-    "Credit Notes",
-    "Debit Notes",
-    "Refunds",
-    "Write-offs",
-    "Patient Accounts",
-    "Patient Statements",
-    "Receivables",
-    "Collection Follow-up",
-    "Price Lists & Tariffs",
-    "Billing Rules",
-    "Discount Rules",
-    "Tax Rules",
-    "Document Templates",
-    "Billing Reports",
+# Every menu nests exactly one level: `Menu → Category`. A category's tabs are
+# the workspace `AppTabStrip`, never a deeper menu level.
+BILLING_GROUPS: list[tuple[tuple[str, ...], tuple[str, ...], list[str]]] = [
+    (("Overview",), ("overview",), ["Overview"]),
+    (
+        ("Setup & Pricing",),
+        ("setup-and-pricing",),
+        [
+            "Price Lists & Tariffs",
+            "Packages & Bundles",
+            "Billing Rules",
+            "Discount Rules",
+            "Tax Rules",
+            "Document Templates",
+        ],
+    ),
+    (
+        ("Charges & Invoicing",),
+        ("charges-and-invoicing",),
+        [
+            "Charges",
+            "Unbilled Charges",
+            "Estimates & Quotations",
+            "Invoices",
+            "Credit Notes",
+            "Debit Notes",
+        ],
+    ),
+    (
+        ("Payments & Receipts",),
+        ("payments-and-receipts",),
+        [
+            "Payments",
+            "Payment Allocations",
+            "Receipts",
+            "Advances & Deposits",
+            "Refunds",
+            "Write-offs",
+        ],
+    ),
+    (
+        ("Accounts & Collections",),
+        ("accounts-and-collections",),
+        [
+            "Patient Accounts",
+            "Patient Statements",
+            "Receivables",
+            "Collection Follow-up",
+        ],
+    ),
+    (("Billing Reports",), ("billing-reports",), ["Billing Reports"]),
 ]
 
 ACCOUNT_GROUPS: list[tuple[tuple[str, ...], tuple[str, ...], list[str]]] = [
-    ((), (), ["Overview"]),
+    (("Overview",), ("overview",), ["Overview"]),
     (
         ("General Accounting",),
         ("general-accounting",),
         [
             "Chart of Accounts",
+            # Journal Entries is a grouping in the product menu, but the menu
+            # nests only one level, so its tabs live in this same strip.
+            *JOURNAL_TABS,
             "General Ledger",
             "Control Accounts",
             "Recurring Entries",
             "Reversing Entries",
         ],
-    ),
-    (
-        ("General Accounting", "Journal Entries"),
-        ("general-accounting", "journal-entries"),
-        JOURNAL_TABS,
     ),
     (
         ("Purchases & Payables",),
@@ -238,42 +262,78 @@ ACCOUNT_GROUPS: list[tuple[tuple[str, ...], tuple[str, ...], list[str]]] = [
     ),
 ]
 
-INSURANCE_TABS = [
-    "Overview",
-    "Insurance Providers",
-    "Corporate Payers",
-    "Plans & Products",
-    "Contracts",
-    "Tariffs & Price Lists",
-    "Coverage Rules",
-    "Exclusions & Limits",
-    "Patient Policies",
-    "Members & Dependants",
-    "Eligibility Checks",
-    "Coverage Balances",
-    "Pre-authorizations",
-    "Claims",
-    "Claim Validations",
-    "Claim Batches",
-    "Claim Submissions",
-    "Adjudications",
-    "Denials",
-    "Resubmissions & Appeals",
-    "Remittance Advice",
-    "Insurer Payments",
-    "Remittance Allocations",
-    "Payer Balances",
-    "Claim Reconciliation",
-    "Payer Statements",
-    "Claims Aging",
-    "Collection Follow-up",
-    "Disputes",
-    "Claim Rules",
-    "Required Documents",
-    "Denial Codes",
-    "Submission Channels",
-    "Claim Templates",
-    "Insurance Reports",
+INSURANCE_GROUPS: list[tuple[tuple[str, ...], tuple[str, ...], list[str]]] = [
+    (("Overview",), ("overview",), ["Overview"]),
+    (
+        ("Payers & Contracts",),
+        ("payers-and-contracts",),
+        [
+            "Insurance Providers",
+            "Corporate Payers",
+            "Plans & Products",
+            "Contracts",
+            "Tariffs & Price Lists",
+        ],
+    ),
+    (
+        ("Coverage & Claim Rules",),
+        ("coverage-and-claim-rules",),
+        [
+            "Coverage Rules",
+            "Exclusions & Limits",
+            "Required Documents",
+            "Denial Codes",
+            "Submission Channels",
+            "Claim Templates",
+            "Claim Rules",
+        ],
+    ),
+    (
+        ("Membership & Eligibility",),
+        ("membership-and-eligibility",),
+        [
+            "Patient Policies",
+            "Members & Dependants",
+            "Eligibility Checks",
+            "Coverage Balances",
+            "Pre-authorizations",
+        ],
+    ),
+    (
+        ("Claims Processing",),
+        ("claims-processing",),
+        [
+            "Claims",
+            "Claim Validations",
+            "Claim Batches",
+            "Claim Submissions",
+            "Adjudications",
+            "Denials",
+            "Resubmissions & Appeals",
+        ],
+    ),
+    (
+        ("Remittances & Reconciliation",),
+        ("remittances-and-reconciliation",),
+        [
+            "Remittance Advice",
+            "Insurer Payments",
+            "Remittance Allocations",
+            "Payer Balances",
+            "Claim Reconciliation",
+        ],
+    ),
+    (
+        ("Payer Follow-up",),
+        ("payer-follow-up",),
+        [
+            "Payer Statements",
+            "Claims Aging",
+            "Collection Follow-up",
+            "Disputes",
+        ],
+    ),
+    (("Insurance Reports",), ("insurance-reports",), ["Insurance Reports"]),
 ]
 
 MODULES = {
@@ -534,35 +594,42 @@ introduce a currency registry, a rate table, or a second conversion path.
 NAVIGATION_MODEL_DOC = f"""{GENERATED_MARKER}
 # Finance navigation model
 
-Two different navigation shapes, one workspace pattern.
-
-## Billing and Insurance & Claims — flat tabs
-
-- One sidebar menu item opens the workspace.
-- The workspace renders a single, flat `AppTabStrip`.
-- No category tab row above the section tab row, and no `AppTabStripVariant.nested`
-  layer for the menu hierarchy.
-
-## Accounts & Finance — one nesting level, then tabs
-
-The hierarchy splits across exactly two surfaces:
+One rule for all three menus: **the sidebar nests exactly one level, and the
+level below that is a tab strip.**
 
 | Level | Example | Surface |
 |---|---|---|
 | 1 | `Accounts & Finance` | Expandable sidebar menu item |
 | 2 | `General Accounting` | Nested sidebar menu item — the only nesting level |
-| 3 | `Chart of Accounts` | Tab in the workspace page |
+| 3 | `Chart of Accounts` | Tab in the workspace, via `AppTabStrip` |
 
-- Expanding `Accounts & Finance` reveals its category menu items (`General
-  Accounting`, `Purchases & Payables`, `Expenses`, `Cash Management`,
-  `Bank Management`, `Fixed Assets`, `Budgets & Cost Control`,
-  `Tax & Compliance`, `Period Close`, `Financial Reports`, `Setup & Controls`,
-  `Audit Trail`), plus `Overview`.
-- Selecting a category opens `/accounts?section=<its first authorized section>`.
-- The workspace then renders **one flat `AppTabStrip`** holding that category's
-  sections. Selecting a tab moves to `/accounts?section=<slug>`.
-- A fourth conceptual level (`General Accounting → Journal Entries → …`)
-  flattens into the same tab strip; it does not add a menu level or a tab layer.
+The same shape applies to `Billing → Charges & Invoicing → Invoices` and
+`Insurance & Claims → Claims Processing → Adjudications`.
+
+## Menu behavior
+
+- A menu item expands to reveal its categories. Selecting a category opens
+  `<route>?section=<its first authorized section>`.
+- Category menu items carry the summed scope total of their visible sections,
+  read from the workspace summary. The menu never depends on panel query state.
+- Menu items the user cannot access are omitted, not disabled. A category is
+  hidden when none of its sections is visible.
+
+## Screen behavior
+
+- The workspace renders **one flat `AppTabStrip`**
+  (`frontend/lib/shared/components/app_tab_strip.dart`) holding the active
+  category's sections. Selecting a tab moves to `<route>?section=<slug>`.
+- Use `AppTabItem` per section with `icon`, `tooltip`, `count`, and
+  `countTone`; the strip handles overflow into its own more-menu, so never
+  hand-roll a tab row or a second strip.
+- Keep `AppTabStripVariant.standard`. `nested` exists for subordinate category
+  tabs elsewhere in the app and must not be used to express a menu level.
+- Toolbar actions belong to `primaryAction` / `secondaryActions` on the strip,
+  not to a separate button row.
+- Where the product menu shows a fourth level (`General Accounting →
+  Journal Entries → …`), those entries flatten into the same tab strip. They
+  add neither a menu level nor a tab layer.
 
 ### Explicitly forbidden
 
@@ -572,15 +639,11 @@ The hierarchy splits across exactly two surfaces:
 
 ### Required behavior
 
-- Menu items and tabs the user cannot access are omitted, not disabled.
-- A category is hidden when none of its sections is visible.
 - The expanded menu item, the active tab, the canonical `?section=` slug, the
   page title, and the breadcrumb stay synchronized.
-- Category menu items carry the summed scope total of their visible sections,
-  read from the workspace summary — the menu never depends on panel query state.
 - Section tabs keep the established count semantics: the active tab shows the
   filtered server total, siblings show their own scope total.
-- Deep-linking to `/accounts?section=<slug>` expands and selects the owning
+- Deep-linking to `<route>?section=<slug>` expands and selects the owning
   category menu item and activates that tab.
 - Reopening a tab restores its committed search, filters, sort, page, and columns.
 """
@@ -627,18 +690,23 @@ def snake_id(value: str) -> str:
 
 
 def all_tabs() -> list[Tab]:
-    tabs = [
-        Tab("billing", (), (), label, "9.2 / 10.2") for label in BILLING_TABS
-    ]
-    for group_labels, group_slugs, labels in ACCOUNT_GROUPS:
-        tabs.extend(
-            Tab("accounts", group_labels, group_slugs, label, "9.3 / 10.3")
-            for label in labels
-        )
-    tabs.extend(
-        Tab("claims", (), (), label, "9.4 / 10.4")
-        for label in INSURANCE_TABS
-    )
+    tabs: list[Tab] = []
+    for module_key, groups, sections in (
+        ("billing", BILLING_GROUPS, "9.2 / 10.2"),
+        ("accounts", ACCOUNT_GROUPS, "9.3 / 10.3"),
+        ("claims", INSURANCE_GROUPS, "9.4 / 10.4"),
+    ):
+        for group_labels, group_slugs, labels in groups:
+            tabs.extend(
+                Tab(module_key, group_labels, group_slugs, label, sections)
+                for label in labels
+            )
+    for tab in tabs:
+        if len(tab.group_labels) > 1:
+            raise ValueError(
+                f"{tab.module['menu']} → {' → '.join(tab.group_labels)} nests "
+                "more than one menu level"
+            )
     return tabs
 
 
@@ -1688,54 +1756,36 @@ def render_tab(tab: Tab, columns: list[str]) -> str:
         if tab.module_key == "claims"
         else ""
     )
-    if tab.module_key == "accounts":
-        category = tab.group_labels[0] if tab.group_labels else "Accounts & Finance"
-        surface_kind = (
-            f"permanent `{profile}` table/worklist **tab**, inside the "
-            f"`{category}` menu item"
-        )
-        parent_behavior = (
-            "The `Accounts & Finance` sidebar entry expands one level into its "
-            f"category menu items; `{category}` opens the workspace, and this tab "
-            "is one of that category's tabs"
-        )
-        forbidden_navigation = (
-            "- **Forbidden:** a second menu nesting level, a category "
-            "`AppTabStrip` above the section strip, or `AppTabStripVariant.nested`\n"
-        )
-        tab_strip_bullet = (
-            "- One flat `AppTabStrip` holding the sections of the active category; "
-            "the category itself is a sidebar menu item, not a tab"
-        )
-    else:
-        surface_kind = f"permanent `{profile}` table/worklist tab"
-        parent_behavior = (
-            f"The {tab.module['menu']} menu opens this flat workspace tab"
-        )
-        forbidden_navigation = (
-            "- **Forbidden:** a category tab row above the section strip, or nested "
-            "menu items for a flat workspace\n"
-        )
-        tab_strip_bullet = (
-            "- One flat `AppTabStrip` for workspace sections; no nested tab variant"
-        )
+    menu = tab.module["menu"]
+    category = tab.group_labels[0] if tab.group_labels else menu
+    surface_kind = (
+        f"permanent `{profile}` table/worklist **tab**, inside the "
+        f"`{category}` menu item"
+    )
+    parent_behavior = (
+        f"The `{menu}` sidebar entry expands one level into its category menu "
+        f"items; `{category}` opens the workspace, and this tab is one of that "
+        "category's tabs"
+    )
+    forbidden_navigation = (
+        "- **Forbidden:** a second menu nesting level, a category `AppTabStrip` "
+        "above the section strip, or `AppTabStripVariant.nested`\n"
+    )
+    tab_strip_bullet = (
+        "- One flat `AppTabStrip` (`frontend/lib/shared/components/app_tab_strip.dart`) "
+        "holding the sections of the active category; the category itself is a "
+        "sidebar menu item, not a tab"
+    )
     reuse_block = "\n".join(f"- {entry}" for entry in reuse_targets(tab))
     panel_path = panel_file_path(tab)
     accounts_navigation_note = (
         " Add it to its category's flat tab strip; the category is the sidebar menu "
         "item and must not become a tab row."
-        if tab.module_key == "accounts"
-        else ""
     )
     navigation_acceptance = (
-        f"`{' → '.join(('Accounts & Finance',) + tab.group_labels)}` resolves through "
-        "exactly two sidebar menu levels, and this tab appears in the category's "
-        "single flat tab strip with no category tab row and no nested variant."
-        if tab.module_key == "accounts"
-        else (
-            f"The {tab.module['menu']} workspace exposes one flat tab strip with no "
-            "nested tab layer and no sidebar submenu for its sections."
-        )
+        f"`{' → '.join((menu,) + tab.group_labels)}` resolves through exactly two "
+        "sidebar menu levels, and this tab appears in the category's single flat "
+        "`AppTabStrip` with no category tab row and no nested variant."
     )
 
     return f"""{GENERATED_MARKER}
@@ -1953,9 +2003,7 @@ def render_folder_readme(
     for child_title, child in sorted(child_folders, key=lambda item: item[0].lower()):
         child_rows.append(f"| [{child_title}]({child.name}/README.md) | Nested menu item with its own leaf specifications. |")
 
-    is_accounts_tree = folder == OUTPUT_ROOT / MODULES["accounts"]["folder"] or (
-        OUTPUT_ROOT / MODULES["accounts"]["folder"]
-    ) in folder.parents
+    is_menu_root = folder.parent == OUTPUT_ROOT
     surface_word = "workspace tab"
 
     parts = [
@@ -1965,7 +2013,7 @@ def render_folder_readme(
         f"This folder is derived from [{SOURCE.name}]({source_link}) and represents a menu or nested menu item. Each non-README Markdown file represents one permanent table {surface_word}.",
         "",
     ]
-    if is_accounts_tree:
+    if is_menu_root:
         parts.extend(
             [
                 "The first folder level is a **sidebar menu item**; the files inside "
@@ -1986,8 +2034,8 @@ def render_folder_readme(
             ]
         )
     if tab_rows:
-        heading = "Leaf menu items" if is_accounts_tree else "Tabs"
-        label_column = "Menu item" if is_accounts_tree else "Tab"
+        heading = "Tabs"
+        label_column = "Tab"
         parts.extend(
             [
                 f"## {heading}",

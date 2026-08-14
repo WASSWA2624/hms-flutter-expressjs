@@ -3,11 +3,9 @@
 
 This folder is derived from [billing-accounts-finance.md](../../../billing-accounts-finance.md) and represents a menu or nested menu item. Each non-README Markdown file represents one permanent table workspace tab.
 
-The first folder level is a **sidebar menu item**; the files inside it are that menu item's **workspace tabs**. The menu never nests deeper, and the tabs never gain a category row above them.
+## Tabs
 
-## Leaf menu items
-
-| Menu item | Section slug | Purpose |
+| Tab | Section slug | Purpose |
 |---|---|---|
 | [Asset Acquisitions](asset-acquisitions.md) | `asset-acquisitions` | Manages the end-to-end asset acquisitions workflow for Fixed Assets. |
 | [Asset Categories](asset-categories.md) | `asset-categories` | Maintains the authoritative asset categories records used by Fixed Assets. |

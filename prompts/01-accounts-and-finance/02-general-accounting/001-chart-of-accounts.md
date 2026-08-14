@@ -2,14 +2,14 @@
 
 ## Context
 
-- **Sequence:** 001 of 006 in `prompts/01-accounts-and-finance/02-general-accounting/`
+- **Sequence:** 001 of 015 in `prompts/01-accounts-and-finance/02-general-accounting/`
 - **Overall step:** 009 of 158
 - **Phase:** Accounts foundation — general accounting
 - **Prerequisite:** `Accounts & Finance → Setup & Controls → Integration Mappings` (`prompts/01-accounts-and-finance/01-setup-and-controls/008-integration-mappings.md`).
 - **Menu path:** `Accounts & Finance → General Accounting → Chart of Accounts`
 - **Canonical route:** `/accounts?section=chart-of-accounts`
 - **Surface profile:** `master` table/worklist tab
-- **Navigation model:** `Accounts & Finance → General Accounting` are the two sidebar menu levels; this surface is a tab in that menu item's flat tab strip
+- **Navigation model:** `Accounts & Finance → General Accounting` are the two sidebar menu levels; this surface is a tab in that category's flat `AppTabStrip`
 - **Authoritative tab specification:** `.cursor/finance/accounts-and-finance/general-accounting/chart-of-accounts.md`
 - **Finance source of truth:** `.cursor/billing-accounts-finance.md`
 
@@ -28,7 +28,7 @@ Implement this prompt only after the prerequisite prompt passes its acceptance c
    - Implement the `Chart of Accounts` tab at `Accounts & Finance → General Accounting → Chart of Accounts` with canonical section slug `chart-of-accounts`.
    - Preserve compatible existing deep-link aliases, but generate new links only with the canonical slug.
    - Reopening the route must focus the existing tab and restore committed search, filters, sorting, pagination, and column settings.
-   - Add this tab to the flat `AppTabStrip` of the `General Accounting` sidebar menu item. The menu nests exactly one level: never add a second sidebar level, a category `AppTabStrip` above the section strip, or an `AppTabStripVariant.nested` layer. See `.cursor/finance/_shared/navigation-model.md`.
+   - Add this tab to the flat `AppTabStrip` (`frontend/lib/shared/components/app_tab_strip.dart`) of the `General Accounting` sidebar menu item. Every finance menu nests exactly one level: never add a second sidebar level, a category `AppTabStrip` above the section strip, or an `AppTabStripVariant.nested` layer. See `.cursor/finance/_shared/navigation-model.md`.
 
 3. **Implement the backend and data contract.**
    - Implement every list, detail, CRUD, workflow, report, or reconciliation operation defined under **Target API contract** in `.cursor/finance/accounts-and-finance/general-accounting/chart-of-accounts.md`.
@@ -88,7 +88,7 @@ Implement this prompt only after the prerequisite prompt passes its acceptance c
 
 10. **Apply shared UI contracts.**
     - Follow `prompts/.cursor/screens.mdc`, `tabs.mdc`, `tables.mdc`, `dialogs.mdc`, `forms.mdc`, `printing.mdc`, `localization.mdc`, `theming.mdc`, and `responsiveness.mdc`.
-    - Reuse Pharmacy's route → query → flat `AppTabStrip` → `AppListTable` → detail dialog → mutation dialog → targeted refresh pattern.
+    - Reuse Pharmacy's route → query → flat `AppTabStrip` → `AppListTable` → detail dialog → mutation dialog → targeted refresh pattern, reached through the category menu item.
     - Add all user-facing copy and accessibility text to English localization; do not hard-code UI strings.
     - Verify mobile, tablet, and desktop layouts in light and dark themes.
 
@@ -96,7 +96,7 @@ Implement this prompt only after the prerequisite prompt passes its acceptance c
     - Add focused widget/controller tests for route restoration, columns, filters, counts, buttons, CRUD/workflow states, dialogs, authorization omission, export/print, and targeted refresh.
     - Add backend route/service tests for validation, pagination, ABAC scope, permission denial, status transitions, idempotency, concurrency, rollback, and audit.
     - Run `flutter analyze`, the focused Flutter tests, relevant backend tests, and any generator/contract checks affected by the change.
-    - Do not proceed to `Accounts & Finance → General Accounting → Journal Entries → All Journal Entries` (`prompts/01-accounts-and-finance/02-general-accounting/002-journal-entries/001-all-journal-entries.md`) until all acceptance criteria below pass.
+    - Do not proceed to `Accounts & Finance → General Accounting → Journal Entries → All Journal Entries` (`prompts/01-accounts-and-finance/02-general-accounting/002-all-journal-entries.md`) until all acceptance criteria below pass.
 
 ## Constraints
 

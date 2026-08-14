@@ -6,11 +6,11 @@
 - **Overall step:** 099 of 158
 - **Phase:** Accounts & Finance overview and menu integration
 - **Prerequisite:** `Accounts & Finance → Audit Trail → Data Exports` (`prompts/01-accounts-and-finance/12-audit-trail/005-data-exports.md`).
-- **Menu path:** `Accounts & Finance → Overview`
+- **Menu path:** `Accounts & Finance → Overview → Overview`
 - **Canonical route:** `/accounts?section=overview`
 - **Surface profile:** `overview` table/worklist tab
-- **Navigation model:** `Accounts & Finance → Overview` are the two sidebar menu levels; this surface is a tab in that menu item's flat tab strip
-- **Authoritative tab specification:** `.cursor/finance/accounts-and-finance/overview.md`
+- **Navigation model:** `Accounts & Finance → Overview` are the two sidebar menu levels; this surface is a tab in that category's flat `AppTabStrip`
+- **Authoritative tab specification:** `.cursor/finance/accounts-and-finance/overview/overview.md`
 - **Finance source of truth:** `.cursor/billing-accounts-finance.md`
 
 Implement this prompt only after the prerequisite prompt passes its acceptance criteria. Treat the tab specification as authoritative for domain behavior, columns, API operations, statuses, permissions, buttons, forms, nested detail tables, and acceptance criteria.
@@ -28,17 +28,17 @@ Implement this prompt only after the prerequisite prompt passes its acceptance c
    - Implement the `Overview` tab at `Accounts & Finance → Overview` with canonical section slug `overview`.
    - Preserve compatible existing deep-link aliases, but generate new links only with the canonical slug.
    - Reopening the route must focus the existing tab and restore committed search, filters, sorting, pagination, and column settings.
-   - Add this tab to the flat `AppTabStrip` of the `Overview` sidebar menu item. The menu nests exactly one level: never add a second sidebar level, a category `AppTabStrip` above the section strip, or an `AppTabStripVariant.nested` layer. See `.cursor/finance/_shared/navigation-model.md`.
+   - Add this tab to the flat `AppTabStrip` (`frontend/lib/shared/components/app_tab_strip.dart`) of the `Overview` sidebar menu item. Every finance menu nests exactly one level: never add a second sidebar level, a category `AppTabStrip` above the section strip, or an `AppTabStripVariant.nested` layer. See `.cursor/finance/_shared/navigation-model.md`.
 
 3. **Implement the backend and data contract.**
-   - Implement every list, detail, CRUD, workflow, report, or reconciliation operation defined under **Target API contract** in `.cursor/finance/accounts-and-finance/overview.md`.
+   - Implement every list, detail, CRUD, workflow, report, or reconciliation operation defined under **Target API contract** in `.cursor/finance/accounts-and-finance/overview/overview.md`.
    - Extend the existing workspace route/service/repository rather than creating a parallel API.
    - Use Zod validation, `snake_case` JSON, public `human_friendly_id`, paginated `data` plus `meta`, optimistic versions, idempotency for financial mutations, and database transactions.
    - Enforce status transitions, period locks, source-document integrity, and audit logging server-side.
 
 4. **Build the primary table with the exact source columns.**
    - Use `AppListTable`; do not create custom table chrome.
-   - Preserve this source order in Settings/export while applying the default/optional visibility defined in `.cursor/finance/accounts-and-finance/overview.md`:
+   - Preserve this source order in Settings/export while applying the default/optional visibility defined in `.cursor/finance/accounts-and-finance/overview/overview.md`:
      `Queue/Metric`, `Current Count`, `Debit Value`, `Credit Value`, `Net Value`, `Currency`, `Current Period`, `Exceptions`, `Pending Approvals`, `Unposted Items`, `Unreconciled Items`, `Oldest Item Age`, `Responsible Team`, `Last Refreshed`.
    - Implement server sort keys, atomic cells, localized formatting, status badges, monetary alignment/precision, server-filtered totals, a mobile item builder, horizontal overflow, pinned footer, and empty-row padding.
 
@@ -83,7 +83,7 @@ Implement this prompt only after the prerequisite prompt passes its acceptance c
 
 10. **Apply shared UI contracts.**
     - Follow `prompts/.cursor/screens.mdc`, `tabs.mdc`, `tables.mdc`, `dialogs.mdc`, `forms.mdc`, `printing.mdc`, `localization.mdc`, `theming.mdc`, and `responsiveness.mdc`.
-    - Reuse Pharmacy's route → query → flat `AppTabStrip` → `AppListTable` → detail dialog → mutation dialog → targeted refresh pattern.
+    - Reuse Pharmacy's route → query → flat `AppTabStrip` → `AppListTable` → detail dialog → mutation dialog → targeted refresh pattern, reached through the category menu item.
     - Add all user-facing copy and accessibility text to English localization; do not hard-code UI strings.
     - Verify mobile, tablet, and desktop layouts in light and dark themes.
 
@@ -91,7 +91,7 @@ Implement this prompt only after the prerequisite prompt passes its acceptance c
     - Add focused widget/controller tests for route restoration, columns, filters, counts, buttons, CRUD/workflow states, dialogs, authorization omission, export/print, and targeted refresh.
     - Add backend route/service tests for validation, pagination, ABAC scope, permission denial, status transitions, idempotency, concurrency, rollback, and audit.
     - Run `flutter analyze`, the focused Flutter tests, relevant backend tests, and any generator/contract checks affected by the change.
-    - Do not proceed to `Billing → Price Lists & Tariffs` (`prompts/02-billing/001-price-lists-and-tariffs.md`) until all acceptance criteria below pass.
+    - Do not proceed to `Billing → Price Lists & Tariffs` (`prompts/02-billing/01-setup-and-pricing/001-price-lists-and-tariffs.md`) until all acceptance criteria below pass.
 
 ## Constraints
 
@@ -107,7 +107,7 @@ Implement this prompt only after the prerequisite prompt passes its acceptance c
 
 - **AC1 (R1):** The reuse audit is documented, and the change adds no parallel model, route, panel, permission key, or formatter for a capability another module already owns.
 - **AC2 (R2):** `/accounts?section=overview` opens the correct authorized tab, restores state, and omits it when access is denied.
-- **AC3 (R3):** All API operations in `.cursor/finance/accounts-and-finance/overview.md` use validated, scoped, versioned contracts and pass success, denial, conflict, rollback, and audit tests.
+- **AC3 (R3):** All API operations in `.cursor/finance/accounts-and-finance/overview/overview.md` use validated, scoped, versioned contracts and pass success, denial, conflict, rollback, and audit tests.
 - **AC4 (R4):** The table exposes every specified column with correct default/optional visibility, formatting, sorting, filtering, totals, responsive behavior, and Settings/export availability.
 - **AC5 (R5):** Filters, counts, rows, URL state, export, print, and saved views share one committed query and remain synchronized.
 - **AC6 (R6):** Every specified toolbar, row, and bulk button appears only in valid authorized states and performs the documented result.
@@ -119,7 +119,7 @@ Implement this prompt only after the prerequisite prompt passes its acceptance c
 
 ## Relevant Files
 
-- `.cursor/finance/accounts-and-finance/overview.md`
+- `.cursor/finance/accounts-and-finance/overview/overview.md`
 - `.cursor/billing-accounts-finance.md`
 - `.cursor/finance/_shared/existing-implementation.md`
 - `.cursor/finance/_shared/navigation-model.md`

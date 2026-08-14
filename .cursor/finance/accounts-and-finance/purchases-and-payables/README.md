@@ -3,11 +3,9 @@
 
 This folder is derived from [billing-accounts-finance.md](../../../billing-accounts-finance.md) and represents a menu or nested menu item. Each non-README Markdown file represents one permanent table workspace tab.
 
-The first folder level is a **sidebar menu item**; the files inside it are that menu item's **workspace tabs**. The menu never nests deeper, and the tabs never gain a category row above them.
+## Tabs
 
-## Leaf menu items
-
-| Menu item | Section slug | Purpose |
+| Tab | Section slug | Purpose |
 |---|---|---|
 | [AP Aging](ap-aging.md) | `ap-aging` | Provides a read-oriented ap aging table for analysis, reconciliation, drill-down, printing, and export without duplicating the authoritative source transactions. |
 | [AP Reconciliation](ap-reconciliation.md) | `ap-reconciliation` | Coordinates ap reconciliation as an exception-driven worklist. |
