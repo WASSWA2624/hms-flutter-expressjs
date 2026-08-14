@@ -25,6 +25,9 @@ Thumbs.db
 frontend/env/*.json
 !frontend/env/*.example
 
+# Staging folder for cPanel uploads - contains production secrets, never commit
+backend-cpanel-deploy/
+
 # Logs
 logs/
 *.log
