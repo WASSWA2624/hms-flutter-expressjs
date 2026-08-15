@@ -22,6 +22,8 @@ import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_gl_pa
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_invoices_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_ledgers_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_open_work_panel.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_payment_method_dialogs.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_payment_methods_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_scope_navigation.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_to_post_panel.dart';
@@ -40,7 +42,8 @@ const Key accountsSectionBodyKey = Key('accounts-section-body');
 /// Accounts desk shell (`/accounts`).
 ///
 /// Books: Open work / To post / Need approval / GL / Ledgers / Chart /
-/// Invoices. Setup & Controls: Fiscal Years & Periods.
+/// Invoices. Setup & Controls: Fiscal Years & Periods / Departments & Cost
+/// Centres / Payment Methods.
 ///
 /// Menu depth stops at the category: `Accounts & Finance → <Category>` are the
 /// two menu levels, and the category's sections are this page's tabs
@@ -307,6 +310,7 @@ class _AccountsWorkspaceContentState
       chartActiveOverride: ref.watch(accountsChartActiveCountProvider),
       fiscalPeriodsOverride: ref.watch(accountsFiscalPeriodCountProvider),
       departmentsOverride: ref.watch(accountsDepartmentCountProvider),
+      paymentMethodsOverride: ref.watch(accountsPaymentMethodCountProvider),
     );
   }
 
@@ -334,6 +338,8 @@ class _AccountsWorkspaceContentState
         const AccountsFiscalPeriodsPanel(),
       AccountsDeskSection.departmentsAndCostCentres =>
         const AccountsDepartmentsAndCostCentresPanel(),
+      AccountsDeskSection.paymentMethods =>
+        const AccountsPaymentMethodsPanel(),
     };
   }
 }

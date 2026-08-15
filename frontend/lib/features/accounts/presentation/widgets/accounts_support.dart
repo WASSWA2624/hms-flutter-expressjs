@@ -3,6 +3,7 @@ import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_department.dart';
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.dart';
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_fiscal_period.dart';
+import 'package:hosspi_hms/features/accounts/domain/entities/accounts_payment_method.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -163,6 +164,7 @@ String accountsSectionLabel(
     AccountsDeskSection.fiscalYearsAndPeriods => l10n.accountsFiscalPeriodsLabel,
     AccountsDeskSection.departmentsAndCostCentres =>
       l10n.accountsDepartmentsLabel,
+    AccountsDeskSection.paymentMethods => l10n.accountsPaymentMethodsLabel,
   };
 }
 
@@ -205,6 +207,8 @@ String? accountsSectionTooltip(
       l10n.accountsFiscalPeriodsTooltip,
     AccountsDeskSection.departmentsAndCostCentres =>
       l10n.accountsDepartmentsTooltip,
+    AccountsDeskSection.paymentMethods =>
+      l10n.accountsPaymentMethodsTooltip,
   };
 }
 
@@ -219,6 +223,7 @@ String accountsTableSettingsKey(AccountsDeskSection section) {
     AccountsDeskSection.invoices => 'accounts_invoices_v1',
     AccountsDeskSection.fiscalYearsAndPeriods => 'accounts_fiscal_periods_v1',
     AccountsDeskSection.departmentsAndCostCentres => 'accounts_departments_v1',
+    AccountsDeskSection.paymentMethods => 'accounts_payment_methods_v1',
   };
 }
 
@@ -234,6 +239,7 @@ IconData accountsSectionIcon(AccountsDeskSection section) {
     AccountsDeskSection.fiscalYearsAndPeriods => Icons.event_note_outlined,
     AccountsDeskSection.departmentsAndCostCentres =>
       Icons.account_tree_outlined,
+    AccountsDeskSection.paymentMethods => Icons.payments_outlined,
   };
 }
 
@@ -249,6 +255,7 @@ String accountsEmptyBody(AppLocalizations l10n, AccountsDeskSection section) {
     AccountsDeskSection.fiscalYearsAndPeriods => l10n.accountsFiscalPeriodsEmpty,
     AccountsDeskSection.departmentsAndCostCentres =>
       l10n.accountsDepartmentsEmpty,
+    AccountsDeskSection.paymentMethods => l10n.accountsPaymentMethodsEmpty,
   };
 }
 
@@ -305,6 +312,87 @@ IconData accountsDepartmentStatusIcon(AccountsDepartmentStatus status) {
     AccountsDepartmentStatus.inactive => Icons.pause_circle_outline,
     AccountsDepartmentStatus.archived => Icons.inventory_2_outlined,
   };
+}
+
+String accountsPaymentMethodStatusLabel(
+  AppLocalizations l10n,
+  AccountsPaymentMethodStatus status,
+) {
+  return switch (status) {
+    AccountsPaymentMethodStatus.draft => l10n.accountsPaymentMethodStatusDraft,
+    AccountsPaymentMethodStatus.active => l10n.accountsPaymentMethodStatusActive,
+    AccountsPaymentMethodStatus.inactive =>
+      l10n.accountsPaymentMethodStatusInactive,
+    AccountsPaymentMethodStatus.archived =>
+      l10n.accountsPaymentMethodStatusArchived,
+  };
+}
+
+AppWorkspaceStatusTone accountsPaymentMethodStatusTone(
+  AccountsPaymentMethodStatus status,
+) {
+  return switch (status) {
+    AccountsPaymentMethodStatus.active => AppWorkspaceStatusTone.success,
+    AccountsPaymentMethodStatus.draft => AppWorkspaceStatusTone.warning,
+    AccountsPaymentMethodStatus.inactive => AppWorkspaceStatusTone.neutral,
+    AccountsPaymentMethodStatus.archived => AppWorkspaceStatusTone.neutral,
+  };
+}
+
+IconData accountsPaymentMethodStatusIcon(AccountsPaymentMethodStatus status) {
+  return switch (status) {
+    AccountsPaymentMethodStatus.draft => Icons.edit_note_outlined,
+    AccountsPaymentMethodStatus.active => Icons.check_circle_outline,
+    AccountsPaymentMethodStatus.inactive => Icons.pause_circle_outline,
+    AccountsPaymentMethodStatus.archived => Icons.inventory_2_outlined,
+  };
+}
+
+/// Localized label for the shared tender taxonomy; never render the raw enum.
+String accountsPaymentMethodTypeLabel(
+  AppLocalizations l10n,
+  AccountsPaymentMethodType type,
+) {
+  return switch (type) {
+    AccountsPaymentMethodType.cash => l10n.accountsPaymentMethodTypeCash,
+    AccountsPaymentMethodType.creditCard =>
+      l10n.accountsPaymentMethodTypeCreditCard,
+    AccountsPaymentMethodType.debitCard =>
+      l10n.accountsPaymentMethodTypeDebitCard,
+    AccountsPaymentMethodType.prepaidCard =>
+      l10n.accountsPaymentMethodTypePrepaidCard,
+    AccountsPaymentMethodType.giftCard =>
+      l10n.accountsPaymentMethodTypeGiftCard,
+    AccountsPaymentMethodType.voucher => l10n.accountsPaymentMethodTypeVoucher,
+    AccountsPaymentMethodType.bankCheck =>
+      l10n.accountsPaymentMethodTypeBankCheck,
+    AccountsPaymentMethodType.mobileMoney =>
+      l10n.accountsPaymentMethodTypeMobileMoney,
+    AccountsPaymentMethodType.bankTransfer =>
+      l10n.accountsPaymentMethodTypeBankTransfer,
+    AccountsPaymentMethodType.insurance =>
+      l10n.accountsPaymentMethodTypeInsurance,
+    AccountsPaymentMethodType.other => l10n.accountsPaymentMethodTypeOther,
+  };
+}
+
+String accountsPaymentMethodDirectionLabel(
+  AppLocalizations l10n,
+  AccountsPaymentMethodDirection direction,
+) {
+  return switch (direction) {
+    AccountsPaymentMethodDirection.incoming =>
+      l10n.accountsPaymentMethodDirectionIncoming,
+    AccountsPaymentMethodDirection.outgoing =>
+      l10n.accountsPaymentMethodDirectionOutgoing,
+    AccountsPaymentMethodDirection.both =>
+      l10n.accountsPaymentMethodDirectionBoth,
+  };
+}
+
+/// Localized Yes/No for a payment method requirement flag.
+String accountsPaymentMethodFlagLabel(AppLocalizations l10n, bool value) {
+  return value ? l10n.accountsPaymentMethodYes : l10n.accountsPaymentMethodNo;
 }
 
 IconData accountsFiscalPeriodStatusIcon(AccountsFiscalPeriodStatus status) {

@@ -36180,5 +36180,382 @@
         "type": "String"
       }
     }
+  },
+  "accountsPaymentMethodsLabel": "Payment Methods",
+  "@accountsPaymentMethodsLabel": {
+    "description": "Accounts & Finance -> Setup & Controls -> Payment Methods tab label."
+  },
+  "accountsPaymentMethodsTooltip": "Accepted tenders, their settlement accounts, fees, and evidence rules",
+  "@accountsPaymentMethodsTooltip": {
+    "description": "Tooltip for the Payment Methods tab."
+  },
+  "accountsPaymentMethodsEmpty": "No payment methods match.",
+  "@accountsPaymentMethodsEmpty": {
+    "description": "Empty-state title for the payment methods table."
+  },
+  "accountsPaymentMethodsEmptyBody": "Try another search or add a payment method.",
+  "@accountsPaymentMethodsEmptyBody": {
+    "description": "Empty-state body for the payment methods table."
+  },
+  "accountsPaymentMethodsSearchHint": "Reference, code, name, provider…",
+  "@accountsPaymentMethodsSearchHint": {
+    "description": "Search field hint and accessibility label for the payment methods table."
+  },
+  "accountsPaymentMethodReferenceColumn": "Reference",
+  "@accountsPaymentMethodReferenceColumn": {
+    "description": "Human-friendly reference column of the payment methods table."
+  },
+  "accountsPaymentMethodCodeColumn": "Method Code",
+  "@accountsPaymentMethodCodeColumn": {
+    "description": "Method code column of the payment methods table."
+  },
+  "accountsPaymentMethodNameColumn": "Method Name",
+  "@accountsPaymentMethodNameColumn": {
+    "description": "Method name column of the payment methods table."
+  },
+  "accountsPaymentMethodTypeColumn": "Method Type",
+  "@accountsPaymentMethodTypeColumn": {
+    "description": "Tender type column of the payment methods table."
+  },
+  "accountsPaymentMethodDirectionColumn": "Incoming/Outgoing",
+  "@accountsPaymentMethodDirectionColumn": {
+    "description": "Direction column of the payment methods table."
+  },
+  "accountsPaymentMethodProviderColumn": "Provider",
+  "@accountsPaymentMethodProviderColumn": {
+    "description": "Provider column of the payment methods table."
+  },
+  "accountsPaymentMethodSettlementAccountColumn": "Settlement Account",
+  "@accountsPaymentMethodSettlementAccountColumn": {
+    "description": "Settlement posting account column of the payment methods table."
+  },
+  "accountsPaymentMethodClearingAccountColumn": "Clearing Account",
+  "@accountsPaymentMethodClearingAccountColumn": {
+    "description": "Clearing posting account column of the payment methods table."
+  },
+  "accountsPaymentMethodRequiresReferenceColumn": "Requires External Reference",
+  "@accountsPaymentMethodRequiresReferenceColumn": {
+    "description": "Column showing whether the tender needs an external reference."
+  },
+  "accountsPaymentMethodRequiresApprovalColumn": "Requires Approval",
+  "@accountsPaymentMethodRequiresApprovalColumn": {
+    "description": "Column showing whether the tender needs approval."
+  },
+  "accountsPaymentMethodFeeRuleColumn": "Fee Rule",
+  "@accountsPaymentMethodFeeRuleColumn": {
+    "description": "Fee rule column of the payment methods table."
+  },
+  "accountsPaymentMethodFacilityScopeColumn": "Facility Scope",
+  "@accountsPaymentMethodFacilityScopeColumn": {
+    "description": "Facility scope column of the payment methods table (optional column)."
+  },
+  "accountsPaymentMethodEffectiveFromColumn": "Effective From",
+  "@accountsPaymentMethodEffectiveFromColumn": {
+    "description": "Effective-from column of the payment methods table (optional column)."
+  },
+  "accountsPaymentMethodEffectiveToColumn": "Effective To",
+  "@accountsPaymentMethodEffectiveToColumn": {
+    "description": "Effective-to column of the payment methods table (optional column)."
+  },
+  "accountsPaymentMethodStatusColumn": "Status",
+  "@accountsPaymentMethodStatusColumn": {
+    "description": "Status column of the payment methods table."
+  },
+  "accountsPaymentMethodActionsColumn": "Actions",
+  "@accountsPaymentMethodActionsColumn": {
+    "description": "Row actions column of the payment methods table."
+  },
+  "accountsPaymentMethodYes": "Yes",
+  "@accountsPaymentMethodYes": {
+    "description": "Affirmative chip for a payment method requirement flag."
+  },
+  "accountsPaymentMethodNo": "No",
+  "@accountsPaymentMethodNo": {
+    "description": "Negative chip for a payment method requirement flag."
+  },
+  "accountsPaymentMethodStatusDraft": "Draft",
+  "@accountsPaymentMethodStatusDraft": {
+    "description": "Payment method status: not yet available to downstream workflows."
+  },
+  "accountsPaymentMethodStatusActive": "Active",
+  "@accountsPaymentMethodStatusActive": {
+    "description": "Payment method status: selectable by permitted workflows."
+  },
+  "accountsPaymentMethodStatusInactive": "Inactive",
+  "@accountsPaymentMethodStatusInactive": {
+    "description": "Payment method status: retained but not selectable for new work."
+  },
+  "accountsPaymentMethodStatusArchived": "Archived",
+  "@accountsPaymentMethodStatusArchived": {
+    "description": "Payment method status: soft-deleted historical record."
+  },
+  "accountsPaymentMethodTypeCash": "Cash",
+  "@accountsPaymentMethodTypeCash": {
+    "description": "Tender type: cash."
+  },
+  "accountsPaymentMethodTypeCreditCard": "Credit card",
+  "@accountsPaymentMethodTypeCreditCard": {
+    "description": "Tender type: credit card."
+  },
+  "accountsPaymentMethodTypeDebitCard": "Debit card",
+  "@accountsPaymentMethodTypeDebitCard": {
+    "description": "Tender type: debit card."
+  },
+  "accountsPaymentMethodTypePrepaidCard": "Prepaid card",
+  "@accountsPaymentMethodTypePrepaidCard": {
+    "description": "Tender type: prepaid card."
+  },
+  "accountsPaymentMethodTypeGiftCard": "Gift card",
+  "@accountsPaymentMethodTypeGiftCard": {
+    "description": "Tender type: gift card."
+  },
+  "accountsPaymentMethodTypeVoucher": "Voucher",
+  "@accountsPaymentMethodTypeVoucher": {
+    "description": "Tender type: voucher."
+  },
+  "accountsPaymentMethodTypeBankCheck": "Bank cheque",
+  "@accountsPaymentMethodTypeBankCheck": {
+    "description": "Tender type: bank cheque."
+  },
+  "accountsPaymentMethodTypeMobileMoney": "Mobile money",
+  "@accountsPaymentMethodTypeMobileMoney": {
+    "description": "Tender type: mobile money."
+  },
+  "accountsPaymentMethodTypeBankTransfer": "Bank transfer",
+  "@accountsPaymentMethodTypeBankTransfer": {
+    "description": "Tender type: bank transfer."
+  },
+  "accountsPaymentMethodTypeInsurance": "Insurance",
+  "@accountsPaymentMethodTypeInsurance": {
+    "description": "Tender type: insurance settlement."
+  },
+  "accountsPaymentMethodTypeOther": "Other",
+  "@accountsPaymentMethodTypeOther": {
+    "description": "Tender type: anything outside the listed tenders."
+  },
+  "accountsPaymentMethodDirectionIncoming": "Incoming",
+  "@accountsPaymentMethodDirectionIncoming": {
+    "description": "Direction: the method takes money in."
+  },
+  "accountsPaymentMethodDirectionOutgoing": "Outgoing",
+  "@accountsPaymentMethodDirectionOutgoing": {
+    "description": "Direction: the method pays money out."
+  },
+  "accountsPaymentMethodDirectionBoth": "Incoming and outgoing",
+  "@accountsPaymentMethodDirectionBoth": {
+    "description": "Direction: the method both receives and pays out."
+  },
+  "accountsPaymentMethodDateRangeFilterLabel": "Effective period",
+  "@accountsPaymentMethodDateRangeFilterLabel": {
+    "description": "Advanced filter label for the payment method effective window."
+  },
+  "accountsPaymentMethodFacilityFilterLabel": "Facility",
+  "@accountsPaymentMethodFacilityFilterLabel": {
+    "description": "Advanced filter label for the facility that owns a payment method."
+  },
+  "accountsPaymentMethodNewRecordAction": "New record",
+  "@accountsPaymentMethodNewRecordAction": {
+    "description": "Toolbar action that opens the payment method create dialog."
+  },
+  "accountsPaymentMethodViewAction": "View",
+  "@accountsPaymentMethodViewAction": {
+    "description": "Row action that opens the payment method detail dialog."
+  },
+  "accountsPaymentMethodCloneAction": "Clone",
+  "@accountsPaymentMethodCloneAction": {
+    "description": "Row action that copies a payment method into a new unsaved draft."
+  },
+  "accountsPaymentMethodActivateAction": "Activate",
+  "@accountsPaymentMethodActivateAction": {
+    "description": "Row action that moves a payment method to Active."
+  },
+  "accountsPaymentMethodDeactivateAction": "Deactivate",
+  "@accountsPaymentMethodDeactivateAction": {
+    "description": "Row action that moves a payment method to Inactive."
+  },
+  "accountsPaymentMethodArchiveAction": "Archive",
+  "@accountsPaymentMethodArchiveAction": {
+    "description": "Row action that soft-archives a payment method."
+  },
+  "accountsPaymentMethodRestoreAction": "Restore",
+  "@accountsPaymentMethodRestoreAction": {
+    "description": "Row action that restores an archived payment method."
+  },
+  "accountsPaymentMethodBulkActivateAction": "Activate selected",
+  "@accountsPaymentMethodBulkActivateAction": {
+    "description": "Bulk action that activates every eligible matching payment method."
+  },
+  "accountsPaymentMethodBulkDeactivateAction": "Deactivate selected",
+  "@accountsPaymentMethodBulkDeactivateAction": {
+    "description": "Bulk action that deactivates every eligible matching payment method."
+  },
+  "accountsPaymentMethodBulkArchiveAction": "Archive selected",
+  "@accountsPaymentMethodBulkArchiveAction": {
+    "description": "Bulk action that archives every eligible matching payment method."
+  },
+  "accountsPaymentMethodCreateTitle": "Add payment method",
+  "@accountsPaymentMethodCreateTitle": {
+    "description": "Title of the payment method create dialog."
+  },
+  "accountsPaymentMethodEditTitle": "Edit payment method",
+  "@accountsPaymentMethodEditTitle": {
+    "description": "Title of the payment method edit dialog."
+  },
+  "accountsPaymentMethodCloneTitle": "Clone payment method",
+  "@accountsPaymentMethodCloneTitle": {
+    "description": "Title of the payment method clone dialog."
+  },
+  "accountsPaymentMethodDetailTitle": "Payment method details",
+  "@accountsPaymentMethodDetailTitle": {
+    "description": "Title of the payment method detail dialog."
+  },
+  "accountsPaymentMethodIdentitySection": "Method identity",
+  "@accountsPaymentMethodIdentitySection": {
+    "description": "Form section grouping the identifying fields of a payment method."
+  },
+  "accountsPaymentMethodPostingSection": "Settlement accounts",
+  "@accountsPaymentMethodPostingSection": {
+    "description": "Form section grouping the settlement and clearing accounts."
+  },
+  "accountsPaymentMethodRulesSection": "Handling rules",
+  "@accountsPaymentMethodRulesSection": {
+    "description": "Form section grouping the evidence, approval, and fee rules."
+  },
+  "accountsPaymentMethodSummarySection": "Summary",
+  "@accountsPaymentMethodSummarySection": {
+    "description": "Detail dialog section holding the key payment method fields."
+  },
+  "accountsPaymentMethodAllocationsSection": "Allocations",
+  "@accountsPaymentMethodAllocationsSection": {
+    "description": "Detail dialog section holding allocation behaviour for this method."
+  },
+  "accountsPaymentMethodSettlementSection": "Settlement",
+  "@accountsPaymentMethodSettlementSection": {
+    "description": "Detail dialog section holding settlement and reconciliation links."
+  },
+  "accountsPaymentMethodDocumentsSection": "Documents & audit",
+  "@accountsPaymentMethodDocumentsSection": {
+    "description": "Detail dialog section holding the immutable payment method timeline."
+  },
+  "accountsPaymentMethodAllocationsEmpty": "Allocations are recorded on the payments that use this method.",
+  "@accountsPaymentMethodAllocationsEmpty": {
+    "description": "Explains that allocation rows belong to payments, not to method configuration."
+  },
+  "accountsPaymentMethodSettlementEmpty": "No settlement accounts configured.",
+  "@accountsPaymentMethodSettlementEmpty": {
+    "description": "Empty state for the payment method settlement section."
+  },
+  "accountsPaymentMethodActivityCreated": "Created",
+  "@accountsPaymentMethodActivityCreated": {
+    "description": "Activity timeline label for the payment method creation timestamp."
+  },
+  "accountsPaymentMethodActivityUpdated": "Last updated",
+  "@accountsPaymentMethodActivityUpdated": {
+    "description": "Activity timeline label for the payment method update timestamp."
+  },
+  "accountsPaymentMethodActivityArchived": "Archived",
+  "@accountsPaymentMethodActivityArchived": {
+    "description": "Activity timeline label for the payment method archive timestamp."
+  },
+  "accountsPaymentMethodVersionLabel": "Record version",
+  "@accountsPaymentMethodVersionLabel": {
+    "description": "Activity timeline label for the optimistic record version."
+  },
+  "accountsPaymentMethodNotesLabel": "Notes",
+  "@accountsPaymentMethodNotesLabel": {
+    "description": "Notes field label of the payment method form."
+  },
+  "accountsPaymentMethodSharedTypeNotice": "Method Type is the shared tender taxonomy recorded on every payment; this tab configures how each type behaves.",
+  "@accountsPaymentMethodSharedTypeNotice": {
+    "description": "Notice clarifying that the tender taxonomy is shared with payment records."
+  },
+  "accountsPaymentMethodRequiredField": "This field is required.",
+  "@accountsPaymentMethodRequiredField": {
+    "description": "Validation message for a missing required payment method value."
+  },
+  "accountsPaymentMethodEffectiveToBeforeFrom": "Effective To must not be earlier than Effective From.",
+  "@accountsPaymentMethodEffectiveToBeforeFrom": {
+    "description": "Validation message for a payment method effective window that ends before it starts."
+  },
+  "accountsPaymentMethodSettlementRequired": "A clearing account also needs a settlement account.",
+  "@accountsPaymentMethodSettlementRequired": {
+    "description": "Validation message when a clearing account is set without a settlement account."
+  },
+  "accountsPaymentMethodActivateConfirmTitle": "Activate payment method?",
+  "@accountsPaymentMethodActivateConfirmTitle": {
+    "description": "Confirmation title for activating a payment method."
+  },
+  "accountsPaymentMethodDeactivateConfirmTitle": "Deactivate payment method?",
+  "@accountsPaymentMethodDeactivateConfirmTitle": {
+    "description": "Confirmation title for deactivating a payment method."
+  },
+  "accountsPaymentMethodArchiveConfirmTitle": "Archive payment method?",
+  "@accountsPaymentMethodArchiveConfirmTitle": {
+    "description": "Confirmation title for archiving a payment method."
+  },
+  "accountsPaymentMethodRestoreConfirmTitle": "Restore payment method?",
+  "@accountsPaymentMethodRestoreConfirmTitle": {
+    "description": "Confirmation title for restoring an archived payment method."
+  },
+  "accountsPaymentMethodArchiveConfirmBody": "The method is archived, not deleted. Posted receipts stay available and the record can be restored. Archiving is refused while recorded payments already used this tender.",
+  "@accountsPaymentMethodArchiveConfirmBody": {
+    "description": "Confirmation body clarifying that archive is a soft, reference-guarded state change."
+  },
+  "accountsPaymentMethodActivateConfirmBody": "Activate {reference} so permitted workflows can accept it?",
+  "@accountsPaymentMethodActivateConfirmBody": {
+    "description": "Confirmation body for activating a payment method.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsPaymentMethodDeactivateConfirmBody": "Deactivate {reference} so it is no longer offered for new payments?",
+  "@accountsPaymentMethodDeactivateConfirmBody": {
+    "description": "Confirmation body for deactivating a payment method.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsPaymentMethodRestoreConfirmBody": "Restore {reference} and record the change in the audit trail?",
+  "@accountsPaymentMethodRestoreConfirmBody": {
+    "description": "Confirmation body for restoring an archived payment method.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsPaymentMethodBulkConfirmBody": "{count, plural, one{Apply this change to {count} matching payment method? Records that do not allow the change are skipped.} other{Apply this change to {count} matching payment methods? Records that do not allow the change are skipped.}}",
+  "@accountsPaymentMethodBulkConfirmBody": {
+    "description": "Confirmation body for a bulk payment method workflow action.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsPaymentMethodBulkPartialFailure": "{count, plural, one{{count} record could not be changed.} other{{count} records could not be changed.}}",
+  "@accountsPaymentMethodBulkPartialFailure": {
+    "description": "Feedback shown when part of a bulk payment method action failed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsPaymentMethodMobileCaption": "{methodCode} · {methodType}",
+  "@accountsPaymentMethodMobileCaption": {
+    "description": "Compact mobile row caption pairing the method code with the localized tender type.",
+    "placeholders": {
+      "methodCode": {
+        "type": "String"
+      },
+      "methodType": {
+        "type": "String"
+      }
+    }
   }
 }

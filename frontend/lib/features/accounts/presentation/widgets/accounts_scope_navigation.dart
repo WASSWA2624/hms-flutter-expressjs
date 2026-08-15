@@ -86,6 +86,7 @@ int accountsSectionTabCount(
   int? chartActiveOverride,
   int? fiscalPeriodsOverride,
   int? departmentsOverride,
+  int? paymentMethodsOverride,
 }) {
   final AccountsSummary summary = state.overview.summary;
   final int scopeTotal = switch (section) {
@@ -100,6 +101,8 @@ int accountsSectionTabCount(
       fiscalPeriodsOverride ?? summary.countFor(section),
     AccountsDeskSection.departmentsAndCostCentres =>
       departmentsOverride ?? summary.countFor(section),
+    AccountsDeskSection.paymentMethods =>
+      paymentMethodsOverride ?? summary.countFor(section),
     _ => summary.countFor(section),
   };
 
@@ -109,7 +112,8 @@ int accountsSectionTabCount(
       section == AccountsDeskSection.ledgers ||
       section == AccountsDeskSection.chart ||
       section == AccountsDeskSection.fiscalYearsAndPeriods ||
-      section == AccountsDeskSection.departmentsAndCostCentres;
+      section == AccountsDeskSection.departmentsAndCostCentres ||
+      section == AccountsDeskSection.paymentMethods;
   if (isDedicatedPanel) {
     return scopeTotal;
   }
@@ -137,7 +141,8 @@ AppTabCountTone accountsSectionCountTone(AccountsDeskSection section) {
     AccountsDeskSection.chart ||
     AccountsDeskSection.invoices ||
     AccountsDeskSection.fiscalYearsAndPeriods ||
-    AccountsDeskSection.departmentsAndCostCentres => AppTabCountTone.info,
+    AccountsDeskSection.departmentsAndCostCentres ||
+    AccountsDeskSection.paymentMethods => AppTabCountTone.info,
   };
 }
 
@@ -153,6 +158,7 @@ int accountsCategoryTabCount(
   int? chartActiveOverride,
   int? fiscalPeriodsOverride,
   int? departmentsOverride,
+  int? paymentMethodsOverride,
 }) {
   int total = 0;
   for (final AccountsDeskSection section in category.sections) {
@@ -169,6 +175,7 @@ int accountsCategoryTabCount(
       chartActiveOverride: chartActiveOverride,
       fiscalPeriodsOverride: fiscalPeriodsOverride,
       departmentsOverride: departmentsOverride,
+      paymentMethodsOverride: paymentMethodsOverride,
     );
   }
   return total;

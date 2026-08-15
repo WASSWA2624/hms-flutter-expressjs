@@ -813,6 +813,138 @@ void main() {
     },
   );
 
+  test('appListTableResolveActionBarLayout keeps one row before wrapping', () {
+    const List<double> labeled = <double>[120, 120, 120];
+    const List<double> icons = <double>[40, 40, 40];
+
+    expect(
+      appListTableResolveActionBarLayout(
+        labeledWidths: labeled,
+        iconWidths: icons,
+        spacing: 8,
+        maxWidth: 400,
+      ),
+      AppListTableActionBarLayout.labeledRow,
+    );
+    // Labels no longer fit, icons still do: drop labels, keep one row.
+    expect(
+      appListTableResolveActionBarLayout(
+        labeledWidths: labeled,
+        iconWidths: icons,
+        spacing: 8,
+        maxWidth: 200,
+      ),
+      AppListTableActionBarLayout.iconRow,
+    );
+    // Not even icons fit: wrap onto more rows.
+    expect(
+      appListTableResolveActionBarLayout(
+        labeledWidths: labeled,
+        iconWidths: icons,
+        spacing: 8,
+        maxWidth: 100,
+      ),
+      AppListTableActionBarLayout.iconWrap,
+    );
+    expect(
+      appListTableResolveActionBarLayout(
+        labeledWidths: const <double>[],
+        iconWidths: const <double>[],
+        spacing: 8,
+        maxWidth: 100,
+      ),
+      AppListTableActionBarLayout.labeledRow,
+    );
+  });
+
+  testWidgets(
+    'AppListTable moves caller actions below the search bar',
+    (WidgetTester tester) async {
+      final TextEditingController searchController = TextEditingController();
+      addTearDown(searchController.dispose);
+
+      Future<void> pumpAt(Size size) {
+        return pumpComponent(
+          tester,
+          SizedBox(
+            height: 420,
+            child: AppListTable<_RowItem>(
+              items: items,
+              columns: _columns,
+              search: AppListTableSearch<_RowItem>(
+                controller: searchController,
+                semanticLabel: 'Search rows',
+                matcher: (_, _) => true,
+                trailingActions: <AppSearchBarAction>[
+                  AppSearchBarAction(
+                    icon: Icons.add,
+                    label: 'Create row',
+                    onPressed: () {},
+                  ),
+                  AppSearchBarAction(
+                    icon: Icons.refresh,
+                    label: 'Refresh rows',
+                    onPressed: () {},
+                  ),
+                  AppSearchBarAction(
+                    icon: Icons.upload_file,
+                    label: 'Import rows',
+                    onPressed: () {},
+                  ),
+                  AppSearchBarAction(
+                    icon: Icons.archive_outlined,
+                    label: 'Archive rows',
+                    onPressed: () {},
+                  ),
+                ],
+              ),
+              mobileItemBuilder: (BuildContext context, _RowItem item) {
+                return Text(item.title);
+              },
+            ),
+          ),
+          size: size,
+        );
+      }
+
+      await pumpAt(const Size(1000, 600));
+
+      final Finder searchBar = find.byType(AppSearchBar);
+      expect(
+        find.descendant(of: searchBar, matching: find.byIcon(Icons.add)),
+        findsNothing,
+      );
+      expect(find.byIcon(Icons.add), findsOneWidget);
+      expect(find.byIcon(Icons.refresh), findsOneWidget);
+      // Wide layout fits every labelled button on one row under the bar.
+      expect(find.text('Create row'), findsOneWidget);
+      expect(find.text('Archive rows'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.byIcon(Icons.add)).dy,
+        greaterThan(tester.getBottomLeft(searchBar).dy - 1),
+      );
+      expect(
+        tester.getTopLeft(find.byIcon(Icons.add)).dx,
+        lessThan(tester.getTopLeft(find.byIcon(Icons.refresh)).dx),
+      );
+      expect(
+        tester.getTopLeft(find.byIcon(Icons.add)).dy,
+        tester.getTopLeft(find.byIcon(Icons.refresh)).dy,
+      );
+
+      // Narrow layout drops the labels so the actions still share one row.
+      await pumpAt(const Size(360, 600));
+      expect(find.byIcon(Icons.add), findsOneWidget);
+      expect(find.byIcon(Icons.refresh), findsOneWidget);
+      expect(find.text('Create row'), findsNothing);
+      expect(find.byTooltip('Create row'), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.byIcon(Icons.add)).dy,
+        tester.getTopLeft(find.byIcon(Icons.refresh)).dy,
+      );
+    },
+  );
+
   testWidgets('AppListTable can hide row numbers and scroll surface header', (
     WidgetTester tester,
   ) async {

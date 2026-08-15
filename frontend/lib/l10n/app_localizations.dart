@@ -51780,6 +51780,525 @@ abstract class AppLocalizations {
     String departmentCode,
     String costCentreCode,
   );
+
+  /// Accounts & Finance -> Setup & Controls -> Payment Methods tab label.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Methods'**
+  String get accountsPaymentMethodsLabel;
+
+  /// Tooltip for the Payment Methods tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted tenders, their settlement accounts, fees, and evidence rules'**
+  String get accountsPaymentMethodsTooltip;
+
+  /// Empty-state title for the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'No payment methods match.'**
+  String get accountsPaymentMethodsEmpty;
+
+  /// Empty-state body for the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another search or add a payment method.'**
+  String get accountsPaymentMethodsEmptyBody;
+
+  /// Search field hint and accessibility label for the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference, code, name, provider…'**
+  String get accountsPaymentMethodsSearchHint;
+
+  /// Human-friendly reference column of the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference'**
+  String get accountsPaymentMethodReferenceColumn;
+
+  /// Method code column of the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Method Code'**
+  String get accountsPaymentMethodCodeColumn;
+
+  /// Method name column of the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Method Name'**
+  String get accountsPaymentMethodNameColumn;
+
+  /// Tender type column of the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Method Type'**
+  String get accountsPaymentMethodTypeColumn;
+
+  /// Direction column of the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming/Outgoing'**
+  String get accountsPaymentMethodDirectionColumn;
+
+  /// Provider column of the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider'**
+  String get accountsPaymentMethodProviderColumn;
+
+  /// Settlement posting account column of the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlement Account'**
+  String get accountsPaymentMethodSettlementAccountColumn;
+
+  /// Clearing posting account column of the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Clearing Account'**
+  String get accountsPaymentMethodClearingAccountColumn;
+
+  /// Column showing whether the tender needs an external reference.
+  ///
+  /// In en, this message translates to:
+  /// **'Requires External Reference'**
+  String get accountsPaymentMethodRequiresReferenceColumn;
+
+  /// Column showing whether the tender needs approval.
+  ///
+  /// In en, this message translates to:
+  /// **'Requires Approval'**
+  String get accountsPaymentMethodRequiresApprovalColumn;
+
+  /// Fee rule column of the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee Rule'**
+  String get accountsPaymentMethodFeeRuleColumn;
+
+  /// Facility scope column of the payment methods table (optional column).
+  ///
+  /// In en, this message translates to:
+  /// **'Facility Scope'**
+  String get accountsPaymentMethodFacilityScopeColumn;
+
+  /// Effective-from column of the payment methods table (optional column).
+  ///
+  /// In en, this message translates to:
+  /// **'Effective From'**
+  String get accountsPaymentMethodEffectiveFromColumn;
+
+  /// Effective-to column of the payment methods table (optional column).
+  ///
+  /// In en, this message translates to:
+  /// **'Effective To'**
+  String get accountsPaymentMethodEffectiveToColumn;
+
+  /// Status column of the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get accountsPaymentMethodStatusColumn;
+
+  /// Row actions column of the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get accountsPaymentMethodActionsColumn;
+
+  /// Affirmative chip for a payment method requirement flag.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get accountsPaymentMethodYes;
+
+  /// Negative chip for a payment method requirement flag.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get accountsPaymentMethodNo;
+
+  /// Payment method status: not yet available to downstream workflows.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get accountsPaymentMethodStatusDraft;
+
+  /// Payment method status: selectable by permitted workflows.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get accountsPaymentMethodStatusActive;
+
+  /// Payment method status: retained but not selectable for new work.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get accountsPaymentMethodStatusInactive;
+
+  /// Payment method status: soft-deleted historical record.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get accountsPaymentMethodStatusArchived;
+
+  /// Tender type: cash.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash'**
+  String get accountsPaymentMethodTypeCash;
+
+  /// Tender type: credit card.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit card'**
+  String get accountsPaymentMethodTypeCreditCard;
+
+  /// Tender type: debit card.
+  ///
+  /// In en, this message translates to:
+  /// **'Debit card'**
+  String get accountsPaymentMethodTypeDebitCard;
+
+  /// Tender type: prepaid card.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepaid card'**
+  String get accountsPaymentMethodTypePrepaidCard;
+
+  /// Tender type: gift card.
+  ///
+  /// In en, this message translates to:
+  /// **'Gift card'**
+  String get accountsPaymentMethodTypeGiftCard;
+
+  /// Tender type: voucher.
+  ///
+  /// In en, this message translates to:
+  /// **'Voucher'**
+  String get accountsPaymentMethodTypeVoucher;
+
+  /// Tender type: bank cheque.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank cheque'**
+  String get accountsPaymentMethodTypeBankCheck;
+
+  /// Tender type: mobile money.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile money'**
+  String get accountsPaymentMethodTypeMobileMoney;
+
+  /// Tender type: bank transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank transfer'**
+  String get accountsPaymentMethodTypeBankTransfer;
+
+  /// Tender type: insurance settlement.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance'**
+  String get accountsPaymentMethodTypeInsurance;
+
+  /// Tender type: anything outside the listed tenders.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get accountsPaymentMethodTypeOther;
+
+  /// Direction: the method takes money in.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming'**
+  String get accountsPaymentMethodDirectionIncoming;
+
+  /// Direction: the method pays money out.
+  ///
+  /// In en, this message translates to:
+  /// **'Outgoing'**
+  String get accountsPaymentMethodDirectionOutgoing;
+
+  /// Direction: the method both receives and pays out.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming and outgoing'**
+  String get accountsPaymentMethodDirectionBoth;
+
+  /// Advanced filter label for the payment method effective window.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective period'**
+  String get accountsPaymentMethodDateRangeFilterLabel;
+
+  /// Advanced filter label for the facility that owns a payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get accountsPaymentMethodFacilityFilterLabel;
+
+  /// Toolbar action that opens the payment method create dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'New record'**
+  String get accountsPaymentMethodNewRecordAction;
+
+  /// Row action that opens the payment method detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get accountsPaymentMethodViewAction;
+
+  /// Row action that copies a payment method into a new unsaved draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Clone'**
+  String get accountsPaymentMethodCloneAction;
+
+  /// Row action that moves a payment method to Active.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate'**
+  String get accountsPaymentMethodActivateAction;
+
+  /// Row action that moves a payment method to Inactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate'**
+  String get accountsPaymentMethodDeactivateAction;
+
+  /// Row action that soft-archives a payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get accountsPaymentMethodArchiveAction;
+
+  /// Row action that restores an archived payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get accountsPaymentMethodRestoreAction;
+
+  /// Bulk action that activates every eligible matching payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate selected'**
+  String get accountsPaymentMethodBulkActivateAction;
+
+  /// Bulk action that deactivates every eligible matching payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate selected'**
+  String get accountsPaymentMethodBulkDeactivateAction;
+
+  /// Bulk action that archives every eligible matching payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive selected'**
+  String get accountsPaymentMethodBulkArchiveAction;
+
+  /// Title of the payment method create dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Add payment method'**
+  String get accountsPaymentMethodCreateTitle;
+
+  /// Title of the payment method edit dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit payment method'**
+  String get accountsPaymentMethodEditTitle;
+
+  /// Title of the payment method clone dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Clone payment method'**
+  String get accountsPaymentMethodCloneTitle;
+
+  /// Title of the payment method detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment method details'**
+  String get accountsPaymentMethodDetailTitle;
+
+  /// Form section grouping the identifying fields of a payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Method identity'**
+  String get accountsPaymentMethodIdentitySection;
+
+  /// Form section grouping the settlement and clearing accounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlement accounts'**
+  String get accountsPaymentMethodPostingSection;
+
+  /// Form section grouping the evidence, approval, and fee rules.
+  ///
+  /// In en, this message translates to:
+  /// **'Handling rules'**
+  String get accountsPaymentMethodRulesSection;
+
+  /// Detail dialog section holding the key payment method fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get accountsPaymentMethodSummarySection;
+
+  /// Detail dialog section holding allocation behaviour for this method.
+  ///
+  /// In en, this message translates to:
+  /// **'Allocations'**
+  String get accountsPaymentMethodAllocationsSection;
+
+  /// Detail dialog section holding settlement and reconciliation links.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlement'**
+  String get accountsPaymentMethodSettlementSection;
+
+  /// Detail dialog section holding the immutable payment method timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents & audit'**
+  String get accountsPaymentMethodDocumentsSection;
+
+  /// Explains that allocation rows belong to payments, not to method configuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Allocations are recorded on the payments that use this method.'**
+  String get accountsPaymentMethodAllocationsEmpty;
+
+  /// Empty state for the payment method settlement section.
+  ///
+  /// In en, this message translates to:
+  /// **'No settlement accounts configured.'**
+  String get accountsPaymentMethodSettlementEmpty;
+
+  /// Activity timeline label for the payment method creation timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get accountsPaymentMethodActivityCreated;
+
+  /// Activity timeline label for the payment method update timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated'**
+  String get accountsPaymentMethodActivityUpdated;
+
+  /// Activity timeline label for the payment method archive timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get accountsPaymentMethodActivityArchived;
+
+  /// Activity timeline label for the optimistic record version.
+  ///
+  /// In en, this message translates to:
+  /// **'Record version'**
+  String get accountsPaymentMethodVersionLabel;
+
+  /// Notes field label of the payment method form.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get accountsPaymentMethodNotesLabel;
+
+  /// Notice clarifying that the tender taxonomy is shared with payment records.
+  ///
+  /// In en, this message translates to:
+  /// **'Method Type is the shared tender taxonomy recorded on every payment; this tab configures how each type behaves.'**
+  String get accountsPaymentMethodSharedTypeNotice;
+
+  /// Validation message for a missing required payment method value.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required.'**
+  String get accountsPaymentMethodRequiredField;
+
+  /// Validation message for a payment method effective window that ends before it starts.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective To must not be earlier than Effective From.'**
+  String get accountsPaymentMethodEffectiveToBeforeFrom;
+
+  /// Validation message when a clearing account is set without a settlement account.
+  ///
+  /// In en, this message translates to:
+  /// **'A clearing account also needs a settlement account.'**
+  String get accountsPaymentMethodSettlementRequired;
+
+  /// Confirmation title for activating a payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate payment method?'**
+  String get accountsPaymentMethodActivateConfirmTitle;
+
+  /// Confirmation title for deactivating a payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate payment method?'**
+  String get accountsPaymentMethodDeactivateConfirmTitle;
+
+  /// Confirmation title for archiving a payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive payment method?'**
+  String get accountsPaymentMethodArchiveConfirmTitle;
+
+  /// Confirmation title for restoring an archived payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore payment method?'**
+  String get accountsPaymentMethodRestoreConfirmTitle;
+
+  /// Confirmation body clarifying that archive is a soft, reference-guarded state change.
+  ///
+  /// In en, this message translates to:
+  /// **'The method is archived, not deleted. Posted receipts stay available and the record can be restored. Archiving is refused while recorded payments already used this tender.'**
+  String get accountsPaymentMethodArchiveConfirmBody;
+
+  /// Confirmation body for activating a payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate {reference} so permitted workflows can accept it?'**
+  String accountsPaymentMethodActivateConfirmBody(String reference);
+
+  /// Confirmation body for deactivating a payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate {reference} so it is no longer offered for new payments?'**
+  String accountsPaymentMethodDeactivateConfirmBody(String reference);
+
+  /// Confirmation body for restoring an archived payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore {reference} and record the change in the audit trail?'**
+  String accountsPaymentMethodRestoreConfirmBody(String reference);
+
+  /// Confirmation body for a bulk payment method workflow action.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Apply this change to {count} matching payment method? Records that do not allow the change are skipped.} other{Apply this change to {count} matching payment methods? Records that do not allow the change are skipped.}}'**
+  String accountsPaymentMethodBulkConfirmBody(int count);
+
+  /// Feedback shown when part of a bulk payment method action failed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} record could not be changed.} other{{count} records could not be changed.}}'**
+  String accountsPaymentMethodBulkPartialFailure(int count);
+
+  /// Compact mobile row caption pairing the method code with the localized tender type.
+  ///
+  /// In en, this message translates to:
+  /// **'{methodCode} · {methodType}'**
+  String accountsPaymentMethodMobileCaption(
+    String methodCode,
+    String methodType,
+  );
 }
 
 class _AppLocalizationsDelegate

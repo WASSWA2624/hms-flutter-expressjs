@@ -90,7 +90,8 @@ AccessRequirement accountsSectionTabRequirement(AccountsDeskSection section) {
     // Setup & Controls is read-gated, not entry-gated: a write-only grant must
     // not surface the fiscal calendar or the cost-centre structure.
     AccountsDeskSection.fiscalYearsAndPeriods ||
-    AccountsDeskSection.departmentsAndCostCentres =>
+    AccountsDeskSection.departmentsAndCostCentres ||
+    AccountsDeskSection.paymentMethods =>
       accountsWorkspaceReadRequirement,
     _ => accountsWorkspaceEntryRequirement,
   };
@@ -222,7 +223,8 @@ bool accountsSectionShowsNextActionColumn(
     AccountsDeskSection.chart ||
     AccountsDeskSection.invoices ||
     AccountsDeskSection.fiscalYearsAndPeriods ||
-    AccountsDeskSection.departmentsAndCostCentres => false,
+    AccountsDeskSection.departmentsAndCostCentres ||
+    AccountsDeskSection.paymentMethods => false,
   };
 }
 
@@ -386,6 +388,33 @@ abstract final class AccountsDepartmentsAtomPermissions {
 /// Departments & Cost Centres mutations — `accounts:write` ∩ `facility-accounts`.
 bool canWriteAccountsDepartments(AppAccessPolicy policy) {
   return AccountsDepartmentsAtomPermissions.write.isAllowed(policy);
+}
+
+/// Setup & Controls → Payment Methods atom → permission mapping
+/// (`.cursor/finance/accounts-and-finance/setup-and-controls/payment-methods.md`).
+abstract final class AccountsPaymentMethodsAtomPermissions {
+  static const AccessRequirement tab = accountsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = accountsWorkspaceReadRequirement;
+  static const AccessRequirement detail = accountsWorkspaceReadRequirement;
+  static const AccessRequirement filters = accountsWorkspaceReadRequirement;
+  static const AccessRequirement settings = accountsWorkspaceReadRequirement;
+  static const AccessRequirement export = accountsWorkspaceExportRequirement;
+  static const AccessRequirement print = accountsWorkspacePrintRequirement;
+  static const AccessRequirement create = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement update = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement clone = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement activate = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement deactivate = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement archive = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement restore = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement write = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement approve = accountsApprovalDecisionRequirement;
+  static const AccessRequirement routeEntry = accountsWorkspaceReadRequirement;
+}
+
+/// Payment Methods mutations — `accounts:write` ∩ `facility-accounts`.
+bool canWriteAccountsPaymentMethods(AppAccessPolicy policy) {
+  return AccountsPaymentMethodsAtomPermissions.write.isAllowed(policy);
 }
 
 abstract final class AccountsInvoicesAtomPermissions {

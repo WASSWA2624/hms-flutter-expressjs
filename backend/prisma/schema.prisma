@@ -592,6 +592,20 @@ enum PostingRuleStatus {
   ARCHIVED
 }
 
+enum PaymentMethodStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+/// Whether a configured payment method takes money in, pays money out, or both.
+enum PaymentMethodDirection {
+  INCOMING
+  OUTGOING
+  BOTH
+}
+
 /// Dry-run outcome of a posting rule. A rule that has never been tested, or was
 /// edited after its last test, reports NOT_TESTED.
 enum PostingRuleTestStatus {
@@ -1158,6 +1172,7 @@ model tenant {
   fiscal_periods                  fiscal_period[]
   document_number_sequences       document_number_sequence[]
   posting_rules                   posting_rule[]
+  payment_methods                 payment_method[]
   opening_balance_entries         opening_balance_entry[]
   billable_charge_events          billable_charge_event[]
   insurance_companies             insurance_company[]
@@ -1247,6 +1262,7 @@ model facility {
   fiscal_periods                  fiscal_period[]
   document_number_sequences       document_number_sequence[]
   posting_rules                   posting_rule[]
+  payment_methods                 payment_method[]
   opening_balance_entries         opening_balance_entry[]
   billable_charge_events          billable_charge_event[]
   patient_insurance_enrollments   patient_insurance_enrollment[]
@@ -1651,6 +1667,7 @@ model user {
   radiology_orders_assigned     radiology_order[]             @relation("radiology_order_assigned_user")
   fiscal_periods_reopened       fiscal_period[]               @relation("FiscalPeriodReopenedBy")
   posting_rules_reopened        posting_rule[]                @relation("PostingRuleReopenedBy")
+  payment_methods_updated       payment_method[]              @relation("PaymentMethodUpdatedBy")
   opening_balances_approved     opening_balance_entry[]       @relation("OpeningBalanceApprovedBy")
   departments_managed           department[]                  @relation("DepartmentManager")
   departments_budget_owned      department[]                  @relation("DepartmentBudgetOwner")
@@ -5029,6 +5046,8 @@ model chart_account {
   departments_default_revenue department[] @relation("DepartmentRevenueAccount")
   departments_default_expense department[] @relation("DepartmentExpenseAccount")
   opening_balance_entries     opening_balance_entry[] @relation("OpeningBalanceAccount")
+  payment_methods_settlement  payment_method[]        @relation("PaymentMethodSettlementAccount")
+  payment_methods_clearing    payment_method[]        @relation("PaymentMethodClearingAccount")
 
   @@unique([tenant_id, facility_id, code])
   @@index([tenant_id])
@@ -5255,6 +5274,64 @@ model posting_rule {
   @@index([status])
   @@index([test_status])
   @@index([priority])
+  @@index([effective_from])
+  @@index([effective_to])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
+}
+
+/// Accounts & Finance -> Setup & Controls -> Payment Methods.
+///
+/// Configures how each tender is accepted or paid out: settlement and clearing
+/// accounts, fee rule, evidence and approval requirements, effective window,
+/// and lifecycle. `method_type` reuses the existing `PaymentMethodType` enum
+/// that `payment.method` already stores, so this record configures the
+/// taxonomy rather than becoming a second source of truth for it.
+model payment_method {
+  id                String                 @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id String?                @db.VarChar(32)
+  tenant_id         String                 @db.VarChar(36)
+  facility_id       String?                @db.VarChar(36)
+  method_code       String                 @db.VarChar(32)
+  method_name       String                 @db.VarChar(160)
+  /// Shared with `payment.method`; never redefine the tender taxonomy here.
+  method_type       PaymentMethodType
+  direction         PaymentMethodDirection @default(INCOMING)
+  provider          String?                @db.VarChar(120)
+  settlement_account_id String?            @db.VarChar(36)
+  clearing_account_id   String?            @db.VarChar(36)
+  requires_external_reference Boolean       @default(false)
+  requires_approval          Boolean       @default(false)
+  fee_rule          String?                @db.VarChar(120)
+  /// Free-text scope note when the method is not limited to one facility row.
+  facility_scope    String?                @db.VarChar(120)
+  effective_from    DateTime?
+  effective_to      DateTime?
+  status            PaymentMethodStatus    @default(DRAFT)
+  notes             String?                @db.VarChar(500)
+  created_by        String?                @db.VarChar(36)
+  updated_by        String?                @db.VarChar(36)
+  archived_at       DateTime?
+  created_at        DateTime               @default(now())
+  updated_at        DateTime               @updatedAt
+  deleted_at        DateTime?
+  version           Int                    @default(1)
+
+  tenant             tenant         @relation(fields: [tenant_id], references: [id])
+  facility           facility?      @relation(fields: [facility_id], references: [id])
+  settlement_account chart_account? @relation("PaymentMethodSettlementAccount", fields: [settlement_account_id], references: [id])
+  clearing_account   chart_account? @relation("PaymentMethodClearingAccount", fields: [clearing_account_id], references: [id])
+  updated_user       user?          @relation("PaymentMethodUpdatedBy", fields: [updated_by], references: [id])
+
+  // Explicit name: the generated one exceeds the 64-char MySQL identifier cap.
+  @@unique([tenant_id, method_code], map: "payment_method_code_key")
+  @@index([tenant_id])
+  @@index([facility_id])
+  @@index([method_type])
+  @@index([direction])
+  @@index([settlement_account_id])
+  @@index([clearing_account_id])
+  @@index([status])
   @@index([effective_from])
   @@index([effective_to])
   @@index([deleted_at])

@@ -28262,4 +28262,306 @@ class AppLocalizationsEn extends AppLocalizations {
   ) {
     return '$departmentCode · $costCentreCode';
   }
+
+  @override
+  String get accountsPaymentMethodsLabel => 'Payment Methods';
+
+  @override
+  String get accountsPaymentMethodsTooltip =>
+      'Accepted tenders, their settlement accounts, fees, and evidence rules';
+
+  @override
+  String get accountsPaymentMethodsEmpty => 'No payment methods match.';
+
+  @override
+  String get accountsPaymentMethodsEmptyBody =>
+      'Try another search or add a payment method.';
+
+  @override
+  String get accountsPaymentMethodsSearchHint =>
+      'Reference, code, name, provider…';
+
+  @override
+  String get accountsPaymentMethodReferenceColumn => 'Reference';
+
+  @override
+  String get accountsPaymentMethodCodeColumn => 'Method Code';
+
+  @override
+  String get accountsPaymentMethodNameColumn => 'Method Name';
+
+  @override
+  String get accountsPaymentMethodTypeColumn => 'Method Type';
+
+  @override
+  String get accountsPaymentMethodDirectionColumn => 'Incoming/Outgoing';
+
+  @override
+  String get accountsPaymentMethodProviderColumn => 'Provider';
+
+  @override
+  String get accountsPaymentMethodSettlementAccountColumn =>
+      'Settlement Account';
+
+  @override
+  String get accountsPaymentMethodClearingAccountColumn => 'Clearing Account';
+
+  @override
+  String get accountsPaymentMethodRequiresReferenceColumn =>
+      'Requires External Reference';
+
+  @override
+  String get accountsPaymentMethodRequiresApprovalColumn => 'Requires Approval';
+
+  @override
+  String get accountsPaymentMethodFeeRuleColumn => 'Fee Rule';
+
+  @override
+  String get accountsPaymentMethodFacilityScopeColumn => 'Facility Scope';
+
+  @override
+  String get accountsPaymentMethodEffectiveFromColumn => 'Effective From';
+
+  @override
+  String get accountsPaymentMethodEffectiveToColumn => 'Effective To';
+
+  @override
+  String get accountsPaymentMethodStatusColumn => 'Status';
+
+  @override
+  String get accountsPaymentMethodActionsColumn => 'Actions';
+
+  @override
+  String get accountsPaymentMethodYes => 'Yes';
+
+  @override
+  String get accountsPaymentMethodNo => 'No';
+
+  @override
+  String get accountsPaymentMethodStatusDraft => 'Draft';
+
+  @override
+  String get accountsPaymentMethodStatusActive => 'Active';
+
+  @override
+  String get accountsPaymentMethodStatusInactive => 'Inactive';
+
+  @override
+  String get accountsPaymentMethodStatusArchived => 'Archived';
+
+  @override
+  String get accountsPaymentMethodTypeCash => 'Cash';
+
+  @override
+  String get accountsPaymentMethodTypeCreditCard => 'Credit card';
+
+  @override
+  String get accountsPaymentMethodTypeDebitCard => 'Debit card';
+
+  @override
+  String get accountsPaymentMethodTypePrepaidCard => 'Prepaid card';
+
+  @override
+  String get accountsPaymentMethodTypeGiftCard => 'Gift card';
+
+  @override
+  String get accountsPaymentMethodTypeVoucher => 'Voucher';
+
+  @override
+  String get accountsPaymentMethodTypeBankCheck => 'Bank cheque';
+
+  @override
+  String get accountsPaymentMethodTypeMobileMoney => 'Mobile money';
+
+  @override
+  String get accountsPaymentMethodTypeBankTransfer => 'Bank transfer';
+
+  @override
+  String get accountsPaymentMethodTypeInsurance => 'Insurance';
+
+  @override
+  String get accountsPaymentMethodTypeOther => 'Other';
+
+  @override
+  String get accountsPaymentMethodDirectionIncoming => 'Incoming';
+
+  @override
+  String get accountsPaymentMethodDirectionOutgoing => 'Outgoing';
+
+  @override
+  String get accountsPaymentMethodDirectionBoth => 'Incoming and outgoing';
+
+  @override
+  String get accountsPaymentMethodDateRangeFilterLabel => 'Effective period';
+
+  @override
+  String get accountsPaymentMethodFacilityFilterLabel => 'Facility';
+
+  @override
+  String get accountsPaymentMethodNewRecordAction => 'New record';
+
+  @override
+  String get accountsPaymentMethodViewAction => 'View';
+
+  @override
+  String get accountsPaymentMethodCloneAction => 'Clone';
+
+  @override
+  String get accountsPaymentMethodActivateAction => 'Activate';
+
+  @override
+  String get accountsPaymentMethodDeactivateAction => 'Deactivate';
+
+  @override
+  String get accountsPaymentMethodArchiveAction => 'Archive';
+
+  @override
+  String get accountsPaymentMethodRestoreAction => 'Restore';
+
+  @override
+  String get accountsPaymentMethodBulkActivateAction => 'Activate selected';
+
+  @override
+  String get accountsPaymentMethodBulkDeactivateAction => 'Deactivate selected';
+
+  @override
+  String get accountsPaymentMethodBulkArchiveAction => 'Archive selected';
+
+  @override
+  String get accountsPaymentMethodCreateTitle => 'Add payment method';
+
+  @override
+  String get accountsPaymentMethodEditTitle => 'Edit payment method';
+
+  @override
+  String get accountsPaymentMethodCloneTitle => 'Clone payment method';
+
+  @override
+  String get accountsPaymentMethodDetailTitle => 'Payment method details';
+
+  @override
+  String get accountsPaymentMethodIdentitySection => 'Method identity';
+
+  @override
+  String get accountsPaymentMethodPostingSection => 'Settlement accounts';
+
+  @override
+  String get accountsPaymentMethodRulesSection => 'Handling rules';
+
+  @override
+  String get accountsPaymentMethodSummarySection => 'Summary';
+
+  @override
+  String get accountsPaymentMethodAllocationsSection => 'Allocations';
+
+  @override
+  String get accountsPaymentMethodSettlementSection => 'Settlement';
+
+  @override
+  String get accountsPaymentMethodDocumentsSection => 'Documents & audit';
+
+  @override
+  String get accountsPaymentMethodAllocationsEmpty =>
+      'Allocations are recorded on the payments that use this method.';
+
+  @override
+  String get accountsPaymentMethodSettlementEmpty =>
+      'No settlement accounts configured.';
+
+  @override
+  String get accountsPaymentMethodActivityCreated => 'Created';
+
+  @override
+  String get accountsPaymentMethodActivityUpdated => 'Last updated';
+
+  @override
+  String get accountsPaymentMethodActivityArchived => 'Archived';
+
+  @override
+  String get accountsPaymentMethodVersionLabel => 'Record version';
+
+  @override
+  String get accountsPaymentMethodNotesLabel => 'Notes';
+
+  @override
+  String get accountsPaymentMethodSharedTypeNotice =>
+      'Method Type is the shared tender taxonomy recorded on every payment; this tab configures how each type behaves.';
+
+  @override
+  String get accountsPaymentMethodRequiredField => 'This field is required.';
+
+  @override
+  String get accountsPaymentMethodEffectiveToBeforeFrom =>
+      'Effective To must not be earlier than Effective From.';
+
+  @override
+  String get accountsPaymentMethodSettlementRequired =>
+      'A clearing account also needs a settlement account.';
+
+  @override
+  String get accountsPaymentMethodActivateConfirmTitle =>
+      'Activate payment method?';
+
+  @override
+  String get accountsPaymentMethodDeactivateConfirmTitle =>
+      'Deactivate payment method?';
+
+  @override
+  String get accountsPaymentMethodArchiveConfirmTitle =>
+      'Archive payment method?';
+
+  @override
+  String get accountsPaymentMethodRestoreConfirmTitle =>
+      'Restore payment method?';
+
+  @override
+  String get accountsPaymentMethodArchiveConfirmBody =>
+      'The method is archived, not deleted. Posted receipts stay available and the record can be restored. Archiving is refused while recorded payments already used this tender.';
+
+  @override
+  String accountsPaymentMethodActivateConfirmBody(String reference) {
+    return 'Activate $reference so permitted workflows can accept it?';
+  }
+
+  @override
+  String accountsPaymentMethodDeactivateConfirmBody(String reference) {
+    return 'Deactivate $reference so it is no longer offered for new payments?';
+  }
+
+  @override
+  String accountsPaymentMethodRestoreConfirmBody(String reference) {
+    return 'Restore $reference and record the change in the audit trail?';
+  }
+
+  @override
+  String accountsPaymentMethodBulkConfirmBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Apply this change to $count matching payment methods? Records that do not allow the change are skipped.',
+      one:
+          'Apply this change to $count matching payment method? Records that do not allow the change are skipped.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountsPaymentMethodBulkPartialFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count records could not be changed.',
+      one: '$count record could not be changed.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountsPaymentMethodMobileCaption(
+    String methodCode,
+    String methodType,
+  ) {
+    return '$methodCode · $methodType';
+  }
 }

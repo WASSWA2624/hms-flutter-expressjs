@@ -173,6 +173,10 @@ final class AccountsWorkspaceOverviewDto {
             _int(summary['departments_and_cost_centres']) ??
             _int(summary['departments_active_count']) ??
             0,
+        paymentMethodsActive:
+            _int(summary['payment_methods']) ??
+            _int(summary['payment_methods_active_count']) ??
+            0,
       ),
       generatedAt: _date(json['generated_at']),
     );

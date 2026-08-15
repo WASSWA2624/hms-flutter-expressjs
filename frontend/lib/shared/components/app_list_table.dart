@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_list_table_column_layout_memory.dart';
@@ -324,6 +325,52 @@ int appListTableProgressiveBatchSize({
   return math.max(fallbackBatch, viewportRows + bufferRows);
 }
 
+/// How the action row under the search bar presents caller actions.
+enum AppListTableActionBarLayout {
+  /// Icon + label, all actions on one row.
+  labeledRow,
+
+  /// Icon only, all actions on one row.
+  iconRow,
+
+  /// Icon only, wrapped onto as many rows as needed.
+  iconWrap,
+}
+
+/// Picks the presentation for the action row below the search bar.
+///
+/// One row is always preferred, on every breakpoint: labels are kept when the
+/// labelled buttons fit ([AppListTableActionBarLayout.labeledRow]), dropped so
+/// the icons still fit ([AppListTableActionBarLayout.iconRow]), and only when
+/// even the icons overflow does the row wrap
+/// ([AppListTableActionBarLayout.iconWrap]).
+///
+/// [labeledWidths] and [iconWidths] are per-action widths in the same order,
+/// [spacing] the gap between adjacent buttons.
+AppListTableActionBarLayout appListTableResolveActionBarLayout({
+  required List<double> labeledWidths,
+  required List<double> iconWidths,
+  required double spacing,
+  required double maxWidth,
+}) {
+  if (labeledWidths.isEmpty || !maxWidth.isFinite || maxWidth <= 0) {
+    return AppListTableActionBarLayout.labeledRow;
+  }
+
+  double rowWidth(List<double> widths) {
+    return widths.fold<double>(0, (double sum, double width) => sum + width) +
+        spacing * (widths.length - 1);
+  }
+
+  if (rowWidth(labeledWidths) <= maxWidth) {
+    return AppListTableActionBarLayout.labeledRow;
+  }
+  if (rowWidth(iconWidths) <= maxWidth) {
+    return AppListTableActionBarLayout.iconRow;
+  }
+  return AppListTableActionBarLayout.iconWrap;
+}
+
 class AppListTableColumnVisibilityController<T> extends ChangeNotifier {
   AppListTableColumnVisibilityController({this.storageKey});
 
@@ -602,8 +649,6 @@ final class AppListTableSearch<T> {
     this.onFilterChanged,
     this.hasActiveFilters = false,
     this.trailingActions = const <AppSearchBarAction>[],
-    this.maxTrailingActions,
-    this.trailingActionsOverflowLabel = 'More actions',
     this.enableSpeechToText = true,
   });
 
@@ -645,16 +690,22 @@ final class AppListTableSearch<T> {
   final AppSearchBarFilterValue filterValue;
   final ValueChanged<AppSearchBarFilterValue>? onFilterChanged;
   final bool hasActiveFilters;
+
+  /// Caller actions (e.g. Create / Refresh).
+  ///
+  /// These never enter the search bar: [AppListTable] renders them in a
+  /// wrapping action row directly below it. See [AppListTable] docs.
   final List<AppSearchBarAction> trailingActions;
-  final int? maxTrailingActions;
-  final String trailingActionsOverflowLabel;
   final bool enableSpeechToText;
 
+  /// Builds the search bar with the reserved table chrome only.
+  ///
+  /// The bar keeps speech-to-text, Filters, and the [tableActions] chrome
+  /// (Settings / Export / Print); [trailingActions] are laid out below it by
+  /// [AppListTable].
   Widget buildSearchBar(
     BuildContext context, {
-    List<AppSearchBarAction> trailingActions = const <AppSearchBarAction>[],
-    int? maxTrailingActions,
-    String? trailingActionsOverflowLabel,
+    List<AppSearchBarAction> tableActions = const <AppSearchBarAction>[],
   }) {
     return AppSearchBar(
       controller: controller,
@@ -695,16 +746,125 @@ final class AppListTableSearch<T> {
       filterValue: filterValue,
       onFilterChanged: onFilterChanged,
       hasActiveFilters: hasActiveFilters,
-      // Filters (in AppSearchBar) → Settings → Export → caller actions (e.g. Create).
-      trailingActions: <AppSearchBarAction>[
-        ...trailingActions,
-        ...this.trailingActions,
-      ],
-      maxTrailingActions: maxTrailingActions ?? this.maxTrailingActions,
-      trailingActionsOverflowLabel:
-          trailingActionsOverflowLabel ?? this.trailingActionsOverflowLabel,
+      // Search bar chrome only: Filters (in AppSearchBar) → Settings → Export
+      // → Print. Caller actions live in the action row below the search bar.
+      trailingActions: tableActions,
       enableSpeechToText: enableSpeechToText,
     );
+  }
+}
+
+/// Extra slack per button so rounding / borders cannot make a measured row
+/// overflow the real layout by a hairline.
+const double _actionBarFitSlack = 2;
+
+/// Caller actions ([AppListTableSearch.trailingActions]) laid out under the
+/// search bar.
+///
+/// Buttons pack from the left and prefer a single row on every breakpoint:
+/// labels are dropped before the row is allowed to wrap. See
+/// [appListTableResolveActionBarLayout].
+class _AppListTableActionBar extends StatelessWidget {
+  const _AppListTableActionBar({required this.actions, required this.enabled});
+
+  final List<AppSearchBarAction> actions;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    if (actions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    final AppSpacingTokens spacing = theme.spacing;
+    final double gap = spacing.xs;
+    final double iconSize = theme.appTokens.listIconSize;
+    final TextStyle labelStyle =
+        (theme.textTheme.labelLarge ?? const TextStyle()).copyWith(
+          fontWeight: AppFontWeight.emphasis,
+          fontSize: 14,
+        );
+    final TextScaler textScaler = MediaQuery.textScalerOf(context);
+    final TextDirection textDirection = Directionality.of(context);
+
+    // Mirrors dense [AppButton] metrics so the fit test matches what is painted:
+    // icon-only is a square tap target, labelled is padding + icon + gap + text.
+    final double iconOnlyWidth = math.max(
+      math.max(theme.appTokens.minInteractiveDimension, iconSize + spacing.sm),
+      iconSize + spacing.xs * 2,
+    );
+    final List<double> iconWidths = List<double>.filled(
+      actions.length,
+      iconOnlyWidth,
+    );
+    final List<double> labeledWidths = <double>[
+      for (final AppSearchBarAction action in actions)
+        spacing.sm * 3 +
+            iconSize +
+            _labelWidth(action.label, labelStyle, textScaler, textDirection) +
+            _actionBarFitSlack,
+    ];
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final AppListTableActionBarLayout layout =
+            appListTableResolveActionBarLayout(
+              labeledWidths: labeledWidths,
+              iconWidths: iconWidths,
+              spacing: gap,
+              maxWidth: constraints.maxWidth,
+            );
+        final bool showLabels =
+            layout == AppListTableActionBarLayout.labeledRow;
+
+        return AppActionLabelScope(
+          showLabels: showLabels,
+          forceIconOnly: !showLabels,
+          dense: true,
+          child: Wrap(
+            spacing: gap,
+            runSpacing: gap,
+            children: <Widget>[
+              for (final AppSearchBarAction action in actions)
+                AppButton.secondary(
+                  label: action.label,
+                  leadingIcon: action.icon,
+                  tooltip: action.tooltip ?? action.label,
+                  semanticLabel: action.label,
+                  dense: true,
+                  iconOnly: !showLabels,
+                  color: action.destructive
+                      ? colors.error
+                      : action.active
+                      ? colors.primary
+                      : null,
+                  enabled: enabled && action.enabled,
+                  onPressed: action.onPressed,
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  static double _labelWidth(
+    String label,
+    TextStyle style,
+    TextScaler textScaler,
+    TextDirection textDirection,
+  ) {
+    final TextPainter painter = TextPainter(
+      text: TextSpan(text: label, style: style),
+      textDirection: textDirection,
+      textScaler: textScaler,
+      maxLines: 1,
+    )..layout();
+    final double width = painter.width;
+    painter.dispose();
+    return width;
   }
 }
 
@@ -1033,6 +1193,12 @@ class _AppListTableMobileMetaRow extends StatelessWidget {
 /// scrolls. For paged backends, prefer
 /// `AppPageRequest(pageSize: appListTablePreferredPageSize)` (100 / max page
 /// size); smaller explicit [AppPageRequest.pageSize] values are left alone.
+///
+/// Toolbar chrome is fixed: the search bar holds only speech-to-text, Filters,
+/// Settings, Export and Print. Caller actions
+/// ([AppListTableSearch.trailingActions]) are laid out in a wrapping row
+/// directly below the search bar — see [appListTableResolveActionBarLayout] for
+/// how that row picks icon-only vs icon+label.
 class AppListTable<T> extends StatefulWidget {
   const AppListTable({
     required this.columns,
@@ -1108,8 +1274,6 @@ class AppListTable<T> extends StatefulWidget {
     this.padEmptyRows,
     this.surfaceHeader,
     this.forceCompact = false,
-    this.maxTrailingActions,
-    this.trailingActionsOverflowLabel = 'More actions',
     this.goToTopLabel = _defaultGoToTopLabel,
     this.loadingMoreLabel = _defaultLoadingMoreLabel,
     this.allRowsLoadedLabel = _defaultAllRowsLoadedLabel,
@@ -1246,8 +1410,6 @@ class AppListTable<T> extends StatefulWidget {
 
   /// When true, uses compact row/header metrics regardless of breakpoint.
   final bool forceCompact;
-  final int? maxTrailingActions;
-  final String trailingActionsOverflowLabel;
   final String goToTopLabel;
   final String loadingMoreLabel;
   final String allRowsLoadedLabel;
@@ -1680,9 +1842,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
 
     final Widget searchBar = resolvedSearch.buildSearchBar(
       context,
-      trailingActions: _searchActions(context),
-      maxTrailingActions: widget.maxTrailingActions,
-      trailingActionsOverflowLabel: widget.trailingActionsOverflowLabel,
+      tableActions: _searchActions(context),
     );
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: resolvedSearch.controller,
@@ -2494,14 +2654,38 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
     return true;
   }
 
+  /// Search bar plus, when the caller supplies extra actions, the wrapping
+  /// action row rendered directly beneath it.
   Widget? _buildToolbar(BuildContext context, Widget? searchBar) {
-    return searchBar;
+    final AppListTableSearch<T>? search = widget.search;
+    final List<AppSearchBarAction> extraActions =
+        search?.trailingActions ?? const <AppSearchBarAction>[];
+    if (extraActions.isEmpty) {
+      return searchBar;
+    }
+
+    final Widget actionBar = _AppListTableActionBar(
+      actions: extraActions,
+      enabled: (search?.enabled ?? true) && !(search?.isLoading ?? false),
+    );
+    if (searchBar == null) {
+      return actionBar;
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        searchBar,
+        SizedBox(height: Theme.of(context).spacing.xs),
+        actionBar,
+      ],
+    );
   }
 
   List<AppSearchBarAction> _searchActions(BuildContext context) {
-    // Filters (in AppSearchBar) → Settings → Export → Print → caller trailing.
-    // Settings / Print are desktop-only (lg+); mobile and tablet keep Filters /
-    // Export and context actions so the compact search chrome stays usable.
+    // Search bar chrome only: Filters (in AppSearchBar) → Settings → Export →
+    // Print. Settings / Print are desktop-only (lg+); mobile and tablet keep
+    // Filters / Export so the compact search chrome stays usable.
     final bool showDesktopChrome =
         AppBreakpoints.of(context).index >= AppBreakpoint.lg.index;
     final List<AppSearchBarAction> actions = <AppSearchBarAction>[];

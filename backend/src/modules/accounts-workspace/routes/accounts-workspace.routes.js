@@ -3,6 +3,7 @@ const router = express.Router();
 const accountsWorkspaceController = require('@controllers/accounts-workspace/accounts-workspace.controller');
 const fiscalPeriodController = require('@controllers/accounts-workspace/fiscal-period.controller');
 const departmentController = require('@controllers/accounts-workspace/department-cost-centre.controller');
+const paymentMethodController = require('@controllers/accounts-workspace/payment-method.controller');
 const documentSequenceController = require('@controllers/accounts-workspace/document-number-sequence.controller');
 const postingRuleController = require('@controllers/accounts-workspace/posting-rule.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
@@ -28,6 +29,14 @@ const {
   updateFiscalPeriodSchema,
   fiscalPeriodActionSchema,
 } = require('@validations/accounts-workspace/fiscal-period.schema');
+const {
+  paymentMethodsQuerySchema,
+  paymentMethodIdentifierParamsSchema,
+  paymentMethodActionParamsSchema,
+  createPaymentMethodSchema,
+  updatePaymentMethodSchema,
+  paymentMethodActionSchema,
+} = require('@validations/accounts-workspace/payment-method.schema');
 const {
   departmentsQuerySchema,
   departmentIdentifierParamsSchema,
@@ -202,6 +211,55 @@ router.post(
   }),
   authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
   departmentController.applyDepartmentAction
+);
+
+/**
+ * Setup & Controls → Payment Methods.
+ *
+ * `method_type` reuses the canonical tender taxonomy that `payment.method`
+ * stores; these routes configure how each tender behaves. Records are
+ * addressed by their public `human_friendly_id`, and archive is a status
+ * transition rather than a delete, so there is no DELETE route.
+ */
+router.get(
+  '/payment-methods',
+  validateRequest({ query: paymentMethodsQuerySchema }),
+  authorize(ACCOUNTS_READ_SCOPES, 'permission'),
+  paymentMethodController.listPaymentMethods
+);
+
+router.get(
+  '/payment-methods/:paymentMethodIdentifier',
+  validateRequest({ params: paymentMethodIdentifierParamsSchema }),
+  authorize(ACCOUNTS_READ_SCOPES, 'permission'),
+  paymentMethodController.getPaymentMethod
+);
+
+router.post(
+  '/payment-methods',
+  validateRequest({ body: createPaymentMethodSchema }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  paymentMethodController.createPaymentMethod
+);
+
+router.put(
+  '/payment-methods/:paymentMethodIdentifier',
+  validateRequest({
+    params: paymentMethodIdentifierParamsSchema,
+    body: updatePaymentMethodSchema,
+  }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  paymentMethodController.updatePaymentMethod
+);
+
+router.post(
+  '/payment-methods/:paymentMethodIdentifier/:action',
+  validateRequest({
+    params: paymentMethodActionParamsSchema,
+    body: paymentMethodActionSchema,
+  }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  paymentMethodController.applyPaymentMethodAction
 );
 
 /**

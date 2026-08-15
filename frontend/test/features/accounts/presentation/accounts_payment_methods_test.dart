@@ -12,19 +12,16 @@ import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/security/session_state.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/storage_providers.dart';
-import 'package:hosspi_hms/features/accounts/data/repositories/accounts_department_repository_impl.dart';
-import 'package:hosspi_hms/features/accounts/data/repositories/accounts_fiscal_period_repository_impl.dart';
+import 'package:hosspi_hms/features/accounts/data/repositories/accounts_payment_method_repository_impl.dart';
 import 'package:hosspi_hms/features/accounts/data/repositories/accounts_repository_impl.dart';
-import 'package:hosspi_hms/features/accounts/domain/entities/accounts_department.dart';
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.dart';
-import 'package:hosspi_hms/features/accounts/domain/entities/accounts_fiscal_period.dart';
-import 'package:hosspi_hms/features/accounts/domain/repositories/accounts_department_repository.dart';
-import 'package:hosspi_hms/features/accounts/domain/repositories/accounts_fiscal_period_repository.dart';
+import 'package:hosspi_hms/features/accounts/domain/entities/accounts_payment_method.dart';
+import 'package:hosspi_hms/features/accounts/domain/repositories/accounts_payment_method_repository.dart';
 import 'package:hosspi_hms/features/accounts/domain/repositories/accounts_repository.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_access.dart';
 import 'package:hosspi_hms/features/accounts/presentation/pages/accounts_workspace_page.dart';
-import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_department_dialogs.dart';
-import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_departments_and_cost_centres_panel.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_payment_method_dialogs.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_payment_methods_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_scope_navigation.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_en.dart';
@@ -35,44 +32,42 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// All department copy comes from `app_en.arb`; the tests assert against the
-/// same generated strings the UI renders, never against literals.
+/// All payment method copy comes from `app_en.arb`; the tests assert against
+/// the same generated strings the UI renders, never against literals.
 final AppLocalizations _l10n = AppLocalizationsEn();
 
 class _MockAccountsRepository extends Mock implements AccountsRepository {}
 
-class _MockDepartmentRepository extends Mock
-    implements AccountsDepartmentRepository {}
+class _MockPaymentMethodRepository extends Mock
+    implements AccountsPaymentMethodRepository {}
 
-class _MockFiscalPeriodRepository extends Mock
-    implements AccountsFiscalPeriodRepository {}
-
-final AccountsDepartment _draftDepartment = AccountsDepartment(
-  humanFriendlyId: 'DEP0000001',
-  departmentCode: 'CARD',
-  departmentName: 'Cardiology',
-  costCentreCode: 'CC-100',
-  costCentreName: 'Cardiology Cost Centre',
-  facility: 'Kampala Main',
+final AccountsPaymentMethod _draftMethod = AccountsPaymentMethod(
+  humanFriendlyId: 'PMT0000001',
+  methodCode: 'MOMO',
+  methodName: 'Mobile Money',
+  methodType: AccountsPaymentMethodType.mobileMoney,
+  direction: AccountsPaymentMethodDirection.incoming,
+  provider: 'MTN',
+  requiresExternalReference: true,
+  facilityScope: 'Kampala Main',
   facilityHumanFriendlyId: 'FAC-001',
-  manager: 'Ada Nakato',
-  managerHumanFriendlyId: 'USR-001',
   effectiveFrom: DateTime.utc(2026, 1, 1),
-  status: AccountsDepartmentStatus.draft,
+  status: AccountsPaymentMethodStatus.draft,
   version: 1,
 );
 
-final AccountsDepartment _archivedDepartment = AccountsDepartment(
-  humanFriendlyId: 'DEP0000002',
-  departmentCode: 'RAD',
-  departmentName: 'Radiology',
-  costCentreCode: 'CC-200',
-  costCentreName: 'Radiology Cost Centre',
-  facility: 'Kampala Main',
+final AccountsPaymentMethod _archivedMethod = AccountsPaymentMethod(
+  humanFriendlyId: 'PMT0000002',
+  methodCode: 'CHEQUE',
+  methodName: 'Bank Cheque',
+  methodType: AccountsPaymentMethodType.bankCheck,
+  direction: AccountsPaymentMethodDirection.outgoing,
+  requiresApproval: true,
+  facilityScope: 'Kampala Main',
   facilityHumanFriendlyId: 'FAC-001',
   effectiveFrom: DateTime.utc(2025, 1, 1),
   effectiveTo: DateTime.utc(2025, 12, 31),
-  status: AccountsDepartmentStatus.archived,
+  status: AccountsPaymentMethodStatus.archived,
   version: 4,
 );
 
@@ -82,6 +77,7 @@ const AccountsSummary _summary = AccountsSummary(
   needApproval: 2,
   fiscalPeriodsActive: 11,
   departmentsActive: 9,
+  paymentMethodsActive: 6,
 );
 
 AppAccessPolicy _policy({required Set<AppPermission> permissions}) {
@@ -145,18 +141,18 @@ void _stubAccounts(_MockAccountsRepository repository) {
   );
 }
 
-void _stubDepartments(
-  _MockDepartmentRepository repository, {
-  required List<AccountsDepartment> items,
+void _stubMethods(
+  _MockPaymentMethodRepository repository, {
+  required List<AccountsPaymentMethod> items,
   int filteredTotal = 2,
 }) {
-  when(() => repository.listDepartments(any())).thenAnswer((
+  when(() => repository.listPaymentMethods(any())).thenAnswer((
     Invocation inv,
   ) async {
-    final AccountsDepartmentQuery query =
-        inv.positionalArguments.first as AccountsDepartmentQuery;
-    return Result<AppPage<AccountsDepartment>>.success(
-      AppPage<AccountsDepartment>(
+    final AccountsPaymentMethodQuery query =
+        inv.positionalArguments.first as AccountsPaymentMethodQuery;
+    return Result<AppPage<AccountsPaymentMethod>>.success(
+      AppPage<AccountsPaymentMethod>(
         items: items,
         request: const AppPageRequest(pageSize: AppPageRequest.maxPageSize),
         totalItemCount: query.isNarrowed ? filteredTotal : items.length,
@@ -171,36 +167,26 @@ void _stubDepartments(
       version: any(named: 'version'),
     ),
   ).thenAnswer(
-    (_) async => Result<AccountsDepartment>.success(_draftDepartment),
+    (_) async => Result<AccountsPaymentMethod>.success(_draftMethod),
   );
 }
 
-Future<_MockDepartmentRepository> _pumpDepartments(
+Future<_MockPaymentMethodRepository> _pumpPaymentMethods(
   WidgetTester tester, {
   required AppAccessPolicy accessPolicy,
-  List<AccountsDepartment>? items,
+  List<AccountsPaymentMethod>? items,
   int filteredTotal = 2,
-  String location = '/accounts?section=departments-and-cost-centres',
+  String location = '/accounts?section=payment-methods',
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
   final _MockAccountsRepository accounts = _MockAccountsRepository();
-  final _MockDepartmentRepository departments = _MockDepartmentRepository();
-  final _MockFiscalPeriodRepository periods = _MockFiscalPeriodRepository();
+  final _MockPaymentMethodRepository methods = _MockPaymentMethodRepository();
   _stubAccounts(accounts);
-  _stubDepartments(
-    departments,
-    items: items ?? <AccountsDepartment>[_draftDepartment, _archivedDepartment],
+  _stubMethods(
+    methods,
+    items: items ?? <AccountsPaymentMethod>[_draftMethod, _archivedMethod],
     filteredTotal: filteredTotal,
-  );
-  when(() => periods.listPeriods(any())).thenAnswer(
-    (_) async => const Result<AppPage<AccountsFiscalPeriod>>.success(
-      AppPage<AccountsFiscalPeriod>(
-        items: <AccountsFiscalPeriod>[],
-        request: AppPageRequest(pageSize: AppPageRequest.maxPageSize),
-        totalItemCount: 0,
-      ),
-    ),
   );
 
   tester.view.physicalSize = const Size(1600, 900);
@@ -226,8 +212,7 @@ Future<_MockDepartmentRepository> _pumpDepartments(
     ProviderScope(
       overrides: [
         accountsRepositoryProvider.overrideWithValue(accounts),
-        accountsDepartmentRepositoryProvider.overrideWithValue(departments),
-        accountsFiscalPeriodRepositoryProvider.overrideWithValue(periods),
+        accountsPaymentMethodRepositoryProvider.overrideWithValue(methods),
         sharedPreferencesProvider.overrideWithValue(preferences),
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
@@ -247,16 +232,16 @@ Future<_MockDepartmentRepository> _pumpDepartments(
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 800));
   await tester.pump(const Duration(seconds: 1));
-  return departments;
+  return methods;
 }
 
-/// Minimal host for [confirmAccountsDepartmentAction]; the row button that
+/// Minimal host for [confirmAccountsPaymentMethodAction]; the row button that
 /// triggers it in the panel sits in the last of many columns.
 Future<void> _pumpActionHarness(
   WidgetTester tester, {
-  required _MockDepartmentRepository departments,
-  required AccountsDepartment department,
-  required AccountsDepartmentAction action,
+  required _MockPaymentMethodRepository methods,
+  required AccountsPaymentMethod method,
+  required AccountsPaymentMethodAction action,
 }) async {
   SharedPreferences.setMockInitialValues(<String, Object>{});
   final SharedPreferences preferences = await SharedPreferences.getInstance();
@@ -269,7 +254,7 @@ Future<void> _pumpActionHarness(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        accountsDepartmentRepositoryProvider.overrideWithValue(departments),
+        accountsPaymentMethodRepositoryProvider.overrideWithValue(methods),
         sharedPreferencesProvider.overrideWithValue(preferences),
         initialSessionStateProvider.overrideWithValue(
           const SessionState.ready(),
@@ -285,10 +270,10 @@ Future<void> _pumpActionHarness(
             body: Center(
               child: TextButton(
                 key: const Key('run-action'),
-                onPressed: () => confirmAccountsDepartmentAction(
+                onPressed: () => confirmAccountsPaymentMethodAction(
                   context: context,
                   ref: ref,
-                  department: department,
+                  method: method,
                   action: action,
                 ),
                 child: const Text('run'),
@@ -306,86 +291,83 @@ void main() {
   setUpAll(() {
     registerFallbackValue(const AccountsWorkspaceQuery());
     registerFallbackValue(const AccountsGlQuery());
-    registerFallbackValue(const AccountsDepartmentQuery());
-    registerFallbackValue(const AccountsFiscalPeriodQuery());
-    registerFallbackValue(AccountsDepartmentAction.activate);
+    registerFallbackValue(const AccountsPaymentMethodQuery());
+    registerFallbackValue(AccountsPaymentMethodAction.activate);
   });
 
   group('navigation and scoping', () {
-    test('the tab sits under Setup & Controls beside Fiscal Years & Periods', () {
+    test('the tab is the third leaf under Setup & Controls', () {
+      expect(AccountsDeskCategory.setupAndControls.sections, <
+        AccountsDeskSection
+      >[
+        AccountsDeskSection.fiscalYearsAndPeriods,
+        AccountsDeskSection.departmentsAndCostCentres,
+        AccountsDeskSection.paymentMethods,
+      ]);
       expect(
-        AccountsDeskCategory.setupAndControls.sections.take(2),
-        <AccountsDeskSection>[
-          AccountsDeskSection.fiscalYearsAndPeriods,
-          AccountsDeskSection.departmentsAndCostCentres,
-        ],
-      );
-      expect(
-        AccountsDeskSection.departmentsAndCostCentres.category,
+        AccountsDeskSection.paymentMethods.category,
         AccountsDeskCategory.setupAndControls,
       );
     });
 
     test('the section slug matches the API path segment', () {
       expect(
-        AccountsDeskSection.departmentsAndCostCentres.sectionQueryValue,
-        accountsDepartmentsSectionSlug,
+        AccountsDeskSection.paymentMethods.sectionQueryValue,
+        accountsPaymentMethodsSectionSlug,
       );
       expect(
-        AccountsDeskSection.resolveDeskSlug('departments-and-cost-centres'),
-        AccountsDeskSection.departmentsAndCostCentres,
+        AccountsDeskSection.resolveDeskSlug('payment-methods'),
+        AccountsDeskSection.paymentMethods,
       );
     });
 
     test('compatible deep-link aliases resolve to the canonical tab', () {
       for (final String alias in <String>[
-        'departments',
-        'cost-centres',
-        'cost-centers',
-        'departments-and-cost-centers',
-        'departmentsandcostcentres',
+        'paymentmethods',
+        'payment-method',
+        'tenders',
       ]) {
         expect(
           AccountsDeskSection.resolveDeskSlug(alias),
-          AccountsDeskSection.departmentsAndCostCentres,
+          AccountsDeskSection.paymentMethods,
           reason: '$alias should resolve to the owning tab',
         );
       }
     });
 
-    test('the table exposes the thirteen documented columns', () {
-      expect(accountsDepartmentColumnIds.length, 13);
-      expect(accountsDepartmentColumnIds.first, accountsDepartmentCodeColumnId);
-      expect(accountsDepartmentColumnIds.last, accountsDepartmentStatusColumnId);
+    test('the table exposes the fourteen documented columns', () {
+      expect(accountsPaymentMethodColumnIds.length, 14);
+      expect(
+        accountsPaymentMethodColumnIds.first,
+        accountsPaymentMethodCodeColumnId,
+      );
+      expect(
+        accountsPaymentMethodColumnIds.last,
+        accountsPaymentMethodStatusColumnId,
+      );
     });
 
-    test('the two Optional columns are not part of the default set', () {
-      expect(accountsDepartmentOptionalColumnIds, <String>[
-        accountsDepartmentReferenceColumnId,
-        accountsDepartmentEffectiveFromColumnId,
-        accountsDepartmentEffectiveToColumnId,
+    test('the three Optional columns are not part of the default set', () {
+      expect(accountsPaymentMethodOptionalColumnIds, <String>[
+        accountsPaymentMethodReferenceColumnId,
+        accountsPaymentMethodFacilityScopeColumnId,
+        accountsPaymentMethodEffectiveFromColumnId,
+        accountsPaymentMethodEffectiveToColumnId,
       ]);
-      for (final String id in accountsDepartmentOptionalColumnIds) {
-        if (id == accountsDepartmentReferenceColumnId) {
+      for (final String id in accountsPaymentMethodOptionalColumnIds) {
+        if (id == accountsPaymentMethodReferenceColumnId) {
           continue;
         }
-        expect(accountsDepartmentColumnIds, contains(id));
+        expect(accountsPaymentMethodColumnIds, contains(id));
       }
     });
 
     testWidgets('deep link opens the Setup & Controls tab strip', (
       WidgetTester tester,
     ) async {
-      await _pumpDepartments(tester, accessPolicy: _readerPolicy);
+      await _pumpPaymentMethods(tester, accessPolicy: _readerPolicy);
 
-      expect(
-        find.byType(AccountsDepartmentsAndCostCentresPanel),
-        findsOneWidget,
-      );
-      expect(
-        AccountsDeskCategory.of(AccountsDeskSection.departmentsAndCostCentres),
-        AccountsDeskCategory.setupAndControls,
-      );
+      expect(find.byType(AccountsPaymentMethodsPanel), findsOneWidget);
       expect(
         accountsShellMenuChildren(
           accessPolicy: _readerPolicy,
@@ -393,30 +375,19 @@ void main() {
         contains(AccountsDeskCategory.setupAndControls.name),
       );
 
-      // Every Setup & Controls section is a tab in one flat strip.
+      // All three Setup & Controls sections are tabs in one flat strip.
       final AppTabStrip sections = tester.widget<AppTabStrip>(
         find.byKey(accountsSectionTabsKey),
       );
-      expect(
-        sections.tabs.map((AppTabItem tab) => tab.id),
-        contains(AccountsDeskSection.departmentsAndCostCentres.name),
-      );
-      expect(
-        sections.tabs
-            .firstWhere(
-              (AppTabItem tab) =>
-                  tab.id == AccountsDeskSection.departmentsAndCostCentres.name,
-            )
-            .label,
-        _l10n.accountsDepartmentsLabel,
-      );
+      expect(sections.tabs.length, 3);
+      expect(sections.tabs.last.label, _l10n.accountsPaymentMethodsLabel);
       expect(sections.variant, AppTabStripVariant.standard);
     });
 
     testWidgets('the workspace renders no category tab row', (
       WidgetTester tester,
     ) async {
-      await _pumpDepartments(tester, accessPolicy: _readerPolicy);
+      await _pumpPaymentMethods(tester, accessPolicy: _readerPolicy);
 
       expect(find.byType(AppTabStrip), findsOneWidget);
     });
@@ -424,22 +395,22 @@ void main() {
     testWidgets('the badge uses the summary until the query is narrowed', (
       WidgetTester tester,
     ) async {
-      await _pumpDepartments(tester, accessPolicy: _readerPolicy);
+      await _pumpPaymentMethods(tester, accessPolicy: _readerPolicy);
 
-      AppTabItem departmentsTab() => tester
+      AppTabItem methodsTab() => tester
           .widget<AppTabStrip>(find.byKey(accountsSectionTabsKey))
           .tabs
-          .lastWhere(
+          .firstWhere(
             (AppTabItem tab) =>
-                tab.id == AccountsDeskSection.departmentsAndCostCentres.name,
+                tab.id == AccountsDeskSection.paymentMethods.name,
           );
-      expect(departmentsTab().count, _summary.departmentsActive);
+      expect(methodsTab().count, _summary.paymentMethodsActive);
 
-      await tester.enterText(find.byType(TextField).first, 'Cardiology');
+      await tester.enterText(find.byType(TextField).first, 'Mobile');
       await tester.pump(const Duration(milliseconds: 500));
       await tester.pump(const Duration(seconds: 1));
 
-      expect(departmentsTab().count, 2);
+      expect(methodsTab().count, 2);
     });
   });
 
@@ -447,31 +418,31 @@ void main() {
     testWidgets('Optional columns stay out of the default visible set', (
       WidgetTester tester,
     ) async {
-      await _pumpDepartments(tester, accessPolicy: _readerPolicy);
+      await _pumpPaymentMethods(tester, accessPolicy: _readerPolicy);
 
-      final AppListTable<AccountsDepartment> table = tester
-          .widget<AppListTable<AccountsDepartment>>(
-            find.byType(AppListTable<AccountsDepartment>),
+      final AppListTable<AccountsPaymentMethod> table = tester
+          .widget<AppListTable<AccountsPaymentMethod>>(
+            find.byType(AppListTable<AccountsPaymentMethod>),
           );
       final List<String> defaultKeys = table.columns
-          .map((AppListTableColumn<AccountsDepartment> column) => column.key)
+          .map((AppListTableColumn<AccountsPaymentMethod> column) => column.key)
           .toList();
       final List<String> optionalKeys = table.columnChoices!
-          .map((AppListTableColumn<AccountsDepartment> column) => column.key)
+          .map((AppListTableColumn<AccountsPaymentMethod> column) => column.key)
           .toList();
 
-      expect(defaultKeys, contains(accountsDepartmentCodeColumnId));
-      expect(defaultKeys, contains(accountsDepartmentBudgetOwnerColumnId));
-      expect(defaultKeys, contains(accountsDepartmentStatusColumnId));
+      expect(defaultKeys, contains(accountsPaymentMethodCodeColumnId));
+      expect(defaultKeys, contains(accountsPaymentMethodFeeRuleColumnId));
+      expect(defaultKeys, contains(accountsPaymentMethodStatusColumnId));
 
-      expect(optionalKeys, accountsDepartmentOptionalColumnIds);
-      for (final String id in accountsDepartmentOptionalColumnIds) {
+      expect(optionalKeys, accountsPaymentMethodOptionalColumnIds);
+      for (final String id in accountsPaymentMethodOptionalColumnIds) {
         expect(defaultKeys, isNot(contains(id)));
       }
 
       // Optional columns stay exportable so Settings/export keep the full
       // source-of-truth inventory.
-      for (final AppListTableColumn<AccountsDepartment> column
+      for (final AppListTableColumn<AccountsPaymentMethod> column
           in table.columnChoices!) {
         expect(column.includesInExport, isTrue);
       }
@@ -480,46 +451,54 @@ void main() {
     testWidgets('every specified domain filter reaches the committed query', (
       WidgetTester tester,
     ) async {
-      final _MockDepartmentRepository departments = await _pumpDepartments(
+      final _MockPaymentMethodRepository methods = await _pumpPaymentMethods(
         tester,
         accessPolicy: _readerPolicy,
       );
 
-      final AppListTable<AccountsDepartment> table = tester
-          .widget<AppListTable<AccountsDepartment>>(
-            find.byType(AppListTable<AccountsDepartment>),
+      final AppListTable<AccountsPaymentMethod> table = tester
+          .widget<AppListTable<AccountsPaymentMethod>>(
+            find.byType(AppListTable<AccountsPaymentMethod>),
           );
       final List<String> groupKeys = table.search!.filterGroups
           .map((AppSearchBarFilterGroup group) => group.key)
           .toList();
 
-      // Status, Department / cost centre, and Owner come from controlled
-      // reference data harvested from permitted rows.
       expect(groupKeys, contains('status'));
-      expect(groupKeys, contains('cost_centre'));
-      expect(groupKeys, contains('owner'));
+      expect(groupKeys, contains('method_type'));
+      expect(groupKeys, contains('direction'));
+      expect(groupKeys, contains('requires_reference'));
+      expect(groupKeys, contains('requires_approval'));
 
       table.search!.onFilterChanged!(
         const AppSearchBarFilterValue(
           options: <String, String>{
             'status': 'ACTIVE',
-            'cost_centre': 'CC-100',
-            'owner': 'USR-001',
+            'method_type': 'MOBILE_MONEY',
+            'direction': 'INCOMING',
+            'requires_reference': 'true',
+            'requires_approval': 'false',
           },
         ),
       );
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 
-      final List<AccountsDepartmentQuery> queries =
-          verify(() => departments.listDepartments(captureAny())).captured
-              .cast<AccountsDepartmentQuery>();
-      final AccountsDepartmentQuery committed = queries.last;
-      expect(committed.statuses, <AccountsDepartmentStatus>{
-        AccountsDepartmentStatus.active,
+      final List<AccountsPaymentMethodQuery> queries =
+          verify(() => methods.listPaymentMethods(captureAny())).captured
+              .cast<AccountsPaymentMethodQuery>();
+      final AccountsPaymentMethodQuery committed = queries.last;
+      expect(committed.statuses, <AccountsPaymentMethodStatus>{
+        AccountsPaymentMethodStatus.active,
       });
-      expect(committed.costCentreCodes, <String>{'CC-100'});
-      expect(committed.ownerId, 'USR-001');
+      expect(committed.methodTypes, <AccountsPaymentMethodType>{
+        AccountsPaymentMethodType.mobileMoney,
+      });
+      expect(committed.directions, <AccountsPaymentMethodDirection>{
+        AccountsPaymentMethodDirection.incoming,
+      });
+      expect(committed.requiresExternalReference, isTrue);
+      expect(committed.requiresApproval, isFalse);
       expect(committed.hasActiveFilters, isTrue);
     });
 
@@ -528,11 +507,11 @@ void main() {
     ) async {
       // Both seeded rows share one facility, so the control is omitted rather
       // than rendered as dead chrome.
-      await _pumpDepartments(tester, accessPolicy: _readerPolicy);
+      await _pumpPaymentMethods(tester, accessPolicy: _readerPolicy);
 
-      final AppListTable<AccountsDepartment> table = tester
-          .widget<AppListTable<AccountsDepartment>>(
-            find.byType(AppListTable<AccountsDepartment>),
+      final AppListTable<AccountsPaymentMethod> table = tester
+          .widget<AppListTable<AccountsPaymentMethod>>(
+            find.byType(AppListTable<AccountsPaymentMethod>),
           );
       expect(
         table.search!.filterGroups
@@ -546,19 +525,19 @@ void main() {
   group('permissions', () {
     test('every atom resolves to an accounts permission', () {
       expect(
-        AccountsDepartmentsAtomPermissions.tab.isAllowed(_readerPolicy),
+        AccountsPaymentMethodsAtomPermissions.tab.isAllowed(_readerPolicy),
         isTrue,
       );
       expect(
-        AccountsDepartmentsAtomPermissions.create.isAllowed(_readerPolicy),
+        AccountsPaymentMethodsAtomPermissions.create.isAllowed(_readerPolicy),
         isFalse,
       );
       expect(
-        AccountsDepartmentsAtomPermissions.create.isAllowed(_writerPolicy),
+        AccountsPaymentMethodsAtomPermissions.create.isAllowed(_writerPolicy),
         isTrue,
       );
-      expect(canWriteAccountsDepartments(_readerPolicy), isFalse);
-      expect(canWriteAccountsDepartments(_writerPolicy), isTrue);
+      expect(canWriteAccountsPaymentMethods(_readerPolicy), isFalse);
+      expect(canWriteAccountsPaymentMethods(_writerPolicy), isTrue);
     });
 
     test('a write-only grant does not surface the tab', () {
@@ -566,10 +545,7 @@ void main() {
         permissions: <AppPermission>{AppPermissions.accountsWrite},
       );
       expect(
-        canViewAccountsSection(
-          writeOnly,
-          AccountsDeskSection.departmentsAndCostCentres,
-        ),
+        canViewAccountsSection(writeOnly, AccountsDeskSection.paymentMethods),
         isFalse,
       );
     });
@@ -577,63 +553,75 @@ void main() {
     testWidgets('read-only hides New record, Actions, and workflow buttons', (
       WidgetTester tester,
     ) async {
-      await _pumpDepartments(tester, accessPolicy: _readerPolicy);
+      await _pumpPaymentMethods(tester, accessPolicy: _readerPolicy);
 
-      expect(find.text('Cardiology'), findsWidgets);
-      expect(find.text(_l10n.accountsDepartmentNewRecordAction), findsNothing);
-      expect(find.text(_l10n.accountsDepartmentActionsColumn), findsNothing);
-      expect(find.text(_l10n.accountsDepartmentActivateAction), findsNothing);
-      expect(find.text(_l10n.accountsDepartmentBulkArchiveAction), findsNothing);
+      expect(find.text('Mobile Money'), findsWidgets);
+      expect(
+        find.text(_l10n.accountsPaymentMethodNewRecordAction),
+        findsNothing,
+      );
+      expect(find.text(_l10n.accountsPaymentMethodActionsColumn), findsNothing);
+      expect(
+        find.text(_l10n.accountsPaymentMethodActivateAction),
+        findsNothing,
+      );
+      expect(
+        find.text(_l10n.accountsPaymentMethodBulkArchiveAction),
+        findsNothing,
+      );
     });
 
     testWidgets('write access shows the toolbar and per-row actions', (
       WidgetTester tester,
     ) async {
-      await _pumpDepartments(tester, accessPolicy: _writerPolicy);
+      await _pumpPaymentMethods(tester, accessPolicy: _writerPolicy);
 
-      expect(find.text(_l10n.accountsDepartmentActionsColumn), findsOneWidget);
-      expect(find.text(_l10n.accountsDepartmentViewAction), findsWidgets);
-      expect(find.text(_l10n.accountsDepartmentActivateAction), findsWidgets);
+      expect(
+        find.text(_l10n.accountsPaymentMethodActionsColumn),
+        findsOneWidget,
+      );
+      expect(find.text(_l10n.accountsPaymentMethodViewAction), findsWidgets);
+      expect(find.text(_l10n.accountsPaymentMethodActivateAction), findsWidgets);
     });
   });
 
   group('status rules', () {
     test('transitions follow the documented lifecycle', () {
-      expect(_draftDepartment.canActivate, isTrue);
-      expect(_draftDepartment.canDeactivate, isFalse);
-      expect(_draftDepartment.canEdit, isTrue);
-      expect(_draftDepartment.toggleAction, AccountsDepartmentAction.activate);
+      expect(_draftMethod.canActivate, isTrue);
+      expect(_draftMethod.canDeactivate, isFalse);
+      expect(_draftMethod.canEdit, isTrue);
+      expect(_draftMethod.toggleAction, AccountsPaymentMethodAction.activate);
 
-      const AccountsDepartmentStatus archived =
-          AccountsDepartmentStatus.archived;
-      expect(archived.allowedTransitions, <AccountsDepartmentStatus>{
-        AccountsDepartmentStatus.active,
+      const AccountsPaymentMethodStatus archived =
+          AccountsPaymentMethodStatus.archived;
+      expect(archived.allowedTransitions, <AccountsPaymentMethodStatus>{
+        AccountsPaymentMethodStatus.active,
       });
     });
 
     test('an archived record is not editable and offers Restore', () {
-      expect(_archivedDepartment.canEdit, isFalse);
-      expect(_archivedDepartment.canClone, isFalse);
-      expect(_archivedDepartment.canRestore, isTrue);
+      expect(_archivedMethod.canEdit, isFalse);
+      expect(_archivedMethod.canClone, isFalse);
+      expect(_archivedMethod.canRestore, isTrue);
       expect(
-        _archivedDepartment.toggleAction,
-        AccountsDepartmentAction.restore,
+        _archivedMethod.toggleAction,
+        AccountsPaymentMethodAction.restore,
       );
     });
 
     testWidgets('archived rows expose no Edit or Clone button', (
       WidgetTester tester,
     ) async {
-      await _pumpDepartments(
+      await _pumpPaymentMethods(
         tester,
         accessPolicy: _writerPolicy,
-        items: <AccountsDepartment>[_archivedDepartment],
+        items: <AccountsPaymentMethod>[_archivedMethod],
       );
 
-      expect(find.text('Radiology'), findsWidgets);
-      expect(find.text(_l10n.accountsDepartmentCloneAction), findsNothing);
-      expect(find.text(_l10n.accountsDepartmentRestoreAction), findsWidgets);
-      expect(find.text(_l10n.accountsDepartmentViewAction), findsOneWidget);
+      expect(find.text('Bank Cheque'), findsWidgets);
+      expect(find.text(_l10n.accountsPaymentMethodCloneAction), findsNothing);
+      expect(find.text(_l10n.accountsPaymentMethodRestoreAction), findsWidgets);
+      expect(find.text(_l10n.accountsPaymentMethodViewAction), findsOneWidget);
     });
   });
 
@@ -641,17 +629,15 @@ void main() {
     testWidgets('Activate confirms, then posts the action with the version', (
       WidgetTester tester,
     ) async {
-      final _MockDepartmentRepository departments = _MockDepartmentRepository();
-      _stubDepartments(
-        departments,
-        items: <AccountsDepartment>[_draftDepartment],
-      );
+      final _MockPaymentMethodRepository methods =
+          _MockPaymentMethodRepository();
+      _stubMethods(methods, items: <AccountsPaymentMethod>[_draftMethod]);
 
       await _pumpActionHarness(
         tester,
-        departments: departments,
-        department: _draftDepartment,
-        action: AccountsDepartmentAction.activate,
+        methods: methods,
+        method: _draftMethod,
+        action: AccountsPaymentMethodAction.activate,
       );
 
       await tester.tap(find.byKey(const Key('run-action')));
@@ -661,24 +647,24 @@ void main() {
         tester
             .widget<AppConfirmActionDialog>(find.byType(AppConfirmActionDialog))
             .title,
-        _l10n.accountsDepartmentActivateConfirmTitle,
+        _l10n.accountsPaymentMethodActivateConfirmTitle,
       );
 
       await tester.tap(
         find
             .widgetWithText(
               AppButton,
-              _l10n.accountsDepartmentActivateAction,
+              _l10n.accountsPaymentMethodActivateAction,
             )
             .last,
       );
       await tester.pumpAndSettle();
 
       verify(
-        () => departments.applyAction(
-          _draftDepartment.humanFriendlyId,
-          AccountsDepartmentAction.activate,
-          version: _draftDepartment.version,
+        () => methods.applyAction(
+          _draftMethod.humanFriendlyId,
+          AccountsPaymentMethodAction.activate,
+          version: _draftMethod.version,
         ),
       ).called(1);
     });
@@ -686,17 +672,15 @@ void main() {
     testWidgets('Archive warns that the record is archived, not deleted', (
       WidgetTester tester,
     ) async {
-      final _MockDepartmentRepository departments = _MockDepartmentRepository();
-      _stubDepartments(
-        departments,
-        items: <AccountsDepartment>[_draftDepartment],
-      );
+      final _MockPaymentMethodRepository methods =
+          _MockPaymentMethodRepository();
+      _stubMethods(methods, items: <AccountsPaymentMethod>[_draftMethod]);
 
       await _pumpActionHarness(
         tester,
-        departments: departments,
-        department: _draftDepartment,
-        action: AccountsDepartmentAction.archive,
+        methods: methods,
+        method: _draftMethod,
+        action: AccountsPaymentMethodAction.archive,
       );
 
       await tester.tap(find.byKey(const Key('run-action')));
@@ -704,10 +688,10 @@ void main() {
 
       final AppConfirmActionDialog dialog = tester
           .widget<AppConfirmActionDialog>(find.byType(AppConfirmActionDialog));
-      expect(dialog.title, _l10n.accountsDepartmentArchiveConfirmTitle);
+      expect(dialog.title, _l10n.accountsPaymentMethodArchiveConfirmTitle);
       expect(dialog.body, contains('archived, not deleted'));
       // The reference guard is stated up front, not discovered on failure.
-      expect(dialog.body, contains('units, or wards'));
+      expect(dialog.body, contains('recorded payments'));
     });
   });
 
@@ -715,12 +699,56 @@ void main() {
     testWidgets('no raw database identifier or raw enum reaches the table', (
       WidgetTester tester,
     ) async {
-      await _pumpDepartments(tester, accessPolicy: _writerPolicy);
+      await _pumpPaymentMethods(tester, accessPolicy: _writerPolicy);
 
       expect(find.text('550e8400-e29b-41d4-a716-446655440020'), findsNothing);
       expect(find.text('DRAFT'), findsNothing);
-      expect(find.text('ARCHIVED'), findsNothing);
-      expect(find.text(_l10n.accountsDepartmentStatusDraft), findsWidgets);
+      expect(find.text('MOBILE_MONEY'), findsNothing);
+      expect(find.text('INCOMING'), findsNothing);
+      expect(find.text(_l10n.accountsPaymentMethodStatusDraft), findsWidgets);
+      expect(
+        find.text(_l10n.accountsPaymentMethodTypeMobileMoney),
+        findsWidgets,
+      );
+    });
+
+    testWidgets('requirement flags export as localized Yes/No, not booleans', (
+      WidgetTester tester,
+    ) async {
+      await _pumpPaymentMethods(
+        tester,
+        accessPolicy: _readerPolicy,
+        items: <AccountsPaymentMethod>[_draftMethod],
+      );
+
+      final AppListTable<AccountsPaymentMethod> table = tester
+          .widget<AppListTable<AccountsPaymentMethod>>(
+            find.byType(AppListTable<AccountsPaymentMethod>),
+          );
+      AppListTableColumn<AccountsPaymentMethod> columnFor(String id) =>
+          table.columns.firstWhere(
+            (AppListTableColumn<AccountsPaymentMethod> column) =>
+                column.key == id,
+          );
+
+      // The seeded row requires an external reference but not approval, so the
+      // two flags must localize in opposite directions.
+      expect(
+        columnFor(
+          accountsPaymentMethodRequiresReferenceColumnId,
+        ).exportValue!(_draftMethod),
+        _l10n.accountsPaymentMethodYes,
+      );
+      expect(
+        columnFor(
+          accountsPaymentMethodRequiresApprovalColumnId,
+        ).exportValue!(_draftMethod),
+        _l10n.accountsPaymentMethodNo,
+      );
+
+      // A raw boolean never reaches the sheet.
+      expect(find.text('true'), findsNothing);
+      expect(find.text('false'), findsNothing);
     });
   });
 }
