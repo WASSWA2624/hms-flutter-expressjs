@@ -67,10 +67,17 @@ class AuthRegistrationGuideDialog extends StatelessWidget {
         ],
       ),
       actions: <Widget>[
-        AppButton.primary(
-          label: l10n.commonCloseActionLabel,
-          leadingIcon: Icons.check_rounded,
-          onPressed: () => Navigator.of(context).pop(),
+        // Dialog footers go icon-only below lg; this guide is the entry point
+        // for people who do not have an account yet, so keep the wording.
+        AppActionLabelScope(
+          showLabels: true,
+          forceIconOnly: false,
+          dense: true,
+          child: AppButton.primary(
+            label: l10n.commonCloseActionLabel,
+            leadingIcon: Icons.check_rounded,
+            onPressed: () => Navigator.of(context).pop(),
+          ),
         ),
       ],
     );

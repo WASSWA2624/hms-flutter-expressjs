@@ -391,6 +391,7 @@ class _AppTextFieldState extends State<AppTextField> {
         controller.text.isNotEmpty;
     final Widget? clearButton = showClear
         ? AppButton(
+            key: const ValueKey<String>('app-text-field-clear'),
             iconOnly: true,
             dense: widget.isDense,
             leadingIcon: Icons.close,
@@ -403,8 +404,12 @@ class _AppTextFieldState extends State<AppTextField> {
           )
         : null;
 
+    // Keyed: the clear action appears as soon as dictation writes the first
+    // word, and an unkeyed list would rebuild the speech button's element at
+    // the new index, tearing down the in-flight listen session.
     final Widget? speechButton = _speechEnabled && controller != null
         ? AppSpeechToTextButton(
+            key: const ValueKey<String>('app-text-field-speech'),
             controller: controller,
             enabled: canEdit,
             dense: widget.isDense,

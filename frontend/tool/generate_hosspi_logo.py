@@ -271,12 +271,14 @@ def main() -> None:
 
     favicon = _repair_dark_spots(_favicon(cropped, 1024))
 
+    # web/favicon.png is intentionally not written here: the browser tab mark
+    # needs an opaque plate to survive dark tab strips, so it is baked by
+    # tool/generate_platform_icons.py along with the Android launcher icons.
     for path, img in {
         OUT / "logo.png": logo,
         OUT / "favicon.png": favicon,
         OUT / "splash.png": logo.copy(),
         OUT / "logo_master.png": master,
-        WEB / "favicon.png": favicon,
     }.items():
         img.save(path, "PNG", optimize=True)
         print(f"wrote {path.name} {img.size}")

@@ -182,28 +182,26 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
               onPressed: _submit,
             ),
             SizedBox(height: theme.spacing.sm),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                if (!_usesLinkToken) ...<Widget>[
-                  Flexible(
-                    child: AuthTextLink(
-                      label: l10n.authForgotPasswordActionLabel,
-                      onPressed: state.isSubmitting
-                          ? null
-                          : () =>
-                              context.go(AppRoutes.forgotPassword.location()),
-                    ),
-                  ),
-                  SizedBox(width: theme.spacing.sm),
-                ],
-                Flexible(
-                  child: AuthTextLink(
-                    label: l10n.authBackToLoginActionLabel,
+            AuthSecondaryLinkRow(
+              links: <AuthTextLink>[
+                if (!_usesLinkToken)
+                  AuthTextLink(
+                    label: l10n.authForgotPasswordActionLabel,
                     onPressed: state.isSubmitting
                         ? null
-                        : () => context.go(AppRoutes.login.location()),
+                        : () => context.go(AppRoutes.forgotPassword.location()),
                   ),
+                AuthTextLink(
+                  label: l10n.authBackToLoginActionLabel,
+                  onPressed: state.isSubmitting
+                      ? null
+                      : () => context.go(AppRoutes.login.location()),
+                ),
+                AuthTextLink(
+                  label: l10n.authCreateAccountActionLabel,
+                  onPressed: state.isSubmitting
+                      ? null
+                      : () => context.go(AppRoutes.register.location()),
                 ),
               ],
             ),

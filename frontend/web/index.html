@@ -26,8 +26,10 @@
   <meta name="apple-mobile-web-app-title" content="HOSSPI Hospital Management System">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
-  <!-- Favicon (cache-busted when the mark changes) -->
-  <link rel="icon" type="image/png" href="favicon.png?v=hosspi-transparent-smooth"/>
+  <!-- Favicon (cache-busted when the mark changes). Tab strips paint their own
+       chrome, so this one mark is baked on a white plate; the PWA / apple-touch
+       icons above and in manifest.json stay transparent. -->
+  <link rel="icon" type="image/png" href="favicon.png?v=hosspi-tab-plate"/>
 
   <title>HOSSPI Hospital Management System</title>
   <link rel="manifest" href="manifest.json">

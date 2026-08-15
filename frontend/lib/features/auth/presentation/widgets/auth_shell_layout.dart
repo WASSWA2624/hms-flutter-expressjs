@@ -22,9 +22,6 @@ class _AuthShellLayoutState extends State<AuthShellLayout> {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-    final bool isCompact =
-        breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm;
-    final double panelRadius = context.responsiveRadius(theme.radius.lg);
 
     return Scaffold(
       body: DecoratedBox(
@@ -43,58 +40,38 @@ class _AuthShellLayoutState extends State<AuthShellLayout> {
         child: SafeArea(
           child: LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
+              // Form copy stays inside a readable measure; the surface behind
+              // it spans the full width and runs to the bottom edge.
               final double maxFormWidth = switch (breakpoint) {
                 AppBreakpoint.xs || AppBreakpoint.sm => constraints.maxWidth,
                 AppBreakpoint.md => constraints.maxWidth.clamp(0, 480),
                 _ => constraints.maxWidth.clamp(0, 520),
               };
 
-              final EdgeInsets pagePadding = EdgeInsets.fromLTRB(
-                theme.spacing.lg,
-                isCompact ? theme.spacing.lg : theme.spacing.xl,
-                theme.spacing.lg,
-                theme.spacing.lg,
-              );
-
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Padding(
-                    padding: pagePadding,
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: maxFormWidth),
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(panelRadius),
-                            border: theme.borders.all(),
-                            boxShadow: <BoxShadow>[
-                              BoxShadow(
-                                color: colorScheme.shadow.withValues(
-                                  alpha: 0.07,
-                                ),
-                                blurRadius: 28,
-                                offset: const Offset(0, 10),
-                              ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(panelRadius),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: <Widget>[
-                                const _AuthBrandHeader(),
-                                widget.child,
-                              ],
-                            ),
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  const _AuthBrandHeader(),
+                  Expanded(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface,
+                        border: theme.borders.only(top: true),
+                      ),
+                      // Scroll inside the filled area so the surface keeps
+                      // covering the viewport even when the form overflows.
+                      child: SingleChildScrollView(
+                        child: Align(
+                          alignment: Alignment.topCenter,
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(maxWidth: maxFormWidth),
+                            child: widget.child,
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
+                ],
               );
             },
           ),

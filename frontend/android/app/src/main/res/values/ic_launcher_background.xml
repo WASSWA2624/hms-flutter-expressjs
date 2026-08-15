@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Plate behind the adaptive launcher icon. The logo mark is drawn in
+         brand blue/red, so it needs a light plate to stay legible over any
+         wallpaper. -->
+    <color name="ic_launcher_background">#FFFFFF</color>
+</resources>

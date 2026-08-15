@@ -7,6 +7,7 @@ import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_page_frame.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_primary_button.dart';
+import 'package:hosspi_hms/features/auth/presentation/widgets/auth_registration_guide_dialog.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_text_link.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
@@ -138,11 +139,28 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
               fullWidth: true,
               onPressed: email == null || busy ? null : _resendCode,
             ),
-            AuthTextLink(
-              label: l10n.authBackToLoginActionLabel,
-              onPressed: busy
-                  ? null
-                  : () => context.go(AppRoutes.login.location()),
+            SizedBox(height: theme.spacing.sm),
+            AuthSecondaryLinkRow(
+              links: <AuthTextLink>[
+                AuthTextLink(
+                  label: l10n.authBackToLoginActionLabel,
+                  onPressed: busy
+                      ? null
+                      : () => context.go(AppRoutes.login.location()),
+                ),
+                AuthTextLink(
+                  label: l10n.authCreateAccountActionLabel,
+                  onPressed: busy
+                      ? null
+                      : () => context.go(AppRoutes.register.location()),
+                ),
+                AuthTextLink(
+                  label: l10n.authHowToRegisterActionLabel,
+                  onPressed: busy
+                      ? null
+                      : () => showAuthRegistrationGuideDialog(context),
+                ),
+              ],
             ),
           ],
         ),

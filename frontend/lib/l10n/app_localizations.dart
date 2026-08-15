@@ -16801,12 +16801,6 @@ abstract class AppLocalizations {
   /// **'Use your facility account to open the HMS workspace.'**
   String get authLoginBody;
 
-  /// Login identifier field label.
-  ///
-  /// In en, this message translates to:
-  /// **'Email or phone'**
-  String get authIdentifierLabel;
-
   /// Email field label.
   ///
   /// In en, this message translates to:
@@ -16840,8 +16834,26 @@ abstract class AppLocalizations {
   /// Navigate to self-registration action label.
   ///
   /// In en, this message translates to:
-  /// **'Create account'**
+  /// **'Register'**
   String get authCreateAccountActionLabel;
+
+  /// Label for the login identifier type selector (email or phone).
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with'**
+  String get authIdentifierModeLabel;
+
+  /// Login identifier selector option for signing in with an email address.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get authIdentifierModeEmailLabel;
+
+  /// Login identifier selector option for signing in with a phone number.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get authIdentifierModePhoneLabel;
 
   /// Self-registration page title.
   ///
@@ -16864,7 +16876,7 @@ abstract class AppLocalizations {
   /// Navigate back to login action label.
   ///
   /// In en, this message translates to:
-  /// **'Back to sign in'**
+  /// **'Sign in'**
   String get authBackToLoginActionLabel;
 
   /// Opens onboarding guide for facility registration.

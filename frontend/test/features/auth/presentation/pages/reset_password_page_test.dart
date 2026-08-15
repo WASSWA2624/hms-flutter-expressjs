@@ -64,7 +64,12 @@ void main() {
       );
       expect(find.text(l10n.authBackToLoginActionLabel), findsOneWidget);
       expect(find.text(l10n.authResetPasswordCompletedTitle), findsNothing);
-      expect(find.text(l10n.authLoginActionLabel), findsNothing);
+      // The Sign in *link* is expected here; only the login submit control
+      // must be absent (the two share the same wording).
+      expect(
+        find.widgetWithText(FilledButton, l10n.authLoginActionLabel),
+        findsNothing,
+      );
       expect(
         find.text(l10n.authResetPasswordWithCodeActionLabel),
         findsNothing,
@@ -132,7 +137,7 @@ void main() {
         findsOneWidget,
       );
       expect(find.text(l10n.authResetPasswordTitle), findsNothing);
-      expect(find.byType(AppEmailField), findsNothing);
+      expect(find.text(l10n.authResetPasswordCodeLabel), findsNothing);
       expect(repository.resetPasswordCalls, 1);
       expect(repository.lastEmail, 'nurse@example.com');
       expect(repository.lastCode, '123456');

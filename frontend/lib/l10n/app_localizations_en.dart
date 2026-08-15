@@ -9130,9 +9130,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Use your facility account to open the HMS workspace.';
 
   @override
-  String get authIdentifierLabel => 'Email or phone';
-
-  @override
   String get authEmailLabel => 'Email';
 
   @override
@@ -9148,7 +9145,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authLoginActionLabel => 'Sign in';
 
   @override
-  String get authCreateAccountActionLabel => 'Create account';
+  String get authCreateAccountActionLabel => 'Register';
+
+  @override
+  String get authIdentifierModeLabel => 'Sign in with';
+
+  @override
+  String get authIdentifierModeEmailLabel => 'Email';
+
+  @override
+  String get authIdentifierModePhoneLabel => 'Phone';
 
   @override
   String get authRegisterTitle => 'Set up your facility';
@@ -9161,7 +9167,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authRegisterActionLabel => 'Create account';
 
   @override
-  String get authBackToLoginActionLabel => 'Back to sign in';
+  String get authBackToLoginActionLabel => 'Sign in';
 
   @override
   String get authHowToRegisterActionLabel => 'How to register';

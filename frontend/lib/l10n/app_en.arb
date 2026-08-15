@@ -11638,10 +11638,6 @@
   "@authLoginBody": {
     "description": "Authentication login page supporting text."
   },
-  "authIdentifierLabel": "Email or phone",
-  "@authIdentifierLabel": {
-    "description": "Login identifier field label."
-  },
   "authEmailLabel": "Email",
   "@authEmailLabel": {
     "description": "Email field label."
@@ -11662,9 +11658,21 @@
   "@authLoginActionLabel": {
     "description": "Login submit action label."
   },
-  "authCreateAccountActionLabel": "Create account",
+  "authCreateAccountActionLabel": "Register",
   "@authCreateAccountActionLabel": {
     "description": "Navigate to self-registration action label."
+  },
+  "authIdentifierModeLabel": "Sign in with",
+  "@authIdentifierModeLabel": {
+    "description": "Label for the login identifier type selector (email or phone)."
+  },
+  "authIdentifierModeEmailLabel": "Email",
+  "@authIdentifierModeEmailLabel": {
+    "description": "Login identifier selector option for signing in with an email address."
+  },
+  "authIdentifierModePhoneLabel": "Phone",
+  "@authIdentifierModePhoneLabel": {
+    "description": "Login identifier selector option for signing in with a phone number."
   },
   "authRegisterTitle": "Set up your facility",
   "@authRegisterTitle": {
@@ -11678,7 +11686,7 @@
   "@authRegisterActionLabel": {
     "description": "Self-registration submit action label."
   },
-  "authBackToLoginActionLabel": "Back to sign in",
+  "authBackToLoginActionLabel": "Sign in",
   "@authBackToLoginActionLabel": {
     "description": "Navigate back to login action label."
   },

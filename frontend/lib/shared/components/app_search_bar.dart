@@ -599,6 +599,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
         children: <Widget>[
           if (canClear)
             AppActionLabelScope(
+              key: const ValueKey<String>('app-search-bar-clear'),
               showLabels: false,
               forceIconOnly: true,
               child: AppButton(
@@ -611,7 +612,10 @@ class _AppSearchBarState extends State<AppSearchBar> {
               ),
             ),
           if (showSpeech)
+            // Keyed so the clear action appearing mid-dictation does not
+            // rebuild this element at a new index and cancel the session.
             AppSpeechToTextButton(
+              key: const ValueKey<String>('app-search-bar-speech'),
               controller: widget.controller,
               enabled: widget.enabled && !widget.isLoading,
               dense: true,

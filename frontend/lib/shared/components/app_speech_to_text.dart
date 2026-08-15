@@ -58,25 +58,60 @@ final class SpeechToTextAppSpeechRecognizer implements AppSpeechRecognizer {
 
   final SpeechToText _speech;
   bool _initialized = false;
+  Future<AppSpeechInitStatus>? _pendingInit;
   AppSpeechInitStatus _lastStatus = AppSpeechInitStatus.unavailable;
+  void Function(String status)? _lifecycleStatusListener;
+  void Function(String error)? _lifecycleErrorListener;
+  void Function(String status)? _sessionStatusListener;
+  void Function(String error)? _sessionErrorListener;
 
   @override
   bool get isListening => _speech.isListening;
+
+  void _dispatchStatus(String status) {
+    _lifecycleStatusListener?.call(status);
+    _sessionStatusListener?.call(status);
+  }
+
+  void _dispatchError(String error) {
+    _lifecycleErrorListener?.call(error);
+    _sessionErrorListener?.call(error);
+  }
 
   @override
   Future<AppSpeechInitStatus> ensureReady({
     void Function(String status)? onStatus,
     void Function(String error)? onError,
   }) async {
+    _lifecycleStatusListener = onStatus;
+    _lifecycleErrorListener = onError;
     if (_initialized && _lastStatus == AppSpeechInitStatus.ready) {
       return AppSpeechInitStatus.ready;
     }
-
+    // Every speech button warms up on its first frame; without this a screen
+    // full of fields would run `initialize` concurrently, and each call
+    // re-registers the platform recognizer.
+    final Future<AppSpeechInitStatus>? pending = _pendingInit;
+    if (pending != null) {
+      return pending;
+    }
+    final Future<AppSpeechInitStatus> init = _initialize();
+    _pendingInit = init;
     try {
+      return await init;
+    } finally {
+      _pendingInit = null;
+    }
+  }
+
+  Future<AppSpeechInitStatus> _initialize() async {
+    try {
+      // The plugin only accepts status/error handlers at initialize time, so
+      // they fan out through fields that each listen session can swap.
       final bool available = await _speech.initialize(
-        onStatus: onStatus,
+        onStatus: _dispatchStatus,
         onError: (error) {
-          onError?.call(error.errorMsg);
+          _dispatchError(error.errorMsg);
         },
       );
       if (!available) {
@@ -91,7 +126,7 @@ final class SpeechToTextAppSpeechRecognizer implements AppSpeechRecognizer {
       _lastStatus = AppSpeechInitStatus.ready;
       return _lastStatus;
     } on Object catch (error) {
-      onError?.call(error.toString());
+      _dispatchError(error.toString());
       _lastStatus = AppSpeechInitStatus.unavailable;
       _initialized = true;
       return _lastStatus;
@@ -104,6 +139,8 @@ final class SpeechToTextAppSpeechRecognizer implements AppSpeechRecognizer {
     void Function(String status)? onStatus,
     void Function(String error)? onError,
   }) async {
+    _sessionStatusListener = onStatus;
+    _sessionErrorListener = onError;
     await _speech.listen(
       onResult: (result) {
         onResult(result.recognizedWords, isFinal: result.finalResult);
@@ -116,10 +153,18 @@ final class SpeechToTextAppSpeechRecognizer implements AppSpeechRecognizer {
   }
 
   @override
-  Future<void> stopListening() => _speech.stop();
+  Future<void> stopListening() async {
+    _sessionStatusListener = null;
+    _sessionErrorListener = null;
+    await _speech.stop();
+  }
 
   @override
-  Future<void> cancelListening() => _speech.cancel();
+  Future<void> cancelListening() async {
+    _sessionStatusListener = null;
+    _sessionErrorListener = null;
+    await _speech.cancel();
+  }
 }
 
 /// Inserts [transcript] at the current selection/caret of [controller].
@@ -139,6 +184,47 @@ void insertSpeechTranscript(
     text: next,
     selection: TextSelection.collapsed(offset: caret.clamp(0, next.length)),
   );
+}
+
+/// Folds a freshly recognized [segment] into the text already dictated in this
+/// session.
+///
+/// Platform recognizers disagree about what each callback carries: some resend
+/// the whole utterance so far, some resend a final that was already delivered,
+/// and some emit only the new phrase. Appending blindly duplicates text in the
+/// first two cases, so overlapping content is absorbed instead of repeated.
+/// [separator] is empty for digit / email style fields where a space would
+/// corrupt the value.
+String mergeSpeechSegments(
+  String committed,
+  String segment, {
+  String separator = ' ',
+}) {
+  if (committed.isEmpty) {
+    return segment;
+  }
+  if (segment.isEmpty) {
+    return committed;
+  }
+  // Recognizer resent the running utterance (web/iOS accumulate).
+  if (segment.startsWith(committed)) {
+    return segment;
+  }
+  // Recognizer resent a phrase that is already committed (duplicate final).
+  if (committed.endsWith(segment)) {
+    return committed;
+  }
+  if (separator.isEmpty ||
+      committed.endsWith(separator) ||
+      segment.startsWith(separator)) {
+    return '$committed$segment';
+  }
+  return '$committed$separator$segment';
+}
+
+/// Separator used when joining dictated phrases for a backend format mode.
+String appSpeechSegmentSeparatorForFormatMode(String aiFormatMode) {
+  return aiFormatMode == 'text' ? ' ' : '';
 }
 
 ({String prefix, String suffix}) captureSpeechSessionBounds(
@@ -1281,6 +1367,13 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
   Object? _activeOwner;
   String _sessionPrefix = '';
   String _sessionSuffix = '';
+
+  /// Phrases already finalized in this session, as written into the span.
+  String _sessionCommitted = '';
+
+  /// What currently occupies the span (committed phrases plus the live one).
+  String _sessionSpan = '';
+  String _sessionSeparator = ' ';
   AppSpeechInitStatus _initStatus = AppSpeechInitStatus.unavailable;
   String? _lastError;
   int _formatGeneration = 0;
@@ -1335,6 +1428,7 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
     String aiFormatMode = 'text',
     String? aiFormatHint,
     String? locale,
+    String segmentSeparator = ' ',
   }) async {
     var stoppedOther = false;
     if (_activeOwner != null && _activeOwner != owner) {
@@ -1352,6 +1446,9 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
         captureSpeechSessionBounds(controller);
     _sessionPrefix = bounds.prefix;
     _sessionSuffix = bounds.suffix;
+    _sessionCommitted = '';
+    _sessionSpan = '';
+    _sessionSeparator = segmentSeparator;
     _activeOwner = owner;
     _lastError = null;
     notifyListeners();
@@ -1362,27 +1459,36 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
           if (_activeOwner != owner) {
             return;
           }
-          _cancelInFlightFormat();
-          final String formatPrefix = _sessionPrefix;
-          final String formatSuffix = _sessionSuffix;
           final String transcript =
               (transcriptTransform ?? appSpeechTextTranscript).call(words);
-          _deliverTranscript(
+          final String committedBefore = _sessionCommitted;
+          final String span = mergeSpeechSegments(
+            committedBefore,
+            transcript,
+            separator: _sessionSeparator,
+          );
+          if (span == _sessionSpan && !isFinal) {
+            // Recognizer repeated a partial it already delivered.
+            return;
+          }
+          _cancelInFlightFormat();
+          _deliverSpan(
             owner: owner,
             controller: controller,
-            transcript: transcript,
+            span: span,
             onChanged: onChanged,
             onSpeechResult: onSpeechResult,
             isFinal: isFinal,
           );
           if (isFinal) {
+            _sessionCommitted = span;
             unawaited(
               _formatFinalTranscript(
                 owner: owner,
                 controller: controller,
                 transcript: transcript,
-                formatPrefix: formatPrefix,
-                formatSuffix: formatSuffix,
+                committedBefore: committedBefore,
+                unformattedSpan: span,
                 onChanged: onChanged,
                 onSpeechResult: onSpeechResult,
                 aiFormatter: aiFormatter,
@@ -1397,7 +1503,7 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
         onStatus: (String status) {
           if (status == 'done' || status == 'notListening') {
             if (_activeOwner == owner && !_recognizer.isListening) {
-              _activeOwner = null;
+              _endSession();
               notifyListeners();
             }
           } else {
@@ -1407,14 +1513,14 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
         onError: (String error) {
           _lastError = error;
           if (_activeOwner == owner) {
-            _activeOwner = null;
+            _endSession();
           }
           notifyListeners();
         },
       );
     } on Object catch (error) {
       _lastError = error.toString();
-      _activeOwner = null;
+      _endSession();
       notifyListeners();
       return (started: false, stoppedOther: stoppedOther);
     }
@@ -1423,31 +1529,27 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
     return (started: true, stoppedOther: stoppedOther);
   }
 
-  void _deliverTranscript({
+  /// Rewrites the dictation span with [span] (everything spoken this session).
+  void _deliverSpan({
     required Object owner,
     required TextEditingController controller,
-    required String transcript,
+    required String span,
     required ValueChanged<String>? onChanged,
     required void Function(String transcript, {required bool isFinal})?
     onSpeechResult,
     required bool isFinal,
   }) {
+    _sessionSpan = span;
     if (onSpeechResult != null) {
-      onSpeechResult(transcript, isFinal: isFinal);
+      onSpeechResult(span, isFinal: isFinal);
     } else {
       insertSpeechTranscript(
         controller,
-        transcript,
+        span,
         sessionPrefix: _sessionPrefix,
         sessionSuffix: _sessionSuffix,
       );
       onChanged?.call(controller.text);
-      if (isFinal) {
-        final ({String prefix, String suffix}) nextBounds =
-            captureSpeechSessionBounds(controller);
-        _sessionPrefix = nextBounds.prefix;
-        _sessionSuffix = nextBounds.suffix;
-      }
     }
   }
 
@@ -1455,8 +1557,8 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
     required Object owner,
     required TextEditingController controller,
     required String transcript,
-    required String formatPrefix,
-    required String formatSuffix,
+    required String committedBefore,
+    required String unformattedSpan,
     required ValueChanged<String>? onChanged,
     required void Function(String transcript, {required bool isFinal})?
     onSpeechResult,
@@ -1475,7 +1577,8 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
     _formattingOwner = owner;
     notifyListeners();
 
-    final String expected = '$formatPrefix$transcript$formatSuffix';
+    final String expected =
+        '$_sessionPrefix$unformattedSpan$_sessionSuffix';
     String? formatted;
     try {
       formatted = await aiFormatter(
@@ -1505,12 +1608,18 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
       return;
     }
 
-    _sessionPrefix = formatPrefix;
-    _sessionSuffix = formatSuffix;
-    _deliverTranscript(
+    // Swap the raw phrase for the formatted one without disturbing phrases
+    // that were already committed earlier in this session.
+    final String span = mergeSpeechSegments(
+      committedBefore,
+      next,
+      separator: _sessionSeparator,
+    );
+    _sessionCommitted = span;
+    _deliverSpan(
       owner: owner,
       controller: controller,
-      transcript: next,
+      span: span,
       onChanged: onChanged,
       onSpeechResult: onSpeechResult,
       isFinal: true,
@@ -1528,7 +1637,7 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
       // Best-effort stop on dispose/disable.
     }
     _cancelInFlightFormat();
-    _activeOwner = null;
+    _endSession();
     notifyListeners();
   }
 
@@ -1542,8 +1651,15 @@ final class AppSpeechToTextCoordinator extends ChangeNotifier {
       // Best-effort cancel.
     }
     _cancelInFlightFormat();
-    _activeOwner = null;
+    _endSession();
     notifyListeners();
+  }
+
+  /// Drops session state so the next [start] anchors on a fresh caret span.
+  void _endSession() {
+    _activeOwner = null;
+    _sessionCommitted = '';
+    _sessionSpan = '';
   }
 }
 
@@ -1705,6 +1821,9 @@ class _AppSpeechToTextButtonState extends ConsumerState<AppSpeechToTextButton> {
       aiFormatter: widget.aiFormatter ?? ref.read(aiSpeechFormatterProvider),
       aiFormatMode: widget.aiFormatMode,
       aiFormatHint: widget.aiFormatHint,
+      segmentSeparator: appSpeechSegmentSeparatorForFormatMode(
+        widget.aiFormatMode,
+      ),
     );
     if (!mounted) {
       return;
