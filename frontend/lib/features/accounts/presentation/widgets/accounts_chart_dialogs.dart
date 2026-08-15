@@ -133,7 +133,7 @@ class _AccountsChartAccountDialogState
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _codeController;
   late final TextEditingController _nameController;
-  late final TextEditingController _currencyController;
+  late String _currency;
   late String _accountType;
   String? _parentId;
   late bool _isActive;
@@ -148,9 +148,9 @@ class _AccountsChartAccountDialogState
     final AccountsChartAccount? editing = widget.editing;
     _codeController = TextEditingController(text: editing?.code ?? '');
     _nameController = TextEditingController(text: editing?.name ?? '');
-    _currencyController = TextEditingController(
-      text: editing?.currency ?? 'UGX',
-    );
+    _currency = (editing?.currency ?? '').trim().isEmpty
+        ? appDefaultCurrencyCode
+        : editing!.currency.trim().toUpperCase();
     _accountType = editing?.accountType.isNotEmpty == true
         ? editing!.accountType
         : 'ASSET';
@@ -163,7 +163,6 @@ class _AccountsChartAccountDialogState
   void dispose() {
     _codeController.dispose();
     _nameController.dispose();
-    _currencyController.dispose();
     super.dispose();
   }
 
@@ -271,12 +270,14 @@ class _AccountsChartAccountDialogState
               });
             },
           ),
-          AppTextField(
-            controller: _currencyController,
+          // Currency is resolved and formatted by the shared currency stack;
+          // never a free-text code.
+          AppCurrencySelectField(
+            value: _currency,
             labelText: AccountsStrings.chartCurrencyLabel,
             isRequired: true,
-            validator: AppValidators.requiredText(
-              AccountsStrings.chartCurrencyRequired,
+            onChanged: (String? value) => setState(
+              () => _currency = value ?? _currency,
             ),
           ),
           AppDateField(
@@ -339,7 +340,7 @@ class _AccountsChartAccountDialogState
       'name': _nameController.text.trim(),
       'account_type': _accountType,
       'parent_id': _parentId,
-      'currency': _currencyController.text.trim().toUpperCase(),
+      'currency': _currency.trim().toUpperCase(),
       'effective_from': _effectiveFrom?.toUtc().toIso8601String(),
       'is_active': _isActive,
     };
