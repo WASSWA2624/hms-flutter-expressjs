@@ -9,7 +9,6 @@ import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
-import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_list_table_column_layout_memory.dart';
@@ -758,6 +757,14 @@ final class AppListTableSearch<T> {
 /// overflow the real layout by a hairline.
 const double _actionBarFitSlack = 2;
 
+/// Height of the compact action buttons under the search bar. Matches the
+/// search-bar chrome buttons so the row costs as little vertical space as
+/// possible.
+const double _actionBarButtonHeight = 32;
+
+/// Icon size inside those buttons (search-bar chrome parity).
+const double _actionBarIconSize = 18;
+
 /// Caller actions ([AppListTableSearch.trailingActions]) laid out under the
 /// search bar.
 ///
@@ -777,23 +784,18 @@ class _AppListTableActionBar extends StatelessWidget {
     }
 
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colors = theme.colorScheme;
     final AppSpacingTokens spacing = theme.spacing;
     final double gap = spacing.xs;
-    final double iconSize = theme.appTokens.listIconSize;
-    final TextStyle labelStyle =
-        (theme.textTheme.labelLarge ?? const TextStyle()).copyWith(
-          fontWeight: AppFontWeight.emphasis,
-          fontSize: 14,
-        );
+    final TextStyle labelStyle = _labelStyle(theme);
     final TextScaler textScaler = MediaQuery.textScalerOf(context);
     final TextDirection textDirection = Directionality.of(context);
 
-    // Mirrors dense [AppButton] metrics so the fit test matches what is painted:
-    // icon-only is a square tap target, labelled is padding + icon + gap + text.
+    // Mirrors [_AppListTableActionButton] metrics so the fit test matches what
+    // is painted: icon-only is a square tap target, labelled is padding + icon
+    // + gap + text.
     final double iconOnlyWidth = math.max(
-      math.max(theme.appTokens.minInteractiveDimension, iconSize + spacing.sm),
-      iconSize + spacing.xs * 2,
+      _actionBarButtonHeight,
+      _actionBarIconSize + spacing.xs * 2,
     );
     final List<double> iconWidths = List<double>.filled(
       actions.length,
@@ -801,8 +803,9 @@ class _AppListTableActionBar extends StatelessWidget {
     );
     final List<double> labeledWidths = <double>[
       for (final AppSearchBarAction action in actions)
-        spacing.sm * 3 +
-            iconSize +
+        spacing.sm * 2 +
+            _actionBarIconSize +
+            spacing.xs +
             _labelWidth(action.label, labelStyle, textScaler, textDirection) +
             _actionBarFitSlack,
     ];
@@ -819,34 +822,25 @@ class _AppListTableActionBar extends StatelessWidget {
         final bool showLabels =
             layout == AppListTableActionBarLayout.labeledRow;
 
-        return AppActionLabelScope(
-          showLabels: showLabels,
-          forceIconOnly: !showLabels,
-          dense: true,
-          child: Wrap(
-            spacing: gap,
-            runSpacing: gap,
-            children: <Widget>[
-              for (final AppSearchBarAction action in actions)
-                AppButton.secondary(
-                  label: action.label,
-                  leadingIcon: action.icon,
-                  tooltip: action.tooltip ?? action.label,
-                  semanticLabel: action.label,
-                  dense: true,
-                  iconOnly: !showLabels,
-                  color: action.destructive
-                      ? colors.error
-                      : action.active
-                      ? colors.primary
-                      : null,
-                  enabled: enabled && action.enabled,
-                  onPressed: action.onPressed,
-                ),
-            ],
-          ),
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: <Widget>[
+            for (final AppSearchBarAction action in actions)
+              _AppListTableActionButton(
+                action: action,
+                showLabel: showLabels,
+                enabled: enabled && action.enabled,
+              ),
+          ],
         );
       },
+    );
+  }
+
+  static TextStyle _labelStyle(ThemeData theme) {
+    return (theme.textTheme.labelMedium ?? const TextStyle()).copyWith(
+      fontWeight: AppFontWeight.emphasis,
     );
   }
 
@@ -865,6 +859,97 @@ class _AppListTableActionBar extends StatelessWidget {
     final double width = painter.width;
     painter.dispose();
     return width;
+  }
+}
+
+/// Compact action chrome for [_AppListTableActionBar].
+///
+/// Deliberately smaller than [AppButton]: the row sits between the search bar
+/// and the table, so it is kept to [_actionBarButtonHeight] with no vertical
+/// padding of its own.
+class _AppListTableActionButton extends StatelessWidget {
+  const _AppListTableActionButton({
+    required this.action,
+    required this.showLabel,
+    required this.enabled,
+  });
+
+  final AppSearchBarAction action;
+  final bool showLabel;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final AppSpacingTokens spacing = theme.spacing;
+    final bool canPress = enabled && action.onPressed != null;
+    final Color foreground = action.destructive
+        ? colorScheme.error
+        : action.active
+        ? colorScheme.primary
+        : colorScheme.onSurfaceVariant;
+    final String tooltip = action.tooltip ?? action.label;
+
+    final Widget button = TextButton(
+      onPressed: canPress ? action.onPressed : null,
+      // Flat chrome, like the search-bar actions: no fill, no border.
+      style: TextButton.styleFrom(
+        foregroundColor: foreground,
+        disabledForegroundColor: colorScheme.onSurface.withValues(alpha: 0.38),
+        backgroundColor: Colors.transparent,
+        padding: EdgeInsets.symmetric(
+          horizontal: showLabel ? spacing.sm : spacing.xs,
+        ),
+        minimumSize: Size(
+          showLabel ? spacing.none : _actionBarButtonHeight,
+          _actionBarButtonHeight,
+        ),
+        maximumSize: const Size(double.infinity, _actionBarButtonHeight),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        // Standard density keeps the painted height equal to the measured
+        // [_actionBarButtonHeight]; a denser theme would shrink it further and
+        // desync the one-row fit test.
+        visualDensity: VisualDensity.standard,
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        side: BorderSide.none,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(
+            context.responsiveRadius(theme.radius.xs),
+          ),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(action.icon, size: _actionBarIconSize),
+          if (showLabel) ...<Widget>[
+            SizedBox(width: spacing.xs),
+            Text(
+              action.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+              style: _AppListTableActionBar._labelStyle(
+                theme,
+              ).copyWith(color: canPress ? foreground : null),
+            ),
+          ],
+        ],
+      ),
+    );
+
+    return Tooltip(
+      message: tooltip,
+      child: Semantics(
+        button: true,
+        enabled: canPress,
+        label: action.label,
+        child: button,
+      ),
+    );
   }
 }
 
@@ -1196,9 +1281,13 @@ class _AppListTableMobileMetaRow extends StatelessWidget {
 ///
 /// Toolbar chrome is fixed: the search bar holds only speech-to-text, Filters,
 /// Settings, Export and Print. Caller actions
-/// ([AppListTableSearch.trailingActions]) are laid out in a wrapping row
-/// directly below the search bar — see [appListTableResolveActionBarLayout] for
-/// how that row picks icon-only vs icon+label.
+/// ([AppListTableSearch.trailingActions]) are laid out in a compact wrapping
+/// row directly below the search bar — see [appListTableResolveActionBarLayout]
+/// for how that row picks icon-only vs icon+label.
+///
+/// Search bar, action row, and rows scroll together as one body; only the
+/// footer (status / pagination + go-to-top) stays pinned. Tables with a
+/// toolbar therefore mount rows progressively instead of virtualizing them.
 class AppListTable<T> extends StatefulWidget {
   const AppListTable({
     required this.columns,
@@ -1269,7 +1358,6 @@ class AppListTable<T> extends StatefulWidget {
     this.enableColumnResize = true,
     this.tableHorizontalMargin,
     this.toolbarContentGap,
-    this.pinToolbar = true,
     this.showRowNumbers = true,
     this.padEmptyRows,
     this.surfaceHeader,
@@ -1391,11 +1479,6 @@ class AppListTable<T> extends StatefulWidget {
   /// content padding).
   final double? toolbarContentGap;
 
-  /// When true (default), the search/toolbar stays pinned above the scrolling
-  /// table body (main-tab lists). When false, the toolbar scrolls away with
-  /// the rows while the footer stays pinned—prefer this for dialog embeds.
-  final bool pinToolbar;
-
   /// When false, hides the leading `#` index column (desktop and mobile).
   final bool showRowNumbers;
 
@@ -1445,6 +1528,9 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
   int _lastSeenItemsLength = -1;
   final _AppListTableGoToTopController _goToTopController =
       _AppListTableGoToTopController();
+
+  /// Drives the single scroll view that carries toolbar + rows together.
+  final ScrollController _toolbarScrollController = ScrollController();
 
   @override
   void initState() {
@@ -1550,6 +1636,7 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       _handleColumnVisibilityChanged,
     );
     _goToTopController.dispose();
+    _toolbarScrollController.dispose();
     super.dispose();
   }
 
@@ -1869,14 +1956,10 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
       query,
       usesExternalSearchListenable: usesExternalSearchListenable,
     );
-    final Widget content = _wrapIncrementalScroll(
+    final Widget content = _buildForItems(
       context,
-      totalSortedCount: data.totalSortedCount,
-      child: _buildForItems(
-        context,
-        data.items,
-        rowNumberOffset: data.rowNumberOffset,
-      ),
+      data.items,
+      rowNumberOffset: data.rowNumberOffset,
     );
     final ThemeData theme = Theme.of(context);
     final bool loadingMore = _isLoadingMore(data.items.length);
@@ -1910,40 +1993,44 @@ class _AppListTableState<T> extends State<AppListTable<T>> {
 
         final double toolbarGap =
             widget.toolbarContentGap ?? theme.spacing.xs;
-        final bool pinToolbar = widget.pinToolbar || toolbar == null;
-        final Widget body;
-        if (pinToolbar) {
-          body = content;
-        } else {
-          // Unbounded height under a parent scroll view so search + rows share
-          // one vertical scroll while the footer stays pinned below.
-          final Widget scrollChild = Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              toolbar,
-              if (toolbarGap > 0) SizedBox(height: toolbarGap),
-              content,
-            ],
-          );
-          body = canExpand
+        // Search bar and the action row below it are part of the scrolling
+        // body, never pinned above it: the whole table scrolls as one. Only
+        // the footer (status / pagination + go-to-top) stays put.
+        final Widget scrollChild = toolbar == null
+            ? content
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  toolbar,
+                  if (toolbarGap > 0) SizedBox(height: toolbarGap),
+                  content,
+                ],
+              );
+        // With a toolbar the rows cannot own the vertical scroll (they would
+        // scroll under a stationary search bar), so one scroll view wraps the
+        // whole stack. Without one, the table body keeps its virtualized
+        // scroller.
+        final Widget body = _wrapIncrementalScroll(
+          context,
+          totalSortedCount: data.totalSortedCount,
+          child: canExpand && toolbar != null
               ? Scrollbar(
+                  controller: _toolbarScrollController,
                   child: SingleChildScrollView(
+                    controller: _toolbarScrollController,
+                    primary: false,
                     keyboardDismissBehavior:
                         ScrollViewKeyboardDismissBehavior.onDrag,
                     child: scrollChild,
                   ),
                 )
-              : scrollChild;
-        }
+              : scrollChild,
+        );
         return Column(
           mainAxisSize: canExpand ? MainAxisSize.max : MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            if (pinToolbar && toolbar != null) ...<Widget>[
-              toolbar,
-              if (toolbarGap > 0) SizedBox(height: toolbarGap),
-            ],
             if (canExpand) Expanded(child: body) else body,
             footer,
           ],

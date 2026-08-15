@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -15,7 +15,6 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
-import 'package:hosspi_hms/shared/layout/layout.dart';
 
 /// Bumped after chart create / update / deactivate so Journal create and GL
 /// can refresh chart-backed account lists.
@@ -31,9 +30,8 @@ String accountsChartTypeLabel(String accountType) {
     'EQUITY' => AccountsStrings.chartTypeEquity,
     'REVENUE' => AccountsStrings.chartTypeRevenue,
     'EXPENSE' => AccountsStrings.chartTypeExpense,
-    _ => accountType.trim().isEmpty
-        ? AccountsStrings.unknownValue
-        : accountType,
+    _ =>
+      accountType.trim().isEmpty ? AccountsStrings.unknownValue : accountType,
   };
 }
 
@@ -66,50 +64,44 @@ Future<AccountsChartDialogResult> showAccountsChartAccountDialog({
   if (!canWriteAccountsChart(ref.read(appAccessPolicyProvider))) {
     return const AccountsChartDialogResult.cancelled();
   }
-  final AccountsChartDialogResult? result =
-      await showAppWorkspaceActionDialog<AccountsChartDialogResult>(
-        context: context,
-        title: Text(
-          editing == null
-              ? AccountsStrings.chartAddTitle
-              : AccountsStrings.chartEditTitle,
-        ),
-        content: _AccountsChartAccountDialog(
-          editing: editing,
-          parentChoices: parentChoices,
-          onSubmit: (Map<String, Object?> payload) async {
+  // The form owns the dialog so Close/Save live in the pinned footer rather
+  // than scrolling away inside the body (`prompts/.cursor/dialogs.mdc`).
+  final AccountsChartDialogResult?
+  result = await showAppDialog<AccountsChartDialogResult>(
+    context: context,
+    builder: (BuildContext dialogContext) => _AccountsChartAccountDialog(
+      editing: editing,
+      parentChoices: parentChoices,
+      onSubmit: (Map<String, Object?> payload) async {
+        final repo = ref.read(accountsChartRepositoryProvider);
+        if (editing == null) {
+          final createResult = await repo.createAccount(payload);
+          return createResult.when(
+            success: (_) async => null,
+            failure: (AppFailure failure) async => failure,
+          );
+        }
+        final updateResult = await repo.updateAccount(editing.id, payload);
+        return updateResult.when(
+          success: (_) async => null,
+          failure: (AppFailure failure) async => failure,
+        );
+      },
+      onOverwrite:
+          (AccountsChartAccount target, Map<String, Object?> payload) async {
             final repo = ref.read(accountsChartRepositoryProvider);
-            if (editing == null) {
-              final createResult = await repo.createAccount(payload);
-              return createResult.when(
-                success: (_) async => null,
-                failure: (AppFailure failure) async => failure,
-              );
-            }
-            final updateResult = await repo.updateAccount(editing.id, payload);
+            final updateResult = await repo.updateAccount(target.id, payload);
             return updateResult.when(
               success: (_) async => null,
               failure: (AppFailure failure) async => failure,
             );
           },
-          onOverwrite:
-              (AccountsChartAccount target, Map<String, Object?> payload) async {
-                final repo = ref.read(accountsChartRepositoryProvider);
-                final updateResult = await repo.updateAccount(
-                  target.id,
-                  payload,
-                );
-                return updateResult.when(
-                  success: (_) async => null,
-                  failure: (AppFailure failure) async => failure,
-                );
-              },
-        ),
-      );
+    ),
+  );
   if (result?.saved == true) {
     ref
-            .read<StateController<int>>(accountsChartRevisionProvider.notifier)
-            .state++;
+        .read<StateController<int>>(accountsChartRevisionProvider.notifier)
+        .state++;
   }
   return result ?? const AccountsChartDialogResult.cancelled();
 }
@@ -210,101 +202,111 @@ class _AccountsChartAccountDialogState
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    return AppFormShell(
-      formKey: _formKey,
-      formStatus: appFormFailureStatus(context, _failure),
-      children: <Widget>[
-        AppTextField(
-          controller: _codeController,
-          labelText: AccountsStrings.chartCodeLabel,
-          isRequired: true,
-          validator: AppValidators.requiredText(
-            AccountsStrings.chartCodeRequired,
+    return AppDialog(
+      title: Text(
+        widget.editing == null
+            ? AccountsStrings.chartAddTitle
+            : AccountsStrings.chartEditTitle,
+      ),
+      icon: const Icon(Icons.list_alt_outlined),
+      scrollable: true,
+      pinActionsToBottom: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        formStatus: appFormFailureStatus(context, _failure),
+        children: <Widget>[
+          AppTextField(
+            controller: _codeController,
+            labelText: AccountsStrings.chartCodeLabel,
+            isRequired: true,
+            validator: AppValidators.requiredText(
+              AccountsStrings.chartCodeRequired,
+            ),
           ),
-        ),
-        AppTextField(
-          controller: _nameController,
-          labelText: AccountsStrings.chartNameLabel,
-          isRequired: true,
-          validator: AppValidators.requiredText(
-            AccountsStrings.chartNameRequired,
+          AppTextField(
+            controller: _nameController,
+            labelText: AccountsStrings.chartNameLabel,
+            isRequired: true,
+            validator: AppValidators.requiredText(
+              AccountsStrings.chartNameRequired,
+            ),
           ),
-        ),
-        AppSelectField<String>(
-          value: _accountType,
-          labelText: AccountsStrings.chartTypeLabel,
-          options: <AppSelectOption<String>>[
-            AppSelectOption<String>(
-              value: 'ASSET',
-              label: AccountsStrings.chartTypeAsset,
-            ),
-            AppSelectOption<String>(
-              value: 'LIABILITY',
-              label: AccountsStrings.chartTypeLiability,
-            ),
-            AppSelectOption<String>(
-              value: 'EQUITY',
-              label: AccountsStrings.chartTypeEquity,
-            ),
-            AppSelectOption<String>(
-              value: 'REVENUE',
-              label: AccountsStrings.chartTypeRevenue,
-            ),
-            AppSelectOption<String>(
-              value: 'EXPENSE',
-              label: AccountsStrings.chartTypeExpense,
-            ),
-          ],
-          onChanged: (String? value) {
-            setState(() => _accountType = value ?? _accountType);
-          },
-        ),
-        AppSelectField<String>(
-          value: _parentId ?? '',
-          labelText: AccountsStrings.chartParentLabel,
-          options: _parentOptions,
-          onChanged: (String? value) {
-            setState(() {
-              final String next = (value ?? '').trim();
-              _parentId = next.isEmpty ? null : next;
-            });
-          },
-        ),
-        AppTextField(
-          controller: _currencyController,
-          labelText: AccountsStrings.chartCurrencyLabel,
-          isRequired: true,
-          validator: AppValidators.requiredText(
-            AccountsStrings.chartCurrencyRequired,
+          AppSelectField<String>(
+            value: _accountType,
+            labelText: AccountsStrings.chartTypeLabel,
+            options: <AppSelectOption<String>>[
+              AppSelectOption<String>(
+                value: 'ASSET',
+                label: AccountsStrings.chartTypeAsset,
+              ),
+              AppSelectOption<String>(
+                value: 'LIABILITY',
+                label: AccountsStrings.chartTypeLiability,
+              ),
+              AppSelectOption<String>(
+                value: 'EQUITY',
+                label: AccountsStrings.chartTypeEquity,
+              ),
+              AppSelectOption<String>(
+                value: 'REVENUE',
+                label: AccountsStrings.chartTypeRevenue,
+              ),
+              AppSelectOption<String>(
+                value: 'EXPENSE',
+                label: AccountsStrings.chartTypeExpense,
+              ),
+            ],
+            onChanged: (String? value) {
+              setState(() => _accountType = value ?? _accountType);
+            },
           ),
-        ),
-        AppDateField(
-          value: _effectiveFrom,
-          labelText: AccountsStrings.chartEffectiveLabel,
-          pickerButtonLabel: l10n.housekeepingPickDateAction,
-          invalidDateMessage: AccountsStrings.chartEffectiveLabel,
-          firstDate: DateTime(2000),
-          lastDate: DateTime(2100),
-          onChanged: (DateTime? value) {
-            setState(() => _effectiveFrom = value);
-          },
-        ),
-        AppSwitchField(
-          value: _isActive,
-          title: AccountsStrings.chartActiveLabel,
-          onChanged: (bool value) => setState(() => _isActive = value),
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: l10n.commonSaveActionLabel,
-          submitIcon: Icons.save_outlined,
-          isSubmitting: _isSubmitting,
-          onCancel: () => Navigator.of(
-            context,
-          ).pop(const AccountsChartDialogResult.cancelled()),
-          onSubmit: _submit,
-        ),
-      ],
+          AppSelectField<String>(
+            value: _parentId ?? '',
+            labelText: AccountsStrings.chartParentLabel,
+            options: _parentOptions,
+            onChanged: (String? value) {
+              setState(() {
+                final String next = (value ?? '').trim();
+                _parentId = next.isEmpty ? null : next;
+              });
+            },
+          ),
+          AppTextField(
+            controller: _currencyController,
+            labelText: AccountsStrings.chartCurrencyLabel,
+            isRequired: true,
+            validator: AppValidators.requiredText(
+              AccountsStrings.chartCurrencyRequired,
+            ),
+          ),
+          AppDateField(
+            value: _effectiveFrom,
+            labelText: AccountsStrings.chartEffectiveLabel,
+            pickerButtonLabel: l10n.housekeepingPickDateAction,
+            invalidDateMessage: AccountsStrings.chartEffectiveLabel,
+            firstDate: DateTime(2000),
+            lastDate: DateTime(2100),
+            onChanged: (DateTime? value) {
+              setState(() => _effectiveFrom = value);
+            },
+          ),
+          AppSwitchField(
+            value: _isActive,
+            title: AccountsStrings.chartActiveLabel,
+            onChanged: (bool value) => setState(() => _isActive = value),
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: l10n.commonCancelActionLabel,
+        submitLabel: l10n.commonSaveActionLabel,
+        submitIcon: Icons.save_outlined,
+        isSubmitting: _isSubmitting,
+        onCancel: () => Navigator.of(
+          context,
+        ).pop(const AccountsChartDialogResult.cancelled()),
+        onSubmit: _submit,
+      ),
     );
   }
 

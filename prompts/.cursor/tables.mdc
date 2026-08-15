@@ -17,10 +17,11 @@ Cross-cutting: [localization.mdc](localization.mdc), [theming.mdc](theming.mdc),
    2. **Settings**
    3. **Export**
    4. **Print** (only when printing is allowed for that table)
-3. **Context actions below the bar:** Context-specific actions (Create, Assign, etc.) never sit in the search bar. Pass them as `AppListTableSearch.trailingActions`; `AppListTable` lays them out in its own row directly under the search bar, packed left to right and wrapping onto further rows only when needed.
+3. **Context actions below the bar:** Context-specific actions (Create, Assign, etc.) never sit in the search bar. Pass them as `AppListTableSearch.trailingActions`; `AppListTable` lays them out in its own row directly under the search bar, packed left to right and wrapping onto further rows only when needed. That row is deliberately compact — flat chrome (no border, no fill), 32dp tall — so it costs as little vertical space as possible.
 4. **Labels:** Use exactly `Filters`, `Settings`, `Export`, and `Print`. Do not rename these shared actions per feature.
 5. **Responsive chrome:** Icon + label vs icon-only follows [responsiveness.mdc](responsiveness.mdc). The action row under the search bar prefers one row on every breakpoint: it keeps icon + label while the labelled buttons fit, drops to icon-only to stay on one row, and wraps only when even the icons overflow.
-6. **Print behavior:** preview, options, and shared print APIs are owned by [printing.mdc](printing.mdc); this file only fixes Print’s toolbar position.
+6. **One scroll:** search bar, action row, and rows scroll together as a single body — never a pinned toolbar over independently scrolling rows. Only the table footer (row status / pagination + go-to-top) stays put.
+7. **Print behavior:** preview, options, and shared print APIs are owned by [printing.mdc](printing.mdc); this file only fixes Print’s toolbar position.
 
 ## Filters
 

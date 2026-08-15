@@ -35631,6 +35631,34 @@
   "@accountsFiscalStatusLocked": {
     "description": "Marker shown when a fiscal period is past its lock date."
   },
+  "accountsFiscalModuleAll": "All modules",
+  "@accountsFiscalModuleAll": {
+    "description": "Fiscal period module scope: the period applies to every module."
+  },
+  "accountsFiscalModuleGeneralLedger": "General ledger",
+  "@accountsFiscalModuleGeneralLedger": {
+    "description": "Fiscal period module scope: general ledger only."
+  },
+  "accountsFiscalModuleBilling": "Billing",
+  "@accountsFiscalModuleBilling": {
+    "description": "Fiscal period module scope: billing only."
+  },
+  "accountsFiscalModulePharmacy": "Pharmacy",
+  "@accountsFiscalModulePharmacy": {
+    "description": "Fiscal period module scope: pharmacy only."
+  },
+  "accountsFiscalModuleInventory": "Inventory",
+  "@accountsFiscalModuleInventory": {
+    "description": "Fiscal period module scope: inventory only."
+  },
+  "accountsFiscalModulePayroll": "Payroll",
+  "@accountsFiscalModulePayroll": {
+    "description": "Fiscal period module scope: payroll only."
+  },
+  "accountsFiscalModuleFixedAssets": "Fixed assets",
+  "@accountsFiscalModuleFixedAssets": {
+    "description": "Fiscal period module scope: fixed assets only."
+  },
   "accountsFiscalDateRangeFilterLabel": "Period date range",
   "@accountsFiscalDateRangeFilterLabel": {
     "description": "Advanced filter label for the fiscal period date range."

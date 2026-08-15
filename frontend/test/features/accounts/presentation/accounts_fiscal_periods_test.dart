@@ -23,11 +23,13 @@ import 'package:hosspi_hms/features/accounts/presentation/pages/accounts_workspa
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_fiscal_period_dialogs.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_fiscal_periods_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_scope_navigation.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_en.dart';
 import 'package:hosspi_hms/shared/actions/app_action_dialogs.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
+import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -611,6 +613,94 @@ void main() {
       expect(find.text('December 2025'), findsWidgets);
       expect(find.text(_l10n.accountsFiscalArchiveAction), findsNothing);
       expect(find.text(_l10n.accountsFiscalViewAction), findsOneWidget);
+    });
+  });
+
+  group('create dialog chrome', () {
+    /// Opens the create dialog directly; the panel's New record action is
+    /// covered separately by the permission tests.
+    Future<void> openCreateDialog(WidgetTester tester) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+      final _MockFiscalPeriodRepository periods = _MockFiscalPeriodRepository();
+      _stubPeriods(periods, items: <AccountsFiscalPeriod>[_draftPeriod]);
+
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            accountsFiscalPeriodRepositoryProvider.overrideWithValue(periods),
+            sharedPreferencesProvider.overrideWithValue(preferences),
+            initialSessionStateProvider.overrideWithValue(
+              const SessionState.ready(),
+            ),
+            appAccessPolicyProvider.overrideWithValue(_writerPolicy),
+          ],
+          child: MaterialApp(
+            theme: AppTheme.light,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Consumer(
+              builder: (BuildContext context, WidgetRef ref, _) => Scaffold(
+                body: Center(
+                  child: TextButton(
+                    key: const Key('open-create'),
+                    onPressed: () => showAccountsFiscalPeriodDialog(
+                      context: context,
+                      ref: ref,
+                    ),
+                    child: const Text('open'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(const Key('open-create')));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('Close and Save sit in the pinned dialog footer', (
+      WidgetTester tester,
+    ) async {
+      await openCreateDialog(tester);
+
+      final AppDialog dialog = tester.widget<AppDialog>(
+        find.byType(AppDialog),
+      );
+
+      // Footer actions belong to the dialog, not the scrolling body.
+      expect(dialog.actions, hasLength(2));
+      expect(dialog.pinActionsToBottom, isTrue);
+      // The in-body variant is gone entirely from the open dialog.
+      expect(find.byType(AppFormActions), findsNothing);
+    });
+
+    testWidgets('Module is a controlled select, not a free-text field', (
+      WidgetTester tester,
+    ) async {
+      await openCreateDialog(tester);
+
+      final AppSelectField<String> moduleField = tester
+          .widget<AppSelectField<String>>(find.byType(AppSelectField<String>));
+      expect(moduleField.labelText, _l10n.accountsFiscalModuleColumn);
+      expect(moduleField.value, 'ALL');
+      expect(
+        moduleField.options.map((AppSelectOption<String> option) => option.value),
+        containsAll(accountsFiscalModuleWireValues),
+      );
+      // Options render localized labels, never the raw wire value.
+      expect(
+        moduleField.options.first.label,
+        _l10n.accountsFiscalModuleAll,
+      );
     });
   });
 

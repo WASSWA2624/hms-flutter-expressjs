@@ -24,7 +24,9 @@ final accountsFiscalPeriodRevisionProvider = StateProvider<int>((Ref ref) => 0);
 
 /// Filtered fiscal period count owned by the panel; null falls back to the
 /// workspace summary so the badge never reflects only the painted page.
-final accountsFiscalPeriodCountProvider = StateProvider<int?>((Ref ref) => null);
+final accountsFiscalPeriodCountProvider = StateProvider<int?>(
+  (Ref ref) => null,
+);
 
 enum AccountsFiscalPeriodDialogMode { create, edit, clone }
 
@@ -40,25 +42,21 @@ Future<bool> showAccountsFiscalPeriodDialog({
   if (!canWriteAccountsFiscalPeriods(ref.read(appAccessPolicyProvider))) {
     return false;
   }
-  final AppLocalizations l10n = context.l10n;
-  final String title = switch (mode) {
-    AccountsFiscalPeriodDialogMode.create => l10n.accountsFiscalCreateTitle,
-    AccountsFiscalPeriodDialogMode.edit => l10n.accountsFiscalEditTitle,
-    AccountsFiscalPeriodDialogMode.clone => l10n.accountsFiscalCloneTitle,
-  };
 
-  final bool? saved = await showAppWorkspaceActionDialog<bool>(
+  // The form owns the dialog so Close/Save live in the pinned footer rather
+  // than scrolling away inside the body (`prompts/.cursor/dialogs.mdc`).
+  final bool? saved = await showAppDialog<bool>(
     context: context,
-    title: Text(title),
-    content: _AccountsFiscalPeriodForm(mode: mode, source: source),
+    builder: (BuildContext dialogContext) =>
+        _AccountsFiscalPeriodForm(mode: mode, source: source),
   );
 
   if (saved == true) {
     ref
-            .read<StateController<int>>(
-              accountsFiscalPeriodRevisionProvider.notifier,
-            )
-            .state++;
+        .read<StateController<int>>(
+          accountsFiscalPeriodRevisionProvider.notifier,
+        )
+        .state++;
   }
   return saved ?? false;
 }
@@ -80,8 +78,11 @@ class _AccountsFiscalPeriodFormState
   late final TextEditingController _fiscalYearController;
   late final TextEditingController _periodNoController;
   late final TextEditingController _periodNameController;
-  late final TextEditingController _moduleController;
   late final TextEditingController _notesController;
+
+  /// Controlled module scope; seeded from the record so an unrecognised stored
+  /// value survives a round-trip instead of being reset to the default.
+  late String _module;
 
   DateTime? _startDate;
   DateTime? _endDate;
@@ -107,7 +108,9 @@ class _AccountsFiscalPeriodFormState
     _periodNameController = TextEditingController(
       text: source?.periodName ?? '',
     );
-    _moduleController = TextEditingController(text: source?.module ?? 'ALL');
+    _module = (source?.module ?? '').trim().isEmpty
+        ? 'ALL'
+        : source!.module!.trim().toUpperCase();
     _notesController = TextEditingController(text: source?.notes ?? '');
     if (_isEdit) {
       _startDate = source?.startDate;
@@ -123,7 +126,6 @@ class _AccountsFiscalPeriodFormState
     _fiscalYearController.dispose();
     _periodNoController.dispose();
     _periodNameController.dispose();
-    _moduleController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -152,111 +154,139 @@ class _AccountsFiscalPeriodFormState
       );
     }
 
-    return AppFormShell(
-      formKey: _formKey,
-      formStatus: appFormFailureStatus(context, _failure),
-      children: <Widget>[
-        AppFormSection(
-          title: l10n.accountsFiscalIdentitySection,
-          children: <Widget>[
-            AppResponsiveFieldRow.two(
-              left: AppTextField(
-                controller: _fiscalYearController,
-                labelText: l10n.accountsFiscalYearColumn,
-                isRequired: true,
-                validator: AppValidators.requiredText(required),
-              ),
-              right: AppTextField(
-                controller: _periodNoController,
-                labelText: l10n.accountsFiscalPeriodNoColumn,
-                isRequired: true,
-                keyboardType: TextInputType.number,
-                validator: _validatePeriodNo,
-              ),
-            ),
-            AppResponsiveFieldRow.two(
-              left: AppTextField(
-                controller: _periodNameController,
-                labelText: l10n.accountsFiscalPeriodNameColumn,
-                isRequired: true,
-                validator: AppValidators.requiredText(required),
-              ),
-              right: AppTextField(
-                controller: _moduleController,
-                labelText: l10n.accountsFiscalModuleColumn,
-              ),
-            ),
-          ],
-        ),
-        AppFormSection(
-          title: l10n.accountsFiscalCalendarSection,
-          children: <Widget>[
-            AppResponsiveFieldRow.two(
-              left: dateField(
-                value: _startDate,
-                label: l10n.accountsFiscalStartDateColumn,
-                isRequired: true,
-                onChanged: (DateTime? value) =>
-                    setState(() => _startDate = value),
-              ),
-              right: dateField(
-                value: _endDate,
-                label: l10n.accountsFiscalEndDateColumn,
-                isRequired: true,
-                onChanged: (DateTime? value) =>
-                    setState(() => _endDate = value),
-              ),
-            ),
-          ],
-        ),
-        AppFormSection(
-          title: l10n.accountsFiscalMilestonesSection,
-          children: <Widget>[
-            // The three milestones share one row on wide screens and stack on
-            // small ones; no half-empty slot.
-            AppResponsiveFieldRow(
-              children: <Widget>[
-                dateField(
-                  value: _openDate,
-                  label: l10n.accountsFiscalOpenDateColumn,
-                  onChanged: (DateTime? value) =>
-                      setState(() => _openDate = value),
+    // Any stored module outside the controlled vocabulary stays selectable so
+    // editing a legacy row never silently rewrites its scope.
+    final List<String> moduleValues = <String>[
+      ...accountsFiscalModuleWireValues,
+      if (!accountsFiscalModuleWireValues.contains(_module)) _module,
+    ];
+
+    return AppDialog(
+      title: Text(switch (widget.mode) {
+        AccountsFiscalPeriodDialogMode.create => l10n.accountsFiscalCreateTitle,
+        AccountsFiscalPeriodDialogMode.edit => l10n.accountsFiscalEditTitle,
+        AccountsFiscalPeriodDialogMode.clone => l10n.accountsFiscalCloneTitle,
+      }),
+      icon: const Icon(Icons.event_note_outlined),
+      scrollable: true,
+      pinActionsToBottom: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        formStatus: appFormFailureStatus(context, _failure),
+        children: <Widget>[
+          AppFormSection(
+            title: l10n.accountsFiscalIdentitySection,
+            children: <Widget>[
+              AppResponsiveFieldRow.two(
+                left: AppTextField(
+                  controller: _fiscalYearController,
+                  labelText: l10n.accountsFiscalYearColumn,
+                  isRequired: true,
+                  validator: AppValidators.requiredText(required),
                 ),
-                dateField(
-                  value: _softCloseDate,
-                  label: l10n.accountsFiscalSoftCloseDateColumn,
-                  onChanged: (DateTime? value) =>
-                      setState(() => _softCloseDate = value),
+                right: AppTextField(
+                  controller: _periodNoController,
+                  labelText: l10n.accountsFiscalPeriodNoColumn,
+                  isRequired: true,
+                  keyboardType: TextInputType.number,
+                  validator: _validatePeriodNo,
                 ),
-                dateField(
-                  value: _closeDate,
-                  label: l10n.accountsFiscalCloseDateColumn,
-                  onChanged: (DateTime? value) =>
-                      setState(() => _closeDate = value),
+              ),
+              AppResponsiveFieldRow.two(
+                left: AppTextField(
+                  controller: _periodNameController,
+                  labelText: l10n.accountsFiscalPeriodNameColumn,
+                  isRequired: true,
+                  validator: AppValidators.requiredText(required),
                 ),
-              ],
-            ),
-            AppTextField(
-              controller: _notesController,
-              labelText: l10n.accountsFiscalNotesLabel,
-              maxLines: 3,
-            ),
-          ],
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: switch (widget.mode) {
-            AccountsFiscalPeriodDialogMode.create => l10n.commonAddActionLabel,
-            AccountsFiscalPeriodDialogMode.edit => l10n.commonSaveActionLabel,
-            AccountsFiscalPeriodDialogMode.clone =>
-              l10n.accountsFiscalCloneAction,
-          },
-          submitIcon: Icons.save_outlined,
-          isSubmitting: _isSubmitting,
-          onCancel: () => Navigator.of(context).pop(false),
-          onSubmit: _submit,
-        ),
-      ],
+                // Module is a controlled vocabulary, not free text.
+                right: AppSelectField<String>(
+                  value: _module,
+                  labelText: l10n.accountsFiscalModuleColumn,
+                  allowClear: false,
+                  options: <AppSelectOption<String>>[
+                    for (final String value in moduleValues)
+                      AppSelectOption<String>(
+                        value: value,
+                        label: accountsFiscalModuleLabel(l10n, value),
+                      ),
+                  ],
+                  onChanged: (String? value) =>
+                      setState(() => _module = value ?? 'ALL'),
+                ),
+              ),
+            ],
+          ),
+          AppFormSection(
+            title: l10n.accountsFiscalCalendarSection,
+            children: <Widget>[
+              AppResponsiveFieldRow.two(
+                left: dateField(
+                  value: _startDate,
+                  label: l10n.accountsFiscalStartDateColumn,
+                  isRequired: true,
+                  onChanged: (DateTime? value) =>
+                      setState(() => _startDate = value),
+                ),
+                right: dateField(
+                  value: _endDate,
+                  label: l10n.accountsFiscalEndDateColumn,
+                  isRequired: true,
+                  onChanged: (DateTime? value) =>
+                      setState(() => _endDate = value),
+                ),
+              ),
+            ],
+          ),
+          AppFormSection(
+            title: l10n.accountsFiscalMilestonesSection,
+            children: <Widget>[
+              // The three milestones share one row on wide screens and stack on
+              // small ones; no half-empty slot.
+              AppResponsiveFieldRow(
+                children: <Widget>[
+                  dateField(
+                    value: _openDate,
+                    label: l10n.accountsFiscalOpenDateColumn,
+                    onChanged: (DateTime? value) =>
+                        setState(() => _openDate = value),
+                  ),
+                  dateField(
+                    value: _softCloseDate,
+                    label: l10n.accountsFiscalSoftCloseDateColumn,
+                    onChanged: (DateTime? value) =>
+                        setState(() => _softCloseDate = value),
+                  ),
+                  dateField(
+                    value: _closeDate,
+                    label: l10n.accountsFiscalCloseDateColumn,
+                    onChanged: (DateTime? value) =>
+                        setState(() => _closeDate = value),
+                  ),
+                ],
+              ),
+              AppTextField(
+                controller: _notesController,
+                labelText: l10n.accountsFiscalNotesLabel,
+                maxLines: 3,
+              ),
+            ],
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: l10n.commonCancelActionLabel,
+        submitLabel: switch (widget.mode) {
+          AccountsFiscalPeriodDialogMode.create => l10n.commonAddActionLabel,
+          AccountsFiscalPeriodDialogMode.edit => l10n.commonSaveActionLabel,
+          AccountsFiscalPeriodDialogMode.clone =>
+            l10n.accountsFiscalCloneAction,
+        },
+        submitIcon: Icons.save_outlined,
+        isSubmitting: _isSubmitting,
+        onCancel: () => Navigator.of(context).pop(false),
+        onSubmit: _submit,
+      ),
     );
   }
 
@@ -319,7 +349,7 @@ class _AccountsFiscalPeriodFormState
       _failure = null;
     });
 
-    final String module = _moduleController.text.trim().toUpperCase();
+    final String module = _module.trim().toUpperCase();
     final String notes = _notesController.text.trim();
     final Map<String, Object?> payload = <String, Object?>{
       'fiscal_year': _fiscalYearController.text.trim(),
@@ -392,10 +422,7 @@ class _AccountsFiscalPeriodDetail extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    period.periodName,
-                    style: theme.textTheme.titleLarge,
-                  ),
+                  Text(period.periodName, style: theme.textTheme.titleLarge),
                   SizedBox(height: theme.spacing.xs),
                   AppWorkspaceStatusBadge(
                     status: AppWorkspaceStatus(
@@ -561,33 +588,37 @@ Future<bool> confirmAccountsFiscalPeriodAction({
   final AppLocalizations l10n = context.l10n;
   final String reference =
       accountsPublicLabel(period.humanFriendlyId) ?? period.periodName;
-  final (String title, String body, bool destructive, IconData icon) =
-      switch (action) {
-        AccountsFiscalPeriodAction.activate => (
-          l10n.accountsFiscalActivateConfirmTitle,
-          l10n.accountsFiscalActivateConfirmBody(reference),
-          false,
-          Icons.check_circle_outline,
-        ),
-        AccountsFiscalPeriodAction.deactivate => (
-          l10n.accountsFiscalDeactivateConfirmTitle,
-          l10n.accountsFiscalDeactivateConfirmBody(reference),
-          true,
-          Icons.pause_circle_outline,
-        ),
-        AccountsFiscalPeriodAction.archive => (
-          l10n.accountsFiscalArchiveConfirmTitle,
-          l10n.accountsFiscalArchiveConfirmBody,
-          true,
-          Icons.inventory_2_outlined,
-        ),
-        AccountsFiscalPeriodAction.restore => (
-          l10n.accountsFiscalRestoreConfirmTitle,
-          l10n.accountsFiscalRestoreConfirmBody(reference),
-          false,
-          Icons.restore_outlined,
-        ),
-      };
+  final (
+    String title,
+    String body,
+    bool destructive,
+    IconData icon,
+  ) = switch (action) {
+    AccountsFiscalPeriodAction.activate => (
+      l10n.accountsFiscalActivateConfirmTitle,
+      l10n.accountsFiscalActivateConfirmBody(reference),
+      false,
+      Icons.check_circle_outline,
+    ),
+    AccountsFiscalPeriodAction.deactivate => (
+      l10n.accountsFiscalDeactivateConfirmTitle,
+      l10n.accountsFiscalDeactivateConfirmBody(reference),
+      true,
+      Icons.pause_circle_outline,
+    ),
+    AccountsFiscalPeriodAction.archive => (
+      l10n.accountsFiscalArchiveConfirmTitle,
+      l10n.accountsFiscalArchiveConfirmBody,
+      true,
+      Icons.inventory_2_outlined,
+    ),
+    AccountsFiscalPeriodAction.restore => (
+      l10n.accountsFiscalRestoreConfirmTitle,
+      l10n.accountsFiscalRestoreConfirmBody(reference),
+      false,
+      Icons.restore_outlined,
+    ),
+  };
 
   final bool? confirmed = await showAppDialog<bool>(
     context: context,
@@ -609,10 +640,10 @@ Future<bool> confirmAccountsFiscalPeriodAction({
         return result.when(
           success: (_) {
             ref
-                    .read<StateController<int>>(
-                      accountsFiscalPeriodRevisionProvider.notifier,
-                    )
-                    .state++;
+                .read<StateController<int>>(
+                  accountsFiscalPeriodRevisionProvider.notifier,
+                )
+                .state++;
             return null;
           },
           failure: (AppFailure failure) => failure,
@@ -629,7 +660,8 @@ String accountsFiscalPeriodActionLabel(
 ) {
   return switch (action) {
     AccountsFiscalPeriodAction.activate => l10n.accountsFiscalActivateAction,
-    AccountsFiscalPeriodAction.deactivate => l10n.accountsFiscalDeactivateAction,
+    AccountsFiscalPeriodAction.deactivate =>
+      l10n.accountsFiscalDeactivateAction,
     AccountsFiscalPeriodAction.archive => l10n.accountsFiscalArchiveAction,
     AccountsFiscalPeriodAction.restore => l10n.accountsFiscalRestoreAction,
   };

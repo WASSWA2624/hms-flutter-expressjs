@@ -51,7 +51,7 @@ final AccountsPaymentMethod _draftMethod = AccountsPaymentMethod(
   requiresExternalReference: true,
   facilityScope: 'Kampala Main',
   facilityHumanFriendlyId: 'FAC-001',
-  effectiveFrom: DateTime.utc(2026, 1, 1),
+  effectiveFrom: DateTime.utc(2026, 1),
   status: AccountsPaymentMethodStatus.draft,
   version: 1,
 );
@@ -65,7 +65,7 @@ final AccountsPaymentMethod _archivedMethod = AccountsPaymentMethod(
   requiresApproval: true,
   facilityScope: 'Kampala Main',
   facilityHumanFriendlyId: 'FAC-001',
-  effectiveFrom: DateTime.utc(2025, 1, 1),
+  effectiveFrom: DateTime.utc(2025, 1),
   effectiveTo: DateTime.utc(2025, 12, 31),
   status: AccountsPaymentMethodStatus.archived,
   version: 4,

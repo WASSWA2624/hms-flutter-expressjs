@@ -27834,6 +27834,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get accountsFiscalStatusLocked => 'Locked';
 
   @override
+  String get accountsFiscalModuleAll => 'All modules';
+
+  @override
+  String get accountsFiscalModuleGeneralLedger => 'General ledger';
+
+  @override
+  String get accountsFiscalModuleBilling => 'Billing';
+
+  @override
+  String get accountsFiscalModulePharmacy => 'Pharmacy';
+
+  @override
+  String get accountsFiscalModuleInventory => 'Inventory';
+
+  @override
+  String get accountsFiscalModulePayroll => 'Payroll';
+
+  @override
+  String get accountsFiscalModuleFixedAssets => 'Fixed assets';
+
+  @override
   String get accountsFiscalDateRangeFilterLabel => 'Period date range';
 
   @override

@@ -710,7 +710,6 @@ class _ReceptionPatientPickerDialogState
       page: page,
       isLoading: _isLoading,
       shrinkWrap: false,
-      pinToolbar: false,
       tableHorizontalMargin: 0,
       enableExport: false,
       forceCompact: true,

@@ -51064,6 +51064,48 @@ abstract class AppLocalizations {
   /// **'Locked'**
   String get accountsFiscalStatusLocked;
 
+  /// Fiscal period module scope: the period applies to every module.
+  ///
+  /// In en, this message translates to:
+  /// **'All modules'**
+  String get accountsFiscalModuleAll;
+
+  /// Fiscal period module scope: general ledger only.
+  ///
+  /// In en, this message translates to:
+  /// **'General ledger'**
+  String get accountsFiscalModuleGeneralLedger;
+
+  /// Fiscal period module scope: billing only.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing'**
+  String get accountsFiscalModuleBilling;
+
+  /// Fiscal period module scope: pharmacy only.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy'**
+  String get accountsFiscalModulePharmacy;
+
+  /// Fiscal period module scope: inventory only.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory'**
+  String get accountsFiscalModuleInventory;
+
+  /// Fiscal period module scope: payroll only.
+  ///
+  /// In en, this message translates to:
+  /// **'Payroll'**
+  String get accountsFiscalModulePayroll;
+
+  /// Fiscal period module scope: fixed assets only.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixed assets'**
+  String get accountsFiscalModuleFixedAssets;
+
   /// Advanced filter label for the fiscal period date range.
   ///
   /// In en, this message translates to:

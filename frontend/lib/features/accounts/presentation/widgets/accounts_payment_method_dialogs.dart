@@ -20,11 +20,15 @@ import 'package:hosspi_hms/shared/layout/layout.dart';
 
 /// Bumped after every payment method mutation so the tab badge, the workspace
 /// summary, and any dependent tender pickers refetch.
-final accountsPaymentMethodRevisionProvider = StateProvider<int>((Ref ref) => 0);
+final accountsPaymentMethodRevisionProvider = StateProvider<int>(
+  (Ref ref) => 0,
+);
 
 /// Filtered payment method count owned by the panel; null falls back to the
 /// workspace summary so the badge never reflects only the painted page.
-final accountsPaymentMethodCountProvider = StateProvider<int?>((Ref ref) => null);
+final accountsPaymentMethodCountProvider = StateProvider<int?>(
+  (Ref ref) => null,
+);
 
 enum AccountsPaymentMethodDialogMode { create, edit, clone }
 
@@ -34,34 +38,26 @@ enum AccountsPaymentMethodDialogMode { create, edit, clone }
 Future<bool> showAccountsPaymentMethodDialog({
   required BuildContext context,
   required WidgetRef ref,
-  AccountsPaymentMethodDialogMode mode =
-      AccountsPaymentMethodDialogMode.create,
+  AccountsPaymentMethodDialogMode mode = AccountsPaymentMethodDialogMode.create,
   AccountsPaymentMethod? source,
 }) async {
   if (!canWriteAccountsPaymentMethods(ref.read(appAccessPolicyProvider))) {
     return false;
   }
-  final AppLocalizations l10n = context.l10n;
-  final String title = switch (mode) {
-    AccountsPaymentMethodDialogMode.create =>
-      l10n.accountsPaymentMethodCreateTitle,
-    AccountsPaymentMethodDialogMode.edit => l10n.accountsPaymentMethodEditTitle,
-    AccountsPaymentMethodDialogMode.clone =>
-      l10n.accountsPaymentMethodCloneTitle,
-  };
-
-  final bool? saved = await showAppWorkspaceActionDialog<bool>(
+  // The form owns the dialog so Close/Save live in the pinned footer rather
+  // than scrolling away inside the body (`prompts/.cursor/dialogs.mdc`).
+  final bool? saved = await showAppDialog<bool>(
     context: context,
-    title: Text(title),
-    content: _AccountsPaymentMethodForm(mode: mode, source: source),
+    builder: (BuildContext dialogContext) =>
+        _AccountsPaymentMethodForm(mode: mode, source: source),
   );
 
   if (saved == true) {
     ref
-            .read<StateController<int>>(
-              accountsPaymentMethodRevisionProvider.notifier,
-            )
-            .state++;
+        .read<StateController<int>>(
+          accountsPaymentMethodRevisionProvider.notifier,
+        )
+        .state++;
   }
   return saved ?? false;
 }
@@ -140,139 +136,152 @@ class _AccountsPaymentMethodFormState
     final AppLocalizations l10n = context.l10n;
     final String required = l10n.accountsPaymentMethodRequiredField;
 
-    return AppFormShell(
-      formKey: _formKey,
-      formStatus: appFormFailureStatus(context, _failure),
-      children: <Widget>[
-        // The tender taxonomy is shared with every recorded payment; say so
-        // once rather than letting an operator assume it is local to finance.
-        AppFormInformationBanner.message(
-          message: l10n.accountsPaymentMethodSharedTypeNotice,
-        ),
-        AppFormSection(
-          title: l10n.accountsPaymentMethodIdentitySection,
-          children: <Widget>[
-            AppResponsiveFieldRow.two(
-              left: AppTextField(
-                controller: _methodCodeController,
-                labelText: l10n.accountsPaymentMethodCodeColumn,
-                isRequired: true,
-                validator: AppValidators.requiredText(required),
+    return AppDialog(
+      title: Text(switch (widget.mode) {
+        AccountsPaymentMethodDialogMode.create =>
+          l10n.accountsPaymentMethodCreateTitle,
+        AccountsPaymentMethodDialogMode.edit =>
+          l10n.accountsPaymentMethodEditTitle,
+        AccountsPaymentMethodDialogMode.clone =>
+          l10n.accountsPaymentMethodCloneTitle,
+      }),
+      icon: const Icon(Icons.payments_outlined),
+      scrollable: true,
+      pinActionsToBottom: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        formStatus: appFormFailureStatus(context, _failure),
+        children: <Widget>[
+          // The tender taxonomy is shared with every recorded payment; say so
+          // once rather than letting an operator assume it is local to finance.
+          AppFormInformationBanner.message(
+            message: l10n.accountsPaymentMethodSharedTypeNotice,
+          ),
+          AppFormSection(
+            title: l10n.accountsPaymentMethodIdentitySection,
+            children: <Widget>[
+              AppResponsiveFieldRow.two(
+                left: AppTextField(
+                  controller: _methodCodeController,
+                  labelText: l10n.accountsPaymentMethodCodeColumn,
+                  isRequired: true,
+                  validator: AppValidators.requiredText(required),
+                ),
+                right: AppTextField(
+                  controller: _methodNameController,
+                  labelText: l10n.accountsPaymentMethodNameColumn,
+                  isRequired: true,
+                  validator: AppValidators.requiredText(required),
+                ),
               ),
-              right: AppTextField(
-                controller: _methodNameController,
-                labelText: l10n.accountsPaymentMethodNameColumn,
-                isRequired: true,
-                validator: AppValidators.requiredText(required),
-              ),
-            ),
-            AppResponsiveFieldRow.two(
-              left: AppSelectField<AccountsPaymentMethodType>(
-                value: _methodType,
-                labelText: l10n.accountsPaymentMethodTypeColumn,
-                isRequired: true,
-                allowClear: false,
-                options: <AppSelectOption<AccountsPaymentMethodType>>[
-                  for (final AccountsPaymentMethodType type
-                      in AccountsPaymentMethodType.values)
-                    AppSelectOption<AccountsPaymentMethodType>(
-                      value: type,
-                      label: accountsPaymentMethodTypeLabel(l10n, type),
-                    ),
-                ],
-                validator: (AccountsPaymentMethodType? value) =>
-                    value == null ? required : null,
-                onChanged: (AccountsPaymentMethodType? value) =>
-                    setState(() => _methodType = value),
-              ),
-              right: AppSelectField<AccountsPaymentMethodDirection>(
-                value: _direction,
-                labelText: l10n.accountsPaymentMethodDirectionColumn,
-                isRequired: true,
-                allowClear: false,
-                options: <AppSelectOption<AccountsPaymentMethodDirection>>[
-                  for (final AccountsPaymentMethodDirection direction
-                      in AccountsPaymentMethodDirection.values)
-                    AppSelectOption<AccountsPaymentMethodDirection>(
-                      value: direction,
-                      label: accountsPaymentMethodDirectionLabel(
-                        l10n,
-                        direction,
+              AppResponsiveFieldRow.two(
+                left: AppSelectField<AccountsPaymentMethodType>(
+                  value: _methodType,
+                  labelText: l10n.accountsPaymentMethodTypeColumn,
+                  isRequired: true,
+                  allowClear: false,
+                  options: <AppSelectOption<AccountsPaymentMethodType>>[
+                    for (final AccountsPaymentMethodType type
+                        in AccountsPaymentMethodType.values)
+                      AppSelectOption<AccountsPaymentMethodType>(
+                        value: type,
+                        label: accountsPaymentMethodTypeLabel(l10n, type),
                       ),
-                    ),
-                ],
-                validator: (AccountsPaymentMethodDirection? value) =>
-                    value == null ? required : null,
-                onChanged: (AccountsPaymentMethodDirection? value) =>
-                    setState(() => _direction = value),
+                  ],
+                  validator: (AccountsPaymentMethodType? value) =>
+                      value == null ? required : null,
+                  onChanged: (AccountsPaymentMethodType? value) =>
+                      setState(() => _methodType = value),
+                ),
+                right: AppSelectField<AccountsPaymentMethodDirection>(
+                  value: _direction,
+                  labelText: l10n.accountsPaymentMethodDirectionColumn,
+                  isRequired: true,
+                  allowClear: false,
+                  options: <AppSelectOption<AccountsPaymentMethodDirection>>[
+                    for (final AccountsPaymentMethodDirection direction
+                        in AccountsPaymentMethodDirection.values)
+                      AppSelectOption<AccountsPaymentMethodDirection>(
+                        value: direction,
+                        label: accountsPaymentMethodDirectionLabel(
+                          l10n,
+                          direction,
+                        ),
+                      ),
+                  ],
+                  validator: (AccountsPaymentMethodDirection? value) =>
+                      value == null ? required : null,
+                  onChanged: (AccountsPaymentMethodDirection? value) =>
+                      setState(() => _direction = value),
+                ),
               ),
-            ),
-            AppResponsiveFieldRow.two(
-              left: AppTextField(
-                controller: _providerController,
-                labelText: l10n.accountsPaymentMethodProviderColumn,
+              AppResponsiveFieldRow.two(
+                left: AppTextField(
+                  controller: _providerController,
+                  labelText: l10n.accountsPaymentMethodProviderColumn,
+                ),
+                right: const SizedBox.shrink(),
               ),
-              right: const SizedBox.shrink(),
-            ),
-          ],
-        ),
-        AppFormSection(
-          title: l10n.accountsPaymentMethodPostingSection,
-          children: <Widget>[
-            AppResponsiveFieldRow.two(
-              left: AppTextField(
-                controller: _settlementAccountController,
-                labelText: l10n.accountsPaymentMethodSettlementAccountColumn,
+            ],
+          ),
+          AppFormSection(
+            title: l10n.accountsPaymentMethodPostingSection,
+            children: <Widget>[
+              AppResponsiveFieldRow.two(
+                left: AppTextField(
+                  controller: _settlementAccountController,
+                  labelText: l10n.accountsPaymentMethodSettlementAccountColumn,
+                ),
+                right: AppTextField(
+                  controller: _clearingAccountController,
+                  labelText: l10n.accountsPaymentMethodClearingAccountColumn,
+                ),
               ),
-              right: AppTextField(
-                controller: _clearingAccountController,
-                labelText: l10n.accountsPaymentMethodClearingAccountColumn,
+            ],
+          ),
+          AppFormSection(
+            title: l10n.accountsPaymentMethodRulesSection,
+            children: <Widget>[
+              AppResponsiveFieldRow.two(
+                left: AppSwitchField(
+                  title: l10n.accountsPaymentMethodRequiresReferenceColumn,
+                  value: _requiresExternalReference,
+                  onChanged: (bool value) =>
+                      setState(() => _requiresExternalReference = value),
+                ),
+                right: AppSwitchField(
+                  title: l10n.accountsPaymentMethodRequiresApprovalColumn,
+                  value: _requiresApproval,
+                  onChanged: (bool value) =>
+                      setState(() => _requiresApproval = value),
+                ),
               ),
-            ),
-          ],
-        ),
-        AppFormSection(
-          title: l10n.accountsPaymentMethodRulesSection,
-          children: <Widget>[
-            AppResponsiveFieldRow.two(
-              left: AppSwitchField(
-                title: l10n.accountsPaymentMethodRequiresReferenceColumn,
-                value: _requiresExternalReference,
-                onChanged: (bool value) =>
-                    setState(() => _requiresExternalReference = value),
+              AppTextField(
+                controller: _feeRuleController,
+                labelText: l10n.accountsPaymentMethodFeeRuleColumn,
               ),
-              right: AppSwitchField(
-                title: l10n.accountsPaymentMethodRequiresApprovalColumn,
-                value: _requiresApproval,
-                onChanged: (bool value) =>
-                    setState(() => _requiresApproval = value),
+              AppTextField(
+                controller: _notesController,
+                labelText: l10n.accountsPaymentMethodNotesLabel,
+                maxLines: 3,
               ),
-            ),
-            AppTextField(
-              controller: _feeRuleController,
-              labelText: l10n.accountsPaymentMethodFeeRuleColumn,
-            ),
-            AppTextField(
-              controller: _notesController,
-              labelText: l10n.accountsPaymentMethodNotesLabel,
-              maxLines: 3,
-            ),
-          ],
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: switch (widget.mode) {
-            AccountsPaymentMethodDialogMode.create => l10n.commonAddActionLabel,
-            AccountsPaymentMethodDialogMode.edit => l10n.commonSaveActionLabel,
-            AccountsPaymentMethodDialogMode.clone =>
-              l10n.accountsPaymentMethodCloneAction,
-          },
-          submitIcon: Icons.save_outlined,
-          isSubmitting: _isSubmitting,
-          onCancel: () => Navigator.of(context).pop(false),
-          onSubmit: _submit,
-        ),
-      ],
+            ],
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: l10n.commonCancelActionLabel,
+        submitLabel: switch (widget.mode) {
+          AccountsPaymentMethodDialogMode.create => l10n.commonAddActionLabel,
+          AccountsPaymentMethodDialogMode.edit => l10n.commonSaveActionLabel,
+          AccountsPaymentMethodDialogMode.clone =>
+            l10n.accountsPaymentMethodCloneAction,
+        },
+        submitIcon: Icons.save_outlined,
+        isSubmitting: _isSubmitting,
+        onCancel: () => Navigator.of(context).pop(false),
+        onSubmit: _submit,
+      ),
     );
   }
 
@@ -385,10 +394,7 @@ class _AccountsPaymentMethodDetail extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text(
-                    method.methodName,
-                    style: theme.textTheme.titleLarge,
-                  ),
+                  Text(method.methodName, style: theme.textTheme.titleLarge),
                   SizedBox(height: theme.spacing.xs),
                   AppWorkspaceStatusBadge(
                     status: AppWorkspaceStatus(
@@ -515,8 +521,7 @@ class _AccountsPaymentMethodDetail extends ConsumerWidget {
                         icon: Icons.compare_arrows_outlined,
                       ),
                     AppWorkspacePatientContextField(
-                      label:
-                          l10n.accountsPaymentMethodRequiresReferenceColumn,
+                      label: l10n.accountsPaymentMethodRequiresReferenceColumn,
                       value: accountsPaymentMethodFlagLabel(
                         l10n,
                         method.requiresExternalReference,
@@ -571,33 +576,37 @@ Future<bool> confirmAccountsPaymentMethodAction({
   final AppLocalizations l10n = context.l10n;
   final String reference =
       accountsPublicLabel(method.humanFriendlyId) ?? method.methodName;
-  final (String title, String body, bool destructive, IconData icon) =
-      switch (action) {
-        AccountsPaymentMethodAction.activate => (
-          l10n.accountsPaymentMethodActivateConfirmTitle,
-          l10n.accountsPaymentMethodActivateConfirmBody(reference),
-          false,
-          Icons.check_circle_outline,
-        ),
-        AccountsPaymentMethodAction.deactivate => (
-          l10n.accountsPaymentMethodDeactivateConfirmTitle,
-          l10n.accountsPaymentMethodDeactivateConfirmBody(reference),
-          true,
-          Icons.pause_circle_outline,
-        ),
-        AccountsPaymentMethodAction.archive => (
-          l10n.accountsPaymentMethodArchiveConfirmTitle,
-          l10n.accountsPaymentMethodArchiveConfirmBody,
-          true,
-          Icons.inventory_2_outlined,
-        ),
-        AccountsPaymentMethodAction.restore => (
-          l10n.accountsPaymentMethodRestoreConfirmTitle,
-          l10n.accountsPaymentMethodRestoreConfirmBody(reference),
-          false,
-          Icons.restore_outlined,
-        ),
-      };
+  final (
+    String title,
+    String body,
+    bool destructive,
+    IconData icon,
+  ) = switch (action) {
+    AccountsPaymentMethodAction.activate => (
+      l10n.accountsPaymentMethodActivateConfirmTitle,
+      l10n.accountsPaymentMethodActivateConfirmBody(reference),
+      false,
+      Icons.check_circle_outline,
+    ),
+    AccountsPaymentMethodAction.deactivate => (
+      l10n.accountsPaymentMethodDeactivateConfirmTitle,
+      l10n.accountsPaymentMethodDeactivateConfirmBody(reference),
+      true,
+      Icons.pause_circle_outline,
+    ),
+    AccountsPaymentMethodAction.archive => (
+      l10n.accountsPaymentMethodArchiveConfirmTitle,
+      l10n.accountsPaymentMethodArchiveConfirmBody,
+      true,
+      Icons.inventory_2_outlined,
+    ),
+    AccountsPaymentMethodAction.restore => (
+      l10n.accountsPaymentMethodRestoreConfirmTitle,
+      l10n.accountsPaymentMethodRestoreConfirmBody(reference),
+      false,
+      Icons.restore_outlined,
+    ),
+  };
 
   final bool? confirmed = await showAppDialog<bool>(
     context: context,
@@ -619,10 +628,10 @@ Future<bool> confirmAccountsPaymentMethodAction({
         return result.when(
           success: (_) {
             ref
-                    .read<StateController<int>>(
-                      accountsPaymentMethodRevisionProvider.notifier,
-                    )
-                    .state++;
+                .read<StateController<int>>(
+                  accountsPaymentMethodRevisionProvider.notifier,
+                )
+                .state++;
             return null;
           },
           failure: (AppFailure failure) => failure,

@@ -57,7 +57,7 @@ final AccountsDepartment _draftDepartment = AccountsDepartment(
   facilityHumanFriendlyId: 'FAC-001',
   manager: 'Ada Nakato',
   managerHumanFriendlyId: 'USR-001',
-  effectiveFrom: DateTime.utc(2026, 1, 1),
+  effectiveFrom: DateTime.utc(2026, 1),
   status: AccountsDepartmentStatus.draft,
   version: 1,
 );
@@ -70,7 +70,7 @@ final AccountsDepartment _archivedDepartment = AccountsDepartment(
   costCentreName: 'Radiology Cost Centre',
   facility: 'Kampala Main',
   facilityHumanFriendlyId: 'FAC-001',
-  effectiveFrom: DateTime.utc(2025, 1, 1),
+  effectiveFrom: DateTime.utc(2025, 1),
   effectiveTo: DateTime.utc(2025, 12, 31),
   status: AccountsDepartmentStatus.archived,
   version: 4,

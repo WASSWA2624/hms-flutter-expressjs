@@ -259,6 +259,37 @@ String accountsEmptyBody(AppLocalizations l10n, AccountsDeskSection section) {
   };
 }
 
+/// Controlled module scopes a fiscal period may target.
+///
+/// The API keeps `module` a free-text column so historic rows stay readable;
+/// the picker offers this vocabulary and preserves any unrecognised stored
+/// value as its own option rather than silently dropping it.
+const List<String> accountsFiscalModuleWireValues = <String>[
+  'ALL',
+  'GENERAL_LEDGER',
+  'BILLING',
+  'PHARMACY',
+  'INVENTORY',
+  'PAYROLL',
+  'FIXED_ASSETS',
+];
+
+/// Localized label for a module scope; unknown stored values render verbatim.
+String accountsFiscalModuleLabel(AppLocalizations l10n, String? wireValue) {
+  final String normalized = (wireValue ?? '').trim().toUpperCase();
+  return switch (normalized) {
+    'ALL' => l10n.accountsFiscalModuleAll,
+    'GENERAL_LEDGER' => l10n.accountsFiscalModuleGeneralLedger,
+    'BILLING' => l10n.accountsFiscalModuleBilling,
+    'PHARMACY' => l10n.accountsFiscalModulePharmacy,
+    'INVENTORY' => l10n.accountsFiscalModuleInventory,
+    'PAYROLL' => l10n.accountsFiscalModulePayroll,
+    'FIXED_ASSETS' => l10n.accountsFiscalModuleFixedAssets,
+    '' => accountsUnknownValue(),
+    _ => normalized,
+  };
+}
+
 String accountsFiscalPeriodStatusLabel(
   AppLocalizations l10n,
   AccountsFiscalPeriodStatus status,

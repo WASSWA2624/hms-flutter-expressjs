@@ -923,6 +923,18 @@ void main() {
         tester.getTopLeft(find.byIcon(Icons.add)).dy,
         greaterThan(tester.getBottomLeft(searchBar).dy - 1),
       );
+      // Compact chrome: the row costs 32dp of height, not a full button row.
+      expect(
+        tester
+            .getSize(
+              find.ancestor(
+                of: find.byIcon(Icons.add),
+                matching: find.byType(TextButton),
+              ),
+            )
+            .height,
+        32,
+      );
       expect(
         tester.getTopLeft(find.byIcon(Icons.add)).dx,
         lessThan(tester.getTopLeft(find.byIcon(Icons.refresh)).dx),
@@ -941,6 +953,70 @@ void main() {
       expect(
         tester.getTopLeft(find.byIcon(Icons.add)).dy,
         tester.getTopLeft(find.byIcon(Icons.refresh)).dy,
+      );
+    },
+  );
+
+  testWidgets(
+    'AppListTable scrolls the search bar and action row with the rows',
+    (WidgetTester tester) async {
+      final TextEditingController searchController = TextEditingController();
+      addTearDown(searchController.dispose);
+      final List<_RowItem> manyItems = List<_RowItem>.generate(
+        40,
+        (int index) => _RowItem(
+          id: '$index',
+          title: 'Row $index',
+          status: 'Active',
+        ),
+      );
+
+      await pumpComponent(
+        tester,
+        SizedBox(
+          height: 360,
+          child: AppListTable<_RowItem>(
+            items: manyItems,
+            columns: _columns,
+            search: AppListTableSearch<_RowItem>(
+              controller: searchController,
+              semanticLabel: 'Search rows',
+              matcher: (_, _) => true,
+              trailingActions: <AppSearchBarAction>[
+                AppSearchBarAction(
+                  icon: Icons.add,
+                  label: 'Create row',
+                  onPressed: () {},
+                ),
+              ],
+            ),
+            mobileItemBuilder: (BuildContext context, _RowItem item) {
+              return Text(item.title);
+            },
+          ),
+        ),
+        size: const Size(1000, 700),
+      );
+
+      final double searchBarTop = tester
+          .getTopLeft(find.byType(AppSearchBar))
+          .dy;
+      final double actionRowTop = tester.getTopLeft(find.byIcon(Icons.add)).dy;
+
+      final ScrollableState scrollable = tester.state<ScrollableState>(
+        find.byWidgetPredicate(_isVerticalScrollable).first,
+      );
+      scrollable.position.jumpTo(180);
+      await tester.pumpAndSettle();
+
+      // Toolbar travels with the rows instead of staying pinned above them.
+      expect(
+        tester.getTopLeft(find.byType(AppSearchBar)).dy,
+        lessThan(searchBarTop - 100),
+      );
+      expect(
+        tester.getTopLeft(find.byIcon(Icons.add)).dy,
+        lessThan(actionRowTop - 100),
       );
     },
   );
@@ -1159,6 +1235,61 @@ void main() {
 
     expect(nextRequest, const AppPageRequest(pageIndex: 1, pageSize: 12));
   });
+
+  testWidgets(
+    'AppListTable infinite scroll still pages when the toolbar scrolls along',
+    (WidgetTester tester) async {
+      final TextEditingController searchController = TextEditingController();
+      addTearDown(searchController.dispose);
+      AppPageRequest? nextRequest;
+      final AppPage<_RowItem> page = AppPage<_RowItem>(
+        items: List<_RowItem>.generate(12, (int index) {
+          return _RowItem(id: '$index', title: 'Item $index', status: 'Active');
+        }),
+        request: const AppPageRequest(pageSize: 12),
+        totalItemCount: 24,
+      );
+
+      await pumpComponent(
+        tester,
+        SizedBox(
+          height: 220,
+          width: 960,
+          child: AppListTable<_RowItem>(
+            page: page,
+            columns: _columns,
+            search: AppListTableSearch<_RowItem>(
+              controller: searchController,
+              semanticLabel: 'Search rows',
+              matcher: (_, _) => true,
+              trailingActions: <AppSearchBarAction>[
+                AppSearchBarAction(
+                  icon: Icons.add,
+                  label: 'Create row',
+                  onPressed: () {},
+                ),
+              ],
+            ),
+            mobileItemBuilder: (BuildContext context, _RowItem item) {
+              return ListTile(title: Text(item.title));
+            },
+            onPageChanged: (AppPageRequest request) {
+              nextRequest = request;
+            },
+          ),
+        ),
+        size: const Size(960, 600),
+      );
+
+      final ScrollableState scrollable = tester.state<ScrollableState>(
+        find.byWidgetPredicate(_isVerticalScrollable).first,
+      );
+      scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
+      await tester.pump();
+
+      expect(nextRequest, const AppPageRequest(pageIndex: 1, pageSize: 12));
+    },
+  );
 
   testWidgets(
     'AppListTable accumulates infinite pages and continues numbering',

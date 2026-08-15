@@ -40,25 +40,18 @@ Future<bool> showAccountsDepartmentDialog({
   if (!canWriteAccountsDepartments(ref.read(appAccessPolicyProvider))) {
     return false;
   }
-  final AppLocalizations l10n = context.l10n;
-  final String title = switch (mode) {
-    AccountsDepartmentDialogMode.create => l10n.accountsDepartmentCreateTitle,
-    AccountsDepartmentDialogMode.edit => l10n.accountsDepartmentEditTitle,
-    AccountsDepartmentDialogMode.clone => l10n.accountsDepartmentCloneTitle,
-  };
-
-  final bool? saved = await showAppWorkspaceActionDialog<bool>(
+  // The form owns the dialog so Close/Save live in the pinned footer rather
+  // than scrolling away inside the body (`prompts/.cursor/dialogs.mdc`).
+  final bool? saved = await showAppDialog<bool>(
     context: context,
-    title: Text(title),
-    content: _AccountsDepartmentForm(mode: mode, source: source),
+    builder: (BuildContext dialogContext) =>
+        _AccountsDepartmentForm(mode: mode, source: source),
   );
 
   if (saved == true) {
     ref
-            .read<StateController<int>>(
-              accountsDepartmentRevisionProvider.notifier,
-            )
-            .state++;
+        .read<StateController<int>>(accountsDepartmentRevisionProvider.notifier)
+        .state++;
   }
   return saved ?? false;
 }
@@ -168,114 +161,125 @@ class _AccountsDepartmentFormState
       );
     }
 
-    return AppFormShell(
-      formKey: _formKey,
-      formStatus: appFormFailureStatus(context, _failure),
-      children: <Widget>[
-        // The department is shared with facility setup; say so once rather than
-        // letting an operator assume this is a finance-only record.
-        AppFormInformationBanner.message(
-          message: l10n.accountsDepartmentOwnedNotice,
-        ),
-        AppFormSection(
-          title: l10n.accountsDepartmentIdentitySection,
-          children: <Widget>[
-            AppResponsiveFieldRow.two(
-              left: AppTextField(
-                controller: _departmentCodeController,
-                labelText: l10n.accountsDepartmentCodeColumn,
-                isRequired: true,
-                validator: AppValidators.requiredText(required),
+    return AppDialog(
+      title: Text(switch (widget.mode) {
+        AccountsDepartmentDialogMode.create =>
+          l10n.accountsDepartmentCreateTitle,
+        AccountsDepartmentDialogMode.edit => l10n.accountsDepartmentEditTitle,
+        AccountsDepartmentDialogMode.clone => l10n.accountsDepartmentCloneTitle,
+      }),
+      icon: const Icon(Icons.account_tree_outlined),
+      scrollable: true,
+      pinActionsToBottom: true,
+      content: AppFormShell(
+        formKey: _formKey,
+        formStatus: appFormFailureStatus(context, _failure),
+        children: <Widget>[
+          // The department is shared with facility setup; say so once rather than
+          // letting an operator assume this is a finance-only record.
+          AppFormInformationBanner.message(
+            message: l10n.accountsDepartmentOwnedNotice,
+          ),
+          AppFormSection(
+            title: l10n.accountsDepartmentIdentitySection,
+            children: <Widget>[
+              AppResponsiveFieldRow.two(
+                left: AppTextField(
+                  controller: _departmentCodeController,
+                  labelText: l10n.accountsDepartmentCodeColumn,
+                  isRequired: true,
+                  validator: AppValidators.requiredText(required),
+                ),
+                right: AppTextField(
+                  controller: _departmentNameController,
+                  labelText: l10n.accountsDepartmentNameColumn,
+                  isRequired: true,
+                  validator: AppValidators.requiredText(required),
+                ),
               ),
-              right: AppTextField(
-                controller: _departmentNameController,
-                labelText: l10n.accountsDepartmentNameColumn,
-                isRequired: true,
-                validator: AppValidators.requiredText(required),
+              AppResponsiveFieldRow.two(
+                left: AppTextField(
+                  controller: _costCentreCodeController,
+                  labelText: l10n.accountsDepartmentCostCentreCodeColumn,
+                  isRequired: true,
+                  validator: AppValidators.requiredText(required),
+                ),
+                right: AppTextField(
+                  controller: _costCentreNameController,
+                  labelText: l10n.accountsDepartmentCostCentreNameColumn,
+                  isRequired: true,
+                  validator: AppValidators.requiredText(required),
+                ),
               ),
-            ),
-            AppResponsiveFieldRow.two(
-              left: AppTextField(
-                controller: _costCentreCodeController,
-                labelText: l10n.accountsDepartmentCostCentreCodeColumn,
-                isRequired: true,
-                validator: AppValidators.requiredText(required),
+            ],
+          ),
+          AppFormSection(
+            title: l10n.accountsDepartmentStructureSection,
+            children: <Widget>[
+              // Facility is fixed by the session scope and never asked for.
+              AppResponsiveFieldRow.two(
+                left: AppTextField(
+                  controller: _parentController,
+                  labelText: l10n.accountsDepartmentParentColumn,
+                ),
+                right: AppTextField(
+                  controller: _managerController,
+                  labelText: l10n.accountsDepartmentManagerColumn,
+                ),
               ),
-              right: AppTextField(
-                controller: _costCentreNameController,
-                labelText: l10n.accountsDepartmentCostCentreNameColumn,
-                isRequired: true,
-                validator: AppValidators.requiredText(required),
+              AppResponsiveFieldRow.two(
+                left: AppTextField(
+                  controller: _budgetOwnerController,
+                  labelText: l10n.accountsDepartmentBudgetOwnerColumn,
+                ),
+                right: const SizedBox.shrink(),
               ),
-            ),
-          ],
-        ),
-        AppFormSection(
-          title: l10n.accountsDepartmentStructureSection,
-          children: <Widget>[
-            // Facility is fixed by the session scope and never asked for.
-            AppResponsiveFieldRow.two(
-              left: AppTextField(
-                controller: _parentController,
-                labelText: l10n.accountsDepartmentParentColumn,
+              AppResponsiveFieldRow.two(
+                left: dateField(
+                  value: _effectiveFrom,
+                  label: l10n.accountsDepartmentEffectiveFromColumn,
+                  onChanged: (DateTime? value) =>
+                      setState(() => _effectiveFrom = value),
+                ),
+                right: dateField(
+                  value: _effectiveTo,
+                  label: l10n.accountsDepartmentEffectiveToColumn,
+                  onChanged: (DateTime? value) =>
+                      setState(() => _effectiveTo = value),
+                ),
               ),
-              right: AppTextField(
-                controller: _managerController,
-                labelText: l10n.accountsDepartmentManagerColumn,
+            ],
+          ),
+          AppFormSection(
+            title: l10n.accountsDepartmentPostingSection,
+            children: <Widget>[
+              AppResponsiveFieldRow.two(
+                left: AppTextField(
+                  controller: _revenueAccountController,
+                  labelText: l10n.accountsDepartmentRevenueAccountColumn,
+                ),
+                right: AppTextField(
+                  controller: _expenseAccountController,
+                  labelText: l10n.accountsDepartmentExpenseAccountColumn,
+                ),
               ),
-            ),
-            AppResponsiveFieldRow.two(
-              left: AppTextField(
-                controller: _budgetOwnerController,
-                labelText: l10n.accountsDepartmentBudgetOwnerColumn,
-              ),
-              right: const SizedBox.shrink(),
-            ),
-            AppResponsiveFieldRow.two(
-              left: dateField(
-                value: _effectiveFrom,
-                label: l10n.accountsDepartmentEffectiveFromColumn,
-                onChanged: (DateTime? value) =>
-                    setState(() => _effectiveFrom = value),
-              ),
-              right: dateField(
-                value: _effectiveTo,
-                label: l10n.accountsDepartmentEffectiveToColumn,
-                onChanged: (DateTime? value) =>
-                    setState(() => _effectiveTo = value),
-              ),
-            ),
-          ],
-        ),
-        AppFormSection(
-          title: l10n.accountsDepartmentPostingSection,
-          children: <Widget>[
-            AppResponsiveFieldRow.two(
-              left: AppTextField(
-                controller: _revenueAccountController,
-                labelText: l10n.accountsDepartmentRevenueAccountColumn,
-              ),
-              right: AppTextField(
-                controller: _expenseAccountController,
-                labelText: l10n.accountsDepartmentExpenseAccountColumn,
-              ),
-            ),
-          ],
-        ),
-        AppFormActions(
-          cancelLabel: l10n.commonCancelActionLabel,
-          submitLabel: switch (widget.mode) {
-            AccountsDepartmentDialogMode.create => l10n.commonAddActionLabel,
-            AccountsDepartmentDialogMode.edit => l10n.commonSaveActionLabel,
-            AccountsDepartmentDialogMode.clone =>
-              l10n.accountsDepartmentCloneAction,
-          },
-          submitIcon: Icons.save_outlined,
-          isSubmitting: _isSubmitting,
-          onCancel: () => Navigator.of(context).pop(false),
-          onSubmit: _submit,
-        ),
-      ],
+            ],
+          ),
+        ],
+      ),
+      actions: buildAppDialogFormActions(
+        cancelLabel: l10n.commonCancelActionLabel,
+        submitLabel: switch (widget.mode) {
+          AccountsDepartmentDialogMode.create => l10n.commonAddActionLabel,
+          AccountsDepartmentDialogMode.edit => l10n.commonSaveActionLabel,
+          AccountsDepartmentDialogMode.clone =>
+            l10n.accountsDepartmentCloneAction,
+        },
+        submitIcon: Icons.save_outlined,
+        isSubmitting: _isSubmitting,
+        onCancel: () => Navigator.of(context).pop(false),
+        onSubmit: _submit,
+      ),
     );
   }
 
@@ -550,33 +554,37 @@ Future<bool> confirmAccountsDepartmentAction({
   final String reference =
       accountsPublicLabel(department.humanFriendlyId) ??
       department.departmentName;
-  final (String title, String body, bool destructive, IconData icon) =
-      switch (action) {
-        AccountsDepartmentAction.activate => (
-          l10n.accountsDepartmentActivateConfirmTitle,
-          l10n.accountsDepartmentActivateConfirmBody(reference),
-          false,
-          Icons.check_circle_outline,
-        ),
-        AccountsDepartmentAction.deactivate => (
-          l10n.accountsDepartmentDeactivateConfirmTitle,
-          l10n.accountsDepartmentDeactivateConfirmBody(reference),
-          true,
-          Icons.pause_circle_outline,
-        ),
-        AccountsDepartmentAction.archive => (
-          l10n.accountsDepartmentArchiveConfirmTitle,
-          l10n.accountsDepartmentArchiveConfirmBody,
-          true,
-          Icons.inventory_2_outlined,
-        ),
-        AccountsDepartmentAction.restore => (
-          l10n.accountsDepartmentRestoreConfirmTitle,
-          l10n.accountsDepartmentRestoreConfirmBody(reference),
-          false,
-          Icons.restore_outlined,
-        ),
-      };
+  final (
+    String title,
+    String body,
+    bool destructive,
+    IconData icon,
+  ) = switch (action) {
+    AccountsDepartmentAction.activate => (
+      l10n.accountsDepartmentActivateConfirmTitle,
+      l10n.accountsDepartmentActivateConfirmBody(reference),
+      false,
+      Icons.check_circle_outline,
+    ),
+    AccountsDepartmentAction.deactivate => (
+      l10n.accountsDepartmentDeactivateConfirmTitle,
+      l10n.accountsDepartmentDeactivateConfirmBody(reference),
+      true,
+      Icons.pause_circle_outline,
+    ),
+    AccountsDepartmentAction.archive => (
+      l10n.accountsDepartmentArchiveConfirmTitle,
+      l10n.accountsDepartmentArchiveConfirmBody,
+      true,
+      Icons.inventory_2_outlined,
+    ),
+    AccountsDepartmentAction.restore => (
+      l10n.accountsDepartmentRestoreConfirmTitle,
+      l10n.accountsDepartmentRestoreConfirmBody(reference),
+      false,
+      Icons.restore_outlined,
+    ),
+  };
 
   final bool? confirmed = await showAppDialog<bool>(
     context: context,
@@ -598,10 +606,10 @@ Future<bool> confirmAccountsDepartmentAction({
         return result.when(
           success: (_) {
             ref
-                    .read<StateController<int>>(
-                      accountsDepartmentRevisionProvider.notifier,
-                    )
-                    .state++;
+                .read<StateController<int>>(
+                  accountsDepartmentRevisionProvider.notifier,
+                )
+                .state++;
             return null;
           },
           failure: (AppFailure failure) => failure,

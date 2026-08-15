@@ -305,7 +305,6 @@ Future<void> showAccountsInvoiceDetailsDialog({
                       enableExport: false,
                       forceCompact: true,
                       displayMode: AppListTableDisplayMode.table,
-                      pinToolbar: false,
                       rowColorBuilder:
                           (BuildContext context, _InvoiceDraftTableRow row) {
                         if (!row.isTotal) {
@@ -768,7 +767,6 @@ class _AccountsInvoiceEditorDialogState
                 enableExport: false,
                 forceCompact: true,
                 displayMode: AppListTableDisplayMode.table,
-                pinToolbar: false,
                 rowColorBuilder:
                     (BuildContext context, _InvoiceDraftTableRow row) {
                   if (!row.isTotal) {
