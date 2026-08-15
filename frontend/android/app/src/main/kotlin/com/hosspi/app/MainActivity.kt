@@ -1,4 +1,4 @@
-package com.hosspi.hms
+package com.hosspi.app
 
 import io.flutter.embedding.android.FlutterActivity
 

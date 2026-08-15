@@ -1,4 +1,4 @@
-package com.hosspi.hms;
+package com.hosspi.app;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.Test;
