@@ -15,9 +15,10 @@ class AppLogo extends StatelessWidget {
   final double size;
 
   /// Matches cropped `logo.png` content aspect (width ÷ height).
-  static const double defaultAspectRatio = 1.7883;
+  /// Printed as `APP_LOGO_ASPECT` by `tool/generate_hosspi_logo.py`.
+  static const double defaultAspectRatio = 0.9798;
 
-  /// Cyan-blue from the window/grid features under the medical cross.
+  /// Cyan-blue from the book cover under the medical cross.
   /// Keep in sync with [AppLightThemePalette.brandPrimary] / light `colorScheme.primary`.
   static const Color brandBlue = Color(0xFF0079FD);
 

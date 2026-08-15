@@ -1,9 +1,17 @@
-"""Import repo-root logo.png into transparent Flutter/web logo assets.
+"""Derive the transparent Flutter/web logo assets from the brand artwork.
+
+The source artwork holds four elements side by side: the medical cross, a
+2x2 window grid, the book, and the HOSSPI wordmark. The shipped mark keeps
+only two of them - the cross is composited onto the book's front cover - so
+it stays legible at favicon and launcher sizes where a wide lockup would
+shrink to nothing. See `_compose_mark`.
 
 The source is cleaned before export: near-white plates are knocked out,
 isolated dark specks are repaired, and the alpha edge is supersampled for a
 smooth silhouette. Every generated asset uses transparent padding so the mark
 works on light, dark, and custom theme surfaces.
+
+Run with: python tool/generate_hosspi_logo.py
 """
 
 from __future__ import annotations
@@ -11,18 +19,28 @@ from __future__ import annotations
 from collections import deque
 from pathlib import Path
 
+import numpy as np
 from PIL import Image, ImageChops, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[2]
 FRONTEND = Path(__file__).resolve().parents[1]
-SRC_CANDIDATES = (
-    ROOT / "logo.png",
-    FRONTEND / "assets" / "logos" / "logo_master.png",
-    FRONTEND / "assets" / "logos" / "logo.png",
-)
 OUT = FRONTEND / "assets" / "logos"
+# Pristine multi-element artwork. Never written by this script so the pieces
+# stay available for future mark revisions.
+SOURCE = OUT / "logo_source.png"
+SRC_CANDIDATES = (
+    SOURCE,
+    ROOT / "logo.png",
+)
 WEB = FRONTEND / "web"
 ICONS = WEB / "icons"
+
+# Cross width as a share of the book's front-cover width. Large enough to
+# survive a 16px favicon, small enough to leave cover margin on both sides.
+CROSS_COVER_WIDTH_RATIO = 0.62
+# Nudge the cross up by this share of the cover height. The page block along
+# the bottom edge adds visual weight, so true centering reads low.
+CROSS_COVER_RISE_RATIO = 0.015
 
 def _is_near_white_plate(pixel: tuple[int, int, int, int]) -> bool:
     r, g, b, a = pixel
@@ -215,6 +233,166 @@ def _clean_logo(img: Image.Image) -> Image.Image:
     return _repair_dark_spots(_smooth_alpha_edges(cleaned))
 
 
+def _opaque_components(
+    img: Image.Image,
+    *,
+    min_share: float = 0.02,
+) -> list[tuple[int, tuple[int, int, int, int], tuple[int, int, int]]]:
+    """Connected opaque regions as (pixel count, bbox, mean rgb), largest first.
+
+    Row runs are unioned instead of flood-filling pixel by pixel; the artwork
+    is multi-megapixel and a per-pixel queue in Python is far too slow.
+    """
+    data = np.array(img.convert("RGBA"))
+    mask = data[:, :, 3] > 24
+    height, width = mask.shape
+
+    parent: list[int] = []
+
+    def find(node: int) -> int:
+        while parent[node] != node:
+            parent[node] = parent[parent[node]]
+            node = parent[node]
+        return node
+
+    def union(a: int, b: int) -> None:
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[max(ra, rb)] = min(ra, rb)
+
+    runs: list[tuple[int, int, int, int]] = []  # (row, start, end_exclusive, id)
+    previous: list[tuple[int, int, int, int]] = []
+    for y in range(height):
+        row = mask[y]
+        if not row.any():
+            previous = []
+            continue
+        edges = np.flatnonzero(np.diff(np.concatenate(([0], row.view(np.int8), [0]))))
+        current: list[tuple[int, int, int, int]] = []
+        for start, end in zip(edges[::2], edges[1::2]):
+            run_id = len(parent)
+            parent.append(run_id)
+            run = (y, int(start), int(end), run_id)
+            current.append(run)
+            runs.append(run)
+            for _, pstart, pend, pid in previous:
+                if pstart < end and start < pend:
+                    union(run_id, pid)
+        previous = current
+
+    groups: dict[int, list[tuple[int, int, int, int]]] = {}
+    for run in runs:
+        groups.setdefault(find(run[3]), []).append(run)
+
+    total = int(mask.sum())
+    rgb = data[:, :, :3].astype(np.int64)
+    results = []
+    for members in groups.values():
+        count = sum(end - start for _, start, end, _ in members)
+        if count < total * min_share:
+            continue
+        xs0 = min(start for _, start, _, _ in members)
+        xs1 = max(end for _, _, end, _ in members)
+        ys0 = min(y for y, _, _, _ in members)
+        ys1 = max(y for y, _, _, _ in members) + 1
+        channel_sum = np.zeros(3, dtype=np.int64)
+        for y, start, end, _ in members:
+            channel_sum += rgb[y, start:end].sum(axis=0)
+        mean = tuple((channel_sum // count).tolist())
+        results.append((count, (xs0, ys0, xs1, ys1), mean))
+
+    results.sort(key=lambda item: item[0], reverse=True)
+    return results
+
+
+def _cover_face(book: Image.Image) -> tuple[int, int, int, int]:
+    """Front-cover rectangle of the book, excluding spine and page block."""
+    data = np.array(book)
+    r, g, b, a = (data[:, :, i].astype(int) for i in range(4))
+    opaque = a > 128
+    # Cream page edges: warm and light, unlike every blue cover pixel.
+    pages = opaque & (r > 190) & (g > 155) & (b > 100) & (b < 235)
+    height, width = opaque.shape
+
+    # The spine meets the cover at a dark crease; find it in the left third.
+    crease = data[int(height * 0.18) : int(height * 0.62), :, :3]
+    seam = int(np.argmin(crease.astype(int).mean(axis=(0, 2))[: width // 3]))
+
+    mid_rows = pages[int(height * 0.25) : int(height * 0.6)]
+    right = int(np.flatnonzero(mid_rows.any(axis=0)).min())
+    mid_cols = pages[:, int(width * 0.25) : int(width * 0.75)]
+    bottom = int(np.flatnonzero(mid_cols.any(axis=1)).min())
+    top = int(np.flatnonzero(opaque.any(axis=1)).min())
+    return (seam + 6, top, right, bottom)
+
+
+def _compose_mark(cleaned: Image.Image) -> Image.Image:
+    """Keep the cross and the book, and set the cross on the book's cover."""
+    components = _opaque_components(cleaned)
+    if len(components) < 2:
+        raise SystemExit(
+            "Source artwork does not separate into distinct elements. Point "
+            f"{SOURCE.name} at the original multi-element logo."
+        )
+
+    def redness(component) -> int:
+        red, green, blue = component[2]
+        return red - max(green, blue)
+
+    cross_part = max(components, key=redness)
+    if redness(cross_part) < 60:
+        raise SystemExit(
+            "No red cross found in the source artwork; refusing to compose a "
+            "mark from an already-composed image."
+        )
+    # Book is the largest remaining element (the grid tiles and the wordmark
+    # glyphs are all substantially smaller).
+    book_part = max(
+        (c for c in components if c is not cross_part), key=lambda c: c[0]
+    )
+
+    cross = cleaned.crop(cross_part[1])
+    book = cleaned.crop(book_part[1])
+
+    left, top, right, bottom = _cover_face(book)
+    cover_width = right - left
+    cover_height = bottom - top
+
+    target_width = int(round(cover_width * CROSS_COVER_WIDTH_RATIO))
+    scale = target_width / cross.size[0]
+    target_height = int(round(cross.size[1] * scale))
+    scaled = cross.resize((target_width, target_height), Image.Resampling.LANCZOS)
+
+    x = left + (cover_width - target_width) // 2
+    y = top + int(
+        round((cover_height - target_height) / 2 - cover_height * CROSS_COVER_RISE_RATIO)
+    )
+
+    mark = book.copy()
+    # Contact shadow so the cross reads as resting on the cover rather than
+    # punched into it. Deep navy, not black, so _repair_dark_spots ignores it.
+    blur = max(2, target_width // 26)
+    pad = blur * 4
+    shadow = Image.new(
+        "RGBA", (target_width + pad * 2, target_height + pad * 2), (0, 0, 0, 0)
+    )
+    tint = Image.new("RGBA", scaled.size, (10, 45, 105, 255))
+    tint.putalpha(scaled.getchannel("A").point(lambda value: int(value * 0.42)))
+    shadow.alpha_composite(tint, (pad, pad))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(blur))
+    mark.alpha_composite(shadow, (x - pad, y - pad + blur))
+    mark.alpha_composite(scaled, (x, y))
+
+    bbox = mark.getbbox()
+    if bbox:
+        mark = mark.crop(bbox)
+    print(
+        f"composed mark {mark.size[0]}x{mark.size[1]} "
+        f"cover={cover_width}x{cover_height} cross={target_width}x{target_height}"
+    )
+    return mark
+
+
 def _fit_square(
     img: Image.Image,
     size: int,
@@ -245,24 +423,20 @@ def _favicon(img: Image.Image, size: int = 1024) -> Image.Image:
 def main() -> None:
     src_path = next((p for p in SRC_CANDIDATES if p.exists()), None)
     if src_path is None:
-        raise SystemExit(
-            f"Missing source logo. Place logo.png at {ROOT / 'logo.png'}."
-        )
+        raise SystemExit(f"Missing source artwork. Expected {SOURCE}.")
 
-    cropped = _clean_logo(Image.open(src_path).convert("RGBA"))
-    bbox = cropped.getbbox()
+    cleaned = _clean_logo(Image.open(src_path).convert("RGBA"))
+    bbox = cleaned.getbbox()
     if bbox:
-        cropped = cropped.crop(bbox)
+        cleaned = cleaned.crop(bbox)
+    print(f"source {src_path.name} content {cleaned.size[0]}x{cleaned.size[1]}")
 
+    cropped = _compose_mark(cleaned)
     cw, ch = cropped.size
     aspect = cw / ch
-    print(f"source {src_path.name} content {cw}x{ch} aspect={aspect:.4f}")
 
     OUT.mkdir(parents=True, exist_ok=True)
     ICONS.mkdir(parents=True, exist_ok=True)
-
-    # Keep the repo-root source clean and transparent as well.
-    cropped.save(ROOT / "logo.png", "PNG", optimize=True)
 
     # Bake the in-app mark at master resolution. AppLogo decodes via
     # device-pixel cacheWidth/cacheHeight so web/high-DPI stays sharp.
