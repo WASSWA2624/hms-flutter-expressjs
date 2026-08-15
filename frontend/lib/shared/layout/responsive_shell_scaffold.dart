@@ -549,7 +549,6 @@ class AppMenuBar extends StatelessWidget {
     final bool isMobile = breakpoint.isMobile;
     final bool hideTitle = breakpoint == AppBreakpoint.xs;
     final String effectiveTitle = isMobile ? compactTitle ?? title : title;
-    final double logoSize = isMobile ? _mobileHeaderLogoSize : _headerLogoSize;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -573,7 +572,7 @@ class AppMenuBar extends StatelessWidget {
                 onPressed: onToggleNavigation,
               ),
               SizedBox(width: theme.spacing.xs),
-              AppLogo(size: logoSize),
+              const AppLogo(size: _headerBrandHeight),
               if (!hideTitle) SizedBox(width: theme.spacing.sm),
               Expanded(
                 child: hideTitle
@@ -583,7 +582,7 @@ class AppMenuBar extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: colorScheme.primary,
-                          fontSize: logoSize * _appBarTitleToLogoRatio,
+                          fontSize: _headerBrandHeight,
                           height: 1,
                           fontWeight: AppFontWeight.bold,
                         ),
@@ -1171,6 +1170,13 @@ class _MobileShellDrawerState extends State<_MobileShellDrawer> {
     final ColorScheme colorScheme = theme.colorScheme;
     final String title = widget.title;
     final String closeTooltip = widget.closeTooltip;
+    final TextStyle? drawerTitleStyle = theme.textTheme.titleMedium?.copyWith(
+      color: colorScheme.primary,
+      fontWeight: AppFontWeight.emphasis,
+      height: 1,
+    );
+    final double drawerBrandHeight =
+        drawerTitleStyle?.fontSize ?? _drawerBrandHeightFallback;
     final List<_NavigationListEntry> entries = _navigationListEntries(
       _indexedDestinations(widget.destinations),
       showGroups: false,
@@ -1192,16 +1198,16 @@ class _MobileShellDrawerState extends State<_MobileShellDrawer> {
                 ),
                 child: Row(
                   children: <Widget>[
-                    const AppLogo(size: _drawerLogoSize),
+                    // Match the mark to the title's own size rather than a
+                    // fixed constant. The previous 48 also overflowed this
+                    // header, which is only _drawerHeaderHeight (40) tall.
+                    AppLogo(size: drawerBrandHeight),
                     SizedBox(width: theme.spacing.xs),
                     Expanded(
                       child: Text(
                         title,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: colorScheme.primary,
-                          fontWeight: AppFontWeight.emphasis,
-                        ),
+                        style: drawerTitleStyle,
                       ),
                     ),
                     AppButton(
@@ -2182,11 +2188,15 @@ final RegExp _initialsDelimiterPattern = RegExp(r'[@._-]+');
 final RegExp _whitespacePattern = RegExp(r'\s+');
 
 const double _drawerHeaderHeight = AppShellLayout.headerHeight;
-/// Match dense icon-only [AppButton] (40 min − VisualDensity.compact → 32).
-const double _headerLogoSize = 32;
-const double _mobileHeaderLogoSize = 32;
-const double _appBarTitleToLogoRatio = 0.9;
-const double _drawerLogoSize = 48;
+/// Shared height for the header logo and the app name beside it, so the two
+/// read as one lockup. The title sets `height: 1`, making its line box equal
+/// its font size. Stays inside the dense icon-only [AppButton] slot
+/// (40 min − VisualDensity.compact → 32).
+const double _headerBrandHeight = 28;
+
+/// Fallback when the drawer title's style carries no explicit font size; the
+/// drawer normally sizes its mark from [TextTheme.titleMedium].
+const double _drawerBrandHeightFallback = 16;
 const double _avatarRadius = 13;
 const double _focusIndicatorWidth = 2;
 const Duration _menuAnimationDuration = Duration(milliseconds: 120);

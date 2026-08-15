@@ -92,8 +92,10 @@ class _AuthBrandHeader extends StatelessWidget {
         breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm;
     final String displayName = context.l10n.appTitle;
 
-    final double logoHeight = isCompact ? 56.0 : 72.0;
-    final double titleSize = logoHeight * 0.5;
+    // One height for both halves of the lockup. The title sets `height: 1.0`,
+    // so its line box equals its font size and the mark lines up with it
+    // exactly instead of towering over it.
+    final double brandHeight = isCompact ? 28.0 : 36.0;
 
     return Semantics(
       header: true,
@@ -109,7 +111,7 @@ class _AuthBrandHeader extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: <Widget>[
-              AppLogo(size: logoHeight),
+              AppLogo(size: brandHeight),
               SizedBox(width: theme.spacing.md),
               Flexible(
                 child: Text(
@@ -120,7 +122,7 @@ class _AuthBrandHeader extends StatelessWidget {
                   style: theme.textTheme.headlineSmall?.copyWith(
                     color: theme.colorScheme.primary,
                     fontWeight: AppFontWeight.strong,
-                    fontSize: titleSize,
+                    fontSize: brandHeight,
                     height: 1.0,
                     letterSpacing: -0.6,
                   ),
