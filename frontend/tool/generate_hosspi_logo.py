@@ -1,10 +1,10 @@
 """Derive the transparent Flutter/web logo assets from the brand artwork.
 
-The source artwork holds four elements side by side: the medical cross, a
-2x2 window grid, the book, and the HOSSPI wordmark. The shipped mark keeps
-only two of them - the cross is composited onto the book's front cover - so
-it stays legible at favicon and launcher sizes where a wide lockup would
-shrink to nothing. See `_compose_mark`.
+The source artwork holds four elements side by side: a medical cross, a 2x2
+window grid, the book, and the HOSSPI wordmark. The shipped mark keeps only
+the book and lays a drawn syringe across its front cover, so it stays legible
+at favicon and launcher sizes where a wide lockup would shrink to nothing.
+See `_compose_mark`.
 
 The source is cleaned before export: near-white plates are knocked out,
 isolated dark specks are repaired, and the alpha edge is supersampled for a
@@ -20,7 +20,7 @@ from collections import deque
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageChops, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 ROOT = Path(__file__).resolve().parents[2]
 FRONTEND = Path(__file__).resolve().parents[1]
@@ -35,12 +35,27 @@ SRC_CANDIDATES = (
 WEB = FRONTEND / "web"
 ICONS = WEB / "icons"
 
-# Cross width as a share of the book's front-cover width. Large enough to
-# survive a 16px favicon, small enough to leave cover margin on both sides.
-CROSS_COVER_WIDTH_RATIO = 0.62
-# Nudge the cross up by this share of the cover height. The page block along
+# Syringe bounding-box width as a share of the book's front-cover width. It is
+# drawn on the diagonal, so the box is nearly square and can run wider than an
+# upright element before it crowds the cover edges.
+SYRINGE_COVER_WIDTH_RATIO = 0.84
+# Nudge the syringe up by this share of the cover height. The page block along
 # the bottom edge adds visual weight, so true centering reads low.
-CROSS_COVER_RISE_RATIO = 0.015
+SYRINGE_COVER_RISE_RATIO = 0.015
+# Needle points up and to the right, counter-clockwise from horizontal.
+SYRINGE_ANGLE_DEGREES = 40.0
+# Barrel half-height as a share of the syringe's length. Chunky on purpose:
+# a slimmer barrel dissolves into a smudge once the favicon hits 16px.
+SYRINGE_GIRTH_RATIO = 0.150
+# Supersample factor for the drawn syringe, downscaled for antialiasing.
+SYRINGE_SUPERSAMPLE = 4
+
+# Syringe palette. Every value stays bright enough that _repair_dark_spots
+# does not mistake the shading for raster damage.
+GLASS_TOP, GLASS_BOTTOM = (255, 255, 255), (196, 214, 234)
+STEEL_TOP, STEEL_BOTTOM = (252, 253, 255), (172, 192, 216)
+FLUID_TOP, FLUID_BOTTOM = (255, 108, 94), (196, 38, 38)
+GRADUATION = (120, 150, 185)
 
 def _is_near_white_plate(pixel: tuple[int, int, int, int]) -> bool:
     r, g, b, a = pixel
@@ -326,69 +341,237 @@ def _cover_face(book: Image.Image) -> tuple[int, int, int, int]:
     return (seam + 6, top, right, bottom)
 
 
-def _compose_mark(cleaned: Image.Image) -> Image.Image:
-    """Keep the cross and the book, and set the cross on the book's cover."""
-    components = _opaque_components(cleaned)
-    if len(components) < 2:
-        raise SystemExit(
-            "Source artwork does not separate into distinct elements. Point "
-            f"{SOURCE.name} at the original multi-element logo."
+def _vertical_gradient(
+    size: tuple[int, int],
+    top: tuple[int, int, int],
+    bottom: tuple[int, int, int],
+) -> Image.Image:
+    width, height = size
+    column = Image.new("RGB", (1, height))
+    pixels = column.load()
+    for y in range(height):
+        blend = y / max(1, height - 1)
+        pixels[0, y] = tuple(
+            round(top[i] + (bottom[i] - top[i]) * blend) for i in range(3)
+        )
+    return column.resize((width, height), Image.Resampling.BILINEAR)
+
+
+def _shaded(
+    mask: Image.Image,
+    top: tuple[int, int, int],
+    bottom: tuple[int, int, int],
+) -> Image.Image:
+    """Fill [mask] with a vertical gradient, keeping the mask as its alpha."""
+    layer = _vertical_gradient(mask.size, top, bottom).convert("RGBA")
+    layer.putalpha(mask)
+    return layer
+
+
+def _bevel(
+    alpha: Image.Image,
+    radius: float,
+    offset: int,
+) -> tuple[Image.Image, Image.Image]:
+    """Lit / shaded bands just inside a silhouette, as if lit from above.
+
+    Offsetting a blurred copy of the shape and subtracting the original
+    leaves a soft band hugging one edge, which is enough to give flat fills
+    the rounded read of the surrounding 3D artwork.
+    """
+    soft = alpha.filter(ImageFilter.GaussianBlur(radius))
+    solid = alpha.point(lambda value: 255 if value > 160 else 0)
+    light = ImageChops.multiply(
+        ImageChops.subtract(ImageChops.offset(soft, 0, offset), soft), solid
+    )
+    shade = ImageChops.multiply(
+        ImageChops.subtract(ImageChops.offset(soft, 0, -offset), soft), solid
+    )
+    return light, shade
+
+
+def _syringe(length: int) -> Image.Image:
+    """Draw a syringe of [length] px, needle up and to the right."""
+    ss = SYRINGE_SUPERSAMPLE
+    width = length * ss
+    unit = int(width * SYRINGE_GIRTH_RATIO)  # barrel half-height
+    height = int(unit * 4.2)
+    axis = height // 2
+
+    def rounded(x0, y0, x1, y1, radius) -> Image.Image:
+        mask = Image.new("L", (width, height), 0)
+        ImageDraw.Draw(mask).rounded_rectangle(
+            (x0, y0, x1, y1), radius=radius, fill=255
+        )
+        return mask
+
+    body = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+
+    # Plunger rod, bracketed by the thumb press and the finger flange.
+    body.alpha_composite(
+        _shaded(
+            rounded(
+                0.055 * width,
+                axis - 0.26 * unit,
+                0.36 * width,
+                axis + 0.26 * unit,
+                0.22 * unit,
+            ),
+            STEEL_TOP,
+            STEEL_BOTTOM,
+        )
+    )
+    for x0, x1 in ((0.005 * width, 0.085 * width), (0.290 * width, 0.370 * width)):
+        body.alpha_composite(
+            _shaded(
+                rounded(x0, axis - 1.05 * unit, x1, axis + 1.05 * unit, 0.34 * unit),
+                GLASS_TOP,
+                GLASS_BOTTOM,
+            )
         )
 
-    def redness(component) -> int:
-        red, green, blue = component[2]
-        return red - max(green, blue)
-
-    cross_part = max(components, key=redness)
-    if redness(cross_part) < 60:
-        raise SystemExit(
-            "No red cross found in the source artwork; refusing to compose a "
-            "mark from an already-composed image."
+    body.alpha_composite(
+        _shaded(
+            rounded(
+                0.345 * width,
+                axis - 0.62 * unit,
+                0.815 * width,
+                axis + 0.62 * unit,
+                0.30 * unit,
+            ),
+            GLASS_TOP,
+            GLASS_BOTTOM,
         )
-    # Book is the largest remaining element (the grid tiles and the wordmark
-    # glyphs are all substantially smaller).
-    book_part = max(
-        (c for c in components if c is not cross_part), key=lambda c: c[0]
     )
 
-    cross = cleaned.crop(cross_part[1])
-    book = cleaned.crop(book_part[1])
+    hub = Image.new("L", (width, height), 0)
+    ImageDraw.Draw(hub).polygon(
+        [
+            (0.800 * width, axis - 0.44 * unit),
+            (0.800 * width, axis + 0.44 * unit),
+            (0.885 * width, axis + 0.14 * unit),
+            (0.885 * width, axis - 0.14 * unit),
+        ],
+        fill=255,
+    )
+    body.alpha_composite(_shaded(hub, STEEL_TOP, STEEL_BOTTOM))
+    needle = Image.new("L", (width, height), 0)
+    ImageDraw.Draw(needle).polygon(
+        [
+            (0.875 * width, axis - 0.170 * unit),
+            (0.875 * width, axis + 0.170 * unit),
+            (0.997 * width, axis + 0.015 * unit),
+            (0.997 * width, axis - 0.070 * unit),
+        ],
+        fill=255,
+    )
+    body.alpha_composite(_shaded(needle, STEEL_TOP, STEEL_BOTTOM))
 
+    # Round the hardware before the dose goes in, so the fluid keeps its own
+    # edge instead of inheriting the barrel's.
+    light, shade = _bevel(body.getchannel("A"), unit * 0.30, int(unit * 0.26))
+    lit = Image.new("RGBA", (width, height), (255, 255, 255, 0))
+    lit.putalpha(light.point(lambda value: min(255, int(value * 1.35))))
+    body.alpha_composite(lit)
+    dark = Image.new("RGBA", (width, height), (86, 116, 152, 0))
+    dark.putalpha(shade.point(lambda value: min(255, int(value * 1.05))))
+    body.alpha_composite(dark)
+
+    # Dose drawn up, filling the needle end of the barrel.
+    fluid_mask = rounded(
+        0.520 * width,
+        axis - 0.46 * unit,
+        0.802 * width,
+        axis + 0.46 * unit,
+        0.22 * unit,
+    )
+    fluid = _shaded(fluid_mask, FLUID_TOP, FLUID_BOTTOM)
+    fluid_light, fluid_shade = _bevel(fluid_mask, unit * 0.22, int(unit * 0.20))
+    fluid_lit = Image.new("RGBA", (width, height), (255, 190, 180, 0))
+    fluid_lit.putalpha(fluid_light.point(lambda value: min(255, int(value * 1.25))))
+    fluid.alpha_composite(fluid_lit)
+    fluid_dark = Image.new("RGBA", (width, height), (150, 26, 26, 0))
+    fluid_dark.putalpha(fluid_shade.point(lambda value: min(255, int(value * 1.10))))
+    fluid.alpha_composite(fluid_dark)
+    body.alpha_composite(fluid)
+
+    ticks = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    tick_draw = ImageDraw.Draw(ticks)
+    for index in range(2):
+        x = 0.405 * width + index * 0.055 * width
+        tick_draw.rounded_rectangle(
+            (x, axis - 0.33 * unit, x + 0.015 * width, axis + 0.05 * unit),
+            radius=0.009 * width,
+            fill=(*GRADUATION, 200),
+        )
+    body.alpha_composite(ticks)
+
+    rotated = body.rotate(
+        SYRINGE_ANGLE_DEGREES, resample=Image.Resampling.BICUBIC, expand=True
+    )
+    rotated = rotated.crop(rotated.getbbox())
+    return rotated.resize(
+        (max(1, rotated.size[0] // ss), max(1, rotated.size[1] // ss)),
+        Image.Resampling.LANCZOS,
+    )
+
+
+def _compose_mark(cleaned: Image.Image) -> Image.Image:
+    """Keep the book, and lay a syringe across its front cover."""
+    components = _opaque_components(cleaned)
+    if not components:
+        raise SystemExit("Source artwork has no opaque content.")
+
+    total = sum(count for count, _, _ in components)
+    book_part = components[0]
+    if book_part[0] > total * 0.6:
+        raise SystemExit(
+            "Source artwork is a single element; refusing to compose a mark "
+            f"from an already-composed image. Point {SOURCE.name} at the "
+            "original multi-element logo."
+        )
+
+    book = cleaned.crop(book_part[1])
     left, top, right, bottom = _cover_face(book)
     cover_width = right - left
     cover_height = bottom - top
 
-    target_width = int(round(cover_width * CROSS_COVER_WIDTH_RATIO))
-    scale = target_width / cross.size[0]
-    target_height = int(round(cross.size[1] * scale))
-    scaled = cross.resize((target_width, target_height), Image.Resampling.LANCZOS)
+    art = _syringe(max(64, int(round(cover_width))))
+    target_width = int(round(cover_width * SYRINGE_COVER_WIDTH_RATIO))
+    scale = target_width / art.size[0]
+    target_height = int(round(art.size[1] * scale))
+    art = art.resize((target_width, target_height), Image.Resampling.LANCZOS)
 
     x = left + (cover_width - target_width) // 2
     y = top + int(
-        round((cover_height - target_height) / 2 - cover_height * CROSS_COVER_RISE_RATIO)
+        round(
+            (cover_height - target_height) / 2
+            - cover_height * SYRINGE_COVER_RISE_RATIO
+        )
     )
 
     mark = book.copy()
-    # Contact shadow so the cross reads as resting on the cover rather than
-    # punched into it. Deep navy, not black, so _repair_dark_spots ignores it.
-    blur = max(2, target_width // 26)
+    # Contact shadow so the syringe reads as resting on the cover rather than
+    # printed into it. Deep navy, not black, so _repair_dark_spots ignores it.
+    blur = max(2, target_width // 30)
     pad = blur * 4
     shadow = Image.new(
         "RGBA", (target_width + pad * 2, target_height + pad * 2), (0, 0, 0, 0)
     )
-    tint = Image.new("RGBA", scaled.size, (10, 45, 105, 255))
-    tint.putalpha(scaled.getchannel("A").point(lambda value: int(value * 0.42)))
+    tint = Image.new("RGBA", art.size, (10, 45, 105, 255))
+    tint.putalpha(art.getchannel("A").point(lambda value: int(value * 0.45)))
     shadow.alpha_composite(tint, (pad, pad))
     shadow = shadow.filter(ImageFilter.GaussianBlur(blur))
     mark.alpha_composite(shadow, (x - pad, y - pad + blur))
-    mark.alpha_composite(scaled, (x, y))
+    mark.alpha_composite(art, (x, y))
 
     bbox = mark.getbbox()
     if bbox:
         mark = mark.crop(bbox)
     print(
         f"composed mark {mark.size[0]}x{mark.size[1]} "
-        f"cover={cover_width}x{cover_height} cross={target_width}x{target_height}"
+        f"cover={cover_width}x{cover_height} "
+        f"syringe={target_width}x{target_height}"
     )
     return mark
 
