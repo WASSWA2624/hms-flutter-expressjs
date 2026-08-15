@@ -42,7 +42,10 @@ SYRINGE_COVER_WIDTH_RATIO = 0.84
 # Nudge the syringe up by this share of the cover height. The page block along
 # the bottom edge adds visual weight, so true centering reads low.
 SYRINGE_COVER_RISE_RATIO = 0.015
-# Needle points up and to the right, counter-clockwise from horizontal.
+# Tilt from horizontal. The barrel is drawn needle-right and then mirrored, so
+# rotating clockwise by this much lands the needle down and to the left.
+# Mirroring rather than rotating a further 180 degrees keeps the baked-in
+# shading lit from above, matching the book.
 SYRINGE_ANGLE_DEGREES = 40.0
 # Barrel half-height as a share of the syringe's length. Chunky on purpose:
 # a slimmer barrel dissolves into a smudge once the favicon hits 16px.
@@ -390,8 +393,59 @@ def _bevel(
     return light, shade
 
 
+def _crisp_alpha_edge(
+    img: Image.Image,
+    *,
+    gain: float = 3.5,
+    supersample: int = 4,
+    bleed: float = 6.0,
+) -> Image.Image:
+    """Narrow the source's soft alpha ramp to a clean antialiased edge.
+
+    The brand render bakes a ~9px fade into its alpha, which reads as a fuzzy
+    halo once the mark is composited - dark on light surfaces, bright on dark
+    ones. Steepening the ramp at [supersample] scale and resampling back down
+    trades that fade for a ~1px edge without introducing stair-steps.
+    """
+    width, height = img.size
+    alpha = img.getchannel("A")
+    stepped = alpha.resize(
+        (width * supersample, height * supersample), Image.Resampling.BICUBIC
+    ).point(lambda value: max(0, min(255, int((value - 128) * gain + 128))))
+    tight = stepped.resize((width, height), Image.Resampling.LANCZOS)
+
+    # Alpha-weighted colour bleed: blur the premultiplied colour and divide by
+    # the blurred alpha so the fringe inherits its neighbours' real colour.
+    # A per-channel maximum would work too, but it skews the fringe white.
+    data = np.array(img).astype(np.float64)
+    coverage = data[:, :, 3] / 255.0
+    premultiplied = Image.fromarray(
+        np.dstack([data[:, :, i] * coverage for i in range(3)]).astype(np.uint8)
+    ).filter(ImageFilter.GaussianBlur(bleed))
+    spread = (
+        np.array(
+            Image.fromarray((coverage * 255).astype(np.uint8)).filter(
+                ImageFilter.GaussianBlur(bleed)
+            )
+        ).astype(np.float64)
+        / 255.0
+    )
+    bled = np.clip(
+        np.array(premultiplied).astype(np.float64)
+        / np.maximum(spread, 1e-3)[:, :, None],
+        0,
+        255,
+    )
+
+    weight = coverage[:, :, None]
+    rgb = data[:, :, :3] * weight + bled * (1 - weight)
+    return Image.fromarray(
+        np.dstack([rgb, np.array(tight)]).astype(np.uint8), "RGBA"
+    )
+
+
 def _syringe(length: int) -> Image.Image:
-    """Draw a syringe of [length] px, needle up and to the right."""
+    """Draw a syringe of [length] px, needle down and to the left."""
     ss = SYRINGE_SUPERSAMPLE
     width = length * ss
     unit = int(width * SYRINGE_GIRTH_RATIO)  # barrel half-height
@@ -506,7 +560,9 @@ def _syringe(length: int) -> Image.Image:
         )
     body.alpha_composite(ticks)
 
-    rotated = body.rotate(
+    # Mirror so the needle faces left, then rotate counter-clockwise, which
+    # swings the left end downwards.
+    rotated = body.transpose(Image.Transpose.FLIP_LEFT_RIGHT).rotate(
         SYRINGE_ANGLE_DEGREES, resample=Image.Resampling.BICUBIC, expand=True
     )
     rotated = rotated.crop(rotated.getbbox())
@@ -568,6 +624,11 @@ def _compose_mark(cleaned: Image.Image) -> Image.Image:
     bbox = mark.getbbox()
     if bbox:
         mark = mark.crop(bbox)
+    mark = _crisp_alpha_edge(mark)
+    # Re-crop: tightening the ramp drops the outermost near-transparent ring.
+    bbox = mark.getbbox()
+    if bbox:
+        mark = mark.crop(bbox)
     print(
         f"composed mark {mark.size[0]}x{mark.size[1]} "
         f"cover={cover_width}x{cover_height} "
@@ -623,7 +684,12 @@ def main() -> None:
 
     # Bake the in-app mark at master resolution. AppLogo decodes via
     # device-pixel cacheWidth/cacheHeight so web/high-DPI stays sharp.
-    master = _repair_dark_spots(_fit_natural(cropped, 2048))
+    #
+    # Never scale past the source pixels: the mark is one element cropped out
+    # of the artwork, so upscaling to a fixed 2048 only smears the edge that
+    # _crisp_alpha_edge just tightened. Its own height is already ~3x what the
+    # largest on-screen logo needs.
+    master = _repair_dark_spots(_fit_natural(cropped, min(2048, ch)))
     logo = master.copy()
 
     favicon = _repair_dark_spots(_favicon(cropped, 1024))
