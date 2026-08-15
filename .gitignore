@@ -25,9 +25,9 @@ Thumbs.db
 frontend/env/*.json
 !frontend/env/*.example
 
-# Staging folders for cPanel uploads - build output, never commit
-backend-cpanel-deploy/
-frontend-cpanel-deploy/
+# Staging folder for cPanel/APK uploads - build output plus live credentials
+# in deploy/backend/.env.production, never commit
+deploy/
 
 # Logs
 logs/

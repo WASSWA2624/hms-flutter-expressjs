@@ -1,4 +1,4 @@
-package com.example.flutter_template;
+package com.hosspi.hms;
 
 import androidx.test.platform.app.InstrumentationRegistry;
 import org.junit.Test;
