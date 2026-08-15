@@ -42,7 +42,7 @@ class _MockDocumentSequenceRepository extends Mock
     implements AccountsDocumentSequenceRepository {}
 
 /// A draft policy that has never issued a number: its shape is still editable.
-final AccountsDocumentSequence _draftSequence = AccountsDocumentSequence(
+const AccountsDocumentSequence _draftSequence = AccountsDocumentSequence(
   humanFriendlyId: 'DNS0000001',
   sequenceCode: 'INV-MAIN',
   documentType: AccountsDocumentType.invoice,
@@ -178,7 +178,7 @@ void _stubSequences(
       version: any(named: 'version'),
     ),
   ).thenAnswer(
-    (_) async => Result<AccountsDocumentSequence>.success(_draftSequence),
+    (_) async => const Result<AccountsDocumentSequence>.success(_draftSequence),
   );
 }
 
