@@ -52341,6 +52341,573 @@ abstract class AppLocalizations {
     String methodCode,
     String methodType,
   );
+
+  /// Accounts & Finance -> Setup & Controls -> Document Numbering tab label.
+  ///
+  /// In en, this message translates to:
+  /// **'Document Numbering'**
+  String get accountsDocumentNumberingLabel;
+
+  /// Tooltip for the Document Numbering tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefixes, padding, and reset rules for the references each document family issues'**
+  String get accountsDocumentNumberingTooltip;
+
+  /// Empty-state title for the document numbering table.
+  ///
+  /// In en, this message translates to:
+  /// **'No numbering sequences match.'**
+  String get accountsDocumentNumberingEmpty;
+
+  /// Empty-state body for the document numbering table.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another search or add a numbering sequence.'**
+  String get accountsDocumentNumberingEmptyBody;
+
+  /// Search field hint and accessibility label for the document numbering table.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference, code, prefix, module…'**
+  String get accountsDocumentNumberingSearchHint;
+
+  /// Optional human-friendly reference column on the document numbering table.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference'**
+  String get accountsDocumentSequenceReferenceColumn;
+
+  /// Sequence Code column and form field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Sequence Code'**
+  String get accountsDocumentSequenceCodeColumn;
+
+  /// Document Type column and form field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Document Type'**
+  String get accountsDocumentSequenceTypeColumn;
+
+  /// Module column and form field label on the document numbering table.
+  ///
+  /// In en, this message translates to:
+  /// **'Module'**
+  String get accountsDocumentSequenceModuleColumn;
+
+  /// Facility column and form field label on the document numbering table.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get accountsDocumentSequenceFacilityColumn;
+
+  /// Helper text under the Facility field in the document numbering form.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave blank to use the current facility scope.'**
+  String get accountsDocumentSequenceFacilityHelper;
+
+  /// Prefix column and form field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefix'**
+  String get accountsDocumentSequencePrefixColumn;
+
+  /// Suffix column and form field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Suffix'**
+  String get accountsDocumentSequenceSuffixColumn;
+
+  /// Date Pattern column and form field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Date Pattern'**
+  String get accountsDocumentSequenceDatePatternColumn;
+
+  /// Helper text clarifying that Date Pattern is a format, not a calendar date.
+  ///
+  /// In en, this message translates to:
+  /// **'Literal calendar pattern such as yyyyMM, not a date.'**
+  String get accountsDocumentSequenceDatePatternHelper;
+
+  /// Next Number column and read-only form field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Number'**
+  String get accountsDocumentSequenceNextNumberColumn;
+
+  /// Helper text explaining that Next Number is server-owned and not editable here.
+  ///
+  /// In en, this message translates to:
+  /// **'Read from the counter the documents themselves increment.'**
+  String get accountsDocumentSequenceNextNumberHelper;
+
+  /// Minimum Length column and form field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum Length'**
+  String get accountsDocumentSequenceMinimumLengthColumn;
+
+  /// Reset Frequency column and form field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Frequency'**
+  String get accountsDocumentSequenceResetColumn;
+
+  /// Optional Last Issued Number column on the document numbering table.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Issued Number'**
+  String get accountsDocumentSequenceLastIssuedNumberColumn;
+
+  /// Optional Last Issued At column on the document numbering table.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Issued At'**
+  String get accountsDocumentSequenceLastIssuedAtColumn;
+
+  /// Optional Gap Policy column and form field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Gap Policy'**
+  String get accountsDocumentSequenceGapPolicyColumn;
+
+  /// Sequence Status column and status filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Sequence Status'**
+  String get accountsDocumentSequenceStatusColumn;
+
+  /// Row actions column header on the document numbering table.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get accountsDocumentSequenceActionsColumn;
+
+  /// Label for the derived preview of the next reference this policy issues.
+  ///
+  /// In en, this message translates to:
+  /// **'Next reference'**
+  String get accountsDocumentSequencePreviewLabel;
+
+  /// Notes field label in the document numbering form and detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get accountsDocumentSequenceNotesLabel;
+
+  /// Optimistic record version shown in the document numbering detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get accountsDocumentSequenceVersionLabel;
+
+  /// Document numbering status: not yet available to downstream workflows.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get accountsDocumentSequenceStatusDraft;
+
+  /// Document numbering status: selectable by permitted workflows.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get accountsDocumentSequenceStatusActive;
+
+  /// Document numbering status: retained but not selectable for new work.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get accountsDocumentSequenceStatusInactive;
+
+  /// Document numbering status: soft-deleted historical record.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get accountsDocumentSequenceStatusArchived;
+
+  /// Numbered document family: patient billing invoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient Invoice'**
+  String get accountsDocumentTypeInvoice;
+
+  /// Numbered document family: facility outflow invoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts Invoice'**
+  String get accountsDocumentTypeAccountsInvoice;
+
+  /// Numbered document family: payment receipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt'**
+  String get accountsDocumentTypeReceipt;
+
+  /// Numbered document family: recorded payment.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get accountsDocumentTypePayment;
+
+  /// Numbered document family: refund.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund'**
+  String get accountsDocumentTypeRefund;
+
+  /// Numbered document family: credit note.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit Note'**
+  String get accountsDocumentTypeCreditNote;
+
+  /// Numbered document family: debit note.
+  ///
+  /// In en, this message translates to:
+  /// **'Debit Note'**
+  String get accountsDocumentTypeDebitNote;
+
+  /// Numbered document family: purchase order.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Order'**
+  String get accountsDocumentTypePurchaseOrder;
+
+  /// Numbered document family: goods receipt note.
+  ///
+  /// In en, this message translates to:
+  /// **'Goods Receipt'**
+  String get accountsDocumentTypeGoodsReceipt;
+
+  /// Numbered document family: insurance claim.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance Claim'**
+  String get accountsDocumentTypeClaim;
+
+  /// Reset frequency: the counter never restarts.
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get accountsDocumentResetNever;
+
+  /// Reset frequency: the counter restarts each day.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get accountsDocumentResetDaily;
+
+  /// Reset frequency: the counter restarts each month.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get accountsDocumentResetMonthly;
+
+  /// Reset frequency: the counter restarts each quarter.
+  ///
+  /// In en, this message translates to:
+  /// **'Quarterly'**
+  String get accountsDocumentResetQuarterly;
+
+  /// Reset frequency: the counter restarts each year.
+  ///
+  /// In en, this message translates to:
+  /// **'Yearly'**
+  String get accountsDocumentResetYearly;
+
+  /// Gap policy: reserved numbers that are never committed leave gaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow gaps'**
+  String get accountsDocumentGapPolicyAllowGaps;
+
+  /// Gap policy: the sequence must issue an unbroken run of numbers.
+  ///
+  /// In en, this message translates to:
+  /// **'No gaps'**
+  String get accountsDocumentGapPolicyNoGaps;
+
+  /// Gap policy: unused reservations are recorded as voided numbers.
+  ///
+  /// In en, this message translates to:
+  /// **'Reserve and void'**
+  String get accountsDocumentGapPolicyReserveAndVoid;
+
+  /// Form section grouping the sequence code, document type, module, and facility.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity'**
+  String get accountsDocumentSequenceIdentitySection;
+
+  /// Form section grouping the prefix, suffix, pattern, padding, and reset rules.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference shape'**
+  String get accountsDocumentSequenceShapeSection;
+
+  /// Detail section showing the key document numbering columns.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get accountsDocumentSequenceSummarySection;
+
+  /// Detail section showing the counter-derived issued numbers and cross-module links.
+  ///
+  /// In en, this message translates to:
+  /// **'Related records'**
+  String get accountsDocumentSequenceRelatedSection;
+
+  /// Explains that issued references live with the owning documents, not this policy row.
+  ///
+  /// In en, this message translates to:
+  /// **'Issued references belong to the documents this sequence numbers.'**
+  String get accountsDocumentSequenceRelatedEmpty;
+
+  /// Detail section listing documents attached to a numbering sequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachments'**
+  String get accountsDocumentSequenceAttachmentsSection;
+
+  /// Empty state for the document numbering attachments section.
+  ///
+  /// In en, this message translates to:
+  /// **'No attachments for this sequence.'**
+  String get accountsDocumentSequenceAttachmentsEmpty;
+
+  /// Detail section holding the immutable document numbering audit timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity & audit'**
+  String get accountsDocumentSequenceActivitySection;
+
+  /// Audit timeline entry for record creation.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get accountsDocumentSequenceActivityCreated;
+
+  /// Audit timeline entry for the last update.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated'**
+  String get accountsDocumentSequenceActivityUpdated;
+
+  /// Audit timeline entry for archiving.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get accountsDocumentSequenceActivityArchived;
+
+  /// Banner explaining that the counter is server-owned and not set from this form.
+  ///
+  /// In en, this message translates to:
+  /// **'The running number is held by the documents this sequence numbers. This form sets the policy; Next Number is read back from that counter.'**
+  String get accountsDocumentSequenceCounterNotice;
+
+  /// Banner explaining why reference shape fields are disabled once numbers have been issued.
+  ///
+  /// In en, this message translates to:
+  /// **'This sequence has already issued numbers, so its prefix, suffix, pattern, and padding are locked. Changing them would make old and new references indistinguishable.'**
+  String get accountsDocumentSequenceShapeLockedNotice;
+
+  /// Validation message for a required document numbering field.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get accountsDocumentSequenceRequiredField;
+
+  /// Validation message for a malformed sequence code.
+  ///
+  /// In en, this message translates to:
+  /// **'Use up to 32 letters, digits, hyphens, or underscores.'**
+  String get accountsDocumentSequenceInvalidCode;
+
+  /// Validation message for a malformed prefix or suffix.
+  ///
+  /// In en, this message translates to:
+  /// **'Use up to 16 letters, digits, hyphens, or slashes.'**
+  String get accountsDocumentSequenceInvalidAffix;
+
+  /// Validation message for a malformed date pattern.
+  ///
+  /// In en, this message translates to:
+  /// **'Use only calendar pattern characters such as y, M, d, q, or w.'**
+  String get accountsDocumentSequenceInvalidDatePattern;
+
+  /// Validation message for an out-of-range minimum length.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a number between 1 and 20.'**
+  String get accountsDocumentSequenceInvalidMinimumLength;
+
+  /// Validation message when the configured reference shape exceeds the reference column width.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefix, pattern, padding, and suffix must fit within {maxLength} characters.'**
+  String accountsDocumentSequenceReferenceTooLong(int maxLength);
+
+  /// Title of the document numbering create dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'New numbering sequence'**
+  String get accountsDocumentSequenceCreateTitle;
+
+  /// Title of the document numbering edit dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit numbering sequence'**
+  String get accountsDocumentSequenceEditTitle;
+
+  /// Title of the document numbering clone dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Clone numbering sequence'**
+  String get accountsDocumentSequenceCloneTitle;
+
+  /// Title of the document numbering detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Numbering sequence'**
+  String get accountsDocumentSequenceDetailTitle;
+
+  /// Toolbar action that opens the document numbering create dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'New sequence'**
+  String get accountsDocumentSequenceNewRecordAction;
+
+  /// Row action that opens the document numbering detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get accountsDocumentSequenceViewAction;
+
+  /// Row action that copies a sequence into a new unsaved draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Clone'**
+  String get accountsDocumentSequenceCloneAction;
+
+  /// Row action that activates a numbering sequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate'**
+  String get accountsDocumentSequenceActivateAction;
+
+  /// Row action that deactivates a numbering sequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate'**
+  String get accountsDocumentSequenceDeactivateAction;
+
+  /// Row action that soft-archives a numbering sequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get accountsDocumentSequenceArchiveAction;
+
+  /// Row action that restores an archived numbering sequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get accountsDocumentSequenceRestoreAction;
+
+  /// Toolbar action that activates every eligible matching sequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate selected'**
+  String get accountsDocumentSequenceBulkActivateAction;
+
+  /// Toolbar action that deactivates every eligible matching sequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate selected'**
+  String get accountsDocumentSequenceBulkDeactivateAction;
+
+  /// Toolbar action that archives every eligible matching sequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive selected'**
+  String get accountsDocumentSequenceBulkArchiveAction;
+
+  /// Confirmation body naming how many sequences a bulk action will change.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{This applies to 1 matching sequence.} other{This applies to {count} matching sequences.}}'**
+  String accountsDocumentSequenceBulkConfirmBody(int count);
+
+  /// Reports how many rows a bulk action could not change.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 sequence could not be changed.} other{{count} sequences could not be changed.}}'**
+  String accountsDocumentSequenceBulkPartialFailure(int count);
+
+  /// Title of the document numbering activate confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate this sequence?'**
+  String get accountsDocumentSequenceActivateConfirmTitle;
+
+  /// Body of the document numbering activate confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'{reference} will start issuing references for its document type. Only one sequence per document type can be active at a time.'**
+  String accountsDocumentSequenceActivateConfirmBody(String reference);
+
+  /// Title of the document numbering deactivate confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate this sequence?'**
+  String get accountsDocumentSequenceDeactivateConfirmTitle;
+
+  /// Body of the document numbering deactivate confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'{reference} will stop issuing new references. References it already issued stay valid.'**
+  String accountsDocumentSequenceDeactivateConfirmBody(String reference);
+
+  /// Title of the document numbering archive confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive this sequence?'**
+  String get accountsDocumentSequenceArchiveConfirmTitle;
+
+  /// Body of the document numbering archive confirmation, stating that archive is a soft state change.
+  ///
+  /// In en, this message translates to:
+  /// **'The sequence is archived, not deleted, so every reference it already issued stays traceable to the policy that produced it.'**
+  String get accountsDocumentSequenceArchiveConfirmBody;
+
+  /// Title of the document numbering restore confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore this sequence?'**
+  String get accountsDocumentSequenceRestoreConfirmTitle;
+
+  /// Body of the document numbering restore confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'{reference} returns to active and can issue references again.'**
+  String accountsDocumentSequenceRestoreConfirmBody(String reference);
+
+  /// Date range filter label on the document numbering table.
+  ///
+  /// In en, this message translates to:
+  /// **'Last changed'**
+  String get accountsDocumentSequenceDateRangeFilterLabel;
+
+  /// Compact mobile row caption pairing the localized document type with the prefix.
+  ///
+  /// In en, this message translates to:
+  /// **'{documentType} · {prefix}'**
+  String accountsDocumentSequenceMobileCaption(
+    String documentType,
+    String prefix,
+  );
 }
 
 class _AppLocalizationsDelegate

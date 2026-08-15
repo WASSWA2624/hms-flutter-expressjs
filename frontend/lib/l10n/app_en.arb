@@ -36585,5 +36585,419 @@
         "type": "String"
       }
     }
+  },
+  "accountsDocumentNumberingLabel": "Document Numbering",
+  "@accountsDocumentNumberingLabel": {
+    "description": "Accounts & Finance -> Setup & Controls -> Document Numbering tab label."
+  },
+  "accountsDocumentNumberingTooltip": "Prefixes, padding, and reset rules for the references each document family issues",
+  "@accountsDocumentNumberingTooltip": {
+    "description": "Tooltip for the Document Numbering tab."
+  },
+  "accountsDocumentNumberingEmpty": "No numbering sequences match.",
+  "@accountsDocumentNumberingEmpty": {
+    "description": "Empty-state title for the document numbering table."
+  },
+  "accountsDocumentNumberingEmptyBody": "Try another search or add a numbering sequence.",
+  "@accountsDocumentNumberingEmptyBody": {
+    "description": "Empty-state body for the document numbering table."
+  },
+  "accountsDocumentNumberingSearchHint": "Reference, code, prefix, module…",
+  "@accountsDocumentNumberingSearchHint": {
+    "description": "Search field hint and accessibility label for the document numbering table."
+  },
+  "accountsDocumentSequenceReferenceColumn": "Reference",
+  "@accountsDocumentSequenceReferenceColumn": {
+    "description": "Optional human-friendly reference column on the document numbering table."
+  },
+  "accountsDocumentSequenceCodeColumn": "Sequence Code",
+  "@accountsDocumentSequenceCodeColumn": {
+    "description": "Sequence Code column and form field label."
+  },
+  "accountsDocumentSequenceTypeColumn": "Document Type",
+  "@accountsDocumentSequenceTypeColumn": {
+    "description": "Document Type column and form field label."
+  },
+  "accountsDocumentSequenceModuleColumn": "Module",
+  "@accountsDocumentSequenceModuleColumn": {
+    "description": "Module column and form field label on the document numbering table."
+  },
+  "accountsDocumentSequenceFacilityColumn": "Facility",
+  "@accountsDocumentSequenceFacilityColumn": {
+    "description": "Facility column and form field label on the document numbering table."
+  },
+  "accountsDocumentSequenceFacilityHelper": "Leave blank to use the current facility scope.",
+  "@accountsDocumentSequenceFacilityHelper": {
+    "description": "Helper text under the Facility field in the document numbering form."
+  },
+  "accountsDocumentSequencePrefixColumn": "Prefix",
+  "@accountsDocumentSequencePrefixColumn": {
+    "description": "Prefix column and form field label."
+  },
+  "accountsDocumentSequenceSuffixColumn": "Suffix",
+  "@accountsDocumentSequenceSuffixColumn": {
+    "description": "Suffix column and form field label."
+  },
+  "accountsDocumentSequenceDatePatternColumn": "Date Pattern",
+  "@accountsDocumentSequenceDatePatternColumn": {
+    "description": "Date Pattern column and form field label."
+  },
+  "accountsDocumentSequenceDatePatternHelper": "Literal calendar pattern such as yyyyMM, not a date.",
+  "@accountsDocumentSequenceDatePatternHelper": {
+    "description": "Helper text clarifying that Date Pattern is a format, not a calendar date."
+  },
+  "accountsDocumentSequenceNextNumberColumn": "Next Number",
+  "@accountsDocumentSequenceNextNumberColumn": {
+    "description": "Next Number column and read-only form field label."
+  },
+  "accountsDocumentSequenceNextNumberHelper": "Read from the counter the documents themselves increment.",
+  "@accountsDocumentSequenceNextNumberHelper": {
+    "description": "Helper text explaining that Next Number is server-owned and not editable here."
+  },
+  "accountsDocumentSequenceMinimumLengthColumn": "Minimum Length",
+  "@accountsDocumentSequenceMinimumLengthColumn": {
+    "description": "Minimum Length column and form field label."
+  },
+  "accountsDocumentSequenceResetColumn": "Reset Frequency",
+  "@accountsDocumentSequenceResetColumn": {
+    "description": "Reset Frequency column and form field label."
+  },
+  "accountsDocumentSequenceLastIssuedNumberColumn": "Last Issued Number",
+  "@accountsDocumentSequenceLastIssuedNumberColumn": {
+    "description": "Optional Last Issued Number column on the document numbering table."
+  },
+  "accountsDocumentSequenceLastIssuedAtColumn": "Last Issued At",
+  "@accountsDocumentSequenceLastIssuedAtColumn": {
+    "description": "Optional Last Issued At column on the document numbering table."
+  },
+  "accountsDocumentSequenceGapPolicyColumn": "Gap Policy",
+  "@accountsDocumentSequenceGapPolicyColumn": {
+    "description": "Optional Gap Policy column and form field label."
+  },
+  "accountsDocumentSequenceStatusColumn": "Sequence Status",
+  "@accountsDocumentSequenceStatusColumn": {
+    "description": "Sequence Status column and status filter label."
+  },
+  "accountsDocumentSequenceActionsColumn": "Actions",
+  "@accountsDocumentSequenceActionsColumn": {
+    "description": "Row actions column header on the document numbering table."
+  },
+  "accountsDocumentSequencePreviewLabel": "Next reference",
+  "@accountsDocumentSequencePreviewLabel": {
+    "description": "Label for the derived preview of the next reference this policy issues."
+  },
+  "accountsDocumentSequenceNotesLabel": "Notes",
+  "@accountsDocumentSequenceNotesLabel": {
+    "description": "Notes field label in the document numbering form and detail."
+  },
+  "accountsDocumentSequenceVersionLabel": "Version",
+  "@accountsDocumentSequenceVersionLabel": {
+    "description": "Optimistic record version shown in the document numbering detail."
+  },
+  "accountsDocumentSequenceStatusDraft": "Draft",
+  "@accountsDocumentSequenceStatusDraft": {
+    "description": "Document numbering status: not yet available to downstream workflows."
+  },
+  "accountsDocumentSequenceStatusActive": "Active",
+  "@accountsDocumentSequenceStatusActive": {
+    "description": "Document numbering status: selectable by permitted workflows."
+  },
+  "accountsDocumentSequenceStatusInactive": "Inactive",
+  "@accountsDocumentSequenceStatusInactive": {
+    "description": "Document numbering status: retained but not selectable for new work."
+  },
+  "accountsDocumentSequenceStatusArchived": "Archived",
+  "@accountsDocumentSequenceStatusArchived": {
+    "description": "Document numbering status: soft-deleted historical record."
+  },
+  "accountsDocumentTypeInvoice": "Patient Invoice",
+  "@accountsDocumentTypeInvoice": {
+    "description": "Numbered document family: patient billing invoice."
+  },
+  "accountsDocumentTypeAccountsInvoice": "Accounts Invoice",
+  "@accountsDocumentTypeAccountsInvoice": {
+    "description": "Numbered document family: facility outflow invoice."
+  },
+  "accountsDocumentTypeReceipt": "Receipt",
+  "@accountsDocumentTypeReceipt": {
+    "description": "Numbered document family: payment receipt."
+  },
+  "accountsDocumentTypePayment": "Payment",
+  "@accountsDocumentTypePayment": {
+    "description": "Numbered document family: recorded payment."
+  },
+  "accountsDocumentTypeRefund": "Refund",
+  "@accountsDocumentTypeRefund": {
+    "description": "Numbered document family: refund."
+  },
+  "accountsDocumentTypeCreditNote": "Credit Note",
+  "@accountsDocumentTypeCreditNote": {
+    "description": "Numbered document family: credit note."
+  },
+  "accountsDocumentTypeDebitNote": "Debit Note",
+  "@accountsDocumentTypeDebitNote": {
+    "description": "Numbered document family: debit note."
+  },
+  "accountsDocumentTypePurchaseOrder": "Purchase Order",
+  "@accountsDocumentTypePurchaseOrder": {
+    "description": "Numbered document family: purchase order."
+  },
+  "accountsDocumentTypeGoodsReceipt": "Goods Receipt",
+  "@accountsDocumentTypeGoodsReceipt": {
+    "description": "Numbered document family: goods receipt note."
+  },
+  "accountsDocumentTypeClaim": "Insurance Claim",
+  "@accountsDocumentTypeClaim": {
+    "description": "Numbered document family: insurance claim."
+  },
+  "accountsDocumentResetNever": "Never",
+  "@accountsDocumentResetNever": {
+    "description": "Reset frequency: the counter never restarts."
+  },
+  "accountsDocumentResetDaily": "Daily",
+  "@accountsDocumentResetDaily": {
+    "description": "Reset frequency: the counter restarts each day."
+  },
+  "accountsDocumentResetMonthly": "Monthly",
+  "@accountsDocumentResetMonthly": {
+    "description": "Reset frequency: the counter restarts each month."
+  },
+  "accountsDocumentResetQuarterly": "Quarterly",
+  "@accountsDocumentResetQuarterly": {
+    "description": "Reset frequency: the counter restarts each quarter."
+  },
+  "accountsDocumentResetYearly": "Yearly",
+  "@accountsDocumentResetYearly": {
+    "description": "Reset frequency: the counter restarts each year."
+  },
+  "accountsDocumentGapPolicyAllowGaps": "Allow gaps",
+  "@accountsDocumentGapPolicyAllowGaps": {
+    "description": "Gap policy: reserved numbers that are never committed leave gaps."
+  },
+  "accountsDocumentGapPolicyNoGaps": "No gaps",
+  "@accountsDocumentGapPolicyNoGaps": {
+    "description": "Gap policy: the sequence must issue an unbroken run of numbers."
+  },
+  "accountsDocumentGapPolicyReserveAndVoid": "Reserve and void",
+  "@accountsDocumentGapPolicyReserveAndVoid": {
+    "description": "Gap policy: unused reservations are recorded as voided numbers."
+  },
+  "accountsDocumentSequenceIdentitySection": "Identity",
+  "@accountsDocumentSequenceIdentitySection": {
+    "description": "Form section grouping the sequence code, document type, module, and facility."
+  },
+  "accountsDocumentSequenceShapeSection": "Reference shape",
+  "@accountsDocumentSequenceShapeSection": {
+    "description": "Form section grouping the prefix, suffix, pattern, padding, and reset rules."
+  },
+  "accountsDocumentSequenceSummarySection": "Summary",
+  "@accountsDocumentSequenceSummarySection": {
+    "description": "Detail section showing the key document numbering columns."
+  },
+  "accountsDocumentSequenceRelatedSection": "Related records",
+  "@accountsDocumentSequenceRelatedSection": {
+    "description": "Detail section showing the counter-derived issued numbers and cross-module links."
+  },
+  "accountsDocumentSequenceRelatedEmpty": "Issued references belong to the documents this sequence numbers.",
+  "@accountsDocumentSequenceRelatedEmpty": {
+    "description": "Explains that issued references live with the owning documents, not this policy row."
+  },
+  "accountsDocumentSequenceAttachmentsSection": "Attachments",
+  "@accountsDocumentSequenceAttachmentsSection": {
+    "description": "Detail section listing documents attached to a numbering sequence."
+  },
+  "accountsDocumentSequenceAttachmentsEmpty": "No attachments for this sequence.",
+  "@accountsDocumentSequenceAttachmentsEmpty": {
+    "description": "Empty state for the document numbering attachments section."
+  },
+  "accountsDocumentSequenceActivitySection": "Activity & audit",
+  "@accountsDocumentSequenceActivitySection": {
+    "description": "Detail section holding the immutable document numbering audit timeline."
+  },
+  "accountsDocumentSequenceActivityCreated": "Created",
+  "@accountsDocumentSequenceActivityCreated": {
+    "description": "Audit timeline entry for record creation."
+  },
+  "accountsDocumentSequenceActivityUpdated": "Last updated",
+  "@accountsDocumentSequenceActivityUpdated": {
+    "description": "Audit timeline entry for the last update."
+  },
+  "accountsDocumentSequenceActivityArchived": "Archived",
+  "@accountsDocumentSequenceActivityArchived": {
+    "description": "Audit timeline entry for archiving."
+  },
+  "accountsDocumentSequenceCounterNotice": "The running number is held by the documents this sequence numbers. This form sets the policy; Next Number is read back from that counter.",
+  "@accountsDocumentSequenceCounterNotice": {
+    "description": "Banner explaining that the counter is server-owned and not set from this form."
+  },
+  "accountsDocumentSequenceShapeLockedNotice": "This sequence has already issued numbers, so its prefix, suffix, pattern, and padding are locked. Changing them would make old and new references indistinguishable.",
+  "@accountsDocumentSequenceShapeLockedNotice": {
+    "description": "Banner explaining why reference shape fields are disabled once numbers have been issued."
+  },
+  "accountsDocumentSequenceRequiredField": "Required",
+  "@accountsDocumentSequenceRequiredField": {
+    "description": "Validation message for a required document numbering field."
+  },
+  "accountsDocumentSequenceInvalidCode": "Use up to 32 letters, digits, hyphens, or underscores.",
+  "@accountsDocumentSequenceInvalidCode": {
+    "description": "Validation message for a malformed sequence code."
+  },
+  "accountsDocumentSequenceInvalidAffix": "Use up to 16 letters, digits, hyphens, or slashes.",
+  "@accountsDocumentSequenceInvalidAffix": {
+    "description": "Validation message for a malformed prefix or suffix."
+  },
+  "accountsDocumentSequenceInvalidDatePattern": "Use only calendar pattern characters such as y, M, d, q, or w.",
+  "@accountsDocumentSequenceInvalidDatePattern": {
+    "description": "Validation message for a malformed date pattern."
+  },
+  "accountsDocumentSequenceInvalidMinimumLength": "Enter a number between 1 and 20.",
+  "@accountsDocumentSequenceInvalidMinimumLength": {
+    "description": "Validation message for an out-of-range minimum length."
+  },
+  "accountsDocumentSequenceReferenceTooLong": "Prefix, pattern, padding, and suffix must fit within {maxLength} characters.",
+  "@accountsDocumentSequenceReferenceTooLong": {
+    "description": "Validation message when the configured reference shape exceeds the reference column width.",
+    "placeholders": {
+      "maxLength": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsDocumentSequenceCreateTitle": "New numbering sequence",
+  "@accountsDocumentSequenceCreateTitle": {
+    "description": "Title of the document numbering create dialog."
+  },
+  "accountsDocumentSequenceEditTitle": "Edit numbering sequence",
+  "@accountsDocumentSequenceEditTitle": {
+    "description": "Title of the document numbering edit dialog."
+  },
+  "accountsDocumentSequenceCloneTitle": "Clone numbering sequence",
+  "@accountsDocumentSequenceCloneTitle": {
+    "description": "Title of the document numbering clone dialog."
+  },
+  "accountsDocumentSequenceDetailTitle": "Numbering sequence",
+  "@accountsDocumentSequenceDetailTitle": {
+    "description": "Title of the document numbering detail dialog."
+  },
+  "accountsDocumentSequenceNewRecordAction": "New sequence",
+  "@accountsDocumentSequenceNewRecordAction": {
+    "description": "Toolbar action that opens the document numbering create dialog."
+  },
+  "accountsDocumentSequenceViewAction": "View",
+  "@accountsDocumentSequenceViewAction": {
+    "description": "Row action that opens the document numbering detail dialog."
+  },
+  "accountsDocumentSequenceCloneAction": "Clone",
+  "@accountsDocumentSequenceCloneAction": {
+    "description": "Row action that copies a sequence into a new unsaved draft."
+  },
+  "accountsDocumentSequenceActivateAction": "Activate",
+  "@accountsDocumentSequenceActivateAction": {
+    "description": "Row action that activates a numbering sequence."
+  },
+  "accountsDocumentSequenceDeactivateAction": "Deactivate",
+  "@accountsDocumentSequenceDeactivateAction": {
+    "description": "Row action that deactivates a numbering sequence."
+  },
+  "accountsDocumentSequenceArchiveAction": "Archive",
+  "@accountsDocumentSequenceArchiveAction": {
+    "description": "Row action that soft-archives a numbering sequence."
+  },
+  "accountsDocumentSequenceRestoreAction": "Restore",
+  "@accountsDocumentSequenceRestoreAction": {
+    "description": "Row action that restores an archived numbering sequence."
+  },
+  "accountsDocumentSequenceBulkActivateAction": "Activate selected",
+  "@accountsDocumentSequenceBulkActivateAction": {
+    "description": "Toolbar action that activates every eligible matching sequence."
+  },
+  "accountsDocumentSequenceBulkDeactivateAction": "Deactivate selected",
+  "@accountsDocumentSequenceBulkDeactivateAction": {
+    "description": "Toolbar action that deactivates every eligible matching sequence."
+  },
+  "accountsDocumentSequenceBulkArchiveAction": "Archive selected",
+  "@accountsDocumentSequenceBulkArchiveAction": {
+    "description": "Toolbar action that archives every eligible matching sequence."
+  },
+  "accountsDocumentSequenceBulkConfirmBody": "{count, plural, =1{This applies to 1 matching sequence.} other{This applies to {count} matching sequences.}}",
+  "@accountsDocumentSequenceBulkConfirmBody": {
+    "description": "Confirmation body naming how many sequences a bulk action will change.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsDocumentSequenceBulkPartialFailure": "{count, plural, =1{1 sequence could not be changed.} other{{count} sequences could not be changed.}}",
+  "@accountsDocumentSequenceBulkPartialFailure": {
+    "description": "Reports how many rows a bulk action could not change.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsDocumentSequenceActivateConfirmTitle": "Activate this sequence?",
+  "@accountsDocumentSequenceActivateConfirmTitle": {
+    "description": "Title of the document numbering activate confirmation."
+  },
+  "accountsDocumentSequenceActivateConfirmBody": "{reference} will start issuing references for its document type. Only one sequence per document type can be active at a time.",
+  "@accountsDocumentSequenceActivateConfirmBody": {
+    "description": "Body of the document numbering activate confirmation.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsDocumentSequenceDeactivateConfirmTitle": "Deactivate this sequence?",
+  "@accountsDocumentSequenceDeactivateConfirmTitle": {
+    "description": "Title of the document numbering deactivate confirmation."
+  },
+  "accountsDocumentSequenceDeactivateConfirmBody": "{reference} will stop issuing new references. References it already issued stay valid.",
+  "@accountsDocumentSequenceDeactivateConfirmBody": {
+    "description": "Body of the document numbering deactivate confirmation.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsDocumentSequenceArchiveConfirmTitle": "Archive this sequence?",
+  "@accountsDocumentSequenceArchiveConfirmTitle": {
+    "description": "Title of the document numbering archive confirmation."
+  },
+  "accountsDocumentSequenceArchiveConfirmBody": "The sequence is archived, not deleted, so every reference it already issued stays traceable to the policy that produced it.",
+  "@accountsDocumentSequenceArchiveConfirmBody": {
+    "description": "Body of the document numbering archive confirmation, stating that archive is a soft state change."
+  },
+  "accountsDocumentSequenceRestoreConfirmTitle": "Restore this sequence?",
+  "@accountsDocumentSequenceRestoreConfirmTitle": {
+    "description": "Title of the document numbering restore confirmation."
+  },
+  "accountsDocumentSequenceRestoreConfirmBody": "{reference} returns to active and can issue references again.",
+  "@accountsDocumentSequenceRestoreConfirmBody": {
+    "description": "Body of the document numbering restore confirmation.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsDocumentSequenceDateRangeFilterLabel": "Last changed",
+  "@accountsDocumentSequenceDateRangeFilterLabel": {
+    "description": "Date range filter label on the document numbering table."
+  },
+  "accountsDocumentSequenceMobileCaption": "{documentType} · {prefix}",
+  "@accountsDocumentSequenceMobileCaption": {
+    "description": "Compact mobile row caption pairing the localized document type with the prefix.",
+    "placeholders": {
+      "documentType": {
+        "type": "String"
+      },
+      "prefix": {
+        "type": "String"
+      }
+    }
   }
 }

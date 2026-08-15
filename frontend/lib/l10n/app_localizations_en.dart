@@ -28585,4 +28585,336 @@ class AppLocalizationsEn extends AppLocalizations {
   ) {
     return '$methodCode · $methodType';
   }
+
+  @override
+  String get accountsDocumentNumberingLabel => 'Document Numbering';
+
+  @override
+  String get accountsDocumentNumberingTooltip =>
+      'Prefixes, padding, and reset rules for the references each document family issues';
+
+  @override
+  String get accountsDocumentNumberingEmpty => 'No numbering sequences match.';
+
+  @override
+  String get accountsDocumentNumberingEmptyBody =>
+      'Try another search or add a numbering sequence.';
+
+  @override
+  String get accountsDocumentNumberingSearchHint =>
+      'Reference, code, prefix, module…';
+
+  @override
+  String get accountsDocumentSequenceReferenceColumn => 'Reference';
+
+  @override
+  String get accountsDocumentSequenceCodeColumn => 'Sequence Code';
+
+  @override
+  String get accountsDocumentSequenceTypeColumn => 'Document Type';
+
+  @override
+  String get accountsDocumentSequenceModuleColumn => 'Module';
+
+  @override
+  String get accountsDocumentSequenceFacilityColumn => 'Facility';
+
+  @override
+  String get accountsDocumentSequenceFacilityHelper =>
+      'Leave blank to use the current facility scope.';
+
+  @override
+  String get accountsDocumentSequencePrefixColumn => 'Prefix';
+
+  @override
+  String get accountsDocumentSequenceSuffixColumn => 'Suffix';
+
+  @override
+  String get accountsDocumentSequenceDatePatternColumn => 'Date Pattern';
+
+  @override
+  String get accountsDocumentSequenceDatePatternHelper =>
+      'Literal calendar pattern such as yyyyMM, not a date.';
+
+  @override
+  String get accountsDocumentSequenceNextNumberColumn => 'Next Number';
+
+  @override
+  String get accountsDocumentSequenceNextNumberHelper =>
+      'Read from the counter the documents themselves increment.';
+
+  @override
+  String get accountsDocumentSequenceMinimumLengthColumn => 'Minimum Length';
+
+  @override
+  String get accountsDocumentSequenceResetColumn => 'Reset Frequency';
+
+  @override
+  String get accountsDocumentSequenceLastIssuedNumberColumn =>
+      'Last Issued Number';
+
+  @override
+  String get accountsDocumentSequenceLastIssuedAtColumn => 'Last Issued At';
+
+  @override
+  String get accountsDocumentSequenceGapPolicyColumn => 'Gap Policy';
+
+  @override
+  String get accountsDocumentSequenceStatusColumn => 'Sequence Status';
+
+  @override
+  String get accountsDocumentSequenceActionsColumn => 'Actions';
+
+  @override
+  String get accountsDocumentSequencePreviewLabel => 'Next reference';
+
+  @override
+  String get accountsDocumentSequenceNotesLabel => 'Notes';
+
+  @override
+  String get accountsDocumentSequenceVersionLabel => 'Version';
+
+  @override
+  String get accountsDocumentSequenceStatusDraft => 'Draft';
+
+  @override
+  String get accountsDocumentSequenceStatusActive => 'Active';
+
+  @override
+  String get accountsDocumentSequenceStatusInactive => 'Inactive';
+
+  @override
+  String get accountsDocumentSequenceStatusArchived => 'Archived';
+
+  @override
+  String get accountsDocumentTypeInvoice => 'Patient Invoice';
+
+  @override
+  String get accountsDocumentTypeAccountsInvoice => 'Accounts Invoice';
+
+  @override
+  String get accountsDocumentTypeReceipt => 'Receipt';
+
+  @override
+  String get accountsDocumentTypePayment => 'Payment';
+
+  @override
+  String get accountsDocumentTypeRefund => 'Refund';
+
+  @override
+  String get accountsDocumentTypeCreditNote => 'Credit Note';
+
+  @override
+  String get accountsDocumentTypeDebitNote => 'Debit Note';
+
+  @override
+  String get accountsDocumentTypePurchaseOrder => 'Purchase Order';
+
+  @override
+  String get accountsDocumentTypeGoodsReceipt => 'Goods Receipt';
+
+  @override
+  String get accountsDocumentTypeClaim => 'Insurance Claim';
+
+  @override
+  String get accountsDocumentResetNever => 'Never';
+
+  @override
+  String get accountsDocumentResetDaily => 'Daily';
+
+  @override
+  String get accountsDocumentResetMonthly => 'Monthly';
+
+  @override
+  String get accountsDocumentResetQuarterly => 'Quarterly';
+
+  @override
+  String get accountsDocumentResetYearly => 'Yearly';
+
+  @override
+  String get accountsDocumentGapPolicyAllowGaps => 'Allow gaps';
+
+  @override
+  String get accountsDocumentGapPolicyNoGaps => 'No gaps';
+
+  @override
+  String get accountsDocumentGapPolicyReserveAndVoid => 'Reserve and void';
+
+  @override
+  String get accountsDocumentSequenceIdentitySection => 'Identity';
+
+  @override
+  String get accountsDocumentSequenceShapeSection => 'Reference shape';
+
+  @override
+  String get accountsDocumentSequenceSummarySection => 'Summary';
+
+  @override
+  String get accountsDocumentSequenceRelatedSection => 'Related records';
+
+  @override
+  String get accountsDocumentSequenceRelatedEmpty =>
+      'Issued references belong to the documents this sequence numbers.';
+
+  @override
+  String get accountsDocumentSequenceAttachmentsSection => 'Attachments';
+
+  @override
+  String get accountsDocumentSequenceAttachmentsEmpty =>
+      'No attachments for this sequence.';
+
+  @override
+  String get accountsDocumentSequenceActivitySection => 'Activity & audit';
+
+  @override
+  String get accountsDocumentSequenceActivityCreated => 'Created';
+
+  @override
+  String get accountsDocumentSequenceActivityUpdated => 'Last updated';
+
+  @override
+  String get accountsDocumentSequenceActivityArchived => 'Archived';
+
+  @override
+  String get accountsDocumentSequenceCounterNotice =>
+      'The running number is held by the documents this sequence numbers. This form sets the policy; Next Number is read back from that counter.';
+
+  @override
+  String get accountsDocumentSequenceShapeLockedNotice =>
+      'This sequence has already issued numbers, so its prefix, suffix, pattern, and padding are locked. Changing them would make old and new references indistinguishable.';
+
+  @override
+  String get accountsDocumentSequenceRequiredField => 'Required';
+
+  @override
+  String get accountsDocumentSequenceInvalidCode =>
+      'Use up to 32 letters, digits, hyphens, or underscores.';
+
+  @override
+  String get accountsDocumentSequenceInvalidAffix =>
+      'Use up to 16 letters, digits, hyphens, or slashes.';
+
+  @override
+  String get accountsDocumentSequenceInvalidDatePattern =>
+      'Use only calendar pattern characters such as y, M, d, q, or w.';
+
+  @override
+  String get accountsDocumentSequenceInvalidMinimumLength =>
+      'Enter a number between 1 and 20.';
+
+  @override
+  String accountsDocumentSequenceReferenceTooLong(int maxLength) {
+    return 'Prefix, pattern, padding, and suffix must fit within $maxLength characters.';
+  }
+
+  @override
+  String get accountsDocumentSequenceCreateTitle => 'New numbering sequence';
+
+  @override
+  String get accountsDocumentSequenceEditTitle => 'Edit numbering sequence';
+
+  @override
+  String get accountsDocumentSequenceCloneTitle => 'Clone numbering sequence';
+
+  @override
+  String get accountsDocumentSequenceDetailTitle => 'Numbering sequence';
+
+  @override
+  String get accountsDocumentSequenceNewRecordAction => 'New sequence';
+
+  @override
+  String get accountsDocumentSequenceViewAction => 'View';
+
+  @override
+  String get accountsDocumentSequenceCloneAction => 'Clone';
+
+  @override
+  String get accountsDocumentSequenceActivateAction => 'Activate';
+
+  @override
+  String get accountsDocumentSequenceDeactivateAction => 'Deactivate';
+
+  @override
+  String get accountsDocumentSequenceArchiveAction => 'Archive';
+
+  @override
+  String get accountsDocumentSequenceRestoreAction => 'Restore';
+
+  @override
+  String get accountsDocumentSequenceBulkActivateAction => 'Activate selected';
+
+  @override
+  String get accountsDocumentSequenceBulkDeactivateAction =>
+      'Deactivate selected';
+
+  @override
+  String get accountsDocumentSequenceBulkArchiveAction => 'Archive selected';
+
+  @override
+  String accountsDocumentSequenceBulkConfirmBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'This applies to $count matching sequences.',
+      one: 'This applies to 1 matching sequence.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountsDocumentSequenceBulkPartialFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sequences could not be changed.',
+      one: '1 sequence could not be changed.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountsDocumentSequenceActivateConfirmTitle =>
+      'Activate this sequence?';
+
+  @override
+  String accountsDocumentSequenceActivateConfirmBody(String reference) {
+    return '$reference will start issuing references for its document type. Only one sequence per document type can be active at a time.';
+  }
+
+  @override
+  String get accountsDocumentSequenceDeactivateConfirmTitle =>
+      'Deactivate this sequence?';
+
+  @override
+  String accountsDocumentSequenceDeactivateConfirmBody(String reference) {
+    return '$reference will stop issuing new references. References it already issued stay valid.';
+  }
+
+  @override
+  String get accountsDocumentSequenceArchiveConfirmTitle =>
+      'Archive this sequence?';
+
+  @override
+  String get accountsDocumentSequenceArchiveConfirmBody =>
+      'The sequence is archived, not deleted, so every reference it already issued stays traceable to the policy that produced it.';
+
+  @override
+  String get accountsDocumentSequenceRestoreConfirmTitle =>
+      'Restore this sequence?';
+
+  @override
+  String accountsDocumentSequenceRestoreConfirmBody(String reference) {
+    return '$reference returns to active and can issue references again.';
+  }
+
+  @override
+  String get accountsDocumentSequenceDateRangeFilterLabel => 'Last changed';
+
+  @override
+  String accountsDocumentSequenceMobileCaption(
+    String documentType,
+    String prefix,
+  ) {
+    return '$documentType · $prefix';
+  }
 }

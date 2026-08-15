@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_department.dart';
+import 'package:hosspi_hms/features/accounts/domain/entities/accounts_document_sequence.dart';
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.dart';
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_fiscal_period.dart';
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_payment_method.dart';
@@ -165,6 +166,7 @@ String accountsSectionLabel(
     AccountsDeskSection.departmentsAndCostCentres =>
       l10n.accountsDepartmentsLabel,
     AccountsDeskSection.paymentMethods => l10n.accountsPaymentMethodsLabel,
+    AccountsDeskSection.documentNumbering => l10n.accountsDocumentNumberingLabel,
   };
 }
 
@@ -209,6 +211,8 @@ String? accountsSectionTooltip(
       l10n.accountsDepartmentsTooltip,
     AccountsDeskSection.paymentMethods =>
       l10n.accountsPaymentMethodsTooltip,
+    AccountsDeskSection.documentNumbering =>
+      l10n.accountsDocumentNumberingTooltip,
   };
 }
 
@@ -224,6 +228,7 @@ String accountsTableSettingsKey(AccountsDeskSection section) {
     AccountsDeskSection.fiscalYearsAndPeriods => 'accounts_fiscal_periods_v1',
     AccountsDeskSection.departmentsAndCostCentres => 'accounts_departments_v1',
     AccountsDeskSection.paymentMethods => 'accounts_payment_methods_v1',
+    AccountsDeskSection.documentNumbering => 'accounts_document_numbering_v1',
   };
 }
 
@@ -240,6 +245,7 @@ IconData accountsSectionIcon(AccountsDeskSection section) {
     AccountsDeskSection.departmentsAndCostCentres =>
       Icons.account_tree_outlined,
     AccountsDeskSection.paymentMethods => Icons.payments_outlined,
+    AccountsDeskSection.documentNumbering => Icons.pin_outlined,
   };
 }
 
@@ -256,6 +262,7 @@ String accountsEmptyBody(AppLocalizations l10n, AccountsDeskSection section) {
     AccountsDeskSection.departmentsAndCostCentres =>
       l10n.accountsDepartmentsEmpty,
     AccountsDeskSection.paymentMethods => l10n.accountsPaymentMethodsEmpty,
+    AccountsDeskSection.documentNumbering => l10n.accountsDocumentNumberingEmpty,
   };
 }
 
@@ -424,6 +431,107 @@ String accountsPaymentMethodDirectionLabel(
 /// Localized Yes/No for a payment method requirement flag.
 String accountsPaymentMethodFlagLabel(AppLocalizations l10n, bool value) {
   return value ? l10n.accountsPaymentMethodYes : l10n.accountsPaymentMethodNo;
+}
+
+String accountsDocumentSequenceStatusLabel(
+  AppLocalizations l10n,
+  AccountsDocumentSequenceStatus status,
+) {
+  return switch (status) {
+    AccountsDocumentSequenceStatus.draft =>
+      l10n.accountsDocumentSequenceStatusDraft,
+    AccountsDocumentSequenceStatus.active =>
+      l10n.accountsDocumentSequenceStatusActive,
+    AccountsDocumentSequenceStatus.inactive =>
+      l10n.accountsDocumentSequenceStatusInactive,
+    AccountsDocumentSequenceStatus.archived =>
+      l10n.accountsDocumentSequenceStatusArchived,
+  };
+}
+
+AppWorkspaceStatusTone accountsDocumentSequenceStatusTone(
+  AccountsDocumentSequenceStatus status,
+) {
+  return switch (status) {
+    AccountsDocumentSequenceStatus.active => AppWorkspaceStatusTone.success,
+    AccountsDocumentSequenceStatus.draft => AppWorkspaceStatusTone.warning,
+    AccountsDocumentSequenceStatus.inactive => AppWorkspaceStatusTone.neutral,
+    AccountsDocumentSequenceStatus.archived => AppWorkspaceStatusTone.neutral,
+  };
+}
+
+IconData accountsDocumentSequenceStatusIcon(
+  AccountsDocumentSequenceStatus status,
+) {
+  return switch (status) {
+    AccountsDocumentSequenceStatus.draft => Icons.edit_note_outlined,
+    AccountsDocumentSequenceStatus.active => Icons.check_circle_outline,
+    AccountsDocumentSequenceStatus.inactive => Icons.pause_circle_outline,
+    AccountsDocumentSequenceStatus.archived => Icons.inventory_2_outlined,
+  };
+}
+
+/// Localized label for a numbered document family; never render the raw enum.
+String accountsDocumentTypeLabel(
+  AppLocalizations l10n,
+  AccountsDocumentType type,
+) {
+  return switch (type) {
+    AccountsDocumentType.invoice => l10n.accountsDocumentTypeInvoice,
+    AccountsDocumentType.accountsInvoice =>
+      l10n.accountsDocumentTypeAccountsInvoice,
+    AccountsDocumentType.receipt => l10n.accountsDocumentTypeReceipt,
+    AccountsDocumentType.payment => l10n.accountsDocumentTypePayment,
+    AccountsDocumentType.refund => l10n.accountsDocumentTypeRefund,
+    AccountsDocumentType.creditNote => l10n.accountsDocumentTypeCreditNote,
+    AccountsDocumentType.debitNote => l10n.accountsDocumentTypeDebitNote,
+    AccountsDocumentType.purchaseOrder => l10n.accountsDocumentTypePurchaseOrder,
+    AccountsDocumentType.goodsReceipt => l10n.accountsDocumentTypeGoodsReceipt,
+    AccountsDocumentType.claim => l10n.accountsDocumentTypeClaim,
+  };
+}
+
+String accountsDocumentResetFrequencyLabel(
+  AppLocalizations l10n,
+  AccountsDocumentSequenceResetFrequency frequency,
+) {
+  return switch (frequency) {
+    AccountsDocumentSequenceResetFrequency.never =>
+      l10n.accountsDocumentResetNever,
+    AccountsDocumentSequenceResetFrequency.daily =>
+      l10n.accountsDocumentResetDaily,
+    AccountsDocumentSequenceResetFrequency.monthly =>
+      l10n.accountsDocumentResetMonthly,
+    AccountsDocumentSequenceResetFrequency.quarterly =>
+      l10n.accountsDocumentResetQuarterly,
+    AccountsDocumentSequenceResetFrequency.yearly =>
+      l10n.accountsDocumentResetYearly,
+  };
+}
+
+String accountsDocumentGapPolicyLabel(
+  AppLocalizations l10n,
+  AccountsDocumentSequenceGapPolicy policy,
+) {
+  return switch (policy) {
+    AccountsDocumentSequenceGapPolicy.allowGaps =>
+      l10n.accountsDocumentGapPolicyAllowGaps,
+    AccountsDocumentSequenceGapPolicy.noGaps =>
+      l10n.accountsDocumentGapPolicyNoGaps,
+    AccountsDocumentSequenceGapPolicy.reserveAndVoid =>
+      l10n.accountsDocumentGapPolicyReserveAndVoid,
+  };
+}
+
+/// Padded issued number, e.g. `43` at minimum length 7 → `0000043`.
+///
+/// The number itself stays a number; this only formats it for display so the
+/// operator sees the width the policy actually issues.
+String accountsDocumentSequenceNumber(int? value, int minimumLength) {
+  if (value == null) {
+    return AccountsStrings.unknownValue;
+  }
+  return value.toString().padLeft(minimumLength.clamp(1, 20), '0');
 }
 
 IconData accountsFiscalPeriodStatusIcon(AccountsFiscalPeriodStatus status) {

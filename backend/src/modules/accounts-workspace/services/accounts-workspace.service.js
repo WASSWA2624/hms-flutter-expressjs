@@ -8,6 +8,7 @@ const fiscalPeriodService = require('@services/accounts-workspace/fiscal-period.
 const postingRuleService = require('@services/accounts-workspace/posting-rule.service');
 const departmentService = require('@services/accounts-workspace/department-cost-centre.service');
 const paymentMethodService = require('@services/accounts-workspace/payment-method.service');
+const documentSequenceService = require('@services/accounts-workspace/document-number-sequence.service');
 const repo = require('@repositories/accounts-workspace/accounts-workspace.repository');
 
 const clean = (value) => String(value ?? '').trim();
@@ -228,6 +229,8 @@ const getWorkspace = async (filters = {}, user = {}) => {
   );
   const paymentMethodsCount =
     await paymentMethodService.countActivePaymentMethods(filters, user);
+  const documentSequencesCount =
+    await documentSequenceService.countActiveDocumentSequences(filters, user);
 
   return {
     summary: {
@@ -253,6 +256,8 @@ const getWorkspace = async (filters = {}, user = {}) => {
       departments_active_count: departmentsCount,
       payment_methods: paymentMethodsCount,
       payment_methods_active_count: paymentMethodsCount,
+      document_numbering: documentSequencesCount,
+      document_sequences_active_count: documentSequencesCount,
     },
     generated_at: new Date().toISOString(),
   };
@@ -273,6 +278,8 @@ const WORK_ITEM_SECTION_HANDLERS = {
     departmentService.listDepartments(filters, page, limit, user),
   [paymentMethodService.SECTION_SLUG]: (filters, page, limit, user) =>
     paymentMethodService.listPaymentMethods(filters, page, limit, user),
+  [documentSequenceService.SECTION_SLUG]: (filters, page, limit, user) =>
+    documentSequenceService.listDocumentSequences(filters, page, limit, user),
 };
 
 const listWorkItems = async (filters = {}, page = 1, limit = 20, user = {}) => {

@@ -297,7 +297,9 @@ void main() {
 
   group('navigation and scoping', () {
     test('the tab is the third leaf under Setup & Controls', () {
-      expect(AccountsDeskCategory.setupAndControls.sections, <
+      // Asserts this tab's own position, not the whole category inventory, so
+      // a later Setup & Controls tab does not break it.
+      expect(AccountsDeskCategory.setupAndControls.sections.take(3), <
         AccountsDeskSection
       >[
         AccountsDeskSection.fiscalYearsAndPeriods,
@@ -375,12 +377,18 @@ void main() {
         contains(AccountsDeskCategory.setupAndControls.name),
       );
 
-      // All three Setup & Controls sections are tabs in one flat strip.
+      // Every Setup & Controls section is a tab in one flat strip.
       final AppTabStrip sections = tester.widget<AppTabStrip>(
         find.byKey(accountsSectionTabsKey),
       );
-      expect(sections.tabs.length, 3);
-      expect(sections.tabs.last.label, _l10n.accountsPaymentMethodsLabel);
+      expect(
+        sections.tabs.map((AppTabItem tab) => tab.label),
+        contains(_l10n.accountsPaymentMethodsLabel),
+      );
+      expect(
+        sections.tabs[2].id,
+        AccountsDeskSection.paymentMethods.name,
+      );
       expect(sections.variant, AppTabStripVariant.standard);
     });
 

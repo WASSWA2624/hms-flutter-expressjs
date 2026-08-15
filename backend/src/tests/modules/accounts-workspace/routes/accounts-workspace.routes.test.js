@@ -94,3 +94,60 @@ describe('accounts-workspace routes — fiscal years & periods', () => {
     expect(new Set(modes)).toEqual(new Set(['permission']));
   });
 });
+
+describe('accounts-workspace routes — document numbering', () => {
+  it('registers every operation in the target API contract', () => {
+    expect(findRoute('/document-numbering', 'get')).toBeDefined();
+    expect(
+      findRoute('/document-numbering/:documentSequenceIdentifier', 'get')
+    ).toBeDefined();
+    expect(findRoute('/document-numbering', 'post')).toBeDefined();
+    expect(
+      findRoute('/document-numbering/:documentSequenceIdentifier', 'put')
+    ).toBeDefined();
+    expect(
+      findRoute('/document-numbering/:documentSequenceIdentifier/:action', 'post')
+    ).toBeDefined();
+  });
+
+  it('never exposes a hard delete for a numbering policy', () => {
+    // Issued references must stay traceable to the policy that produced them,
+    // so archive is a status transition rather than a delete.
+    const deletes = routeTable().filter(
+      (route) =>
+        route.path.startsWith('/document-numbering') &&
+        route.methods.includes('delete')
+    );
+    expect(deletes).toEqual([]);
+  });
+
+  it('gates reads on accounts:read or accounts:write', () => {
+    expect(findRoute('/document-numbering', 'get').scopes).toEqual([
+      PERMISSIONS.ACCOUNTS_READ,
+      PERMISSIONS.ACCOUNTS_WRITE,
+    ]);
+    expect(
+      findRoute('/document-numbering/:documentSequenceIdentifier', 'get').scopes
+    ).toEqual([PERMISSIONS.ACCOUNTS_READ, PERMISSIONS.ACCOUNTS_WRITE]);
+  });
+
+  it('gates create, update, and workflow actions on accounts:write only', () => {
+    const writeOnly = [PERMISSIONS.ACCOUNTS_WRITE];
+    expect(findRoute('/document-numbering', 'post').scopes).toEqual(writeOnly);
+    expect(
+      findRoute('/document-numbering/:documentSequenceIdentifier', 'put').scopes
+    ).toEqual(writeOnly);
+    expect(
+      findRoute('/document-numbering/:documentSequenceIdentifier/:action', 'post')
+        .scopes
+    ).toEqual(writeOnly);
+  });
+
+  it('checks permissions rather than roles', () => {
+    const modes = routeTable()
+      .filter((route) => route.path.startsWith('/document-numbering'))
+      .flatMap((route) => route.modes);
+    expect(modes.length).toBeGreaterThan(0);
+    expect(new Set(modes)).toEqual(new Set(['permission']));
+  });
+});

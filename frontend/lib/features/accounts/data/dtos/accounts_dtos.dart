@@ -177,6 +177,10 @@ final class AccountsWorkspaceOverviewDto {
             _int(summary['payment_methods']) ??
             _int(summary['payment_methods_active_count']) ??
             0,
+        documentSequencesActive:
+            _int(summary['document_numbering']) ??
+            _int(summary['document_sequences_active_count']) ??
+            0,
       ),
       generatedAt: _date(json['generated_at']),
     );

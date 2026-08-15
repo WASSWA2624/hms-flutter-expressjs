@@ -16,6 +16,8 @@ import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_chart
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_chart_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_department_dialogs.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_departments_and_cost_centres_panel.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_document_numbering_panel.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_document_sequence_dialogs.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_fiscal_period_dialogs.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_fiscal_periods_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_gl_panel.dart';
@@ -311,6 +313,7 @@ class _AccountsWorkspaceContentState
       fiscalPeriodsOverride: ref.watch(accountsFiscalPeriodCountProvider),
       departmentsOverride: ref.watch(accountsDepartmentCountProvider),
       paymentMethodsOverride: ref.watch(accountsPaymentMethodCountProvider),
+      documentSequencesOverride: ref.watch(accountsDocumentSequenceCountProvider),
     );
   }
 
@@ -340,6 +343,8 @@ class _AccountsWorkspaceContentState
         const AccountsDepartmentsAndCostCentresPanel(),
       AccountsDeskSection.paymentMethods =>
         const AccountsPaymentMethodsPanel(),
+      AccountsDeskSection.documentNumbering =>
+        const AccountsDocumentNumberingPanel(),
     };
   }
 }

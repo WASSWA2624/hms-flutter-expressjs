@@ -263,6 +263,55 @@ router.post(
 );
 
 /**
+ * Setup & Controls → Document Numbering.
+ *
+ * A row here is numbering *policy*; the running counter stays in
+ * `human_id_counter`, which `src/prisma/client.js` owns. Records are addressed
+ * by their public `human_friendly_id`, and archive is a status transition
+ * rather than a delete, so there is no DELETE route.
+ */
+router.get(
+  '/document-numbering',
+  validateRequest({ query: documentSequencesQuerySchema }),
+  authorize(ACCOUNTS_READ_SCOPES, 'permission'),
+  documentSequenceController.listDocumentSequences
+);
+
+router.get(
+  '/document-numbering/:documentSequenceIdentifier',
+  validateRequest({ params: documentSequenceIdentifierParamsSchema }),
+  authorize(ACCOUNTS_READ_SCOPES, 'permission'),
+  documentSequenceController.getDocumentSequence
+);
+
+router.post(
+  '/document-numbering',
+  validateRequest({ body: createDocumentSequenceSchema }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  documentSequenceController.createDocumentSequence
+);
+
+router.put(
+  '/document-numbering/:documentSequenceIdentifier',
+  validateRequest({
+    params: documentSequenceIdentifierParamsSchema,
+    body: updateDocumentSequenceSchema,
+  }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  documentSequenceController.updateDocumentSequence
+);
+
+router.post(
+  '/document-numbering/:documentSequenceIdentifier/:action',
+  validateRequest({
+    params: documentSequenceActionParamsSchema,
+    body: documentSequenceActionSchema,
+  }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  documentSequenceController.applyDocumentSequenceAction
+);
+
+/**
  * Setup & Controls → Posting Rules.
  *
  * Records are addressed by their public `human_friendly_id`. Archive is a

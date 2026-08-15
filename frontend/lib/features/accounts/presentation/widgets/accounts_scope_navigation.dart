@@ -87,6 +87,7 @@ int accountsSectionTabCount(
   int? fiscalPeriodsOverride,
   int? departmentsOverride,
   int? paymentMethodsOverride,
+  int? documentSequencesOverride,
 }) {
   final AccountsSummary summary = state.overview.summary;
   final int scopeTotal = switch (section) {
@@ -103,6 +104,8 @@ int accountsSectionTabCount(
       departmentsOverride ?? summary.countFor(section),
     AccountsDeskSection.paymentMethods =>
       paymentMethodsOverride ?? summary.countFor(section),
+    AccountsDeskSection.documentNumbering =>
+      documentSequencesOverride ?? summary.countFor(section),
     _ => summary.countFor(section),
   };
 
@@ -113,7 +116,8 @@ int accountsSectionTabCount(
       section == AccountsDeskSection.chart ||
       section == AccountsDeskSection.fiscalYearsAndPeriods ||
       section == AccountsDeskSection.departmentsAndCostCentres ||
-      section == AccountsDeskSection.paymentMethods;
+      section == AccountsDeskSection.paymentMethods ||
+      section == AccountsDeskSection.documentNumbering;
   if (isDedicatedPanel) {
     return scopeTotal;
   }
@@ -142,7 +146,8 @@ AppTabCountTone accountsSectionCountTone(AccountsDeskSection section) {
     AccountsDeskSection.invoices ||
     AccountsDeskSection.fiscalYearsAndPeriods ||
     AccountsDeskSection.departmentsAndCostCentres ||
-    AccountsDeskSection.paymentMethods => AppTabCountTone.info,
+    AccountsDeskSection.paymentMethods ||
+    AccountsDeskSection.documentNumbering => AppTabCountTone.info,
   };
 }
 
@@ -159,6 +164,7 @@ int accountsCategoryTabCount(
   int? fiscalPeriodsOverride,
   int? departmentsOverride,
   int? paymentMethodsOverride,
+  int? documentSequencesOverride,
 }) {
   int total = 0;
   for (final AccountsDeskSection section in category.sections) {
@@ -176,6 +182,7 @@ int accountsCategoryTabCount(
       fiscalPeriodsOverride: fiscalPeriodsOverride,
       departmentsOverride: departmentsOverride,
       paymentMethodsOverride: paymentMethodsOverride,
+      documentSequencesOverride: documentSequencesOverride,
     );
   }
   return total;

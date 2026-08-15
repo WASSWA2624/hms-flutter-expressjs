@@ -26,6 +26,7 @@ enum AccountsDeskCategory {
         AccountsDeskSection.fiscalYearsAndPeriods,
         AccountsDeskSection.departmentsAndCostCentres,
         AccountsDeskSection.paymentMethods,
+        AccountsDeskSection.documentNumbering,
       ],
     };
   }
@@ -51,7 +52,8 @@ enum AccountsDeskSection {
   invoices,
   fiscalYearsAndPeriods('fiscal-years-and-periods'),
   departmentsAndCostCentres('departments-and-cost-centres'),
-  paymentMethods('payment-methods');
+  paymentMethods('payment-methods'),
+  documentNumbering('document-numbering');
 
   const AccountsDeskSection([this.canonicalSlug]);
 
@@ -115,6 +117,13 @@ enum AccountsDeskSection {
       // Pre-finance tender-configuration aliases resolve to the owning tab.
       'tenders' =>
         AccountsDeskSection.paymentMethods,
+      'document-numbering' ||
+      'documentnumbering' ||
+      'document-sequences' ||
+      'number-sequences' ||
+      // Pre-finance numbering-configuration aliases resolve to the owning tab.
+      'numbering' =>
+        AccountsDeskSection.documentNumbering,
       _ => null,
     };
   }
@@ -283,6 +292,7 @@ final class AccountsSummary {
     this.fiscalPeriodsActive = 0,
     this.departmentsActive = 0,
     this.paymentMethodsActive = 0,
+    this.documentSequencesActive = 0,
   });
 
   final int openWork;
@@ -295,6 +305,7 @@ final class AccountsSummary {
   final int fiscalPeriodsActive;
   final int departmentsActive;
   final int paymentMethodsActive;
+  final int documentSequencesActive;
 
   /// Alias used by mutation applier / legacy callers.
   int get approvals => needApproval;
@@ -309,6 +320,7 @@ final class AccountsSummary {
   int get fiscalPeriodsActiveCount => fiscalPeriodsActive;
   int get departmentsActiveCount => departmentsActive;
   int get paymentMethodsActiveCount => paymentMethodsActive;
+  int get documentSequencesActiveCount => documentSequencesActive;
 
   int get workloadCount => openWork;
 
@@ -324,6 +336,7 @@ final class AccountsSummary {
       AccountsDeskSection.fiscalYearsAndPeriods => fiscalPeriodsActive,
       AccountsDeskSection.departmentsAndCostCentres => departmentsActive,
       AccountsDeskSection.paymentMethods => paymentMethodsActive,
+      AccountsDeskSection.documentNumbering => documentSequencesActive,
     };
   }
 
@@ -338,6 +351,7 @@ final class AccountsSummary {
     int? fiscalPeriodsActive,
     int? departmentsActive,
     int? paymentMethodsActive,
+    int? documentSequencesActive,
     int? approvals,
   }) {
     return AccountsSummary(
@@ -351,6 +365,8 @@ final class AccountsSummary {
       fiscalPeriodsActive: fiscalPeriodsActive ?? this.fiscalPeriodsActive,
       departmentsActive: departmentsActive ?? this.departmentsActive,
       paymentMethodsActive: paymentMethodsActive ?? this.paymentMethodsActive,
+      documentSequencesActive:
+          documentSequencesActive ?? this.documentSequencesActive,
     );
   }
 }
