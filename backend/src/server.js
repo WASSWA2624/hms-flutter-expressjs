@@ -367,8 +367,15 @@ const startServer = async () => {
   }
 };
 
-// Start server if this file is run directly
-if (require.main === module) {
+// Passenger/LiteSpeed boots the app by requiring this file from its own loader
+// (lsnode.js), so `require.main` is the loader, not this module. Detect that runtime
+// explicitly, otherwise the server would never bind and the vhost would serve 503s.
+const isPassengerRuntime = Boolean(
+  process.env.LSNODE_SOCKET || process.env.PASSENGER_APP_ENV || process.env.PASSENGER_BASE_URI
+);
+
+// Start server if this file is run directly, or hosted under Passenger
+if (require.main === module || isPassengerRuntime) {
   void startServer();
 }
 
