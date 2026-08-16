@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS `price_book_entry` (
   `deleted_at` DATETIME(3) NULL,
   `version` INTEGER NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- Ensure coverage_plan provider index
 SET @idx_exists := (
@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS `patient_insurance_enrollment` (
   `deleted_at` DATETIME(3) NULL,
   `version` INTEGER NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 SET @idx_exists := (
   SELECT COUNT(1) FROM information_schema.STATISTICS
@@ -291,7 +291,7 @@ CREATE TABLE IF NOT EXISTS `insurer_integration` (
   `deleted_at` DATETIME(3) NULL,
   `version` INTEGER NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 SET @idx_exists := (
   SELECT COUNT(1) FROM information_schema.STATISTICS

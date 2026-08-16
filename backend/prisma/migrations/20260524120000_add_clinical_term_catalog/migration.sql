@@ -19,7 +19,7 @@ CREATE TABLE `clinical_term_catalog` (
   `version` INTEGER NOT NULL DEFAULT 1,
 
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateIndex
 CREATE UNIQUE INDEX `clinical_term_catalog_tenant_id_term_type_catalog_key_key` ON `clinical_term_catalog`(`tenant_id`, `term_type`, `catalog_key`);

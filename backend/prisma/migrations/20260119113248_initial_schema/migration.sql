@@ -13,7 +13,7 @@ CREATE TABLE `tenant` (
     INDEX `tenant_is_active_idx`(`is_active`),
     UNIQUE INDEX `tenant_slug_key`(`slug`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `facility` (
@@ -31,7 +31,7 @@ CREATE TABLE `facility` (
     INDEX `facility_facility_type_idx`(`facility_type`),
     INDEX `facility_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `branch` (
@@ -48,7 +48,7 @@ CREATE TABLE `branch` (
     INDEX `branch_tenant_id_idx`(`tenant_id`),
     INDEX `branch_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `department` (
@@ -69,7 +69,7 @@ CREATE TABLE `department` (
     INDEX `department_department_type_idx`(`department_type`),
     INDEX `department_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `unit` (
@@ -88,7 +88,7 @@ CREATE TABLE `unit` (
     INDEX `unit_department_id_idx`(`department_id`),
     INDEX `unit_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `ward` (
@@ -109,7 +109,7 @@ CREATE TABLE `ward` (
     INDEX `ward_ward_type_idx`(`ward_type`),
     INDEX `ward_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `room` (
@@ -128,7 +128,7 @@ CREATE TABLE `room` (
     INDEX `room_ward_id_idx`(`ward_id`),
     INDEX `room_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `bed` (
@@ -150,7 +150,7 @@ CREATE TABLE `bed` (
     INDEX `bed_status_idx`(`status`),
     INDEX `bed_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `address` (
@@ -184,7 +184,7 @@ CREATE TABLE `address` (
     INDEX `address_supplier_id_idx`(`supplier_id`),
     INDEX `address_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `contact` (
@@ -213,7 +213,7 @@ CREATE TABLE `contact` (
     INDEX `contact_supplier_id_idx`(`supplier_id`),
     INDEX `contact_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `user` (
@@ -236,7 +236,7 @@ CREATE TABLE `user` (
     INDEX `user_deleted_at_idx`(`deleted_at`),
     UNIQUE INDEX `user_tenant_id_email_key`(`tenant_id`, `email`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `user_profile` (
@@ -256,7 +256,7 @@ CREATE TABLE `user_profile` (
     INDEX `user_profile_deleted_at_idx`(`deleted_at`),
     UNIQUE INDEX `user_profile_user_id_key`(`user_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `user_session` (
@@ -276,7 +276,7 @@ CREATE TABLE `user_session` (
     INDEX `user_session_expires_at_idx`(`expires_at`),
     INDEX `user_session_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `role` (
@@ -295,7 +295,7 @@ CREATE TABLE `role` (
     INDEX `role_name_idx`(`name`),
     INDEX `role_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `permission` (
@@ -312,7 +312,7 @@ CREATE TABLE `permission` (
     INDEX `permission_name_idx`(`name`),
     INDEX `permission_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `role_permission` (
@@ -329,7 +329,7 @@ CREATE TABLE `role_permission` (
     INDEX `role_permission_deleted_at_idx`(`deleted_at`),
     UNIQUE INDEX `role_permission_role_id_permission_id_key`(`role_id`, `permission_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `user_role` (
@@ -350,7 +350,7 @@ CREATE TABLE `user_role` (
     INDEX `user_role_deleted_at_idx`(`deleted_at`),
     UNIQUE INDEX `user_role_user_id_role_id_tenant_id_facility_id_key`(`user_id`, `role_id`, `tenant_id`, `facility_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `api_key` (
@@ -372,7 +372,7 @@ CREATE TABLE `api_key` (
     INDEX `api_key_is_active_idx`(`is_active`),
     INDEX `api_key_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `api_key_permission` (
@@ -389,7 +389,7 @@ CREATE TABLE `api_key_permission` (
     INDEX `api_key_permission_deleted_at_idx`(`deleted_at`),
     UNIQUE INDEX `api_key_permission_api_key_id_permission_id_key`(`api_key_id`, `permission_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `user_mfa` (
@@ -408,7 +408,7 @@ CREATE TABLE `user_mfa` (
     INDEX `user_mfa_channel_idx`(`channel`),
     INDEX `user_mfa_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `oauth_account` (
@@ -430,7 +430,7 @@ CREATE TABLE `oauth_account` (
     INDEX `oauth_account_deleted_at_idx`(`deleted_at`),
     UNIQUE INDEX `oauth_account_provider_provider_user_id_key`(`provider`, `provider_user_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `patient` (
@@ -452,7 +452,7 @@ CREATE TABLE `patient` (
     INDEX `patient_is_active_idx`(`is_active`),
     INDEX `patient_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `patient_identifier` (
@@ -473,7 +473,7 @@ CREATE TABLE `patient_identifier` (
     INDEX `patient_identifier_deleted_at_idx`(`deleted_at`),
     UNIQUE INDEX `patient_identifier_tenant_id_identifier_value_key`(`tenant_id`, `identifier_value`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `patient_contact` (
@@ -493,7 +493,7 @@ CREATE TABLE `patient_contact` (
     INDEX `patient_contact_contact_type_idx`(`contact_type`),
     INDEX `patient_contact_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `patient_guardian` (
@@ -513,7 +513,7 @@ CREATE TABLE `patient_guardian` (
     INDEX `patient_guardian_patient_id_idx`(`patient_id`),
     INDEX `patient_guardian_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `patient_allergy` (
@@ -534,7 +534,7 @@ CREATE TABLE `patient_allergy` (
     INDEX `patient_allergy_severity_idx`(`severity`),
     INDEX `patient_allergy_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `patient_medical_history` (
@@ -553,7 +553,7 @@ CREATE TABLE `patient_medical_history` (
     INDEX `patient_medical_history_patient_id_idx`(`patient_id`),
     INDEX `patient_medical_history_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `patient_document` (
@@ -574,7 +574,7 @@ CREATE TABLE `patient_document` (
     INDEX `patient_document_document_type_idx`(`document_type`),
     INDEX `patient_document_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `consent` (
@@ -595,7 +595,7 @@ CREATE TABLE `consent` (
     INDEX `consent_status_idx`(`status`),
     INDEX `consent_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `terms_acceptance` (
@@ -613,7 +613,7 @@ CREATE TABLE `terms_acceptance` (
     INDEX `terms_acceptance_user_id_idx`(`user_id`),
     INDEX `terms_acceptance_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `appointment` (
@@ -639,7 +639,7 @@ CREATE TABLE `appointment` (
     INDEX `appointment_scheduled_start_idx`(`scheduled_start`),
     INDEX `appointment_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `appointment_participant` (
@@ -658,7 +658,7 @@ CREATE TABLE `appointment_participant` (
     INDEX `appointment_participant_participant_patient_id_idx`(`participant_patient_id`),
     INDEX `appointment_participant_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `appointment_reminder` (
@@ -677,7 +677,7 @@ CREATE TABLE `appointment_reminder` (
     INDEX `appointment_reminder_scheduled_at_idx`(`scheduled_at`),
     INDEX `appointment_reminder_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `provider_schedule` (
@@ -699,7 +699,7 @@ CREATE TABLE `provider_schedule` (
     INDEX `provider_schedule_day_of_week_idx`(`day_of_week`),
     INDEX `provider_schedule_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `availability_slot` (
@@ -717,7 +717,7 @@ CREATE TABLE `availability_slot` (
     INDEX `availability_slot_is_available_idx`(`is_available`),
     INDEX `availability_slot_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `visit_queue` (
@@ -742,7 +742,7 @@ CREATE TABLE `visit_queue` (
     INDEX `visit_queue_status_idx`(`status`),
     INDEX `visit_queue_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `encounter` (
@@ -768,7 +768,7 @@ CREATE TABLE `encounter` (
     INDEX `encounter_status_idx`(`status`),
     INDEX `encounter_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `clinical_note` (
@@ -785,7 +785,7 @@ CREATE TABLE `clinical_note` (
     INDEX `clinical_note_author_user_id_idx`(`author_user_id`),
     INDEX `clinical_note_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `diagnosis` (
@@ -804,7 +804,7 @@ CREATE TABLE `diagnosis` (
     INDEX `diagnosis_code_idx`(`code`),
     INDEX `diagnosis_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `procedure` (
@@ -823,7 +823,7 @@ CREATE TABLE `procedure` (
     INDEX `procedure_performed_at_idx`(`performed_at`),
     INDEX `procedure_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `vital_sign` (
@@ -843,7 +843,7 @@ CREATE TABLE `vital_sign` (
     INDEX `vital_sign_recorded_at_idx`(`recorded_at`),
     INDEX `vital_sign_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `care_plan` (
@@ -862,7 +862,7 @@ CREATE TABLE `care_plan` (
     INDEX `care_plan_end_date_idx`(`end_date`),
     INDEX `care_plan_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `clinical_alert` (
@@ -879,7 +879,7 @@ CREATE TABLE `clinical_alert` (
     INDEX `clinical_alert_severity_idx`(`severity`),
     INDEX `clinical_alert_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `referral` (
@@ -900,7 +900,7 @@ CREATE TABLE `referral` (
     INDEX `referral_status_idx`(`status`),
     INDEX `referral_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `follow_up` (
@@ -917,7 +917,7 @@ CREATE TABLE `follow_up` (
     INDEX `follow_up_scheduled_at_idx`(`scheduled_at`),
     INDEX `follow_up_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `admission` (
@@ -941,7 +941,7 @@ CREATE TABLE `admission` (
     INDEX `admission_status_idx`(`status`),
     INDEX `admission_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `bed_assignment` (
@@ -960,7 +960,7 @@ CREATE TABLE `bed_assignment` (
     INDEX `bed_assignment_assigned_at_idx`(`assigned_at`),
     INDEX `bed_assignment_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `ward_round` (
@@ -977,7 +977,7 @@ CREATE TABLE `ward_round` (
     INDEX `ward_round_round_at_idx`(`round_at`),
     INDEX `ward_round_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `nursing_note` (
@@ -994,7 +994,7 @@ CREATE TABLE `nursing_note` (
     INDEX `nursing_note_nurse_user_id_idx`(`nurse_user_id`),
     INDEX `nursing_note_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `medication_administration` (
@@ -1014,7 +1014,7 @@ CREATE TABLE `medication_administration` (
     INDEX `medication_administration_route_idx`(`route`),
     INDEX `medication_administration_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `discharge_summary` (
@@ -1032,7 +1032,7 @@ CREATE TABLE `discharge_summary` (
     INDEX `discharge_summary_status_idx`(`status`),
     INDEX `discharge_summary_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `transfer_request` (
@@ -1053,7 +1053,7 @@ CREATE TABLE `transfer_request` (
     INDEX `transfer_request_status_idx`(`status`),
     INDEX `transfer_request_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `icu_stay` (
@@ -1070,7 +1070,7 @@ CREATE TABLE `icu_stay` (
     INDEX `icu_stay_started_at_idx`(`started_at`),
     INDEX `icu_stay_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `icu_observation` (
@@ -1087,7 +1087,7 @@ CREATE TABLE `icu_observation` (
     INDEX `icu_observation_observed_at_idx`(`observed_at`),
     INDEX `icu_observation_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `critical_alert` (
@@ -1104,7 +1104,7 @@ CREATE TABLE `critical_alert` (
     INDEX `critical_alert_severity_idx`(`severity`),
     INDEX `critical_alert_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `theatre_case` (
@@ -1122,7 +1122,7 @@ CREATE TABLE `theatre_case` (
     INDEX `theatre_case_status_idx`(`status`),
     INDEX `theatre_case_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `anesthesia_record` (
@@ -1139,7 +1139,7 @@ CREATE TABLE `anesthesia_record` (
     INDEX `anesthesia_record_anesthetist_user_id_idx`(`anesthetist_user_id`),
     INDEX `anesthesia_record_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `post_op_note` (
@@ -1154,7 +1154,7 @@ CREATE TABLE `post_op_note` (
     INDEX `post_op_note_theatre_case_id_idx`(`theatre_case_id`),
     INDEX `post_op_note_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `lab_test` (
@@ -1173,7 +1173,7 @@ CREATE TABLE `lab_test` (
     INDEX `lab_test_code_idx`(`code`),
     INDEX `lab_test_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `lab_panel` (
@@ -1190,7 +1190,7 @@ CREATE TABLE `lab_panel` (
     INDEX `lab_panel_code_idx`(`code`),
     INDEX `lab_panel_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `lab_order` (
@@ -1210,7 +1210,7 @@ CREATE TABLE `lab_order` (
     INDEX `lab_order_ordered_at_idx`(`ordered_at`),
     INDEX `lab_order_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `lab_order_item` (
@@ -1228,7 +1228,7 @@ CREATE TABLE `lab_order_item` (
     INDEX `lab_order_item_status_idx`(`status`),
     INDEX `lab_order_item_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `lab_sample` (
@@ -1246,7 +1246,7 @@ CREATE TABLE `lab_sample` (
     INDEX `lab_sample_status_idx`(`status`),
     INDEX `lab_sample_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `lab_result` (
@@ -1267,7 +1267,7 @@ CREATE TABLE `lab_result` (
     INDEX `lab_result_reported_at_idx`(`reported_at`),
     INDEX `lab_result_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `lab_qc_log` (
@@ -1285,7 +1285,7 @@ CREATE TABLE `lab_qc_log` (
     INDEX `lab_qc_log_logged_at_idx`(`logged_at`),
     INDEX `lab_qc_log_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `radiology_test` (
@@ -1304,7 +1304,7 @@ CREATE TABLE `radiology_test` (
     INDEX `radiology_test_modality_idx`(`modality`),
     INDEX `radiology_test_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `radiology_order` (
@@ -1326,7 +1326,7 @@ CREATE TABLE `radiology_order` (
     INDEX `radiology_order_ordered_at_idx`(`ordered_at`),
     INDEX `radiology_order_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `radiology_result` (
@@ -1345,7 +1345,7 @@ CREATE TABLE `radiology_result` (
     INDEX `radiology_result_reported_at_idx`(`reported_at`),
     INDEX `radiology_result_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `imaging_study` (
@@ -1363,7 +1363,7 @@ CREATE TABLE `imaging_study` (
     INDEX `imaging_study_performed_at_idx`(`performed_at`),
     INDEX `imaging_study_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `imaging_asset` (
@@ -1380,7 +1380,7 @@ CREATE TABLE `imaging_asset` (
     INDEX `imaging_asset_imaging_study_id_idx`(`imaging_study_id`),
     INDEX `imaging_asset_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `pacs_link` (
@@ -1397,7 +1397,7 @@ CREATE TABLE `pacs_link` (
     INDEX `pacs_link_expires_at_idx`(`expires_at`),
     INDEX `pacs_link_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `drug` (
@@ -1416,7 +1416,7 @@ CREATE TABLE `drug` (
     INDEX `drug_code_idx`(`code`),
     INDEX `drug_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `drug_batch` (
@@ -1435,7 +1435,7 @@ CREATE TABLE `drug_batch` (
     INDEX `drug_batch_expiry_date_idx`(`expiry_date`),
     INDEX `drug_batch_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `formulary_item` (
@@ -1453,7 +1453,7 @@ CREATE TABLE `formulary_item` (
     INDEX `formulary_item_is_active_idx`(`is_active`),
     INDEX `formulary_item_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `pharmacy_order` (
@@ -1473,7 +1473,7 @@ CREATE TABLE `pharmacy_order` (
     INDEX `pharmacy_order_ordered_at_idx`(`ordered_at`),
     INDEX `pharmacy_order_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `pharmacy_order_item` (
@@ -1495,7 +1495,7 @@ CREATE TABLE `pharmacy_order_item` (
     INDEX `pharmacy_order_item_status_idx`(`status`),
     INDEX `pharmacy_order_item_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `dispense_log` (
@@ -1514,7 +1514,7 @@ CREATE TABLE `dispense_log` (
     INDEX `dispense_log_dispensed_at_idx`(`dispensed_at`),
     INDEX `dispense_log_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `adverse_event` (
@@ -1535,7 +1535,7 @@ CREATE TABLE `adverse_event` (
     INDEX `adverse_event_reported_at_idx`(`reported_at`),
     INDEX `adverse_event_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `inventory_item` (
@@ -1555,7 +1555,7 @@ CREATE TABLE `inventory_item` (
     INDEX `inventory_item_sku_idx`(`sku`),
     INDEX `inventory_item_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `inventory_stock` (
@@ -1573,7 +1573,7 @@ CREATE TABLE `inventory_stock` (
     INDEX `inventory_stock_facility_id_idx`(`facility_id`),
     INDEX `inventory_stock_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `stock_movement` (
@@ -1596,7 +1596,7 @@ CREATE TABLE `stock_movement` (
     INDEX `stock_movement_occurred_at_idx`(`occurred_at`),
     INDEX `stock_movement_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `supplier` (
@@ -1614,7 +1614,7 @@ CREATE TABLE `supplier` (
     INDEX `supplier_name_idx`(`name`),
     INDEX `supplier_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `purchase_request` (
@@ -1635,7 +1635,7 @@ CREATE TABLE `purchase_request` (
     INDEX `purchase_request_status_idx`(`status`),
     INDEX `purchase_request_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `purchase_order` (
@@ -1655,7 +1655,7 @@ CREATE TABLE `purchase_order` (
     INDEX `purchase_order_ordered_at_idx`(`ordered_at`),
     INDEX `purchase_order_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `goods_receipt` (
@@ -1673,7 +1673,7 @@ CREATE TABLE `goods_receipt` (
     INDEX `goods_receipt_received_at_idx`(`received_at`),
     INDEX `goods_receipt_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `stock_adjustment` (
@@ -1694,7 +1694,7 @@ CREATE TABLE `stock_adjustment` (
     INDEX `stock_adjustment_adjusted_at_idx`(`adjusted_at`),
     INDEX `stock_adjustment_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `emergency_case` (
@@ -1716,7 +1716,7 @@ CREATE TABLE `emergency_case` (
     INDEX `emergency_case_status_idx`(`status`),
     INDEX `emergency_case_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `triage_assessment` (
@@ -1733,7 +1733,7 @@ CREATE TABLE `triage_assessment` (
     INDEX `triage_assessment_triage_level_idx`(`triage_level`),
     INDEX `triage_assessment_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `emergency_response` (
@@ -1750,7 +1750,7 @@ CREATE TABLE `emergency_response` (
     INDEX `emergency_response_response_at_idx`(`response_at`),
     INDEX `emergency_response_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `ambulance` (
@@ -1770,7 +1770,7 @@ CREATE TABLE `ambulance` (
     INDEX `ambulance_identifier_idx`(`identifier`),
     INDEX `ambulance_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `ambulance_dispatch` (
@@ -1790,7 +1790,7 @@ CREATE TABLE `ambulance_dispatch` (
     INDEX `ambulance_dispatch_dispatched_at_idx`(`dispatched_at`),
     INDEX `ambulance_dispatch_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `ambulance_trip` (
@@ -1809,7 +1809,7 @@ CREATE TABLE `ambulance_trip` (
     INDEX `ambulance_trip_started_at_idx`(`started_at`),
     INDEX `ambulance_trip_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `invoice` (
@@ -1835,7 +1835,7 @@ CREATE TABLE `invoice` (
     INDEX `invoice_issued_at_idx`(`issued_at`),
     INDEX `invoice_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `invoice_item` (
@@ -1853,7 +1853,7 @@ CREATE TABLE `invoice_item` (
     INDEX `invoice_item_invoice_id_idx`(`invoice_id`),
     INDEX `invoice_item_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `payment` (
@@ -1881,7 +1881,7 @@ CREATE TABLE `payment` (
     INDEX `payment_paid_at_idx`(`paid_at`),
     INDEX `payment_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `refund` (
@@ -1899,7 +1899,7 @@ CREATE TABLE `refund` (
     INDEX `refund_refunded_at_idx`(`refunded_at`),
     INDEX `refund_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `pricing_rule` (
@@ -1921,7 +1921,7 @@ CREATE TABLE `pricing_rule` (
     INDEX `pricing_rule_effective_to_idx`(`effective_to`),
     INDEX `pricing_rule_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `coverage_plan` (
@@ -1938,7 +1938,7 @@ CREATE TABLE `coverage_plan` (
     INDEX `coverage_plan_tenant_id_idx`(`tenant_id`),
     INDEX `coverage_plan_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `insurance_claim` (
@@ -1958,7 +1958,7 @@ CREATE TABLE `insurance_claim` (
     INDEX `insurance_claim_submitted_at_idx`(`submitted_at`),
     INDEX `insurance_claim_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `pre_authorization` (
@@ -1977,7 +1977,7 @@ CREATE TABLE `pre_authorization` (
     INDEX `pre_authorization_requested_at_idx`(`requested_at`),
     INDEX `pre_authorization_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `billing_adjustment` (
@@ -1997,7 +1997,7 @@ CREATE TABLE `billing_adjustment` (
     INDEX `billing_adjustment_adjusted_at_idx`(`adjusted_at`),
     INDEX `billing_adjustment_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `staff_profile` (
@@ -2021,7 +2021,7 @@ CREATE TABLE `staff_profile` (
     INDEX `staff_profile_deleted_at_idx`(`deleted_at`),
     UNIQUE INDEX `staff_profile_tenant_id_staff_number_key`(`tenant_id`, `staff_number`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `staff_assignment` (
@@ -2041,7 +2041,7 @@ CREATE TABLE `staff_assignment` (
     INDEX `staff_assignment_unit_id_idx`(`unit_id`),
     INDEX `staff_assignment_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `staff_leave` (
@@ -2062,7 +2062,7 @@ CREATE TABLE `staff_leave` (
     INDEX `staff_leave_end_date_idx`(`end_date`),
     INDEX `staff_leave_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `shift` (
@@ -2084,7 +2084,7 @@ CREATE TABLE `shift` (
     INDEX `shift_status_idx`(`status`),
     INDEX `shift_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `shift_assignment` (
@@ -2101,7 +2101,7 @@ CREATE TABLE `shift_assignment` (
     INDEX `shift_assignment_staff_profile_id_idx`(`staff_profile_id`),
     INDEX `shift_assignment_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `shift_swap_request` (
@@ -2121,7 +2121,7 @@ CREATE TABLE `shift_swap_request` (
     INDEX `shift_swap_request_status_idx`(`status`),
     INDEX `shift_swap_request_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `payroll_run` (
@@ -2141,7 +2141,7 @@ CREATE TABLE `payroll_run` (
     INDEX `payroll_run_status_idx`(`status`),
     INDEX `payroll_run_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `payroll_item` (
@@ -2159,7 +2159,7 @@ CREATE TABLE `payroll_item` (
     INDEX `payroll_item_staff_profile_id_idx`(`staff_profile_id`),
     INDEX `payroll_item_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `housekeeping_task` (
@@ -2181,7 +2181,7 @@ CREATE TABLE `housekeeping_task` (
     INDEX `housekeeping_task_status_idx`(`status`),
     INDEX `housekeeping_task_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `housekeeping_schedule` (
@@ -2200,7 +2200,7 @@ CREATE TABLE `housekeeping_schedule` (
     INDEX `housekeeping_schedule_room_id_idx`(`room_id`),
     INDEX `housekeeping_schedule_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `maintenance_request` (
@@ -2222,7 +2222,7 @@ CREATE TABLE `maintenance_request` (
     INDEX `maintenance_request_reported_at_idx`(`reported_at`),
     INDEX `maintenance_request_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `asset` (
@@ -2243,7 +2243,7 @@ CREATE TABLE `asset` (
     INDEX `asset_status_idx`(`status`),
     INDEX `asset_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `asset_service_log` (
@@ -2260,7 +2260,7 @@ CREATE TABLE `asset_service_log` (
     INDEX `asset_service_log_serviced_at_idx`(`serviced_at`),
     INDEX `asset_service_log_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `notification` (
@@ -2283,7 +2283,7 @@ CREATE TABLE `notification` (
     INDEX `notification_priority_idx`(`priority`),
     INDEX `notification_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `notification_delivery` (
@@ -2302,7 +2302,7 @@ CREATE TABLE `notification_delivery` (
     INDEX `notification_delivery_sent_at_idx`(`sent_at`),
     INDEX `notification_delivery_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `conversation` (
@@ -2319,7 +2319,7 @@ CREATE TABLE `conversation` (
     INDEX `conversation_created_by_user_id_idx`(`created_by_user_id`),
     INDEX `conversation_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `message` (
@@ -2340,7 +2340,7 @@ CREATE TABLE `message` (
     INDEX `message_sent_at_idx`(`sent_at`),
     INDEX `message_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `template` (
@@ -2359,7 +2359,7 @@ CREATE TABLE `template` (
     INDEX `template_name_idx`(`name`),
     INDEX `template_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `template_variable` (
@@ -2377,7 +2377,7 @@ CREATE TABLE `template_variable` (
     INDEX `template_variable_deleted_at_idx`(`deleted_at`),
     UNIQUE INDEX `template_variable_template_id_key_key`(`template_id`, `key`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `report_definition` (
@@ -2395,7 +2395,7 @@ CREATE TABLE `report_definition` (
     INDEX `report_definition_name_idx`(`name`),
     INDEX `report_definition_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `report_run` (
@@ -2416,7 +2416,7 @@ CREATE TABLE `report_run` (
     INDEX `report_run_started_at_idx`(`started_at`),
     INDEX `report_run_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `dashboard_widget` (
@@ -2433,7 +2433,7 @@ CREATE TABLE `dashboard_widget` (
     INDEX `dashboard_widget_name_idx`(`name`),
     INDEX `dashboard_widget_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `kpi_snapshot` (
@@ -2451,7 +2451,7 @@ CREATE TABLE `kpi_snapshot` (
     INDEX `kpi_snapshot_recorded_at_idx`(`recorded_at`),
     INDEX `kpi_snapshot_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `analytics_event` (
@@ -2472,7 +2472,7 @@ CREATE TABLE `analytics_event` (
     INDEX `analytics_event_occurred_at_idx`(`occurred_at`),
     INDEX `analytics_event_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `subscription_plan` (
@@ -2490,7 +2490,7 @@ CREATE TABLE `subscription_plan` (
     INDEX `subscription_plan_billing_cycle_idx`(`billing_cycle`),
     INDEX `subscription_plan_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `subscription` (
@@ -2510,7 +2510,7 @@ CREATE TABLE `subscription` (
     INDEX `subscription_status_idx`(`status`),
     INDEX `subscription_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `subscription_invoice` (
@@ -2527,7 +2527,7 @@ CREATE TABLE `subscription_invoice` (
     INDEX `subscription_invoice_deleted_at_idx`(`deleted_at`),
     UNIQUE INDEX `subscription_invoice_subscription_id_invoice_id_key`(`subscription_id`, `invoice_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `module` (
@@ -2543,7 +2543,7 @@ CREATE TABLE `module` (
     INDEX `module_deleted_at_idx`(`deleted_at`),
     UNIQUE INDEX `module_name_key`(`name`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `module_subscription` (
@@ -2562,7 +2562,7 @@ CREATE TABLE `module_subscription` (
     INDEX `module_subscription_deleted_at_idx`(`deleted_at`),
     UNIQUE INDEX `module_subscription_module_id_subscription_id_key`(`module_id`, `subscription_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `license` (
@@ -2582,7 +2582,7 @@ CREATE TABLE `license` (
     INDEX `license_status_idx`(`status`),
     INDEX `license_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `audit_log` (
@@ -2606,7 +2606,7 @@ CREATE TABLE `audit_log` (
     INDEX `audit_log_created_at_idx`(`created_at`),
     INDEX `audit_log_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `phi_access_log` (
@@ -2629,7 +2629,7 @@ CREATE TABLE `phi_access_log` (
     INDEX `phi_access_log_accessed_at_idx`(`accessed_at`),
     INDEX `phi_access_log_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `data_processing_log` (
@@ -2652,7 +2652,7 @@ CREATE TABLE `data_processing_log` (
     INDEX `data_processing_log_processed_at_idx`(`processed_at`),
     INDEX `data_processing_log_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `breach_notification` (
@@ -2674,7 +2674,7 @@ CREATE TABLE `breach_notification` (
     INDEX `breach_notification_reported_at_idx`(`reported_at`),
     INDEX `breach_notification_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `system_change_log` (
@@ -2694,7 +2694,7 @@ CREATE TABLE `system_change_log` (
     INDEX `system_change_log_created_at_idx`(`created_at`),
     INDEX `system_change_log_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `integration` (
@@ -2714,7 +2714,7 @@ CREATE TABLE `integration` (
     INDEX `integration_status_idx`(`status`),
     INDEX `integration_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `integration_log` (
@@ -2733,7 +2733,7 @@ CREATE TABLE `integration_log` (
     INDEX `integration_log_logged_at_idx`(`logged_at`),
     INDEX `integration_log_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `webhook_subscription` (
@@ -2754,7 +2754,7 @@ CREATE TABLE `webhook_subscription` (
     INDEX `webhook_subscription_is_active_idx`(`is_active`),
     INDEX `webhook_subscription_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- AddForeignKey
 ALTER TABLE `facility` ADD CONSTRAINT `facility_tenant_id_fkey` FOREIGN KEY (`tenant_id`) REFERENCES `tenant`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

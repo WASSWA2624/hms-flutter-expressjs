@@ -38,7 +38,7 @@ CREATE TABLE `abac_policy` (
     INDEX `abac_policy_deleted_at_idx`(`deleted_at`),
     INDEX `abac_policy_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `break_glass_access` (
@@ -87,7 +87,7 @@ CREATE TABLE `break_glass_access` (
     INDEX `break_glass_access_deleted_at_idx`(`deleted_at`),
     INDEX `break_glass_access_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `break_glass_review` (
@@ -112,7 +112,7 @@ CREATE TABLE `break_glass_review` (
     INDEX `break_glass_review_deleted_at_idx`(`deleted_at`),
     INDEX `break_glass_review_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `office_context` (
@@ -148,7 +148,7 @@ CREATE TABLE `office_context` (
     INDEX `office_context_deleted_at_idx`(`deleted_at`),
     INDEX `office_context_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `shift_close` (
@@ -190,7 +190,7 @@ CREATE TABLE `shift_close` (
     INDEX `shift_close_deleted_at_idx`(`deleted_at`),
     INDEX `shift_close_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `day_close` (
@@ -228,7 +228,7 @@ CREATE TABLE `day_close` (
     INDEX `day_close_deleted_at_idx`(`deleted_at`),
     INDEX `day_close_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `handover` (
@@ -264,7 +264,7 @@ CREATE TABLE `handover` (
     INDEX `handover_deleted_at_idx`(`deleted_at`),
     INDEX `handover_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `custody_snapshot` (
@@ -299,7 +299,7 @@ CREATE TABLE `custody_snapshot` (
     INDEX `custody_snapshot_deleted_at_idx`(`deleted_at`),
     INDEX `custody_snapshot_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `closeout_pack` (
@@ -345,7 +345,7 @@ CREATE TABLE `closeout_pack` (
     INDEX `closeout_pack_deleted_at_idx`(`deleted_at`),
     INDEX `closeout_pack_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- AddForeignKey
 ALTER TABLE `abac_policy` ADD CONSTRAINT `abac_policy_tenant_id_fkey` FOREIGN KEY (`tenant_id`) REFERENCES `tenant`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

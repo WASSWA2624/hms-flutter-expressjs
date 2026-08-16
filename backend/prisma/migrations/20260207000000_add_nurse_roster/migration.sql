@@ -22,7 +22,7 @@ CREATE TABLE `nurse_roster` (
     INDEX `nurse_roster_status_idx`(`status`),
     INDEX `nurse_roster_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- AddForeignKey
 ALTER TABLE `nurse_roster` ADD CONSTRAINT `nurse_roster_tenant_id_fkey` FOREIGN KEY (`tenant_id`) REFERENCES `tenant`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

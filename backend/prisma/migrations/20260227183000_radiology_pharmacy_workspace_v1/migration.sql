@@ -30,7 +30,7 @@ CREATE TABLE `radiology_result_attestation` (
   CONSTRAINT `radiology_result_attestation_radiology_result_id_fkey`
     FOREIGN KEY (`radiology_result_id`) REFERENCES `radiology_result`(`id`)
     ON DELETE RESTRICT ON UPDATE CASCADE
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 CREATE TABLE `pharmacy_dispense_attestation` (
   `id` VARCHAR(36) NOT NULL,
@@ -59,7 +59,7 @@ CREATE TABLE `pharmacy_dispense_attestation` (
   CONSTRAINT `pharmacy_dispense_attestation_pharmacy_order_id_fkey`
     FOREIGN KEY (`pharmacy_order_id`) REFERENCES `pharmacy_order`(`id`)
     ON DELETE RESTRICT ON UPDATE CASCADE
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 CREATE TABLE `drug_inventory_map` (
   `id` VARCHAR(36) NOT NULL,
@@ -87,4 +87,4 @@ CREATE TABLE `drug_inventory_map` (
   CONSTRAINT `drug_inventory_map_inventory_item_id_fkey`
     FOREIGN KEY (`inventory_item_id`) REFERENCES `inventory_item`(`id`)
     ON DELETE RESTRICT ON UPDATE CASCADE
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;

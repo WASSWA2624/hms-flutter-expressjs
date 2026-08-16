@@ -9,7 +9,7 @@ CREATE TABLE `human_id_counter` (
   `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   `updated_at` DATETIME(3) NOT NULL,
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateIndex
 CREATE UNIQUE INDEX `human_id_counter_model_name_prefix_scope_key_key` ON `human_id_counter`(`model_name`, `prefix`, `scope_key`);

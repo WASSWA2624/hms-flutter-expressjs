@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS `posting_rule` (
   `deleted_at` DATETIME(3) NULL,
   `version` INTEGER NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- One rule code per tenant. The service also guards overlapping effective
 -- windows for the same source module, event type, and priority.

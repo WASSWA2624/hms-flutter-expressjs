@@ -3,7 +3,15 @@ require('module-alias/register');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { faker } = require('@faker-js/faker');
+// Lazily required: @faker-js/faker is a devDependency, and production-side
+// scripts (sync-permission-catalog) only need `prisma` from this module.
+let fakerInstance = null;
+const getFaker = () => {
+  if (!fakerInstance) {
+    ({ faker: fakerInstance } = require('@faker-js/faker'));
+  }
+  return fakerInstance;
+};
 const BACKEND_ROOT = path.join(__dirname, '..', '..');
 
 try {
@@ -317,6 +325,7 @@ const createSeedContext = ({
 } = {}) => {
   const parsedSeed = Number.parseInt(String(randomSeed), 10);
   const safeSeed = Number.isFinite(parsedSeed) ? parsedSeed : DEFAULT_RANDOM_SEED;
+  const faker = getFaker();
   faker.seed(safeSeed);
 
   const schemaPath = path.join(BACKEND_ROOT, 'prisma', 'schema.prisma');
@@ -417,7 +426,6 @@ const createSeedContext = ({
 
 module.exports = {
   prisma,
-  faker,
   DEFAULT_RANDOM_SEED,
   DEFAULT_SEED_PASSWORD,
   DEMO_SEED_PACK,
@@ -431,3 +439,10 @@ module.exports = {
   mergeJson,
   parseSchemaMetadata,
 };
+
+// Keep `const { faker } = require('./seed-runtime')` working for the demo
+// seeders without loading the devDependency at require time.
+Object.defineProperty(module.exports, 'faker', {
+  enumerable: true,
+  get: getFaker,
+});

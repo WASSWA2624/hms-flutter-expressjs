@@ -42,7 +42,7 @@ CREATE TABLE `therapy_episode` (
     INDEX `therapy_episode_deleted_at_idx`(`deleted_at`),
     INDEX `therapy_episode_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 CREATE TABLE `therapy_session` (
     `id` VARCHAR(36) NOT NULL,
@@ -68,7 +68,7 @@ CREATE TABLE `therapy_session` (
     INDEX `therapy_session_deleted_at_idx`(`deleted_at`),
     INDEX `therapy_session_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 ALTER TABLE `therapy_episode` ADD CONSTRAINT `therapy_episode_encounter_id_fkey` FOREIGN KEY (`encounter_id`) REFERENCES `encounter`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE `therapy_episode` ADD CONSTRAINT `therapy_episode_admission_id_fkey` FOREIGN KEY (`admission_id`) REFERENCES `admission`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;

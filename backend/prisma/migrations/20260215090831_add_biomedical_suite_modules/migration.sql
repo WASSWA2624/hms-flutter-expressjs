@@ -53,7 +53,7 @@ CREATE TABLE `equipment_category` (
     INDEX `equipment_category_deleted_at_idx`(`deleted_at`),
     UNIQUE INDEX `equipment_category_tenant_id_name_key`(`tenant_id`, `name`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `equipment_registry` (
@@ -90,7 +90,7 @@ CREATE TABLE `equipment_registry` (
     INDEX `equipment_registry_status_idx`(`status`),
     INDEX `equipment_registry_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `equipment_location_history` (
@@ -116,7 +116,7 @@ CREATE TABLE `equipment_location_history` (
     INDEX `equipment_location_history_moved_at_idx`(`moved_at`),
     INDEX `equipment_location_history_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `equipment_maintenance_plan` (
@@ -148,7 +148,7 @@ CREATE TABLE `equipment_maintenance_plan` (
     INDEX `equipment_maintenance_plan_next_due_at_idx`(`next_due_at`),
     INDEX `equipment_maintenance_plan_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `equipment_work_order` (
@@ -189,7 +189,7 @@ CREATE TABLE `equipment_work_order` (
     INDEX `equipment_work_order_opened_at_idx`(`opened_at`),
     INDEX `equipment_work_order_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `equipment_calibration_log` (
@@ -219,7 +219,7 @@ CREATE TABLE `equipment_calibration_log` (
     INDEX `equipment_calibration_log_calibrated_at_idx`(`calibrated_at`),
     INDEX `equipment_calibration_log_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `equipment_safety_test_log` (
@@ -249,7 +249,7 @@ CREATE TABLE `equipment_safety_test_log` (
     INDEX `equipment_safety_test_log_tested_at_idx`(`tested_at`),
     INDEX `equipment_safety_test_log_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `equipment_downtime_log` (
@@ -277,7 +277,7 @@ CREATE TABLE `equipment_downtime_log` (
     INDEX `equipment_downtime_log_is_clinically_critical_idx`(`is_clinically_critical`),
     INDEX `equipment_downtime_log_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `equipment_spare_part` (
@@ -309,7 +309,7 @@ CREATE TABLE `equipment_spare_part` (
     INDEX `equipment_spare_part_part_number_idx`(`part_number`),
     INDEX `equipment_spare_part_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `equipment_warranty_contract` (
@@ -341,7 +341,7 @@ CREATE TABLE `equipment_warranty_contract` (
     INDEX `equipment_warranty_contract_expires_at_idx`(`expires_at`),
     INDEX `equipment_warranty_contract_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `equipment_service_provider` (
@@ -369,7 +369,7 @@ CREATE TABLE `equipment_service_provider` (
     INDEX `equipment_service_provider_deleted_at_idx`(`deleted_at`),
     UNIQUE INDEX `equipment_service_provider_tenant_id_name_key`(`tenant_id`, `name`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `equipment_incident_report` (
@@ -404,7 +404,7 @@ CREATE TABLE `equipment_incident_report` (
     INDEX `equipment_incident_report_occurred_at_idx`(`occurred_at`),
     INDEX `equipment_incident_report_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `equipment_recall_notice` (
@@ -436,7 +436,7 @@ CREATE TABLE `equipment_recall_notice` (
     INDEX `equipment_recall_notice_deleted_at_idx`(`deleted_at`),
     UNIQUE INDEX `equipment_recall_notice_tenant_id_recall_reference_key`(`tenant_id`, `recall_reference`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `equipment_utilization_snapshot` (
@@ -463,7 +463,7 @@ CREATE TABLE `equipment_utilization_snapshot` (
     INDEX `equipment_utilization_snapshot_captured_at_idx`(`captured_at`),
     INDEX `equipment_utilization_snapshot_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `equipment_disposal_transfer` (
@@ -495,7 +495,7 @@ CREATE TABLE `equipment_disposal_transfer` (
     INDEX `equipment_disposal_transfer_approved_by_user_id_idx`(`approved_by_user_id`),
     INDEX `equipment_disposal_transfer_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- AddForeignKey
 ALTER TABLE `equipment_category` ADD CONSTRAINT `equipment_category_tenant_id_fkey` FOREIGN KEY (`tenant_id`) REFERENCES `tenant`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

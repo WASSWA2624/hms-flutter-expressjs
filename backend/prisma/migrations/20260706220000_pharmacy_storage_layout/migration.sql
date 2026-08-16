@@ -18,7 +18,7 @@ CREATE TABLE `pharmacy_storage_room` (
     INDEX `pharmacy_storage_room_deleted_at_idx`(`deleted_at`),
     INDEX `pharmacy_storage_room_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `pharmacy_storage_shelf` (
@@ -43,7 +43,7 @@ CREATE TABLE `pharmacy_storage_shelf` (
     INDEX `pharmacy_storage_shelf_human_friendly_id_idx`(`human_friendly_id`),
     UNIQUE INDEX `pharmacy_storage_shelf_storage_room_id_shelf_code_key`(`storage_room_id`, `shelf_code`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- AlterTable
 ALTER TABLE `drug_batch`

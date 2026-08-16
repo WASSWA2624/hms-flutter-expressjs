@@ -36,7 +36,7 @@ CREATE TABLE `clinical_vital_alert_threshold` (
   `version` INTEGER NOT NULL DEFAULT 1,
 
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `clinical_term_favorite` (
@@ -57,7 +57,7 @@ CREATE TABLE `clinical_term_favorite` (
   `version` INTEGER NOT NULL DEFAULT 1,
 
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateIndex
 CREATE INDEX `clinical_alert_status_idx` ON `clinical_alert`(`status`);

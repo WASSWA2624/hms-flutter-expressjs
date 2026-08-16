@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS `chart_account` (
   `deleted_at` DATETIME(3) NULL,
   `version` INTEGER NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- Unique per tenant + facility + code.
 -- MariaDB 10.4 does not support functional unique indexes (IFNULL(...)), so

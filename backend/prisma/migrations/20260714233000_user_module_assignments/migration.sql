@@ -19,7 +19,7 @@ CREATE TABLE `user_module_assignment` (
   INDEX `user_module_assignment_deleted_at_idx` (`deleted_at`),
   INDEX `user_module_assignment_human_friendly_id_idx` (`human_friendly_id`),
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 ALTER TABLE `user_module_assignment`
   ADD CONSTRAINT `user_module_assignment_user_id_fkey`

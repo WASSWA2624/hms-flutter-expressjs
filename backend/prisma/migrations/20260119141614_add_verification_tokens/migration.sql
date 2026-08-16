@@ -17,7 +17,7 @@ CREATE TABLE `verification_token` (
     INDEX `verification_token_expires_at_idx`(`expires_at`),
     INDEX `verification_token_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- AddForeignKey
 ALTER TABLE `verification_token` ADD CONSTRAINT `verification_token_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

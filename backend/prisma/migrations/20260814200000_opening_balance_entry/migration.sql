@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS `opening_balance_entry` (
   `deleted_at` DATETIME(3) NULL,
   `version` INTEGER NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- The public reference is unique per tenant, so a deep link can never resolve
 -- to two rows.

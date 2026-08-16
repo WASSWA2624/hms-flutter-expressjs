@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS `insurance_company` (
   `deleted_at` DATETIME(3) NULL,
   `version` INTEGER NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 SET @idx_exists := (
   SELECT COUNT(1) FROM information_schema.STATISTICS
@@ -315,7 +315,7 @@ CREATE TABLE IF NOT EXISTS `scheme_offer` (
   `deleted_at` DATETIME(3) NULL,
   `version` INTEGER NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 SET @idx_exists := (
   SELECT COUNT(1) FROM information_schema.STATISTICS

@@ -23,7 +23,7 @@ CREATE TABLE `lab_test_reference_range` (
   `updated_at` DATETIME(3) NOT NULL,
 
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 CREATE TABLE `lab_panel_item` (
   `id` VARCHAR(36) NOT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE `lab_panel_item` (
   UNIQUE INDEX `lab_panel_item_lab_panel_id_lab_test_id_key`(`lab_panel_id`, `lab_test_id`),
   INDEX `lab_panel_item_lab_panel_id_sort_order_idx`(`lab_panel_id`, `sort_order`),
   INDEX `lab_panel_item_lab_test_id_idx`(`lab_test_id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 CREATE INDEX `lab_test_reference_range_lab_test_id_sort_order_idx`
   ON `lab_test_reference_range`(`lab_test_id`, `sort_order`);
