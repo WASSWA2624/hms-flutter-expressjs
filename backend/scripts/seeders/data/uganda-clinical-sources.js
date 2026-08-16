@@ -25,6 +25,13 @@ const UGANDA_CLINICAL_SOURCES = freezeSources({
     url: 'https://library.health.go.ug/sites/default/files/resources/Uganda%20Clinical%20Guidelines%202023.pdf',
     scope: 'Priority conditions, terminology, and national clinical practice',
   },
+  CDC_ICD10_CM: {
+    title: 'International Classification of Diseases, Tenth Revision, Clinical Modification',
+    publisher: 'US Centers for Disease Control and Prevention, National Center for Health Statistics',
+    url: 'https://www.cdc.gov/nchs/icd/icd-10-cm/',
+    scope:
+      'Rubric titles for the ICD-10 category representatives in the diagnosis catalog. Clinical Modification, so codes are more granular than WHO ICD-10 and are not interchangeable with it',
+  },
   UG_MOH_LAB_MENU_2017: {
     title: 'National Standard Test Menu, Techniques and Supplies List for Laboratories in Uganda',
     publisher: 'Uganda Ministry of Health, National Health Laboratory Services',

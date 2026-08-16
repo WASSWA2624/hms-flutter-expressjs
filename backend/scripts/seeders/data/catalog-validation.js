@@ -215,10 +215,51 @@ const assertLabCatalogIntegrity = ({ tests, panels }) => {
     }
     panelMemberships.set(membership, panel.key);
   }
+
+  assertNoNearDuplicatePanels(panels);
+};
+
+/**
+ * Identical membership is already rejected above, but a panel that repeats
+ * another one bar a test or two is the same ordering problem wearing a hat: it
+ * splits clinician muscle memory across two entries that mean the same thing.
+ *
+ * The threshold has to stay above the legitimate nesting in the catalog - a
+ * basic metabolic panel sits inside a comprehensive one at 0.57 - so 0.75 keeps
+ * real order sets while catching rebadges.
+ */
+const PANEL_SIMILARITY_LIMIT = 0.75;
+
+const assertNoNearDuplicatePanels = (panels) => {
+  const entries = panels.map((panel) => ({
+    key: panel.key,
+    tests: new Set(panel.test_keys),
+  }));
+
+  for (let left = 0; left < entries.length; left += 1) {
+    for (let right = left + 1; right < entries.length; right += 1) {
+      const a = entries[left];
+      const b = entries[right];
+      const shared = [...a.tests].filter((testKey) => b.tests.has(testKey)).length;
+      const combined = new Set([...a.tests, ...b.tests]).size;
+      if (combined === 0) continue;
+
+      const similarity = shared / combined;
+      if (similarity >= PANEL_SIMILARITY_LIMIT) {
+        throw new Error(
+          `LAB_PANEL_CATALOG.${a.key} and LAB_PANEL_CATALOG.${b.key} share ${shared} of ${combined} tests ` +
+            `(${similarity.toFixed(2)} similarity, limit ${PANEL_SIMILARITY_LIMIT}). ` +
+            'Merge them into one canonical panel instead of shipping both.'
+        );
+      }
+    }
+  }
 };
 
 module.exports = {
   assertLabCatalogIntegrity,
+  assertNoNearDuplicatePanels,
   assertUniqueFields,
   normalizeCatalogValue,
+  PANEL_SIMILARITY_LIMIT,
 };
