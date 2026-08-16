@@ -861,95 +861,95 @@ ALTER TABLE `unit_management_assignment` ADD CONSTRAINT `unit_management_assignm
 ALTER TABLE `unit_management_assignment` ADD CONSTRAINT `unit_management_assignment_staff_profile_id_fkey` FOREIGN KEY (`staff_profile_id`) REFERENCES `staff_profile`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- RenameIndex
-ALTER TABLE `billable_charge_event` RENAME INDEX `billable_charge_event_source_idx` TO `billable_charge_event_source_module_source_id_idx`;
+ALTER TABLE `billable_charge_event` DROP INDEX `billable_charge_event_source_idx`, ADD INDEX `billable_charge_event_source_module_source_id_idx`(`source_module`, `source_id`);
 
 -- RenameIndex
-ALTER TABLE `facility_lab_test_reference_range` RENAME INDEX `fltr_offering_sort_idx` TO `facility_lab_test_reference_range_facility_lab_test_offering_idx`;
+ALTER TABLE `facility_lab_test_reference_range` DROP INDEX `fltr_offering_sort_idx`, ADD INDEX `facility_lab_test_reference_range_facility_lab_test_offering_idx`(`facility_lab_test_offering_id`, `sort_order`);
 
 -- RenameIndex
-ALTER TABLE `facility_lab_test_result_option` RENAME INDEX `fltro_offering_sort_idx` TO `facility_lab_test_result_option_facility_lab_test_offering_i_idx`;
+ALTER TABLE `facility_lab_test_result_option` DROP INDEX `fltro_offering_sort_idx`, ADD INDEX `facility_lab_test_result_option_facility_lab_test_offering_i_idx`(`facility_lab_test_offering_id`, `sort_order`);
 
 -- RenameIndex
-ALTER TABLE `facility_lab_test_result_option` RENAME INDEX `fltro_offering_value_key` TO `facility_lab_test_result_option_facility_lab_test_offering_i_key`;
+ALTER TABLE `facility_lab_test_result_option` DROP INDEX `fltro_offering_value_key`, ADD UNIQUE INDEX `facility_lab_test_result_option_facility_lab_test_offering_i_key`(`facility_lab_test_offering_id`, `value`);
 
 -- RenameIndex
-ALTER TABLE `facility_lab_test_unit_option` RENAME INDEX `fltu_offering_sort_idx` TO `facility_lab_test_unit_option_facility_lab_test_offering_id__idx`;
+ALTER TABLE `facility_lab_test_unit_option` DROP INDEX `fltu_offering_sort_idx`, ADD INDEX `facility_lab_test_unit_option_facility_lab_test_offering_id__idx`(`facility_lab_test_offering_id`, `sort_order`);
 
 -- RenameIndex
-ALTER TABLE `facility_lab_test_unit_option` RENAME INDEX `fltu_offering_unit_key` TO `facility_lab_test_unit_option_facility_lab_test_offering_id__key`;
+ALTER TABLE `facility_lab_test_unit_option` DROP INDEX `fltu_offering_unit_key`, ADD UNIQUE INDEX `facility_lab_test_unit_option_facility_lab_test_offering_id__key`(`facility_lab_test_offering_id`, `unit`);
 
 -- RenameIndex
-ALTER TABLE `facility_pharmacy_offering` RENAME INDEX `fpo_deleted_at_idx` TO `facility_pharmacy_offering_deleted_at_idx`;
+ALTER TABLE `facility_pharmacy_offering` DROP INDEX `fpo_deleted_at_idx`, ADD INDEX `facility_pharmacy_offering_deleted_at_idx`(`deleted_at`);
 
 -- RenameIndex
-ALTER TABLE `facility_pharmacy_offering` RENAME INDEX `fpo_drug_id_idx` TO `facility_pharmacy_offering_drug_id_idx`;
+ALTER TABLE `facility_pharmacy_offering` DROP INDEX `fpo_drug_id_idx`, ADD INDEX `facility_pharmacy_offering_drug_id_idx`(`drug_id`);
 
 -- RenameIndex
-ALTER TABLE `facility_pharmacy_offering` RENAME INDEX `fpo_facility_id_idx` TO `facility_pharmacy_offering_facility_id_idx`;
+ALTER TABLE `facility_pharmacy_offering` DROP INDEX `fpo_facility_id_idx`, ADD INDEX `facility_pharmacy_offering_facility_id_idx`(`facility_id`);
 
 -- RenameIndex
-ALTER TABLE `facility_pharmacy_offering` RENAME INDEX `fpo_human_friendly_id_idx` TO `facility_pharmacy_offering_human_friendly_id_idx`;
+ALTER TABLE `facility_pharmacy_offering` DROP INDEX `fpo_human_friendly_id_idx`, ADD INDEX `facility_pharmacy_offering_human_friendly_id_idx`(`human_friendly_id`);
 
 -- RenameIndex
-ALTER TABLE `facility_pharmacy_offering` RENAME INDEX `fpo_is_active_idx` TO `facility_pharmacy_offering_is_active_idx`;
+ALTER TABLE `facility_pharmacy_offering` DROP INDEX `fpo_is_active_idx`, ADD INDEX `facility_pharmacy_offering_is_active_idx`(`is_active`);
 
 -- RenameIndex
-ALTER TABLE `facility_pharmacy_offering` RENAME INDEX `fpo_sort_order_idx` TO `facility_pharmacy_offering_sort_order_idx`;
+ALTER TABLE `facility_pharmacy_offering` DROP INDEX `fpo_sort_order_idx`, ADD INDEX `facility_pharmacy_offering_sort_order_idx`(`sort_order`);
 
 -- RenameIndex
-ALTER TABLE `facility_pharmacy_offering` RENAME INDEX `fpo_tenant_id_idx` TO `facility_pharmacy_offering_tenant_id_idx`;
+ALTER TABLE `facility_pharmacy_offering` DROP INDEX `fpo_tenant_id_idx`, ADD INDEX `facility_pharmacy_offering_tenant_id_idx`(`tenant_id`);
 
 -- RenameIndex
-ALTER TABLE `facility_radiology_procedure_offering` RENAME INDEX `frpo_radiology_procedure_id_idx` TO `facility_radiology_procedure_offering_radiology_procedure_id_idx`;
+ALTER TABLE `facility_radiology_procedure_offering` DROP INDEX `frpo_radiology_procedure_id_idx`, ADD INDEX `facility_radiology_procedure_offering_radiology_procedure_id_idx`(`radiology_procedure_id`);
 
 -- RenameIndex
-ALTER TABLE `facility_radiology_procedure_offering` RENAME INDEX `frto_deleted_at_idx` TO `facility_radiology_procedure_offering_deleted_at_idx`;
+ALTER TABLE `facility_radiology_procedure_offering` DROP INDEX `frto_deleted_at_idx`, ADD INDEX `facility_radiology_procedure_offering_deleted_at_idx`(`deleted_at`);
 
 -- RenameIndex
-ALTER TABLE `facility_radiology_procedure_offering` RENAME INDEX `frto_facility_id_idx` TO `facility_radiology_procedure_offering_facility_id_idx`;
+ALTER TABLE `facility_radiology_procedure_offering` DROP INDEX `frto_facility_id_idx`, ADD INDEX `facility_radiology_procedure_offering_facility_id_idx`(`facility_id`);
 
 -- RenameIndex
-ALTER TABLE `facility_radiology_procedure_offering` RENAME INDEX `frto_human_friendly_id_idx` TO `facility_radiology_procedure_offering_human_friendly_id_idx`;
+ALTER TABLE `facility_radiology_procedure_offering` DROP INDEX `frto_human_friendly_id_idx`, ADD INDEX `facility_radiology_procedure_offering_human_friendly_id_idx`(`human_friendly_id`);
 
 -- RenameIndex
-ALTER TABLE `facility_radiology_procedure_offering` RENAME INDEX `frto_is_active_idx` TO `facility_radiology_procedure_offering_is_active_idx`;
+ALTER TABLE `facility_radiology_procedure_offering` DROP INDEX `frto_is_active_idx`, ADD INDEX `facility_radiology_procedure_offering_is_active_idx`(`is_active`);
 
 -- RenameIndex
-ALTER TABLE `facility_radiology_procedure_offering` RENAME INDEX `frto_sort_order_idx` TO `facility_radiology_procedure_offering_sort_order_idx`;
+ALTER TABLE `facility_radiology_procedure_offering` DROP INDEX `frto_sort_order_idx`, ADD INDEX `facility_radiology_procedure_offering_sort_order_idx`(`sort_order`);
 
 -- RenameIndex
-ALTER TABLE `facility_radiology_procedure_offering` RENAME INDEX `frto_tenant_id_idx` TO `facility_radiology_procedure_offering_tenant_id_idx`;
+ALTER TABLE `facility_radiology_procedure_offering` DROP INDEX `frto_tenant_id_idx`, ADD INDEX `facility_radiology_procedure_offering_tenant_id_idx`(`tenant_id`);
 
 -- RenameIndex
-ALTER TABLE `invoice_item` RENAME INDEX `invoice_item_coverage_plan_id_fkey` TO `invoice_item_coverage_plan_id_idx`;
+ALTER TABLE `invoice_item` DROP INDEX `invoice_item_coverage_plan_id_fkey`, ADD INDEX `invoice_item_coverage_plan_id_idx`(`coverage_plan_id`);
 
 -- RenameIndex
-ALTER TABLE `invoice_item` RENAME INDEX `invoice_item_price_book_entry_id_fkey` TO `invoice_item_price_book_entry_id_idx`;
+ALTER TABLE `invoice_item` DROP INDEX `invoice_item_price_book_entry_id_fkey`, ADD INDEX `invoice_item_price_book_entry_id_idx`(`price_book_entry_id`);
 
 -- RenameIndex
-ALTER TABLE `pharmacy_dispense_attestation` RENAME INDEX `pharmacy_dispense_attestation_order_batch_phase_key` TO `pharmacy_dispense_attestation_pharmacy_order_id_dispense_bat_key`;
+ALTER TABLE `pharmacy_dispense_attestation` DROP INDEX `pharmacy_dispense_attestation_order_batch_phase_key`, ADD UNIQUE INDEX `pharmacy_dispense_attestation_pharmacy_order_id_dispense_bat_key`(`pharmacy_order_id`, `dispense_batch_ref`, `phase`);
 
 -- RenameIndex
-ALTER TABLE `price_book_entry` RENAME INDEX `price_book_entry_coverage_plan_id_fkey` TO `price_book_entry_coverage_plan_id_idx`;
+ALTER TABLE `price_book_entry` DROP INDEX `price_book_entry_coverage_plan_id_fkey`, ADD INDEX `price_book_entry_coverage_plan_id_idx`(`coverage_plan_id`);
 
 -- RenameIndex
-ALTER TABLE `price_book_entry` RENAME INDEX `price_book_entry_facility_id_fkey` TO `price_book_entry_facility_id_idx`;
+ALTER TABLE `price_book_entry` DROP INDEX `price_book_entry_facility_id_fkey`, ADD INDEX `price_book_entry_facility_id_idx`(`facility_id`);
 
 -- RenameIndex
-ALTER TABLE `radiology_procedure` RENAME INDEX `radiology_test_body_region_idx` TO `radiology_procedure_body_region_idx`;
+ALTER TABLE `radiology_procedure` DROP INDEX `radiology_test_body_region_idx`, ADD INDEX `radiology_procedure_body_region_idx`(`body_region`);
 
 -- RenameIndex
-ALTER TABLE `radiology_procedure` RENAME INDEX `radiology_test_code_idx` TO `radiology_procedure_code_idx`;
+ALTER TABLE `radiology_procedure` DROP INDEX `radiology_test_code_idx`, ADD INDEX `radiology_procedure_code_idx`(`code`);
 
 -- RenameIndex
-ALTER TABLE `radiology_procedure` RENAME INDEX `radiology_test_deleted_at_idx` TO `radiology_procedure_deleted_at_idx`;
+ALTER TABLE `radiology_procedure` DROP INDEX `radiology_test_deleted_at_idx`, ADD INDEX `radiology_procedure_deleted_at_idx`(`deleted_at`);
 
 -- RenameIndex
-ALTER TABLE `radiology_procedure` RENAME INDEX `radiology_test_human_friendly_id_idx` TO `radiology_procedure_human_friendly_id_idx`;
+ALTER TABLE `radiology_procedure` DROP INDEX `radiology_test_human_friendly_id_idx`, ADD INDEX `radiology_procedure_human_friendly_id_idx`(`human_friendly_id`);
 
 -- RenameIndex
-ALTER TABLE `radiology_procedure` RENAME INDEX `radiology_test_modality_idx` TO `radiology_procedure_modality_idx`;
+ALTER TABLE `radiology_procedure` DROP INDEX `radiology_test_modality_idx`, ADD INDEX `radiology_procedure_modality_idx`(`modality`);
 
 -- RenameIndex
-ALTER TABLE `radiology_procedure` RENAME INDEX `radiology_test_tenant_id_idx` TO `radiology_procedure_tenant_id_idx`;
+ALTER TABLE `radiology_procedure` DROP INDEX `radiology_test_tenant_id_idx`, ADD INDEX `radiology_procedure_tenant_id_idx`(`tenant_id`);
 
