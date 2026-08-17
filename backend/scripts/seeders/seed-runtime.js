@@ -4,11 +4,17 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 // Lazily required: @faker-js/faker is a devDependency, and production-side
-// scripts (sync-permission-catalog) only need `prisma` from this module.
+// scripts (sync-permission-catalog, setup-default-accounts) only need `prisma`
+// and the curated org/access packs, which never touch faker.
 let fakerInstance = null;
-const getFaker = () => {
+const getFaker = ({ optional = false } = {}) => {
   if (!fakerInstance) {
-    ({ faker: fakerInstance } = require('@faker-js/faker'));
+    try {
+      ({ faker: fakerInstance } = require('@faker-js/faker'));
+    } catch (error) {
+      if (optional) return null;
+      throw error;
+    }
   }
   return fakerInstance;
 };
@@ -44,7 +50,11 @@ try {
 const prisma = require('@prisma/client');
 const { hashPassword } = require('@lib/crypto/hashPassword');
 
-const DEFAULT_SEED_PASSWORD = 'Hosspi@2624.';
+// Shared password for the curated accounts. Override with SEED_DEFAULT_PASSWORD
+// when seeding an environment where the committed demo password is not
+// acceptable (e.g. production).
+const DEFAULT_SEED_PASSWORD =
+  String(process.env.SEED_DEFAULT_PASSWORD || '').trim() || 'Hosspi@2624.';
 const DEMO_SEED_PACK = 'hms_demo_v2';
 const DEFAULT_RANDOM_SEED = 20260302;
 const BASE_TIMESTAMP = Date.UTC(2026, 1, 15, 9, 0, 0);
@@ -325,8 +335,11 @@ const createSeedContext = ({
 } = {}) => {
   const parsedSeed = Number.parseInt(String(randomSeed), 10);
   const safeSeed = Number.isFinite(parsedSeed) ? parsedSeed : DEFAULT_RANDOM_SEED;
-  const faker = getFaker();
-  faker.seed(safeSeed);
+  // Optional so the curated account seeder can run on a production install
+  // (devDependencies omitted). Randomised packs still require faker and will
+  // fail loudly on first use if it is missing.
+  const faker = getFaker({ optional: true });
+  if (faker) faker.seed(safeSeed);
 
   const schemaPath = path.join(BACKEND_ROOT, 'prisma', 'schema.prisma');
   const schema = parseSchemaMetadata(schemaPath);

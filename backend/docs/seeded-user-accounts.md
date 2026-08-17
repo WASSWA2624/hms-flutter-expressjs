@@ -10,17 +10,30 @@ Seeder entrypoints that create users:
 - `npm run seed` → `backend/prisma/seed.js` → `seed-demo-data.js`
 - `npm run setup:accounts` → `backend/scripts/setup-default-accounts.js` → `seed-org-pack` + `seed-access-pack`
 
-## Production
+## Environments
 
-**No user accounts are seeded on production.**
+**The same 58 accounts are seeded on development and production.**
 
-Both entrypoints short-circuit when `NODE_ENV=production`:
+Run on both:
 
-- `prisma/seed.js:45` — logs `Skipping seed: NODE_ENV=production` and returns.
-- `setup-default-accounts.js:18` via `scripts/demo-safety.js:25` — returns `{ allowed: false, reason: 'production_environment' }`, logs `Skipping default account setup`.
-- `demo-safety.js` additionally refuses to run if `DATABASE_URL` host/user/db name contains `prod`, `production`, or `live`, even when `NODE_ENV` is not production.
+```bash
+npm run setup:accounts
+```
 
-Production-safe seed scripts exist but seed **reference/catalog data only, never users**:
+On production, supply a private shared password (otherwise the committed demo password is used):
+
+```bash
+SEED_DEFAULT_PASSWORD='<strong-shared-password>' npm run setup:accounts
+```
+
+The script is idempotent (deterministic UUID upserts), so re-running it is safe.
+
+What stays **development-only**: the randomised demo *data* packs
+(`npm run seed`, `npm run db:seed:demo`) — patients, encounters, invoices, inventory, etc. Those
+still short-circuit on `NODE_ENV=production` (`prisma/seed.js:45`) and still refuse a
+prod/live-looking `DATABASE_URL` (`scripts/demo-safety.js`).
+
+Other production-safe seeders load reference/catalog data only:
 
 | Script | Seeds |
 | --- | --- |
@@ -30,16 +43,14 @@ Production-safe seed scripts exist but seed **reference/catalog data only, never
 | `scripts/seed-lab-catalog-data.js` | lab test catalog |
 | `scripts/backfill-plan-module-matrix.js` | subscription plan/module matrix |
 
-Production users are therefore created only through the app's own registration/onboarding and
-access-admin flows.
-
-## Development
+## Account list
 
 Tenant: **DemoCare General Hospital** (`tenant_code: DEMO`, slug `democare-general-hospital`, plan `pro`).
 Facilities: `DemoCare General Hospital` (HOSPITAL, anchor), `DemoCare Annex Pharmacy` (CLINIC).
 
-All 58 accounts share one password from `scripts/seeders/seed-runtime.js:47`
-(`DEFAULT_SEED_PASSWORD = 'Hosspi@2624.'`), status `ACTIVE`, and are attached to the anchor facility.
+All 58 accounts share one password — `SEED_DEFAULT_PASSWORD` if set, otherwise the committed
+default `Hosspi@2624.` (`scripts/seeders/seed-runtime.js`) — with status `ACTIVE`, attached to the
+anchor facility.
 They are immutable from access-admin APIs (no edit/delete/role change) per `config/demo-users.js`.
 
 ### Platform & administration
