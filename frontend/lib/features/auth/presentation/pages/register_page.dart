@@ -27,13 +27,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _adminNameController = TextEditingController();
   final _facilityNameController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _locationController = TextEditingController();
   final _adminNameFocusNode = FocusNode();
   final _emailFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
   final _facilityNameFocusNode = FocusNode();
   final _phoneFocusNode = FocusNode();
-  final _locationFocusNode = FocusNode();
   String _facilityType = 'HOSPITAL';
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
 
@@ -60,13 +58,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     _adminNameController.dispose();
     _facilityNameController.dispose();
     _phoneController.dispose();
-    _locationController.dispose();
     _adminNameFocusNode.dispose();
     _emailFocusNode.dispose();
     _passwordFocusNode.dispose();
     _facilityNameFocusNode.dispose();
     _phoneFocusNode.dispose();
-    _locationFocusNode.dispose();
     super.dispose();
   }
 
@@ -204,23 +200,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 numberLabelText: l10n.appPhoneNumberLabel,
                 numberHintText: l10n.appPhoneNumberHint,
                 invalidPhoneMessage: l10n.appPhoneInvalidMessage,
-                textInputAction: TextInputAction.next,
+                // Last field in the form, so it carries the submit affordance.
+                textInputAction: TextInputAction.done,
                 isRequired: true,
                 requiredMessage: l10n.validationRequired,
                 onChanged: (_) => _clearFormFeedback(),
                 onFocusChanged: _handleFieldFocusChanged,
                 focusNode: _phoneFocusNode,
-                enabled: !state.isSubmitting,
-              ),
-              SizedBox(height: theme.spacing.md),
-              AppTextField(
-                controller: _locationController,
-                labelText: l10n.authLocationOptionalLabel,
-                textInputAction: TextInputAction.done,
-                autofillHints: const <String>[AutofillHints.addressCity],
-                onChanged: (_) => _clearFormFeedback(),
-                onFocusChanged: _handleFieldFocusChanged,
-                focusNode: _locationFocusNode,
                 enabled: !state.isSubmitting,
                 onFieldSubmitted: (_) => _submit(),
               ),
@@ -280,7 +266,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           facilityName: _facilityNameController.text,
           facilityType: _facilityType,
           phone: _phoneController.text,
-          location: _locationController.text,
         );
 
     if (!mounted || !registered) {

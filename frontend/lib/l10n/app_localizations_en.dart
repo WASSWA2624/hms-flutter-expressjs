@@ -9335,9 +9335,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authPhoneOptionalLabel => 'Phone (optional)';
 
   @override
-  String get authLocationOptionalLabel => 'Location (optional)';
-
-  @override
   String get authRegistrationSubmittedTitle => 'Check your email';
 
   @override

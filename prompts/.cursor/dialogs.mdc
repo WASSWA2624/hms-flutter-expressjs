@@ -54,10 +54,11 @@ When the dialog’s job is to browse or pick from a list (patients, roles, items
 ## Footer and chrome
 
 1. Use footer `actions` for primary/secondary outcomes (`Save`, `Confirm`, `Cancel`, `Close`). Right-align; keep labels short and generic.
-2. Footer actions stay on **one right-aligned horizontal row** at every breakpoint: icon-only on small/medium screens (tooltip + semantics carry the name), icon + label on large (`showsToolbarActionLabels` / `AppActionLabelScope`). Always supply a `leadingIcon` so compact mode can drop the label.
-3. Opt into `stackActionsWhenCompact: true` only when a labeled footer truly cannot fit one row.
-4. Header restore/maximize and close stay icon-only.
-5. Pin footer actions when the body scrolls (`pinActionsToBottom: true`) for long forms and selection tables.
+2. Footer actions stay on **one right-aligned horizontal row** at every breakpoint and always render **icon + label**, including on phones. Always supply a `leadingIcon`.
+3. When the labeled row does not fit, `AppDialog` moves the lowest-priority actions into a trailing **More actions** menu — it never scales the row down, wraps it, or silently drops an action. Priority is inferred: `AppButton.close` is the dismiss action and `AppButtonVariant.primary` is the primary; both always stay inline, everything else is overflow-eligible in author order. Override with `AppDialogAction(priority: ...)` only when the inferred priority is wrong.
+4. Opt into `stackActionsWhenCompact: true` only when a labeled footer truly cannot fit one row; stacking bypasses the overflow menu and keeps every action visible.
+5. Header chrome is icon-only. On `xs`/`sm` the dismiss control is a **leading platform back arrow** at the header start (no trailing ✕); on `md`+ it is the trailing `[maximize/restore] [close ✕]` cluster. Exactly one dismiss control renders at any breakpoint, and `closeEnabled` / `showCloseButton` gate both forms identically.
+6. Pin footer actions when the body scrolls (`pinActionsToBottom: true`) for long forms and selection tables.
 
 ## Implementation constraints
 
@@ -68,6 +69,8 @@ When the dialog’s job is to browse or pick from a list (patients, roles, items
 ## Relevant files
 
 - `frontend/lib/shared/components/app_dialog.dart`
+- `frontend/lib/shared/components/app_dialog_action.dart` (footer action priority)
+- `frontend/lib/shared/layout/app_overflow_menu_style.dart` (shared overflow menu chrome)
 - `frontend/lib/shared/layout/app_dialog_insets.dart`
 - `frontend/lib/core/utils/app_dialog_title.dart`
 - `frontend/lib/shared/components/app_collapsible_section.dart`

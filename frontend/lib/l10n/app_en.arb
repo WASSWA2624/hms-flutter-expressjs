@@ -178,7 +178,7 @@
   },
   "workspaceToolbarOverflowLabel": "More actions",
   "@workspaceToolbarOverflowLabel": {
-    "description": "Accessibility label for the workspace toolbar overflow menu."
+    "description": "Accessibility label for an overflow menu holding actions that did not fit inline (workspace toolbars and dialog footers)."
   },
   "workspaceNotificationsMenuLabel": "Notifications",
   "@workspaceNotificationsMenuLabel": {
@@ -11897,10 +11897,6 @@
   "authPhoneOptionalLabel": "Phone (optional)",
   "@authPhoneOptionalLabel": {
     "description": "Optional phone field label."
-  },
-  "authLocationOptionalLabel": "Location (optional)",
-  "@authLocationOptionalLabel": {
-    "description": "Optional location field label."
   },
   "authRegistrationSubmittedTitle": "Check your email",
   "@authRegistrationSubmittedTitle": {

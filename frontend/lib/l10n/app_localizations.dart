@@ -328,7 +328,7 @@ abstract class AppLocalizations {
   /// **'Encounter {encounterId}'**
   String clinicalResultsEncounterScopeLabel(String encounterId);
 
-  /// Accessibility label for the workspace toolbar overflow menu.
+  /// Accessibility label for an overflow menu holding actions that did not fit inline (workspace toolbars and dialog footers).
   ///
   /// In en, this message translates to:
   /// **'More actions'**
@@ -17154,12 +17154,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Phone (optional)'**
   String get authPhoneOptionalLabel;
-
-  /// Optional location field label.
-  ///
-  /// In en, this message translates to:
-  /// **'Location (optional)'**
-  String get authLocationOptionalLabel;
 
   /// Title shown after registration request succeeds.
   ///
