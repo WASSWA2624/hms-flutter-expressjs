@@ -9555,6 +9555,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get errorUnauthorizedMessage => 'Sign in again to continue.';
 
   @override
+  String get errorSecurityTokenTitle => 'Security check failed';
+
+  @override
+  String get errorSecurityTokenMessage =>
+      'The security check for this request expired. Please try again — you are still signed in.';
+
+  @override
   String get errorForbiddenTitle => 'Access denied';
 
   @override

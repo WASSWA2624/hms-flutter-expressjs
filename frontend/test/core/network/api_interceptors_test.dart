@@ -47,6 +47,85 @@ void main() {
 
       expect(unauthorizedCallCount, 1);
     });
+
+    test('refreshes once and replays the original request on 401', () async {
+      var refreshCount = 0;
+      var unauthorizedCallCount = 0;
+      var responseCount = 0;
+      final sentTokens = <Object?>[];
+
+      final adapter = _StaticHttpClientAdapter((RequestOptions options) {
+        sentTokens.add(options.headers[authorizationHeaderName]);
+        responseCount += 1;
+        // First attempt is rejected; the replay after refresh succeeds.
+        return responseCount == 1
+            ? ResponseBody.fromString('{}', 401)
+            : ResponseBody.fromString('{"ok":true}', 200);
+      });
+
+      var token = 'stale-token';
+      final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+        ..httpClientAdapter = adapter;
+      dio.interceptors.add(
+        AuthInterceptor(
+          readAccessToken: () async => token,
+          onTokenRefresh: () async {
+            refreshCount += 1;
+            token = 'fresh-token';
+            return true;
+          },
+          onUnauthorizedResponse: () async {
+            unauthorizedCallCount += 1;
+          },
+          retryClient: dio,
+        ),
+      );
+
+      final Response<Object?> response = await dio.post<Object?>('/patients');
+
+      expect(response.statusCode, 200);
+      expect(refreshCount, 1);
+      // The session must survive: a recoverable 401 is not a sign-out.
+      expect(unauthorizedCallCount, 0);
+      expect(sentTokens, <Object?>[
+        'Bearer stale-token',
+        'Bearer fresh-token',
+      ]);
+    });
+
+    test('does not refresh more than once for a single request', () async {
+      var refreshCount = 0;
+      var unauthorizedCallCount = 0;
+      final adapter = _StaticHttpClientAdapter(
+        (_) => ResponseBody.fromString('{}', 401),
+      );
+
+      final dio = Dio(BaseOptions(baseUrl: 'https://api.example.test'))
+        ..httpClientAdapter = adapter;
+      dio.interceptors.add(
+        AuthInterceptor(
+          readAccessToken: () async => 'token',
+          onTokenRefresh: () async {
+            refreshCount += 1;
+            return true;
+          },
+          onUnauthorizedResponse: () async {
+            unauthorizedCallCount += 1;
+          },
+          retryClient: dio,
+        ),
+      );
+
+      await expectLater(
+        dio.post<Object?>('/patients'),
+        throwsA(isA<DioException>()),
+      );
+
+      // The replay carries `auth_retry`, so it skips refresh instead of
+      // looping, and the session is torn down exactly once.
+      expect(refreshCount, 1);
+      expect(unauthorizedCallCount, 1);
+    });
   });
 
   group('CsrfInterceptor', () {

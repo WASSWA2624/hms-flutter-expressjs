@@ -130,6 +130,9 @@ abstract final class ValidationMessagePresenter {
         email: _platformAdminContactField(failure.detailMessage, 'email'),
         phone: _platformAdminContactField(failure.detailMessage, 'phone'),
       ),
+      // Never route this through the unauthorized copy: the user is signed in,
+      // only the request's CSRF token failed to validate.
+      'auth.csrf_token' => l10n.errorSecurityTokenMessage,
       'auth.account_not_found' => l10n.authAccountNotFoundMessage,
       'auth.wrong_password' => l10n.authWrongPasswordMessage,
       'network.rate_limited' => _rateLimitedMessage(l10n, failure),

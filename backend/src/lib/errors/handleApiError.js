@@ -323,7 +323,12 @@ const handleApiError = (err, req, res, next) => {
   const resolvedErrors = resolveErrors(errors, meta.locale, message);
   applyLocaleHeader(res, meta.locale);
 
-  const code = toErrorCode(message, statusCode);
+  // An explicit `problemCode` wins over the code derived from the message key.
+  // Only this dedicated field is trusted: a bare `err.code` would leak Node and
+  // Prisma internals (ECONNREFUSED, P2002, ...) into the public contract.
+  const code = err?.problemCode
+    ? String(err.problemCode)
+    : toErrorCode(message, statusCode);
   const problem = createProblemDetails({
     status: statusCode,
     title: resolvedMessage,

@@ -17518,6 +17518,18 @@ abstract class AppLocalizations {
   /// **'Sign in again to continue.'**
   String get errorUnauthorizedMessage;
 
+  /// Title shown when a request failed its CSRF security-token check.
+  ///
+  /// In en, this message translates to:
+  /// **'Security check failed'**
+  String get errorSecurityTokenTitle;
+
+  /// Message shown when a request failed its CSRF security-token check. Must not suggest signing in again.
+  ///
+  /// In en, this message translates to:
+  /// **'The security check for this request expired. Please try again — you are still signed in.'**
+  String get errorSecurityTokenMessage;
+
   /// Title for a forbidden failure.
   ///
   /// In en, this message translates to:

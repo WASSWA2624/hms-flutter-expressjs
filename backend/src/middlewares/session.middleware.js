@@ -123,11 +123,19 @@ const sessionMiddleware = () => {
       const crypto = require('crypto');
       sessionId = crypto.randomBytes(16).toString('hex');
       
-      // Set cookie (httpOnly, secure in production)
+      // Set cookie (httpOnly, secure in production).
+      //
+      // The web client is served from its own origin and calls the API
+      // cross-site, so `SameSite=Strict` meant the browser never sent this
+      // cookie back and every request minted a new session — which broke CSRF
+      // validation for every mutation. `SameSite=None` is required for a
+      // cross-site cookie and is only legal alongside `Secure`, so it is used
+      // when running over HTTPS and `Lax` is kept for plain-HTTP development.
+      const isSecureContext = env.NODE_ENV === 'production';
       res.cookie('sessionId', sessionId, {
         httpOnly: true,
-        secure: env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        secure: isSecureContext,
+        sameSite: isSecureContext ? 'none' : 'lax',
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
       });
     }

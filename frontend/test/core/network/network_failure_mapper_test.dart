@@ -371,5 +371,69 @@ void main() {
 
       expect(failure.category, AppFailureCategory.unexpectedResponse);
     });
+
+    group('CSRF responses', () {
+      AppFailure mapForbidden(Map<String, Object?> body) {
+        final requestOptions = RequestOptions(path: '/patients');
+        return mapper.map(
+          DioException(
+            requestOptions: requestOptions,
+            response: Response<Object?>(
+              requestOptions: requestOptions,
+              statusCode: 403,
+              data: body,
+            ),
+            type: DioExceptionType.badResponse,
+          ),
+          StackTrace.empty,
+        );
+      }
+
+      for (final String code in <String>['CSRF_MISSING', 'CSRF_INVALID']) {
+        test('$code never presents as a rejected session', () {
+          final AppFailure failure = mapForbidden(<String, Object?>{
+            'code': code,
+          });
+
+          // A signed-in user must not be told to sign in again, and the
+          // session layer must not treat this as a credential rejection.
+          expect(failure.category, isNot(AppFailureCategory.unauthorized));
+          expect(failure.code, 'auth.csrf_token');
+          expect(failure.isRetryable, isTrue);
+        });
+      }
+
+      test('legacy bare codes are still recognised', () {
+        for (final String code in <String>['MISSING', 'INVALID']) {
+          expect(
+            mapForbidden(<String, Object?>{'code': code}).code,
+            'auth.csrf_token',
+          );
+        }
+      });
+
+      test('a permission denial stays forbidden', () {
+        final AppFailure failure = mapForbidden(<String, Object?>{
+          'code': 'INSUFFICIENT_PERMISSIONS',
+          'detail': 'Insufficient permissions',
+        });
+
+        expect(failure.category, AppFailureCategory.forbidden);
+        expect(failure.detailMessage, 'Insufficient permissions');
+      });
+
+      test('an entitlement denial stays forbidden', () {
+        final AppFailure failure = mapForbidden(<String, Object?>{
+          'code': 'MODULE_NOT_ENTITLED',
+          'detail': 'Your current plan does not include this module',
+        });
+
+        expect(failure.category, AppFailureCategory.forbidden);
+        expect(
+          failure.detailMessage,
+          'Your current plan does not include this module',
+        );
+      });
+    });
   });
 }

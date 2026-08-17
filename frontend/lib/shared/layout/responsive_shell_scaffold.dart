@@ -572,7 +572,8 @@ class AppMenuBar extends StatelessWidget {
                 onPressed: onToggleNavigation,
               ),
               SizedBox(width: theme.spacing.xs),
-              const AppLogo(size: _headerBrandHeight),
+              // Cap height, not font size, so the mark matches the wordmark.
+              AppLogo(size: AppLogo.markHeightForFontSize(_headerBrandHeight)),
               if (!hideTitle) SizedBox(width: theme.spacing.sm),
               Expanded(
                 child: hideTitle
@@ -1198,10 +1199,12 @@ class _MobileShellDrawerState extends State<_MobileShellDrawer> {
                 ),
                 child: Row(
                   children: <Widget>[
-                    // Match the mark to the title's own size rather than a
+                    // Match the mark to the title's own cap height rather than a
                     // fixed constant. The previous 48 also overflowed this
                     // header, which is only _drawerHeaderHeight (40) tall.
-                    AppLogo(size: drawerBrandHeight),
+                    AppLogo(
+                      size: AppLogo.markHeightForFontSize(drawerBrandHeight),
+                    ),
                     SizedBox(width: theme.spacing.xs),
                     Expanded(
                       child: Text(

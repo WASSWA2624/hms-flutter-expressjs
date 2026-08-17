@@ -12200,6 +12200,14 @@
   "@errorUnauthorizedMessage": {
     "description": "Safe user-facing message for an unauthorized failure."
   },
+  "errorSecurityTokenTitle": "Security check failed",
+  "@errorSecurityTokenTitle": {
+    "description": "Title shown when a request failed its CSRF security-token check."
+  },
+  "errorSecurityTokenMessage": "The security check for this request expired. Please try again — you are still signed in.",
+  "@errorSecurityTokenMessage": {
+    "description": "Message shown when a request failed its CSRF security-token check. Must not suggest signing in again."
+  },
   "errorForbiddenTitle": "Access denied",
   "@errorForbiddenTitle": {
     "description": "Title for a forbidden failure."
