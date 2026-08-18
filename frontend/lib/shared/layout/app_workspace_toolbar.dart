@@ -12,6 +12,7 @@ import 'package:hosspi_hms/shared/actions/app_workspace_refresh_action.dart';
 import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_menu_item_label.dart';
+import 'package:hosspi_hms/shared/layout/app_overflow_menu_style.dart';
 import 'package:hosspi_hms/shared/layout/app_toolbar_overflow_resolver.dart';
 import 'package:hosspi_hms/shared/layout/app_toolbar_overflow_section.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
@@ -132,7 +133,9 @@ class AppWorkspaceToolbar extends ConsumerWidget {
             maxVisibleScreenActions: config.maxVisibleScreenActions,
             showLabels: showLabels,
             spacing: theme.spacing.xs,
-            overflowLabel: config.overflowLabel ?? 'More actions',
+            overflowLabel:
+                config.overflowLabel ??
+                context.l10n.workspaceToolbarOverflowLabel,
             summaryNotifications: config.summaryNotifications,
             notificationsMenuLabel: config.notificationsMenuLabel,
             notificationsMenuTooltip: config.notificationsMenuTooltip,
@@ -571,7 +574,7 @@ class _ToolbarActionRow extends StatelessWidget {
       }
       children.add(
         _ToolbarOverflowMenu(
-          label: overflowLabel ?? 'More actions',
+          label: overflowLabel ?? context.l10n.workspaceToolbarOverflowLabel,
           actions: overflowActions,
           summaryNotifications: visibleNotifications,
           notificationsMenuLabel: notificationsMenuLabel,
@@ -616,7 +619,6 @@ class _ToolbarOverflowMenu extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
     final String notificationsLabel = notificationsMenuLabel ?? 'Notifications';
 
     final List<AppWorkspaceSummaryNotification> visibleNotifications =
@@ -642,8 +644,8 @@ class _ToolbarOverflowMenu extends ConsumerWidget {
     final String triggerLabel = attentionTotal > 0
         ? context.l10n.workspaceToolbarOverflowAttentionTooltip(attentionTotal)
         : label;
-    final MenuStyle menuStyle = _toolbarMenuStyle(theme, colorScheme);
-    final MenuStyle submenuStyle = _toolbarSubmenuStyle(theme, colorScheme);
+    final MenuStyle menuStyle = appOverflowMenuStyle(theme);
+    final MenuStyle submenuStyle = appOverflowSubmenuStyle(theme);
     final List<Widget> menuChildren = overflowSections != null
         ? _buildSectionedMenuChildren(
             context: context,
@@ -881,77 +883,10 @@ class _ToolbarOverflowMenu extends ConsumerWidget {
     );
   }
 
-  MenuStyle _toolbarMenuStyle(ThemeData theme, ColorScheme colorScheme) {
-    return MenuStyle(
-      minimumSize: WidgetStateProperty.all(const Size(240, 0)),
-      maximumSize: WidgetStateProperty.all(const Size(320, double.infinity)),
-      backgroundColor: WidgetStateProperty.all(colorScheme.surface),
-      surfaceTintColor: WidgetStateProperty.all(colorScheme.surfaceTint),
-      shape: WidgetStateProperty.all(
-        RoundedRectangleBorder(
-          side: theme.borders.side(),
-          borderRadius: BorderRadius.circular(theme.radius.sm),
-        ),
-      ),
-      padding: WidgetStateProperty.all(
-        EdgeInsets.symmetric(vertical: theme.spacing.xs),
-      ),
-    );
-  }
-
-  MenuStyle _toolbarSubmenuStyle(ThemeData theme, ColorScheme colorScheme) {
-    return MenuStyle(
-      minimumSize: WidgetStateProperty.all(const Size(240, 0)),
-      maximumSize: WidgetStateProperty.all(const Size(320, double.infinity)),
-      backgroundColor: WidgetStateProperty.all(colorScheme.surface),
-      surfaceTintColor: WidgetStateProperty.all(colorScheme.surfaceTint),
-      shape: WidgetStateProperty.all(
-        RoundedRectangleBorder(
-          side: theme.borders.side(),
-          borderRadius: BorderRadius.circular(theme.radius.sm),
-        ),
-      ),
-      padding: WidgetStateProperty.all(
-        EdgeInsets.symmetric(vertical: theme.spacing.xs),
-      ),
-      alignment: AlignmentDirectional.centerEnd,
-    );
-  }
-
+  // Menu chrome lives in app_overflow_menu_style.dart, shared with AppDialog
+  // footers so both overflow surfaces render one treatment.
   ButtonStyle _overflowMenuItemStyle(ThemeData theme, {bool selected = false}) {
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return ButtonStyle(
-      padding: WidgetStateProperty.all(
-        EdgeInsets.symmetric(horizontal: theme.spacing.sm),
-      ),
-      minimumSize: WidgetStateProperty.all(const Size(0, 48)),
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click),
-      backgroundColor: WidgetStateProperty.resolveWith<Color?>((
-        Set<WidgetState> states,
-      ) {
-        if (selected) {
-          return colorScheme.secondaryContainer;
-        }
-        if (states.contains(WidgetState.hovered) ||
-            states.contains(WidgetState.focused)) {
-          return colorScheme.surfaceContainerHighest;
-        }
-        return null;
-      }),
-      side: WidgetStateProperty.resolveWith<BorderSide?>((
-        Set<WidgetState> states,
-      ) {
-        if (!states.contains(WidgetState.focused)) {
-          return null;
-        }
-        return theme.borders.side(
-          color: colorScheme.primary.withValues(alpha: 0.72),
-          weight: AppBorderWeight.medium,
-        );
-      }),
-    );
+    return appOverflowMenuItemStyle(theme, selected: selected);
   }
 }
 

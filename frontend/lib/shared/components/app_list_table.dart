@@ -43,8 +43,13 @@ enum AppListTablePaginationMode { infinite, buttons }
 const int _maxVisibleTableColumns = 5;
 const int _minTableRowCount = 50;
 const double _rowNumberColumnWidth = 48;
-const double _mobileRowNumberColumnWidth = 28;
-const double _mobileRowGutterHeight = 8;
+const double _mobileRowNumberColumnWidth = 26;
+
+/// Height of the surface gutter between tinted mobile rows.
+///
+/// Only tinted rows (see [AppListTable.rowColorBuilder]) get a gutter; plain
+/// rows are separated by an inset hairline so the list stays compact.
+const double _mobileRowGutterHeight = 6;
 const double _minResizableColumnWidth = 96;
 const String _defaultGoToTopLabel = 'Go to top';
 const String _defaultLoadingMoreLabel = 'Loading more...';
@@ -768,8 +773,8 @@ const double _actionBarIconSize = 18;
 /// Caller actions ([AppListTableSearch.trailingActions]) laid out under the
 /// search bar.
 ///
-/// Buttons pack from the left and prefer a single row on every breakpoint:
-/// labels are dropped before the row is allowed to wrap. See
+/// Buttons are end-aligned (right in LTR) on every breakpoint and prefer a
+/// single row: labels are dropped before the row is allowed to wrap. See
 /// [appListTableResolveActionBarLayout].
 class _AppListTableActionBar extends StatelessWidget {
   const _AppListTableActionBar({required this.actions, required this.enabled});
@@ -823,6 +828,12 @@ class _AppListTableActionBar extends StatelessWidget {
             layout == AppListTableActionBarLayout.labeledRow;
 
         return Wrap(
+          // End-aligned on every breakpoint (and on every run once the row is
+          // allowed to wrap), so the actions sit under the search bar's own
+          // trailing chrome instead of drifting away from it.
+          alignment: WrapAlignment.end,
+          runAlignment: WrapAlignment.end,
+          crossAxisAlignment: WrapCrossAlignment.center,
           spacing: gap,
           runSpacing: gap,
           children: <Widget>[
@@ -1088,17 +1099,20 @@ class AppListTableMobileItem extends StatelessWidget {
             : null);
 
     return Padding(
+      // Compact by default: the leading avatar already sets the row's minimum
+      // height, so the vertical inset only needs to keep two-line content off
+      // the divider.
       padding:
           padding ??
           EdgeInsets.symmetric(
             horizontal: theme.spacing.sm,
-            vertical: theme.spacing.md,
+            vertical: theme.spacing.sm,
           ),
       child: Row(
         children: <Widget>[
           if (leadingWidget != null) ...<Widget>[
             leadingWidget,
-            SizedBox(width: theme.spacing.md - 2),
+            SizedBox(width: theme.spacing.sm + 2),
           ],
           Expanded(
             child: Column(
@@ -1238,7 +1252,9 @@ class _AppListTableMobileMetaRow extends StatelessWidget {
           for (int index = 0; index < items.length; index++) ...<InlineSpan>[
             if (index > 0)
               TextSpan(
-                text: '  ·  ',
+                // Tight middot: on a phone the meta line is the first thing to
+                // truncate, so padding around the separator is width wasted.
+                text: ' · ',
                 style: style.copyWith(
                   color: muted.withValues(alpha: 0.55),
                 ),
@@ -1281,9 +1297,10 @@ class _AppListTableMobileMetaRow extends StatelessWidget {
 ///
 /// Toolbar chrome is fixed: the search bar holds only speech-to-text, Filters,
 /// Settings, Export and Print. Caller actions
-/// ([AppListTableSearch.trailingActions]) are laid out in a compact wrapping
-/// row directly below the search bar — see [appListTableResolveActionBarLayout]
-/// for how that row picks icon-only vs icon+label.
+/// ([AppListTableSearch.trailingActions]) are laid out in a compact,
+/// end-aligned wrapping row directly below the search bar — see
+/// [appListTableResolveActionBarLayout] for how that row picks icon-only vs
+/// icon+label.
 ///
 /// Search bar, action row, and rows scroll together as one body; only the
 /// footer (status / pagination + go-to-top) stays pinned. Tables with a
@@ -3762,87 +3779,121 @@ class _MobileListTable<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    return _GoToTopHost(
-      controller: goToTopController,
-      headerExtent: 56,
-      builder: (BuildContext context, Key headerKey) {
-        return ListView.separated(
-          itemCount: items.length + (surfaceHeader == null ? 0 : 1),
-          shrinkWrap: shrinkWrap,
-          physics: physics,
-          itemBuilder: (BuildContext context, int index) {
-            if (surfaceHeader != null && index == 0) {
-              return KeyedSubtree(key: headerKey, child: surfaceHeader!);
-            }
-            final int itemIndex = surfaceHeader == null ? index : index - 1;
-            final T item = items[itemIndex];
-            Widget row = KeyedSubtree(
-              key: appListTableUniqueRowKey<T>(
-                index: itemIndex,
-                itemKeyBuilder: itemKeyBuilder,
-                item: item,
-                rowsVersion: rowsVersion,
-              ),
-              child: showRowNumbers
-                  ? _NumberedMobileListItem(
-                      number: rowNumberOffset + itemIndex + 1,
-                      child: itemBuilder(context, item),
-                    )
-                  : itemBuilder(context, item),
-            );
+    final ColorScheme colorScheme = theme.colorScheme;
+    // Tinted rows need a surface gutter so adjacent pastel bands stay legible
+    // as separate rows; plain lists get a single inset hairline instead, which
+    // is both tidier and shorter.
+    final bool usesTintedRows = rowColorBuilder != null;
+    // Aligns the hairline with the row content: past the row-number lane, or a
+    // small text inset when numbers are hidden.
+    final double separatorIndent = showRowNumbers
+        ? _mobileRowNumberColumnWidth
+        : theme.spacing.md;
 
-            if (onRowSelected != null) {
-              row = _SelectableMobileDataRow<T>(
-                item: item,
-                onSelected: onRowSelected!,
-                child: row,
+    // Same bordered surface the desktop table (and the mobile empty/loading
+    // states) use, so the list reads as one contained card on phones.
+    return Material(
+      color: colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        side: theme.borders.side(),
+      ),
+      child: _GoToTopHost(
+        controller: goToTopController,
+        headerExtent: 56,
+        builder: (BuildContext context, Key headerKey) {
+          return ListView.separated(
+            itemCount: items.length + (surfaceHeader == null ? 0 : 1),
+            shrinkWrap: shrinkWrap,
+            physics: physics,
+            padding: EdgeInsets.zero,
+            itemBuilder: (BuildContext context, int index) {
+              if (surfaceHeader != null && index == 0) {
+                return KeyedSubtree(key: headerKey, child: surfaceHeader!);
+              }
+              final int itemIndex = surfaceHeader == null ? index : index - 1;
+              final T item = items[itemIndex];
+              Widget row = KeyedSubtree(
+                key: appListTableUniqueRowKey<T>(
+                  index: itemIndex,
+                  itemKeyBuilder: itemKeyBuilder,
+                  item: item,
+                  rowsVersion: rowsVersion,
+                ),
+                child: showRowNumbers
+                    ? _NumberedMobileListItem(
+                        number: rowNumberOffset + itemIndex + 1,
+                        child: itemBuilder(context, item),
+                      )
+                    : itemBuilder(context, item),
               );
-            }
 
-            final Color? rowColor = rowColorBuilder?.call(context, item);
-            if (rowColor != null) {
-              row = DecoratedBox(
-                decoration: BoxDecoration(
-                  color: rowColor,
-                  border: Border(
-                    // Soft left rail keeps status tint readable as a distinct
-                    // row even when adjacent pastels are similar.
-                    left: theme.borders.side(
-                      color: Color.alphaBlend(
-                        theme.colorScheme.onSurface.withValues(alpha: 0.14),
-                        rowColor,
+              if (onRowSelected != null) {
+                row = _SelectableMobileDataRow<T>(
+                  item: item,
+                  onSelected: onRowSelected!,
+                  child: row,
+                );
+              }
+
+              final Color? rowColor = rowColorBuilder?.call(context, item);
+              // Each row owns its Material so tap ink paints above the status
+              // tint instead of being hidden underneath it.
+              row = rowColor == null
+                  ? Material(type: MaterialType.transparency, child: row)
+                  : DecoratedBox(
+                      // Foreground so the rail is not overpainted by the row's
+                      // own opaque Material fill.
+                      position: DecorationPosition.foreground,
+                      decoration: BoxDecoration(
+                        border: Border(
+                          // Soft left rail keeps status tint readable as a
+                          // distinct row even when adjacent pastels are similar.
+                          left: theme.borders.side(
+                            color: Color.alphaBlend(
+                              colorScheme.onSurface.withValues(alpha: 0.14),
+                              rowColor,
+                            ),
+                            width: 3,
+                          ),
+                        ),
                       ),
-                      width: 3,
+                      child: Material(color: rowColor, child: row),
+                    );
+
+              if (surfaceHeader == null && itemIndex == 0) {
+                row = KeyedSubtree(key: headerKey, child: row);
+              }
+              return row;
+            },
+            separatorBuilder: (BuildContext context, int index) {
+              if (!usesTintedRows) {
+                return Divider(
+                  height: theme.borders.thin,
+                  thickness: theme.borders.thin,
+                  indent: separatorIndent,
+                  color: theme.borders.faint,
+                );
+              }
+              return ColoredBox(
+                color: colorScheme.surface,
+                child: SizedBox(
+                  height: _mobileRowGutterHeight,
+                  child: Center(
+                    child: Container(
+                      height: theme.borders.thin,
+                      margin: EdgeInsetsDirectional.only(
+                        start: separatorIndent,
+                        end: theme.spacing.sm,
+                      ),
+                      color: theme.borders.faint,
                     ),
                   ),
                 ),
-                child: row,
               );
-            }
-
-            if (surfaceHeader == null && itemIndex == 0) {
-              row = KeyedSubtree(key: headerKey, child: row);
-            }
-            return row;
-          },
-          separatorBuilder: (BuildContext context, int index) {
-            // Surface gutters break continuous pastel bands into distinct rows.
-            return ColoredBox(
-              color: theme.colorScheme.surface,
-              child: SizedBox(
-                height: _mobileRowGutterHeight,
-                child: Center(
-                  child: Container(
-                    height: 1,
-                    margin: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
-                    color: theme.borders.faint,
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
+            },
+          );
+        },
+      ),
     );
   }
 }
@@ -3861,10 +3912,17 @@ class _NumberedMobileListItem extends StatelessWidget {
       children: <Widget>[
         SizedBox(
           width: _mobileRowNumberColumnWidth,
-          child: Text(
-            number.toString(),
-            textAlign: TextAlign.center,
-            style: theme.listTokens.mobileRowNumber,
+          // End-aligned tabular figures line up as a tidy column and leave the
+          // gap next to the row content, not next to the card edge.
+          child: Padding(
+            padding: EdgeInsetsDirectional.only(end: theme.spacing.xs),
+            child: Text(
+              number.toString(),
+              textAlign: TextAlign.end,
+              maxLines: 1,
+              overflow: TextOverflow.clip,
+              style: theme.listTokens.mobileRowNumber,
+            ),
           ),
         ),
         Expanded(child: child),
@@ -3921,13 +3979,15 @@ class _SelectableMobileDataRow<T> extends StatelessWidget {
                   children: <Widget>[
                     Expanded(child: child),
                     Padding(
+                      // Tucked close to the edge: the affordance only needs to
+                      // be legible, and the row content is what needs width.
                       padding: EdgeInsetsDirectional.only(
-                        end: theme.spacing.sm,
+                        end: theme.spacing.xs,
                       ),
                       child: Icon(
                         Icons.chevron_right_rounded,
                         color: theme.colorScheme.onSurfaceVariant.withValues(
-                          alpha: 0.45,
+                          alpha: 0.38,
                         ),
                         size: theme.listTokens.mobileChevronSize,
                       ),

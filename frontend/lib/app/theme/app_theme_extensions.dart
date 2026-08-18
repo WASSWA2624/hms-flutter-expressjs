@@ -505,10 +505,13 @@ final class AppListTokens extends ThemeExtension<AppListTokens> {
   static const FontWeight mobileAvatarInitialsWeight = AppFontWeight.emphasis;
 
   /// Metrics for mobile list chrome — sized for thumb-friendly readability.
-  static const double mobileAvatarExtent = 40;
-  static const double mobileMetaIconExtent = 14;
+  ///
+  /// The avatar sets the minimum row height, so it stays just large enough to
+  /// carry two initials while keeping two-line rows compact on phones.
+  static const double mobileAvatarExtent = 36;
+  static const double mobileMetaIconExtent = 13;
   static const double mobileChevronExtent = 18;
-  static const double mobileMetaGap = 6;
+  static const double mobileMetaGap = 4;
 
   /// Mobile list styles derived from the active [TextTheme]/[ColorScheme].
   ///

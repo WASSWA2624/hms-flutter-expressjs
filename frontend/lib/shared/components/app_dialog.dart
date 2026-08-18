@@ -5,10 +5,14 @@ import 'package:flutter/services.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_dialog_title.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/app_action_label_scope.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
+import 'package:hosspi_hms/shared/components/app_dialog_action.dart';
 import 'package:hosspi_hms/shared/components/app_field_label.dart';
+import 'package:hosspi_hms/shared/icons/app_action_icons.dart';
 import 'package:hosspi_hms/shared/layout/app_dialog_insets.dart';
+import 'package:hosspi_hms/shared/layout/app_overflow_menu_style.dart';
 
 class AppDialog extends StatefulWidget {
   const AppDialog({
@@ -61,9 +65,11 @@ class AppDialog extends StatefulWidget {
   final EdgeInsetsGeometry? contentPadding;
 
   /// When true, compact/mobile footers stack actions full-width.
-  /// Default false: keep a right-aligned horizontal action row (icon-only on
-  /// small screens via [AppActionLabelScope]). Opt into stacking only when a
-  /// long labeled footer truly cannot fit in one row.
+  ///
+  /// Default false: keep a right-aligned horizontal row of icon + label
+  /// actions, moving the lowest-priority ones into a "More actions" menu when
+  /// they do not fit (see [AppDialogActionPriority]). Opt into stacking only
+  /// when a call site needs every action visible without a menu.
   final bool stackActionsWhenCompact;
 
   /// When true (default), footer uses compact chrome padding and dense action
@@ -642,12 +648,32 @@ class _DialogHeader extends StatelessWidget {
   final VoidCallback? onMaximizeToggle;
   final ValueChanged<DragUpdateDetails>? onDragUpdate;
 
+  /// Back glyph matching the host platform's convention.
+  ///
+  /// Phones present dismissal as a back arrow rather than a corner ✕; Apple
+  /// platforms use the chevron form.
+  static IconData _backIconFor(TargetPlatform platform) {
+    return switch (platform) {
+      TargetPlatform.iOS || TargetPlatform.macOS => Icons.arrow_back_ios_new,
+      _ => Icons.arrow_back,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    // Compact dismissal moves to a leading back arrow (phone convention); the
+    // trailing ✕ is desktop/tablet chrome only. Exactly one is ever rendered.
+    final bool useLeadingBack = compact && showCloseButton;
+    final bool useTrailingClose = !compact && showCloseButton;
+    final String backLabel = context.l10n.commonBackActionLabel;
     final EdgeInsetsGeometry padding = EdgeInsetsDirectional.only(
-      start: compact ? theme.spacing.sm : theme.spacing.md,
+      start: useLeadingBack
+          ? theme.spacing.xs
+          : compact
+          ? theme.spacing.sm
+          : theme.spacing.md,
       top: theme.spacing.xs,
       bottom: theme.spacing.xs,
       end: theme.spacing.xs,
@@ -662,6 +688,25 @@ class _DialogHeader extends StatelessWidget {
         padding: padding,
         child: Row(
           children: <Widget>[
+            if (useLeadingBack) ...<Widget>[
+              _DialogChromeScope(
+                child: AppButton.secondary(
+                  iconOnly: true,
+                  leadingIcon: _backIconFor(theme.platform),
+                  label: backLabel,
+                  semanticLabel: backLabel,
+                  tooltip: backLabel,
+                  enabled: closeEnabled,
+                  borderRadius: chromeBorderRadius,
+                  onPressed: closeEnabled
+                      ? () {
+                          Navigator.of(context).maybePop();
+                        }
+                      : null,
+                ),
+              ),
+              SizedBox(width: theme.spacing.xs),
+            ],
             if (icon != null) ...<Widget>[
               IconTheme.merge(
                 data: IconThemeData(
@@ -682,13 +727,8 @@ class _DialogHeader extends StatelessWidget {
                       child: normalizeDialogTitleWidget(title!),
                     ),
             ),
-            if (showMaximizeButton || showCloseButton)
-              AppActionLabelScope(
-                // Dialog chrome stays icon-only on all breakpoints; tooltips
-                // and semantics keep the accessible names.
-                showLabels: false,
-                forceIconOnly: true,
-                dense: true,
+            if (showMaximizeButton || useTrailingClose)
+              _DialogChromeScope(
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
@@ -710,9 +750,9 @@ class _DialogHeader extends StatelessWidget {
                         borderRadius: chromeBorderRadius,
                         onPressed: onMaximizeToggle,
                       ),
-                    if (showMaximizeButton && showCloseButton)
+                    if (showMaximizeButton && useTrailingClose)
                       SizedBox(width: theme.spacing.xs),
-                    if (showCloseButton)
+                    if (useTrailingClose)
                       AppButton.close(
                         iconOnly: true,
                         label: MaterialLocalizations.of(
@@ -752,6 +792,24 @@ class _DialogHeader extends StatelessWidget {
         onPanUpdate: dragHandler,
         child: header,
       ),
+    );
+  }
+}
+
+/// Header chrome stays icon-only on every breakpoint; tooltips and semantics
+/// carry the accessible names.
+class _DialogChromeScope extends StatelessWidget {
+  const _DialogChromeScope({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppActionLabelScope(
+      showLabels: false,
+      forceIconOnly: true,
+      dense: true,
+      child: child,
     );
   }
 }
@@ -819,12 +877,23 @@ class _DialogActions extends StatelessWidget {
   final bool stackWhenCompact;
   final bool dense;
 
+  /// Slack so an estimate landing a hair under the true width still overflows
+  /// an action instead of clipping the row.
+  static const double _fitSafetyMargin = 4;
+
+  /// Budget for a footer action that is not an [AppButton] and so cannot be
+  /// measured from its own geometry (permission gates, custom controls).
+  ///
+  /// Sized as one ordinary labeled control. Such actions are laid out inside a
+  /// [Flexible] so a wider-than-budgeted child shrinks instead of overflowing,
+  /// which makes a modest estimate safer than a pessimistic one — the latter
+  /// would strip labels off the whole row to make room that was never needed.
+  static const double _unmeasurableActionWidth = 112;
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final bool showActionLabels =
-        AppBreakpoints.of(context).showsToolbarActionLabels;
     // Footer chrome: doubled vertical inset from the prior xs baseline; keep
     // horizontal inset and inter-button gaps tight around the actions.
     final EdgeInsets padding = EdgeInsets.symmetric(
@@ -832,48 +901,16 @@ class _DialogActions extends StatelessWidget {
       vertical: theme.spacing.xs * 2,
     );
 
-    final Widget actionRow;
     // Two-action footers are authored [Close/dismiss, primary]. Reverse for
     // display so Close sits extreme-right (desktop) / last (stacked mobile).
     // Longer footers (wizards, etc.) already place Close last.
     final List<Widget> displayActions = actions.length == 2
         ? actions.reversed.toList(growable: false)
         : actions;
-    if (compact && stackWhenCompact) {
-      // Opt-in only: stack full-width actions when a call site cannot fit a
-      // horizontal icon-only row (rare; prefer icons + horizontal default).
-      actionRow = Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          for (int i = 0; i < displayActions.length; i++) ...<Widget>[
-            if (i > 0) SizedBox(height: theme.spacing.xs),
-            SizedBox(width: double.infinity, child: displayActions[i]),
-          ],
-        ],
-      );
-    } else {
-      // Default: single right-aligned horizontal row on every breakpoint,
-      // including phones (scale down rather than wrap/stack).
-      actionRow = Align(
-        alignment: AlignmentDirectional.centerEnd,
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: AlignmentDirectional.centerEnd,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              for (int i = 0; i < displayActions.length; i++)
-                Padding(
-                  padding: EdgeInsetsDirectional.only(
-                    start: i == 0 ? 0 : theme.spacing.xs,
-                  ),
-                  child: displayActions[i],
-                ),
-            ],
-          ),
-        ),
-      );
-    }
+
+    final Widget actionRow = compact && stackWhenCompact
+        ? _stackedActions(theme, displayActions)
+        : _adaptiveActions(theme, displayActions);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -881,13 +918,284 @@ class _DialogActions extends StatelessWidget {
         border: theme.borders.only(top: true),
       ),
       child: AppActionLabelScope(
-        // Large screens: icon + label. Small/medium: icon-only when an icon
-        // is present (labels remain for text-only actions).
-        showLabels: showActionLabels,
-        forceIconOnly: !showActionLabels,
+        // Footer actions carry icon + label at every breakpoint. Crowding is
+        // resolved by moving low-priority actions into the overflow menu —
+        // never by dropping labels wholesale or scaling the row down.
+        showLabels: true,
+        forceIconOnly: false,
         dense: dense,
         child: Padding(padding: padding, child: actionRow),
       ),
+    );
+  }
+
+  /// Opt-in only: stack full-width actions when a call site cannot fit a
+  /// horizontal row. Bypasses overflow — every action stays visible.
+  Widget _stackedActions(ThemeData theme, List<Widget> displayActions) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        for (int i = 0; i < displayActions.length; i++) ...<Widget>[
+          if (i > 0) SizedBox(height: theme.spacing.xs),
+          SizedBox(width: double.infinity, child: displayActions[i]),
+        ],
+      ],
+    );
+  }
+
+  /// Default: one right-aligned row. Actions that do not fit move into a
+  /// trailing overflow menu, lowest priority first.
+  Widget _adaptiveActions(ThemeData theme, List<Widget> displayActions) {
+    final double gap = theme.spacing.xs;
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final List<_FooterEntry> entries = <_FooterEntry>[
+          for (final Widget action in displayActions)
+            _FooterEntry(
+              action: action,
+              priority: resolveAppDialogActionPriority(
+                unwrapAppDialogAction(action),
+              ),
+              overflowEligible: isAppDialogActionOverflowEligible(action),
+            ),
+        ];
+
+        final _FooterLayout layout = constraints.hasBoundedWidth
+            ? _resolveFooterLayout(
+                context,
+                entries,
+                available: constraints.maxWidth,
+                gap: gap,
+              )
+            : _FooterLayout(inline: entries, overflow: const <_FooterEntry>[]);
+
+        final List<Widget> children = <Widget>[];
+        for (int i = 0; i < layout.inline.length; i++) {
+          if (i > 0) {
+            children.add(SizedBox(width: gap));
+          }
+          final _FooterEntry entry = layout.inline[i];
+          final Widget child = entry.iconOnly
+              ? AppActionLabelScope(
+                  showLabels: false,
+                  forceIconOnly: true,
+                  dense: dense,
+                  child: entry.action,
+                )
+              : entry.action;
+          // Actions whose width could only be estimated lay out flexibly, so a
+          // wider-than-budgeted control shrinks (its label ellipsizes) instead
+          // of overflowing the row. Measured buttons keep their intrinsic size.
+          children.add(
+            entry.measurable ? child : Flexible(child: child),
+          );
+        }
+
+        if (layout.overflow.isNotEmpty) {
+          if (children.isNotEmpty) {
+            children.add(SizedBox(width: gap));
+          }
+          children.add(
+            _DialogOverflowMenu(
+              actions: layout.overflow
+                  .map((_FooterEntry entry) => entry.action)
+                  .toList(growable: false),
+              dense: dense,
+            ),
+          );
+        }
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: children,
+        );
+      },
+    );
+  }
+
+  /// Greedy fit: evict overflow-eligible actions from the end until the row
+  /// fits, then — only if the mandatory actions still do not fit — degrade the
+  /// least important survivors to icon-only. Never scales.
+  _FooterLayout _resolveFooterLayout(
+    BuildContext context,
+    List<_FooterEntry> entries, {
+    required double available,
+    required double gap,
+  }) {
+    final List<_FooterEntry> inline = List<_FooterEntry>.of(entries);
+    final List<_FooterEntry> overflow = <_FooterEntry>[];
+
+    double widthOf(_FooterEntry entry) {
+      final Widget target = unwrapAppDialogAction(entry.action);
+      if (target is! AppButton) {
+        return _unmeasurableActionWidth;
+      }
+      return entry.iconOnly
+          ? target.estimatedIconOnlyWidth(context, dense: dense)
+          : target.estimatedLabeledWidth(context, dense: dense);
+    }
+
+    bool fits() {
+      double total = 0;
+      for (int i = 0; i < inline.length; i++) {
+        if (i > 0) {
+          total += gap;
+        }
+        total += widthOf(inline[i]);
+      }
+      if (overflow.isNotEmpty) {
+        if (inline.isNotEmpty) {
+          total += gap;
+        }
+        total += AppButton.iconOnlyWidth(context, dense: dense);
+      }
+      return total <= available - _fitSafetyMargin;
+    }
+
+    // Keep at least one action inline so the footer never collapses to a lone
+    // overflow trigger.
+    while (!fits() && inline.length > 1) {
+      final int index = inline.lastIndexWhere(
+        (_FooterEntry entry) => entry.overflowEligible,
+      );
+      if (index < 0) {
+        break;
+      }
+      overflow.insert(0, inline.removeAt(index));
+    }
+
+    if (!fits()) {
+      // Last resort before any clipping: shed labels, least important first.
+      for (final AppDialogActionPriority priority
+          in const <AppDialogActionPriority>[
+            AppDialogActionPriority.secondary,
+            AppDialogActionPriority.dismiss,
+            AppDialogActionPriority.primary,
+          ]) {
+        for (int i = inline.length - 1; i >= 0; i--) {
+          if (inline[i].priority != priority || inline[i].iconOnly) {
+            continue;
+          }
+          inline[i].iconOnly = true;
+          if (fits()) {
+            break;
+          }
+        }
+        if (fits()) {
+          break;
+        }
+      }
+    }
+
+    return _FooterLayout(inline: inline, overflow: overflow);
+  }
+}
+
+/// One footer action plus the layout decisions taken for it.
+final class _FooterEntry {
+  _FooterEntry({
+    required this.action,
+    required this.priority,
+    required this.overflowEligible,
+  });
+
+  final Widget action;
+
+  /// Drives label-shedding order when even the inline-only row will not fit.
+  final AppDialogActionPriority priority;
+
+  /// Whether this action may move into the overflow menu at all.
+  final bool overflowEligible;
+
+  /// Whether the action's width comes from its own geometry rather than an
+  /// estimate. Unmeasurable actions lay out flexibly as a safety net.
+  bool get measurable => unwrapAppDialogAction(action) is AppButton;
+
+  /// Set only as a last resort, when even the mandatory actions cannot fit.
+  bool iconOnly = false;
+}
+
+@immutable
+final class _FooterLayout {
+  const _FooterLayout({required this.inline, required this.overflow});
+
+  final List<_FooterEntry> inline;
+  final List<_FooterEntry> overflow;
+}
+
+/// Trailing "More actions" menu for footer actions that did not fit inline.
+class _DialogOverflowMenu extends StatelessWidget {
+  const _DialogOverflowMenu({required this.actions, required this.dense});
+
+  final List<Widget> actions;
+  final bool dense;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final String label = context.l10n.workspaceToolbarOverflowLabel;
+
+    return AppActionLabelScope(
+      // The trigger itself stays icon-only inside the labeled footer scope.
+      showLabels: false,
+      forceIconOnly: true,
+      dense: dense,
+      child: MenuAnchor(
+        style: appOverflowMenuStyle(theme),
+        alignmentOffset: Offset(0, theme.spacing.xs),
+        crossAxisUnconstrained: false,
+        menuChildren: <Widget>[
+          for (final Widget action in actions) _menuItem(context, theme, action),
+        ],
+        builder:
+            (BuildContext context, MenuController controller, Widget? child) {
+              return AppButton.popupMenuTrigger(
+                context: context,
+                icon: AppActionIcons.more,
+                semanticLabel: label,
+                onPressed: () {
+                  if (controller.isOpen) {
+                    controller.close();
+                  } else {
+                    controller.open();
+                  }
+                },
+              );
+            },
+      ),
+    );
+  }
+
+  /// Disabled actions stay listed and disabled — never silently dropped.
+  Widget _menuItem(BuildContext context, ThemeData theme, Widget action) {
+    final Widget target = unwrapAppDialogAction(action);
+    if (target is! AppButton) {
+      return Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.xs,
+        ),
+        child: target,
+      );
+    }
+
+    final bool canPress =
+        target.enabled && !target.isLoading && target.onPressed != null;
+    final VoidCallback? onPressed = target.onPressed;
+
+    return MenuItemButton(
+      style: appOverflowMenuItemStyle(theme),
+      leadingIcon: Icon(
+        target.overflowMenuIcon,
+        size: theme.appTokens.listIconSize,
+      ),
+      onPressed: canPress
+          ? () {
+              onPressed?.call();
+            }
+          : null,
+      child: Text(target.semanticLabel ?? target.label),
     );
   }
 }

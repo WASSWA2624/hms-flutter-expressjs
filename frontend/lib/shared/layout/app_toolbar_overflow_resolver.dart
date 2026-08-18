@@ -192,16 +192,11 @@ AppToolbarOverflowEntry _resolveAppButton(AppButton action) {
   final String label = action.semanticLabel ?? action.label;
   final bool canPress =
       action.enabled && !action.isLoading && action.onPressed != null;
-  final IconData icon =
-      action.leadingIcon ??
-      switch (action.variant) {
-        AppButtonVariant.primary => Icons.add,
-        AppButtonVariant.secondary ||
-        AppButtonVariant.tertiary => Icons.touch_app_outlined,
-      };
 
   return AppToolbarOverflowEntry(
-    icon: icon,
+    // Icon fallbacks live on AppButton so ref-free overflow surfaces
+    // (AppDialog footers) resolve the same glyph without importing this file.
+    icon: action.overflowMenuIcon,
     label: label,
     enabled: canPress,
     onSelected: (_, _) => action.onPressed?.call(),

@@ -151,7 +151,90 @@ class AppButton extends StatelessWidget {
 
   final bool _isCloseButton;
 
+  /// Outline thickness of labeled chrome (see [_buttonStyle]).
+  static const double _outlineWidth = 0.5;
+
   IconData? get _resolvedIcon => leadingIcon ?? icon;
+
+  /// Whether this is the dismiss control built by [AppButton.close].
+  ///
+  /// Adaptive containers use this to keep the dismiss action inline instead of
+  /// moving it into an overflow menu.
+  bool get isDismissAction => _isCloseButton;
+
+  /// Icon this button renders (explicit [leadingIcon] or [icon]).
+  IconData? get resolvedIcon => _resolvedIcon;
+
+  /// Glyph to show when this button is rendered as an overflow menu entry.
+  ///
+  /// Menu rows are always icon + label, so unlabeled variants fall back to a
+  /// generic glyph rather than rendering a gap.
+  IconData get overflowMenuIcon {
+    return _resolvedIcon ??
+        switch (variant) {
+          AppButtonVariant.primary => Icons.add,
+          AppButtonVariant.secondary ||
+          AppButtonVariant.tertiary => Icons.touch_app_outlined,
+        };
+  }
+
+  /// Width of an icon-only [AppButton] under the current theme.
+  ///
+  /// Mirrors the `minimumSize` computed in [_buttonStyle] so containers can
+  /// budget space before layout.
+  static double iconOnlyWidth(BuildContext context, {bool dense = false}) {
+    final ThemeData theme = Theme.of(context);
+    final AppSpacingTokens spacing = theme.spacing;
+    return math.max(
+      dense ? 40 : theme.appTokens.minInteractiveDimension,
+      theme.appTokens.listIconSize + (dense ? spacing.sm : spacing.lg),
+    );
+  }
+
+  /// Estimated width of this button rendered icon-only.
+  double estimatedIconOnlyWidth(BuildContext context, {bool dense = false}) {
+    return iconOnlyWidth(context, dense: this.dense || dense);
+  }
+
+  /// Estimated width of this button rendered with its icon **and** label.
+  ///
+  /// Mirrors the padding in [_buttonStyle] and the glyph/gap/label row in
+  /// [_ButtonContent], measuring [label] with the real label style and the
+  /// ambient text scale. Intentionally errs slightly wide so adaptive
+  /// containers overflow one action early rather than clipping one.
+  double estimatedLabeledWidth(BuildContext context, {bool dense = false}) {
+    final ThemeData theme = Theme.of(context);
+    final AppSpacingTokens spacing = theme.spacing;
+    final bool effectiveDense = this.dense || dense;
+    final bool compact = MediaQuery.sizeOf(context).width < 360;
+    final double horizontalPadding =
+        (effectiveDense
+            ? spacing.sm
+            : compact
+            ? spacing.md
+            : spacing.lg) *
+        2;
+    final bool hasGlyph =
+        _resolvedIcon != null || iconWidget != null || isLoading;
+    final double glyphWidth = hasGlyph
+        ? theme.appTokens.listIconSize + spacing.sm
+        : 0;
+    final TextStyle labelStyle =
+        (theme.textTheme.labelLarge ?? const TextStyle()).copyWith(
+          fontWeight: AppFontWeight.emphasis,
+          fontSize: 14,
+        );
+    final TextPainter painter = TextPainter(
+      text: TextSpan(text: label, style: labelStyle),
+      textDirection: Directionality.maybeOf(context) ?? TextDirection.ltr,
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    )..layout();
+    final double labelWidth = painter.width;
+    painter.dispose();
+
+    return horizontalPadding + glyphWidth + labelWidth + _outlineWidth * 2;
+  }
 
   /// Icon-only trigger for [PopupMenuButton] and [MenuAnchor] overflow menus.
   static Widget popupMenuTrigger({
@@ -418,7 +501,7 @@ class AppButton extends StatelessWidget {
         if (iconOnly || plainChrome) {
           return BorderSide.none;
         }
-        const double thinWidth = 0.5;
+        const double thinWidth = _outlineWidth;
         if (states.contains(WidgetState.focused) &&
             variant != AppButtonVariant.primary) {
           return theme.borders.side(color: colorScheme.primary.withValues(alpha: 0.72), width: thinWidth,);
