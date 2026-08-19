@@ -202,6 +202,51 @@ const findOverlappingForProvider = async ({
   }
 };
 
+/**
+ * Find a non-terminal appointment for the same patient whose window overlaps
+ * [scheduledStart, scheduledEnd). A patient cannot be in two places at once,
+ * so this is the patient-side counterpart to findOverlappingForProvider.
+ */
+const findOverlappingForPatient = async ({
+  patientId,
+  scheduledStart,
+  scheduledEnd,
+  excludeAppointmentId,
+  tenantId,
+}) => {
+  try {
+    if (!patientId || !scheduledStart || !scheduledEnd) {
+      return null;
+    }
+    const start = new Date(scheduledStart);
+    const end = new Date(scheduledEnd);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) {
+      return null;
+    }
+
+    return await prisma.appointment.findFirst({
+      where: {
+        deleted_at: null,
+        patient_id: patientId,
+        ...(tenantId ? { tenant_id: tenantId } : {}),
+        ...(excludeAppointmentId ? { id: { not: excludeAppointmentId } } : {}),
+        status: { notIn: ['CANCELLED', 'NO_SHOW', 'COMPLETED'] },
+        scheduled_start: { lt: end },
+        scheduled_end: { gt: start },
+      },
+      select: {
+        id: true,
+        human_friendly_id: true,
+        scheduled_start: true,
+        scheduled_end: true,
+        status: true,
+      },
+    });
+  } catch (error) {
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 module.exports = {
   findById,
   findMany,
@@ -210,4 +255,5 @@ module.exports = {
   update,
   softDelete,
   findOverlappingForProvider,
+  findOverlappingForPatient,
 };

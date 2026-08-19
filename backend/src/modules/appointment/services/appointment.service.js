@@ -373,6 +373,47 @@ const assertHostAvailable = async ({
   }
 };
 
+/**
+ * Reject a booking that would put the same patient in two appointments at
+ * once. Independent of assertHostAvailable: a patient conflict can happen
+ * even across two different providers, and a provider conflict says nothing
+ * about whether the patient themselves is free. Visitor appointments have no
+ * patient_id and are exempt.
+ */
+const assertPatientAvailable = async ({
+  patientId,
+  scheduledStart,
+  scheduledEnd,
+  excludeAppointmentId,
+  tenantId,
+}) => {
+  if (!patientId || !scheduledStart || !scheduledEnd) {
+    return;
+  }
+  const start = new Date(scheduledStart);
+  const end = new Date(scheduledEnd);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) {
+    return;
+  }
+
+  const overlap = await appointmentRepository.findOverlappingForPatient({
+    patientId,
+    scheduledStart: start,
+    scheduledEnd: end,
+    excludeAppointmentId,
+    tenantId,
+  });
+  if (overlap) {
+    throw new HttpError('errors.appointment.patient_conflict', 409, [
+      {
+        field: 'patient_id',
+        conflicting_appointment_id:
+          overlap.human_friendly_id || overlap.id || null,
+      },
+    ]);
+  }
+};
+
 const normalizeStatus = (value) => String(value || '').trim().toUpperCase();
 
 const resolveAppointmentRecordByIdentifier = async (identifier) => {
@@ -628,6 +669,12 @@ const createAppointment = async (data, userId, ipAddress) => {
       scheduledEnd: payload.scheduled_end,
       tenantId: payload.tenant_id,
     });
+    await assertPatientAvailable({
+      patientId: payload.patient_id,
+      scheduledStart: payload.scheduled_start,
+      scheduledEnd: payload.scheduled_end,
+      tenantId: payload.tenant_id,
+    });
 
     const createdAppointment = await appointmentRepository.create(payload);
     const appointment = await appointmentRepository.findById(createdAppointment.id, APPOINTMENT_INCLUDE);
@@ -674,6 +721,8 @@ const updateAppointment = async (id, data, userId, ipAddress) => {
       payload.provider_user_id !== undefined
         ? payload.provider_user_id
         : before.provider_user_id;
+    const nextPatientId =
+      payload.patient_id !== undefined ? payload.patient_id : before.patient_id;
     const nextStart =
       payload.scheduled_start !== undefined
         ? payload.scheduled_start
@@ -684,11 +733,19 @@ const updateAppointment = async (id, data, userId, ipAddress) => {
         : before.scheduled_end;
     const scheduleTouched =
       payload.provider_user_id !== undefined ||
+      payload.patient_id !== undefined ||
       payload.scheduled_start !== undefined ||
       payload.scheduled_end !== undefined;
     if (scheduleTouched) {
       await assertHostAvailable({
         providerUserId: nextProviderId,
+        scheduledStart: nextStart,
+        scheduledEnd: nextEnd,
+        excludeAppointmentId: before.id,
+        tenantId: before.tenant_id,
+      });
+      await assertPatientAvailable({
+        patientId: nextPatientId,
         scheduledStart: nextStart,
         scheduledEnd: nextEnd,
         excludeAppointmentId: before.id,

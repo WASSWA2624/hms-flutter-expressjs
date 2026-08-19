@@ -16,6 +16,7 @@
   "errors.appointment.already_cancelled": "Appointment is already cancelled",
   "errors.appointment.not_found": "Appointment not found",
   "errors.appointment.host_unavailable": "The selected staff host is not available for that time",
+  "errors.appointment.patient_conflict": "This patient already has an appointment that overlaps this time",
   "errors.appointment_participant.not_found": "Appointment participant not found",
   "errors.appointment_reminder.not_found": "Appointment reminder not found",
   "errors.asset.not_found": "Asset not found",

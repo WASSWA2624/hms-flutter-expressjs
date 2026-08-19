@@ -274,6 +274,37 @@ describe('Appointment Service', () => {
 
       expect(result).toEqual(mockCreated);
     });
+
+    it('should reject a booking that overlaps another appointment for the same patient', async () => {
+      appointmentRepository.findOverlappingForPatient.mockResolvedValue({
+        id: 'existing-appointment',
+        human_friendly_id: 'APT000099',
+      });
+
+      await expect(
+        appointmentService.createAppointment(createData, 'user-id', '127.0.0.1')
+      ).rejects.toMatchObject({
+        message: 'errors.appointment.patient_conflict',
+        statusCode: 409,
+      });
+      expect(appointmentRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('should not check patient availability for a visitor appointment', async () => {
+      const visitorData = {
+        ...createData,
+        patient_id: null,
+        subject_type: 'VISITOR',
+        visitor_name: 'Jordan Visitor',
+        provider_user_id: 'provider-1',
+      };
+      appointmentRepository.create.mockResolvedValue({ ...mockCreated, ...visitorData });
+      appointmentRepository.findById.mockResolvedValue({ ...mockCreated, ...visitorData });
+
+      await appointmentService.createAppointment(visitorData, 'user-id', '127.0.0.1');
+
+      expect(appointmentRepository.findOverlappingForPatient).not.toHaveBeenCalled();
+    });
   });
 
   describe('updateAppointment', () => {
@@ -346,6 +377,54 @@ describe('Appointment Service', () => {
         entity_id: appointmentId,
         diff: { before, after },
         ip_address: '127.0.0.1'});
+    });
+
+    it('should reject rescheduling into a slot that overlaps another appointment for the same patient', async () => {
+      const before = {
+        id: appointmentId,
+        patient_id: 'patient-1',
+        tenant_id: 'tenant-1',
+        status: 'SCHEDULED',
+        scheduled_start: '2026-07-20T08:00:00.000Z',
+        scheduled_end: '2026-07-20T08:30:00.000Z'};
+      appointmentRepository.findById.mockResolvedValueOnce(before);
+      appointmentRepository.findOverlappingForPatient.mockResolvedValue({
+        id: 'other-appointment',
+        human_friendly_id: 'APT000042',
+      });
+
+      await expect(
+        appointmentService.updateAppointment(
+          appointmentId,
+          {
+            scheduled_start: '2026-07-21T10:00:00.000Z',
+            scheduled_end: '2026-07-21T10:30:00.000Z'},
+          'user-id',
+          '127.0.0.1'
+        )
+      ).rejects.toMatchObject({
+        message: 'errors.appointment.patient_conflict',
+        statusCode: 409,
+      });
+      expect(appointmentRepository.findOverlappingForPatient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          patientId: 'patient-1',
+          excludeAppointmentId: appointmentId,
+          tenantId: 'tenant-1',
+        })
+      );
+      expect(appointmentRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('should not check patient availability when the schedule is untouched', async () => {
+      appointmentRepository.findById
+        .mockResolvedValueOnce(mockBefore)
+        .mockResolvedValueOnce(mockAfter);
+      appointmentRepository.update.mockResolvedValue(mockAfter);
+
+      await appointmentService.updateAppointment(appointmentId, updateData, 'user-id', '127.0.0.1');
+
+      expect(appointmentRepository.findOverlappingForPatient).not.toHaveBeenCalled();
     });
 
     it('should auto-start OPD flow when status transitions to IN_PROGRESS', async () => {
