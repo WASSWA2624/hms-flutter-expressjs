@@ -1,4 +1,3 @@
-import 'package:hosspi_hms/core/logging/app_logger.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_status_display.dart';
@@ -114,25 +113,11 @@ bool isReceptionPreEncounterAppointment({
   if (isOpdAppointmentStatusTerminal(appointment.status)) {
     return false;
   }
-  final OpdFlowSummary? linkedFlow = findActiveOpdFlowForAppointment(
-    appointment: appointment,
-    flows: flows,
-  );
-  if (linkedFlow != null) {
-    // A booking a receptionist just scheduled disappearing from this list a
-    // few seconds later, with no error shown, looks like data loss but is
-    // this filter doing its job on stale/matching flow data. Logged so the
-    // next occurrence is diagnosable from the running app's own console
-    // instead of another guessing round.
-    AppLogger.debug(
-      'Reception worklist hid appointment ${appointment.publicId ?? appointment.id} '
-      '(status ${appointment.status}): matched active flow '
-      '${linkedFlow.publicId ?? linkedFlow.id} (status '
-      '${linkedFlow.status ?? linkedFlow.stage}).',
-    );
-    return false;
-  }
-  return true;
+  return findActiveOpdFlowForAppointment(
+        appointment: appointment,
+        flows: flows,
+      ) ==
+      null;
 }
 
 /// Localized next-action label for [resolveOpdAppointmentPrimaryAction].

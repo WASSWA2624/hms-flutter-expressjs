@@ -155,7 +155,22 @@ class OpdActionContextPanel extends StatelessWidget {
       currentStepCode: flow.displayCode ?? flow.stage,
       expandedChild: expandedPairs.isEmpty
           ? null
-          : OpdEncounterSummaryRow(pairs: expandedPairs),
+          : AppPatientContextFactsRow(
+              fields: <AppWorkspacePatientContextField>[
+                for (final OpdEncounterSummaryPair pair in expandedPairs)
+                  AppWorkspacePatientContextField(
+                    label: pair.label,
+                    value: pair.value,
+                    icon: _opdEncounterSummaryFieldIcon(l10n, pair.label),
+                    tone:
+                        pair.valueTone ?? AppWorkspaceStatusTone.neutral,
+                    copyable: pair.copyable,
+                    copiedMessage: pair.label == l10n.opdPatientIdLabel
+                        ? l10n.clinicalPatientIdCopiedMessage
+                        : l10n.opdEncounterIdCopiedMessage,
+                  ),
+              ],
+            ),
       showTitle: showTitle,
       initiallyExpanded: initiallyExpanded,
     );
@@ -428,6 +443,22 @@ String? _usableAssignedStaffLabel(String? label) {
     default:
       return normalized;
   }
+}
+
+IconData? _opdEncounterSummaryFieldIcon(AppLocalizations l10n, String label) {
+  return switch (label) {
+    final String l when l == l10n.opdEncounterIdLabel =>
+      Icons.confirmation_number_outlined,
+    final String l when l == l10n.opdArrivalModeLabel =>
+      Icons.directions_walk_outlined,
+    final String l when l == l10n.opdProviderColumnLabel =>
+      Icons.medical_services_outlined,
+    final String l when l == l10n.opdPaymentStatusLabel =>
+      Icons.payments_outlined,
+    final String l when l == l10n.opdTriageLevelLabel =>
+      Icons.priority_high_outlined,
+    _ => null,
+  };
 }
 
 String? _firstNonEmpty(Iterable<String?> values) {

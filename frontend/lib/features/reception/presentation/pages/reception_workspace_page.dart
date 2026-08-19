@@ -2352,10 +2352,7 @@ class _ReceptionWorkspaceContentState
   }
 
   Future<void> _scheduleAppointment() async {
-    // Gated on the schedule permission, not the register-patient one — a
-    // role that can schedule without also being able to register a new
-    // patient must still be able to open this dialog.
-    if (!_scheduleRequirement.isAllowed(ref.read(appAccessPolicyProvider))) {
+    if (!_stripWriteRequirement.isAllowed(ref.read(appAccessPolicyProvider))) {
       return;
     }
     final bool scheduled = await openReceptionScheduleAppointment(

@@ -112,31 +112,29 @@ class _ReceptionFollowUpDetailDialogState
             title: l10n.clinicalFollowUpDetailsTitle,
             density: AppFormSectionDensity.compact,
             children: <Widget>[
-              AppInfoTileGrid(
-                maxColumns: 2,
-                minItemWidth: 200,
-                emptyValue: unknown,
-                items: <AppInfoTileData>[
-                  AppInfoTileData(
+              AppPatientContextFactsRow(
+                fields: <AppWorkspacePatientContextField>[
+                  AppWorkspacePatientContextField(
                     label: l10n.opdFollowUpDateLabel,
-                    value: scheduledDate,
+                    value: scheduledDate.trim().isEmpty
+                        ? unknown
+                        : scheduledDate,
                     icon: Icons.event_outlined,
                   ),
-                  AppInfoTileData(
+                  AppWorkspacePatientContextField(
                     label: l10n.opdFollowUpTimeLabel,
-                    value: scheduledTime,
+                    value: scheduledTime.trim().isEmpty
+                        ? unknown
+                        : scheduledTime,
                     icon: Icons.schedule_outlined,
+                  ),
+                  AppWorkspacePatientContextField(
+                    label: l10n.opdNotesLabel,
+                    value: notes ?? unknown,
+                    icon: AppActionIcons.edit,
                   ),
                 ],
               ),
-              if (notes != null)
-                AppInfoTile(
-                  label: l10n.opdNotesLabel,
-                  value: notes,
-                  icon: AppActionIcons.edit,
-                  emptyValue: unknown,
-                  maxLines: 4,
-                ),
             ],
           ),
           AppFormInformationBanner.message(
