@@ -8009,6 +8009,22 @@
   "@patientsAppointmentDurationLabel": {
     "description": "Patient appointment duration field label."
   },
+  "patientsAppointmentEndTimeLabel": "End time",
+  "@patientsAppointmentEndTimeLabel": {
+    "description": "Patient appointment end time field label."
+  },
+  "patientsAppointmentWindowRequiredMessage": "Enter an end time or a duration.",
+  "@patientsAppointmentWindowRequiredMessage": {
+    "description": "Shown when neither the appointment end time nor the duration is filled in."
+  },
+  "patientsAppointmentContactPhoneLabel": "Contact phone",
+  "@patientsAppointmentContactPhoneLabel": {
+    "description": "Patient appointment follow-up contact phone field label."
+  },
+  "patientsAppointmentContactPhoneHelper": "Used for reminders and follow-up.",
+  "@patientsAppointmentContactPhoneHelper": {
+    "description": "Helper text under the appointment contact phone field."
+  },
   "patientsAppointmentStatusLabel": "Appointment status",
   "@patientsAppointmentStatusLabel": {
     "description": "Patient appointment status field label."

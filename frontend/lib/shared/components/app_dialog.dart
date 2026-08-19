@@ -823,8 +823,6 @@ class _DialogActions extends StatelessWidget {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
-    final bool showActionLabels =
-        AppBreakpoints.of(context).showsToolbarActionLabels;
     // Footer chrome: doubled vertical inset from the prior xs baseline; keep
     // horizontal inset and inter-button gaps tight around the actions.
     final EdgeInsets padding = EdgeInsets.symmetric(
@@ -881,10 +879,12 @@ class _DialogActions extends StatelessWidget {
         border: theme.borders.only(top: true),
       ),
       child: AppActionLabelScope(
-        // Large screens: icon + label. Small/medium: icon-only when an icon
-        // is present (labels remain for text-only actions).
-        showLabels: showActionLabels,
-        forceIconOnly: !showActionLabels,
+        // Footer actions keep icon + label on every breakpoint. A bare icon in
+        // a dialog footer gives no clue what committing does, so phones scale
+        // the labelled row down (see the FittedBox above) instead of dropping
+        // the text.
+        showLabels: true,
+        forceIconOnly: false,
         dense: dense,
         child: Padding(padding: padding, child: actionRow),
       ),

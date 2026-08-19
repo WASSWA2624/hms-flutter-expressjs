@@ -11,6 +11,7 @@ import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/opd_actions/appointment_window.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_provider_options.dart';
 
 /// Schedule a visitor (non-patient) meeting with any facility staff host.
@@ -52,6 +53,7 @@ class ReceptionVisitorAppointmentDialogState
 
   DateTime? _date = DateTime.now();
   AppTimeValue? _startTime = const AppTimeValue(hour: 9, minute: 0);
+  AppTimeValue? _endTime = const AppTimeValue(hour: 9, minute: 30);
   String? _hostId;
   List<OpdProviderOption> _hosts = const <OpdProviderOption>[];
   List<OpdProviderSchedule> _schedules = const <OpdProviderSchedule>[];
@@ -128,7 +130,12 @@ class ReceptionVisitorAppointmentDialogState
               numberLabelText: l10n.appPhoneNumberLabel,
               numberHintText: l10n.appPhoneNumberHint,
               invalidPhoneMessage: l10n.appPhoneInvalidMessage,
+              helperText: l10n.patientsAppointmentContactPhoneHelper,
               enabled: !isBusy,
+              // Reception calls visitors back about their meeting, so the
+              // number is mandatory rather than a nicety.
+              isRequired: true,
+              requiredMessage: l10n.validationRequired,
               textInputAction: TextInputAction.next,
             ),
             AppTextField(
@@ -156,52 +163,65 @@ class ReceptionVisitorAppointmentDialogState
             return null;
           },
         ),
-        AppResponsiveFieldRow(
+        AppResponsiveFieldRow.two(
           gap: AppResponsiveFieldRowGap.form,
-          children: <Widget>[
-            AppDateField(
-              value: _date,
-              firstDate: DateTime.now().subtract(const Duration(days: 1)),
-              lastDate: DateTime.now().add(const Duration(days: 365)),
-              labelText: l10n.patientsAppointmentDateLabel,
-              pickerButtonLabel: l10n.patientsDatePickerAction,
-              invalidDateMessage: l10n.appDateInvalidMessage,
-              enabled: !isBusy,
-              isRequired: true,
-              validator: AppValidators.requiredValue(l10n.validationRequired),
-              onChanged: (DateTime? value) => setState(() => _date = value),
+          left: AppDateField(
+            value: _date,
+            firstDate: DateTime.now().subtract(const Duration(days: 1)),
+            lastDate: DateTime.now().add(const Duration(days: 365)),
+            labelText: l10n.patientsAppointmentDateLabel,
+            pickerButtonLabel: l10n.patientsDatePickerAction,
+            invalidDateMessage: l10n.appDateInvalidMessage,
+            enabled: !isBusy,
+            isRequired: true,
+            validator: AppValidators.requiredValue(l10n.validationRequired),
+            onChanged: (DateTime? value) => setState(() => _date = value),
+          ),
+          right: AppTimeField(
+            value: _startTime,
+            labelText: l10n.patientsAppointmentTimeLabel,
+            pickerButtonLabel: l10n.appTimePickerAction,
+            invalidTimeMessage: l10n.patientsTimeInvalidMessage,
+            hintText: l10n.patientsTimeHint,
+            hourLabelText: l10n.appTimeHourLabel,
+            minuteLabelText: l10n.appTimeMinuteLabel,
+            enabled: !isBusy,
+            isRequired: true,
+            validator: (AppTimeValue? value) =>
+                value == null ? l10n.validationRequired : null,
+            onChanged: _handleStartTimeChanged,
+          ),
+        ),
+        AppResponsiveFieldRow.two(
+          gap: AppResponsiveFieldRowGap.form,
+          left: AppTimeField(
+            value: _endTime,
+            labelText: l10n.patientsAppointmentEndTimeLabel,
+            pickerButtonLabel: l10n.appTimePickerAction,
+            invalidTimeMessage: l10n.patientsTimeInvalidMessage,
+            hintText: l10n.patientsTimeHint,
+            hourLabelText: l10n.appTimeHourLabel,
+            minuteLabelText: l10n.appTimeMinuteLabel,
+            enabled: !isBusy,
+            validator: appointmentEndTimeValidator(
+              l10n: l10n,
+              startTime: () => _startTime,
+              duration: () => _durationController.text,
             ),
-            AppTimeField(
-              value: _startTime,
-              labelText: l10n.patientsAppointmentTimeLabel,
-              pickerButtonLabel: l10n.appTimePickerAction,
-              invalidTimeMessage: l10n.patientsTimeInvalidMessage,
-              hintText: l10n.patientsTimeHint,
-              hourLabelText: l10n.appTimeHourLabel,
-              minuteLabelText: l10n.appTimeMinuteLabel,
-              enabled: !isBusy,
-              isRequired: true,
-              validator: (AppTimeValue? value) =>
-                  value == null ? l10n.validationRequired : null,
-              onChanged: (AppTimeValue? value) {
-                setState(() => _startTime = value);
-              },
+            onChanged: _handleEndTimeChanged,
+          ),
+          right: AppTextField(
+            controller: _durationController,
+            labelText: l10n.patientsAppointmentDurationLabel,
+            enabled: !isBusy,
+            keyboardType: TextInputType.number,
+            validator: appointmentDurationValidator(
+              l10n: l10n,
+              startTime: () => _startTime,
+              endTime: () => _endTime,
             ),
-            AppTextField(
-              controller: _durationController,
-              labelText: l10n.patientsAppointmentDurationLabel,
-              enabled: !isBusy,
-              isRequired: true,
-              keyboardType: TextInputType.number,
-              validator: (String? value) {
-                final int? minutes = int.tryParse((value ?? '').trim());
-                if (minutes == null || minutes <= 0) {
-                  return l10n.validationRequired;
-                }
-                return null;
-              },
-            ),
-          ],
+            onChanged: _handleDurationChanged,
+          ),
         ),
         AppTextField(
           controller: _reasonController,
@@ -257,11 +277,15 @@ class ReceptionVisitorAppointmentDialogState
       return false;
     }
     final DateTime? scheduledStart = _combineDateAndTime(_date, _startTime);
-    if (scheduledStart == null) {
+    final int? duration = AppointmentWindow.resolveMinutes(
+      duration: _durationController.text,
+      start: _startTime,
+      end: _endTime,
+    );
+    if (scheduledStart == null || duration == null) {
       setState(() => _failure = AppFailure.validation());
       return false;
     }
-    final int duration = int.parse(_durationController.text.trim());
     final DateTime scheduledEnd = scheduledStart.add(
       Duration(minutes: duration),
     );
@@ -313,6 +337,50 @@ class ReceptionVisitorAppointmentDialogState
     }
     Navigator.of(context).pop(true);
     return true;
+  }
+
+  /// Keeps the end time anchored to the duration when the start time moves.
+  void _handleStartTimeChanged(AppTimeValue? value) {
+    setState(() {
+      _startTime = value;
+      final int? minutes = AppointmentWindow.parseDuration(
+        _durationController.text,
+      );
+      if (AppointmentWindow.isValidDuration(minutes)) {
+        _endTime = AppointmentWindow.endAfter(value, minutes);
+        return;
+      }
+      _syncDurationFromWindow();
+    });
+  }
+
+  void _handleEndTimeChanged(AppTimeValue? value) {
+    setState(() {
+      _endTime = value;
+      _syncDurationFromWindow();
+    });
+  }
+
+  void _handleDurationChanged(String value) {
+    final int? minutes = AppointmentWindow.parseDuration(value);
+    if (!AppointmentWindow.isValidDuration(minutes)) {
+      // Mid-edit or out-of-range input leaves the end time alone; the field
+      // validators report the problem on submit.
+      return;
+    }
+    final AppTimeValue? end = AppointmentWindow.endAfter(_startTime, minutes);
+    if (end == _endTime) {
+      return;
+    }
+    setState(() => _endTime = end);
+  }
+
+  void _syncDurationFromWindow() {
+    final int? minutes = AppointmentWindow.durationBetween(
+      _startTime,
+      _endTime,
+    );
+    _durationController.text = minutes == null ? '' : '$minutes';
   }
 
   Future<void> _loadHosts() async {

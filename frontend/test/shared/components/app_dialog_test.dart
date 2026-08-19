@@ -568,22 +568,22 @@ void main() {
       size: const Size(400, 498),
     );
 
-    expect(find.text('Clear filters'), findsNothing);
-    expect(find.text('Apply filters'), findsNothing);
+    expect(find.text('Clear filters'), findsOneWidget);
+    expect(find.text('Apply filters'), findsOneWidget);
     expect(find.text('Close'), findsNothing);
 
     final Offset clearAction = tester.getCenter(
-      find.byTooltip('Clear filters'),
+      find.widgetWithText(AppButton, 'Clear filters'),
     );
     final Offset applyAction = tester.getCenter(
-      find.byTooltip('Apply filters'),
+      find.widgetWithText(AppButton, 'Apply filters'),
     );
     expect(clearAction.dy, closeTo(applyAction.dy, 1));
     expect(clearAction.dx, greaterThan(applyAction.dx));
   });
 
   testWidgets(
-    'mobile AppDialog keeps footer actions horizontal and icon-only',
+    'mobile AppDialog keeps footer actions horizontal and labelled',
     (WidgetTester tester) async {
       await pumpComponent(
         tester,
@@ -607,15 +607,18 @@ void main() {
         size: const Size(390, 844),
       );
 
-      expect(find.text('Preview report'), findsNothing);
-      expect(find.text('Save results'), findsNothing);
-      expect(find.byTooltip('Preview report'), findsOneWidget);
-      expect(find.byTooltip('Save results'), findsOneWidget);
+      // Phones scale the labelled row down rather than reducing it to icons.
+      expect(find.text('Preview report'), findsOneWidget);
+      expect(find.text('Save results'), findsOneWidget);
+      expect(find.byTooltip('Preview report'), findsNothing);
+      expect(find.byTooltip('Save results'), findsNothing);
 
       final Offset preview = tester.getCenter(
-        find.byTooltip('Preview report'),
+        find.widgetWithText(AppButton, 'Preview report'),
       );
-      final Offset save = tester.getCenter(find.byTooltip('Save results'));
+      final Offset save = tester.getCenter(
+        find.widgetWithText(AppButton, 'Save results'),
+      );
       expect(preview.dy, closeTo(save.dy, 1));
       expect(preview.dx, greaterThan(save.dx));
     },
@@ -650,9 +653,11 @@ void main() {
     );
 
     final Offset preview = tester.getCenter(
-      find.byTooltip('Preview report'),
+      find.widgetWithText(AppButton, 'Preview report'),
     );
-    final Offset save = tester.getCenter(find.byTooltip('Save results'));
+    final Offset save = tester.getCenter(
+      find.widgetWithText(AppButton, 'Save results'),
+    );
     // Source [secondary, primary] is reversed so primary is top / left and
     // secondary (dismiss) is bottom / extreme-right.
     expect(preview.dy, greaterThan(save.dy));

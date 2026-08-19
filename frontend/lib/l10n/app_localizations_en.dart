@@ -6269,6 +6269,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get patientsAppointmentDurationLabel => 'Duration minutes';
 
   @override
+  String get patientsAppointmentEndTimeLabel => 'End time';
+
+  @override
+  String get patientsAppointmentWindowRequiredMessage =>
+      'Enter an end time or a duration.';
+
+  @override
+  String get patientsAppointmentContactPhoneLabel => 'Contact phone';
+
+  @override
+  String get patientsAppointmentContactPhoneHelper =>
+      'Used for reminders and follow-up.';
+
+  @override
   String get patientsAppointmentStatusLabel => 'Appointment status';
 
   @override
