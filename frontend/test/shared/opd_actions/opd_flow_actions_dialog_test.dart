@@ -162,7 +162,7 @@ void main() {
 
     expect(find.widgetWithText(AppButton, 'Record vitals'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Change doctor'), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Print summary'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Print'), findsOneWidget);
     expect(find.text('Close'), findsOneWidget);
   });
 
@@ -202,7 +202,7 @@ void main() {
       expect(find.widgetWithText(AppButton, 'Request lab'), findsNothing);
       expect(find.widgetWithText(AppButton, 'Refer'), findsNothing);
       expect(find.widgetWithText(AppButton, 'Follow up'), findsOneWidget);
-      expect(find.widgetWithText(AppButton, 'Print summary'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Print'), findsOneWidget);
       expect(find.text('Close'), findsOneWidget);
     },
   );
@@ -240,7 +240,7 @@ void main() {
         findsNothing,
       );
       expect(find.widgetWithText(AppButton, 'Follow up'), findsOneWidget);
-      expect(find.widgetWithText(AppButton, 'Print summary'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Print'), findsOneWidget);
       expect(find.text('Close'), findsOneWidget);
     },
   );
@@ -323,7 +323,7 @@ void main() {
       );
       expect(find.widgetWithText(AppButton, 'Refer'), findsOneWidget);
       expect(find.widgetWithText(AppButton, 'Follow up'), findsOneWidget);
-      expect(find.widgetWithText(AppButton, 'Print summary'), findsOneWidget);
+      expect(find.widgetWithText(AppButton, 'Print'), findsOneWidget);
       expect(find.text('Close'), findsOneWidget);
     },
   );
@@ -454,7 +454,7 @@ void main() {
 
     expect(find.widgetWithText(AppButton, 'Record vitals'), findsNothing);
     expect(find.widgetWithText(AppButton, 'Change doctor'), findsOneWidget);
-    expect(find.widgetWithText(AppButton, 'Print summary'), findsOneWidget);
+    expect(find.widgetWithText(AppButton, 'Print'), findsOneWidget);
     expect(find.text('Close'), findsOneWidget);
   });
 

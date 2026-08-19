@@ -26,8 +26,23 @@ void main() {
     registerFallbackValue(const OpdTriageQueueQuery());
   });
 
-  final DateTime scheduledStart = DateTime.utc(2026, 7, 20, 8);
-  final DateTime scheduledEnd = DateTime.utc(2026, 7, 20, 8, 30);
+  // The dialog only accepts dates from yesterday onward, so the fixtures are
+  // anchored to a day relative to today. Calendar literals here rot silently:
+  // once the date passes, every save fails date-range validation and the tests
+  // fail for a reason that has nothing to do with what they cover.
+  final DateTime anchorDay = DateTime.now().add(const Duration(days: 7));
+  DateTime slot(int hour, int minute, {int dayOffset = 0}) {
+    return DateTime(
+      anchorDay.year,
+      anchorDay.month,
+      anchorDay.day + dayOffset,
+      hour,
+      minute,
+    ).toUtc();
+  }
+
+  final DateTime scheduledStart = slot(8, 0);
+  final DateTime scheduledEnd = slot(8, 30);
   final OpdAppointment appointment = OpdAppointment(
     id: 'appointment-internal',
     publicId: 'APT000001',
@@ -173,8 +188,8 @@ void main() {
     WidgetTester tester,
   ) async {
     final _MockOpdRepository repository = _MockOpdRepository();
-    final DateTime updatedStart = DateTime.utc(2026, 7, 21, 10);
-    final DateTime updatedEnd = DateTime.utc(2026, 7, 21, 10, 30);
+    final DateTime updatedStart = slot(10, 0, dayOffset: 1);
+    final DateTime updatedEnd = slot(10, 30, dayOffset: 1);
     final OpdAppointment updated = appointment.copyWith(
       scheduledStart: updatedStart,
       scheduledEnd: updatedEnd,
@@ -306,8 +321,8 @@ void main() {
       patientDisplayName: 'Patient Example',
       providerDisplayName: 'Provider Example',
       status: 'SCHEDULED',
-      scheduledStart: DateTime.utc(2026, 7, 20, 8, 30),
-      scheduledEnd: DateTime.utc(2026, 7, 20, 8),
+      scheduledStart: slot(8, 30),
+      scheduledEnd: slot(8, 0),
     );
     final _MockOpdRepository repository = _MockOpdRepository();
     _stubWorkspaceLoad(

@@ -48,6 +48,9 @@ void main() {
       // Footer order: primary then Close — was Cancel (secondary) then Open admission (primary).
       final List<AppButton> actions = tester
           .widgetList<AppButton>(find.byType(AppButton))
+          // The header's dismiss affordance is icon-only; footer actions carry
+          // labels. Filtering on that keeps this about footer order.
+          .where((AppButton button) => !button.iconOnly)
           .where(
             (AppButton button) =>
                 button.label == 'Close' ||

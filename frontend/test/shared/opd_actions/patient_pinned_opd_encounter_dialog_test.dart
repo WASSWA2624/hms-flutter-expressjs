@@ -114,6 +114,9 @@ void main() {
 
       final Iterable<AppButton> footerButtons = tester
           .widgetList<AppButton>(find.byType(AppButton))
+          // The header's dismiss affordance is icon-only; footer actions carry
+          // labels. Filtering on that keeps this about footer order.
+          .where((AppButton button) => !button.iconOnly)
           .where(
             (AppButton button) =>
                 button.label == 'Close' || button.label == 'Start encounter',
