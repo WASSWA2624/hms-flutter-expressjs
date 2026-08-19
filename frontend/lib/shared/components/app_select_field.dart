@@ -619,7 +619,18 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
       } else if (!hasFocus && _hadFocus) {
         _browseAllOptions = false;
         _menuOpen = false;
-        _syncControllerForSelection(widget.value);
+        // A commit already set the controller text to the chosen option's
+        // label. widget.value is the caller's prop, which for an uncontrolled
+        // or async-setState caller has not caught up to that commit yet —
+        // resyncing from it unconditionally would erase a selection the
+        // instant the field loses focus. Only fall back to widget.value to
+        // clean up stray typed text that was never turned into a selection.
+        final bool textMatchesAnOption = widget.options.any(
+          (AppSelectOption<T> option) => option.label == _controller.text,
+        );
+        if (!textMatchesAnOption) {
+          _syncControllerForSelection(widget.value);
+        }
       }
     }
     final bool shouldRebuild = _hadFocus != hasFocus;
