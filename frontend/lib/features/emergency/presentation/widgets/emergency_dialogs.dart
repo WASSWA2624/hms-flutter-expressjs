@@ -350,7 +350,6 @@ class _DispatchDialogState extends State<DispatchDialog> {
               value: _ambulanceId,
               labelText: l10n.emergencyDispatchAmbulanceLabel,
               isRequired: true,
-              searchable: true,
               options: <AppSelectOption<String>>[
                 for (final EmergencyAmbulance ambulance in ambulances)
                   AppSelectOption<String>(

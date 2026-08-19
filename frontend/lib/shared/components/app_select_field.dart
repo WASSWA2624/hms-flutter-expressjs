@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
@@ -44,7 +46,10 @@ class AppSelectField<T> extends StatefulWidget {
     this.isRequired = false,
     this.isLoading = false,
     this.allowClear = true,
-    this.searchable = false,
+    // Typing to filter is the expected behavior everywhere a select appears;
+    // pass `searchable: false` only for the rare field where free text entry
+    // would be actively confusing (e.g. a fixed two-value toggle).
+    this.searchable = true,
     this.isDense = false,
     this.textStyle,
     this.filterCallback,
@@ -57,6 +62,9 @@ class AppSelectField<T> extends StatefulWidget {
     super.key,
   });
 
+  /// Explicit alias for the (now default) searchable behavior. Kept for call
+  /// sites that want to say so, and as the only constructor when a caller
+  /// also needs [searchCallback]-driven remote search.
   const AppSelectField.searchable({
     required this.options,
     this.value,
@@ -283,7 +291,17 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
           width: width,
           menuHeight: effectiveMenuHeight,
           menuStyle: menuStyle,
-          alignmentOffset: Offset(0, -menuChrome.borderWidth),
+          // Anchors below the whole field, which in Flutter's own layout
+          // includes the helper/error text under the border. Left alone that
+          // leaves a gap where the message shows through above the menu, so
+          // this pulls the menu back up by exactly that text's height: the
+          // list opens flush against the border and, since the overlay always
+          // paints above the base layout, overshadows the message rather than
+          // floating below it.
+          alignmentOffset: Offset(
+            0,
+            -(menuChrome.borderWidth + _subtextOverlayHeight(theme, width)),
+          ),
           label: appFieldLabelWidget(
             context,
             widget.labelText,
@@ -701,6 +719,48 @@ class _AppSelectFieldState<T> extends State<AppSelectField<T>> {
 
   Color _fieldFillColor(ThemeData theme) {
     return theme.inputDecorationTheme.fillColor ?? theme.colorScheme.surface;
+  }
+
+  /// Text shown beneath the field: an error wins over the helper, mirroring
+  /// the priority [InputDecorator] itself uses when picking what to render.
+  String? get _visibleSubtext {
+    final String? error = widget.errorText?.trim();
+    if (error != null && error.isNotEmpty) {
+      return error;
+    }
+    final String? helper = widget.helperText?.trim();
+    return (helper != null && helper.isNotEmpty) ? helper : null;
+  }
+
+  /// Height of the current helper/error row, so the open menu can be pulled
+  /// up by exactly that much and land flush against the field's border.
+  ///
+  /// Matches [InputDecorator]'s own subtext layout closely enough for the
+  /// menu to fully cover the message rather than clip it or leave a sliver
+  /// showing: same content width, same 4px subtext gap used under Material 3,
+  /// and the ambient body-small style/text scale the message actually renders
+  /// with.
+  double _subtextOverlayHeight(ThemeData theme, double? width) {
+    final String? message = _visibleSubtext;
+    if (message == null || width == null) {
+      return 0;
+    }
+    final EdgeInsets contentPadding =
+        (theme.inputDecorationTheme.contentPadding ?? EdgeInsets.zero)
+            .resolve(Directionality.of(context));
+    final double maxWidth = math.max(0, width - contentPadding.horizontal);
+    final TextStyle style = (theme.textTheme.bodySmall ??
+            const TextStyle(fontSize: 12))
+        .copyWith(height: 1.3);
+    final TextPainter painter = TextPainter(
+      text: TextSpan(text: message, style: style),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout(maxWidth: maxWidth > 0 ? maxWidth : double.infinity);
+    final double height = painter.height;
+    painter.dispose();
+    const double subtextGap = 4;
+    return height + subtextGap;
   }
 
   _SelectMenuChrome _selectMenuChrome(
