@@ -954,9 +954,10 @@ class _DialogActions extends StatelessWidget {
           for (final Widget action in displayActions)
             _FooterEntry(
               action: action,
-              priority: resolveAppDialogActionPriority(
-                unwrapAppDialogAction(action),
-              ),
+              // Resolved from the action as authored: unwrapping first would
+              // discard an AppDialogAction's explicit priority and fall back
+              // to whatever the underlying button's variant implies.
+              priority: resolveAppDialogActionPriority(action),
               overflowEligible: isAppDialogActionOverflowEligible(action),
             ),
         ];

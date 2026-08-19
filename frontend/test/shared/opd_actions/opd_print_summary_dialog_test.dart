@@ -84,6 +84,7 @@ void main() {
   testWidgets(
     'uses AppDialog with section picker, Copy → Cancel → Print',
     (WidgetTester tester) async {
+      _useDesktopSurface(tester);
       await _pumpDialog(tester, flow: flow, detail: detail);
 
       final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
@@ -238,6 +239,7 @@ void main() {
   testWidgets('deselecting vitals removes them from preview', (
     WidgetTester tester,
   ) async {
+    _useDesktopSurface(tester);
     await _pumpDialog(tester, flow: flow, detail: detail);
 
     expect(find.textContaining('Temperature'), findsWidgets);
@@ -300,6 +302,7 @@ void main() {
   testWidgets('empty clinical sections stay disabled in the picker', (
     WidgetTester tester,
   ) async {
+    _useDesktopSurface(tester);
     await _pumpDialog(tester, flow: flow);
 
     final List<ReportSectionAvailability> availabilities =
@@ -466,6 +469,18 @@ String? _actionLabel(Widget action) {
     return action.label;
   }
   return null;
+}
+
+/// Desktop-width surface.
+///
+/// The print dialog is preview-first: below [AppBreakpoints.lg] it drops the
+/// sections pane entirely and shows only the preview, so any test that asserts
+/// on the section picker has to run on a surface wide enough to split.
+void _useDesktopSurface(WidgetTester tester) {
+  tester.view.physicalSize = const Size(1200, 900);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.resetPhysicalSize);
+  addTearDown(tester.view.resetDevicePixelRatio);
 }
 
 Future<void> _pumpDialog(

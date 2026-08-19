@@ -790,12 +790,19 @@ List<Widget> _actionDialogButtons(
       onPressed: isSaving ? null : () => Navigator.of(context).pop(false),
     ),
     if (destructive)
-      AppButton.tertiary(
-        label: submitLabel,
-        leadingIcon: submitLeadingIcon ?? AppActionIcons.delete,
-        color: colorScheme.error,
-        isLoading: isSaving,
-        onPressed: isSaving ? null : onSubmit,
+      // Tertiary chrome, primary standing: a destructive commit is styled
+      // quietly on purpose, but it is still what the dialog exists to do, so
+      // it must stay on the inline row rather than being inferred as a
+      // supporting action and collapsed into the overflow menu.
+      AppDialogAction(
+        priority: AppDialogActionPriority.primary,
+        child: AppButton.tertiary(
+          label: submitLabel,
+          leadingIcon: submitLeadingIcon ?? AppActionIcons.delete,
+          color: colorScheme.error,
+          isLoading: isSaving,
+          onPressed: isSaving ? null : onSubmit,
+        ),
       )
     else
       AppButton.primary(
