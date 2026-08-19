@@ -22,7 +22,15 @@ abstract final class ValidationMessagePresenter {
           .join('\n');
     }
 
-    if (failure.validationFields.isNotEmpty) {
+    // "X is required" only makes sense for a validation failure (something
+    // was missing from the request). A conflict failure's `field` entries
+    // identify *which* record clashed, not that a field was left blank —
+    // servers across the API attach one to every 409, so treating it as a
+    // required-field list here would relabel every conflict (a scheduling
+    // clash, a duplicate code, ...) as a missing-field error and bury the
+    // server's actual explanation, which detailMessage carries below.
+    if (failure.validationFields.isNotEmpty &&
+        failure.category != AppFailureCategory.conflict) {
       return failure.validationFields
           .map(
             (String field) =>

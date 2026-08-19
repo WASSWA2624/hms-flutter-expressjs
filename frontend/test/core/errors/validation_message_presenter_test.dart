@@ -106,5 +106,28 @@ void main() {
         l10n.tenantFacilityPermanentDeleteBlockedActiveSubscriptionMessage,
       );
     });
+
+    test(
+      'shows the conflict detail instead of a required-field label when the '
+      "server's 409 tags a field",
+      () {
+        // The API attaches `field` to every 409 to identify which record
+        // clashed (e.g. provider_user_id / patient_id for a scheduling
+        // conflict), not to say the field was left blank. That must not
+        // relabel "this patient already has an overlapping appointment" as
+        // "Patient is required.".
+        final AppFailure failure = AppFailure.conflict(
+          code: 'errors.appointment.patient_conflict',
+          validationFields: <String>{'patient_id'},
+          detailMessage: 'This patient already has an appointment that '
+              'overlaps this time',
+        );
+
+        expect(
+          ValidationMessagePresenter.displayMessage(failure, l10n),
+          'This patient already has an appointment that overlaps this time',
+        );
+      },
+    );
   });
 }
