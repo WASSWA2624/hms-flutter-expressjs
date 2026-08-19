@@ -163,7 +163,9 @@ void main() {
     expect(payload, containsPair('subject_type', 'VISITOR'));
     expect(payload, containsPair('visitor_phone', '+256700000123'));
     expect(payload, containsPair('provider_user_id', 'host-1'));
-    final DateTime start = DateTime.parse(payload!['scheduled_start']! as String);
+    final DateTime start = DateTime.parse(
+      payload!['scheduled_start']! as String,
+    );
     final DateTime end = DateTime.parse(payload!['scheduled_end']! as String);
     expect(end.difference(start), const Duration(minutes: 105));
   });
@@ -199,16 +201,16 @@ void _stubHosts(_MockOpdRepository repository) {
   when(
     () => repository.listMeetingHosts(search: any(named: 'search')),
   ).thenAnswer(
-    (_) async => const Result<List<OpdProviderOption>>.success(
-      <OpdProviderOption>[
-        OpdProviderOption(id: 'host-1', displayName: 'Dr Host'),
-        OpdProviderOption(id: 'host-2', displayName: 'Nurse Grace'),
-      ],
-    ),
+    (_) async =>
+        const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[
+          OpdProviderOption(id: 'host-1', displayName: 'Dr Host'),
+          OpdProviderOption(id: 'host-2', displayName: 'Nurse Grace'),
+        ]),
   );
   when(() => repository.listProviderSchedules()).thenAnswer(
-    (_) async =>
-        const Result<List<OpdProviderSchedule>>.success(<OpdProviderSchedule>[]),
+    (_) async => const Result<List<OpdProviderSchedule>>.success(
+      <OpdProviderSchedule>[],
+    ),
   );
   when(() => repository.listAppointments(any())).thenAnswer(
     (Invocation invocation) async => Result<AppPage<OpdAppointment>>.success(

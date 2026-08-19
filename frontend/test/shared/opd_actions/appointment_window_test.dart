@@ -61,7 +61,10 @@ void main() {
 
     test('wraps past midnight', () {
       expect(
-        AppointmentWindow.endAfter(const AppTimeValue(hour: 23, minute: 30), 60),
+        AppointmentWindow.endAfter(
+          const AppTimeValue(hour: 23, minute: 30),
+          60,
+        ),
         const AppTimeValue(hour: 0, minute: 30),
       );
     });
@@ -73,7 +76,10 @@ void main() {
         isNull,
       );
       expect(
-        AppointmentWindow.endAfter(const AppTimeValue(hour: 9, minute: 0), null),
+        AppointmentWindow.endAfter(
+          const AppTimeValue(hour: 9, minute: 0),
+          null,
+        ),
         isNull,
       );
     });
