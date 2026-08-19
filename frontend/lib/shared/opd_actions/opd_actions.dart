@@ -1,3 +1,4 @@
+export 'appointment_window.dart';
 export 'opd_action_context.dart';
 export 'opd_admission_handoff_dialog.dart';
 export 'opd_appointment_actions_dialog.dart';

@@ -15,7 +15,9 @@ import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.da
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/domain/repositories/opd_repository.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
+import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
+import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -25,6 +27,8 @@ import 'package:mocktail/mocktail.dart';
 
 class _MockOpdRepository extends Mock implements OpdRepository {}
 
+class _MockPatientRepository extends Mock implements PatientRepository {}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(const OpdAppointmentQuery());
@@ -32,6 +36,7 @@ void main() {
     registerFallbackValue(const OpdFlowQuery());
     registerFallbackValue(const OpdTriageQueueQuery());
     registerFallbackValue(<String, Object?>{});
+    registerFallbackValue(const Patient(id: 'fallback'));
   });
 
   Finder appButton(String label, {bool excludeIconOnly = false}) {
@@ -49,6 +54,7 @@ void main() {
     tenantId: 'TEN000001',
     facilityId: 'FAC000001',
     displayName: 'Ada Lovelace',
+    primaryPhone: '+256700000001',
   );
 
   testWidgets('uses AppDialog with Schedule appointment commit chrome', (
@@ -67,7 +73,8 @@ void main() {
     expect(appButton('Close', excludeIconOnly: true), findsOneWidget);
     expect(find.text('Ada Lovelace'), findsNothing);
     expect(find.byType(AppDateField), findsOneWidget);
-    expect(find.byType(AppTimeField), findsOneWidget);
+    // Start time plus the optional end time paired with the duration.
+    expect(find.byType(AppTimeField), findsNWidgets(2));
     expect(
       find.descendant(
         of: find.byType(AppResponsiveFieldRow),
@@ -80,7 +87,7 @@ void main() {
         of: find.byType(AppResponsiveFieldRow),
         matching: find.byType(AppTimeField),
       ),
-      findsOneWidget,
+      findsNWidgets(2),
     );
     expect(
       find.byWidgetPredicate(
@@ -239,6 +246,157 @@ void main() {
     verifyNever(() => repository.createAppointment(any()));
   });
 
+  testWidgets('prefills the contact phone and blocks submit when cleared', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    _stubWorkspaceLoad(repository);
+
+    await _pumpDialog(tester, patient: patient, repository: repository);
+
+    final Finder phoneInput = find.descendant(
+      of: find.byType(AppPhoneField),
+      matching: find.byType(TextField),
+    );
+    expect(phoneInput, findsOneWidget);
+    expect(
+      tester.widget<TextField>(phoneInput).controller?.text,
+      '700000001',
+    );
+
+    await tester.enterText(phoneInput, '');
+    await tester.tap(appButton('Schedule appointment'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppDialog), findsOneWidget);
+    verifyNever(() => repository.createAppointment(any()));
+  });
+
+  testWidgets('end time and duration stay in sync in both directions', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    _stubWorkspaceLoad(repository);
+
+    await _pumpDialog(tester, patient: patient, repository: repository);
+
+    Finder endTimeField() => find.byWidgetPredicate(
+      (Widget widget) =>
+          widget is AppTimeField && widget.labelText == 'End time',
+    );
+    Finder durationField() => find.byWidgetPredicate(
+      (Widget widget) =>
+          widget is AppTextField &&
+          widget.labelText == 'Duration minutes',
+    );
+
+    // Default 30 minute duration seeds the end time.
+    expect(
+      tester.widget<AppTimeField>(endTimeField()).value,
+      const AppTimeValue(hour: 9, minute: 30),
+    );
+
+    await tester.enterText(durationField(), '45');
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<AppTimeField>(endTimeField()).value,
+      const AppTimeValue(hour: 9, minute: 45),
+    );
+
+    tester.widget<AppTimeField>(endTimeField()).onChanged!(
+      const AppTimeValue(hour: 11, minute: 0),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<AppTextField>(durationField()).controller?.text,
+      '120',
+    );
+  });
+
+  testWidgets('books the window the end time describes', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    _stubWorkspaceLoad(repository);
+    Map<String, Object?>? submittedPayload;
+    when(() => repository.createAppointment(any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      submittedPayload =
+          invocation.positionalArguments.single as Map<String, Object?>;
+      return const Result<OpdAppointment>.success(
+        OpdAppointment(id: 'appointment-internal', status: 'SCHEDULED'),
+      );
+    });
+
+    await _pumpDialog(tester, patient: patient, repository: repository);
+
+    tester
+        .widget<AppTimeField>(
+          find.byWidgetPredicate(
+            (Widget widget) =>
+                widget is AppTimeField && widget.labelText == 'End time',
+          ),
+        )
+        .onChanged!(const AppTimeValue(hour: 10, minute: 15));
+    await tester.pumpAndSettle();
+
+    await tester.tap(appButton('Schedule appointment'));
+    await tester.pumpAndSettle();
+
+    final DateTime start = DateTime.parse(
+      submittedPayload!['scheduled_start']! as String,
+    );
+    final DateTime end = DateTime.parse(
+      submittedPayload!['scheduled_end']! as String,
+    );
+    expect(end.difference(start), const Duration(minutes: 75));
+  });
+
+  testWidgets('a corrected contact phone is written back to the patient', (
+    WidgetTester tester,
+  ) async {
+    final _MockOpdRepository repository = _MockOpdRepository();
+    final _MockPatientRepository patientRepository = _MockPatientRepository();
+    _stubWorkspaceLoad(repository);
+    when(() => repository.createAppointment(any())).thenAnswer(
+      (_) async => const Result<OpdAppointment>.success(
+        OpdAppointment(id: 'appointment-internal', status: 'SCHEDULED'),
+      ),
+    );
+    Map<String, Object?>? contactPayload;
+    when(() => patientRepository.updatePatient(any(), any())).thenAnswer((
+      Invocation invocation,
+    ) async {
+      contactPayload =
+          invocation.positionalArguments[1] as Map<String, Object?>;
+      return const Result<Patient>.success(patient);
+    });
+
+    await _pumpDialog(
+      tester,
+      patient: patient,
+      repository: repository,
+      patientRepository: patientRepository,
+    );
+
+    await tester.enterText(
+      find.descendant(
+        of: find.byType(AppPhoneField),
+        matching: find.byType(TextField),
+      ),
+      '700000002',
+    );
+    await tester.tap(appButton('Schedule appointment'));
+    await tester.pumpAndSettle();
+
+    verify(
+      () => patientRepository.updatePatient('PAT000001', any()),
+    ).called(1);
+    expect(contactPayload, containsPair('primary_phone', '+256700000002'));
+    verify(() => repository.createAppointment(any())).called(1);
+  });
+
   testWidgets('remains usable on a compact dark high-text-scale surface', (
     WidgetTester tester,
   ) async {
@@ -269,6 +427,7 @@ Future<void> _pumpDialog(
   WidgetTester tester, {
   required Patient patient,
   OpdRepository? repository,
+  PatientRepository? patientRepository,
   ValueChanged<bool?>? onResult,
   bool dark = false,
   TextScaler textScaler = TextScaler.noScaling,
@@ -277,6 +436,8 @@ Future<void> _pumpDialog(
     ProviderScope(
       overrides: [
         appAccessPolicyProvider.overrideWithValue(_frontDeskPolicy()),
+        if (patientRepository != null)
+          patientRepositoryProvider.overrideWithValue(patientRepository),
         if (repository != null) ...[
           initialSessionStateProvider.overrideWithValue(
             const SessionState.ready(),

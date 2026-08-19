@@ -11821,6 +11821,30 @@ abstract class AppLocalizations {
   /// **'Duration minutes'**
   String get patientsAppointmentDurationLabel;
 
+  /// Patient appointment end time field label.
+  ///
+  /// In en, this message translates to:
+  /// **'End time'**
+  String get patientsAppointmentEndTimeLabel;
+
+  /// Shown when neither the appointment end time nor the duration is filled in.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an end time or a duration.'**
+  String get patientsAppointmentWindowRequiredMessage;
+
+  /// Patient appointment follow-up contact phone field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact phone'**
+  String get patientsAppointmentContactPhoneLabel;
+
+  /// Helper text under the appointment contact phone field.
+  ///
+  /// In en, this message translates to:
+  /// **'Used for reminders and follow-up.'**
+  String get patientsAppointmentContactPhoneHelper;
+
   /// Patient appointment status field label.
   ///
   /// In en, this message translates to:

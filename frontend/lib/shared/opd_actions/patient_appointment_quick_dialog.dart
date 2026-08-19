@@ -8,6 +8,7 @@ import 'package:hosspi_hms/core/utils/app_display.dart';
 import 'package:hosspi_hms/features/opd/data/repositories/opd_repository_impl.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/features/opd/presentation/controllers/opd_workspace_controller.dart';
+import 'package:hosspi_hms/features/patients/data/repositories/patient_repository_impl.dart';
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/presentation/widgets/patient_form_fields.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -17,6 +18,7 @@ import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialo
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
+import 'package:hosspi_hms/shared/opd_actions/appointment_window.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_encounter_flow.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_flow_actions_dialog.dart'
     show opdFrontDeskActionRequirement, showFlowActionsDialog;
@@ -74,12 +76,16 @@ class PatientAppointmentQuickDialog extends ConsumerStatefulWidget {
 class PatientAppointmentQuickDialogState
     extends ConsumerState<PatientAppointmentQuickDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final GlobalKey<State<AppPhoneField>> _phoneFieldKey =
+      GlobalKey<State<AppPhoneField>>();
   final TextEditingController _durationController = TextEditingController(
     text: '30',
   );
+  final TextEditingController _contactPhoneController = TextEditingController();
   final TextEditingController _reasonController = TextEditingController();
   DateTime? _date = DateTime.now();
   AppTimeValue? _startTime = const AppTimeValue(hour: 9, minute: 0);
+  AppTimeValue? _endTime = const AppTimeValue(hour: 9, minute: 30);
   String? _facilityId;
   String? _providerId;
   String _status = 'SCHEDULED';
@@ -101,6 +107,9 @@ class PatientAppointmentQuickDialogState
   void initState() {
     super.initState();
     _facilityId = widget.patient.facilityId;
+    // Reception follows up on the number already on file; staff can correct it
+    // here and the patient record picks up the correction on submit.
+    _contactPhoneController.text = widget.patient.primaryPhone?.trim() ?? '';
     // Defer controller writes until after the first frame so Riverpod does not
     // see a provider mutation during dialog mount/build.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -114,6 +123,7 @@ class PatientAppointmentQuickDialogState
   @override
   void dispose() {
     _durationController.dispose();
+    _contactPhoneController.dispose();
     _reasonController.dispose();
     super.dispose();
   }
@@ -201,46 +211,81 @@ class PatientAppointmentQuickDialogState
             enabled: !_isBusy,
             onChanged: (String? value) => setState(() => _facilityId = value),
           ),
-        AppResponsiveFieldRow(
+        AppPhoneField(
+          key: _phoneFieldKey,
+          controller: _contactPhoneController,
+          labelText: l10n.patientsAppointmentContactPhoneLabel,
+          countryLabelText: l10n.appPhoneCountryLabel,
+          countrySearchLabelText: l10n.appPhoneCountrySearchLabel,
+          countryNoResultsText: l10n.appPhoneCountryNoResults,
+          numberLabelText: l10n.appPhoneNumberLabel,
+          numberHintText: l10n.appPhoneNumberHint,
+          invalidPhoneMessage: l10n.appPhoneInvalidMessage,
+          helperText: l10n.patientsAppointmentContactPhoneHelper,
+          enabled: !_isBusy,
+          isRequired: true,
+          requiredMessage: l10n.validationRequired,
+          textInputAction: TextInputAction.next,
+        ),
+        AppResponsiveFieldRow.two(
           gap: AppResponsiveFieldRowGap.form,
-          children: <Widget>[
-            AppDateField(
-              value: _date,
-              firstDate: DateTime.now().subtract(const Duration(days: 1)),
-              lastDate: DateTime.now().add(const Duration(days: 365)),
-              labelText: l10n.patientsAppointmentDateLabel,
-              pickerButtonLabel: l10n.patientsDatePickerAction,
-              invalidDateMessage: l10n.appDateInvalidMessage,
-              enabled: !_isBusy,
-              isRequired: true,
-              validator: AppValidators.requiredValue(l10n.validationRequired),
-              onChanged: (DateTime? value) => setState(() => _date = value),
+          left: AppDateField(
+            value: _date,
+            firstDate: DateTime.now().subtract(const Duration(days: 1)),
+            lastDate: DateTime.now().add(const Duration(days: 365)),
+            labelText: l10n.patientsAppointmentDateLabel,
+            pickerButtonLabel: l10n.patientsDatePickerAction,
+            invalidDateMessage: l10n.appDateInvalidMessage,
+            enabled: !_isBusy,
+            isRequired: true,
+            validator: AppValidators.requiredValue(l10n.validationRequired),
+            onChanged: (DateTime? value) => setState(() => _date = value),
+          ),
+          right: AppTimeField(
+            value: _startTime,
+            labelText: l10n.patientsAppointmentTimeLabel,
+            pickerButtonLabel: l10n.appTimePickerAction,
+            invalidTimeMessage: l10n.patientsTimeInvalidMessage,
+            hintText: l10n.patientsTimeHint,
+            hourLabelText: l10n.appTimeHourLabel,
+            minuteLabelText: l10n.appTimeMinuteLabel,
+            enabled: !_isBusy,
+            isRequired: true,
+            validator: (AppTimeValue? value) =>
+                value == null ? l10n.validationRequired : null,
+            onChanged: _handleStartTimeChanged,
+          ),
+        ),
+        AppResponsiveFieldRow.two(
+          gap: AppResponsiveFieldRowGap.form,
+          left: AppTimeField(
+            value: _endTime,
+            labelText: l10n.patientsAppointmentEndTimeLabel,
+            pickerButtonLabel: l10n.appTimePickerAction,
+            invalidTimeMessage: l10n.patientsTimeInvalidMessage,
+            hintText: l10n.patientsTimeHint,
+            hourLabelText: l10n.appTimeHourLabel,
+            minuteLabelText: l10n.appTimeMinuteLabel,
+            enabled: !_isBusy,
+            validator: appointmentEndTimeValidator(
+              l10n: l10n,
+              startTime: () => _startTime,
+              duration: () => _durationController.text,
             ),
-            AppTimeField(
-              value: _startTime,
-              labelText: l10n.patientsAppointmentTimeLabel,
-              pickerButtonLabel: l10n.appTimePickerAction,
-              invalidTimeMessage: l10n.patientsTimeInvalidMessage,
-              hintText: l10n.patientsTimeHint,
-              hourLabelText: l10n.appTimeHourLabel,
-              minuteLabelText: l10n.appTimeMinuteLabel,
-              enabled: !_isBusy,
-              isRequired: true,
-              validator: (AppTimeValue? value) =>
-                  value == null ? l10n.validationRequired : null,
-              onChanged: (AppTimeValue? value) {
-                setState(() => _startTime = value);
-              },
+            onChanged: _handleEndTimeChanged,
+          ),
+          right: AppTextField(
+            controller: _durationController,
+            labelText: l10n.patientsAppointmentDurationLabel,
+            enabled: !_isBusy,
+            keyboardType: TextInputType.number,
+            validator: appointmentDurationValidator(
+              l10n: l10n,
+              startTime: () => _startTime,
+              endTime: () => _endTime,
             ),
-            AppTextField(
-              controller: _durationController,
-              labelText: l10n.patientsAppointmentDurationLabel,
-              enabled: !_isBusy,
-              isRequired: true,
-              keyboardType: TextInputType.number,
-              validator: _durationValidator(l10n),
-            ),
-          ],
+            onChanged: _handleDurationChanged,
+          ),
         ),
         AppResponsiveFieldRow.two(
           left: AppSelectField<String>.searchable(
@@ -302,15 +347,20 @@ class PatientAppointmentQuickDialogState
     if (_isBusy) {
       return false;
     }
+    AppPhoneField.commitPhone(_phoneFieldKey);
     if (!validateAndSaveAppForm(_formKey)) {
       return false;
     }
     final DateTime? scheduledStart = _combineDateAndTime(_date, _startTime);
-    if (scheduledStart == null) {
+    final int? duration = AppointmentWindow.resolveMinutes(
+      duration: _durationController.text,
+      start: _startTime,
+      end: _endTime,
+    );
+    if (scheduledStart == null || duration == null) {
       setState(() => _failure = AppFailure.validation());
       return false;
     }
-    final int duration = int.parse(_durationController.text.trim());
 
     setState(() {
       _isCheckingEncounter = true;
@@ -343,6 +393,18 @@ class PatientAppointmentQuickDialogState
       _isCheckingEncounter = false;
       _isSaving = true;
     });
+    final AppFailure? contactFailure = await _syncContactPhone();
+    if (!mounted) {
+      return false;
+    }
+    if (contactFailure != null) {
+      setState(() {
+        _isSaving = false;
+        _failure = contactFailure;
+      });
+      widget.onBusyChanged?.call(false);
+      return false;
+    }
     final AppFailure? failure = await ref
         .read(opdWorkspaceControllerProvider.notifier)
         .createAppointment(<String, Object?>{
@@ -375,6 +437,72 @@ class PatientAppointmentQuickDialogState
     });
     widget.onBusyChanged?.call(false);
     return false;
+  }
+
+  /// Writes a corrected contact number back to the patient record.
+  ///
+  /// Reception calls this number to confirm or move the appointment, so a
+  /// correction typed here has to outlive the dialog. Returns the failure when
+  /// the write is rejected, which keeps the booking from going ahead with a
+  /// number nobody can reach.
+  Future<AppFailure?> _syncContactPhone() async {
+    final String phone = _contactPhoneController.text.trim();
+    if (phone.isEmpty || phone == (widget.patient.primaryPhone?.trim() ?? '')) {
+      return null;
+    }
+    final Result<Patient> result = await ref
+        .read(patientRepositoryProvider)
+        .updatePatient(patientApiId(widget.patient), <String, Object?>{
+          'primary_phone': phone,
+        });
+    return result.when(
+      success: (_) => null,
+      failure: (AppFailure failure) => failure,
+    );
+  }
+
+  /// Keeps the end time anchored to the duration when the start time moves.
+  void _handleStartTimeChanged(AppTimeValue? value) {
+    setState(() {
+      _startTime = value;
+      final int? minutes = AppointmentWindow.parseDuration(
+        _durationController.text,
+      );
+      if (AppointmentWindow.isValidDuration(minutes)) {
+        _endTime = AppointmentWindow.endAfter(value, minutes);
+        return;
+      }
+      _syncDurationFromWindow();
+    });
+  }
+
+  void _handleEndTimeChanged(AppTimeValue? value) {
+    setState(() {
+      _endTime = value;
+      _syncDurationFromWindow();
+    });
+  }
+
+  void _handleDurationChanged(String value) {
+    final int? minutes = AppointmentWindow.parseDuration(value);
+    if (!AppointmentWindow.isValidDuration(minutes)) {
+      // Mid-edit or out-of-range input leaves the end time alone; the field
+      // validators report the problem on submit.
+      return;
+    }
+    final AppTimeValue? end = AppointmentWindow.endAfter(_startTime, minutes);
+    if (end == _endTime) {
+      return;
+    }
+    setState(() => _endTime = end);
+  }
+
+  void _syncDurationFromWindow() {
+    final int? minutes = AppointmentWindow.durationBetween(
+      _startTime,
+      _endTime,
+    );
+    _durationController.text = minutes == null ? '' : '$minutes';
   }
 
   void _cancel() {
@@ -641,18 +769,6 @@ class PatientAppointmentQuickDialogState
     }
     return DateTime(date.year, date.month, date.day, time.hour, time.minute);
   }
-}
-
-FormFieldValidator<String> _durationValidator(AppLocalizations l10n) {
-  return (String? value) {
-    final int? minutes = int.tryParse(value?.trim() ?? '');
-    if (minutes == null) {
-      return l10n.validationRequired;
-    }
-    return minutes <= 0 || minutes > 720
-        ? l10n.patientsDurationInvalidMessage
-        : null;
-  };
 }
 
 List<AppSelectOption<String>> _statusOptions(Iterable<String> values) {

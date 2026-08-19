@@ -125,7 +125,15 @@ void main() {
       );
       expect(find.text('Non-patient meeting'), findsNothing);
       expect(find.byType(AppDateField), findsOneWidget);
-      expect(find.byType(AppTimeField), findsOneWidget);
+      // Start time plus the optional end time that mirrors the duration.
+      expect(find.byType(AppTimeField), findsNWidgets(2));
+      expect(
+        find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is AppTimeField && widget.labelText == 'End time',
+        ),
+        findsOneWidget,
+      );
       final AppDialog dialog = tester.widget<AppDialog>(find.byType(AppDialog));
       expect(dialog.pinActionsToBottom, isTrue);
       expect(dialog.scrollable, isFalse);
@@ -196,7 +204,14 @@ void main() {
       );
       expect(find.byType(AppTabStrip), findsNothing);
       expect(find.byType(AppDateField), findsOneWidget);
-      expect(find.byType(AppTimeField), findsOneWidget);
+      expect(find.byType(AppTimeField), findsNWidgets(2));
+      expect(
+        find.byWidgetPredicate(
+          (Widget widget) =>
+              widget is AppTimeField && widget.labelText == 'End time',
+        ),
+        findsOneWidget,
+      );
       expect(
         find.descendant(
           of: find.byType(AppResponsiveFieldRow),
