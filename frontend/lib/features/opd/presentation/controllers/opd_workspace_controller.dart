@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
-import 'package:hosspi_hms/core/logging/app_logger.dart';
 import 'package:hosspi_hms/core/network/idempotency.dart';
 import 'package:hosspi_hms/core/network/network_failure_mapper.dart';
 import 'package:hosspi_hms/core/realtime/realtime_event_groups.dart';
@@ -1193,16 +1192,6 @@ final class OpdWorkspaceController
             .listAppointments(current.appointmentQuery);
         result.when(
           success: (AppPage<OpdAppointment> page) {
-            // A booking that shows immediately (optimistic upsert) and then
-            // vanishes once this refetch lands means the server's own list
-            // did not include it. Logging the raw ids the server actually
-            // returned turns that into a one-line diagnosis instead of
-            // another guessing round.
-            AppLogger.debug(
-              'Reception appointments refresh: server returned '
-              '${page.items.length} of ${page.totalItemCount ?? '?'} — '
-              '${page.items.map((OpdAppointment a) => a.publicId ?? a.id).join(', ')}',
-            );
             final OpdWorkspaceState? latest = _currentState;
             if (latest != null) {
               _emit(latest.copyWith(appointments: page));

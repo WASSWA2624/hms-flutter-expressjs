@@ -243,6 +243,8 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
               body: l10n.opdLoadingBody,
               semanticLabel: l10n.opdLoadingTitle,
             ),
+          if (!isInitialLoad)
+            _actionGrid(context, flow, detail, actionsEnabled: !isBusy),
           if (widget.allowClinicalActions &&
               detail != null &&
               opdDetailHasClinicalRecords(detail))
@@ -250,8 +252,6 @@ class _FlowActionsDialogState extends ConsumerState<FlowActionsDialog> {
               detail: detail,
               flow: flow,
             ),
-          if (!isInitialLoad)
-            _actionGrid(context, flow, detail, actionsEnabled: !isBusy),
         ],
       ),
       actions: <Widget>[
