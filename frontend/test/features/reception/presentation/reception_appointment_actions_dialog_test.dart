@@ -77,8 +77,10 @@ void main() {
     expect(find.text('APPOINTMENT ACTIONS'), findsOneWidget);
     expect(find.byType(OpdWorkflowContextPanel), findsOneWidget);
     expect(find.text('Scheduled'), findsWidgets);
-    // Next-step guidance remains; Check in itself stays on the worklist only.
-    expect(find.text('Start OPD encounter'), findsWidgets);
+    // Reception passes omitPrimaryAction, so starting the encounter is absent
+    // from this hub altogether — the worklist's next-action column owns that
+    // prompt, and the hub keeps only the actions reception may take here.
+    expect(find.text('Start OPD encounter'), findsNothing);
     expect(
       find.widgetWithText(AppButton, 'Start OPD encounter'),
       findsNothing,

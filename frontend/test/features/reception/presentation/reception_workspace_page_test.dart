@@ -657,19 +657,21 @@ void main() {
     expect(find.text('Full OPD'), findsNothing);
     expect(find.byType(AppTabToolbarPrimary), findsNothing);
     expect(find.byType(AppTabToolbarAction), findsNothing);
+    // Desk CTAs sit in the action row beneath the search bar; the bar itself
+    // keeps only table chrome (Filters / Settings / Export / Print).
     expect(
       find.descendant(
         of: find.byType(AppSearchBar),
         matching: find.text('Register patient'),
       ),
-      findsOneWidget,
+      findsNothing,
     );
     expect(
       find.descendant(
         of: find.byType(AppSearchBar),
         matching: find.text('Schedule appointment'),
       ),
-      findsOneWidget,
+      findsNothing,
     );
 
     await tester.tap(find.text('Ada Appointment'));
@@ -809,12 +811,13 @@ void main() {
     expect(find.text('Billing'), findsNothing);
     expect(find.text('Register patient'), findsOneWidget);
     expect(find.byType(AppTabToolbarPrimary), findsNothing);
+    // Caller action, so it renders below the search bar rather than inside it.
     expect(
       find.descendant(
         of: find.byType(AppSearchBar),
         matching: find.text('Register patient'),
       ),
-      findsOneWidget,
+      findsNothing,
     );
   });
 
@@ -901,14 +904,25 @@ void main() {
     final int settings = labels.indexOf('Settings');
     final int export = labels.indexOf('Export');
     final int print = labels.indexOf('Print');
-    final int schedule = labels.indexOf('Schedule appointment');
-    final int register = labels.indexOf('Register patient');
 
     expect(filters, greaterThanOrEqualTo(0));
     expect(settings, greaterThan(filters));
     expect(export, greaterThan(settings));
     expect(print, greaterThan(export));
-    expect(schedule, greaterThan(print));
+
+    // Desk CTAs are caller actions, so they render in the action row beneath
+    // the search bar, after the table chrome, and keep their own order.
+    expect(labels.contains('Schedule appointment'), isFalse);
+    expect(labels.contains('Register patient'), isFalse);
+
+    final List<String> belowBar = tester
+        .widgetList<Text>(find.byType(Text))
+        .map((Text text) => text.data ?? '')
+        .where((String label) => label.isNotEmpty)
+        .toList(growable: false);
+    final int schedule = belowBar.indexOf('Schedule appointment');
+    final int register = belowBar.indexOf('Register patient');
+    expect(schedule, greaterThanOrEqualTo(0));
     expect(register, greaterThan(schedule));
   });
 
@@ -1035,10 +1049,12 @@ void main() {
       await tester.tap(find.byTooltip('Filters'));
       await tester.pumpAndSettle();
       expect(find.text('New'), findsWidgets);
-      expect(find.text('Confirmed'), findsWidgets);
+      // A confirmed appointment still waits to be checked in, and the status
+      // label says so rather than repeating the bare code.
+      expect(find.text('Confirmed — waiting'), findsWidgets);
       expect(find.text('Scheduled'), findsWidgets);
 
-      await tester.tap(find.text('Confirmed').last);
+      await tester.tap(find.text('Confirmed — waiting').last);
       await tester.pump();
       await tester.tap(find.text('Apply filters'));
       await tester.pump();
@@ -1177,7 +1193,10 @@ void main() {
       await tester.tap(find.text('Victor VIP'));
       await tester.pumpAndSettle();
       expect(find.text('QUEUE ACTIONS'), findsOneWidget);
-      expect(find.text('Prioritize'), findsOneWidget);
+      // Entries on this tab are prioritized by definition, so the hub offers
+      // Change status and withholds Prioritize.
+      expect(find.text('Prioritize'), findsNothing);
+      expect(find.text('Change status'), findsOneWidget);
       await tester.tap(find.text('Close').last);
       await tester.pumpAndSettle();
     },

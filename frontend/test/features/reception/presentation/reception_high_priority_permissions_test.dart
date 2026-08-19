@@ -767,7 +767,10 @@ void main() {
         expect(find.byType(ReceptionQueueActionsDialog), findsOneWidget);
         expect(find.byType(FlowActionsDialog), findsNothing);
         expect(find.text('QUEUE ACTIONS'), findsOneWidget);
-        expect(find.text('Prioritize'), findsOneWidget);
+        // Victor VIP is already prioritized, so the hub offers Change status
+        // and withholds Prioritize.
+        expect(find.text('Prioritize'), findsNothing);
+        expect(find.text('Change status'), findsOneWidget);
 
         final QueueActionsDialog hub = tester.widget<QueueActionsDialog>(
           find.byType(QueueActionsDialog),
@@ -1064,7 +1067,7 @@ void main() {
       expect(find.text('Victor VIP'), findsOneWidget);
     });
 
-    testWidgets('post-mutation sync path: Prioritize opens nested dialog', (
+    testWidgets('post-mutation sync path: queue action opens nested dialog', (
       WidgetTester tester,
     ) async {
       await _pumpHighPriorityTab(
@@ -1075,10 +1078,12 @@ void main() {
 
       await tester.tap(find.text('Victor VIP'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Prioritize'));
+      // Every entry on this tab is already prioritized, so Prioritize is not
+      // on offer here; Change status exercises the same nested-dialog path.
+      await tester.tap(find.text('Change status'));
       await tester.pumpAndSettle();
 
-      expect(find.text('PRIORITIZE QUEUE ENTRY'), findsOneWidget);
+      expect(find.text('CHANGE QUEUE STATUS'), findsOneWidget);
     });
   });
 }
