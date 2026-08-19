@@ -986,10 +986,21 @@ class _DialogActions extends StatelessWidget {
               : entry.action;
           // Actions whose width could only be estimated lay out flexibly, so a
           // wider-than-budgeted control shrinks (its label ellipsizes) instead
-          // of overflowing the row. Measured buttons keep their intrinsic size.
-          children.add(
-            entry.measurable ? child : Flexible(child: child),
-          );
+          // of overflowing the row. Measured buttons keep their intrinsic size
+          // unless the row could not fit them, in which case they share the
+          // width in proportion to how much each label wants.
+          if (entry.measurable && !entry.flexible) {
+            children.add(child);
+          } else {
+            children.add(
+              Flexible(
+                flex: entry.flexible
+                    ? math.max(1, _estimatedWidth(context, entry).round())
+                    : 1,
+                child: child,
+              ),
+            );
+          }
         }
 
         if (layout.overflow.isNotEmpty) {
@@ -1014,6 +1025,20 @@ class _DialogActions extends StatelessWidget {
     );
   }
 
+  /// Width [entry] wants at its current label setting.
+  ///
+  /// Actions that are not an [AppButton] cannot be measured from their own
+  /// geometry, so they get a one-labeled-control budget.
+  double _estimatedWidth(BuildContext context, _FooterEntry entry) {
+    final Widget target = unwrapAppDialogAction(entry.action);
+    if (target is! AppButton) {
+      return _unmeasurableActionWidth;
+    }
+    return entry.iconOnly
+        ? target.estimatedIconOnlyWidth(context, dense: dense)
+        : target.estimatedLabeledWidth(context, dense: dense);
+  }
+
   /// Greedy fit: evict overflow-eligible actions from the end until the row
   /// fits, then — only if the mandatory actions still do not fit — degrade the
   /// least important survivors to icon-only. Never scales.
@@ -1026,15 +1051,7 @@ class _DialogActions extends StatelessWidget {
     final List<_FooterEntry> inline = List<_FooterEntry>.of(entries);
     final List<_FooterEntry> overflow = <_FooterEntry>[];
 
-    double widthOf(_FooterEntry entry) {
-      final Widget target = unwrapAppDialogAction(entry.action);
-      if (target is! AppButton) {
-        return _unmeasurableActionWidth;
-      }
-      return entry.iconOnly
-          ? target.estimatedIconOnlyWidth(context, dense: dense)
-          : target.estimatedLabeledWidth(context, dense: dense);
-    }
+    double widthOf(_FooterEntry entry) => _estimatedWidth(context, entry);
 
     bool fits() {
       double total = 0;
@@ -1066,25 +1083,27 @@ class _DialogActions extends StatelessWidget {
     }
 
     if (!fits()) {
-      // Last resort before any clipping: shed labels, least important first.
-      for (final AppDialogActionPriority priority
-          in const <AppDialogActionPriority>[
-            AppDialogActionPriority.secondary,
-            AppDialogActionPriority.dismiss,
-            AppDialogActionPriority.primary,
-          ]) {
-        for (int i = inline.length - 1; i >= 0; i--) {
-          if (inline[i].priority != priority || inline[i].iconOnly) {
-            continue;
-          }
-          inline[i].iconOnly = true;
-          if (fits()) {
-            break;
-          }
+      // Shed labels from supporting actions only. Confirm and dismiss keep
+      // theirs at every size: a bare glyph gives no clue what committing does,
+      // which is the whole point of a labeled footer.
+      for (int i = inline.length - 1; i >= 0; i--) {
+        if (inline[i].priority != AppDialogActionPriority.secondary ||
+            inline[i].iconOnly) {
+          continue;
         }
+        inline[i].iconOnly = true;
         if (fits()) {
           break;
         }
+      }
+    }
+
+    if (!fits()) {
+      // Narrow viewport at a large text scale: the labeled mandatory actions
+      // genuinely do not fit. Lay them out flexibly so each label ellipsizes
+      // inside its button instead of overflowing the row.
+      for (final _FooterEntry entry in inline) {
+        entry.flexible = true;
       }
     }
 
@@ -1113,7 +1132,16 @@ final class _FooterEntry {
   bool get measurable => unwrapAppDialogAction(action) is AppButton;
 
   /// Set only as a last resort, when even the mandatory actions cannot fit.
+  ///
+  /// Never set for [AppDialogActionPriority.primary] or
+  /// [AppDialogActionPriority.dismiss]: a footer that hides what committing
+  /// does behind a bare glyph is worse than one whose label ellipsizes.
   bool iconOnly = false;
+
+  /// Whether this action lays out flexibly so its label ellipsizes rather than
+  /// overflowing the row. Set when the mandatory actions cannot fit even at
+  /// full width — the narrow, high-text-scale case.
+  bool flexible = false;
 }
 
 @immutable
