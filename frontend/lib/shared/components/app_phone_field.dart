@@ -503,7 +503,8 @@ class _UnifiedPhoneInput extends StatelessWidget {
         // The flag and chevron grow with the reader's text scale, so the fixed
         // country column has to grow with them or the row clips. Never take
         // more than half the field, which leaves room for the number itself.
-        final double textScale = MediaQuery.textScalerOf(context).scale(16) / 16;
+        final double textScale =
+            MediaQuery.textScalerOf(context).scale(16) / 16;
         final double countryWidth = math.min(
           baseCountryWidth * math.max(1, textScale),
           constraints.maxWidth / 2,
