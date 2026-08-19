@@ -16,7 +16,12 @@ const {
 } = require('../../../scripts/seeders/data/uganda-lab-reference-ranges');
 const {
   assertLabCatalogIntegrity,
+  assertNoNearDuplicatePanels,
+  PANEL_SIMILARITY_LIMIT,
 } = require('../../../scripts/seeders/data/catalog-validation');
+const {
+  COMMON_PROCEDURE_TERMS,
+} = require('../../modules/clinical-term/data/common-procedure-terms');
 const {
   selectReferenceRange,
 } = require('../../modules/lab-workspace/services/lab.interpretation');
@@ -94,7 +99,7 @@ const fixturePanel = {
 describe('Uganda clinical catalog seed data', () => {
   it('ships a broad Uganda laboratory menu with valid panel references', () => {
     expect(LAB_TEST_CATALOG.length).toBeGreaterThanOrEqual(147);
-    expect(LAB_PANEL_CATALOG.length).toBeGreaterThanOrEqual(100);
+    expect(LAB_PANEL_CATALOG.length).toBeGreaterThanOrEqual(40);
 
     const keys = new Set(LAB_TEST_CATALOG.map((entry) => entry.key));
     expect([...keys]).toEqual(
@@ -339,6 +344,73 @@ describe('Uganda clinical catalog seed data', () => {
       )
     );
     expect(criticalRanges).toEqual([]);
+  });
+
+  describe('catalog uniqueness', () => {
+    const normalize = (value) =>
+      String(value ?? '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+
+    const expectUnique = (label, entries, field) => {
+      const values = entries.map((entry) => normalize(entry[field])).filter(Boolean);
+      const duplicates = values.filter((value, index) => values.indexOf(value) !== index);
+      expect({ label, field, duplicates: [...new Set(duplicates)] }).toEqual({
+        label,
+        field,
+        duplicates: [],
+      });
+      expect(values).toHaveLength(entries.length);
+    };
+
+    it('ships no duplicate lab tests or panels', () => {
+      ['key', 'name', 'code'].forEach((field) => {
+        expectUnique('LAB_TEST_CATALOG', LAB_TEST_CATALOG, field);
+        expectUnique('LAB_PANEL_CATALOG', LAB_PANEL_CATALOG, field);
+      });
+    });
+
+    it('keeps every panel below the near-duplicate membership limit', () => {
+      expect(() => assertNoNearDuplicatePanels(LAB_PANEL_CATALOG)).not.toThrow();
+
+      let worst = 0;
+      for (let left = 0; left < LAB_PANEL_CATALOG.length; left += 1) {
+        for (let right = left + 1; right < LAB_PANEL_CATALOG.length; right += 1) {
+          const a = new Set(LAB_PANEL_CATALOG[left].test_keys);
+          const b = new Set(LAB_PANEL_CATALOG[right].test_keys);
+          const shared = [...a].filter((testKey) => b.has(testKey)).length;
+          worst = Math.max(worst, shared / new Set([...a, ...b]).size);
+        }
+      }
+      expect(worst).toBeLessThan(PANEL_SIMILARITY_LIMIT);
+    });
+
+    it('ships no duplicate radiology procedures', () => {
+      ['key', 'name', 'code'].forEach((field) => {
+        expectUnique('RADIOLOGY_TEST_CATALOG', RADIOLOGY_TEST_CATALOG, field);
+      });
+    });
+
+    it('ships no duplicate diagnoses', () => {
+      ['key', 'description', 'code'].forEach((field) => {
+        expectUnique('UGANDA_DIAGNOSIS_CATALOG', UGANDA_DIAGNOSIS_CATALOG, field);
+      });
+    });
+
+    it('ships no duplicate procedures and no generated qualifier variants', () => {
+      ['code', 'description'].forEach((field) => {
+        expectUnique('COMMON_PROCEDURE_TERMS', COMMON_PROCEDURE_TERMS, field);
+      });
+
+      // The retired generator emitted rows like "Excision of mole - left side"
+      // and "emergency Cautery of wart"; laterality and acuity belong on the
+      // encounter record, never on a catalog entry.
+      const qualifierVariants = COMMON_PROCEDURE_TERMS.filter((term) =>
+        / - (left|right) side$| - (pediatric|adult)$/i.test(term.description)
+      );
+      expect(qualifierVariants).toEqual([]);
+    });
   });
 
   it('covers Uganda-priority diagnoses with unique WHO ICD-10 codes', () => {

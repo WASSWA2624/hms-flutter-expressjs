@@ -44,7 +44,7 @@ CREATE TABLE `staff_compensation` (
   INDEX `staff_compensation_deleted_at_idx`(`deleted_at`),
   INDEX `staff_compensation_human_friendly_id_idx`(`human_friendly_id`),
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 ALTER TABLE `staff_compensation`
   ADD CONSTRAINT `staff_compensation_staff_profile_id_fkey`

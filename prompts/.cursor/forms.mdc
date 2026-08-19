@@ -5,15 +5,14 @@ alwaysApply: true
 
 # App Forms
 
-Conventions for every create/edit/filter/mutation surface built with `AppFormShell`, shared field widgets, and dialog/page form bodies (including forms opened from workspace actions and forms nested in pages). Prefer extending shared form primitives; do not invent parallel field chrome or one-off layouts.
+Conventions for every create/edit/filter/mutation surface built with `AppFormShell`, shared field widgets, and dialog/page form bodies (including forms opened from workspace actions and forms nested in pages).
 
 Cross-cutting: [localization.mdc](localization.mdc), [theming.mdc](theming.mdc), [responsiveness.mdc](responsiveness.mdc), [prompt.mdc](prompt.mdc) (RBAC / UI states). Dialog chrome: [dialogs.mdc](dialogs.mdc). Advanced filter forms: [tables.mdc](tables.mdc).
 
 ## Field reuse and uniformity
 
-1. **Reuse existing fields only:** Prefer shared controls from `frontend/lib/shared/components/` and `frontend/lib/shared/forms/` (`AppTextField`, `AppSelectField`, `AppDateField`, `AppTimeField`, `AppPhoneField`, `AppEmailField`, `AppGenderField`, currency/amount fields, checkboxes, switches, radios, validators, etc.).
-2. Do not invent a new field widget, label style, or validation pattern when an existing shared field already covers the type.
-3. Keep labels, placeholders, errors, density, and empty/null treatment consistent with neighboring forms in the same domain.
+1. **Reuse existing fields only:** use shared controls from `frontend/lib/shared/components/` and `frontend/lib/shared/forms/` (`AppTextField`, `AppSelectField`, `AppDateField`, `AppTimeField`, `AppPhoneField`, `AppEmailField`, `AppGenderField`, currency/amount fields, checkboxes, switches, radios, validators, etc.). Do not invent a new field widget, label style, or validation pattern when a shared field already covers the type.
+2. Keep labels, placeholders, errors, density, and empty/null treatment consistent with neighboring forms in the same domain.
 
 ## Hide known context
 
@@ -47,11 +46,10 @@ Cross-cutting: [localization.mdc](localization.mdc), [theming.mdc](theming.mdc),
 
 ## Submit, sync, and alerts
 
-1. Validate with shared validators / `validateAndSaveAppForm` before submit; show field errors and form-level banners (`AppFormInformationBanner`) rather than silent failure.
+1. Validate with shared validators / `validateAndSaveAppForm` before submit; show field specific errors and form-level banners (`AppFormInformationBanner`) rather than silent failure.
 2. After successful mutations, synchronize affected lists, detail panes, and workflow state so the UI reflects the new record.
 3. For money and other high-impact actions (payments, allocations, status changes), update the relevant account/workflow state and surface clear success/error feedback so operators know what changed.
 4. Cover loading, empty option lists, validation, conflict, cancelled similarity, and success states explicitly.
-5. Omit fields and submit actions the user cannot use (RBAC/ABAC per [prompt.mdc](prompt.mdc)).
 
 ## Implementation constraints
 

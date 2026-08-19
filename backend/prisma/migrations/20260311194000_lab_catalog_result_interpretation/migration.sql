@@ -27,7 +27,7 @@ CREATE TABLE `lab_test_unit_option` (
   PRIMARY KEY (`id`),
   UNIQUE INDEX `lab_test_unit_option_lab_test_id_unit_key`(`lab_test_id`, `unit`),
   INDEX `lab_test_unit_option_lab_test_id_sort_order_idx`(`lab_test_id`, `sort_order`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 CREATE TABLE `lab_test_result_option` (
   `id` VARCHAR(36) NOT NULL,
@@ -46,7 +46,7 @@ CREATE TABLE `lab_test_result_option` (
   UNIQUE INDEX `lab_test_result_option_lab_test_id_value_key`(`lab_test_id`, `value`),
   INDEX `lab_test_result_option_lab_test_id_sort_order_idx`(`lab_test_id`, `sort_order`),
   INDEX `lab_test_result_option_status_idx`(`status`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 ALTER TABLE `lab_result`
   ADD COLUMN `result_flag` VARCHAR(40) NULL AFTER `result_unit`,

@@ -8,7 +8,7 @@ Use Pharmacy as the interaction and component exemplar, not as a monolithic file
 1. `AsyncStateScaffold`
 2. `ResponsivePage`
 3. `AppWorkspace`
-4. `AppTabStrip` for workspace tabs or Accounts nested-menu leaf selection
+4. One flat `AppTabStrip` in every workspace; for Accounts & Finance it holds the active category's sections, reached through one sidebar nesting level (see [navigation-model.md](navigation-model.md))
 5. `AppListTable` for every permanent tab
 6. `showAppDialog` + `AppDialog` / `AppWorkspaceMutationDialog` for details and mutations
 7. `AppWorkspaceDetailPanel` for collapsible detail sections

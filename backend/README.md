@@ -189,9 +189,24 @@ Create one default demo account for each user type in the seeded `DemoCare Gener
 npm run setup:accounts
 ```
 
-**⚠️ Security Note**: All accounts are created with a default password. Change passwords immediately after first login!
+This script runs in **every environment, production included** — the same account
+set exists on development and production. It seeds tenants, facilities,
+departments, roles, permissions, users and staff profiles only; it never creates
+demo patients or clinical records.
 
-For more information, see `scripts/README.md`.
+On production, set a private password before running:
+
+```bash
+SEED_DEFAULT_PASSWORD='<strong-shared-password>' npm run setup:accounts
+```
+
+Without `SEED_DEFAULT_PASSWORD`, the committed demo password is used for every
+account — do not do that on an internet-facing deployment.
+
+**⚠️ Security Note**: All accounts are created with one shared password. Change
+passwords immediately after first login!
+
+For more information, see `scripts/README.md` and `docs/seeded-user-accounts.md`.
 
 ## Testing
 

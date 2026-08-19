@@ -5,7 +5,7 @@ alwaysApply: true
 
 # App Printing
 
-Conventions for every Print entry point (list-table toolbars, dialogs, detail panes, reports, and workflow actions). Prefer the shared print preview and document templates; do not invent parallel preview shells or silent print-to-device shortcuts.
+Conventions for every Print entry point (list-table toolbars, dialogs, detail panes, reports, and workflow actions).
 
 Cross-cutting: [localization.mdc](localization.mdc), [theming.mdc](theming.mdc), [responsiveness.mdc](responsiveness.mdc), [prompt.mdc](prompt.mdc) (RBAC / UI states). Table toolbar placement: [tables.mdc](tables.mdc). Dialog chrome: [dialogs.mdc](dialogs.mdc).
 
@@ -40,11 +40,10 @@ The preview must let the user shape the document before Print commits:
 
 ## Implementation constraints
 
-- Build on `frontend/lib/shared/printing/` (`showAppPrintPreviewDialog`, `AppPrintPreviewWorkspace`, `AppPrintPreviewPanel`, `PrintDocumentTemplates`, facility sections, form templates).
+- Build on `frontend/lib/shared/printing/` (`showAppPrintPreviewDialog`, `AppPrintPreviewWorkspace`, `AppPrintPreviewPanel`, `PrintDocumentTemplates`, facility sections, form templates). Do not fork one-off preview shells, silent print-to-device shortcuts, or bypass preview when a shared path exists or can be extended.
 - Follow [dialogs.mdc](dialogs.mdc) for any print options hosted inside `AppDialog`.
-- Omit Print when unauthorized (RBAC/ABAC per [prompt.mdc](prompt.mdc)).
 - Keep loading, empty, error, and success feedback explicit for preview build and print.
-- Do not fork one-off print-preview dialogs or bypass preview when a shared path exists or can be extended.
+- This file owns the Print label, preview-first flow, and preview options—not table toolbar order or dialog chrome.
 
 ## Relevant files
 

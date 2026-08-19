@@ -584,19 +584,103 @@ enum FiscalPeriodStatus {
   ARCHIVED
 }
 
-enum CurrencyRateStatus {
+/// Lifecycle for Accounts & Finance → Setup & Controls → Posting Rules.
+enum PostingRuleStatus {
   DRAFT
   ACTIVE
   INACTIVE
   ARCHIVED
 }
 
-enum CurrencyRateType {
-  SPOT
+enum PaymentMethodStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+/// Whether a configured payment method takes money in, pays money out, or both.
+enum PaymentMethodDirection {
+  INCOMING
+  OUTGOING
+  BOTH
+}
+
+/// Dry-run outcome of a posting rule. A rule that has never been tested, or was
+/// edited after its last test, reports NOT_TESTED.
+enum PostingRuleTestStatus {
+  NOT_TESTED
+  PASSED
+  FAILED
+}
+
+/// Import validation outcome of one Accounts & Finance → Setup & Controls →
+/// Opening Balances line. Lines stay queryable whatever the outcome so the
+/// import is auditable end to end.
+enum OpeningBalanceValidationStatus {
+  PENDING
+  VALID
+  WARNING
+  INVALID
+}
+
+/// Where an opening balance line sits in the posting pipeline. The tab reads
+/// this; the journal workflow owns the transitions.
+enum OpeningBalancePostingStatus {
+  NOT_POSTED
+  POSTED
+  FAILED
+  REVERSED
+}
+
+/// Lifecycle for Accounts & Finance → Setup & Controls → Departments & Cost Centres.
+/// `department.is_active` stays mirrored from this so pre-finance consumers keep working.
+enum DepartmentStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum DocumentSequenceStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+/// How often the underlying counter restarts at one.
+enum DocumentSequenceResetFrequency {
+  NEVER
   DAILY
   MONTHLY
-  BUDGET
-  CONTRACT
+  QUARTERLY
+  YEARLY
+}
+
+/// What the sequence does with numbers reserved but never committed.
+enum DocumentSequenceGapPolicy {
+  ALLOW_GAPS
+  NO_GAPS
+  RESERVE_AND_VOID
+}
+
+/// Documents a numbering sequence can issue references for.
+///
+/// Every value maps to a model that already reserves friendly ids through
+/// `human_id_counter`, so a sequence can never be configured for a document
+/// the system does not actually number.
+enum DocumentSequenceType {
+  INVOICE
+  ACCOUNTS_INVOICE
+  RECEIPT
+  PAYMENT
+  REFUND
+  CREDIT_NOTE
+  DEBIT_NOTE
+  PURCHASE_ORDER
+  GOODS_RECEIPT
+  CLAIM
 }
 
 enum PatientInsuranceEnrollmentStatus {
@@ -1086,7 +1170,10 @@ model tenant {
   chart_accounts                  chart_account[]
   accounts_invoices               accounts_invoice[]
   fiscal_periods                  fiscal_period[]
-  accounts_currency_rates         accounts_currency_rate[]
+  document_number_sequences       document_number_sequence[]
+  posting_rules                   posting_rule[]
+  payment_methods                 payment_method[]
+  opening_balance_entries         opening_balance_entry[]
   billable_charge_events          billable_charge_event[]
   insurance_companies             insurance_company[]
   coverage_plans                  coverage_plan[]
@@ -1173,7 +1260,10 @@ model facility {
   chart_accounts                  chart_account[]
   accounts_invoices               accounts_invoice[]
   fiscal_periods                  fiscal_period[]
-  accounts_currency_rates         accounts_currency_rate[]
+  document_number_sequences       document_number_sequence[]
+  posting_rules                   posting_rule[]
+  payment_methods                 payment_method[]
+  opening_balance_entries         opening_balance_entry[]
   billable_charge_events          billable_charge_event[]
   patient_insurance_enrollments   patient_insurance_enrollment[]
   insurer_integrations            insurer_integration[]
@@ -1250,6 +1340,25 @@ model department {
   short_name        String?        @db.VarChar(50)
   department_type   DepartmentType
   is_active         Boolean        @default(true)
+
+  // Accounts & Finance → Setup & Controls → Departments & Cost Centres.
+  // The department stays owned by tenant/facility setup; these columns add the
+  // finance projection (cost centre, default posting accounts, ownership,
+  // effective window, lifecycle) rather than duplicating the record elsewhere.
+  code                       String?           @db.VarChar(32)
+  cost_centre_code           String?           @db.VarChar(32)
+  cost_centre_name           String?           @db.VarChar(160)
+  parent_id                  String?           @db.VarChar(36)
+  manager_id                 String?           @db.VarChar(36)
+  default_revenue_account_id String?           @db.VarChar(36)
+  default_expense_account_id String?           @db.VarChar(36)
+  budget_owner_id            String?           @db.VarChar(36)
+  effective_from             DateTime?
+  effective_to               DateTime?
+  status                     DepartmentStatus  @default(ACTIVE)
+  archived_at                DateTime?
+  updated_by                 String?           @db.VarChar(36)
+
   created_at        DateTime       @default(now())
   updated_at        DateTime       @updatedAt
   deleted_at        DateTime?
@@ -1257,6 +1366,13 @@ model department {
 
   tenant            tenant             @relation(fields: [tenant_id], references: [id])
   facility          facility?          @relation(fields: [facility_id], references: [id])
+  parent            department?        @relation("DepartmentParent", fields: [parent_id], references: [id])
+  children          department[]       @relation("DepartmentParent")
+  manager           user?              @relation("DepartmentManager", fields: [manager_id], references: [id])
+  budget_owner      user?              @relation("DepartmentBudgetOwner", fields: [budget_owner_id], references: [id])
+  updated_user      user?              @relation("DepartmentUpdatedBy", fields: [updated_by], references: [id])
+  default_revenue_account chart_account? @relation("DepartmentRevenueAccount", fields: [default_revenue_account_id], references: [id])
+  default_expense_account chart_account? @relation("DepartmentExpenseAccount", fields: [default_expense_account_id], references: [id])
   units             unit[]
   wards             ward[]
   staff_positions   staff_position[]
@@ -1267,9 +1383,19 @@ model department {
   referrals_to      referral[]         @relation("referral_to_department")
   abac_policies     abac_policy[]
   unit_management_assignments unit_management_assignment[]
+  opening_balance_entries     opening_balance_entry[] @relation("OpeningBalanceDepartment")
 
   @@index([tenant_id])
   @@index([department_type])
+  @@index([code])
+  @@index([cost_centre_code])
+  @@index([parent_id])
+  @@index([manager_id])
+  @@index([budget_owner_id])
+  @@index([default_revenue_account_id])
+  @@index([default_expense_account_id])
+  @@index([status])
+  @@index([effective_from])
   @@index([deleted_at])
   @@index([human_friendly_id])
 }
@@ -1540,7 +1666,12 @@ model user {
   unit_management_assignments   unit_management_assignment[]
   radiology_orders_assigned     radiology_order[]             @relation("radiology_order_assigned_user")
   fiscal_periods_reopened       fiscal_period[]               @relation("FiscalPeriodReopenedBy")
-  currency_rates_updated        accounts_currency_rate[]      @relation("CurrencyRateUpdatedBy")
+  posting_rules_reopened        posting_rule[]                @relation("PostingRuleReopenedBy")
+  payment_methods_updated       payment_method[]              @relation("PaymentMethodUpdatedBy")
+  opening_balances_approved     opening_balance_entry[]       @relation("OpeningBalanceApprovedBy")
+  departments_managed           department[]                  @relation("DepartmentManager")
+  departments_budget_owned      department[]                  @relation("DepartmentBudgetOwner")
+  departments_updated           department[]                  @relation("DepartmentUpdatedBy")
 
   @@unique([tenant_id, email])
   @@unique([tenant_id, human_friendly_id])
@@ -4912,6 +5043,11 @@ model chart_account {
   facility facility?      @relation(fields: [facility_id], references: [id])
   parent   chart_account? @relation("ChartAccountParent", fields: [parent_id], references: [id])
   children chart_account[] @relation("ChartAccountParent")
+  departments_default_revenue department[] @relation("DepartmentRevenueAccount")
+  departments_default_expense department[] @relation("DepartmentExpenseAccount")
+  opening_balance_entries     opening_balance_entry[] @relation("OpeningBalanceAccount")
+  payment_methods_settlement  payment_method[]        @relation("PaymentMethodSettlementAccount")
+  payment_methods_clearing    payment_method[]        @relation("PaymentMethodClearingAccount")
 
   @@unique([tenant_id, facility_id, code])
   @@index([tenant_id])
@@ -4923,6 +5059,55 @@ model chart_account {
   @@index([deleted_at])
   @@index([human_friendly_id])
   @@index([effective_from])
+}
+
+/// Numbering policy for Accounts & Finance → Setup & Controls → Document Numbering.
+///
+/// This row is the *configuration* only. The running counter stays in
+/// `human_id_counter`, which `src/prisma/client.js` already owns and increments
+/// atomically for every model. `next_number`, `last_issued_number`, and
+/// `last_issued_at` are derived from that counter at read time so numbering
+/// never gets a second source of truth.
+model document_number_sequence {
+  id                String                         @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id String?                        @db.VarChar(32)
+  tenant_id         String                         @db.VarChar(36)
+  facility_id       String?                        @db.VarChar(36)
+  sequence_code     String                         @db.VarChar(32)
+  document_type     DocumentSequenceType
+  module            String                         @default("ALL") @db.VarChar(32)
+  /// `human_id_counter.model_name` this policy configures.
+  counter_model     String                         @db.VarChar(80)
+  prefix            String                         @db.VarChar(16)
+  suffix            String?                        @db.VarChar(16)
+  /// Literal pattern such as `yyyyMM`, not a calendar date.
+  date_pattern      String?                        @db.VarChar(32)
+  minimum_length    Int                            @default(7)
+  reset_frequency   DocumentSequenceResetFrequency @default(NEVER)
+  gap_policy        DocumentSequenceGapPolicy      @default(ALLOW_GAPS)
+  status            DocumentSequenceStatus         @default(DRAFT)
+  notes             String?                        @db.VarChar(500)
+  created_by        String?                        @db.VarChar(36)
+  updated_by        String?                        @db.VarChar(36)
+  archived_at       DateTime?
+  created_at        DateTime                       @default(now())
+  updated_at        DateTime                       @updatedAt
+  deleted_at        DateTime?
+  version           Int                            @default(1)
+
+  tenant   tenant    @relation(fields: [tenant_id], references: [id])
+  facility facility? @relation(fields: [facility_id], references: [id])
+
+  // Explicit names: the generated ones exceed the 64-char MySQL identifier cap.
+  @@unique([tenant_id, sequence_code], map: "document_number_sequence_code_key")
+  @@unique([tenant_id, facility_id, document_type, module], map: "document_number_sequence_scope_key")
+  @@index([tenant_id])
+  @@index([facility_id])
+  @@index([document_type])
+  @@index([status])
+  @@index([module])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
 }
 
 /// Fiscal calendar rows for Accounts & Finance → Setup & Controls → Fiscal Years & Periods.
@@ -4971,47 +5156,184 @@ model fiscal_period {
   @@index([human_friendly_id])
 }
 
-/// Currency registry plus its dated exchange rate for Accounts & Finance →
-/// Setup & Controls. One row per currency + rate type + effective date.
-model accounts_currency_rate {
-  id                String             @id @default(uuid()) @db.VarChar(36)
-  human_friendly_id String?            @db.VarChar(32)
-  tenant_id         String             @db.VarChar(36)
-  facility_id       String?            @db.VarChar(36)
-  currency_code     String             @db.VarChar(3)
-  currency_name     String             @db.VarChar(120)
-  symbol            String             @db.VarChar(8)
-  decimal_places    Int                @default(2)
-  is_base_currency  Boolean            @default(false)
-  rate_type         CurrencyRateType   @default(SPOT)
-  exchange_rate     Decimal            @db.Decimal(18, 8)
+/// Imported opening balance lines for Accounts & Finance → Setup & Controls →
+/// Opening Balances.
+///
+/// One row is one line of one import batch. The tab is read-only: rows are
+/// produced by the opening balance import and consumed by the journal posting
+/// workflow, which owns `journal_entry_no` and `posting_status`. The line
+/// references — never copies — the records other modules own: `chart_account`
+/// for the account, `department` for both the department and its cost centre,
+/// and `user` for the approver.
+model opening_balance_entry {
+  id                String                         @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id String?                        @db.VarChar(32)
+  tenant_id         String                         @db.VarChar(36)
+  facility_id       String?                        @db.VarChar(36)
+  /// Import/Batch No. — groups every line loaded by one import run.
+  batch_no          String                         @db.VarChar(64)
   effective_date    DateTime
-  source            String?            @db.VarChar(120)
-  buy_rate          Decimal?           @db.Decimal(18, 8)
-  sell_rate         Decimal?           @db.Decimal(18, 8)
-  status            CurrencyRateStatus @default(DRAFT)
-  notes             String?            @db.VarChar(500)
-  created_by        String?            @db.VarChar(36)
-  updated_by        String?            @db.VarChar(36)
-  archived_at       DateTime?
-  created_at        DateTime           @default(now())
-  updated_at        DateTime           @updatedAt
+  account_id        String?                        @db.VarChar(36)
+  /// Party or asset label for lines that open a non-GL balance.
+  party_label       String?                        @db.VarChar(160)
+  reference         String?                        @db.VarChar(120)
+  description       String?                        @db.VarChar(500)
+  debit             Decimal                        @default(0) @db.Decimal(18, 2)
+  credit            Decimal                        @default(0) @db.Decimal(18, 2)
+  currency          String                         @db.VarChar(10)
+  /// Department and its cost centre both resolve through `department`.
+  department_id     String?                        @db.VarChar(36)
+  source_file       String?                        @db.VarChar(255)
+  validation_status OpeningBalanceValidationStatus @default(PENDING)
+  error_message     String?                        @db.VarChar(500)
+  approved_by       String?                        @db.VarChar(36)
+  approved_at       DateTime?
+  /// Public reference of the journal entry the posting run produced.
+  journal_entry_no  String?                        @db.VarChar(64)
+  posting_status    OpeningBalancePostingStatus    @default(NOT_POSTED)
+  posted_at         DateTime?
+  created_by        String?                        @db.VarChar(36)
+  updated_by        String?                        @db.VarChar(36)
+  created_at        DateTime                       @default(now())
+  updated_at        DateTime                       @updatedAt
   deleted_at        DateTime?
-  version           Int                @default(1)
+  version           Int                            @default(1)
 
-  tenant       tenant    @relation(fields: [tenant_id], references: [id])
-  facility     facility? @relation(fields: [facility_id], references: [id])
-  updated_user user?     @relation("CurrencyRateUpdatedBy", fields: [updated_by], references: [id])
+  tenant        tenant         @relation(fields: [tenant_id], references: [id])
+  facility      facility?      @relation(fields: [facility_id], references: [id])
+  account       chart_account? @relation("OpeningBalanceAccount", fields: [account_id], references: [id])
+  department    department?    @relation("OpeningBalanceDepartment", fields: [department_id], references: [id])
+  approved_user user?          @relation("OpeningBalanceApprovedBy", fields: [approved_by], references: [id])
 
-  // Explicit name: the generated one exceeds the 64-char MySQL identifier cap.
-  @@unique([tenant_id, facility_id, currency_code, rate_type, effective_date], map: "currency_rate_scope_effective_key")
+  // Explicit names: the generated ones exceed the 64-char MySQL identifier cap.
+  @@unique([tenant_id, human_friendly_id], map: "opening_balance_entry_public_id_key")
   @@index([tenant_id])
   @@index([facility_id])
-  @@index([currency_code])
-  @@index([rate_type])
-  @@index([status])
+  @@index([batch_no])
   @@index([effective_date])
-  @@index([is_base_currency])
+  @@index([account_id])
+  @@index([department_id])
+  @@index([currency])
+  @@index([validation_status])
+  @@index([posting_status])
+  @@index([journal_entry_no])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
+}
+
+/// Posting rules for Accounts & Finance → Setup & Controls → Posting Rules.
+///
+/// A row maps one source-module event onto the ledger accounts the posting
+/// engine debits and credits. `chart_account` stays the single source of truth
+/// for the accounts themselves, so the rule stores their codes rather than a
+/// second copy of the account. Higher `priority` wins when several rules match
+/// the same event.
+model posting_rule {
+  id                  String                @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id   String?               @db.VarChar(32)
+  tenant_id           String                @db.VarChar(36)
+  facility_id         String?               @db.VarChar(36)
+  rule_code           String                @db.VarChar(32)
+  rule_name           String                @db.VarChar(160)
+  source_module       String                @db.VarChar(64)
+  event_type          String                @db.VarChar(64)
+  /// `chart_account.code` (or a resolver expression) the engine debits.
+  debit_account_rule  String                @db.VarChar(120)
+  /// `chart_account.code` (or a resolver expression) the engine credits.
+  credit_account_rule String                @db.VarChar(120)
+  tax_rule            String?               @db.VarChar(120)
+  department_rule     String?               @db.VarChar(120)
+  cost_centre_rule    String?               @db.VarChar(120)
+  priority            Int                   @default(100)
+  effective_from      DateTime?
+  effective_to        DateTime?
+  test_status         PostingRuleTestStatus @default(NOT_TESTED)
+  tested_at           DateTime?
+  status              PostingRuleStatus     @default(DRAFT)
+  notes               String?               @db.VarChar(500)
+  created_by          String?               @db.VarChar(36)
+  updated_by          String?               @db.VarChar(36)
+  reopened_at         DateTime?
+  reopened_by         String?               @db.VarChar(36)
+  archived_at         DateTime?
+  created_at          DateTime              @default(now())
+  updated_at          DateTime              @updatedAt
+  deleted_at          DateTime?
+  version             Int                   @default(1)
+
+  tenant        tenant    @relation(fields: [tenant_id], references: [id])
+  facility      facility? @relation(fields: [facility_id], references: [id])
+  reopened_user user?     @relation("PostingRuleReopenedBy", fields: [reopened_by], references: [id])
+
+  // Explicit name: the generated one exceeds the 64-char MySQL identifier cap.
+  @@unique([tenant_id, rule_code], map: "posting_rule_code_key")
+  @@index([tenant_id])
+  @@index([facility_id])
+  @@index([source_module])
+  @@index([event_type])
+  @@index([status])
+  @@index([test_status])
+  @@index([priority])
+  @@index([effective_from])
+  @@index([effective_to])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
+}
+
+/// Accounts & Finance -> Setup & Controls -> Payment Methods.
+///
+/// Configures how each tender is accepted or paid out: settlement and clearing
+/// accounts, fee rule, evidence and approval requirements, effective window,
+/// and lifecycle. `method_type` reuses the existing `PaymentMethodType` enum
+/// that `payment.method` already stores, so this record configures the
+/// taxonomy rather than becoming a second source of truth for it.
+model payment_method {
+  id                String                 @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id String?                @db.VarChar(32)
+  tenant_id         String                 @db.VarChar(36)
+  facility_id       String?                @db.VarChar(36)
+  method_code       String                 @db.VarChar(32)
+  method_name       String                 @db.VarChar(160)
+  /// Shared with `payment.method`; never redefine the tender taxonomy here.
+  method_type       PaymentMethodType
+  direction         PaymentMethodDirection @default(INCOMING)
+  provider          String?                @db.VarChar(120)
+  settlement_account_id String?            @db.VarChar(36)
+  clearing_account_id   String?            @db.VarChar(36)
+  requires_external_reference Boolean       @default(false)
+  requires_approval          Boolean       @default(false)
+  fee_rule          String?                @db.VarChar(120)
+  /// Free-text scope note when the method is not limited to one facility row.
+  facility_scope    String?                @db.VarChar(120)
+  effective_from    DateTime?
+  effective_to      DateTime?
+  status            PaymentMethodStatus    @default(DRAFT)
+  notes             String?                @db.VarChar(500)
+  created_by        String?                @db.VarChar(36)
+  updated_by        String?                @db.VarChar(36)
+  archived_at       DateTime?
+  created_at        DateTime               @default(now())
+  updated_at        DateTime               @updatedAt
+  deleted_at        DateTime?
+  version           Int                    @default(1)
+
+  tenant             tenant         @relation(fields: [tenant_id], references: [id])
+  facility           facility?      @relation(fields: [facility_id], references: [id])
+  settlement_account chart_account? @relation("PaymentMethodSettlementAccount", fields: [settlement_account_id], references: [id])
+  clearing_account   chart_account? @relation("PaymentMethodClearingAccount", fields: [clearing_account_id], references: [id])
+  updated_user       user?          @relation("PaymentMethodUpdatedBy", fields: [updated_by], references: [id])
+
+  // Explicit name: the generated one exceeds the 64-char MySQL identifier cap.
+  @@unique([tenant_id, method_code], map: "payment_method_code_key")
+  @@index([tenant_id])
+  @@index([facility_id])
+  @@index([method_type])
+  @@index([direction])
+  @@index([settlement_account_id])
+  @@index([clearing_account_id])
+  @@index([status])
+  @@index([effective_from])
+  @@index([effective_to])
   @@index([deleted_at])
   @@index([human_friendly_id])
 }

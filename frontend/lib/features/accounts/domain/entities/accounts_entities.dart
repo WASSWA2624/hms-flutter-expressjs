@@ -24,7 +24,9 @@ enum AccountsDeskCategory {
       ],
       AccountsDeskCategory.setupAndControls => const <AccountsDeskSection>[
         AccountsDeskSection.fiscalYearsAndPeriods,
-        AccountsDeskSection.currenciesAndExchangeRates,
+        AccountsDeskSection.departmentsAndCostCentres,
+        AccountsDeskSection.paymentMethods,
+        AccountsDeskSection.documentNumbering,
       ],
     };
   }
@@ -49,7 +51,9 @@ enum AccountsDeskSection {
   chart,
   invoices,
   fiscalYearsAndPeriods('fiscal-years-and-periods'),
-  currenciesAndExchangeRates('currencies-and-exchange-rates');
+  departmentsAndCostCentres('departments-and-cost-centres'),
+  paymentMethods('payment-methods'),
+  documentNumbering('document-numbering');
 
   const AccountsDeskSection([this.canonicalSlug]);
 
@@ -98,11 +102,28 @@ enum AccountsDeskSection {
       // tab rather than Invoices.
       'periods' =>
         AccountsDeskSection.fiscalYearsAndPeriods,
-      'currencies-and-exchange-rates' ||
-      'currenciesandexchangerates' ||
-      'currencies' ||
-      'exchange-rates' =>
-        AccountsDeskSection.currenciesAndExchangeRates,
+      'departments-and-cost-centres' ||
+      'departmentsandcostcentres' ||
+      'departments' ||
+      'cost-centres' ||
+      'cost-centers' ||
+      // US spelling and the pre-finance singular both resolve to the owning
+      // Setup & Controls tab.
+      'departments-and-cost-centers' =>
+        AccountsDeskSection.departmentsAndCostCentres,
+      'payment-methods' ||
+      'paymentmethods' ||
+      'payment-method' ||
+      // Pre-finance tender-configuration aliases resolve to the owning tab.
+      'tenders' =>
+        AccountsDeskSection.paymentMethods,
+      'document-numbering' ||
+      'documentnumbering' ||
+      'document-sequences' ||
+      'number-sequences' ||
+      // Pre-finance numbering-configuration aliases resolve to the owning tab.
+      'numbering' =>
+        AccountsDeskSection.documentNumbering,
       _ => null,
     };
   }
@@ -269,7 +290,9 @@ final class AccountsSummary {
     this.chartActive = 0,
     this.invoices = 0,
     this.fiscalPeriodsActive = 0,
-    this.currencyRatesActive = 0,
+    this.departmentsActive = 0,
+    this.paymentMethodsActive = 0,
+    this.documentSequencesActive = 0,
   });
 
   final int openWork;
@@ -280,7 +303,9 @@ final class AccountsSummary {
   final int chartActive;
   final int invoices;
   final int fiscalPeriodsActive;
-  final int currencyRatesActive;
+  final int departmentsActive;
+  final int paymentMethodsActive;
+  final int documentSequencesActive;
 
   /// Alias used by mutation applier / legacy callers.
   int get approvals => needApproval;
@@ -293,7 +318,9 @@ final class AccountsSummary {
   int get chartActiveCount => chartActive;
   int get invoicesCount => invoices;
   int get fiscalPeriodsActiveCount => fiscalPeriodsActive;
-  int get currencyRatesActiveCount => currencyRatesActive;
+  int get departmentsActiveCount => departmentsActive;
+  int get paymentMethodsActiveCount => paymentMethodsActive;
+  int get documentSequencesActiveCount => documentSequencesActive;
 
   int get workloadCount => openWork;
 
@@ -307,7 +334,9 @@ final class AccountsSummary {
       AccountsDeskSection.chart => chartActive,
       AccountsDeskSection.invoices => invoices,
       AccountsDeskSection.fiscalYearsAndPeriods => fiscalPeriodsActive,
-      AccountsDeskSection.currenciesAndExchangeRates => currencyRatesActive,
+      AccountsDeskSection.departmentsAndCostCentres => departmentsActive,
+      AccountsDeskSection.paymentMethods => paymentMethodsActive,
+      AccountsDeskSection.documentNumbering => documentSequencesActive,
     };
   }
 
@@ -320,7 +349,9 @@ final class AccountsSummary {
     int? chartActive,
     int? invoices,
     int? fiscalPeriodsActive,
-    int? currencyRatesActive,
+    int? departmentsActive,
+    int? paymentMethodsActive,
+    int? documentSequencesActive,
     int? approvals,
   }) {
     return AccountsSummary(
@@ -332,7 +363,10 @@ final class AccountsSummary {
       chartActive: chartActive ?? this.chartActive,
       invoices: invoices ?? this.invoices,
       fiscalPeriodsActive: fiscalPeriodsActive ?? this.fiscalPeriodsActive,
-      currencyRatesActive: currencyRatesActive ?? this.currencyRatesActive,
+      departmentsActive: departmentsActive ?? this.departmentsActive,
+      paymentMethodsActive: paymentMethodsActive ?? this.paymentMethodsActive,
+      documentSequencesActive:
+          documentSequencesActive ?? this.documentSequencesActive,
     );
   }
 }

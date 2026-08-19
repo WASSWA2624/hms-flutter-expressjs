@@ -12,6 +12,7 @@ const csrfHeaderName = 'x-csrf-token';
 const localeHeaderName = 'x-locale';
 const timezoneHeaderName = 'x-timezone';
 const authRetryExtraKey = 'auth_retry';
+const authUnauthorizedNotifiedExtraKey = 'auth_unauthorized_notified';
 const csrfRetryExtraKey = 'csrf_retry';
 
 typedef RequestLocaleReader = String? Function();
@@ -84,11 +85,7 @@ final class AuthInterceptor extends Interceptor {
     }
 
     if (_shouldSkipRefresh(err.requestOptions)) {
-      try {
-        await _onUnauthorizedResponse?.call();
-      } catch (_) {
-        // Session recovery failures are mapped by the repository boundary.
-      }
+      await _notifyUnauthorizedOnce(err.requestOptions);
       handler.next(err);
       return;
     }
@@ -96,7 +93,7 @@ final class AuthInterceptor extends Interceptor {
     try {
       final bool refreshed = await _onTokenRefresh?.call() ?? false;
       if (!refreshed) {
-        await _onUnauthorizedResponse?.call();
+        await _notifyUnauthorizedOnce(err.requestOptions);
         handler.next(err);
         return;
       }
@@ -114,12 +111,26 @@ final class AuthInterceptor extends Interceptor {
       );
       handler.resolve(response);
     } catch (_) {
-      try {
-        await _onUnauthorizedResponse?.call();
-      } catch (_) {
-        // Session recovery failures are mapped by the repository boundary.
-      }
+      // The replay re-enters this interceptor, so a second 401 has already
+      // ended the session through the skip-refresh branch above. Without the
+      // guard the same request tears the session down twice, which races a
+      // concurrent sign-in and repeats the provider disposal.
+      await _notifyUnauthorizedOnce(err.requestOptions);
       handler.next(err);
+    }
+  }
+
+  /// Ends the session at most once per originating request.
+  Future<void> _notifyUnauthorizedOnce(RequestOptions options) async {
+    if (options.extra[authUnauthorizedNotifiedExtraKey] == true) {
+      return;
+    }
+    options.extra[authUnauthorizedNotifiedExtraKey] = true;
+
+    try {
+      await _onUnauthorizedResponse?.call();
+    } catch (_) {
+      // Session recovery failures are mapped by the repository boundary.
     }
   }
 

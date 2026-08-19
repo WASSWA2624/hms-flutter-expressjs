@@ -28,7 +28,7 @@ CREATE TABLE `mortuary_deceased_profile` (
     INDEX `mortuary_deceased_profile_deleted_at_idx`(`deleted_at`),
     INDEX `mortuary_deceased_profile_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `mortuary_storage_unit` (
@@ -54,7 +54,7 @@ CREATE TABLE `mortuary_storage_unit` (
     INDEX `mortuary_storage_unit_deleted_at_idx`(`deleted_at`),
     INDEX `mortuary_storage_unit_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `mortuary_storage_slot` (
@@ -83,7 +83,7 @@ CREATE TABLE `mortuary_storage_slot` (
     INDEX `mortuary_storage_slot_human_friendly_id_idx`(`human_friendly_id`),
     UNIQUE INDEX `mortuary_storage_slot_storage_unit_id_slot_code_key`(`storage_unit_id`, `slot_code`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `mortuary_case` (
@@ -125,7 +125,7 @@ CREATE TABLE `mortuary_case` (
     INDEX `mortuary_case_deleted_at_idx`(`deleted_at`),
     INDEX `mortuary_case_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `mortuary_storage_assignment` (
@@ -157,7 +157,7 @@ CREATE TABLE `mortuary_storage_assignment` (
     INDEX `mortuary_storage_assignment_deleted_at_idx`(`deleted_at`),
     INDEX `mortuary_storage_assignment_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `mortuary_custody_event` (
@@ -187,7 +187,7 @@ CREATE TABLE `mortuary_custody_event` (
     INDEX `mortuary_custody_event_deleted_at_idx`(`deleted_at`),
     INDEX `mortuary_custody_event_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `mortuary_viewing` (
@@ -215,7 +215,7 @@ CREATE TABLE `mortuary_viewing` (
     INDEX `mortuary_viewing_deleted_at_idx`(`deleted_at`),
     INDEX `mortuary_viewing_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `mortuary_post_mortem_request` (
@@ -245,7 +245,7 @@ CREATE TABLE `mortuary_post_mortem_request` (
     INDEX `mortuary_post_mortem_request_deleted_at_idx`(`deleted_at`),
     INDEX `mortuary_post_mortem_request_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `mortuary_release_authorisation` (
@@ -278,7 +278,7 @@ CREATE TABLE `mortuary_release_authorisation` (
     INDEX `mortuary_release_authorisation_deleted_at_idx`(`deleted_at`),
     INDEX `mortuary_release_authorisation_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `mortuary_billable_event` (
@@ -310,7 +310,7 @@ CREATE TABLE `mortuary_billable_event` (
     INDEX `mortuary_billable_event_deleted_at_idx`(`deleted_at`),
     INDEX `mortuary_billable_event_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- AddForeignKey
 ALTER TABLE `mortuary_deceased_profile` ADD CONSTRAINT `mortuary_deceased_profile_tenant_id_fkey` FOREIGN KEY (`tenant_id`) REFERENCES `tenant`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

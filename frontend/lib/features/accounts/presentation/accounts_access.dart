@@ -88,9 +88,11 @@ AccessRequirement accountsSectionTabRequirement(AccountsDeskSection section) {
   return switch (section) {
     AccountsDeskSection.ledgers => accountsPatientLedgersReadRequirement,
     // Setup & Controls is read-gated, not entry-gated: a write-only grant must
-    // not surface the fiscal calendar.
+    // not surface the fiscal calendar or the cost-centre structure.
     AccountsDeskSection.fiscalYearsAndPeriods ||
-    AccountsDeskSection.currenciesAndExchangeRates =>
+    AccountsDeskSection.departmentsAndCostCentres ||
+    AccountsDeskSection.paymentMethods ||
+    AccountsDeskSection.documentNumbering =>
       accountsWorkspaceReadRequirement,
     _ => accountsWorkspaceEntryRequirement,
   };
@@ -217,12 +219,14 @@ bool accountsSectionShowsNextActionColumn(
       canWriteAccounts(policy) ||
           canDecideAccountsApproval(policy) ||
           canEnterAccounts(policy),
-    // Account chart / Invoices / Fiscal periods use Actions — no work-queue
-    // Next column.
+    // Account chart / Invoices / Setup & Controls tabs use Actions — no
+    // work-queue Next column.
     AccountsDeskSection.chart ||
     AccountsDeskSection.invoices ||
     AccountsDeskSection.fiscalYearsAndPeriods ||
-    AccountsDeskSection.currenciesAndExchangeRates => false,
+    AccountsDeskSection.departmentsAndCostCentres ||
+    AccountsDeskSection.paymentMethods ||
+    AccountsDeskSection.documentNumbering => false,
   };
 }
 
@@ -361,9 +365,9 @@ bool canWriteAccountsFiscalPeriods(AppAccessPolicy policy) {
   return AccountsFiscalPeriodsAtomPermissions.write.isAllowed(policy);
 }
 
-/// Setup & Controls → Currencies & Exchange Rates atom → permission mapping
-/// (`.cursor/finance/accounts-and-finance/setup-and-controls/currencies-and-exchange-rates.md`).
-abstract final class AccountsCurrencyRatesAtomPermissions {
+/// Setup & Controls → Departments & Cost Centres atom → permission mapping
+/// (`.cursor/finance/accounts-and-finance/setup-and-controls/departments-and-cost-centres.md`).
+abstract final class AccountsDepartmentsAtomPermissions {
   static const AccessRequirement tab = accountsWorkspaceReadRequirement;
   static const AccessRequirement listChrome = accountsWorkspaceReadRequirement;
   static const AccessRequirement detail = accountsWorkspaceReadRequirement;
@@ -383,9 +387,63 @@ abstract final class AccountsCurrencyRatesAtomPermissions {
   static const AccessRequirement routeEntry = accountsWorkspaceReadRequirement;
 }
 
-/// Currencies & Exchange Rates mutations — `accounts:write` ∩ `facility-accounts`.
-bool canWriteAccountsCurrencyRates(AppAccessPolicy policy) {
-  return AccountsCurrencyRatesAtomPermissions.write.isAllowed(policy);
+/// Departments & Cost Centres mutations — `accounts:write` ∩ `facility-accounts`.
+bool canWriteAccountsDepartments(AppAccessPolicy policy) {
+  return AccountsDepartmentsAtomPermissions.write.isAllowed(policy);
+}
+
+/// Setup & Controls → Payment Methods atom → permission mapping
+/// (`.cursor/finance/accounts-and-finance/setup-and-controls/payment-methods.md`).
+abstract final class AccountsPaymentMethodsAtomPermissions {
+  static const AccessRequirement tab = accountsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = accountsWorkspaceReadRequirement;
+  static const AccessRequirement detail = accountsWorkspaceReadRequirement;
+  static const AccessRequirement filters = accountsWorkspaceReadRequirement;
+  static const AccessRequirement settings = accountsWorkspaceReadRequirement;
+  static const AccessRequirement export = accountsWorkspaceExportRequirement;
+  static const AccessRequirement print = accountsWorkspacePrintRequirement;
+  static const AccessRequirement create = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement update = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement clone = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement activate = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement deactivate = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement archive = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement restore = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement write = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement approve = accountsApprovalDecisionRequirement;
+  static const AccessRequirement routeEntry = accountsWorkspaceReadRequirement;
+}
+
+/// Payment Methods mutations — `accounts:write` ∩ `facility-accounts`.
+bool canWriteAccountsPaymentMethods(AppAccessPolicy policy) {
+  return AccountsPaymentMethodsAtomPermissions.write.isAllowed(policy);
+}
+
+/// Setup & Controls → Document Numbering atom → permission mapping
+/// (`.cursor/finance/accounts-and-finance/setup-and-controls/document-numbering.md`).
+abstract final class AccountsDocumentNumberingAtomPermissions {
+  static const AccessRequirement tab = accountsWorkspaceReadRequirement;
+  static const AccessRequirement listChrome = accountsWorkspaceReadRequirement;
+  static const AccessRequirement detail = accountsWorkspaceReadRequirement;
+  static const AccessRequirement filters = accountsWorkspaceReadRequirement;
+  static const AccessRequirement settings = accountsWorkspaceReadRequirement;
+  static const AccessRequirement export = accountsWorkspaceExportRequirement;
+  static const AccessRequirement print = accountsWorkspacePrintRequirement;
+  static const AccessRequirement create = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement update = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement clone = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement activate = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement deactivate = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement archive = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement restore = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement write = accountsWorkspaceWriteRequirement;
+  static const AccessRequirement approve = accountsApprovalDecisionRequirement;
+  static const AccessRequirement routeEntry = accountsWorkspaceReadRequirement;
+}
+
+/// Document Numbering mutations — `accounts:write` ∩ `facility-accounts`.
+bool canWriteAccountsDocumentSequences(AppAccessPolicy policy) {
+  return AccountsDocumentNumberingAtomPermissions.write.isAllowed(policy);
 }
 
 abstract final class AccountsInvoicesAtomPermissions {

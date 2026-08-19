@@ -1,9 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/core/permissions/access_policy.dart';
+import 'package:hosspi_hms/core/permissions/app_permission.dart';
+import 'package:hosspi_hms/core/security/auth_session.dart';
+import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_scope_navigation.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
-
+import 'package:hosspi_hms/shared/layout/layout.dart';
 void main() {
   const AccountsSummary summary = AccountsSummary(
     openWork: 10,
@@ -123,5 +127,91 @@ void main() {
       accountsSectionCountTone(AccountsDeskSection.gl),
       AppTabCountTone.info,
     );
+  });
+
+  group('sidebar menu (one nesting level)', () {
+    AppAccessPolicy policyFor(Set<AppPermission> permissions) {
+      return AppAccessPolicy.fromSession(
+        AuthSession(
+          tokens: SessionTokens(accessToken: 'access-token'),
+          user: const AuthUserProfile(
+            roles: <String>['ACCOUNTANT'],
+            tenantId: 'tenant-1',
+            facilityId: 'facility-1',
+          ),
+          permissions: permissions,
+          moduleEntitlements: const <AppModuleEntitlement>[
+            AppModuleEntitlement(
+              code: 'facility-accounts',
+              licenseStatus: 'ACTIVE',
+            ),
+          ],
+          isAuthorizationHydrated: true,
+        ),
+      );
+    }
+
+    final AppAccessPolicy reader = policyFor(<AppPermission>{
+      AppPermissions.accountsRead,
+    });
+
+    test('menu stops at categories; sections stay page tabs', () {
+      final List<ShellSubmenuItem> items = accountsShellMenuChildren(
+        accessPolicy: reader,
+      );
+
+      expect(
+        items.map((ShellSubmenuItem item) => item.id),
+        <String>[
+          AccountsDeskCategory.books.name,
+          AccountsDeskCategory.setupAndControls.name,
+        ],
+      );
+      // Sections are never menu items — they belong to the workspace strip.
+      expect(
+        items.map((ShellSubmenuItem item) => item.id),
+        isNot(contains(AccountsDeskSection.chart.sectionQueryValue)),
+      );
+    });
+
+    test('a category badge sums its visible sections', () {
+      final List<ShellSubmenuItem> items = accountsShellMenuChildren(
+        accessPolicy: reader,
+        badgeCount: (AccountsDeskCategory category) =>
+            accountsCategorySummaryCount(
+              summary,
+              accountsVisibleCategorySections(reader, category),
+            ),
+      );
+
+      final ShellSubmenuItem books = items.firstWhere(
+        (ShellSubmenuItem item) => item.id == AccountsDeskCategory.books.name,
+      );
+      expect(books.badgeCount, 10 + 4 + 2 + 8 + 5 + 20 + 1);
+    });
+
+    test('a category opens on its first authorized section', () {
+      expect(
+        accountsCategoryLandingSection(reader, AccountsDeskCategory.books),
+        AccountsDeskSection.work,
+      );
+      expect(
+        accountsCategoryLandingSection(
+          reader,
+          AccountsDeskCategory.setupAndControls,
+        ),
+        AccountsDeskSection.fiscalYearsAndPeriods,
+      );
+    });
+
+    test('categories with no authorized section are omitted', () {
+      final AppAccessPolicy denied = policyFor(<AppPermission>{});
+
+      expect(accountsShellMenuChildren(accessPolicy: denied), isEmpty);
+      expect(
+        accountsCategoryLandingSection(denied, AccountsDeskCategory.books),
+        isNull,
+      );
+    });
   });
 }

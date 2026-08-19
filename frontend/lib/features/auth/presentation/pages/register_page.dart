@@ -27,13 +27,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
   final _adminNameController = TextEditingController();
   final _facilityNameController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _locationController = TextEditingController();
   final _adminNameFocusNode = FocusNode();
   final _emailFocusNode = FocusNode();
   final _passwordFocusNode = FocusNode();
   final _facilityNameFocusNode = FocusNode();
   final _phoneFocusNode = FocusNode();
-  final _locationFocusNode = FocusNode();
   String _facilityType = 'HOSPITAL';
   AutovalidateMode _autovalidateMode = AutovalidateMode.disabled;
 
@@ -60,13 +58,11 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     _adminNameController.dispose();
     _facilityNameController.dispose();
     _phoneController.dispose();
-    _locationController.dispose();
     _adminNameFocusNode.dispose();
     _emailFocusNode.dispose();
     _passwordFocusNode.dispose();
     _facilityNameFocusNode.dispose();
     _phoneFocusNode.dispose();
-    _locationFocusNode.dispose();
     super.dispose();
   }
 
@@ -204,23 +200,13 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 numberLabelText: l10n.appPhoneNumberLabel,
                 numberHintText: l10n.appPhoneNumberHint,
                 invalidPhoneMessage: l10n.appPhoneInvalidMessage,
-                textInputAction: TextInputAction.next,
+                // Last field in the form, so it carries the submit affordance.
+                textInputAction: TextInputAction.done,
                 isRequired: true,
                 requiredMessage: l10n.validationRequired,
                 onChanged: (_) => _clearFormFeedback(),
                 onFocusChanged: _handleFieldFocusChanged,
                 focusNode: _phoneFocusNode,
-                enabled: !state.isSubmitting,
-              ),
-              SizedBox(height: theme.spacing.md),
-              AppTextField(
-                controller: _locationController,
-                labelText: l10n.authLocationOptionalLabel,
-                textInputAction: TextInputAction.done,
-                autofillHints: const <String>[AutofillHints.addressCity],
-                onChanged: (_) => _clearFormFeedback(),
-                onFocusChanged: _handleFieldFocusChanged,
-                focusNode: _locationFocusNode,
                 enabled: !state.isSubmitting,
                 onFieldSubmitted: (_) => _submit(),
               ),
@@ -232,35 +218,25 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
                 onPressed: _submit,
               ),
               SizedBox(height: theme.spacing.sm),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Flexible(
-                    child: AuthTextLink(
-                      label: l10n.authBackToLoginActionLabel,
-                      onPressed: state.isSubmitting
-                          ? null
-                          : () => context.go(AppRoutes.login.location()),
-                    ),
+              AuthSecondaryLinkRow(
+                links: <AuthTextLink>[
+                  AuthTextLink(
+                    label: l10n.authBackToLoginActionLabel,
+                    onPressed: state.isSubmitting
+                        ? null
+                        : () => context.go(AppRoutes.login.location()),
                   ),
-                  SizedBox(width: theme.spacing.sm),
-                  Flexible(
-                    child: AuthTextLink(
-                      label: l10n.authForgotPasswordActionLabel,
-                      onPressed: state.isSubmitting
-                          ? null
-                          : () =>
-                              context.go(AppRoutes.forgotPassword.location()),
-                    ),
+                  AuthTextLink(
+                    label: l10n.authForgotPasswordActionLabel,
+                    onPressed: state.isSubmitting
+                        ? null
+                        : () => context.go(AppRoutes.forgotPassword.location()),
                   ),
-                  SizedBox(width: theme.spacing.sm),
-                  Flexible(
-                    child: AuthTextLink(
-                      label: l10n.authHowToRegisterActionLabel,
-                      onPressed: state.isSubmitting
-                          ? null
-                          : () => showAuthRegistrationGuideDialog(context),
-                    ),
+                  AuthTextLink(
+                    label: l10n.authHowToRegisterActionLabel,
+                    onPressed: state.isSubmitting
+                        ? null
+                        : () => showAuthRegistrationGuideDialog(context),
                   ),
                 ],
               ),
@@ -290,7 +266,6 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           facilityName: _facilityNameController.text,
           facilityType: _facilityType,
           phone: _phoneController.text,
-          location: _locationController.text,
         );
 
     if (!mounted || !registered) {

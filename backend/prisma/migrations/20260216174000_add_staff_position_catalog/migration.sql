@@ -14,7 +14,7 @@ CREATE TABLE `staff_position` (
   `version` INTEGER NOT NULL DEFAULT 1,
 
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateIndex
 CREATE INDEX `staff_position_tenant_id_idx` ON `staff_position`(`tenant_id`);

@@ -39,50 +39,74 @@ JOURNAL_TABS = [
     "Asset Journal",
 ]
 
-BILLING_TABS = [
-    "Overview",
-    "Charges",
-    "Unbilled Charges",
-    "Estimates & Quotations",
-    "Packages & Bundles",
-    "Invoices",
-    "Payments",
-    "Payment Allocations",
-    "Receipts",
-    "Advances & Deposits",
-    "Credit Notes",
-    "Debit Notes",
-    "Refunds",
-    "Write-offs",
-    "Patient Accounts",
-    "Patient Statements",
-    "Receivables",
-    "Collection Follow-up",
-    "Price Lists & Tariffs",
-    "Billing Rules",
-    "Discount Rules",
-    "Tax Rules",
-    "Document Templates",
-    "Billing Reports",
+# Every menu nests exactly one level: `Menu → Category`. A category's tabs are
+# the workspace `AppTabStrip`, never a deeper menu level.
+BILLING_GROUPS: list[tuple[tuple[str, ...], tuple[str, ...], list[str]]] = [
+    (("Overview",), ("overview",), ["Overview"]),
+    (
+        ("Setup & Pricing",),
+        ("setup-and-pricing",),
+        [
+            "Price Lists & Tariffs",
+            "Packages & Bundles",
+            "Billing Rules",
+            "Discount Rules",
+            "Tax Rules",
+            "Document Templates",
+        ],
+    ),
+    (
+        ("Charges & Invoicing",),
+        ("charges-and-invoicing",),
+        [
+            "Charges",
+            "Unbilled Charges",
+            "Estimates & Quotations",
+            "Invoices",
+            "Credit Notes",
+            "Debit Notes",
+        ],
+    ),
+    (
+        ("Payments & Receipts",),
+        ("payments-and-receipts",),
+        [
+            "Payments",
+            "Payment Allocations",
+            "Receipts",
+            "Advances & Deposits",
+            "Refunds",
+            "Write-offs",
+        ],
+    ),
+    (
+        ("Accounts & Collections",),
+        ("accounts-and-collections",),
+        [
+            "Patient Accounts",
+            "Patient Statements",
+            "Receivables",
+            "Collection Follow-up",
+        ],
+    ),
+    (("Billing Reports",), ("billing-reports",), ["Billing Reports"]),
 ]
 
 ACCOUNT_GROUPS: list[tuple[tuple[str, ...], tuple[str, ...], list[str]]] = [
-    ((), (), ["Overview"]),
+    (("Overview",), ("overview",), ["Overview"]),
     (
         ("General Accounting",),
         ("general-accounting",),
         [
             "Chart of Accounts",
+            # Journal Entries is a grouping in the product menu, but the menu
+            # nests only one level, so its tabs live in this same strip.
+            *JOURNAL_TABS,
             "General Ledger",
             "Control Accounts",
             "Recurring Entries",
             "Reversing Entries",
         ],
-    ),
-    (
-        ("General Accounting", "Journal Entries"),
-        ("general-accounting", "journal-entries"),
-        JOURNAL_TABS,
     ),
     (
         ("Purchases & Payables",),
@@ -211,9 +235,11 @@ ACCOUNT_GROUPS: list[tuple[tuple[str, ...], tuple[str, ...], list[str]]] = [
     (
         ("Setup & Controls",),
         ("setup-and-controls",),
+        # Currency is intentionally absent: the app already resolves, formats,
+        # and converts currency through `shared/components/app_currency.dart`
+        # and `core/currency/`. See billing-accounts-finance.md §13.2.
         [
             "Fiscal Years & Periods",
-            "Currencies & Exchange Rates",
             "Payment Methods",
             "Document Numbering",
             "Departments & Cost Centres",
@@ -236,42 +262,78 @@ ACCOUNT_GROUPS: list[tuple[tuple[str, ...], tuple[str, ...], list[str]]] = [
     ),
 ]
 
-INSURANCE_TABS = [
-    "Overview",
-    "Insurance Providers",
-    "Corporate Payers",
-    "Plans & Products",
-    "Contracts",
-    "Tariffs & Price Lists",
-    "Coverage Rules",
-    "Exclusions & Limits",
-    "Patient Policies",
-    "Members & Dependants",
-    "Eligibility Checks",
-    "Coverage Balances",
-    "Pre-authorizations",
-    "Claims",
-    "Claim Validations",
-    "Claim Batches",
-    "Claim Submissions",
-    "Adjudications",
-    "Denials",
-    "Resubmissions & Appeals",
-    "Remittance Advice",
-    "Insurer Payments",
-    "Remittance Allocations",
-    "Payer Balances",
-    "Claim Reconciliation",
-    "Payer Statements",
-    "Claims Aging",
-    "Collection Follow-up",
-    "Disputes",
-    "Claim Rules",
-    "Required Documents",
-    "Denial Codes",
-    "Submission Channels",
-    "Claim Templates",
-    "Insurance Reports",
+INSURANCE_GROUPS: list[tuple[tuple[str, ...], tuple[str, ...], list[str]]] = [
+    (("Overview",), ("overview",), ["Overview"]),
+    (
+        ("Payers & Contracts",),
+        ("payers-and-contracts",),
+        [
+            "Insurance Providers",
+            "Corporate Payers",
+            "Plans & Products",
+            "Contracts",
+            "Tariffs & Price Lists",
+        ],
+    ),
+    (
+        ("Coverage & Claim Rules",),
+        ("coverage-and-claim-rules",),
+        [
+            "Coverage Rules",
+            "Exclusions & Limits",
+            "Required Documents",
+            "Denial Codes",
+            "Submission Channels",
+            "Claim Templates",
+            "Claim Rules",
+        ],
+    ),
+    (
+        ("Membership & Eligibility",),
+        ("membership-and-eligibility",),
+        [
+            "Patient Policies",
+            "Members & Dependants",
+            "Eligibility Checks",
+            "Coverage Balances",
+            "Pre-authorizations",
+        ],
+    ),
+    (
+        ("Claims Processing",),
+        ("claims-processing",),
+        [
+            "Claims",
+            "Claim Validations",
+            "Claim Batches",
+            "Claim Submissions",
+            "Adjudications",
+            "Denials",
+            "Resubmissions & Appeals",
+        ],
+    ),
+    (
+        ("Remittances & Reconciliation",),
+        ("remittances-and-reconciliation",),
+        [
+            "Remittance Advice",
+            "Insurer Payments",
+            "Remittance Allocations",
+            "Payer Balances",
+            "Claim Reconciliation",
+        ],
+    ),
+    (
+        ("Payer Follow-up",),
+        ("payer-follow-up",),
+        [
+            "Payer Statements",
+            "Claims Aging",
+            "Collection Follow-up",
+            "Disputes",
+        ],
+    ),
+    (("Insurance Reports",), ("insurance-reports",), ["Insurance Reports"]),
 ]
 
 MODULES = {
@@ -316,6 +378,277 @@ MODULES = {
 }
 
 
+# --------------------------------------------------------------------------
+# Existing implementation inventory
+#
+# Every entry below was verified against the working tree. These are the assets
+# a finance leaf must extend instead of rebuilding; see
+# `.cursor/billing-accounts-finance.md` §13.
+# --------------------------------------------------------------------------
+
+# Shared assets that apply to every finance leaf regardless of module.
+REUSE_SHARED: list[str] = [
+    "Currency defaults, formatting, precision, and conversion: `frontend/lib/shared/components/app_currency.dart`, `frontend/lib/core/currency/effective_default_currency_provider.dart`, `frontend/lib/core/currency/fx_currency_utils.dart`, `frontend/lib/shared/components/app_currency_amount_field.dart`, `frontend/lib/shared/components/app_currency_select_field.dart`",
+    "Workspace shell, tables, dialogs, forms, toolbars, and print: `frontend/lib/shared/components/`, `frontend/lib/shared/layout/`",
+    "Permissions, entitlement, ABAC, and access gating: `frontend/lib/core/permissions/`, `backend/src/modules/abac-policy/`, `backend/src/modules/permission/`",
+    "Report definitions, runs, schedules, and exports: `backend/src/modules/report-definition/`, `backend/src/modules/report-run/`, `backend/src/modules/report-schedule/`, `backend/src/modules/reports-workspace/`, `frontend/lib/features/reports/presentation/pages/reports_workspace_page.dart`",
+    "Audit, change, and PHI-access history: `backend/src/modules/audit-log/`, `backend/src/modules/system-change-log/`, `backend/src/modules/phi-access-log/`",
+]
+
+# Per-module workspaces that already exist and own the route.
+REUSE_BY_MODULE: dict[str, list[str]] = {
+    "billing": [
+        "Billing workspace and desk queues (all work / needs issue / collect / claims pending / approvals): `frontend/lib/features/billing/presentation/pages/billing_workspace_page.dart`, `frontend/lib/features/billing/domain/entities/billing_entities.dart`",
+        "Billing backend: `backend/src/modules/billing/`, `backend/src/modules/billing-adjustment/`, `backend/src/lib/billing/`",
+    ],
+    "accounts": [
+        "Accounts workspace and its existing sections (open work, to post, approvals, general ledger, patient ledgers, chart of accounts, invoices, fiscal years & periods): `frontend/lib/features/accounts/presentation/pages/accounts_workspace_page.dart`",
+        "Accounts backend: `backend/src/modules/accounts-workspace/`, `backend/src/modules/accounts-invoice/`, `backend/src/modules/chart-account/`",
+    ],
+    "claims": [
+        "Claims workspace and its existing queues (pre-authorization pending/approved/denied/expired, submitted, approved, partial, rejected, settled, insurance setup): `frontend/lib/features/claims/presentation/pages/claims_workspace_page.dart`, `frontend/lib/features/claims/presentation/widgets/insurance_authorization_panel.dart`",
+        "Claims backend: `backend/src/modules/claims-workspace/`, `backend/src/modules/insurance-claim/`, `backend/src/modules/pre-authorization/`",
+    ],
+}
+
+# Group-level (submenu) reuse targets.
+REUSE_BY_GROUP: dict[tuple[str, str], list[str]] = {
+    ("accounts", "General Accounting"): [
+        "`backend/src/modules/chart-account/` and the `chart_account` model own account masters.",
+        "`frontend/lib/features/accounts/presentation/widgets/accounts_gl_panel.dart` and `accounts_chart_panel.dart` own ledger and chart presentation.",
+    ],
+    ("accounts", "Purchases & Payables"): [
+        "`backend/src/modules/supplier/`, `purchase-request/`, `purchase-order/`, and `goods-receipt/` already own suppliers and the procurement chain, including the `supplier`, `purchase_request`, and `purchase_order` models.",
+    ],
+    ("accounts", "Cash Management"): [
+        "`backend/src/modules/shift-close/`, `day-close/`, and `closeout-pack/` already own cashier session and daily closure state.",
+    ],
+    ("accounts", "Fixed Assets"): [
+        "`backend/src/modules/asset/` and `asset-service-log/` already own the asset register and its service history via the `asset` and `asset_service_log` models.",
+    ],
+    ("accounts", "Period Close"): [
+        "`backend/src/modules/accounts-workspace/services/fiscal-period.service.js` and the `fiscal_period` model already own period state, locks, and reopening.",
+    ],
+    ("accounts", "Financial Reports"): [
+        "`backend/src/modules/reports-workspace/` and `backend/src/lib/reports/` already own dataset definitions, runtime, scheduling, and export formats.",
+    ],
+    ("accounts", "Audit Trail"): [
+        "`backend/src/modules/audit-log/`, `system-change-log/`, and `phi-access-log/` already record the events these tabs read. These tabs are read-only projections; do not write a second audit store.",
+    ],
+    ("accounts", "Setup & Controls"): [
+        "`backend/src/modules/department/` and `unit/` already own departments and organizational units.",
+        "`backend/src/modules/settings-workspace/` and `tenant-facility-workspace/` already own tenant/facility configuration, including the default currency these tabs must read rather than redefine.",
+    ],
+}
+
+# Tab-level reuse targets that are more specific than their group.
+REUSE_BY_TAB: dict[tuple[str, str], list[str]] = {
+    ("accounts", "Chart of Accounts"): [
+        "Implemented today: `backend/src/modules/chart-account/` plus `frontend/lib/features/accounts/presentation/widgets/accounts_chart_panel.dart` and `accounts_chart_dialogs.dart`. Extend these; do not add a second chart model or panel.",
+    ],
+    ("accounts", "General Ledger"): [
+        "Implemented today: `frontend/lib/features/accounts/presentation/widgets/accounts_gl_panel.dart` backed by `backend/src/modules/accounts-workspace/`. Extend the existing GL query rather than adding a parallel ledger endpoint.",
+    ],
+    ("accounts", "Payroll Journal"): [
+        "`backend/src/modules/payroll-run/` and `payroll-item/` own payroll amounts. This tab posts and reads them; it does not recompute payroll.",
+    ],
+    ("accounts", "Inventory Journal"): [
+        "`backend/src/modules/stock-movement/`, `stock-adjustment/`, and `inventory-item/` own stock quantities and valuation inputs. This tab posts and reads them.",
+    ],
+    ("accounts", "Asset Journal"): [
+        "`backend/src/modules/asset/` owns asset values. This tab posts and reads them.",
+    ],
+    ("billing", "Invoices"): [
+        "Implemented today: `backend/src/modules/invoice/` and the `invoice` / `invoice_item` models. Extend them; do not add a second invoice model.",
+    ],
+    ("billing", "Payments"): [
+        "Implemented today: `backend/src/modules/payment/` and the `payment` model, plus `frontend/lib/features/billing/presentation/widgets/billing_receive_payment_dialog.dart`.",
+    ],
+    ("billing", "Refunds"): [
+        "Implemented today: `backend/src/modules/refund/` and the `refund` model.",
+    ],
+    ("billing", "Charges"): [
+        "Implemented today: `backend/src/lib/billing/` charge builders per department plus `frontend/lib/features/billing/presentation/widgets/billing_quick_charge_dialog.dart`.",
+    ],
+    ("billing", "Price Lists & Tariffs"): [
+        "Implemented today: `backend/src/modules/price-book-entry/` and `frontend/lib/features/billing/presentation/widgets/billing_price_book_panel.dart` with its dialogs, print options, and similarity checks.",
+    ],
+    ("billing", "Billing Rules"): [
+        "`backend/src/modules/pricing-rule/` already owns pricing rule evaluation through `backend/src/lib/billing/price-resolver.js`.",
+    ],
+    ("billing", "Discount Rules"): [
+        "`backend/src/modules/scheme-offer/` and `pricing-rule/` already own discount and scheme resolution.",
+    ],
+    ("billing", "Billing Reports"): [
+        "`frontend/lib/features/billing/presentation/widgets/billing_financial_analytics_panel.dart` already renders billing analytics.",
+    ],
+    ("claims", "Insurance Providers"): [
+        "Implemented today: `backend/src/modules/insurance-company/` plus `frontend/lib/features/claims/presentation/widgets/claims_insurance_config_dialogs.dart`.",
+    ],
+    ("claims", "Plans & Products"): [
+        "Implemented today: `backend/src/modules/coverage-plan/`.",
+    ],
+    ("claims", "Patient Policies"): [
+        "Implemented today: `backend/src/modules/patient-insurance-enrollment/`.",
+    ],
+    ("claims", "Pre-authorizations"): [
+        "Implemented today: `backend/src/modules/pre-authorization/` plus `frontend/lib/features/claims/presentation/widgets/insurance_authorization_panel.dart`.",
+    ],
+    ("claims", "Claims"): [
+        "Implemented today: `backend/src/modules/insurance-claim/` and the `insurance_claim` model.",
+    ],
+    ("claims", "Submission Channels"): [
+        "`backend/src/modules/insurer-integration/` already owns payer transport configuration.",
+    ],
+}
+
+
+def panel_file_path(tab: Tab) -> str:
+    """Target panel file, following the existing `<module>_<name>_panel.dart` convention."""
+    name = tab.slug.replace("-", "_")
+    return (
+        f"frontend/lib/features/{tab.module_key}/presentation/widgets/"
+        f"{tab.module_key}_{name}_panel.dart"
+    )
+
+
+def reuse_targets(tab: Tab) -> list[str]:
+    """Existing assets this tab must extend rather than reimplement."""
+    entries: list[str] = list(REUSE_BY_MODULE.get(tab.module_key, []))
+    for group_label in tab.group_labels:
+        entries.extend(REUSE_BY_GROUP.get((tab.module_key, group_label), []))
+    entries.extend(REUSE_BY_TAB.get((tab.module_key, tab.label), []))
+    entries.extend(REUSE_SHARED)
+    return entries
+
+
+EXISTING_IMPLEMENTATION_DOC = f"""{GENERATED_MARKER}
+# Existing implementation and the reuse audit
+
+These specifications describe a **target state**, not a greenfield build. Most of this
+scope already exists somewhere in the codebase. Read this document before any other
+contract in this folder.
+
+## Reuse audit
+
+Run all five steps before writing code for a tab, and record the outcome in the change
+description:
+
+1. **Backend record** — is there already a module, Prisma model, service, and route that
+   stores or exposes this record?
+2. **Frontend surface** — is there already a panel, table, dialog, DTO, entity,
+   repository, or controller for it?
+3. **Authorization** — is there already a permission key, entitlement, ABAC scope, and
+   access atom for it?
+4. **Presentation support** — is there already a localized string, formatter, print
+   helper, or export mapping for it?
+5. **Gap list** — what genuinely does not exist?
+
+Only step 5's gap list may be built from scratch. Everything else is extended in place:
+add columns, filters, statuses, and actions to the owning module instead of creating a
+parallel one.
+
+## Authoritative existing implementations
+
+| Capability | Owning implementation |
+|---|---|
+| Currency defaults, formatting, precision, conversion | `frontend/lib/shared/components/app_currency.dart`, `frontend/lib/core/currency/effective_default_currency_provider.dart`, `frontend/lib/core/currency/fx_currency_utils.dart`, `frontend/lib/shared/components/app_currency_amount_field.dart`, `frontend/lib/shared/components/app_currency_select_field.dart` |
+| Chart of accounts | `backend/src/modules/chart-account/`, `chart_account` model, `frontend/lib/features/accounts/presentation/widgets/accounts_chart_panel.dart` |
+| Fiscal periods and period locks | `backend/src/modules/accounts-workspace/services/fiscal-period.service.js`, `fiscal_period` model, `frontend/lib/features/accounts/presentation/widgets/accounts_fiscal_periods_panel.dart` |
+| Accounts desk: work, journals, approvals, GL, patient ledgers, invoices | `backend/src/modules/accounts-workspace/`, `backend/src/modules/accounts-invoice/`, `frontend/lib/features/accounts/` |
+| Patient charges, invoices, payments, refunds, adjustments | `backend/src/modules/billing/`, `invoice/`, `payment/`, `refund/`, `billing-adjustment/`, `backend/src/lib/billing/`, `frontend/lib/features/billing/` |
+| Price lists, tariffs, pricing and discount rules | `backend/src/modules/price-book-entry/`, `pricing-rule/`, `scheme-offer/`, `frontend/lib/features/billing/presentation/widgets/billing_price_book_panel.dart` |
+| Insurers, plans, policies, pre-authorizations, claims | `backend/src/modules/insurance-company/`, `coverage-plan/`, `patient-insurance-enrollment/`, `pre-authorization/`, `insurance-claim/`, `insurer-integration/`, `claims-workspace/`, `frontend/lib/features/claims/` |
+| Suppliers, requisitions, purchase orders, goods receipts | `backend/src/modules/supplier/`, `purchase-request/`, `purchase-order/`, `goods-receipt/` |
+| Fixed assets and service history | `backend/src/modules/asset/`, `asset-service-log/` |
+| Payroll postings | `backend/src/modules/payroll-run/`, `payroll-item/` |
+| Inventory movements and valuation inputs | `backend/src/modules/stock-movement/`, `stock-adjustment/`, `inventory-item/` |
+| Cash points, shift and day closure | `backend/src/modules/shift-close/`, `day-close/`, `closeout-pack/` |
+| Departments and organizational units | `backend/src/modules/department/`, `unit/` |
+| Tenant/facility configuration and defaults | `backend/src/modules/settings-workspace/`, `tenant-facility-workspace/` |
+| Report definitions, runs, schedules, exports | `backend/src/modules/report-definition/`, `report-run/`, `report-schedule/`, `reports-workspace/`, `backend/src/lib/reports/`, `frontend/lib/features/reports/` |
+| Audit, change, and PHI-access history | `backend/src/modules/audit-log/`, `system-change-log/`, `phi-access-log/` |
+| Workspace shell, tables, dialogs, forms, print, access gates | `frontend/lib/shared/components/`, `frontend/lib/shared/layout/`, `frontend/lib/core/permissions/` |
+
+## Currency is settled
+
+The application already resolves currency (facility → tenant → app default), applies
+per-currency decimal precision, rounds, converts, and formats amounts through the shared
+currency code listed above. There is deliberately **no** Currencies & Exchange Rates tab.
+Finance tabs read the effective currency and use the shared formatters; they must not
+introduce a currency registry, a rate table, or a second conversion path.
+
+## When target and existing implementation disagree
+
+- The target column set, statuses, and permissions in the source document win.
+- The owning module, model, route family, and identifier scheme of the existing
+  implementation win.
+- Reconcile by migrating the existing implementation toward the target, keeping
+  compatible deep links and data, and retiring superseded code only after parity tests
+  pass.
+- If a tab would create a second source of truth for a record another module owns, do
+  not build it. Extend the owning module and link to it.
+"""
+
+
+NAVIGATION_MODEL_DOC = f"""{GENERATED_MARKER}
+# Finance navigation model
+
+One rule for all three menus: **the sidebar nests exactly one level, and the
+level below that is a tab strip.**
+
+| Level | Example | Surface |
+|---|---|---|
+| 1 | `Accounts & Finance` | Expandable sidebar menu item |
+| 2 | `General Accounting` | Nested sidebar menu item — the only nesting level |
+| 3 | `Chart of Accounts` | Tab in the workspace, via `AppTabStrip` |
+
+The same shape applies to `Billing → Charges & Invoicing → Invoices` and
+`Insurance & Claims → Claims Processing → Adjudications`.
+
+## Menu behavior
+
+- A menu item expands to reveal its categories. Selecting a category opens
+  `<route>?section=<its first authorized section>`.
+- Category menu items carry the summed scope total of their visible sections,
+  read from the workspace summary. The menu never depends on panel query state.
+- Menu items the user cannot access are omitted, not disabled. A category is
+  hidden when none of its sections is visible.
+
+## Screen behavior
+
+- The workspace renders **one flat `AppTabStrip`**
+  (`frontend/lib/shared/components/app_tab_strip.dart`) holding the active
+  category's sections. Selecting a tab moves to `<route>?section=<slug>`.
+- Use `AppTabItem` per section with `icon`, `tooltip`, `count`, and
+  `countTone`; the strip handles overflow into its own more-menu, so never
+  hand-roll a tab row or a second strip.
+- Keep `AppTabStripVariant.standard`. `nested` exists for subordinate category
+  tabs elsewhere in the app and must not be used to express a menu level.
+- Toolbar actions belong to `primaryAction` / `secondaryActions` on the strip,
+  not to a separate button row.
+- Where the product menu shows a fourth level (`General Accounting →
+  Journal Entries → …`), those entries flatten into the same tab strip. They
+  add neither a menu level nor a tab layer.
+
+### Explicitly forbidden
+
+- A second sidebar nesting level below a category.
+- A category `AppTabStrip` above the section strip.
+- `AppTabStripVariant.nested` used to represent the category → section hierarchy.
+
+### Required behavior
+
+- The expanded menu item, the active tab, the canonical `?section=` slug, the
+  page title, and the breadcrumb stay synchronized.
+- Section tabs keep the established count semantics: the active tab shows the
+  filtered server total, siblings show their own scope total.
+- Deep-linking to `<route>?section=<slug>` expands and selects the owning
+  category menu item and activates that tab.
+- Reopening a tab restores its committed search, filters, sort, page, and columns.
+"""
+
+
 @dataclass(frozen=True)
 class Tab:
     module_key: str
@@ -357,18 +690,23 @@ def snake_id(value: str) -> str:
 
 
 def all_tabs() -> list[Tab]:
-    tabs = [
-        Tab("billing", (), (), label, "9.2 / 10.2") for label in BILLING_TABS
-    ]
-    for group_labels, group_slugs, labels in ACCOUNT_GROUPS:
-        tabs.extend(
-            Tab("accounts", group_labels, group_slugs, label, "9.3 / 10.3")
-            for label in labels
-        )
-    tabs.extend(
-        Tab("claims", (), (), label, "9.4 / 10.4")
-        for label in INSURANCE_TABS
-    )
+    tabs: list[Tab] = []
+    for module_key, groups, sections in (
+        ("billing", BILLING_GROUPS, "9.2 / 10.2"),
+        ("accounts", ACCOUNT_GROUPS, "9.3 / 10.3"),
+        ("claims", INSURANCE_GROUPS, "9.4 / 10.4"),
+    ):
+        for group_labels, group_slugs, labels in groups:
+            tabs.extend(
+                Tab(module_key, group_labels, group_slugs, label, sections)
+                for label in labels
+            )
+    for tab in tabs:
+        if len(tab.group_labels) > 1:
+            raise ValueError(
+                f"{tab.module['menu']} → {' → '.join(tab.group_labels)} nests "
+                "more than one menu level"
+            )
     return tabs
 
 
@@ -539,7 +877,6 @@ def profile_for(tab: Tab) -> str:
         "channels",
         "numbering",
         "methods",
-        "currencies",
         "periods",
         "mappings",
         "price lists",
@@ -615,7 +952,6 @@ def infer_column_type(column: str) -> str:
         return "enum"
     if name in {
         "default template",
-        "base currency",
         "on hold",
         "mandatory",
         "recoverable",
@@ -627,14 +963,24 @@ def infer_column_type(column: str) -> str:
         return "boolean"
     if name.endswith(" required"):
         return "boolean"
+    # "Requires External Reference" is a flag, not a reference column.
+    if name.startswith("requires "):
+        return "boolean"
     if name in {
         "deposits in transit",
         "unpresented payments",
         "bank-only items",
     }:
         return "money"
-    if any(token in name for token in ("cost centre", "cost center")):
+    # A person, not an amount — guards "Budget Owner" against the money tokens.
+    if name.endswith(" owner"):
+        return "text"
+    # A ledger account, not an amount — guards "Default Revenue Account" and
+    # "Default Expense Account" against the "revenue" / "expense" tokens.
+    if name.endswith(" account") or name == "account":
         return "reference"
+    if any(token in name for token in ("cost centre", "cost center")):
+        return "text" if name.endswith(" name") else "reference"
     if re.search(r"(^|[\s/])(no\.?|number|code|reference)(\b|$)", name):
         return "reference"
     if any(
@@ -713,10 +1059,12 @@ def infer_column_type(column: str) -> str:
         return "money"
     if re.search(r"\b(count|quantity|days|age|level|priority)\b", name):
         return "number"
-    if any(token in name for token in ("status", "type", "method", "category")):
-        return "status" if "status" in name else "enum"
+    # A display name is text even when the domain word is an enum elsewhere
+    # ("Method Name", "Category Name"), so this outranks the enum tokens.
     if name.endswith(" name") or name in {"name", "description", "reason", "notes"}:
         return "text"
+    if any(token in name for token in ("status", "type", "method", "category")):
+        return "status" if "status" in name else "enum"
     if any(
         token in name
         for token in (
@@ -1420,10 +1768,36 @@ def render_tab(tab: Tab, columns: list[str]) -> str:
         if tab.module_key == "claims"
         else ""
     )
+    menu = tab.module["menu"]
+    category = tab.group_labels[0] if tab.group_labels else menu
+    surface_kind = (
+        f"permanent `{profile}` table/worklist **tab**, inside the "
+        f"`{category}` menu item"
+    )
     parent_behavior = (
-        "Accounts category labels expand/collapse; this leaf submenu opens the tab"
-        if tab.module_key == "accounts"
-        else f"The {tab.module['menu']} menu opens this flat workspace tab"
+        f"The `{menu}` sidebar entry expands one level into its category menu "
+        f"items; `{category}` opens the workspace, and this tab is one of that "
+        "category's tabs"
+    )
+    forbidden_navigation = (
+        "- **Forbidden:** a second menu nesting level, a category `AppTabStrip` "
+        "above the section strip, or `AppTabStripVariant.nested`\n"
+    )
+    tab_strip_bullet = (
+        "- One flat `AppTabStrip` (`frontend/lib/shared/components/app_tab_strip.dart`) "
+        "holding the sections of the active category; the category itself is a "
+        "sidebar menu item, not a tab"
+    )
+    reuse_block = "\n".join(f"- {entry}" for entry in reuse_targets(tab))
+    panel_path = panel_file_path(tab)
+    accounts_navigation_note = (
+        " Add it to its category's flat tab strip; the category is the sidebar menu "
+        "item and must not become a tab row."
+    )
+    navigation_acceptance = (
+        f"`{' → '.join((menu,) + tab.group_labels)}` resolves through exactly two "
+        "sidebar menu levels, and this tab appears in the category's single flat "
+        "`AppTabStrip` with no category tab row and no nested variant."
     )
 
     return f"""{GENERATED_MARKER}
@@ -1447,13 +1821,22 @@ implementation_status: "target-refactor"
 
 This is a target-state specification. Existing Billing, Accounts, or Claims code may implement only a subset; the source-of-truth document and this specification define the intended refactor.
 
+## Existing implementation to reuse
+
+Run the reuse audit in [{shared_link}/existing-implementation.md]({shared_link}/existing-implementation.md) before writing code. This surface is a refactor of existing code unless the audit proves a genuine gap.
+
+{reuse_block}
+
+Extend the owning module in place. Do not add a parallel model, route family, controller, panel, permission key, or formatter for a record something above already owns, and do not create a second source of truth for it.
+
 ## Navigation and workspace placement
 
 - **Menu path:** `{title_path}`
 - **Canonical URL:** `{canonical_url}`
-- **Tab kind:** permanent `{profile}` table/worklist
-- **Reopen behavior:** focus the existing tab and preserve search, filters, sort, page, and selected columns
+- **Surface kind:** {surface_kind}
+- **Reopen behavior:** focus the existing surface and preserve search, filters, sort, page, and selected columns
 - **Parent behavior:** {parent_behavior}
+{forbidden_navigation}- **Navigation contract:** [{shared_link}/navigation-model.md]({shared_link}/navigation-model.md)
 - **Source:** [{SOURCE.name}]({source_link}) §§{tab.source_section}
 
 ## Pharmacy-guided UI implementation
@@ -1461,13 +1844,13 @@ This is a target-state specification. Existing Billing, Accounts, or Claims code
 Follow the `/pharmacy` workspace conventions:
 
 - `AsyncStateScaffold` → `ResponsivePage` → `AppWorkspace`
-- `AppTabStrip` for Billing and Insurance tabs; Accounts leaf submenu selection opens the same tab model
+{tab_strip_bullet}
 - `AppListTable` for the primary table, server pagination, saved columns, export, and print
 - Row click opens `showAppDialog` / `AppDialog`; sections use `AppWorkspaceDetailPanel`
 - Mutations use `AppWorkspaceMutationDialog` or `AppDialog`, not permanent create/edit tabs
-- `AppAccessActionGate` hides unauthorized buttons; unavailable menu/tabs are omitted
+- `AppAccessActionGate` hides unauthorized buttons; unavailable menu items and tabs are omitted
 - `syncWorkspaceLocation` keeps the section slug, filters, and deep links synchronized
-- Active tab count comes from the filtered server total; inactive badge counts come from the workspace summary
+- The active surface's count badge comes from the filtered server total; sibling badge counts come from the workspace summary
 
 See [{shared_link}/workspace-pattern.md]({shared_link}/workspace-pattern.md) for exact Pharmacy references and the target extraction pattern.
 
@@ -1571,8 +1954,9 @@ Warnings are visibly distinct from blocking errors. Override actions require an 
 
 ## Refactor work breakdown
 
-1. **Navigation:** add `{tab.slug}` to the workspace section enum/query parser, canonical slug map, localized label, permission filter, and count-badge mapper.
-2. **Presentation:** extract `frontend/lib/features/{tab.module_key}/presentation/widgets/{tab.slug.replace('-', '_')}_tab.dart`; compose it from `AppListTable` and shared workspace components.
+0. **Reuse audit:** complete the five steps in [{shared_link}/existing-implementation.md]({shared_link}/existing-implementation.md) and record which of the steps below collapse into extending existing code.
+1. **Navigation:** add `{tab.slug}` to the workspace section enum/query parser, canonical slug map, localized label, permission filter, and count-badge mapper.{accounts_navigation_note}
+2. **Presentation:** extract `{panel_path}`; compose it from `AppListTable` and shared workspace components.
 3. **Table support:** define typed column IDs, default/optional columns, server sort keys, filters, export mapping, print mapping, empty/error states, and count semantics.
 4. **Details and CRUD:** add focused detail and mutation dialogs; include the nested tables and buttons in this specification.
 5. **State:** extend the workspace query/state/controller with a paginated result for this tab and targeted mutation refresh.
@@ -1594,8 +1978,10 @@ Warnings are visibly distinct from blocking errors. Override actions require an 
 
 ## Acceptance criteria
 
-- [ ] Tab appears at `{title_path}` only with the required entitlement and read access.
-- [ ] Canonical section slug `{tab.slug}` deep-links and restores the selected tab.
+- [ ] The reuse audit ran and its outcome is recorded; no parallel model, route, panel, permission key, or formatter was added for something already owned elsewhere.
+- [ ] {navigation_acceptance}
+- [ ] The surface appears at `{title_path}` only with the required entitlement and read access.
+- [ ] Canonical section slug `{tab.slug}` deep-links and restores the selected surface.
 - [ ] Primary `AppListTable` exposes every tab-specific and applicable baseline column.
 - [ ] Search, filters, server sort, pagination, column chooser, saved views, export, and print work.
 - [ ] Buttons match this specification and are hidden when permission, status, or scope denies them.
@@ -1627,32 +2013,46 @@ def render_folder_readme(
         )
     child_rows = []
     for child_title, child in sorted(child_folders, key=lambda item: item[0].lower()):
-        child_rows.append(f"| [{child_title}]({child.name}/README.md) | Nested submenu and tab specifications. |")
+        child_rows.append(f"| [{child_title}]({child.name}/README.md) | Nested menu item with its own leaf specifications. |")
+
+    is_menu_root = folder.parent == OUTPUT_ROOT
+    surface_word = "workspace tab"
 
     parts = [
         GENERATED_MARKER,
         f"# {title}",
         "",
-        f"This folder is derived from [{SOURCE.name}]({source_link}) and represents a menu or nested submenu. Each non-README Markdown file represents one permanent table tab.",
+        f"This folder is derived from [{SOURCE.name}]({source_link}) and represents a menu or nested menu item. Each non-README Markdown file represents one permanent table {surface_word}.",
         "",
     ]
+    if is_menu_root:
+        parts.extend(
+            [
+                "The first folder level is a **sidebar menu item**; the files inside "
+                "it are that menu item's **workspace tabs**. The menu never nests "
+                "deeper, and the tabs never gain a category row above them.",
+                "",
+            ]
+        )
     if child_rows:
         parts.extend(
             [
-                "## Nested submenus",
+                "## Nested menu items",
                 "",
-                "| Submenu | Purpose |",
+                "| Menu item | Purpose |",
                 "|---|---|",
                 *child_rows,
                 "",
             ]
         )
     if tab_rows:
+        heading = "Tabs"
+        label_column = "Tab"
         parts.extend(
             [
-                "## Tabs",
+                f"## {heading}",
                 "",
-                "| Tab | Section slug | Purpose |",
+                f"| {label_column} | Section slug | Purpose |",
                 "|---|---|---|",
                 *tab_rows,
                 "",
@@ -1662,7 +2062,8 @@ def render_folder_readme(
         [
             "## Implementation contract",
             "",
-            "- Every listed tab is an `AppListTable` worklist or tabular report.",
+            f"- Run the [reuse audit]({shared_link.replace('README.md', 'existing-implementation.md')}) first; most of this scope already exists.",
+            f"- Every listed {surface_word} is an `AppListTable` worklist or tabular report.",
             "- Forms and workflow actions open from toolbar/row buttons in dialogs.",
             "- Permissions, entitlement, ABAC, human-friendly IDs, export/print, audit, and targeted refresh are mandatory.",
             f"- Use the [shared finance contracts]({shared_link}) for tables, dialogs, permissions, API behavior, state, and audit.",
@@ -1672,21 +2073,27 @@ def render_folder_readme(
     return "\n".join(parts)
 
 
-def shared_documents() -> dict[Path, str]:
+def shared_documents(tabs: list[Tab]) -> dict[Path, str]:
     base = OUTPUT_ROOT / "_shared"
     docs: dict[Path, str] = {}
     docs[base / "README.md"] = f"""{GENERATED_MARKER}
 # Shared finance workspace contracts
 
-These contracts apply to all 159 permanent tabs under Billing, Accounts & Finance, and Insurance & Claims.
+These contracts apply to all {len(tabs)} permanent tabs under Billing, Accounts & Finance, and Insurance & Claims.
 
+- [Existing implementation and reuse audit](existing-implementation.md)
+- [Navigation model](navigation-model.md)
 - [Workspace pattern](workspace-pattern.md)
 - [Table contract](table-contract.md)
 - [CRUD and dialog contract](crud-and-dialog-contract.md)
 - [Permissions and entitlements](permissions-and-entitlements.md)
 - [API, state, and audit contract](api-state-and-audit-contract.md)
 - [Journal-entry shared columns](journal-entry-table-columns.md)
+
+Read [existing-implementation.md](existing-implementation.md) first. Every other contract assumes the reuse audit already ran.
 """
+    docs[base / "existing-implementation.md"] = EXISTING_IMPLEMENTATION_DOC
+    docs[base / "navigation-model.md"] = NAVIGATION_MODEL_DOC
     docs[base / "workspace-pattern.md"] = f"""{GENERATED_MARKER}
 # Pharmacy-guided workspace pattern
 
@@ -1697,7 +2104,7 @@ Use Pharmacy as the interaction and component exemplar, not as a monolithic file
 1. `AsyncStateScaffold`
 2. `ResponsivePage`
 3. `AppWorkspace`
-4. `AppTabStrip` for workspace tabs or Accounts nested-menu leaf selection
+4. One flat `AppTabStrip` in every workspace; for Accounts & Finance it holds the active category's sections, reached through one sidebar nesting level (see [navigation-model.md](navigation-model.md))
 5. `AppListTable` for every permanent tab
 6. `showAppDialog` + `AppDialog` / `AppWorkspaceMutationDialog` for details and mutations
 7. `AppWorkspaceDetailPanel` for collapsible detail sections
@@ -1851,10 +2258,12 @@ See [`_shared/workspace-pattern.md`](_shared/workspace-pattern.md).
 
 ## Important refactor rules
 
+- Run the [reuse audit](_shared/existing-implementation.md) before implementing any tab. Most of this scope already exists; extend the owning module instead of adding a parallel one.
 - Billing keeps the **Billing** menu name and exposes a flat tab workspace.
-- Accounts becomes **Accounts & Finance** and is the only expandable finance main menu; category folders are submenu groups and leaf files are tabs.
+- Accounts becomes **Accounts & Finance** and is the only expandable finance main menu. Its category folders are **nested sidebar menu items** (one level only) and the leaf files inside them are **tabs** in the workspace. See [navigation-model.md](_shared/navigation-model.md).
 - Insurance Claims becomes **Insurance & Claims** and exposes a flat tab workspace.
 - Every permanent tab is a table/worklist. Create/edit/approve/post/reconcile actions are buttons and dialogs, not permanent tabs.
+- There is no Currencies & Exchange Rates tab. Currency resolution, precision, and conversion already exist in shared code.
 - Posted/finalized financial history is immutable.
 - Cross-module links open the authoritative record in its owning workspace.
 
@@ -1865,7 +2274,7 @@ python tool/generate_finance_tab_docs.py
 python tool/generate_finance_tab_docs.py --check
 ```
 
-The generator validates the 24 Billing, 100 Accounts & Finance, and 35 Insurance & Claims tabs against Section 10 columns before writing.
+The generator validates the {counts['billing']} Billing, {counts['accounts']} Accounts & Finance, and {counts['claims']} Insurance & Claims tabs against Section 10 columns before writing.
 """
 
 
@@ -1928,7 +2337,7 @@ def validate_output_content(outputs: dict[Path, str], tabs: list[Tab]) -> None:
 
 def build_outputs() -> dict[Path, str]:
     tabs = all_tabs()
-    expected_counts = {"billing": 24, "accounts": 100, "claims": 35}
+    expected_counts = {"billing": 24, "accounts": 99, "claims": 35}
     actual_counts = {
         key: sum(1 for tab in tabs if tab.module_key == key)
         for key in expected_counts
@@ -1964,7 +2373,7 @@ def build_outputs() -> dict[Path, str]:
 
     outputs: dict[Path, str] = {
         OUTPUT_ROOT / "README.md": root_readme(tabs),
-        **shared_documents(),
+        **shared_documents(tabs),
     }
     for tab in tabs:
         outputs[tab.path] = render_tab(tab, columns[(tab.module_key, tab.label)])

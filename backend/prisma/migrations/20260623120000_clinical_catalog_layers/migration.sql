@@ -34,7 +34,7 @@ CREATE TABLE `facility_catalog_offering` (
   INDEX `facility_catalog_offering_sort_order_idx`(`sort_order`),
   INDEX `facility_catalog_offering_deleted_at_idx`(`deleted_at`),
   INDEX `facility_catalog_offering_human_friendly_id_idx`(`human_friendly_id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 ALTER TABLE `facility_catalog_offering`
   ADD CONSTRAINT `facility_catalog_offering_tenant_id_fkey`

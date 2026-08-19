@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
@@ -554,12 +555,12 @@ void main() {
         resizable: false,
         actions: <Widget>[
           AppButton.tertiary(
-            label: 'Clear filters',
+            label: 'Clear',
             leadingIcon: Icons.filter_alt_off_outlined,
             onPressed: null,
           ),
           AppButton.primary(
-            label: 'Apply filters',
+            label: 'Apply',
             leadingIcon: Icons.check,
             onPressed: null,
           ),
@@ -568,22 +569,19 @@ void main() {
       size: const Size(400, 498),
     );
 
-    expect(find.text('Clear filters'), findsOneWidget);
-    expect(find.text('Apply filters'), findsOneWidget);
+    // Footer actions stay labeled at every breakpoint.
+    expect(find.text('Clear'), findsOneWidget);
+    expect(find.text('Apply'), findsOneWidget);
     expect(find.text('Close'), findsNothing);
 
-    final Offset clearAction = tester.getCenter(
-      find.widgetWithText(AppButton, 'Clear filters'),
-    );
-    final Offset applyAction = tester.getCenter(
-      find.widgetWithText(AppButton, 'Apply filters'),
-    );
+    final Offset clearAction = tester.getCenter(find.text('Clear'));
+    final Offset applyAction = tester.getCenter(find.text('Apply'));
     expect(clearAction.dy, closeTo(applyAction.dy, 1));
     expect(clearAction.dx, greaterThan(applyAction.dx));
   });
 
   testWidgets(
-    'mobile AppDialog keeps footer actions horizontal and labelled',
+    'mobile AppDialog keeps footer actions horizontal, labeled, and iconed',
     (WidgetTester tester) async {
       await pumpComponent(
         tester,
@@ -591,14 +589,16 @@ void main() {
           title: const Text('Lab result entry'),
           content: const Text('Body'),
           pinActionsToBottom: true,
+          // Short labels: the test font renders every glyph at the full font
+          // size, so label widths here run far wider than production text.
           actions: <Widget>[
             AppButton.secondary(
-              label: 'Preview report',
+              label: 'Preview',
               leadingIcon: Icons.visibility_outlined,
               onPressed: () {},
             ),
             AppButton.primary(
-              label: 'Save results',
+              label: 'Save',
               leadingIcon: Icons.save_outlined,
               onPressed: () {},
             ),
@@ -607,18 +607,14 @@ void main() {
         size: const Size(390, 844),
       );
 
-      // Phones scale the labelled row down rather than reducing it to icons.
-      expect(find.text('Preview report'), findsOneWidget);
-      expect(find.text('Save results'), findsOneWidget);
-      expect(find.byTooltip('Preview report'), findsNothing);
-      expect(find.byTooltip('Save results'), findsNothing);
+      // Icon *and* label on phones, not icon-only.
+      expect(find.text('Preview'), findsOneWidget);
+      expect(find.text('Save'), findsOneWidget);
+      expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.save_outlined), findsOneWidget);
 
-      final Offset preview = tester.getCenter(
-        find.widgetWithText(AppButton, 'Preview report'),
-      );
-      final Offset save = tester.getCenter(
-        find.widgetWithText(AppButton, 'Save results'),
-      );
+      final Offset preview = tester.getCenter(find.text('Preview'));
+      final Offset save = tester.getCenter(find.text('Save'));
       expect(preview.dy, closeTo(save.dy, 1));
       expect(preview.dx, greaterThan(save.dx));
     },
@@ -652,12 +648,8 @@ void main() {
       size: const Size(390, 844),
     );
 
-    final Offset preview = tester.getCenter(
-      find.widgetWithText(AppButton, 'Preview report'),
-    );
-    final Offset save = tester.getCenter(
-      find.widgetWithText(AppButton, 'Save results'),
-    );
+    final Offset preview = tester.getCenter(find.text('Preview report'));
+    final Offset save = tester.getCenter(find.text('Save results'));
     // Source [secondary, primary] is reversed so primary is top / left and
     // secondary (dismiss) is bottom / extreme-right.
     expect(preview.dy, greaterThan(save.dy));
@@ -767,6 +759,482 @@ void main() {
         .toList(growable: false);
     expect(keys[0], isNot(equals(keys[1])));
   });
+
+  testWidgets('mobile header dismisses with a leading back arrow, no close X', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppDialog(
+        title: Text('Patient details'),
+        content: SizedBox(height: 80, child: Text('Body')),
+      ),
+      size: const Size(390, 844),
+    );
+
+    expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+    expect(find.byIcon(Icons.close), findsNothing);
+    expect(find.byIcon(Icons.fullscreen), findsNothing);
+
+    // Leading: the back control sits before the title.
+    final Offset back = tester.getCenter(find.byIcon(Icons.arrow_back));
+    final Offset title = tester.getCenter(find.text('PATIENT DETAILS'));
+    expect(back.dx, lessThan(title.dx));
+  });
+
+  testWidgets('desktop header keeps the trailing close X and no back arrow', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppDialog(
+        title: Text('Patient details'),
+        content: SizedBox(height: 80, child: Text('Body')),
+      ),
+      size: const Size(1280, 800),
+    );
+
+    expect(find.byIcon(Icons.close), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_back), findsNothing);
+
+    final Offset close = tester.getCenter(find.byIcon(Icons.close));
+    final Offset title = tester.getCenter(find.text('PATIENT DETAILS'));
+    expect(close.dx, greaterThan(title.dx));
+  });
+
+  testWidgets('mobile back control uses the Apple chevron on iOS', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      Builder(
+        builder: (BuildContext context) {
+          return Theme(
+            data: Theme.of(context).copyWith(platform: TargetPlatform.iOS),
+            child: const AppDialog(
+              title: Text('Patient details'),
+              content: SizedBox(height: 80, child: Text('Body')),
+            ),
+          );
+        },
+      ),
+      size: const Size(390, 844),
+    );
+
+    expect(find.byIcon(Icons.arrow_back_ios_new), findsOneWidget);
+    expect(find.byIcon(Icons.arrow_back), findsNothing);
+  });
+
+  testWidgets('mobile back control pops the route and honors closeEnabled', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      Builder(
+        builder: (BuildContext context) {
+          return TextButton(
+            onPressed: () {
+              unawaited(
+                showAppDialog<void>(
+                  context: context,
+                  builder: (_) => const AppDialog(
+                    title: Text('Confirm action'),
+                    content: SizedBox(height: 40, child: Text('Body')),
+                  ),
+                ),
+              );
+            },
+            child: const Text('Open dialog'),
+          );
+        },
+      ),
+      size: const Size(390, 844),
+    );
+
+    await tester.tap(find.text('Open dialog'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AppDialog), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.arrow_back));
+    await tester.pumpAndSettle();
+    expect(find.byType(AppDialog), findsNothing);
+  });
+
+  testWidgets('mobile back control renders disabled when closeEnabled is false', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppDialog(
+        title: Text('Saving'),
+        closeEnabled: false,
+        content: SizedBox(height: 80, child: Text('Body')),
+      ),
+      size: const Size(390, 844),
+    );
+
+    final Finder backButton = find.ancestor(
+      of: find.byIcon(Icons.arrow_back),
+      matching: find.byType(TextButton),
+    );
+    expect(backButton, findsOneWidget);
+    expect(tester.widget<TextButton>(backButton).onPressed, isNull);
+  });
+
+  testWidgets('showCloseButton false renders no dismiss control on mobile', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      const AppDialog(
+        title: Text('Blocking step'),
+        showCloseButton: false,
+        content: SizedBox(height: 80, child: Text('Body')),
+      ),
+      size: const Size(390, 844),
+    );
+
+    expect(find.byIcon(Icons.arrow_back), findsNothing);
+    expect(find.byIcon(Icons.close), findsNothing);
+  });
+
+  testWidgets('crowded footer keeps primary and dismiss inline, rest overflow', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      AppDialog(
+        title: const Text('Roster detail'),
+        content: const SizedBox(height: 80, child: Text('Body')),
+        actions: <Widget>[
+          AppButton.close(label: 'Close', onPressed: () {}),
+          AppButton.secondary(
+            label: 'Duplicate',
+            leadingIcon: Icons.copy_outlined,
+            onPressed: () {},
+          ),
+          AppButton.secondary(
+            label: 'Export',
+            leadingIcon: Icons.file_download_outlined,
+            onPressed: () {},
+          ),
+          AppButton.tertiary(
+            label: 'Print',
+            leadingIcon: Icons.print_outlined,
+            onPressed: () {},
+          ),
+          AppButton.primary(
+            label: 'Save',
+            leadingIcon: Icons.save_outlined,
+            onPressed: () {},
+          ),
+        ],
+      ),
+      size: const Size(390, 844),
+    );
+
+    // Mandatory actions stay inline and labeled.
+    expect(find.text('Save'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
+
+    // Overflow-eligible actions moved behind one trailing menu.
+    expect(find.text('Duplicate'), findsNothing);
+    expect(find.text('Export'), findsNothing);
+    expect(find.text('Print'), findsNothing);
+    expect(find.byIcon(Icons.more_vert), findsOneWidget);
+
+    // Nothing disappeared: the menu lists every evicted action.
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    expect(find.text('Duplicate'), findsOneWidget);
+    expect(find.text('Export'), findsOneWidget);
+    expect(find.text('Print'), findsOneWidget);
+  });
+
+  testWidgets('overflow menu keeps disabled actions visible and disabled', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      AppDialog(
+        title: const Text('Roster detail'),
+        content: const SizedBox(height: 80, child: Text('Body')),
+        actions: <Widget>[
+          const AppButton.close(label: 'Close', onPressed: null),
+          const AppButton.secondary(
+            label: 'Duplicate',
+            leadingIcon: Icons.copy_outlined,
+            onPressed: null,
+          ),
+          const AppButton.secondary(
+            label: 'Export',
+            leadingIcon: Icons.file_download_outlined,
+            enabled: false,
+            onPressed: null,
+          ),
+          AppButton.primary(
+            label: 'Save',
+            leadingIcon: Icons.save_outlined,
+            onPressed: () {},
+          ),
+        ],
+      ),
+      size: const Size(390, 844),
+    );
+
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+
+    final Finder exportItem = find.ancestor(
+      of: find.text('Export'),
+      matching: find.byType(MenuItemButton),
+    );
+    expect(exportItem, findsOneWidget);
+    expect(tester.widget<MenuItemButton>(exportItem).onPressed, isNull);
+  });
+
+  testWidgets('overflow menu entry invokes the original action callback', (
+    WidgetTester tester,
+  ) async {
+    var exported = 0;
+
+    await pumpComponent(
+      tester,
+      AppDialog(
+        title: const Text('Roster detail'),
+        content: const SizedBox(height: 80, child: Text('Body')),
+        actions: <Widget>[
+          AppButton.close(label: 'Close', onPressed: () {}),
+          AppButton.secondary(
+            label: 'Duplicate',
+            leadingIcon: Icons.copy_outlined,
+            onPressed: () {},
+          ),
+          AppButton.secondary(
+            label: 'Export',
+            leadingIcon: Icons.file_download_outlined,
+            onPressed: () => exported += 1,
+          ),
+          AppButton.primary(
+            label: 'Save',
+            leadingIcon: Icons.save_outlined,
+            onPressed: () {},
+          ),
+        ],
+      ),
+      size: const Size(390, 844),
+    );
+
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Export'));
+    await tester.pumpAndSettle();
+
+    expect(exported, 1);
+  });
+
+  testWidgets('AppDialogAction overrides the inferred footer priority', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      AppDialog(
+        title: const Text('Roster detail'),
+        content: const SizedBox(height: 80, child: Text('Body')),
+        actions: <Widget>[
+          AppButton.close(label: 'Close', onPressed: () {}),
+          // Secondary by variant, but pinned inline by the caller.
+          AppDialogAction(
+            priority: AppDialogActionPriority.primary,
+            child: AppButton.secondary(
+              label: 'Post',
+              leadingIcon: Icons.send_outlined,
+              onPressed: () {},
+            ),
+          ),
+          AppButton.secondary(
+            label: 'Duplicate',
+            leadingIcon: Icons.copy_outlined,
+            onPressed: () {},
+          ),
+          AppButton.secondary(
+            label: 'Export',
+            leadingIcon: Icons.file_download_outlined,
+            onPressed: () {},
+          ),
+        ],
+      ),
+      size: const Size(390, 844),
+    );
+
+    expect(find.text('Post'), findsOneWidget);
+    expect(find.text('Duplicate'), findsNothing);
+    expect(find.text('Export'), findsNothing);
+  });
+
+  testWidgets('non-AppButton footer actions stay inline, never in the menu', (
+    WidgetTester tester,
+  ) async {
+    // Stands in for AppAccessActionGate and friends: builds lazily, so the
+    // footer cannot read its icon/label and must not re-render it as a row.
+    final Widget gatedAction = Builder(
+      builder: (BuildContext context) => AppButton.secondary(
+        label: 'Gated',
+        leadingIcon: Icons.lock_outline,
+        onPressed: () {},
+      ),
+    );
+
+    await pumpComponent(
+      tester,
+      AppDialog(
+        title: const Text('Roster detail'),
+        content: const SizedBox(height: 80, child: Text('Body')),
+        actions: <Widget>[
+          AppButton.close(label: 'Close', onPressed: () {}),
+          gatedAction,
+          AppButton.secondary(
+            label: 'Duplicate',
+            leadingIcon: Icons.copy_outlined,
+            onPressed: () {},
+          ),
+          AppButton.secondary(
+            label: 'Export',
+            leadingIcon: Icons.file_download_outlined,
+            onPressed: () {},
+          ),
+          AppButton.primary(
+            label: 'Save',
+            leadingIcon: Icons.save_outlined,
+            onPressed: () {},
+          ),
+        ],
+      ),
+      size: const Size(390, 844),
+    );
+
+    // The uninspectable action is never evicted, even under pressure. It may
+    // shed its label as a last resort, but it stays on the inline row.
+    expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+
+    // Inspectable secondaries still overflow normally, and the menu lists only
+    // them — the gate is never re-rendered as a menu row.
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    expect(find.text('Duplicate'), findsOneWidget);
+    expect(find.text('Export'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(MenuItemButton),
+        matching: find.byIcon(Icons.lock_outline),
+      ),
+      findsNothing,
+    );
+  });
+
+  testWidgets('footer controls render unscaled at 320 px', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      AppDialog(
+        title: const Text('Roster detail'),
+        content: const SizedBox(height: 80, child: Text('Body')),
+        actions: <Widget>[
+          AppButton.close(label: 'Close', onPressed: () {}),
+          AppButton.secondary(
+            label: 'Duplicate',
+            leadingIcon: Icons.copy_outlined,
+            onPressed: () {},
+          ),
+          AppButton.primary(
+            label: 'Save',
+            leadingIcon: Icons.save_outlined,
+            onPressed: () {},
+          ),
+        ],
+      ),
+      size: const Size(320, 640),
+      padding: EdgeInsets.zero,
+    );
+
+    _expectFooterTapTargets(tester);
+  });
+
+  testWidgets('footer controls render unscaled at 200% text scale', (
+    WidgetTester tester,
+  ) async {
+    await pumpComponent(
+      tester,
+      Builder(
+        builder: (BuildContext context) {
+          return MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(2)),
+            child: AppDialog(
+              title: const Text('Roster detail'),
+              content: const SizedBox(height: 80, child: Text('Body')),
+              actions: <Widget>[
+                AppButton.close(label: 'Close', onPressed: () {}),
+                AppButton.secondary(
+                  label: 'Duplicate',
+                  leadingIcon: Icons.copy_outlined,
+                  onPressed: () {},
+                ),
+                AppButton.primary(
+                  label: 'Save',
+                  leadingIcon: Icons.save_outlined,
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+      size: const Size(320, 640),
+      padding: EdgeInsets.zero,
+    );
+
+    _expectFooterTapTargets(tester);
+  });
+}
+
+/// Dialog controls must render at their full natural height — the footer
+/// overflows actions rather than scaling controls down.
+///
+/// The natural height of dense chrome is the interactive-dimension token minus
+/// the `VisualDensity.compact` base-size adjustment applied by `AppButton`.
+/// That density predates this footer work and is asserted here as the floor so
+/// the test catches shrinkage introduced by layout, not by button styling.
+void _expectFooterTapTargets(WidgetTester tester) {
+  final double denseChromeHeight =
+      AppTheme.light.appTokens.minInteractiveDimension +
+      VisualDensity.compact.baseSizeAdjustment.dy;
+  final Finder footerButtons = find.descendant(
+    of: find.byType(AppDialog),
+    matching: find.byType(TextButton),
+  );
+
+  expect(footerButtons, findsWidgets);
+  for (final Element element in footerButtons.evaluate()) {
+    final Size size = tester.getSize(find.byWidget(element.widget));
+    expect(
+      size.height,
+      greaterThanOrEqualTo(denseChromeHeight),
+      reason: 'A dialog control rendered below its natural height.',
+    );
+  }
+
+  // No scale-down wrapper anywhere in the dialog: crowding is resolved by
+  // moving actions into the overflow menu, never by shrinking the row.
+  final Finder scalers = find.descendant(
+    of: find.byType(AppDialog),
+    matching: find.byWidgetPredicate(
+      (Widget widget) => widget is FittedBox && widget.fit == BoxFit.scaleDown,
+    ),
+  );
+  expect(scalers, findsNothing);
 }
 
 RenderBox _dialogShellRenderBox(WidgetTester tester) {

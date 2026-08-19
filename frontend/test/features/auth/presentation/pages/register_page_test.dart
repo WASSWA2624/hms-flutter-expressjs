@@ -19,7 +19,7 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 
 void main() {
   testWidgets(
-    'shows one Create account primary and no Organization name field',
+    'shows one Create account primary and no Organization or Location field',
     (WidgetTester tester) async {
       await _pumpRegister(tester, const _IdleRegisterRepository());
 
@@ -36,6 +36,8 @@ void main() {
       expect(find.textContaining(l10n.authTenantNameLabel), findsNothing);
       expect(find.textContaining(l10n.authFacilityNameLabel), findsOneWidget);
       expect(find.text('Create facility account'), findsNothing);
+      // Location was removed from the form; phone is now the last input.
+      expect(find.textContaining('Location'), findsNothing);
     },
   );
 
@@ -200,8 +202,8 @@ void main() {
 
 Future<void> _fillRequiredFields(WidgetTester tester) async {
   final editable = find.byType(EditableText);
-  // admin, email, password, facility, (facility-type select), phone, location
-  expect(editable, findsNWidgets(7));
+  // admin, email, password, facility, (facility-type select), phone
+  expect(editable, findsNWidgets(6));
   await tester.enterText(editable.at(0), 'Jane Admin');
   await tester.enterText(editable.at(1), 'admin@example.com');
   await tester.enterText(editable.at(2), 'Password1!');

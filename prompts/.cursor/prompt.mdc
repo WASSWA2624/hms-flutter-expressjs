@@ -18,11 +18,10 @@ Prompts must define observable behavior without requiring scope or implementatio
 - Backend RBAC and ABAC must remain authoritative via permissions. Unauthorized UI, data, routes, and actions must not render.
 - Disabled unauthorized controls or routine “no access” feedback must not render. Forbidden feedback may appear for direct restricted access, stale permissions, or backend denial.
 - Frontend data must synchronize after mutations.
-- UI must follow [localization.mdc](localization.mdc), [theming.mdc](theming.mdc), and [responsiveness.mdc](responsiveness.mdc)—do not restate those rules here.
+- UI must follow [localization.mdc](localization.mdc), [theming.mdc](theming.mdc), [responsiveness.mdc](responsiveness.mdc), and the surface rules in [screens.mdc](screens.mdc), [tabs.mdc](tabs.mdc), [tables.mdc](tables.mdc), [dialogs.mdc](dialogs.mdc), [forms.mdc](forms.mdc), and [printing.mdc](printing.mdc)—reference them; do not restate them here.
 - Interfaces must stay simple, focused, concise, and visually hierarchical; secondary detail should use progressive disclosure.
 - Prompts must specify permission, loading, empty, error, success, validation, and visible-feedback states.
 - Do not recreate the removed `screens/` inventory folder or write markdown inventories there. Inventory UI atoms from feature presentation code, routes, and tests.
-- Surface-specific chrome belongs in [screens.mdc](screens.mdc), [tabs.mdc](tabs.mdc), [tables.mdc](tables.mdc), [dialogs.mdc](dialogs.mdc), [forms.mdc](forms.mdc), and [printing.mdc](printing.mdc)—reference them; do not repeat them.
 
 ## Writing Requirements
 

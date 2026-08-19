@@ -24,6 +24,7 @@ import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 const String accountsFiscalPeriodsTableSettingsKey = 'accounts_fiscal_periods_v1';
 const String accountsFiscalPeriodsColumnWidthKey = 'accounts_fiscal_periods_cw_v1';
 
+const String accountsFiscalReferenceColumnId = 'reference';
 const String accountsFiscalYearColumnId = 'fiscal_year';
 const String accountsFiscalPeriodNoColumnId = 'period_no';
 const String accountsFiscalPeriodNameColumnId = 'period_name';
@@ -40,7 +41,10 @@ const String accountsFiscalReopenedByColumnId = 'reopened_by';
 const String accountsFiscalStatusColumnId = 'period_status';
 const String accountsFiscalActionsColumnId = 'actions';
 
-/// The 14 documented columns plus Actions, in source-of-truth order.
+/// The 14 documented columns in source-of-truth order.
+///
+/// Settings and export preserve this order; visibility follows
+/// [accountsFiscalPeriodOptionalColumnIds].
 const List<String> accountsFiscalPeriodColumnIds = <String>[
   accountsFiscalYearColumnId,
   accountsFiscalPeriodNoColumnId,
@@ -58,6 +62,18 @@ const List<String> accountsFiscalPeriodColumnIds = <String>[
   accountsFiscalStatusColumnId,
 ];
 
+/// Columns the specification marks `Optional`: selectable and exportable, but
+/// hidden until the operator turns them on in Settings.
+///
+/// The baseline human-friendly Reference column joins them so the default view
+/// stays the source-of-truth default set.
+const List<String> accountsFiscalPeriodOptionalColumnIds = <String>[
+  accountsFiscalReferenceColumnId,
+  accountsFiscalLockDateColumnId,
+  accountsFiscalReopenedAtColumnId,
+  accountsFiscalReopenedByColumnId,
+];
+
 /// `Accounts & Finance → Setup & Controls → Fiscal Years & Periods`
 /// (`?section=fiscal-years-and-periods`).
 class AccountsFiscalPeriodsPanel extends ConsumerStatefulWidget {
@@ -71,6 +87,7 @@ class AccountsFiscalPeriodsPanel extends ConsumerStatefulWidget {
 class _AccountsFiscalPeriodsPanelState
     extends ConsumerState<AccountsFiscalPeriodsPanel> {
   static const String _statusFilterKey = 'period_status';
+  static const String _facilityFilterKey = 'facility';
   static const String _fiscalYearFilterKey = 'fiscal_year';
   static const String _moduleFilterKey = 'module';
   static const String _periodNameFilterKey = 'period_name';
@@ -93,6 +110,14 @@ class _AccountsFiscalPeriodsPanelState
   AppSearchBarFilterValue _filterValue = const AppSearchBarFilterValue();
   Timer? _searchDebounce;
   int _revision = 0;
+
+  /// Facilities seen in this tenant/facility scope, keyed by public reference.
+  ///
+  /// Accumulated across loads so narrowing to one facility never removes the
+  /// choice that produced the narrowing. The backend still re-resolves the
+  /// requested facility inside the caller's tenant, so this list can only
+  /// narrow scope, never widen it.
+  final Map<String, String> _facilityChoices = <String, String>{};
 
   @override
   void initState() {
@@ -131,6 +156,7 @@ class _AccountsFiscalPeriodsPanelState
       fiscalYear: (_filterValue.text(_fiscalYearFilterKey) ?? '').trim(),
       module: (_filterValue.text(_moduleFilterKey) ?? '').trim(),
       periodName: (_filterValue.text(_periodNameFilterKey) ?? '').trim(),
+      facilityId: (_filterValue.option(_facilityFilterKey) ?? '').trim(),
       from: _filterValue.dateFrom,
       to: _filterValue.dateTo,
       pageRequest: const AppPageRequest(pageSize: AppPageRequest.maxPageSize),
@@ -160,6 +186,14 @@ class _AccountsFiscalPeriodsPanelState
           _page = page;
           _loading = false;
           _revision++;
+          for (final AccountsFiscalPeriod period in page.items) {
+            final String reference = (period.facilityHumanFriendlyId ?? '')
+                .trim();
+            final String label = (period.entityAndFacility ?? '').trim();
+            if (reference.isNotEmpty && label.isNotEmpty) {
+              _facilityChoices[reference] = label;
+            }
+          }
         });
         // Badge from the server total when narrowed; otherwise defer to the
         // workspace summary so it never reflects only the painted page.
@@ -251,15 +285,13 @@ class _AccountsFiscalPeriodsPanelState
       return;
     }
 
+    final AppLocalizations l10n = context.l10n;
     final bool? confirmed = await showAppDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) => AppConfirmActionDialog(
-        title: _bulkTitle(action),
-        body: AccountsStrings.fiscalBulkConfirmBody(
-          eligible.length,
-          accountsFiscalPeriodActionLabel(action).toLowerCase(),
-        ),
-        submitLabel: accountsFiscalPeriodActionLabel(action),
+        title: _bulkTitle(l10n, action),
+        body: l10n.accountsFiscalBulkConfirmBody(eligible.length),
+        submitLabel: accountsFiscalPeriodActionLabel(l10n, action),
         destructive: action != AccountsFiscalPeriodAction.activate,
         icon: const Icon(Icons.playlist_add_check_outlined),
       ),
@@ -297,7 +329,7 @@ class _AccountsFiscalPeriodsPanelState
         content: Text(
           failed == 0
               ? AccountsStrings.saved
-              : AccountsStrings.fiscalBulkPartialFailure(failed),
+              : l10n.accountsFiscalBulkPartialFailure(failed),
         ),
       ),
     );
@@ -316,16 +348,18 @@ class _AccountsFiscalPeriodsPanelState
     };
   }
 
-  static String _bulkTitle(AccountsFiscalPeriodAction action) {
+  static String _bulkTitle(
+    AppLocalizations l10n,
+    AccountsFiscalPeriodAction action,
+  ) {
     return switch (action) {
       AccountsFiscalPeriodAction.activate =>
-        AccountsStrings.fiscalBulkActivateAction,
+        l10n.accountsFiscalBulkActivateAction,
       AccountsFiscalPeriodAction.deactivate =>
-        AccountsStrings.fiscalBulkDeactivateAction,
+        l10n.accountsFiscalBulkDeactivateAction,
       AccountsFiscalPeriodAction.archive =>
-        AccountsStrings.fiscalBulkArchiveAction,
-      AccountsFiscalPeriodAction.restore =>
-        AccountsStrings.fiscalRestoreAction,
+        l10n.accountsFiscalBulkArchiveAction,
+      AccountsFiscalPeriodAction.restore => l10n.accountsFiscalRestoreAction,
     };
   }
 
@@ -338,6 +372,7 @@ class _AccountsFiscalPeriodsPanelState
   Widget _actionsCell(BuildContext context, AccountsFiscalPeriod period) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
+    final AppLocalizations l10n = context.l10n;
     final bool canWrite = canWriteAccountsFiscalPeriods(
       ref.watch(appAccessPolicyProvider),
     );
@@ -352,16 +387,16 @@ class _AccountsFiscalPeriodsPanelState
         children: <Widget>[
           AppButton.tertiary(
             leadingIcon: Icons.visibility_outlined,
-            label: AccountsStrings.fiscalViewAction,
-            tooltip: AccountsStrings.fiscalViewAction,
+            label: l10n.accountsFiscalViewAction,
+            tooltip: l10n.accountsFiscalViewAction,
             dense: true,
             onPressed: () => unawaited(_openDetail(period)),
           ),
           if (canWrite && period.canEdit)
             AppButton.tertiary(
               leadingIcon: Icons.edit_outlined,
-              label: context.l10n.commonEditActionLabel,
-              tooltip: context.l10n.commonEditActionLabel,
+              label: l10n.commonEditActionLabel,
+              tooltip: l10n.commonEditActionLabel,
               dense: true,
               enabled: !_isMutating,
               onPressed: () => unawaited(_openEdit(period)),
@@ -369,8 +404,8 @@ class _AccountsFiscalPeriodsPanelState
           if (canWrite && period.canClone)
             AppButton.tertiary(
               leadingIcon: Icons.copy_all_outlined,
-              label: AccountsStrings.fiscalCloneAction,
-              tooltip: AccountsStrings.fiscalCloneAction,
+              label: l10n.accountsFiscalCloneAction,
+              tooltip: l10n.accountsFiscalCloneAction,
               dense: true,
               enabled: !_isMutating,
               onPressed: () => unawaited(_openCreate(cloneOf: period)),
@@ -383,8 +418,8 @@ class _AccountsFiscalPeriodsPanelState
                   Icons.pause_circle_outline,
                 _ => Icons.check_circle_outline,
               },
-              label: accountsFiscalPeriodActionLabel(toggle),
-              tooltip: accountsFiscalPeriodActionLabel(toggle),
+              label: accountsFiscalPeriodActionLabel(l10n, toggle),
+              tooltip: accountsFiscalPeriodActionLabel(l10n, toggle),
               dense: true,
               enabled: !_isMutating,
               color: toggle == AccountsFiscalPeriodAction.deactivate
@@ -395,8 +430,8 @@ class _AccountsFiscalPeriodsPanelState
           if (canWrite && period.canArchive)
             AppButton.tertiary(
               leadingIcon: Icons.inventory_2_outlined,
-              label: AccountsStrings.fiscalArchiveAction,
-              tooltip: AccountsStrings.fiscalArchiveAction,
+              label: l10n.accountsFiscalArchiveAction,
+              tooltip: l10n.accountsFiscalArchiveAction,
               dense: true,
               enabled: !_isMutating,
               color: colors.error,
@@ -409,34 +444,78 @@ class _AccountsFiscalPeriodsPanelState
     );
   }
 
+  /// Optional columns: available in Settings, exports, and print, hidden until
+  /// the operator enables them (specification marks these `Optional`).
+  List<AppListTableColumn<AccountsFiscalPeriod>> _optionalColumns(
+    AppLocalizations l10n,
+  ) {
+    return <AppListTableColumn<AccountsFiscalPeriod>>[
+      AppListTableColumn<AccountsFiscalPeriod>(
+        id: accountsFiscalReferenceColumnId,
+        label: l10n.accountsFiscalReferenceColumn,
+        preferredWidth: 150,
+        cellBuilder: (_, AccountsFiscalPeriod period) => AppCopyableIdentifier(
+          value:
+              accountsPublicLabel(period.humanFriendlyId) ??
+              accountsUnknownValue(),
+        ),
+        sortComparator: (AccountsFiscalPeriod a, AccountsFiscalPeriod b) =>
+            a.humanFriendlyId.compareTo(b.humanFriendlyId),
+        exportValue: (AccountsFiscalPeriod period) =>
+            accountsPublicLabel(period.humanFriendlyId) ?? '',
+      ),
+      _dateColumn(
+        id: accountsFiscalLockDateColumnId,
+        label: l10n.accountsFiscalLockDateColumn,
+        valueOf: (AccountsFiscalPeriod period) => period.lockDate,
+      ),
+      _dateColumn(
+        id: accountsFiscalReopenedAtColumnId,
+        label: l10n.accountsFiscalReopenedAtColumn,
+        valueOf: (AccountsFiscalPeriod period) => period.reopenedAt,
+      ),
+      AppListTableColumn<AccountsFiscalPeriod>(
+        id: accountsFiscalReopenedByColumnId,
+        label: l10n.accountsFiscalReopenedByColumn,
+        preferredWidth: 150,
+        cellBuilder: (_, AccountsFiscalPeriod period) => Text(
+          period.reopenedBy ?? accountsUnknownValue(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+        sortComparator: (AccountsFiscalPeriod a, AccountsFiscalPeriod b) =>
+            (a.reopenedBy ?? '').compareTo(b.reopenedBy ?? ''),
+        exportValue: (AccountsFiscalPeriod period) => period.reopenedBy ?? '',
+      ),
+    ];
+  }
+
+  static AppListTableColumn<AccountsFiscalPeriod> _dateColumn({
+    required String id,
+    required String label,
+    required DateTime? Function(AccountsFiscalPeriod period) valueOf,
+  }) {
+    return AppListTableColumn<AccountsFiscalPeriod>(
+      id: id,
+      label: label,
+      preferredWidth: 130,
+      cellBuilder: (BuildContext context, AccountsFiscalPeriod period) =>
+          Text(accountsDate(context, valueOf(period))),
+      sortComparator: (AccountsFiscalPeriod a, AccountsFiscalPeriod b) =>
+          _compareDates(valueOf(a), valueOf(b)),
+      exportValue: (AccountsFiscalPeriod period) =>
+          valueOf(period)?.toIso8601String() ?? '',
+    );
+  }
+
   List<AppListTableColumn<AccountsFiscalPeriod>> _columns({
+    required AppLocalizations l10n,
     required bool canWrite,
   }) {
-    AppListTableColumn<AccountsFiscalPeriod> dateColumn({
-      required String id,
-      required String label,
-      required DateTime? Function(AccountsFiscalPeriod period) valueOf,
-    }) {
-      return AppListTableColumn<AccountsFiscalPeriod>(
-        id: id,
-        label: label,
-        preferredWidth: 130,
-        cellBuilder: (BuildContext context, AccountsFiscalPeriod period) =>
-            Text(accountsDate(context, valueOf(period))),
-        sortComparator:
-            (AccountsFiscalPeriod a, AccountsFiscalPeriod b) => _compareDates(
-              valueOf(a),
-              valueOf(b),
-            ),
-        exportValue: (AccountsFiscalPeriod period) =>
-            valueOf(period)?.toIso8601String() ?? '',
-      );
-    }
-
     return <AppListTableColumn<AccountsFiscalPeriod>>[
       AppListTableColumn<AccountsFiscalPeriod>(
         id: accountsFiscalYearColumnId,
-        label: AccountsStrings.fiscalYearColumn,
+        label: l10n.accountsFiscalYearColumn,
         alwaysVisible: true,
         preferredWidth: 120,
         cellBuilder: (_, AccountsFiscalPeriod period) => Text(
@@ -450,7 +529,7 @@ class _AccountsFiscalPeriodsPanelState
       ),
       AppListTableColumn<AccountsFiscalPeriod>(
         id: accountsFiscalPeriodNoColumnId,
-        label: AccountsStrings.fiscalPeriodNoColumn,
+        label: l10n.accountsFiscalPeriodNoColumn,
         numeric: true,
         preferredWidth: 100,
         cellBuilder: (_, AccountsFiscalPeriod period) =>
@@ -459,35 +538,38 @@ class _AccountsFiscalPeriodsPanelState
             a.periodNo.compareTo(b.periodNo),
         exportValue: (AccountsFiscalPeriod period) => period.periodNo,
       ),
+      // One fact per cell: the human-friendly reference has its own optional
+      // Reference column rather than riding along with the name.
       AppListTableColumn<AccountsFiscalPeriod>(
         id: accountsFiscalPeriodNameColumnId,
-        label: AccountsStrings.fiscalPeriodNameColumn,
+        label: l10n.accountsFiscalPeriodNameColumn,
         alwaysVisible: true,
         preferredWidth: 180,
-        cellBuilder: (_, AccountsFiscalPeriod period) => AppCopyableIdentifierCell(
-          title: period.periodName,
-          identifier: accountsPublicLabel(period.humanFriendlyId),
+        cellBuilder: (_, AccountsFiscalPeriod period) => Text(
+          period.periodName,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
         sortComparator: (AccountsFiscalPeriod a, AccountsFiscalPeriod b) =>
             a.periodName.compareTo(b.periodName),
         exportValue: (AccountsFiscalPeriod period) => period.periodName,
       ),
-      dateColumn(
+      _dateColumn(
         id: accountsFiscalStartDateColumnId,
-        label: AccountsStrings.fiscalStartDateColumn,
+        label: l10n.accountsFiscalStartDateColumn,
         valueOf: (AccountsFiscalPeriod period) => period.startDate,
       ),
-      dateColumn(
+      _dateColumn(
         id: accountsFiscalEndDateColumnId,
-        label: AccountsStrings.fiscalEndDateColumn,
+        label: l10n.accountsFiscalEndDateColumn,
         valueOf: (AccountsFiscalPeriod period) => period.endDate,
       ),
       AppListTableColumn<AccountsFiscalPeriod>(
         id: accountsFiscalEntityColumnId,
-        label: AccountsStrings.fiscalEntityAndFacilityColumn,
+        label: l10n.accountsFiscalEntityAndFacilityColumn,
         preferredWidth: 160,
         cellBuilder: (_, AccountsFiscalPeriod period) => Text(
-          period.entityAndFacility ?? AccountsStrings.unknownValue,
+          period.entityAndFacility ?? accountsUnknownValue(),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -498,71 +580,51 @@ class _AccountsFiscalPeriodsPanelState
       ),
       AppListTableColumn<AccountsFiscalPeriod>(
         id: accountsFiscalModuleColumnId,
-        label: AccountsStrings.fiscalModuleColumn,
+        label: l10n.accountsFiscalModuleColumn,
         preferredWidth: 110,
         cellBuilder: (_, AccountsFiscalPeriod period) =>
-            Text(period.module ?? AccountsStrings.unknownValue),
+            Text(period.module ?? accountsUnknownValue()),
         sortComparator: (AccountsFiscalPeriod a, AccountsFiscalPeriod b) =>
             (a.module ?? '').compareTo(b.module ?? ''),
         exportValue: (AccountsFiscalPeriod period) => period.module ?? '',
       ),
-      dateColumn(
+      _dateColumn(
         id: accountsFiscalOpenDateColumnId,
-        label: AccountsStrings.fiscalOpenDateColumn,
+        label: l10n.accountsFiscalOpenDateColumn,
         valueOf: (AccountsFiscalPeriod period) => period.openDate,
       ),
-      dateColumn(
+      _dateColumn(
         id: accountsFiscalSoftCloseDateColumnId,
-        label: AccountsStrings.fiscalSoftCloseDateColumn,
+        label: l10n.accountsFiscalSoftCloseDateColumn,
         valueOf: (AccountsFiscalPeriod period) => period.softCloseDate,
       ),
-      dateColumn(
+      _dateColumn(
         id: accountsFiscalCloseDateColumnId,
-        label: AccountsStrings.fiscalCloseDateColumn,
+        label: l10n.accountsFiscalCloseDateColumn,
         valueOf: (AccountsFiscalPeriod period) => period.closeDate,
-      ),
-      dateColumn(
-        id: accountsFiscalLockDateColumnId,
-        label: AccountsStrings.fiscalLockDateColumn,
-        valueOf: (AccountsFiscalPeriod period) => period.lockDate,
-      ),
-      dateColumn(
-        id: accountsFiscalReopenedAtColumnId,
-        label: AccountsStrings.fiscalReopenedAtColumn,
-        valueOf: (AccountsFiscalPeriod period) => period.reopenedAt,
-      ),
-      AppListTableColumn<AccountsFiscalPeriod>(
-        id: accountsFiscalReopenedByColumnId,
-        label: AccountsStrings.fiscalReopenedByColumn,
-        preferredWidth: 150,
-        cellBuilder: (_, AccountsFiscalPeriod period) => Text(
-          period.reopenedBy ?? AccountsStrings.unknownValue,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        sortComparator: (AccountsFiscalPeriod a, AccountsFiscalPeriod b) =>
-            (a.reopenedBy ?? '').compareTo(b.reopenedBy ?? ''),
-        exportValue: (AccountsFiscalPeriod period) => period.reopenedBy ?? '',
       ),
       AppListTableColumn<AccountsFiscalPeriod>(
         id: accountsFiscalStatusColumnId,
-        label: AccountsStrings.fiscalPeriodStatusColumn,
+        label: l10n.accountsFiscalPeriodStatusColumn,
         alwaysVisible: true,
         preferredWidth: 130,
-        cellBuilder: (_, AccountsFiscalPeriod period) => AppStatusBadge(
-          label: accountsFiscalPeriodStatusLabel(period.status),
-          tone: accountsFiscalPeriodStatusTone(period.status),
-          icon: accountsFiscalPeriodStatusIcon(period.status),
-        ),
+        cellBuilder: (_, AccountsFiscalPeriod period) =>
+            AppWorkspaceStatusBadge(
+              status: AppWorkspaceStatus(
+                label: accountsFiscalPeriodStatusLabel(l10n, period.status),
+                tone: accountsFiscalPeriodStatusTone(period.status),
+                icon: accountsFiscalPeriodStatusIcon(period.status),
+              ),
+            ),
         sortComparator: (AccountsFiscalPeriod a, AccountsFiscalPeriod b) =>
             a.status.index.compareTo(b.status.index),
         exportValue: (AccountsFiscalPeriod period) =>
-            accountsFiscalPeriodStatusLabel(period.status),
+            accountsFiscalPeriodStatusLabel(l10n, period.status),
       ),
       if (canWrite)
         AppListTableColumn<AccountsFiscalPeriod>(
           id: accountsFiscalActionsColumnId,
-          label: AccountsStrings.fiscalActionsColumn,
+          label: l10n.accountsFiscalActionsColumn,
           alwaysVisible: true,
           exportable: false,
           preferredWidth: 260,
@@ -592,8 +654,11 @@ class _AccountsFiscalPeriodsPanelState
     final bool canExport = canExportAccountsWorkspace(accessPolicy);
     final bool canPrint = canPrintAccountsWorkspace(accessPolicy);
     final List<AppListTableColumn<AccountsFiscalPeriod>> columns = _columns(
+      l10n: l10n,
       canWrite: canWrite,
     );
+    final List<AppListTableColumn<AccountsFiscalPeriod>> optionalColumns =
+        _optionalColumns(l10n);
 
     // Mutations elsewhere (detail dialog, other panels) invalidate this list.
     ref.listen<int>(accountsFiscalPeriodRevisionProvider, (_, _) {
@@ -630,7 +695,7 @@ class _AccountsFiscalPeriodsPanelState
       exportInvalidDateMessage: l10n.opdInvalidDateMessage,
       exportConfig: AppListTableExportConfig<AccountsFiscalPeriod>(
         fileNameStem: 'accounts_fiscal_periods',
-        sheetName: AccountsStrings.fiscalPeriodsLabel,
+        sheetName: l10n.accountsFiscalPeriodsLabel,
         dateOf: (AccountsFiscalPeriod period) => period.startDate,
         dateFromLabel: l10n.commonTableExportDateFromLabel,
         dateToLabel: l10n.commonTableExportDateToLabel,
@@ -642,24 +707,29 @@ class _AccountsFiscalPeriodsPanelState
           printAccountsListTable<AccountsFiscalPeriod>(
             ref: ref,
             context: context,
-            title: AccountsStrings.fiscalPeriodsLabel,
-            columns: columns,
+            title: l10n.accountsFiscalPeriodsLabel,
+            // Print offers the full source-of-truth column inventory, not only
+            // the columns currently visible.
+            columns: <AppListTableColumn<AccountsFiscalPeriod>>[
+              ...columns,
+              ...optionalColumns,
+            ],
             items: items,
-            emptyText: AccountsStrings.fiscalPeriodsEmpty,
+            emptyText: l10n.accountsFiscalPeriodsEmpty,
           ),
       goToTopLabel: l10n.commonGoToTopActionLabel,
       loadingMoreLabel: l10n.commonLoadingMoreLabel,
       allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
       onRowSelected: (AccountsFiscalPeriod period) =>
           unawaited(_openDetail(period)),
-      emptyBuilder: (_) => const AppWorkspaceStatePanel.empty(
-        title: AccountsStrings.fiscalPeriodsEmpty,
-        body: AccountsStrings.fiscalPeriodsEmptyBody,
+      emptyBuilder: (_) => AppWorkspaceStatePanel.empty(
+        title: l10n.accountsFiscalPeriodsEmpty,
+        body: l10n.accountsFiscalPeriodsEmptyBody,
       ),
       search: AppListTableSearch<AccountsFiscalPeriod>(
         controller: _searchController,
-        semanticLabel: AccountsStrings.fiscalPeriodsSearchHint,
-        hintText: AccountsStrings.fiscalPeriodsSearchHint,
+        semanticLabel: l10n.accountsFiscalPeriodsSearchHint,
+        hintText: l10n.accountsFiscalPeriodsSearchHint,
         clearLabel: AccountsStrings.clearSearch,
         matcher: (AccountsFiscalPeriod period, String query) {
           final String needle = query.trim().toLowerCase();
@@ -686,46 +756,63 @@ class _AccountsFiscalPeriodsPanelState
         advancedFilterResetLabel: l10n.opdClearFiltersAction,
         advancedFilterCloseLabel: l10n.commonCloseActionLabel,
         allFieldsLabel: AccountsStrings.allFields,
-        dateFilterLabel: AccountsStrings.fiscalDateRangeFilterLabel,
-        dateFromLabel: AccountsStrings.fiscalStartDateColumn,
-        dateToLabel: AccountsStrings.fiscalEndDateColumn,
+        dateFilterLabel: l10n.accountsFiscalDateRangeFilterLabel,
+        dateFromLabel: l10n.accountsFiscalStartDateColumn,
+        dateToLabel: l10n.accountsFiscalEndDateColumn,
         firstDate: DateTime(2000),
         lastDate: DateTime(2100),
-        textFilters: const <AppSearchBarTextFilter>[
+        textFilters: <AppSearchBarTextFilter>[
           AppSearchBarTextFilter(
             key: _fiscalYearFilterKey,
-            label: AccountsStrings.fiscalYearColumn,
-            hintText: AccountsStrings.fiscalYearColumn,
+            label: l10n.accountsFiscalYearColumn,
+            hintText: l10n.accountsFiscalYearColumn,
             icon: Icons.calendar_today_outlined,
           ),
           AppSearchBarTextFilter(
             key: _moduleFilterKey,
-            label: AccountsStrings.fiscalModuleColumn,
-            hintText: AccountsStrings.fiscalModuleColumn,
+            label: l10n.accountsFiscalModuleColumn,
+            hintText: l10n.accountsFiscalModuleColumn,
             icon: Icons.widgets_outlined,
           ),
           AppSearchBarTextFilter(
             key: _periodNameFilterKey,
-            label: AccountsStrings.fiscalPeriodNameColumn,
-            hintText: AccountsStrings.fiscalPeriodNameColumn,
+            label: l10n.accountsFiscalPeriodNameColumn,
+            hintText: l10n.accountsFiscalPeriodNameColumn,
             icon: Icons.event_note_outlined,
           ),
         ],
         filterGroups: <AppSearchBarFilterGroup>[
           AppSearchBarFilterGroup(
             key: _statusFilterKey,
-            label: AccountsStrings.fiscalPeriodStatusColumn,
+            label: l10n.accountsFiscalPeriodStatusColumn,
             allLabel: AccountsStrings.allFields,
             choices: <AppSearchBarFilterChoice>[
               for (final AccountsFiscalPeriodStatus status
                   in AccountsFiscalPeriodStatus.values)
                 AppSearchBarFilterChoice(
                   value: status.wireValue,
-                  label: accountsFiscalPeriodStatusLabel(status),
+                  label: accountsFiscalPeriodStatusLabel(l10n, status),
                   icon: accountsFiscalPeriodStatusIcon(status),
                 ),
             ],
           ),
+          // Offered only where the caller's ABAC scope actually spans more than
+          // one facility; a single-facility operator gets no dead control.
+          if (_facilityChoices.length > 1)
+            AppSearchBarFilterGroup(
+              key: _facilityFilterKey,
+              label: l10n.accountsFiscalFacilityFilterLabel,
+              allLabel: AccountsStrings.allFields,
+              choices: <AppSearchBarFilterChoice>[
+                for (final MapEntry<String, String> facility
+                    in _sortedFacilityChoices)
+                  AppSearchBarFilterChoice(
+                    value: facility.key,
+                    label: facility.value,
+                    icon: Icons.apartment_outlined,
+                  ),
+              ],
+            ),
         ],
         filterValue: _filterValue,
         hasActiveFilters: _hasActiveFilters,
@@ -736,38 +823,38 @@ class _AccountsFiscalPeriodsPanelState
         trailingActions: canWrite
             ? <AppSearchBarAction>[
                 AppSearchBarAction(
-                  label: AccountsStrings.fiscalNewRecordAction,
+                  label: l10n.accountsFiscalNewRecordAction,
                   icon: Icons.add_outlined,
                   enabled: !_isMutating,
                   onPressed: () => unawaited(_openCreate()),
                 ),
                 AppSearchBarAction(
-                  label: AccountsStrings.fiscalBulkActivateAction,
+                  label: l10n.accountsFiscalBulkActivateAction,
                   icon: Icons.check_circle_outline,
-                  enabled: !_isMutating && _hasEligible(
-                    AccountsFiscalPeriodAction.activate,
-                  ),
+                  enabled:
+                      !_isMutating &&
+                      _hasEligible(AccountsFiscalPeriodAction.activate),
                   onPressed: () => unawaited(
                     _applyBulkAction(AccountsFiscalPeriodAction.activate),
                   ),
                 ),
                 AppSearchBarAction(
-                  label: AccountsStrings.fiscalBulkDeactivateAction,
+                  label: l10n.accountsFiscalBulkDeactivateAction,
                   icon: Icons.pause_circle_outline,
-                  enabled: !_isMutating && _hasEligible(
-                    AccountsFiscalPeriodAction.deactivate,
-                  ),
+                  enabled:
+                      !_isMutating &&
+                      _hasEligible(AccountsFiscalPeriodAction.deactivate),
                   destructive: true,
                   onPressed: () => unawaited(
                     _applyBulkAction(AccountsFiscalPeriodAction.deactivate),
                   ),
                 ),
                 AppSearchBarAction(
-                  label: AccountsStrings.fiscalBulkArchiveAction,
+                  label: l10n.accountsFiscalBulkArchiveAction,
                   icon: Icons.inventory_2_outlined,
-                  enabled: !_isMutating && _hasEligible(
-                    AccountsFiscalPeriodAction.archive,
-                  ),
+                  enabled:
+                      !_isMutating &&
+                      _hasEligible(AccountsFiscalPeriodAction.archive),
                   destructive: true,
                   onPressed: () => unawaited(
                     _applyBulkAction(AccountsFiscalPeriodAction.archive),
@@ -777,32 +864,47 @@ class _AccountsFiscalPeriodsPanelState
             : const <AppSearchBarAction>[],
       ),
       columns: columns,
+      columnChoices: optionalColumns,
       mobileItemBuilder: (BuildContext context, AccountsFiscalPeriod period) {
         return AppListTableMobileItem(
           title: period.periodName,
-          caption:
-              '${period.fiscalYear} · ${AccountsStrings.fiscalPeriodNoColumn} '
-              '${period.periodNo}',
+          caption: l10n.accountsFiscalMobileCaption(
+            period.fiscalYear,
+            period.periodNo,
+          ),
           meta: <AppListTableMobileMeta>[
             AppListTableMobileMeta(
-              label:
-                  '${accountsDate(context, period.startDate)} – '
-                  '${accountsDate(context, period.endDate)}',
+              label: l10n.accountsFiscalMobileDateRange(
+                accountsDate(context, period.startDate),
+                accountsDate(context, period.endDate),
+              ),
               icon: Icons.date_range_outlined,
             ),
             AppListTableMobileMeta(
-              label: accountsFiscalPeriodStatusLabel(period.status),
+              label: accountsFiscalPeriodStatusLabel(l10n, period.status),
               icon: accountsFiscalPeriodStatusIcon(period.status),
             ),
             if (period.isLocked)
-              const AppListTableMobileMeta(
-                label: AccountsStrings.fiscalStatusLocked,
+              AppListTableMobileMeta(
+                label: l10n.accountsFiscalStatusLocked,
                 icon: Icons.lock_outline,
               ),
           ],
         );
       },
     );
+  }
+
+  /// Facility choices in stable label order so the filter list never reshuffles
+  /// between loads.
+  List<MapEntry<String, String>> get _sortedFacilityChoices {
+    final List<MapEntry<String, String>> entries = _facilityChoices.entries
+        .toList(growable: false);
+    entries.sort(
+      (MapEntry<String, String> a, MapEntry<String, String> b) =>
+          a.value.toLowerCase().compareTo(b.value.toLowerCase()),
+    );
+    return entries;
   }
 
   bool _hasEligible(AccountsFiscalPeriodAction action) {

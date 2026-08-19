@@ -62,7 +62,6 @@ void main() {
     final AppListTable<Patient> table = tester.widget<AppListTable<Patient>>(
       find.byType(AppListTable<Patient>),
     );
-    expect(table.pinToolbar, isFalse);
     expect(table.search?.isLoading, isFalse);
     expect(find.text('SELECT PATIENT'), findsNothing);
 

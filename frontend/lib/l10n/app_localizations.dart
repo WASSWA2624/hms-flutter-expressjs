@@ -328,7 +328,7 @@ abstract class AppLocalizations {
   /// **'Encounter {encounterId}'**
   String clinicalResultsEncounterScopeLabel(String encounterId);
 
-  /// Accessibility label for the workspace toolbar overflow menu.
+  /// Accessibility label for an overflow menu holding actions that did not fit inline (workspace toolbars and dialog footers).
   ///
   /// In en, this message translates to:
   /// **'More actions'**
@@ -16825,12 +16825,6 @@ abstract class AppLocalizations {
   /// **'Use your facility account to open the HMS workspace.'**
   String get authLoginBody;
 
-  /// Login identifier field label.
-  ///
-  /// In en, this message translates to:
-  /// **'Email or phone'**
-  String get authIdentifierLabel;
-
   /// Email field label.
   ///
   /// In en, this message translates to:
@@ -16864,8 +16858,26 @@ abstract class AppLocalizations {
   /// Navigate to self-registration action label.
   ///
   /// In en, this message translates to:
-  /// **'Create account'**
+  /// **'Register'**
   String get authCreateAccountActionLabel;
+
+  /// Label for the login identifier type selector (email or phone).
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in with'**
+  String get authIdentifierModeLabel;
+
+  /// Login identifier selector option for signing in with an email address.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get authIdentifierModeEmailLabel;
+
+  /// Login identifier selector option for signing in with a phone number.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get authIdentifierModePhoneLabel;
 
   /// Self-registration page title.
   ///
@@ -16888,7 +16900,7 @@ abstract class AppLocalizations {
   /// Navigate back to login action label.
   ///
   /// In en, this message translates to:
-  /// **'Back to sign in'**
+  /// **'Sign in'**
   String get authBackToLoginActionLabel;
 
   /// Opens onboarding guide for facility registration.
@@ -17166,12 +17178,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Phone (optional)'**
   String get authPhoneOptionalLabel;
-
-  /// Optional location field label.
-  ///
-  /// In en, this message translates to:
-  /// **'Location (optional)'**
-  String get authLocationOptionalLabel;
 
   /// Title shown after registration request succeeds.
   ///
@@ -17529,6 +17535,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Sign in again to continue.'**
   String get errorUnauthorizedMessage;
+
+  /// Title shown when a request failed its CSRF security-token check.
+  ///
+  /// In en, this message translates to:
+  /// **'Security check failed'**
+  String get errorSecurityTokenTitle;
+
+  /// Message shown when a request failed its CSRF security-token check. Must not suggest signing in again.
+  ///
+  /// In en, this message translates to:
+  /// **'The security check for this request expired. Please try again — you are still signed in.'**
+  String get errorSecurityTokenMessage;
 
   /// Title for a forbidden failure.
   ///
@@ -50931,6 +50949,2007 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Afternoon'**
   String get hrReferenceLeaveHalfDayPeriodAfternoon;
+
+  /// Accounts & Finance -> Setup & Controls -> Fiscal Years & Periods tab label.
+  ///
+  /// In en, this message translates to:
+  /// **'Fiscal Years & Periods'**
+  String get accountsFiscalPeriodsLabel;
+
+  /// Tooltip for the Fiscal Years & Periods tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Fiscal calendar periods, their open, close, and lock milestones'**
+  String get accountsFiscalPeriodsTooltip;
+
+  /// Empty-state title for the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'No fiscal periods match.'**
+  String get accountsFiscalPeriodsEmpty;
+
+  /// Empty-state body for the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another search or add a fiscal period.'**
+  String get accountsFiscalPeriodsEmptyBody;
+
+  /// Search field hint and accessibility label for the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference, fiscal year, period name…'**
+  String get accountsFiscalPeriodsSearchHint;
+
+  /// Human-friendly reference column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference'**
+  String get accountsFiscalReferenceColumn;
+
+  /// Fiscal Year column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Fiscal Year'**
+  String get accountsFiscalYearColumn;
+
+  /// Period number column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Period No.'**
+  String get accountsFiscalPeriodNoColumn;
+
+  /// Period name column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Period Name'**
+  String get accountsFiscalPeriodNameColumn;
+
+  /// Start date column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Date'**
+  String get accountsFiscalStartDateColumn;
+
+  /// End date column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'End Date'**
+  String get accountsFiscalEndDateColumn;
+
+  /// Entity and facility column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Entity/Facility'**
+  String get accountsFiscalEntityAndFacilityColumn;
+
+  /// Module column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Module'**
+  String get accountsFiscalModuleColumn;
+
+  /// Open date column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Date'**
+  String get accountsFiscalOpenDateColumn;
+
+  /// Soft-close date column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Soft-close Date'**
+  String get accountsFiscalSoftCloseDateColumn;
+
+  /// Close date column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Close Date'**
+  String get accountsFiscalCloseDateColumn;
+
+  /// Lock date column of the fiscal periods table (optional column).
+  ///
+  /// In en, this message translates to:
+  /// **'Lock Date'**
+  String get accountsFiscalLockDateColumn;
+
+  /// Reopened-at column of the fiscal periods table (optional column).
+  ///
+  /// In en, this message translates to:
+  /// **'Reopened At'**
+  String get accountsFiscalReopenedAtColumn;
+
+  /// Reopened-by column of the fiscal periods table (optional column).
+  ///
+  /// In en, this message translates to:
+  /// **'Reopened By'**
+  String get accountsFiscalReopenedByColumn;
+
+  /// Period status column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Period Status'**
+  String get accountsFiscalPeriodStatusColumn;
+
+  /// Row actions column of the fiscal periods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get accountsFiscalActionsColumn;
+
+  /// Fiscal period status: not yet available to downstream workflows.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get accountsFiscalStatusDraft;
+
+  /// Fiscal period status: selectable by permitted workflows.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get accountsFiscalStatusActive;
+
+  /// Fiscal period status: retained but not selectable for new work.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get accountsFiscalStatusInactive;
+
+  /// Fiscal period status: soft-deleted historical record.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get accountsFiscalStatusArchived;
+
+  /// Marker shown when a fiscal period is past its lock date.
+  ///
+  /// In en, this message translates to:
+  /// **'Locked'**
+  String get accountsFiscalStatusLocked;
+
+  /// Fiscal period module scope: the period applies to every module.
+  ///
+  /// In en, this message translates to:
+  /// **'All modules'**
+  String get accountsFiscalModuleAll;
+
+  /// Fiscal period module scope: general ledger only.
+  ///
+  /// In en, this message translates to:
+  /// **'General ledger'**
+  String get accountsFiscalModuleGeneralLedger;
+
+  /// Fiscal period module scope: billing only.
+  ///
+  /// In en, this message translates to:
+  /// **'Billing'**
+  String get accountsFiscalModuleBilling;
+
+  /// Fiscal period module scope: pharmacy only.
+  ///
+  /// In en, this message translates to:
+  /// **'Pharmacy'**
+  String get accountsFiscalModulePharmacy;
+
+  /// Fiscal period module scope: inventory only.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory'**
+  String get accountsFiscalModuleInventory;
+
+  /// Fiscal period module scope: payroll only.
+  ///
+  /// In en, this message translates to:
+  /// **'Payroll'**
+  String get accountsFiscalModulePayroll;
+
+  /// Fiscal period module scope: fixed assets only.
+  ///
+  /// In en, this message translates to:
+  /// **'Fixed assets'**
+  String get accountsFiscalModuleFixedAssets;
+
+  /// Advanced filter label for the fiscal period date range.
+  ///
+  /// In en, this message translates to:
+  /// **'Period date range'**
+  String get accountsFiscalDateRangeFilterLabel;
+
+  /// Advanced filter label for the facility that owns a fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get accountsFiscalFacilityFilterLabel;
+
+  /// Toolbar action that opens the fiscal period create dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'New record'**
+  String get accountsFiscalNewRecordAction;
+
+  /// Row action that opens the fiscal period detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get accountsFiscalViewAction;
+
+  /// Row action that copies a fiscal period into a new unsaved draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Clone'**
+  String get accountsFiscalCloneAction;
+
+  /// Row action that moves a fiscal period to Active.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate'**
+  String get accountsFiscalActivateAction;
+
+  /// Row action that moves a fiscal period to Inactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate'**
+  String get accountsFiscalDeactivateAction;
+
+  /// Row action that soft-archives a fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get accountsFiscalArchiveAction;
+
+  /// Row action that restores an archived fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get accountsFiscalRestoreAction;
+
+  /// Bulk action that activates every eligible matching fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate selected'**
+  String get accountsFiscalBulkActivateAction;
+
+  /// Bulk action that deactivates every eligible matching fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate selected'**
+  String get accountsFiscalBulkDeactivateAction;
+
+  /// Bulk action that archives every eligible matching fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive selected'**
+  String get accountsFiscalBulkArchiveAction;
+
+  /// Title of the fiscal period create dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Add fiscal period'**
+  String get accountsFiscalCreateTitle;
+
+  /// Title of the fiscal period edit dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit fiscal period'**
+  String get accountsFiscalEditTitle;
+
+  /// Title of the fiscal period clone dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Clone fiscal period'**
+  String get accountsFiscalCloneTitle;
+
+  /// Title of the fiscal period detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Fiscal period details'**
+  String get accountsFiscalDetailTitle;
+
+  /// Form section grouping the identifying fields of a fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Period identity'**
+  String get accountsFiscalIdentitySection;
+
+  /// Form section grouping the start and end dates of a fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get accountsFiscalCalendarSection;
+
+  /// Form section grouping the open, soft-close, and close dates of a fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Close milestones'**
+  String get accountsFiscalMilestonesSection;
+
+  /// Detail dialog section holding the key fiscal period fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get accountsFiscalSummarySection;
+
+  /// Detail dialog section holding cross-module references.
+  ///
+  /// In en, this message translates to:
+  /// **'Related records'**
+  String get accountsFiscalRelatedSection;
+
+  /// Detail dialog section holding fiscal period attachments.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachments'**
+  String get accountsFiscalAttachmentsSection;
+
+  /// Detail dialog section holding the immutable fiscal period timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity & audit'**
+  String get accountsFiscalActivitySection;
+
+  /// Empty state for the fiscal period related-records section.
+  ///
+  /// In en, this message translates to:
+  /// **'No related records.'**
+  String get accountsFiscalRelatedEmpty;
+
+  /// Empty state for the fiscal period attachments section.
+  ///
+  /// In en, this message translates to:
+  /// **'No attachments.'**
+  String get accountsFiscalAttachmentsEmpty;
+
+  /// Empty state for the fiscal period activity section.
+  ///
+  /// In en, this message translates to:
+  /// **'No recorded activity.'**
+  String get accountsFiscalActivityEmpty;
+
+  /// Activity timeline label for the fiscal period creation timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get accountsFiscalActivityCreated;
+
+  /// Activity timeline label for the fiscal period update timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated'**
+  String get accountsFiscalActivityUpdated;
+
+  /// Activity timeline label for the fiscal period reopen timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopened'**
+  String get accountsFiscalActivityReopened;
+
+  /// Activity timeline label for the actor who reopened a fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopened by'**
+  String get accountsFiscalActivityReopenedBy;
+
+  /// Activity timeline label for the fiscal period archive timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get accountsFiscalActivityArchived;
+
+  /// Activity timeline label for the optimistic record version.
+  ///
+  /// In en, this message translates to:
+  /// **'Record version'**
+  String get accountsFiscalVersionLabel;
+
+  /// Warning banner shown on a locked fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'This period is locked. Posting, close, reversal, and adjustment actions are blocked.'**
+  String get accountsFiscalLockedNotice;
+
+  /// Notes field label of the fiscal period form.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get accountsFiscalNotesLabel;
+
+  /// Validation message for a missing required fiscal period value.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required.'**
+  String get accountsFiscalRequiredField;
+
+  /// Validation message for an out-of-range fiscal period number.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a period number between 1 and 366.'**
+  String get accountsFiscalPeriodNoInvalid;
+
+  /// Validation message for a fiscal period whose end date precedes its start date.
+  ///
+  /// In en, this message translates to:
+  /// **'End date must not be earlier than the start date.'**
+  String get accountsFiscalEndBeforeStart;
+
+  /// Validation message for out-of-order fiscal period milestones.
+  ///
+  /// In en, this message translates to:
+  /// **'Open, soft-close, and close dates must be in order.'**
+  String get accountsFiscalMilestoneOutOfOrder;
+
+  /// Confirmation title for activating a fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate fiscal period?'**
+  String get accountsFiscalActivateConfirmTitle;
+
+  /// Confirmation title for deactivating a fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate fiscal period?'**
+  String get accountsFiscalDeactivateConfirmTitle;
+
+  /// Confirmation title for archiving a fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive fiscal period?'**
+  String get accountsFiscalArchiveConfirmTitle;
+
+  /// Confirmation title for restoring an archived fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore fiscal period?'**
+  String get accountsFiscalRestoreConfirmTitle;
+
+  /// Confirmation body clarifying that archive is a soft state change.
+  ///
+  /// In en, this message translates to:
+  /// **'The period is archived, not deleted. Posted history stays available and the record can be restored.'**
+  String get accountsFiscalArchiveConfirmBody;
+
+  /// Confirmation body for activating a fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate {reference} so permitted workflows can select it?'**
+  String accountsFiscalActivateConfirmBody(String reference);
+
+  /// Confirmation body for deactivating a fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate {reference} so it is no longer selectable for new work?'**
+  String accountsFiscalDeactivateConfirmBody(String reference);
+
+  /// Confirmation body for restoring an archived fiscal period.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore {reference} and record the reopen in the audit trail?'**
+  String accountsFiscalRestoreConfirmBody(String reference);
+
+  /// Confirmation body for a bulk fiscal period workflow action.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Apply this change to {count} matching fiscal period? Records that do not allow the change are skipped.} other{Apply this change to {count} matching fiscal periods? Records that do not allow the change are skipped.}}'**
+  String accountsFiscalBulkConfirmBody(int count);
+
+  /// Feedback shown when part of a bulk fiscal period action failed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} record could not be changed.} other{{count} records could not be changed.}}'**
+  String accountsFiscalBulkPartialFailure(int count);
+
+  /// Compact mobile row caption pairing the fiscal year with the period number.
+  ///
+  /// In en, this message translates to:
+  /// **'{fiscalYear} · Period {periodNo}'**
+  String accountsFiscalMobileCaption(String fiscalYear, int periodNo);
+
+  /// Compact mobile row meta pairing the already-formatted start and end dates.
+  ///
+  /// In en, this message translates to:
+  /// **'{startDate} – {endDate}'**
+  String accountsFiscalMobileDateRange(String startDate, String endDate);
+
+  /// Accounts & Finance -> Setup & Controls -> Departments & Cost Centres tab label.
+  ///
+  /// In en, this message translates to:
+  /// **'Departments & Cost Centres'**
+  String get accountsDepartmentsLabel;
+
+  /// Tooltip for the Departments & Cost Centres tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Departments, their cost centres, default posting accounts, and ownership'**
+  String get accountsDepartmentsTooltip;
+
+  /// Empty-state title for the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'No departments match.'**
+  String get accountsDepartmentsEmpty;
+
+  /// Empty-state body for the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another search or add a department.'**
+  String get accountsDepartmentsEmptyBody;
+
+  /// Search field hint and accessibility label for the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference, department, cost centre…'**
+  String get accountsDepartmentsSearchHint;
+
+  /// Human-friendly reference column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference'**
+  String get accountsDepartmentReferenceColumn;
+
+  /// Department code column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Department Code'**
+  String get accountsDepartmentCodeColumn;
+
+  /// Department name column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Department Name'**
+  String get accountsDepartmentNameColumn;
+
+  /// Cost centre code column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Centre Code'**
+  String get accountsDepartmentCostCentreCodeColumn;
+
+  /// Cost centre name column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Cost Centre Name'**
+  String get accountsDepartmentCostCentreNameColumn;
+
+  /// Parent department column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Parent'**
+  String get accountsDepartmentParentColumn;
+
+  /// Facility column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get accountsDepartmentFacilityColumn;
+
+  /// Manager column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Manager'**
+  String get accountsDepartmentManagerColumn;
+
+  /// Default revenue posting account column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Default Revenue Account'**
+  String get accountsDepartmentRevenueAccountColumn;
+
+  /// Default expense posting account column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Default Expense Account'**
+  String get accountsDepartmentExpenseAccountColumn;
+
+  /// Budget owner column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget Owner'**
+  String get accountsDepartmentBudgetOwnerColumn;
+
+  /// Effective-from column of the departments table (optional column).
+  ///
+  /// In en, this message translates to:
+  /// **'Effective From'**
+  String get accountsDepartmentEffectiveFromColumn;
+
+  /// Effective-to column of the departments table (optional column).
+  ///
+  /// In en, this message translates to:
+  /// **'Effective To'**
+  String get accountsDepartmentEffectiveToColumn;
+
+  /// Status column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get accountsDepartmentStatusColumn;
+
+  /// Row actions column of the departments table.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get accountsDepartmentActionsColumn;
+
+  /// Department status: not yet available to downstream workflows.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get accountsDepartmentStatusDraft;
+
+  /// Department status: selectable by permitted workflows.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get accountsDepartmentStatusActive;
+
+  /// Department status: retained but not selectable for new work.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get accountsDepartmentStatusInactive;
+
+  /// Department status: soft-deleted historical record.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get accountsDepartmentStatusArchived;
+
+  /// Advanced filter label for the department effective window.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective period'**
+  String get accountsDepartmentDateRangeFilterLabel;
+
+  /// Advanced filter label for the facility that owns a department.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get accountsDepartmentFacilityFilterLabel;
+
+  /// Advanced filter label for the hierarchical department and cost centre picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Department / cost centre'**
+  String get accountsDepartmentCostCentreFilterLabel;
+
+  /// Advanced filter label matching a department manager or budget owner.
+  ///
+  /// In en, this message translates to:
+  /// **'Owner / assigned user'**
+  String get accountsDepartmentOwnerFilterLabel;
+
+  /// Toolbar action that opens the department create dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'New record'**
+  String get accountsDepartmentNewRecordAction;
+
+  /// Row action that opens the department detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get accountsDepartmentViewAction;
+
+  /// Row action that copies a department into a new unsaved draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Clone'**
+  String get accountsDepartmentCloneAction;
+
+  /// Row action that moves a department to Active.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate'**
+  String get accountsDepartmentActivateAction;
+
+  /// Row action that moves a department to Inactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate'**
+  String get accountsDepartmentDeactivateAction;
+
+  /// Row action that soft-archives a department.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get accountsDepartmentArchiveAction;
+
+  /// Row action that restores an archived department.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get accountsDepartmentRestoreAction;
+
+  /// Bulk action that activates every eligible matching department.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate selected'**
+  String get accountsDepartmentBulkActivateAction;
+
+  /// Bulk action that deactivates every eligible matching department.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate selected'**
+  String get accountsDepartmentBulkDeactivateAction;
+
+  /// Bulk action that archives every eligible matching department.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive selected'**
+  String get accountsDepartmentBulkArchiveAction;
+
+  /// Title of the department create dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Add department'**
+  String get accountsDepartmentCreateTitle;
+
+  /// Title of the department edit dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit department'**
+  String get accountsDepartmentEditTitle;
+
+  /// Title of the department clone dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Clone department'**
+  String get accountsDepartmentCloneTitle;
+
+  /// Title of the department detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Department details'**
+  String get accountsDepartmentDetailTitle;
+
+  /// Form section grouping the identifying fields of a department.
+  ///
+  /// In en, this message translates to:
+  /// **'Department identity'**
+  String get accountsDepartmentIdentitySection;
+
+  /// Form section grouping the parent, facility, and manager of a department.
+  ///
+  /// In en, this message translates to:
+  /// **'Structure'**
+  String get accountsDepartmentStructureSection;
+
+  /// Form section grouping the default revenue and expense accounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Default posting accounts'**
+  String get accountsDepartmentPostingSection;
+
+  /// Detail dialog section holding the key department fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get accountsDepartmentSummarySection;
+
+  /// Detail dialog section holding cross-module references.
+  ///
+  /// In en, this message translates to:
+  /// **'Related records'**
+  String get accountsDepartmentRelatedSection;
+
+  /// Detail dialog section holding department attachments.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachments'**
+  String get accountsDepartmentAttachmentsSection;
+
+  /// Detail dialog section holding the immutable department timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity & audit'**
+  String get accountsDepartmentActivitySection;
+
+  /// Empty state for the department related-records section.
+  ///
+  /// In en, this message translates to:
+  /// **'No related records.'**
+  String get accountsDepartmentRelatedEmpty;
+
+  /// Empty state for the department attachments section.
+  ///
+  /// In en, this message translates to:
+  /// **'No attachments.'**
+  String get accountsDepartmentAttachmentsEmpty;
+
+  /// Activity timeline label for the department creation timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get accountsDepartmentActivityCreated;
+
+  /// Activity timeline label for the department update timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated'**
+  String get accountsDepartmentActivityUpdated;
+
+  /// Activity timeline label for the department archive timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get accountsDepartmentActivityArchived;
+
+  /// Activity timeline label for the optimistic record version.
+  ///
+  /// In en, this message translates to:
+  /// **'Record version'**
+  String get accountsDepartmentVersionLabel;
+
+  /// Notice clarifying that the finance tab edits the shared department record.
+  ///
+  /// In en, this message translates to:
+  /// **'This department is maintained with facility setup. Editing here updates the same record.'**
+  String get accountsDepartmentOwnedNotice;
+
+  /// Validation message for a missing required department value.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required.'**
+  String get accountsDepartmentRequiredField;
+
+  /// Validation message for a department effective window that ends before it starts.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective To must not be earlier than Effective From.'**
+  String get accountsDepartmentEffectiveToBeforeFrom;
+
+  /// Confirmation title for activating a department.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate department?'**
+  String get accountsDepartmentActivateConfirmTitle;
+
+  /// Confirmation title for deactivating a department.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate department?'**
+  String get accountsDepartmentDeactivateConfirmTitle;
+
+  /// Confirmation title for archiving a department.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive department?'**
+  String get accountsDepartmentArchiveConfirmTitle;
+
+  /// Confirmation title for restoring an archived department.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore department?'**
+  String get accountsDepartmentRestoreConfirmTitle;
+
+  /// Confirmation body clarifying that archive is a soft, reference-guarded state change.
+  ///
+  /// In en, this message translates to:
+  /// **'The department is archived, not deleted. History stays available and the record can be restored. Archiving is refused while live child departments, units, or wards still reference it.'**
+  String get accountsDepartmentArchiveConfirmBody;
+
+  /// Confirmation body for activating a department.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate {reference} so permitted workflows can select it?'**
+  String accountsDepartmentActivateConfirmBody(String reference);
+
+  /// Confirmation body for deactivating a department.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate {reference} so it is no longer selectable for new work?'**
+  String accountsDepartmentDeactivateConfirmBody(String reference);
+
+  /// Confirmation body for restoring an archived department.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore {reference} and record the change in the audit trail?'**
+  String accountsDepartmentRestoreConfirmBody(String reference);
+
+  /// Confirmation body for a bulk department workflow action.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Apply this change to {count} matching department? Records that do not allow the change are skipped.} other{Apply this change to {count} matching departments? Records that do not allow the change are skipped.}}'**
+  String accountsDepartmentBulkConfirmBody(int count);
+
+  /// Feedback shown when part of a bulk department action failed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} record could not be changed.} other{{count} records could not be changed.}}'**
+  String accountsDepartmentBulkPartialFailure(int count);
+
+  /// Compact mobile row caption pairing the department code with the cost centre code.
+  ///
+  /// In en, this message translates to:
+  /// **'{departmentCode} · {costCentreCode}'**
+  String accountsDepartmentMobileCaption(
+    String departmentCode,
+    String costCentreCode,
+  );
+
+  /// Accounts & Finance -> Setup & Controls -> Payment Methods tab label.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment Methods'**
+  String get accountsPaymentMethodsLabel;
+
+  /// Tooltip for the Payment Methods tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepted tenders, their settlement accounts, fees, and evidence rules'**
+  String get accountsPaymentMethodsTooltip;
+
+  /// Empty-state title for the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'No payment methods match.'**
+  String get accountsPaymentMethodsEmpty;
+
+  /// Empty-state body for the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another search or add a payment method.'**
+  String get accountsPaymentMethodsEmptyBody;
+
+  /// Search field hint and accessibility label for the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference, code, name, provider…'**
+  String get accountsPaymentMethodsSearchHint;
+
+  /// Human-friendly reference column of the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference'**
+  String get accountsPaymentMethodReferenceColumn;
+
+  /// Method code column of the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Method Code'**
+  String get accountsPaymentMethodCodeColumn;
+
+  /// Method name column of the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Method Name'**
+  String get accountsPaymentMethodNameColumn;
+
+  /// Tender type column of the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Method Type'**
+  String get accountsPaymentMethodTypeColumn;
+
+  /// Direction column of the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming/Outgoing'**
+  String get accountsPaymentMethodDirectionColumn;
+
+  /// Provider column of the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider'**
+  String get accountsPaymentMethodProviderColumn;
+
+  /// Settlement posting account column of the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlement Account'**
+  String get accountsPaymentMethodSettlementAccountColumn;
+
+  /// Clearing posting account column of the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Clearing Account'**
+  String get accountsPaymentMethodClearingAccountColumn;
+
+  /// Column showing whether the tender needs an external reference.
+  ///
+  /// In en, this message translates to:
+  /// **'Requires External Reference'**
+  String get accountsPaymentMethodRequiresReferenceColumn;
+
+  /// Column showing whether the tender needs approval.
+  ///
+  /// In en, this message translates to:
+  /// **'Requires Approval'**
+  String get accountsPaymentMethodRequiresApprovalColumn;
+
+  /// Fee rule column of the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Fee Rule'**
+  String get accountsPaymentMethodFeeRuleColumn;
+
+  /// Facility scope column of the payment methods table (optional column).
+  ///
+  /// In en, this message translates to:
+  /// **'Facility Scope'**
+  String get accountsPaymentMethodFacilityScopeColumn;
+
+  /// Effective-from column of the payment methods table (optional column).
+  ///
+  /// In en, this message translates to:
+  /// **'Effective From'**
+  String get accountsPaymentMethodEffectiveFromColumn;
+
+  /// Effective-to column of the payment methods table (optional column).
+  ///
+  /// In en, this message translates to:
+  /// **'Effective To'**
+  String get accountsPaymentMethodEffectiveToColumn;
+
+  /// Status column of the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get accountsPaymentMethodStatusColumn;
+
+  /// Row actions column of the payment methods table.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get accountsPaymentMethodActionsColumn;
+
+  /// Affirmative chip for a payment method requirement flag.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get accountsPaymentMethodYes;
+
+  /// Negative chip for a payment method requirement flag.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get accountsPaymentMethodNo;
+
+  /// Payment method status: not yet available to downstream workflows.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get accountsPaymentMethodStatusDraft;
+
+  /// Payment method status: selectable by permitted workflows.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get accountsPaymentMethodStatusActive;
+
+  /// Payment method status: retained but not selectable for new work.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get accountsPaymentMethodStatusInactive;
+
+  /// Payment method status: soft-deleted historical record.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get accountsPaymentMethodStatusArchived;
+
+  /// Tender type: cash.
+  ///
+  /// In en, this message translates to:
+  /// **'Cash'**
+  String get accountsPaymentMethodTypeCash;
+
+  /// Tender type: credit card.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit card'**
+  String get accountsPaymentMethodTypeCreditCard;
+
+  /// Tender type: debit card.
+  ///
+  /// In en, this message translates to:
+  /// **'Debit card'**
+  String get accountsPaymentMethodTypeDebitCard;
+
+  /// Tender type: prepaid card.
+  ///
+  /// In en, this message translates to:
+  /// **'Prepaid card'**
+  String get accountsPaymentMethodTypePrepaidCard;
+
+  /// Tender type: gift card.
+  ///
+  /// In en, this message translates to:
+  /// **'Gift card'**
+  String get accountsPaymentMethodTypeGiftCard;
+
+  /// Tender type: voucher.
+  ///
+  /// In en, this message translates to:
+  /// **'Voucher'**
+  String get accountsPaymentMethodTypeVoucher;
+
+  /// Tender type: bank cheque.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank cheque'**
+  String get accountsPaymentMethodTypeBankCheck;
+
+  /// Tender type: mobile money.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile money'**
+  String get accountsPaymentMethodTypeMobileMoney;
+
+  /// Tender type: bank transfer.
+  ///
+  /// In en, this message translates to:
+  /// **'Bank transfer'**
+  String get accountsPaymentMethodTypeBankTransfer;
+
+  /// Tender type: insurance settlement.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance'**
+  String get accountsPaymentMethodTypeInsurance;
+
+  /// Tender type: anything outside the listed tenders.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get accountsPaymentMethodTypeOther;
+
+  /// Direction: the method takes money in.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming'**
+  String get accountsPaymentMethodDirectionIncoming;
+
+  /// Direction: the method pays money out.
+  ///
+  /// In en, this message translates to:
+  /// **'Outgoing'**
+  String get accountsPaymentMethodDirectionOutgoing;
+
+  /// Direction: the method both receives and pays out.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming and outgoing'**
+  String get accountsPaymentMethodDirectionBoth;
+
+  /// Advanced filter label for the payment method effective window.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective period'**
+  String get accountsPaymentMethodDateRangeFilterLabel;
+
+  /// Advanced filter label for the facility that owns a payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get accountsPaymentMethodFacilityFilterLabel;
+
+  /// Toolbar action that opens the payment method create dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'New record'**
+  String get accountsPaymentMethodNewRecordAction;
+
+  /// Row action that opens the payment method detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get accountsPaymentMethodViewAction;
+
+  /// Row action that copies a payment method into a new unsaved draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Clone'**
+  String get accountsPaymentMethodCloneAction;
+
+  /// Row action that moves a payment method to Active.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate'**
+  String get accountsPaymentMethodActivateAction;
+
+  /// Row action that moves a payment method to Inactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate'**
+  String get accountsPaymentMethodDeactivateAction;
+
+  /// Row action that soft-archives a payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get accountsPaymentMethodArchiveAction;
+
+  /// Row action that restores an archived payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get accountsPaymentMethodRestoreAction;
+
+  /// Bulk action that activates every eligible matching payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate selected'**
+  String get accountsPaymentMethodBulkActivateAction;
+
+  /// Bulk action that deactivates every eligible matching payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate selected'**
+  String get accountsPaymentMethodBulkDeactivateAction;
+
+  /// Bulk action that archives every eligible matching payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive selected'**
+  String get accountsPaymentMethodBulkArchiveAction;
+
+  /// Title of the payment method create dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Add payment method'**
+  String get accountsPaymentMethodCreateTitle;
+
+  /// Title of the payment method edit dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit payment method'**
+  String get accountsPaymentMethodEditTitle;
+
+  /// Title of the payment method clone dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Clone payment method'**
+  String get accountsPaymentMethodCloneTitle;
+
+  /// Title of the payment method detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment method details'**
+  String get accountsPaymentMethodDetailTitle;
+
+  /// Form section grouping the identifying fields of a payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Method identity'**
+  String get accountsPaymentMethodIdentitySection;
+
+  /// Form section grouping the settlement and clearing accounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlement accounts'**
+  String get accountsPaymentMethodPostingSection;
+
+  /// Form section grouping the evidence, approval, and fee rules.
+  ///
+  /// In en, this message translates to:
+  /// **'Handling rules'**
+  String get accountsPaymentMethodRulesSection;
+
+  /// Detail dialog section holding the key payment method fields.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get accountsPaymentMethodSummarySection;
+
+  /// Detail dialog section holding allocation behaviour for this method.
+  ///
+  /// In en, this message translates to:
+  /// **'Allocations'**
+  String get accountsPaymentMethodAllocationsSection;
+
+  /// Detail dialog section holding settlement and reconciliation links.
+  ///
+  /// In en, this message translates to:
+  /// **'Settlement'**
+  String get accountsPaymentMethodSettlementSection;
+
+  /// Detail dialog section holding the immutable payment method timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Documents & audit'**
+  String get accountsPaymentMethodDocumentsSection;
+
+  /// Explains that allocation rows belong to payments, not to method configuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Allocations are recorded on the payments that use this method.'**
+  String get accountsPaymentMethodAllocationsEmpty;
+
+  /// Empty state for the payment method settlement section.
+  ///
+  /// In en, this message translates to:
+  /// **'No settlement accounts configured.'**
+  String get accountsPaymentMethodSettlementEmpty;
+
+  /// Activity timeline label for the payment method creation timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get accountsPaymentMethodActivityCreated;
+
+  /// Activity timeline label for the payment method update timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated'**
+  String get accountsPaymentMethodActivityUpdated;
+
+  /// Activity timeline label for the payment method archive timestamp.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get accountsPaymentMethodActivityArchived;
+
+  /// Activity timeline label for the optimistic record version.
+  ///
+  /// In en, this message translates to:
+  /// **'Record version'**
+  String get accountsPaymentMethodVersionLabel;
+
+  /// Notes field label of the payment method form.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get accountsPaymentMethodNotesLabel;
+
+  /// Notice clarifying that the tender taxonomy is shared with payment records.
+  ///
+  /// In en, this message translates to:
+  /// **'Method Type is the shared tender taxonomy recorded on every payment; this tab configures how each type behaves.'**
+  String get accountsPaymentMethodSharedTypeNotice;
+
+  /// Validation message for a missing required payment method value.
+  ///
+  /// In en, this message translates to:
+  /// **'This field is required.'**
+  String get accountsPaymentMethodRequiredField;
+
+  /// Validation message for a payment method effective window that ends before it starts.
+  ///
+  /// In en, this message translates to:
+  /// **'Effective To must not be earlier than Effective From.'**
+  String get accountsPaymentMethodEffectiveToBeforeFrom;
+
+  /// Validation message when a clearing account is set without a settlement account.
+  ///
+  /// In en, this message translates to:
+  /// **'A clearing account also needs a settlement account.'**
+  String get accountsPaymentMethodSettlementRequired;
+
+  /// Confirmation title for activating a payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate payment method?'**
+  String get accountsPaymentMethodActivateConfirmTitle;
+
+  /// Confirmation title for deactivating a payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate payment method?'**
+  String get accountsPaymentMethodDeactivateConfirmTitle;
+
+  /// Confirmation title for archiving a payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive payment method?'**
+  String get accountsPaymentMethodArchiveConfirmTitle;
+
+  /// Confirmation title for restoring an archived payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore payment method?'**
+  String get accountsPaymentMethodRestoreConfirmTitle;
+
+  /// Confirmation body clarifying that archive is a soft, reference-guarded state change.
+  ///
+  /// In en, this message translates to:
+  /// **'The method is archived, not deleted. Posted receipts stay available and the record can be restored. Archiving is refused while recorded payments already used this tender.'**
+  String get accountsPaymentMethodArchiveConfirmBody;
+
+  /// Confirmation body for activating a payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate {reference} so permitted workflows can accept it?'**
+  String accountsPaymentMethodActivateConfirmBody(String reference);
+
+  /// Confirmation body for deactivating a payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate {reference} so it is no longer offered for new payments?'**
+  String accountsPaymentMethodDeactivateConfirmBody(String reference);
+
+  /// Confirmation body for restoring an archived payment method.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore {reference} and record the change in the audit trail?'**
+  String accountsPaymentMethodRestoreConfirmBody(String reference);
+
+  /// Confirmation body for a bulk payment method workflow action.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{Apply this change to {count} matching payment method? Records that do not allow the change are skipped.} other{Apply this change to {count} matching payment methods? Records that do not allow the change are skipped.}}'**
+  String accountsPaymentMethodBulkConfirmBody(int count);
+
+  /// Feedback shown when part of a bulk payment method action failed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} record could not be changed.} other{{count} records could not be changed.}}'**
+  String accountsPaymentMethodBulkPartialFailure(int count);
+
+  /// Compact mobile row caption pairing the method code with the localized tender type.
+  ///
+  /// In en, this message translates to:
+  /// **'{methodCode} · {methodType}'**
+  String accountsPaymentMethodMobileCaption(
+    String methodCode,
+    String methodType,
+  );
+
+  /// Accounts & Finance -> Setup & Controls -> Document Numbering tab label.
+  ///
+  /// In en, this message translates to:
+  /// **'Document Numbering'**
+  String get accountsDocumentNumberingLabel;
+
+  /// Tooltip for the Document Numbering tab.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefixes, padding, and reset rules for the references each document family issues'**
+  String get accountsDocumentNumberingTooltip;
+
+  /// Empty-state title for the document numbering table.
+  ///
+  /// In en, this message translates to:
+  /// **'No numbering sequences match.'**
+  String get accountsDocumentNumberingEmpty;
+
+  /// Empty-state body for the document numbering table.
+  ///
+  /// In en, this message translates to:
+  /// **'Try another search or add a numbering sequence.'**
+  String get accountsDocumentNumberingEmptyBody;
+
+  /// Search field hint and accessibility label for the document numbering table.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference, code, prefix, module…'**
+  String get accountsDocumentNumberingSearchHint;
+
+  /// Optional human-friendly reference column on the document numbering table.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference'**
+  String get accountsDocumentSequenceReferenceColumn;
+
+  /// Sequence Code column and form field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Sequence Code'**
+  String get accountsDocumentSequenceCodeColumn;
+
+  /// Document Type column and form field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Document Type'**
+  String get accountsDocumentSequenceTypeColumn;
+
+  /// Module column and form field label on the document numbering table.
+  ///
+  /// In en, this message translates to:
+  /// **'Module'**
+  String get accountsDocumentSequenceModuleColumn;
+
+  /// Facility column and form field label on the document numbering table.
+  ///
+  /// In en, this message translates to:
+  /// **'Facility'**
+  String get accountsDocumentSequenceFacilityColumn;
+
+  /// Helper text under the Facility field in the document numbering form.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave blank to use the current facility scope.'**
+  String get accountsDocumentSequenceFacilityHelper;
+
+  /// Prefix column and form field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefix'**
+  String get accountsDocumentSequencePrefixColumn;
+
+  /// Suffix column and form field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Suffix'**
+  String get accountsDocumentSequenceSuffixColumn;
+
+  /// Date Pattern column and form field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Date Pattern'**
+  String get accountsDocumentSequenceDatePatternColumn;
+
+  /// Helper text clarifying that Date Pattern is a format, not a calendar date.
+  ///
+  /// In en, this message translates to:
+  /// **'Literal calendar pattern such as yyyyMM, not a date.'**
+  String get accountsDocumentSequenceDatePatternHelper;
+
+  /// Next Number column and read-only form field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Number'**
+  String get accountsDocumentSequenceNextNumberColumn;
+
+  /// Helper text explaining that Next Number is server-owned and not editable here.
+  ///
+  /// In en, this message translates to:
+  /// **'Read from the counter the documents themselves increment.'**
+  String get accountsDocumentSequenceNextNumberHelper;
+
+  /// Minimum Length column and form field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum Length'**
+  String get accountsDocumentSequenceMinimumLengthColumn;
+
+  /// Reset Frequency column and form field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset Frequency'**
+  String get accountsDocumentSequenceResetColumn;
+
+  /// Optional Last Issued Number column on the document numbering table.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Issued Number'**
+  String get accountsDocumentSequenceLastIssuedNumberColumn;
+
+  /// Optional Last Issued At column on the document numbering table.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Issued At'**
+  String get accountsDocumentSequenceLastIssuedAtColumn;
+
+  /// Optional Gap Policy column and form field label.
+  ///
+  /// In en, this message translates to:
+  /// **'Gap Policy'**
+  String get accountsDocumentSequenceGapPolicyColumn;
+
+  /// Sequence Status column and status filter label.
+  ///
+  /// In en, this message translates to:
+  /// **'Sequence Status'**
+  String get accountsDocumentSequenceStatusColumn;
+
+  /// Row actions column header on the document numbering table.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions'**
+  String get accountsDocumentSequenceActionsColumn;
+
+  /// Label for the derived preview of the next reference this policy issues.
+  ///
+  /// In en, this message translates to:
+  /// **'Next reference'**
+  String get accountsDocumentSequencePreviewLabel;
+
+  /// Notes field label in the document numbering form and detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get accountsDocumentSequenceNotesLabel;
+
+  /// Optimistic record version shown in the document numbering detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get accountsDocumentSequenceVersionLabel;
+
+  /// Document numbering status: not yet available to downstream workflows.
+  ///
+  /// In en, this message translates to:
+  /// **'Draft'**
+  String get accountsDocumentSequenceStatusDraft;
+
+  /// Document numbering status: selectable by permitted workflows.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get accountsDocumentSequenceStatusActive;
+
+  /// Document numbering status: retained but not selectable for new work.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get accountsDocumentSequenceStatusInactive;
+
+  /// Document numbering status: soft-deleted historical record.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get accountsDocumentSequenceStatusArchived;
+
+  /// Numbered document family: patient billing invoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Patient Invoice'**
+  String get accountsDocumentTypeInvoice;
+
+  /// Numbered document family: facility outflow invoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts Invoice'**
+  String get accountsDocumentTypeAccountsInvoice;
+
+  /// Numbered document family: payment receipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Receipt'**
+  String get accountsDocumentTypeReceipt;
+
+  /// Numbered document family: recorded payment.
+  ///
+  /// In en, this message translates to:
+  /// **'Payment'**
+  String get accountsDocumentTypePayment;
+
+  /// Numbered document family: refund.
+  ///
+  /// In en, this message translates to:
+  /// **'Refund'**
+  String get accountsDocumentTypeRefund;
+
+  /// Numbered document family: credit note.
+  ///
+  /// In en, this message translates to:
+  /// **'Credit Note'**
+  String get accountsDocumentTypeCreditNote;
+
+  /// Numbered document family: debit note.
+  ///
+  /// In en, this message translates to:
+  /// **'Debit Note'**
+  String get accountsDocumentTypeDebitNote;
+
+  /// Numbered document family: purchase order.
+  ///
+  /// In en, this message translates to:
+  /// **'Purchase Order'**
+  String get accountsDocumentTypePurchaseOrder;
+
+  /// Numbered document family: goods receipt note.
+  ///
+  /// In en, this message translates to:
+  /// **'Goods Receipt'**
+  String get accountsDocumentTypeGoodsReceipt;
+
+  /// Numbered document family: insurance claim.
+  ///
+  /// In en, this message translates to:
+  /// **'Insurance Claim'**
+  String get accountsDocumentTypeClaim;
+
+  /// Reset frequency: the counter never restarts.
+  ///
+  /// In en, this message translates to:
+  /// **'Never'**
+  String get accountsDocumentResetNever;
+
+  /// Reset frequency: the counter restarts each day.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get accountsDocumentResetDaily;
+
+  /// Reset frequency: the counter restarts each month.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get accountsDocumentResetMonthly;
+
+  /// Reset frequency: the counter restarts each quarter.
+  ///
+  /// In en, this message translates to:
+  /// **'Quarterly'**
+  String get accountsDocumentResetQuarterly;
+
+  /// Reset frequency: the counter restarts each year.
+  ///
+  /// In en, this message translates to:
+  /// **'Yearly'**
+  String get accountsDocumentResetYearly;
+
+  /// Gap policy: reserved numbers that are never committed leave gaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow gaps'**
+  String get accountsDocumentGapPolicyAllowGaps;
+
+  /// Gap policy: the sequence must issue an unbroken run of numbers.
+  ///
+  /// In en, this message translates to:
+  /// **'No gaps'**
+  String get accountsDocumentGapPolicyNoGaps;
+
+  /// Gap policy: unused reservations are recorded as voided numbers.
+  ///
+  /// In en, this message translates to:
+  /// **'Reserve and void'**
+  String get accountsDocumentGapPolicyReserveAndVoid;
+
+  /// Form section grouping the sequence code, document type, module, and facility.
+  ///
+  /// In en, this message translates to:
+  /// **'Identity'**
+  String get accountsDocumentSequenceIdentitySection;
+
+  /// Form section grouping the prefix, suffix, pattern, padding, and reset rules.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference shape'**
+  String get accountsDocumentSequenceShapeSection;
+
+  /// Detail section showing the key document numbering columns.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get accountsDocumentSequenceSummarySection;
+
+  /// Detail section showing the counter-derived issued numbers and cross-module links.
+  ///
+  /// In en, this message translates to:
+  /// **'Related records'**
+  String get accountsDocumentSequenceRelatedSection;
+
+  /// Explains that issued references live with the owning documents, not this policy row.
+  ///
+  /// In en, this message translates to:
+  /// **'Issued references belong to the documents this sequence numbers.'**
+  String get accountsDocumentSequenceRelatedEmpty;
+
+  /// Detail section listing documents attached to a numbering sequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachments'**
+  String get accountsDocumentSequenceAttachmentsSection;
+
+  /// Empty state for the document numbering attachments section.
+  ///
+  /// In en, this message translates to:
+  /// **'No attachments for this sequence.'**
+  String get accountsDocumentSequenceAttachmentsEmpty;
+
+  /// Detail section holding the immutable document numbering audit timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity & audit'**
+  String get accountsDocumentSequenceActivitySection;
+
+  /// Audit timeline entry for record creation.
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get accountsDocumentSequenceActivityCreated;
+
+  /// Audit timeline entry for the last update.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated'**
+  String get accountsDocumentSequenceActivityUpdated;
+
+  /// Audit timeline entry for archiving.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get accountsDocumentSequenceActivityArchived;
+
+  /// Banner explaining that the counter is server-owned and not set from this form.
+  ///
+  /// In en, this message translates to:
+  /// **'The running number is held by the documents this sequence numbers. This form sets the policy; Next Number is read back from that counter.'**
+  String get accountsDocumentSequenceCounterNotice;
+
+  /// Banner explaining why reference shape fields are disabled once numbers have been issued.
+  ///
+  /// In en, this message translates to:
+  /// **'This sequence has already issued numbers, so its prefix, suffix, pattern, and padding are locked. Changing them would make old and new references indistinguishable.'**
+  String get accountsDocumentSequenceShapeLockedNotice;
+
+  /// Validation message for a required document numbering field.
+  ///
+  /// In en, this message translates to:
+  /// **'Required'**
+  String get accountsDocumentSequenceRequiredField;
+
+  /// Validation message for a malformed sequence code.
+  ///
+  /// In en, this message translates to:
+  /// **'Use up to 32 letters, digits, hyphens, or underscores.'**
+  String get accountsDocumentSequenceInvalidCode;
+
+  /// Validation message for a malformed prefix or suffix.
+  ///
+  /// In en, this message translates to:
+  /// **'Use up to 16 letters, digits, hyphens, or slashes.'**
+  String get accountsDocumentSequenceInvalidAffix;
+
+  /// Validation message for a malformed date pattern.
+  ///
+  /// In en, this message translates to:
+  /// **'Use only calendar pattern characters such as y, M, d, q, or w.'**
+  String get accountsDocumentSequenceInvalidDatePattern;
+
+  /// Validation message for an out-of-range minimum length.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a number between 1 and 20.'**
+  String get accountsDocumentSequenceInvalidMinimumLength;
+
+  /// Validation message when the configured reference shape exceeds the reference column width.
+  ///
+  /// In en, this message translates to:
+  /// **'Prefix, pattern, padding, and suffix must fit within {maxLength} characters.'**
+  String accountsDocumentSequenceReferenceTooLong(int maxLength);
+
+  /// Title of the document numbering create dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'New numbering sequence'**
+  String get accountsDocumentSequenceCreateTitle;
+
+  /// Title of the document numbering edit dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit numbering sequence'**
+  String get accountsDocumentSequenceEditTitle;
+
+  /// Title of the document numbering clone dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Clone numbering sequence'**
+  String get accountsDocumentSequenceCloneTitle;
+
+  /// Title of the document numbering detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Numbering sequence'**
+  String get accountsDocumentSequenceDetailTitle;
+
+  /// Toolbar action that opens the document numbering create dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'New sequence'**
+  String get accountsDocumentSequenceNewRecordAction;
+
+  /// Row action that opens the document numbering detail dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'View'**
+  String get accountsDocumentSequenceViewAction;
+
+  /// Row action that copies a sequence into a new unsaved draft.
+  ///
+  /// In en, this message translates to:
+  /// **'Clone'**
+  String get accountsDocumentSequenceCloneAction;
+
+  /// Row action that activates a numbering sequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate'**
+  String get accountsDocumentSequenceActivateAction;
+
+  /// Row action that deactivates a numbering sequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate'**
+  String get accountsDocumentSequenceDeactivateAction;
+
+  /// Row action that soft-archives a numbering sequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get accountsDocumentSequenceArchiveAction;
+
+  /// Row action that restores an archived numbering sequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get accountsDocumentSequenceRestoreAction;
+
+  /// Toolbar action that activates every eligible matching sequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate selected'**
+  String get accountsDocumentSequenceBulkActivateAction;
+
+  /// Toolbar action that deactivates every eligible matching sequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate selected'**
+  String get accountsDocumentSequenceBulkDeactivateAction;
+
+  /// Toolbar action that archives every eligible matching sequence.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive selected'**
+  String get accountsDocumentSequenceBulkArchiveAction;
+
+  /// Confirmation body naming how many sequences a bulk action will change.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{This applies to 1 matching sequence.} other{This applies to {count} matching sequences.}}'**
+  String accountsDocumentSequenceBulkConfirmBody(int count);
+
+  /// Reports how many rows a bulk action could not change.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 sequence could not be changed.} other{{count} sequences could not be changed.}}'**
+  String accountsDocumentSequenceBulkPartialFailure(int count);
+
+  /// Title of the document numbering activate confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Activate this sequence?'**
+  String get accountsDocumentSequenceActivateConfirmTitle;
+
+  /// Body of the document numbering activate confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'{reference} will start issuing references for its document type. Only one sequence per document type can be active at a time.'**
+  String accountsDocumentSequenceActivateConfirmBody(String reference);
+
+  /// Title of the document numbering deactivate confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Deactivate this sequence?'**
+  String get accountsDocumentSequenceDeactivateConfirmTitle;
+
+  /// Body of the document numbering deactivate confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'{reference} will stop issuing new references. References it already issued stay valid.'**
+  String accountsDocumentSequenceDeactivateConfirmBody(String reference);
+
+  /// Title of the document numbering archive confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive this sequence?'**
+  String get accountsDocumentSequenceArchiveConfirmTitle;
+
+  /// Body of the document numbering archive confirmation, stating that archive is a soft state change.
+  ///
+  /// In en, this message translates to:
+  /// **'The sequence is archived, not deleted, so every reference it already issued stays traceable to the policy that produced it.'**
+  String get accountsDocumentSequenceArchiveConfirmBody;
+
+  /// Title of the document numbering restore confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore this sequence?'**
+  String get accountsDocumentSequenceRestoreConfirmTitle;
+
+  /// Body of the document numbering restore confirmation.
+  ///
+  /// In en, this message translates to:
+  /// **'{reference} returns to active and can issue references again.'**
+  String accountsDocumentSequenceRestoreConfirmBody(String reference);
+
+  /// Date range filter label on the document numbering table.
+  ///
+  /// In en, this message translates to:
+  /// **'Last changed'**
+  String get accountsDocumentSequenceDateRangeFilterLabel;
+
+  /// Compact mobile row caption pairing the localized document type with the prefix.
+  ///
+  /// In en, this message translates to:
+  /// **'{documentType} · {prefix}'**
+  String accountsDocumentSequenceMobileCaption(
+    String documentType,
+    String prefix,
+  );
 }
 
 class _AppLocalizationsDelegate

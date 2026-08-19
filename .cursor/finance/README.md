@@ -8,9 +8,9 @@ This folder is the implementation-ready decomposition of [`../billing-accounts-f
 | Main menu | Route | Entitlement | Tabs | Documentation |
 |---|---|---|---:|---|
 | Billing | `/billing` | `billing-payments` | 24 | [Open](billing/README.md) |
-| Accounts & Finance | `/accounts` | `facility-accounts` | 100 | [Open](accounts-and-finance/README.md) |
+| Accounts & Finance | `/accounts` | `facility-accounts` | 99 | [Open](accounts-and-finance/README.md) |
 | Insurance & Claims | `/claims` | `insurance-claims` | 35 | [Open](insurance-and-claims/README.md) |
-| **Total** |  |  | **159** |  |
+| **Total** |  |  | **158** |  |
 
 Folders represent menus and nested submenus. Every non-README tab file specifies purpose, columns, filters, buttons, CRUD, dialogs, nested tables, statuses, permissions, API behavior, validation, audit, implementation references, and acceptance criteria.
 
@@ -30,10 +30,12 @@ See [`_shared/workspace-pattern.md`](_shared/workspace-pattern.md).
 
 ## Important refactor rules
 
+- Run the [reuse audit](_shared/existing-implementation.md) before implementing any tab. Most of this scope already exists; extend the owning module instead of adding a parallel one.
 - Billing keeps the **Billing** menu name and exposes a flat tab workspace.
-- Accounts becomes **Accounts & Finance** and is the only expandable finance main menu; category folders are submenu groups and leaf files are tabs.
+- Accounts becomes **Accounts & Finance** and is the only expandable finance main menu. Its category folders are **nested sidebar menu items** (one level only) and the leaf files inside them are **tabs** in the workspace. See [navigation-model.md](_shared/navigation-model.md).
 - Insurance Claims becomes **Insurance & Claims** and exposes a flat tab workspace.
 - Every permanent tab is a table/worklist. Create/edit/approve/post/reconcile actions are buttons and dialogs, not permanent tabs.
+- There is no Currencies & Exchange Rates tab. Currency resolution, precision, and conversion already exist in shared code.
 - Posted/finalized financial history is immutable.
 - Cross-module links open the authoritative record in its owning workspace.
 
@@ -44,4 +46,4 @@ python tool/generate_finance_tab_docs.py
 python tool/generate_finance_tab_docs.py --check
 ```
 
-The generator validates the 24 Billing, 100 Accounts & Finance, and 35 Insurance & Claims tabs against Section 10 columns before writing.
+The generator validates the 24 Billing, 99 Accounts & Finance, and 35 Insurance & Claims tabs against Section 10 columns before writing.

@@ -20,6 +20,8 @@ import 'package:hosspi_hms/features/auth/presentation/pages/login_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_shell_layout.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/l10n/app_localizations_x.dart';
+import 'package:hosspi_hms/shared/components/app_email_field.dart';
+import 'package:hosspi_hms/shared/components/app_phone_field.dart';
 
 void main() {
   testWidgets(
@@ -58,6 +60,23 @@ void main() {
       findsOneWidget,
     );
     expect(find.text(l10n.authRegistrationGuideStepSignInTitle), findsOneWidget);
+  });
+
+  testWidgets('How to register keeps the Close label on a narrow viewport', (
+    WidgetTester tester,
+  ) async {
+    await _pumpLogin(
+      tester,
+      const _IdleLoginRepository(),
+      size: const Size(360, 720),
+    );
+    final l10n = tester.element(find.byType(LoginPage)).l10n;
+
+    await tester.tap(find.text(l10n.authHowToRegisterActionLabel));
+    await tester.pumpAndSettle();
+
+    // Dialog footers go icon-only below lg; this one opts back in.
+    expect(find.text(l10n.commonCloseActionLabel), findsOneWidget);
   });
 
   testWidgets('keeps wrong password message visible after login fails', (
@@ -114,6 +133,62 @@ void main() {
     await tester.tap(find.text(l10n.authCreateAccountActionLabel));
     await tester.pumpAndSettle();
     expect(find.text('register'), findsOneWidget);
+  });
+
+  testWidgets('phone mode swaps the input and submits an E.164 identifier', (
+    WidgetTester tester,
+  ) async {
+    final repository = _RecordingLoginRepository();
+    await _pumpLogin(tester, repository);
+    final l10n = tester.element(find.byType(LoginPage)).l10n;
+
+    expect(find.byType(AppEmailField), findsOneWidget);
+    expect(find.byType(AppPhoneField), findsNothing);
+
+    await tester.tap(find.text(l10n.authIdentifierModePhoneLabel));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppEmailField), findsNothing);
+    expect(find.byType(AppPhoneField), findsOneWidget);
+    // The country dial code stays visible next to the number field.
+    expect(find.text('+256'), findsOneWidget);
+
+    await tester.enterText(find.byType(EditableText).at(0), '700123456');
+    await tester.enterText(find.byType(EditableText).at(1), 'Challenger2624.');
+    await tester.tap(
+      find.widgetWithText(FilledButton, l10n.authLoginActionLabel),
+    );
+    for (int i = 0; i < 20; i++) {
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+
+    expect(repository.lastIdentifier, '+256700123456');
+    expect(find.text('home'), findsOneWidget);
+  });
+
+  testWidgets('switching identifier mode drops the abandoned credential', (
+    WidgetTester tester,
+  ) async {
+    final repository = _RecordingLoginRepository();
+    await _pumpLogin(tester, repository);
+    final l10n = tester.element(find.byType(LoginPage)).l10n;
+
+    await tester.enterText(
+      find.byType(EditableText).at(0),
+      'wasswawilson0001@gmail.com',
+    );
+    await tester.tap(find.text(l10n.authIdentifierModePhoneLabel));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text(l10n.authIdentifierModeEmailLabel));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<EditableText>(find.byType(EditableText).at(0))
+          .controller
+          .text,
+      isEmpty,
+    );
   });
 
   testWidgets('validation failure stays on login', (WidgetTester tester) async {
@@ -368,6 +443,36 @@ final class _FailingLoginRepository extends _BaseAuthRepository {
   }) async {
     await Future<void>.delayed(Duration.zero);
     return Result<AuthSession>.failure(_failure);
+  }
+}
+
+final class _RecordingLoginRepository extends _BaseAuthRepository {
+  _RecordingLoginRepository();
+
+  String? lastIdentifier;
+
+  @override
+  Future<Result<AuthSession>> login({
+    required String identifier,
+    required String password,
+    String? tenantId,
+    String? facilityId,
+  }) async {
+    lastIdentifier = identifier;
+    await Future<void>.delayed(Duration.zero);
+    return Result<AuthSession>.success(
+      AuthSession(
+        tokens: SessionTokens(accessToken: 'test-access'),
+        subject: identifier,
+        user: AuthUserProfile(
+          id: 'user-1',
+          email: identifier,
+          tenantId: 'tenant-1',
+          facilityId: 'facility-1',
+          roles: const <String>['nurse'],
+        ),
+      ),
+    );
   }
 }
 

@@ -37,16 +37,13 @@ Do **not** hand off mid-form or mid-wizard when the remaining steps belong on th
 
 1. Use `AppWorkspace` **or** the standardized `ResponsivePage` + `AppTabStrip` / `AppListTable` desk shell (enforced by `workspace_ui_pattern_test.dart`).
 2. Reuse shared components under `frontend/lib/shared/` and existing feature dialogs. Do not fork patient, billing, OPD, tab, table, dialog, or form chrome per module when a shared path exists or can be extended.
-3. Omit unauthorized tabs, actions, and routes (RBAC/ABAC per [prompt.mdc](prompt.mdc)). Receptionist-focused users keep OPD / Emergency work on Reception per `shell_route_access.dart`.
-
-## States
-
-1. Cover loading, empty, error, and success for workspace data, tab switches, and in-desk mutations; do not leave silent stale content after a failed load or handoff.
+3. Receptionist-focused users keep OPD / Emergency work on Reception per `shell_route_access.dart`.
 
 ## Implementation constraints
 
 - Build on shell routes in `app_router.dart` / `AppRoutes` and in-desk sync via `workspace_location_sync.dart`. Do not invent a parallel navigator for feature flows.
 - Prefer extending workspace controllers and dialogs over new pages.
+- Cover loading, empty, error, and success for workspace data, tab switches, and in-desk mutations; do not leave silent stale content after a failed load or handoff.
 - This file owns workspace boundaries, in-desk vs handoff navigation, and shell layout reuse—not tab/table/dialog/form/print details.
 
 ## Relevant files

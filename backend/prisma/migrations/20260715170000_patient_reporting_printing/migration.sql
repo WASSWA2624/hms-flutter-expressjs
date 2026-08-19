@@ -52,4 +52,4 @@ CREATE TABLE IF NOT EXISTS `patient_report_job` (
     FOREIGN KEY (`encounter_id`) REFERENCES `encounter`(`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `patient_report_job_requested_by_user_id_fkey`
     FOREIGN KEY (`requested_by_user_id`) REFERENCES `user`(`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;

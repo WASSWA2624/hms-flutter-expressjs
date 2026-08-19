@@ -9,6 +9,29 @@ import 'package:hosspi_hms/shared/layout/app_fullscreen_toggle.dart';
 import 'package:hosspi_hms/shared/layout/app_shell_layout.dart';
 import 'package:hosspi_hms/shared/layout/shell_navigation_loading.dart';
 
+/// A destination's nested menu item — the one nesting level the sidebar allows.
+///
+/// Menus that own a hierarchy (Accounts & Finance) expose their categories here.
+/// Anything below a category belongs to the workspace tab strip, not the menu.
+final class ShellSubmenuItem {
+  const ShellSubmenuItem({
+    required this.id,
+    required this.label,
+    required this.icon,
+    this.badgeCount,
+    this.badgeTone,
+    this.tooltip,
+  });
+
+  /// Stable identifier the host maps back to a location.
+  final String id;
+  final String label;
+  final IconData icon;
+  final int? badgeCount;
+  final AppTabCountTone? badgeTone;
+  final String? tooltip;
+}
+
 final class ResponsiveShellDestination {
   const ResponsiveShellDestination({
     required this.label,
@@ -17,6 +40,7 @@ final class ResponsiveShellDestination {
     this.shortLabel,
     this.groupLabel,
     this.badgeCount,
+    this.children = const <ShellSubmenuItem>[],
   });
 
   final String label;
@@ -25,6 +49,11 @@ final class ResponsiveShellDestination {
   final IconData selectedIcon;
   final String? groupLabel;
   final int? badgeCount;
+
+  /// Nested menu items, one level deep. Empty for flat destinations.
+  final List<ShellSubmenuItem> children;
+
+  bool get hasChildren => children.isNotEmpty;
 
   String displayLabel({required bool compact}) {
     if (compact) {
@@ -85,6 +114,8 @@ class ResponsiveAppShell extends ResponsiveShellScaffold {
     required super.selectedIndex,
     required super.onDestinationSelected,
     required super.child,
+    super.selectedChildId,
+    super.onChildSelected,
     super.connectivityStatus,
     super.showUserAvatar,
     super.compactTitle,
@@ -130,6 +161,8 @@ class ResponsiveShellScaffold extends StatefulWidget {
     required this.selectedIndex,
     required this.onDestinationSelected,
     required this.child,
+    this.selectedChildId,
+    this.onChildSelected,
     this.connectivityStatus = AppConnectivityStatus.online,
     this.showUserAvatar = true,
     this.compactTitle,
@@ -171,6 +204,12 @@ class ResponsiveShellScaffold extends StatefulWidget {
   final List<ResponsiveShellDestination> destinations;
   final int selectedIndex;
   final ValueChanged<int> onDestinationSelected;
+
+  /// [ShellMenuLeaf.id] of the active nested menu item, when one is open.
+  final String? selectedChildId;
+
+  /// Called with a [ShellMenuLeaf.id]; the host maps it back to a location.
+  final ValueChanged<String>? onChildSelected;
   final AppConnectivityStatus connectivityStatus;
   final bool showUserAvatar;
   final String? compactTitle;
@@ -252,8 +291,10 @@ class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
                   title: widget.compactTitle ?? widget.title,
                   destinations: widget.destinations,
                   selectedIndex: effectiveSelectedIndex,
+                  selectedChildId: widget.selectedChildId,
                   closeTooltip: widget.closeDrawerTooltip,
                   onDestinationSelected: _selectMobileDestination,
+                  onChildSelected: _selectMobileChild,
                 )
               : null,
           body: SafeArea(
@@ -306,6 +347,7 @@ class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
                       isShellLoading: widget.isShellLoading,
                       destinations: widget.destinations,
                       selectedIndex: effectiveSelectedIndex,
+                      selectedChildId: widget.selectedChildId,
                       sidebarCollapsed: _sidebarCollapsed,
                       sidebarWidth: _sidebarCollapsed
                           ? AppShellLayout.collapsedSidebarWidth
@@ -315,6 +357,7 @@ class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
                       navigationSearchNoResultsLabel:
                           widget.navigationSearchNoResultsLabel,
                       onDestinationSelected: widget.onDestinationSelected,
+                      onChildSelected: widget.onChildSelected,
                       onResizeSidebar: _resizeSidebar,
                       child: widget.child,
                     ),
@@ -355,6 +398,13 @@ class _ResponsiveShellScaffoldState extends State<ResponsiveShellScaffold> {
       widget.onDestinationSelected(index);
     }
   }
+
+  void _selectMobileChild(String childId) {
+    Navigator.of(context).pop();
+    if (childId != widget.selectedChildId) {
+      widget.onChildSelected?.call(childId);
+    }
+  }
 }
 
 class _ShellBody extends StatelessWidget {
@@ -364,12 +414,14 @@ class _ShellBody extends StatelessWidget {
     required this.isShellLoading,
     required this.destinations,
     required this.selectedIndex,
+    required this.selectedChildId,
     required this.sidebarCollapsed,
     required this.sidebarWidth,
     required this.navigationSearchLabel,
     required this.navigationSearchHint,
     required this.navigationSearchNoResultsLabel,
     required this.onDestinationSelected,
+    required this.onChildSelected,
     required this.onResizeSidebar,
     required this.child,
   });
@@ -379,12 +431,14 @@ class _ShellBody extends StatelessWidget {
   final bool isShellLoading;
   final List<ResponsiveShellDestination> destinations;
   final int selectedIndex;
+  final String? selectedChildId;
   final bool sidebarCollapsed;
   final double sidebarWidth;
   final String navigationSearchLabel;
   final String navigationSearchHint;
   final String navigationSearchNoResultsLabel;
   final ValueChanged<int> onDestinationSelected;
+  final ValueChanged<String>? onChildSelected;
   final ValueChanged<double> onResizeSidebar;
   final Widget child;
 
@@ -408,12 +462,14 @@ class _ShellBody extends StatelessWidget {
           child: SideNavigation(
             destinations: destinations,
             selectedIndex: selectedIndex,
+            selectedChildId: selectedChildId,
             collapsed: sidebarCollapsed,
             width: sidebarWidth,
             searchLabel: navigationSearchLabel,
             searchHint: navigationSearchHint,
             noResultsLabel: navigationSearchNoResultsLabel,
             onDestinationSelected: onDestinationSelected,
+            onChildSelected: onChildSelected,
           ),
         ),
         if (!sidebarCollapsed) _SidebarResizeHandle(onDrag: onResizeSidebar),
@@ -493,7 +549,6 @@ class AppMenuBar extends StatelessWidget {
     final bool isMobile = breakpoint.isMobile;
     final bool hideTitle = breakpoint == AppBreakpoint.xs;
     final String effectiveTitle = isMobile ? compactTitle ?? title : title;
-    final double logoSize = isMobile ? _mobileHeaderLogoSize : _headerLogoSize;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -517,7 +572,8 @@ class AppMenuBar extends StatelessWidget {
                 onPressed: onToggleNavigation,
               ),
               SizedBox(width: theme.spacing.xs),
-              AppLogo(size: logoSize),
+              // Cap height, not font size, so the mark matches the wordmark.
+              AppLogo(size: AppLogo.markHeightForFontSize(_headerBrandHeight)),
               if (!hideTitle) SizedBox(width: theme.spacing.sm),
               Expanded(
                 child: hideTitle
@@ -527,7 +583,7 @@ class AppMenuBar extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.titleMedium?.copyWith(
                           color: colorScheme.primary,
-                          fontSize: logoSize * _appBarTitleToLogoRatio,
+                          fontSize: _headerBrandHeight,
                           height: 1,
                           fontWeight: AppFontWeight.bold,
                         ),
@@ -1061,28 +1117,72 @@ String? _nonEmpty(String? value) {
   return normalized == null || normalized.isEmpty ? null : normalized;
 }
 
-class _MobileShellDrawer extends StatelessWidget {
+class _MobileShellDrawer extends StatefulWidget {
   const _MobileShellDrawer({
     required this.title,
     required this.destinations,
     required this.selectedIndex,
+    required this.selectedChildId,
     required this.closeTooltip,
     required this.onDestinationSelected,
+    required this.onChildSelected,
   });
 
   final String title;
   final List<ResponsiveShellDestination> destinations;
   final int selectedIndex;
+  final String? selectedChildId;
   final String closeTooltip;
   final ValueChanged<int> onDestinationSelected;
+  final ValueChanged<String> onChildSelected;
+
+  @override
+  State<_MobileShellDrawer> createState() => _MobileShellDrawerState();
+}
+
+class _MobileShellDrawerState extends State<_MobileShellDrawer> {
+  final Set<int> _expandedDestinations = <int>{};
+
+  @override
+  void initState() {
+    super.initState();
+    final String? childId = widget.selectedChildId;
+    if (childId != null && childId.isNotEmpty) {
+      _expandedDestinations.addAll(
+        _destinationsOwningChild(
+          _indexedDestinations(widget.destinations),
+          childId,
+        ),
+      );
+    }
+  }
+
+  void _toggleExpansion(int destinationIndex) {
+    setState(() {
+      if (!_expandedDestinations.remove(destinationIndex)) {
+        _expandedDestinations.add(destinationIndex);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
+    final String title = widget.title;
+    final String closeTooltip = widget.closeTooltip;
+    final TextStyle? drawerTitleStyle = theme.textTheme.titleMedium?.copyWith(
+      color: colorScheme.primary,
+      fontWeight: AppFontWeight.emphasis,
+      height: 1,
+    );
+    final double drawerBrandHeight =
+        drawerTitleStyle?.fontSize ?? _drawerBrandHeightFallback;
     final List<_NavigationListEntry> entries = _navigationListEntries(
-      _indexedDestinations(destinations),
+      _indexedDestinations(widget.destinations),
       showGroups: false,
+      selectedChildId: widget.selectedChildId,
+      expandedDestinations: _expandedDestinations,
     );
 
     return Drawer(
@@ -1099,16 +1199,18 @@ class _MobileShellDrawer extends StatelessWidget {
                 ),
                 child: Row(
                   children: <Widget>[
-                    const AppLogo(size: _drawerLogoSize),
+                    // Match the mark to the title's own cap height rather than a
+                    // fixed constant. The previous 48 also overflowed this
+                    // header, which is only _drawerHeaderHeight (40) tall.
+                    AppLogo(
+                      size: AppLogo.markHeightForFontSize(drawerBrandHeight),
+                    ),
                     SizedBox(width: theme.spacing.xs),
                     Expanded(
                       child: Text(
                         title,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: colorScheme.primary,
-                          fontWeight: AppFontWeight.emphasis,
-                        ),
+                        style: drawerTitleStyle,
                       ),
                     ),
                     AppButton(
@@ -1134,10 +1236,12 @@ class _MobileShellDrawer extends StatelessWidget {
                 itemBuilder: (BuildContext context, int index) {
                   return _NavigationListEntryWidget(
                     entry: entries[index],
-                    selectedIndex: selectedIndex,
+                    selectedIndex: widget.selectedIndex,
                     showLabel: true,
                     useShortLabel: true,
-                    onDestinationSelected: onDestinationSelected,
+                    onDestinationSelected: widget.onDestinationSelected,
+                    onChildSelected: widget.onChildSelected,
+                    onExpansionToggled: _toggleExpansion,
                   );
                 },
               ),
@@ -1159,17 +1263,21 @@ class SideNavigation extends StatefulWidget {
     required this.searchHint,
     required this.noResultsLabel,
     required this.onDestinationSelected,
+    this.selectedChildId,
+    this.onChildSelected,
     super.key,
   });
 
   final List<ResponsiveShellDestination> destinations;
   final int selectedIndex;
+  final String? selectedChildId;
   final bool collapsed;
   final double width;
   final String searchLabel;
   final String searchHint;
   final String noResultsLabel;
   final ValueChanged<int> onDestinationSelected;
+  final ValueChanged<String>? onChildSelected;
 
   @override
   State<SideNavigation> createState() => _SideNavigationState();
@@ -1178,6 +1286,13 @@ class SideNavigation extends StatefulWidget {
 class _SideNavigationState extends State<SideNavigation> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  final Set<int> _expandedDestinations = <int>{};
+
+  @override
+  void initState() {
+    super.initState();
+    _revealSelectedChild();
+  }
 
   @override
   void didUpdateWidget(SideNavigation oldWidget) {
@@ -1185,6 +1300,31 @@ class _SideNavigationState extends State<SideNavigation> {
     if (!oldWidget.collapsed && widget.collapsed) {
       _clearSearch();
     }
+    if (oldWidget.selectedChildId != widget.selectedChildId) {
+      _revealSelectedChild();
+    }
+  }
+
+  /// Deep links land on a submenu item, so its parent opens without a tap.
+  void _revealSelectedChild() {
+    final String? childId = widget.selectedChildId;
+    if (childId == null || childId.isEmpty) {
+      return;
+    }
+    _expandedDestinations.addAll(
+      _destinationsOwningChild(
+        _indexedDestinations(widget.destinations),
+        childId,
+      ),
+    );
+  }
+
+  void _toggleExpansion(int destinationIndex) {
+    setState(() {
+      if (!_expandedDestinations.remove(destinationIndex)) {
+        _expandedDestinations.add(destinationIndex);
+      }
+    });
   }
 
   @override
@@ -1215,6 +1355,11 @@ class _SideNavigationState extends State<SideNavigation> {
     final List<_NavigationListEntry> entries = _navigationListEntries(
       visibleDestinations,
       showGroups: false,
+      // The collapsed rail has no room for labels, so nested items stay closed.
+      showChildren: !widget.collapsed,
+      selectedChildId: widget.selectedChildId,
+      expandedDestinations: _expandedDestinations,
+      normalizedQuery: normalizedQuery,
     );
 
     return AnimatedContainer(
@@ -1252,6 +1397,8 @@ class _SideNavigationState extends State<SideNavigation> {
                         selectedIndex: widget.selectedIndex,
                         showLabel: !widget.collapsed,
                         onDestinationSelected: _selectDestination,
+                        onChildSelected: _selectChild,
+                        onExpansionToggled: _toggleExpansion,
                       );
                     },
                   ),
@@ -1277,6 +1424,12 @@ class _SideNavigationState extends State<SideNavigation> {
       widget.onDestinationSelected(index);
     }
   }
+
+  void _selectChild(String childId) {
+    if (childId != widget.selectedChildId) {
+      widget.onChildSelected?.call(childId);
+    }
+  }
 }
 
 class _NavigationListEntryWidget extends StatelessWidget {
@@ -1286,6 +1439,8 @@ class _NavigationListEntryWidget extends StatelessWidget {
     required this.showLabel,
     this.useShortLabel = false,
     required this.onDestinationSelected,
+    this.onChildSelected,
+    this.onExpansionToggled,
   });
 
   final _NavigationListEntry entry;
@@ -1293,6 +1448,8 @@ class _NavigationListEntryWidget extends StatelessWidget {
   final bool showLabel;
   final bool useShortLabel;
   final ValueChanged<int> onDestinationSelected;
+  final ValueChanged<String>? onChildSelected;
+  final ValueChanged<int>? onExpansionToggled;
 
   @override
   Widget build(BuildContext context) {
@@ -1300,16 +1457,206 @@ class _NavigationListEntryWidget extends StatelessWidget {
       _NavigationGroupHeaderEntry(:final label) => _ShellMenuGroupHeader(
         label: label,
       ),
-      _NavigationDestinationEntry(:final destination) => _ShellMenuItem(
-        destination: destination.destination,
-        selected: destination.index == selectedIndex,
-        showLabel: showLabel,
-        useShortLabel: useShortLabel,
-        onTap: () {
-          onDestinationSelected(destination.index);
-        },
+      _NavigationDestinationEntry(
+        :final destination,
+        :final expandable,
+        :final expanded,
+      ) =>
+        _ShellMenuItem(
+          destination: destination.destination,
+          selected: destination.index == selectedIndex,
+          showLabel: showLabel,
+          useShortLabel: useShortLabel,
+          expandable: expandable && showLabel,
+          expanded: expanded,
+          onTap: () {
+            // Opening a parent menu both navigates and reveals its children.
+            if (expandable && showLabel) {
+              onExpansionToggled?.call(destination.index);
+            }
+            onDestinationSelected(destination.index);
+          },
+        ),
+      _NavigationSubmenuEntry(:final item, :final selected) => _ShellSubMenuItem(
+        label: item.label,
+        icon: item.icon,
+        selected: selected,
+        badgeCount: item.badgeCount,
+        badgeTone: item.badgeTone,
+        tooltip: item.tooltip,
+        onTap: () => onChildSelected?.call(item.id),
       ),
     };
+  }
+}
+
+/// Row for a nested menu item: an expandable category or a navigable leaf.
+class _ShellSubMenuItem extends StatefulWidget {
+  const _ShellSubMenuItem({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+    this.badgeCount,
+    this.badgeTone,
+    this.tooltip,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final int? badgeCount;
+  final AppTabCountTone? badgeTone;
+  final String? tooltip;
+  final VoidCallback onTap;
+
+  @override
+  State<_ShellSubMenuItem> createState() => _ShellSubMenuItemState();
+}
+
+class _ShellSubMenuItemState extends State<_ShellSubMenuItem> {
+  static const Map<ShortcutActivator, Intent> _shortcuts =
+      <ShortcutActivator, Intent>{
+        SingleActivator(LogicalKeyboardKey.enter): ActivateIntent(),
+        SingleActivator(LogicalKeyboardKey.space): ActivateIntent(),
+      };
+
+  bool _hovered = false;
+  bool _focused = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppSidebarTokens sidebar = theme.sidebarTokens;
+    final ColorScheme colorScheme = theme.colorScheme;
+    final bool isInteractive = _hovered || _focused;
+    final Color backgroundColor = widget.selected
+        ? sidebar.selectedBackgroundColor
+        : isInteractive
+        ? sidebar.hoverBackgroundColor
+        : Colors.transparent;
+    final Color foregroundColor = widget.selected
+        ? sidebar.selectedForegroundColor
+        : isInteractive
+        ? sidebar.hoverForegroundColor
+        : sidebar.defaultForegroundColor;
+    final BorderRadius itemRadius = BorderRadius.circular(
+      sidebar.itemBorderRadius,
+    );
+    final int badgeCount = widget.badgeCount ?? 0;
+
+    final Widget content = AnimatedContainer(
+      duration: _menuAnimationDuration,
+      height: sidebar.itemHeight,
+      margin: EdgeInsets.only(
+        // Indented one step to read as a child of the destination above it.
+        left: theme.spacing.sm + theme.spacing.lg,
+        right: theme.spacing.sm,
+        top: theme.spacing.xs,
+        bottom: theme.spacing.xs,
+      ),
+      padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: itemRadius,
+        border: _focused
+            ? theme.borders.all(
+                color: widget.selected
+                    ? sidebar.selectedForegroundColor.withValues(alpha: 0.48)
+                    : sidebar.focusBorderColor,
+                width: _focusIndicatorWidth,
+              )
+            : null,
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(
+            widget.icon,
+            color: foregroundColor,
+            size: theme.appTokens.listIconSize,
+          ),
+          SizedBox(width: theme.spacing.sm),
+          Expanded(
+            child: Text(
+              widget.label,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: foregroundColor,
+                fontWeight: widget.selected
+                    ? AppFontWeight.emphasis
+                    : AppFontWeight.regular,
+              ),
+            ),
+          ),
+          if (badgeCount > 0) ...<Widget>[
+            SizedBox(width: theme.spacing.xs),
+            _MenuItemCountBadge(
+              count: badgeCount,
+              selected: widget.selected,
+              sidebar: sidebar,
+              tone: widget.badgeTone,
+            ),
+          ],
+        ],
+      ),
+    );
+
+    return Shortcuts(
+      shortcuts: _shortcuts,
+      child: Actions(
+        actions: <Type, Action<Intent>>{
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              widget.onTap();
+              return null;
+            },
+          ),
+        },
+        child: Focus(
+          onFocusChange: (bool focused) {
+            setState(() {
+              _focused = focused;
+            });
+          },
+          child: Tooltip(
+            message: widget.tooltip ?? '',
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              onEnter: (_) {
+                setState(() {
+                  _hovered = true;
+                });
+              },
+              onExit: (_) {
+                setState(() {
+                  _hovered = false;
+                });
+              },
+              child: Semantics(
+                button: true,
+                selected: widget.selected,
+                enabled: true,
+                label: widget.label,
+                onTap: widget.onTap,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    canRequestFocus: false,
+                    onTap: widget.onTap,
+                    borderRadius: itemRadius,
+                    hoverColor: Colors.transparent,
+                    focusColor: Colors.transparent,
+                    splashColor: colorScheme.primary.withValues(alpha: 0.1),
+                    highlightColor: colorScheme.primary.withValues(alpha: 0.06),
+                    child: content,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -1413,9 +1760,23 @@ final class _NavigationGroupHeaderEntry extends _NavigationListEntry {
 }
 
 final class _NavigationDestinationEntry extends _NavigationListEntry {
-  const _NavigationDestinationEntry({required this.destination});
+  const _NavigationDestinationEntry({
+    required this.destination,
+    this.expandable = false,
+    this.expanded = false,
+  });
 
   final _IndexedShellDestination destination;
+  final bool expandable;
+  final bool expanded;
+}
+
+/// Nested menu row under a destination.
+final class _NavigationSubmenuEntry extends _NavigationListEntry {
+  const _NavigationSubmenuEntry({required this.item, required this.selected});
+
+  final ShellSubmenuItem item;
+  final bool selected;
 }
 
 final class _IndexedShellDestination {
@@ -1440,8 +1801,13 @@ List<_IndexedShellDestination> _indexedDestinations(
 List<_NavigationListEntry> _navigationListEntries(
   List<_IndexedShellDestination> destinations, {
   required bool showGroups,
+  bool showChildren = true,
+  String? selectedChildId,
+  Set<int> expandedDestinations = const <int>{},
+  String normalizedQuery = '',
 }) {
   final entries = <_NavigationListEntry>[];
+  final bool searching = normalizedQuery.isNotEmpty;
   String? currentGroup;
 
   for (final _IndexedShellDestination destination in destinations) {
@@ -1453,10 +1819,58 @@ List<_NavigationListEntry> _navigationListEntries(
       currentGroup = null;
     }
 
-    entries.add(_NavigationDestinationEntry(destination: destination));
+    final bool expandable = showChildren && destination.destination.hasChildren;
+    // A search narrows to matches, so every surviving submenu opens.
+    final bool expanded =
+        expandable &&
+        (searching || expandedDestinations.contains(destination.index));
+
+    entries.add(
+      _NavigationDestinationEntry(
+        destination: destination,
+        expandable: expandable,
+        expanded: expanded,
+      ),
+    );
+
+    if (!expanded) {
+      continue;
+    }
+    for (final ShellSubmenuItem item in destination.destination.children) {
+      if (searching && !_submenuItemMatchesSearch(item, normalizedQuery)) {
+        continue;
+      }
+      entries.add(
+        _NavigationSubmenuEntry(
+          item: item,
+          selected: item.id == selectedChildId,
+        ),
+      );
+    }
   }
 
   return entries;
+}
+
+/// Destination indexes owning [childId], so a deep link reveals its menu item.
+Set<int> _destinationsOwningChild(
+  List<_IndexedShellDestination> destinations,
+  String childId,
+) {
+  return <int>{
+    for (final _IndexedShellDestination destination in destinations)
+      if (destination.destination.children.any(
+        (ShellSubmenuItem item) => item.id == childId,
+      ))
+        destination.index,
+  };
+}
+
+bool _submenuItemMatchesSearch(
+  ShellSubmenuItem item,
+  String normalizedQuery,
+) {
+  return _normalizeNavigationSearchText(item.label).contains(normalizedQuery);
 }
 
 bool _destinationMatchesSearch(
@@ -1471,7 +1885,11 @@ bool _destinationMatchesSearch(
       ).contains(normalizedQuery) ||
       _normalizeNavigationSearchText(
         destination.groupLabel ?? '',
-      ).contains(normalizedQuery);
+      ).contains(normalizedQuery) ||
+      destination.children.any(
+        (ShellSubmenuItem item) =>
+            _submenuItemMatchesSearch(item, normalizedQuery),
+      );
 }
 
 String _normalizeNavigationSearchText(String value) {
@@ -1484,6 +1902,8 @@ class _ShellMenuItem extends StatefulWidget {
     required this.selected,
     required this.showLabel,
     this.useShortLabel = false,
+    this.expandable = false,
+    this.expanded = false,
     required this.onTap,
   });
 
@@ -1491,6 +1911,8 @@ class _ShellMenuItem extends StatefulWidget {
   final bool selected;
   final bool showLabel;
   final bool useShortLabel;
+  final bool expandable;
+  final bool expanded;
   final VoidCallback onTap;
 
   @override
@@ -1600,6 +2022,14 @@ class _ShellMenuItemState extends State<_ShellMenuItem> {
                 sidebar: sidebar,
               ),
             ],
+            if (widget.expandable) ...<Widget>[
+              SizedBox(width: theme.spacing.xs),
+              Icon(
+                widget.expanded ? Icons.expand_less : Icons.expand_more,
+                color: foregroundColor,
+                size: theme.appTokens.listIconSize,
+              ),
+            ],
           ],
         ],
       ),
@@ -1669,21 +2099,36 @@ class _MenuItemCountBadge extends StatelessWidget {
     required this.count,
     required this.selected,
     required this.sidebar,
+    this.tone,
   });
 
   final int count;
   final bool selected;
   final AppSidebarTokens sidebar;
 
+  /// Urgency carried over from the tab strip this menu item replaced.
+  final AppTabCountTone? tone;
+
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Color background = switch (tone) {
+      AppTabCountTone.warning => colorScheme.tertiaryContainer,
+      AppTabCountTone.danger => colorScheme.errorContainer,
+      _ => sidebar.badgeAccentBackgroundColor,
+    };
+    final Color foreground = switch (tone) {
+      AppTabCountTone.warning => colorScheme.onTertiaryContainer,
+      AppTabCountTone.danger => colorScheme.onErrorContainer,
+      _ => sidebar.badgeAccentForegroundColor,
+    };
 
     return DecoratedBox(
       decoration: BoxDecoration(
         color: selected
             ? sidebar.selectedForegroundColor.withValues(alpha: 0.22)
-            : sidebar.badgeAccentBackgroundColor,
+            : background,
         borderRadius: BorderRadius.circular(theme.radius.full),
       ),
       child: Padding(
@@ -1694,9 +2139,7 @@ class _MenuItemCountBadge extends StatelessWidget {
         child: Text(
           _compactBadgeCount(count),
           style: theme.textTheme.labelSmall?.copyWith(
-            color: selected
-                ? sidebar.selectedForegroundColor
-                : sidebar.badgeAccentForegroundColor,
+            color: selected ? sidebar.selectedForegroundColor : foreground,
             fontWeight: AppFontWeight.emphasis,
           ),
         ),
@@ -1748,11 +2191,15 @@ final RegExp _initialsDelimiterPattern = RegExp(r'[@._-]+');
 final RegExp _whitespacePattern = RegExp(r'\s+');
 
 const double _drawerHeaderHeight = AppShellLayout.headerHeight;
-/// Match dense icon-only [AppButton] (40 min − VisualDensity.compact → 32).
-const double _headerLogoSize = 32;
-const double _mobileHeaderLogoSize = 32;
-const double _appBarTitleToLogoRatio = 0.9;
-const double _drawerLogoSize = 48;
+/// Shared height for the header logo and the app name beside it, so the two
+/// read as one lockup. The title sets `height: 1`, making its line box equal
+/// its font size. Stays inside the dense icon-only [AppButton] slot
+/// (40 min − VisualDensity.compact → 32).
+const double _headerBrandHeight = 28;
+
+/// Fallback when the drawer title's style carries no explicit font size; the
+/// drawer normally sizes its mark from [TextTheme.titleMedium].
+const double _drawerBrandHeightFallback = 16;
 const double _avatarRadius = 13;
 const double _focusIndicatorWidth = 2;
 const Duration _menuAnimationDuration = Duration(milliseconds: 120);

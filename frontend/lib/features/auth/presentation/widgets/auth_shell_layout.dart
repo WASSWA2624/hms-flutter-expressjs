@@ -10,6 +10,13 @@ import 'package:hosspi_hms/shared/components/app_logo.dart';
 class AuthShellLayout extends StatefulWidget {
   const AuthShellLayout({required this.child, super.key});
 
+  /// The surface holding branding and form. Exposed so layout tests can assert
+  /// the panel measure without depending on the widget tree's shape.
+  static const Key panelKey = Key('auth-shell-panel');
+
+  /// The scrollable region below the branding band.
+  static const Key formRegionKey = Key('auth-shell-form-region');
+
   final Widget child;
 
   @override
@@ -22,9 +29,6 @@ class _AuthShellLayoutState extends State<AuthShellLayout> {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colorScheme = theme.colorScheme;
     final AppBreakpoint breakpoint = AppBreakpoints.of(context);
-    final bool isCompact =
-        breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm;
-    final double panelRadius = context.responsiveRadius(theme.radius.lg);
 
     return Scaffold(
       body: DecoratedBox(
@@ -43,59 +47,69 @@ class _AuthShellLayoutState extends State<AuthShellLayout> {
         child: SafeArea(
           child: LayoutBuilder(
             builder: (BuildContext context, BoxConstraints constraints) {
-              final double maxFormWidth = switch (breakpoint) {
+              // Branding and form share one measure so they read as a single
+              // panel. On phones that measure is the viewport; from tablet up it
+              // is only as wide as the form needs, centred over the backdrop.
+              final double panelWidth = switch (breakpoint) {
                 AppBreakpoint.xs || AppBreakpoint.sm => constraints.maxWidth,
                 AppBreakpoint.md => constraints.maxWidth.clamp(0, 480),
                 _ => constraints.maxWidth.clamp(0, 520),
               };
+              final bool isCompact = panelWidth >= constraints.maxWidth;
 
-              final EdgeInsets pagePadding = EdgeInsets.fromLTRB(
-                theme.spacing.lg,
-                isCompact ? theme.spacing.lg : theme.spacing.xl,
-                theme.spacing.lg,
-                theme.spacing.lg,
-              );
-
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Padding(
-                    padding: pagePadding,
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: maxFormWidth),
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(panelRadius),
-                            border: theme.borders.all(),
-                            boxShadow: <BoxShadow>[
-                              BoxShadow(
-                                color: colorScheme.shadow.withValues(
-                                  alpha: 0.07,
+              // The panel always runs the full height of the safe area, so the
+              // surface reaches both edges of the viewport at every width.
+              final Widget panel = SizedBox(
+                key: AuthShellLayout.panelKey,
+                width: panelWidth,
+                height: constraints.maxHeight,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface,
+                    border: isCompact
+                        ? theme.borders.only(top: true)
+                        : theme.borders.all(),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      const _AuthBrandHeader(),
+                      Expanded(
+                        child: LayoutBuilder(
+                          builder: (
+                            BuildContext context,
+                            BoxConstraints formConstraints,
+                          ) {
+                            // `minHeight` + `Center`: short forms sit in the
+                            // middle of the remaining space, while a form taller
+                            // than the viewport grows the box instead, so it
+                            // anchors to the top and scrolls with nothing
+                            // clipped and the submit action reachable.
+                            return SingleChildScrollView(
+                              key: AuthShellLayout.formRegionKey,
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  minHeight: formConstraints.maxHeight,
                                 ),
-                                blurRadius: 28,
-                                offset: const Offset(0, 10),
+                                // `Center` loosens the width constraint, so the
+                                // form is stretched back to the panel measure.
+                                child: Center(
+                                  child: SizedBox(
+                                    width: double.infinity,
+                                    child: widget.child,
+                                  ),
+                                ),
                               ),
-                            ],
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(panelRadius),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: <Widget>[
-                                const _AuthBrandHeader(),
-                                widget.child,
-                              ],
-                            ),
-                          ),
+                            );
+                          },
                         ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               );
+
+              return Align(alignment: Alignment.topCenter, child: panel);
             },
           ),
         ),
@@ -115,8 +129,11 @@ class _AuthBrandHeader extends StatelessWidget {
         breakpoint == AppBreakpoint.xs || breakpoint == AppBreakpoint.sm;
     final String displayName = context.l10n.appTitle;
 
-    final double logoHeight = isCompact ? 56.0 : 72.0;
-    final double titleSize = logoHeight * 0.5;
+    // One height for both halves of the lockup. The title sets `height: 1.0`,
+    // so its line box equals its font size; the mark is sized to the cap height
+    // of that font size so it matches the letters rather than the em box.
+    final double brandHeight = isCompact ? 28.0 : 36.0;
+    final double markHeight = AppLogo.markHeightForFontSize(brandHeight);
 
     return Semantics(
       header: true,
@@ -130,9 +147,19 @@ class _AuthBrandHeader extends StatelessWidget {
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
+            // Both halves start at the top of the title's line box, and the
+            // mark is then inset down onto the baseline. Centring instead would
+            // leave it sitting low, because a line box is not centred on its
+            // capitals; row baseline alignment cannot help, because an image
+            // reports no real baseline for `RenderFlex` to align to.
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              AppLogo(size: logoHeight),
+              Padding(
+                padding: EdgeInsets.only(
+                  top: AppLogo.markBaselineInsetForFontSize(brandHeight),
+                ),
+                child: AppLogo(size: markHeight),
+              ),
               SizedBox(width: theme.spacing.md),
               Flexible(
                 child: Text(
@@ -143,7 +170,7 @@ class _AuthBrandHeader extends StatelessWidget {
                   style: theme.textTheme.headlineSmall?.copyWith(
                     color: theme.colorScheme.primary,
                     fontWeight: AppFontWeight.strong,
-                    fontSize: titleSize,
+                    fontSize: brandHeight,
                     height: 1.0,
                     letterSpacing: -0.6,
                   ),

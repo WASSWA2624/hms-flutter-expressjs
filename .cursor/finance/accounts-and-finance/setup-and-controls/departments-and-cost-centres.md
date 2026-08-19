@@ -19,13 +19,31 @@ Maintains the authoritative departments & cost centres records used by Setup & C
 
 This is a target-state specification. Existing Billing, Accounts, or Claims code may implement only a subset; the source-of-truth document and this specification define the intended refactor.
 
+## Existing implementation to reuse
+
+Run the reuse audit in [../../_shared/existing-implementation.md](../../_shared/existing-implementation.md) before writing code. This surface is a refactor of existing code unless the audit proves a genuine gap.
+
+- Accounts workspace and its existing sections (open work, to post, approvals, general ledger, patient ledgers, chart of accounts, invoices, fiscal years & periods): `frontend/lib/features/accounts/presentation/pages/accounts_workspace_page.dart`
+- Accounts backend: `backend/src/modules/accounts-workspace/`, `backend/src/modules/accounts-invoice/`, `backend/src/modules/chart-account/`
+- `backend/src/modules/department/` and `unit/` already own departments and organizational units.
+- `backend/src/modules/settings-workspace/` and `tenant-facility-workspace/` already own tenant/facility configuration, including the default currency these tabs must read rather than redefine.
+- Currency defaults, formatting, precision, and conversion: `frontend/lib/shared/components/app_currency.dart`, `frontend/lib/core/currency/effective_default_currency_provider.dart`, `frontend/lib/core/currency/fx_currency_utils.dart`, `frontend/lib/shared/components/app_currency_amount_field.dart`, `frontend/lib/shared/components/app_currency_select_field.dart`
+- Workspace shell, tables, dialogs, forms, toolbars, and print: `frontend/lib/shared/components/`, `frontend/lib/shared/layout/`
+- Permissions, entitlement, ABAC, and access gating: `frontend/lib/core/permissions/`, `backend/src/modules/abac-policy/`, `backend/src/modules/permission/`
+- Report definitions, runs, schedules, and exports: `backend/src/modules/report-definition/`, `backend/src/modules/report-run/`, `backend/src/modules/report-schedule/`, `backend/src/modules/reports-workspace/`, `frontend/lib/features/reports/presentation/pages/reports_workspace_page.dart`
+- Audit, change, and PHI-access history: `backend/src/modules/audit-log/`, `backend/src/modules/system-change-log/`, `backend/src/modules/phi-access-log/`
+
+Extend the owning module in place. Do not add a parallel model, route family, controller, panel, permission key, or formatter for a record something above already owns, and do not create a second source of truth for it.
+
 ## Navigation and workspace placement
 
 - **Menu path:** `Accounts & Finance → Setup & Controls → Departments & Cost Centres`
 - **Canonical URL:** `/accounts?section=departments-and-cost-centres`
-- **Tab kind:** permanent `master` table/worklist
-- **Reopen behavior:** focus the existing tab and preserve search, filters, sort, page, and selected columns
-- **Parent behavior:** Accounts category labels expand/collapse; this leaf submenu opens the tab
+- **Surface kind:** permanent `master` table/worklist **tab**, inside the `Setup & Controls` menu item
+- **Reopen behavior:** focus the existing surface and preserve search, filters, sort, page, and selected columns
+- **Parent behavior:** The `Accounts & Finance` sidebar entry expands one level into its category menu items; `Setup & Controls` opens the workspace, and this tab is one of that category's tabs
+- **Forbidden:** a second menu nesting level, a category `AppTabStrip` above the section strip, or `AppTabStripVariant.nested`
+- **Navigation contract:** [../../_shared/navigation-model.md](../../_shared/navigation-model.md)
 - **Source:** [billing-accounts-finance.md](../../../billing-accounts-finance.md) §§9.3 / 10.3
 
 ## Pharmacy-guided UI implementation
@@ -33,13 +51,13 @@ This is a target-state specification. Existing Billing, Accounts, or Claims code
 Follow the `/pharmacy` workspace conventions:
 
 - `AsyncStateScaffold` → `ResponsivePage` → `AppWorkspace`
-- `AppTabStrip` for Billing and Insurance tabs; Accounts leaf submenu selection opens the same tab model
+- One flat `AppTabStrip` (`frontend/lib/shared/components/app_tab_strip.dart`) holding the sections of the active category; the category itself is a sidebar menu item, not a tab
 - `AppListTable` for the primary table, server pagination, saved columns, export, and print
 - Row click opens `showAppDialog` / `AppDialog`; sections use `AppWorkspaceDetailPanel`
 - Mutations use `AppWorkspaceMutationDialog` or `AppDialog`, not permanent create/edit tabs
-- `AppAccessActionGate` hides unauthorized buttons; unavailable menu/tabs are omitted
+- `AppAccessActionGate` hides unauthorized buttons; unavailable menu items and tabs are omitted
 - `syncWorkspaceLocation` keeps the section slug, filters, and deep links synchronized
-- Active tab count comes from the filtered server total; inactive badge counts come from the workspace summary
+- The active surface's count badge comes from the filtered server total; sibling badge counts come from the workspace summary
 
 See [../../_shared/workspace-pattern.md](../../_shared/workspace-pattern.md) for exact Pharmacy references and the target extraction pattern.
 
@@ -52,13 +70,13 @@ The baseline table columns and behavior in [../../_shared/table-contract.md](../
 | 1 | `department_code` | Department Code | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
 | 2 | `department_name` | Department Name | text | Yes | Yes | Yes | Searchable display value; opens permitted source context. |
 | 3 | `cost_centre_code` | Cost Centre Code | reference | Yes | Yes | No | Human-friendly reference; opens the authoritative detail. |
-| 4 | `cost_centre_name` | Cost Centre Name | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
+| 4 | `cost_centre_name` | Cost Centre Name | text | Yes | Yes | Yes | Searchable display value; opens permitted source context. |
 | 5 | `parent` | Parent | text | Yes | Yes | No | Localized text; null values render as an em dash. |
 | 6 | `facility` | Facility | text | Yes | Yes | Yes | Localized text; null values render as an em dash. |
 | 7 | `manager` | Manager | text | Yes | Yes | No | Localized text; null values render as an em dash. |
-| 8 | `default_revenue_account` | Default Revenue Account | money | Yes | Yes | Yes | Right-aligned; currency precision; subtotal when meaningful. |
-| 9 | `default_expense_account` | Default Expense Account | money | Yes | Yes | Yes | Right-aligned; currency precision; subtotal when meaningful. |
-| 10 | `budget_owner` | Budget Owner | money | Yes | Yes | Yes | Right-aligned; currency precision; subtotal when meaningful. |
+| 8 | `default_revenue_account` | Default Revenue Account | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
+| 9 | `default_expense_account` | Default Expense Account | reference | Yes | Yes | Yes | Human-friendly reference; opens the authoritative detail. |
+| 10 | `budget_owner` | Budget Owner | text | Yes | Yes | Yes | Localized text; null values render as an em dash. |
 | 11 | `effective_from` | Effective From | date | Optional | Yes | No | Localized display; API remains ISO-8601; date filter enabled. |
 | 12 | `effective_to` | Effective To | date | Optional | Yes | No | Localized display; API remains ISO-8601; date filter enabled. |
 | 13 | `status` | Status | status | Yes | Yes | Yes | Localized `AppWorkspaceStatusBadge`; never expose raw enum text. |
@@ -130,13 +148,13 @@ The baseline table columns and behavior in [../../_shared/table-contract.md](../
 | Department Code | reference | Yes | Existing visible human-friendly reference. |
 | Department Name | text | Yes | Trimmed; length and domain constraints enforced. |
 | Cost Centre Code | reference | Yes | Existing visible human-friendly reference. |
-| Cost Centre Name | reference | Yes | Existing visible human-friendly reference. |
+| Cost Centre Name | text | Yes | Trimmed; length and domain constraints enforced. |
 | Parent | text | Conditional | Trimmed; length and domain constraints enforced. |
 | Facility | text | Conditional | Trimmed; length and domain constraints enforced. |
 | Manager | text | Conditional | Trimmed; length and domain constraints enforced. |
-| Default Revenue Account | money | Conditional | Non-negative; currency required; configured precision. |
-| Default Expense Account | money | Conditional | Non-negative; currency required; configured precision. |
-| Budget Owner | money | Conditional | Non-negative; currency required; configured precision. |
+| Default Revenue Account | reference | Conditional | Existing visible human-friendly reference. |
+| Default Expense Account | reference | Conditional | Existing visible human-friendly reference. |
+| Budget Owner | text | Conditional | Trimmed; length and domain constraints enforced. |
 
 - The backend assigns the human-friendly reference and initial status.
 - Add/remove line-item controls use a nested `AppListTable` where the record has lines.
@@ -210,8 +228,9 @@ Warnings are visibly distinct from blocking errors. Override actions require an 
 
 ## Refactor work breakdown
 
-1. **Navigation:** add `departments-and-cost-centres` to the workspace section enum/query parser, canonical slug map, localized label, permission filter, and count-badge mapper.
-2. **Presentation:** extract `frontend/lib/features/accounts/presentation/widgets/departments_and_cost_centres_tab.dart`; compose it from `AppListTable` and shared workspace components.
+0. **Reuse audit:** complete the five steps in [../../_shared/existing-implementation.md](../../_shared/existing-implementation.md) and record which of the steps below collapse into extending existing code.
+1. **Navigation:** add `departments-and-cost-centres` to the workspace section enum/query parser, canonical slug map, localized label, permission filter, and count-badge mapper. Add it to its category's flat tab strip; the category is the sidebar menu item and must not become a tab row.
+2. **Presentation:** extract `frontend/lib/features/accounts/presentation/widgets/accounts_departments_and_cost_centres_panel.dart`; compose it from `AppListTable` and shared workspace components.
 3. **Table support:** define typed column IDs, default/optional columns, server sort keys, filters, export mapping, print mapping, empty/error states, and count semantics.
 4. **Details and CRUD:** add focused detail and mutation dialogs; include the nested tables and buttons in this specification.
 5. **State:** extend the workspace query/state/controller with a paginated result for this tab and targeted mutation refresh.
@@ -233,8 +252,10 @@ Warnings are visibly distinct from blocking errors. Override actions require an 
 
 ## Acceptance criteria
 
-- [ ] Tab appears at `Accounts & Finance → Setup & Controls → Departments & Cost Centres` only with the required entitlement and read access.
-- [ ] Canonical section slug `departments-and-cost-centres` deep-links and restores the selected tab.
+- [ ] The reuse audit ran and its outcome is recorded; no parallel model, route, panel, permission key, or formatter was added for something already owned elsewhere.
+- [ ] `Accounts & Finance → Setup & Controls` resolves through exactly two sidebar menu levels, and this tab appears in the category's single flat `AppTabStrip` with no category tab row and no nested variant.
+- [ ] The surface appears at `Accounts & Finance → Setup & Controls → Departments & Cost Centres` only with the required entitlement and read access.
+- [ ] Canonical section slug `departments-and-cost-centres` deep-links and restores the selected surface.
 - [ ] Primary `AppListTable` exposes every tab-specific and applicable baseline column.
 - [ ] Search, filters, server sort, pagination, column chooser, saved views, export, and print work.
 - [ ] Buttons match this specification and are hidden when permission, status, or scope denies them.

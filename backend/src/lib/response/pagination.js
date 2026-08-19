@@ -14,6 +14,8 @@
  * @param {number} pagination.totalPages - Total number of pages
  * @param {boolean} pagination.hasNextPage - Whether there is a next page
  * @param {boolean} pagination.hasPreviousPage - Whether there is a previous page
+ * @param {Object} [extraMeta] - Additional list-level metadata (server-computed
+ *   totals, status tallies) merged into `meta`. Locale/direction always win.
  * @returns {Object} Express response
  */
 const { translate, isTranslationKey, applyLocaleHeader, getResponseMeta } = require('@lib/i18n');
@@ -26,9 +28,11 @@ const resolveMessage = (message, locale) => {
   return message;
 };
 
-const sendPaginated = (res, message, data, pagination) => {
+const sendPaginated = (res, message, data, pagination, extraMeta) => {
   const meta = getResponseMeta(res);
-  const sanitizedMeta = sanitizeFriendlyIds(meta);
+  const sanitizedMeta = sanitizeFriendlyIds(
+    extraMeta ? { ...extraMeta, ...meta } : meta
+  );
   const resolvedMessage = resolveMessage(message, meta.locale);
   applyLocaleHeader(res, meta.locale);
 

@@ -1,11 +1,12 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
-import 'package:hosspi_hms/features/accounts/domain/entities/accounts_currency_rate.dart';
+import 'package:hosspi_hms/features/accounts/domain/entities/accounts_department.dart';
+import 'package:hosspi_hms/features/accounts/domain/entities/accounts_document_sequence.dart';
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.dart';
 import 'package:hosspi_hms/features/accounts/domain/entities/accounts_fiscal_period.dart';
+import 'package:hosspi_hms/features/accounts/domain/entities/accounts_payment_method.dart';
 import 'package:hosspi_hms/features/accounts/presentation/accounts_strings.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 
@@ -149,7 +150,10 @@ bool accountsWorkItemMatchesSearch(
   return false;
 }
 
-String accountsSectionLabel(AccountsDeskSection section) {
+String accountsSectionLabel(
+  AppLocalizations l10n,
+  AccountsDeskSection section,
+) {
   return switch (section) {
     AccountsDeskSection.work => AccountsStrings.openWorkLabel,
     AccountsDeskSection.journals => AccountsStrings.toPostLabel,
@@ -158,10 +162,11 @@ String accountsSectionLabel(AccountsDeskSection section) {
     AccountsDeskSection.ledgers => AccountsStrings.patientLedgersLabel,
     AccountsDeskSection.chart => AccountsStrings.accountChartLabel,
     AccountsDeskSection.invoices => AccountsStrings.invoicesLabel,
-    AccountsDeskSection.fiscalYearsAndPeriods =>
-      AccountsStrings.fiscalPeriodsLabel,
-    AccountsDeskSection.currenciesAndExchangeRates =>
-      AccountsStrings.currenciesLabel,
+    AccountsDeskSection.fiscalYearsAndPeriods => l10n.accountsFiscalPeriodsLabel,
+    AccountsDeskSection.departmentsAndCostCentres =>
+      l10n.accountsDepartmentsLabel,
+    AccountsDeskSection.paymentMethods => l10n.accountsPaymentMethodsLabel,
+    AccountsDeskSection.documentNumbering => l10n.accountsDocumentNumberingLabel,
   };
 }
 
@@ -188,7 +193,10 @@ IconData accountsCategoryIcon(AccountsDeskCategory category) {
   };
 }
 
-String? accountsSectionTooltip(AccountsDeskSection section) {
+String? accountsSectionTooltip(
+  AppLocalizations l10n,
+  AccountsDeskSection section,
+) {
   return switch (section) {
     AccountsDeskSection.work => AccountsStrings.openWorkTooltip,
     AccountsDeskSection.journals => AccountsStrings.toPostTooltip,
@@ -198,9 +206,13 @@ String? accountsSectionTooltip(AccountsDeskSection section) {
     AccountsDeskSection.chart => AccountsStrings.accountChartTooltip,
     AccountsDeskSection.invoices => AccountsStrings.invoicesTooltip,
     AccountsDeskSection.fiscalYearsAndPeriods =>
-      AccountsStrings.fiscalPeriodsTooltip,
-    AccountsDeskSection.currenciesAndExchangeRates =>
-      AccountsStrings.currenciesTooltip,
+      l10n.accountsFiscalPeriodsTooltip,
+    AccountsDeskSection.departmentsAndCostCentres =>
+      l10n.accountsDepartmentsTooltip,
+    AccountsDeskSection.paymentMethods =>
+      l10n.accountsPaymentMethodsTooltip,
+    AccountsDeskSection.documentNumbering =>
+      l10n.accountsDocumentNumberingTooltip,
   };
 }
 
@@ -214,8 +226,9 @@ String accountsTableSettingsKey(AccountsDeskSection section) {
     AccountsDeskSection.chart => 'accounts_chart_v1',
     AccountsDeskSection.invoices => 'accounts_invoices_v1',
     AccountsDeskSection.fiscalYearsAndPeriods => 'accounts_fiscal_periods_v1',
-    AccountsDeskSection.currenciesAndExchangeRates =>
-      'accounts_currency_rates_v1',
+    AccountsDeskSection.departmentsAndCostCentres => 'accounts_departments_v1',
+    AccountsDeskSection.paymentMethods => 'accounts_payment_methods_v1',
+    AccountsDeskSection.documentNumbering => 'accounts_document_numbering_v1',
   };
 }
 
@@ -229,12 +242,14 @@ IconData accountsSectionIcon(AccountsDeskSection section) {
     AccountsDeskSection.chart => Icons.list_alt_outlined,
     AccountsDeskSection.invoices => Icons.receipt_long_outlined,
     AccountsDeskSection.fiscalYearsAndPeriods => Icons.event_note_outlined,
-    AccountsDeskSection.currenciesAndExchangeRates =>
-      Icons.currency_exchange_outlined,
+    AccountsDeskSection.departmentsAndCostCentres =>
+      Icons.account_tree_outlined,
+    AccountsDeskSection.paymentMethods => Icons.payments_outlined,
+    AccountsDeskSection.documentNumbering => Icons.pin_outlined,
   };
 }
 
-String accountsEmptyBody(AccountsDeskSection section) {
+String accountsEmptyBody(AppLocalizations l10n, AccountsDeskSection section) {
   return switch (section) {
     AccountsDeskSection.work => AccountsStrings.openWorkEmpty,
     AccountsDeskSection.journals => AccountsStrings.toPostEmpty,
@@ -243,19 +258,54 @@ String accountsEmptyBody(AccountsDeskSection section) {
     AccountsDeskSection.ledgers => AccountsStrings.patientLedgersEmpty,
     AccountsDeskSection.chart => AccountsStrings.chartEmpty,
     AccountsDeskSection.invoices => AccountsStrings.invoicesEmpty,
-    AccountsDeskSection.fiscalYearsAndPeriods =>
-      AccountsStrings.fiscalPeriodsEmpty,
-    AccountsDeskSection.currenciesAndExchangeRates =>
-      AccountsStrings.currenciesEmpty,
+    AccountsDeskSection.fiscalYearsAndPeriods => l10n.accountsFiscalPeriodsEmpty,
+    AccountsDeskSection.departmentsAndCostCentres =>
+      l10n.accountsDepartmentsEmpty,
+    AccountsDeskSection.paymentMethods => l10n.accountsPaymentMethodsEmpty,
+    AccountsDeskSection.documentNumbering => l10n.accountsDocumentNumberingEmpty,
   };
 }
 
-String accountsFiscalPeriodStatusLabel(AccountsFiscalPeriodStatus status) {
+/// Controlled module scopes a fiscal period may target.
+///
+/// The API keeps `module` a free-text column so historic rows stay readable;
+/// the picker offers this vocabulary and preserves any unrecognised stored
+/// value as its own option rather than silently dropping it.
+const List<String> accountsFiscalModuleWireValues = <String>[
+  'ALL',
+  'GENERAL_LEDGER',
+  'BILLING',
+  'PHARMACY',
+  'INVENTORY',
+  'PAYROLL',
+  'FIXED_ASSETS',
+];
+
+/// Localized label for a module scope; unknown stored values render verbatim.
+String accountsFiscalModuleLabel(AppLocalizations l10n, String? wireValue) {
+  final String normalized = (wireValue ?? '').trim().toUpperCase();
+  return switch (normalized) {
+    'ALL' => l10n.accountsFiscalModuleAll,
+    'GENERAL_LEDGER' => l10n.accountsFiscalModuleGeneralLedger,
+    'BILLING' => l10n.accountsFiscalModuleBilling,
+    'PHARMACY' => l10n.accountsFiscalModulePharmacy,
+    'INVENTORY' => l10n.accountsFiscalModuleInventory,
+    'PAYROLL' => l10n.accountsFiscalModulePayroll,
+    'FIXED_ASSETS' => l10n.accountsFiscalModuleFixedAssets,
+    '' => accountsUnknownValue(),
+    _ => normalized,
+  };
+}
+
+String accountsFiscalPeriodStatusLabel(
+  AppLocalizations l10n,
+  AccountsFiscalPeriodStatus status,
+) {
   return switch (status) {
-    AccountsFiscalPeriodStatus.draft => AccountsStrings.fiscalStatusDraft,
-    AccountsFiscalPeriodStatus.active => AccountsStrings.fiscalStatusActive,
-    AccountsFiscalPeriodStatus.inactive => AccountsStrings.fiscalStatusInactive,
-    AccountsFiscalPeriodStatus.archived => AccountsStrings.fiscalStatusArchived,
+    AccountsFiscalPeriodStatus.draft => l10n.accountsFiscalStatusDraft,
+    AccountsFiscalPeriodStatus.active => l10n.accountsFiscalStatusActive,
+    AccountsFiscalPeriodStatus.inactive => l10n.accountsFiscalStatusInactive,
+    AccountsFiscalPeriodStatus.archived => l10n.accountsFiscalStatusArchived,
   };
 }
 
@@ -270,6 +320,220 @@ AppWorkspaceStatusTone accountsFiscalPeriodStatusTone(
   };
 }
 
+String accountsDepartmentStatusLabel(
+  AppLocalizations l10n,
+  AccountsDepartmentStatus status,
+) {
+  return switch (status) {
+    AccountsDepartmentStatus.draft => l10n.accountsDepartmentStatusDraft,
+    AccountsDepartmentStatus.active => l10n.accountsDepartmentStatusActive,
+    AccountsDepartmentStatus.inactive => l10n.accountsDepartmentStatusInactive,
+    AccountsDepartmentStatus.archived => l10n.accountsDepartmentStatusArchived,
+  };
+}
+
+AppWorkspaceStatusTone accountsDepartmentStatusTone(
+  AccountsDepartmentStatus status,
+) {
+  return switch (status) {
+    AccountsDepartmentStatus.active => AppWorkspaceStatusTone.success,
+    AccountsDepartmentStatus.draft => AppWorkspaceStatusTone.warning,
+    AccountsDepartmentStatus.inactive => AppWorkspaceStatusTone.neutral,
+    AccountsDepartmentStatus.archived => AppWorkspaceStatusTone.neutral,
+  };
+}
+
+IconData accountsDepartmentStatusIcon(AccountsDepartmentStatus status) {
+  return switch (status) {
+    AccountsDepartmentStatus.draft => Icons.edit_note_outlined,
+    AccountsDepartmentStatus.active => Icons.check_circle_outline,
+    AccountsDepartmentStatus.inactive => Icons.pause_circle_outline,
+    AccountsDepartmentStatus.archived => Icons.inventory_2_outlined,
+  };
+}
+
+String accountsPaymentMethodStatusLabel(
+  AppLocalizations l10n,
+  AccountsPaymentMethodStatus status,
+) {
+  return switch (status) {
+    AccountsPaymentMethodStatus.draft => l10n.accountsPaymentMethodStatusDraft,
+    AccountsPaymentMethodStatus.active => l10n.accountsPaymentMethodStatusActive,
+    AccountsPaymentMethodStatus.inactive =>
+      l10n.accountsPaymentMethodStatusInactive,
+    AccountsPaymentMethodStatus.archived =>
+      l10n.accountsPaymentMethodStatusArchived,
+  };
+}
+
+AppWorkspaceStatusTone accountsPaymentMethodStatusTone(
+  AccountsPaymentMethodStatus status,
+) {
+  return switch (status) {
+    AccountsPaymentMethodStatus.active => AppWorkspaceStatusTone.success,
+    AccountsPaymentMethodStatus.draft => AppWorkspaceStatusTone.warning,
+    AccountsPaymentMethodStatus.inactive => AppWorkspaceStatusTone.neutral,
+    AccountsPaymentMethodStatus.archived => AppWorkspaceStatusTone.neutral,
+  };
+}
+
+IconData accountsPaymentMethodStatusIcon(AccountsPaymentMethodStatus status) {
+  return switch (status) {
+    AccountsPaymentMethodStatus.draft => Icons.edit_note_outlined,
+    AccountsPaymentMethodStatus.active => Icons.check_circle_outline,
+    AccountsPaymentMethodStatus.inactive => Icons.pause_circle_outline,
+    AccountsPaymentMethodStatus.archived => Icons.inventory_2_outlined,
+  };
+}
+
+/// Localized label for the shared tender taxonomy; never render the raw enum.
+String accountsPaymentMethodTypeLabel(
+  AppLocalizations l10n,
+  AccountsPaymentMethodType type,
+) {
+  return switch (type) {
+    AccountsPaymentMethodType.cash => l10n.accountsPaymentMethodTypeCash,
+    AccountsPaymentMethodType.creditCard =>
+      l10n.accountsPaymentMethodTypeCreditCard,
+    AccountsPaymentMethodType.debitCard =>
+      l10n.accountsPaymentMethodTypeDebitCard,
+    AccountsPaymentMethodType.prepaidCard =>
+      l10n.accountsPaymentMethodTypePrepaidCard,
+    AccountsPaymentMethodType.giftCard =>
+      l10n.accountsPaymentMethodTypeGiftCard,
+    AccountsPaymentMethodType.voucher => l10n.accountsPaymentMethodTypeVoucher,
+    AccountsPaymentMethodType.bankCheck =>
+      l10n.accountsPaymentMethodTypeBankCheck,
+    AccountsPaymentMethodType.mobileMoney =>
+      l10n.accountsPaymentMethodTypeMobileMoney,
+    AccountsPaymentMethodType.bankTransfer =>
+      l10n.accountsPaymentMethodTypeBankTransfer,
+    AccountsPaymentMethodType.insurance =>
+      l10n.accountsPaymentMethodTypeInsurance,
+    AccountsPaymentMethodType.other => l10n.accountsPaymentMethodTypeOther,
+  };
+}
+
+String accountsPaymentMethodDirectionLabel(
+  AppLocalizations l10n,
+  AccountsPaymentMethodDirection direction,
+) {
+  return switch (direction) {
+    AccountsPaymentMethodDirection.incoming =>
+      l10n.accountsPaymentMethodDirectionIncoming,
+    AccountsPaymentMethodDirection.outgoing =>
+      l10n.accountsPaymentMethodDirectionOutgoing,
+    AccountsPaymentMethodDirection.both =>
+      l10n.accountsPaymentMethodDirectionBoth,
+  };
+}
+
+/// Localized Yes/No for a payment method requirement flag.
+String accountsPaymentMethodFlagLabel(AppLocalizations l10n, bool value) {
+  return value ? l10n.accountsPaymentMethodYes : l10n.accountsPaymentMethodNo;
+}
+
+String accountsDocumentSequenceStatusLabel(
+  AppLocalizations l10n,
+  AccountsDocumentSequenceStatus status,
+) {
+  return switch (status) {
+    AccountsDocumentSequenceStatus.draft =>
+      l10n.accountsDocumentSequenceStatusDraft,
+    AccountsDocumentSequenceStatus.active =>
+      l10n.accountsDocumentSequenceStatusActive,
+    AccountsDocumentSequenceStatus.inactive =>
+      l10n.accountsDocumentSequenceStatusInactive,
+    AccountsDocumentSequenceStatus.archived =>
+      l10n.accountsDocumentSequenceStatusArchived,
+  };
+}
+
+AppWorkspaceStatusTone accountsDocumentSequenceStatusTone(
+  AccountsDocumentSequenceStatus status,
+) {
+  return switch (status) {
+    AccountsDocumentSequenceStatus.active => AppWorkspaceStatusTone.success,
+    AccountsDocumentSequenceStatus.draft => AppWorkspaceStatusTone.warning,
+    AccountsDocumentSequenceStatus.inactive => AppWorkspaceStatusTone.neutral,
+    AccountsDocumentSequenceStatus.archived => AppWorkspaceStatusTone.neutral,
+  };
+}
+
+IconData accountsDocumentSequenceStatusIcon(
+  AccountsDocumentSequenceStatus status,
+) {
+  return switch (status) {
+    AccountsDocumentSequenceStatus.draft => Icons.edit_note_outlined,
+    AccountsDocumentSequenceStatus.active => Icons.check_circle_outline,
+    AccountsDocumentSequenceStatus.inactive => Icons.pause_circle_outline,
+    AccountsDocumentSequenceStatus.archived => Icons.inventory_2_outlined,
+  };
+}
+
+/// Localized label for a numbered document family; never render the raw enum.
+String accountsDocumentTypeLabel(
+  AppLocalizations l10n,
+  AccountsDocumentType type,
+) {
+  return switch (type) {
+    AccountsDocumentType.invoice => l10n.accountsDocumentTypeInvoice,
+    AccountsDocumentType.accountsInvoice =>
+      l10n.accountsDocumentTypeAccountsInvoice,
+    AccountsDocumentType.receipt => l10n.accountsDocumentTypeReceipt,
+    AccountsDocumentType.payment => l10n.accountsDocumentTypePayment,
+    AccountsDocumentType.refund => l10n.accountsDocumentTypeRefund,
+    AccountsDocumentType.creditNote => l10n.accountsDocumentTypeCreditNote,
+    AccountsDocumentType.debitNote => l10n.accountsDocumentTypeDebitNote,
+    AccountsDocumentType.purchaseOrder => l10n.accountsDocumentTypePurchaseOrder,
+    AccountsDocumentType.goodsReceipt => l10n.accountsDocumentTypeGoodsReceipt,
+    AccountsDocumentType.claim => l10n.accountsDocumentTypeClaim,
+  };
+}
+
+String accountsDocumentResetFrequencyLabel(
+  AppLocalizations l10n,
+  AccountsDocumentSequenceResetFrequency frequency,
+) {
+  return switch (frequency) {
+    AccountsDocumentSequenceResetFrequency.never =>
+      l10n.accountsDocumentResetNever,
+    AccountsDocumentSequenceResetFrequency.daily =>
+      l10n.accountsDocumentResetDaily,
+    AccountsDocumentSequenceResetFrequency.monthly =>
+      l10n.accountsDocumentResetMonthly,
+    AccountsDocumentSequenceResetFrequency.quarterly =>
+      l10n.accountsDocumentResetQuarterly,
+    AccountsDocumentSequenceResetFrequency.yearly =>
+      l10n.accountsDocumentResetYearly,
+  };
+}
+
+String accountsDocumentGapPolicyLabel(
+  AppLocalizations l10n,
+  AccountsDocumentSequenceGapPolicy policy,
+) {
+  return switch (policy) {
+    AccountsDocumentSequenceGapPolicy.allowGaps =>
+      l10n.accountsDocumentGapPolicyAllowGaps,
+    AccountsDocumentSequenceGapPolicy.noGaps =>
+      l10n.accountsDocumentGapPolicyNoGaps,
+    AccountsDocumentSequenceGapPolicy.reserveAndVoid =>
+      l10n.accountsDocumentGapPolicyReserveAndVoid,
+  };
+}
+
+/// Padded issued number, e.g. `43` at minimum length 7 → `0000043`.
+///
+/// The number itself stays a number; this only formats it for display so the
+/// operator sees the width the policy actually issues.
+String accountsDocumentSequenceNumber(int? value, int minimumLength) {
+  if (value == null) {
+    return AccountsStrings.unknownValue;
+  }
+  return value.toString().padLeft(minimumLength.clamp(1, 20), '0');
+}
+
 IconData accountsFiscalPeriodStatusIcon(AccountsFiscalPeriodStatus status) {
   return switch (status) {
     AccountsFiscalPeriodStatus.draft => Icons.edit_note_outlined,
@@ -277,76 +541,6 @@ IconData accountsFiscalPeriodStatusIcon(AccountsFiscalPeriodStatus status) {
     AccountsFiscalPeriodStatus.inactive => Icons.pause_circle_outline,
     AccountsFiscalPeriodStatus.archived => Icons.inventory_2_outlined,
   };
-}
-
-String accountsCurrencyStatusLabel(AccountsCurrencyStatus status) {
-  return switch (status) {
-    AccountsCurrencyStatus.draft => AccountsStrings.currencyStatusDraft,
-    AccountsCurrencyStatus.active => AccountsStrings.currencyStatusActive,
-    AccountsCurrencyStatus.inactive => AccountsStrings.currencyStatusInactive,
-    AccountsCurrencyStatus.archived => AccountsStrings.currencyStatusArchived,
-  };
-}
-
-AppWorkspaceStatusTone accountsCurrencyStatusTone(
-  AccountsCurrencyStatus status,
-) {
-  return switch (status) {
-    AccountsCurrencyStatus.active => AppWorkspaceStatusTone.success,
-    AccountsCurrencyStatus.draft => AppWorkspaceStatusTone.warning,
-    AccountsCurrencyStatus.inactive => AppWorkspaceStatusTone.neutral,
-    AccountsCurrencyStatus.archived => AppWorkspaceStatusTone.neutral,
-  };
-}
-
-IconData accountsCurrencyStatusIcon(AccountsCurrencyStatus status) {
-  return switch (status) {
-    AccountsCurrencyStatus.draft => Icons.edit_note_outlined,
-    AccountsCurrencyStatus.active => Icons.check_circle_outline,
-    AccountsCurrencyStatus.inactive => Icons.pause_circle_outline,
-    AccountsCurrencyStatus.archived => Icons.inventory_2_outlined,
-  };
-}
-
-String accountsCurrencyRateTypeLabel(AccountsCurrencyRateType type) {
-  return switch (type) {
-    AccountsCurrencyRateType.spot => AccountsStrings.currencyRateTypeSpot,
-    AccountsCurrencyRateType.daily => AccountsStrings.currencyRateTypeDaily,
-    AccountsCurrencyRateType.monthly => AccountsStrings.currencyRateTypeMonthly,
-    AccountsCurrencyRateType.budget => AccountsStrings.currencyRateTypeBudget,
-    AccountsCurrencyRateType.contract =>
-      AccountsStrings.currencyRateTypeContract,
-  };
-}
-
-String accountsCurrencyRateActionLabel(AccountsCurrencyRateAction action) {
-  return switch (action) {
-    AccountsCurrencyRateAction.activate => AccountsStrings.currencyActivateAction,
-    AccountsCurrencyRateAction.deactivate =>
-      AccountsStrings.currencyDeactivateAction,
-    AccountsCurrencyRateAction.archive => AccountsStrings.currencyArchiveAction,
-    AccountsCurrencyRateAction.restore => AccountsStrings.currencyRestoreAction,
-  };
-}
-
-/// Right-aligned rate display at the currency's configured precision.
-///
-/// Rates carry more precision than money, so the currency's own
-/// `decimal_places` is the floor and four fraction digits the minimum.
-String accountsRate(
-  BuildContext context,
-  double? value, {
-  int decimalPlaces = 2,
-}) {
-  if (value == null) {
-    return AccountsStrings.unknownValue;
-  }
-  final int digits = math.max(decimalPlaces, 4);
-  return AppFormatters.decimal(
-    value,
-    Localizations.localeOf(context),
-    decimalDigits: digits,
-  );
 }
 
 /// Localized date-only display; the API keeps ISO-8601.
@@ -358,8 +552,10 @@ String accountsDate(BuildContext context, DateTime? value) {
 }
 
 /// Alias used by workspace empty panels.
-String accountsSectionEmptyCopy(AccountsDeskSection section) =>
-    accountsEmptyBody(section);
+String accountsSectionEmptyCopy(
+  AppLocalizations l10n,
+  AccountsDeskSection section,
+) => accountsEmptyBody(l10n, section);
 
 String accountsMoney(BuildContext context, num value, String? currencyCode) {
   return AppFormatters.currency(

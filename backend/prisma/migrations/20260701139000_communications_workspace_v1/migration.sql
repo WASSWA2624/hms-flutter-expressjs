@@ -44,7 +44,7 @@ CREATE TABLE `conversation_participant` (
     INDEX `conversation_participant_deleted_at_idx`(`deleted_at`),
     INDEX `conversation_participant_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `conversation_visibility_role` (
@@ -64,7 +64,7 @@ CREATE TABLE `conversation_visibility_role` (
     INDEX `conversation_visibility_role_deleted_at_idx`(`deleted_at`),
     INDEX `conversation_visibility_role_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `message_attachment` (
@@ -92,7 +92,7 @@ CREATE TABLE `message_attachment` (
     INDEX `message_attachment_deleted_at_idx`(`deleted_at`),
     INDEX `message_attachment_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- AddForeignKey
 ALTER TABLE `message` ADD CONSTRAINT `message_reply_to_message_id_fkey` FOREIGN KEY (`reply_to_message_id`) REFERENCES `message`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;

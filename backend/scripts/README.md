@@ -142,21 +142,33 @@ This script initializes the system with default accounts for:
 node scripts/setup-default-accounts.js
 ```
 
+Runs in **every environment, production included** — the account set is
+identical on development and production. Unlike the randomised demo data
+seeders, this script is not gated by `scripts/demo-safety.js`.
+
+```bash
+# Production: always supply a private shared password
+SEED_DEFAULT_PASSWORD='<strong-shared-password>' node scripts/setup-default-accounts.js
+```
+
 #### Prerequisites
 
 - Database must be initialized (migrations applied)
 - `.env` file must be configured with `DATABASE_URL`
 - Prisma client must be generated (`npx prisma generate`)
+- Production installs may omit devDependencies; that is supported — this path
+  does not use `@faker-js/faker`
 
 #### Default Credentials
 
-**⚠️ SECURITY WARNING**: All accounts are created with the default password:
+**⚠️ SECURITY WARNING**: Without `SEED_DEFAULT_PASSWORD`, all accounts are
+created with the committed default password:
 
 ```
 Hosspi@2624.
 ```
 
-**You MUST change all passwords immediately after first login in production!**
+**Set `SEED_DEFAULT_PASSWORD` on production, and change all passwords immediately after first login!**
 
 #### Notable Accounts Created
 

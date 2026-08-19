@@ -169,9 +169,17 @@ final class AccountsWorkspaceOverviewDto {
             _int(summary['fiscal_years_and_periods']) ??
             _int(summary['fiscal_periods_active_count']) ??
             0,
-        currencyRatesActive:
-            _int(summary['currencies_and_exchange_rates']) ??
-            _int(summary['currency_rates_active_count']) ??
+        departmentsActive:
+            _int(summary['departments_and_cost_centres']) ??
+            _int(summary['departments_active_count']) ??
+            0,
+        paymentMethodsActive:
+            _int(summary['payment_methods']) ??
+            _int(summary['payment_methods_active_count']) ??
+            0,
+        documentSequencesActive:
+            _int(summary['document_numbering']) ??
+            _int(summary['document_sequences_active_count']) ??
             0,
       ),
       generatedAt: _date(json['generated_at']),

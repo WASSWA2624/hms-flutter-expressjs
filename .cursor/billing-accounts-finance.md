@@ -548,65 +548,85 @@ The application sidebar should expose **Billing**, **Accounts & Finance**, and *
 
 Apply these rules consistently:
 
-1. **Billing** and **Insurance & Claims** open dedicated workspaces whose named entries are tabs.
-2. **Accounts & Finance** is an expandable main menu. Its category labels expand or collapse nested submenu items, and each leaf submenu item opens a tab with the same name.
-3. Every permanent tab represents a searchable, filterable data table or worklist. The required columns are defined in Section 10.
-4. Create, edit, approve, post, allocate, reconcile, close, and reverse operations are actions from a table row or toolbar; they are not permanent menu tabs.
-5. Forms open in a drawer, modal, or contextual record tab, then return the user to the originating table after completion.
-6. Reopening the same destination focuses its existing tab instead of creating a duplicate.
-7. Record-specific tabs may open from a table, for example `Invoice INV-000123` or `Claim CLM-000045`.
-8. Tabs preserve filters, sorting, pagination, selected columns, and unsaved state while open.
-9. Tabs are closable, reorderable, deep-linkable, and restorable after an accidental refresh where practical.
-10. The active sidebar entry, active tab, page title, and breadcrumb remain synchronized.
-11. Menu entries, tabs, actions, totals, and badges respect role, tenant, and facility permissions.
-12. Worklist tabs may show badges such as pending approvals, overdue balances, rejected claims, or unreconciled transactions.
-13. Cross-module links open the authoritative record's tab instead of creating a duplicate copy in another module.
+1. **Every** finance menu — Billing, Accounts & Finance, and Insurance & Claims — is expandable and nests exactly **one level**. Expanding a menu reveals its category menu items; selecting a category opens the workspace on that category's first authorized section.
+2. The third level is a **tab in the workspace**, not a menu item. Each category renders one flat tab strip built from `frontend/lib/shared/components/app_tab_strip.dart`, holding that category's sections.
+3. Never add a second sidebar nesting level, a category tab row above the section strip, or the `nested` tab-strip variant. Where a menu tree shows a fourth level (`General Accounting → Journal Entries → …`), those entries flatten into the same tab strip.
+4. Every permanent tab represents a searchable, filterable data table or worklist. The required columns are defined in Section 10.
+5. Create, edit, approve, post, allocate, reconcile, close, and reverse operations are actions from a table row or toolbar; they are not permanent menu tabs.
+6. Forms open in a drawer, modal, or contextual record tab, then return the user to the originating table after completion.
+7. Reopening the same destination focuses its existing tab or menu item instead of creating a duplicate.
+8. Record-specific tabs may open from a table, for example `Invoice INV-000123` or `Claim CLM-000045`.
+9. Tabs and menu-item sections preserve filters, sorting, pagination, selected columns, and unsaved state while open.
+10. Tabs are closable, reorderable, deep-linkable, and restorable after an accidental refresh where practical.
+11. The active sidebar entry, active tab, page title, and breadcrumb remain synchronized.
+12. Menu entries, tabs, actions, totals, and badges respect role, tenant, and facility permissions.
+13. Worklist tabs and leaf menu items may show badges such as pending approvals, overdue balances, rejected claims, or unreconciled transactions.
+14. Cross-module links open the authoritative record's tab instead of creating a duplicate copy in another module.
+15. Never build a new menu item, tab, table, model, route, or service for a capability the codebase already implements. Section 13 defines the reuse audit that precedes any finance implementation work.
 
 ### 9.2 Billing
 
-Keep the existing menu name **Billing**. It opens a tabbed billing workspace and owns patient and customer charging, invoicing, collection, allocation, adjustment, and receivable follow-up.
+Keep the existing menu name **Billing**. It owns patient and customer charging, invoicing, collection, allocation, adjustment, and receivable follow-up.
+
+Like every finance menu, it nests exactly one level. The first indentation level below the menu is a **category menu item**; its children are **tabs** in the workspace tab strip.
 
 ```text
 BILLING
 │
 ├── Overview
-├── Charges
-├── Unbilled Charges
-├── Estimates & Quotations
-├── Packages & Bundles
-├── Invoices
-├── Payments
-├── Payment Allocations
-├── Receipts
-├── Advances & Deposits
-├── Credit Notes
-├── Debit Notes
-├── Refunds
-├── Write-offs
-├── Patient Accounts
-├── Patient Statements
-├── Receivables
-├── Collection Follow-up
-├── Price Lists & Tariffs
-├── Billing Rules
-├── Discount Rules
-├── Tax Rules
-├── Document Templates
+│   └── Overview
+│
+├── Setup & Pricing
+│   ├── Price Lists & Tariffs
+│   ├── Packages & Bundles
+│   ├── Billing Rules
+│   ├── Discount Rules
+│   ├── Tax Rules
+│   └── Document Templates
+│
+├── Charges & Invoicing
+│   ├── Charges
+│   ├── Unbilled Charges
+│   ├── Estimates & Quotations
+│   ├── Invoices
+│   ├── Credit Notes
+│   └── Debit Notes
+│
+├── Payments & Receipts
+│   ├── Payments
+│   ├── Payment Allocations
+│   ├── Receipts
+│   ├── Advances & Deposits
+│   ├── Refunds
+│   └── Write-offs
+│
+├── Accounts & Collections
+│   ├── Patient Accounts
+│   ├── Patient Statements
+│   ├── Receivables
+│   └── Collection Follow-up
+│
 └── Billing Reports
+    └── Billing Reports
 ```
 
 ### 9.3 Accounts & Finance
 
 Rename the existing **Accounts** menu to **Accounts & Finance**. It must be an expandable first-level menu with nested, permission-aware submenu entries. It owns the accounting books, payables, expenditure, treasury, assets, budgets, period close, compliance, and financial reporting.
 
+The tree below spans two surfaces. The first indentation level is a **nested sidebar menu item** — the only nesting the menu allows. Everything below it is a **tab in the workspace page**, rendered as one flat strip per category. Adding a second menu level, or a category tab row above the section strip, violates rule 3 in Section 9.1.
+
+Currency handling is deliberately absent from this menu. The application already resolves currency from the tenant/facility setup defaults and formats and converts amounts through existing shared code; Accounts & Finance must reuse that, not introduce a currency registry tab of its own.
+
 ```text
 ACCOUNTS & FINANCE
 │
 ├── Overview
+│   └── Overview
 │
 ├── General Accounting
 │   ├── Chart of Accounts
-│   ├── Journal Entries
+│   ├── Journal Entries (flattened into the General Accounting tab strip)
 │   │   ├── All Journal Entries
 │   │   ├── General Journal
 │   │   ├── Sales Journal
@@ -712,7 +732,6 @@ ACCOUNTS & FINANCE
 │
 ├── Setup & Controls
 │   ├── Fiscal Years & Periods
-│   ├── Currencies & Exchange Rates
 │   ├── Payment Methods
 │   ├── Document Numbering
 │   ├── Departments & Cost Centres
@@ -733,44 +752,61 @@ ACCOUNTS & FINANCE
 
 Rename the existing **Insurance Claims** menu to **Insurance & Claims**. It owns insurer and corporate-payer administration, eligibility, pre-authorization, claims, adjudication results, remittances, denials, and payer follow-up.
 
+It nests exactly one level: category menu items, then tabs.
+
 ```text
 INSURANCE & CLAIMS
 │
 ├── Overview
-├── Insurance Providers
-├── Corporate Payers
-├── Plans & Products
-├── Contracts
-├── Tariffs & Price Lists
-├── Coverage Rules
-├── Exclusions & Limits
-├── Patient Policies
-├── Members & Dependants
-├── Eligibility Checks
-├── Coverage Balances
-├── Pre-authorizations
-├── Claims
-├── Claim Validations
-├── Claim Batches
-├── Claim Submissions
-├── Adjudications
-├── Denials
-├── Resubmissions & Appeals
-├── Remittance Advice
-├── Insurer Payments
-├── Remittance Allocations
-├── Payer Balances
-├── Claim Reconciliation
-├── Payer Statements
-├── Claims Aging
-├── Collection Follow-up
-├── Disputes
-├── Claim Rules
-├── Required Documents
-├── Denial Codes
-├── Submission Channels
-├── Claim Templates
+│   └── Overview
+│
+├── Payers & Contracts
+│   ├── Insurance Providers
+│   ├── Corporate Payers
+│   ├── Plans & Products
+│   ├── Contracts
+│   └── Tariffs & Price Lists
+│
+├── Coverage & Claim Rules
+│   ├── Coverage Rules
+│   ├── Exclusions & Limits
+│   ├── Required Documents
+│   ├── Denial Codes
+│   ├── Submission Channels
+│   ├── Claim Templates
+│   └── Claim Rules
+│
+├── Membership & Eligibility
+│   ├── Patient Policies
+│   ├── Members & Dependants
+│   ├── Eligibility Checks
+│   ├── Coverage Balances
+│   └── Pre-authorizations
+│
+├── Claims Processing
+│   ├── Claims
+│   ├── Claim Validations
+│   ├── Claim Batches
+│   ├── Claim Submissions
+│   ├── Adjudications
+│   ├── Denials
+│   └── Resubmissions & Appeals
+│
+├── Remittances & Reconciliation
+│   ├── Remittance Advice
+│   ├── Insurer Payments
+│   ├── Remittance Allocations
+│   ├── Payer Balances
+│   └── Claim Reconciliation
+│
+├── Payer Follow-up
+│   ├── Payer Statements
+│   ├── Claims Aging
+│   ├── Collection Follow-up
+│   └── Disputes
+│
 └── Insurance Reports
+    └── Insurance Reports
 ```
 
 ### 9.5 Module boundaries and hand-offs
@@ -943,7 +979,6 @@ Unless inapplicable, operational tables should also include **Select**, **Refere
 #### 10.3.11 Setup and controls
 
 - **Fiscal Years & Periods** — Fiscal Year, Period No., Period Name, Start Date, End Date, Entity/Facility, Module, Open Date, Soft-close Date, Close Date, Lock Date, Reopened At, Reopened By, Period Status
-- **Currencies & Exchange Rates** — Currency Code, Currency Name, Symbol, Decimal Places, Base Currency, Rate Type, Exchange Rate, Effective Date, Source, Buy Rate, Sell Rate, Last Updated At, Updated By, Currency Status
 - **Payment Methods** — Method Code, Method Name, Method Type, Incoming/Outgoing, Provider, Settlement Account, Clearing Account, Requires External Reference, Requires Approval, Fee Rule, Facility Scope, Effective From, Effective To, Status
 - **Document Numbering** — Sequence Code, Document Type, Module, Facility, Prefix, Suffix, Date Pattern, Next Number, Minimum Length, Reset Frequency, Last Issued Number, Last Issued At, Gap Policy, Sequence Status
 - **Departments & Cost Centres** — Department Code, Department Name, Cost Centre Code, Cost Centre Name, Parent, Facility, Manager, Default Revenue Account, Default Expense Account, Budget Owner, Effective From, Effective To, Status
@@ -1037,3 +1072,45 @@ This document remains the source of truth for scope, menu hierarchy, tab labels,
 python tool/generate_finance_tab_docs.py
 python tool/generate_finance_tab_docs.py --check
 ```
+
+## 13. Existing implementation and the reuse audit
+
+Sections 9 and 10 describe the **target** menu and columns, not a greenfield build. Much of this scope already exists in the codebase under different names, in a different module, or behind a different route. Treat every finance leaf as a refactor of existing code until an audit proves otherwise.
+
+### 13.1 Reuse audit (run before writing code for any finance leaf)
+
+1. Search the backend for an owning module, Prisma model, service, and route that already stores or exposes the record.
+2. Search the frontend for an existing panel, table, dialog, DTO, entity, repository, and controller for the same record.
+3. Search for an existing permission key, entitlement, ABAC scope, and access atom before adding new ones.
+4. Search for an existing localized string, formatter, print helper, and export mapping before adding new ones.
+5. Record the outcome in the change description: what was found, what is extended, and what genuinely did not exist.
+
+Only step 5's "genuinely did not exist" list may be implemented from scratch. Everything else is extended in place: new columns, filters, statuses, and actions are added to the owning module rather than to a parallel one.
+
+### 13.2 Never duplicate these
+
+| Capability | Authoritative existing implementation |
+|---|---|
+| Currency resolution, formatting, precision, conversion | `frontend/lib/shared/components/app_currency.dart`, `frontend/lib/core/currency/effective_default_currency_provider.dart`, `frontend/lib/core/currency/fx_currency_utils.dart`, `frontend/lib/shared/components/app_currency_amount_field.dart`, `frontend/lib/shared/components/app_currency_select_field.dart` |
+| Chart of accounts | `backend/src/modules/chart-account/`, `chart_account` model, `frontend/lib/features/accounts/presentation/widgets/accounts_chart_panel.dart` |
+| Fiscal periods and period locks | `backend/src/modules/accounts-workspace/services/fiscal-period.service.js`, `fiscal_period` model, `frontend/lib/features/accounts/presentation/widgets/accounts_fiscal_periods_panel.dart` |
+| Accounts desk work queues, journals, approvals, GL, patient ledgers, invoices | `backend/src/modules/accounts-workspace/`, `backend/src/modules/accounts-invoice/`, `frontend/lib/features/accounts/` |
+| Patient charges, invoices, payments, refunds, adjustments | `backend/src/modules/billing/`, `invoice/`, `payment/`, `refund/`, `billing-adjustment/`, `frontend/lib/features/billing/` |
+| Price lists, tariffs, pricing and discount rules | `backend/src/modules/price-book-entry/`, `pricing-rule/`, `scheme-offer/`, `frontend/lib/features/billing/presentation/widgets/billing_price_book_panel.dart` |
+| Insurers, plans, policies, pre-authorizations, claims | `backend/src/modules/insurance-company/`, `coverage-plan/`, `patient-insurance-enrollment/`, `pre-authorization/`, `insurance-claim/`, `insurer-integration/`, `claims-workspace/`, `frontend/lib/features/claims/` |
+| Suppliers, requisitions, purchase orders, goods receipts | `backend/src/modules/supplier/`, `purchase-request/`, `purchase-order/`, `goods-receipt/` |
+| Fixed assets and service history | `backend/src/modules/asset/`, `asset-service-log/` |
+| Payroll postings | `backend/src/modules/payroll-run/`, `payroll-item/` |
+| Inventory movements and valuation inputs | `backend/src/modules/stock-movement/`, `stock-adjustment/`, `inventory-item/` |
+| Cash points, shift and day closure | `backend/src/modules/shift-close/`, `day-close/`, `closeout-pack/` |
+| Departments and cost centres | `backend/src/modules/department/`, `unit/` |
+| Report definitions, runs, schedules, exports | `backend/src/modules/report-definition/`, `report-run/`, `report-schedule/`, `reports-workspace/`, `frontend/lib/features/reports/` |
+| Audit, change, and PHI access history | `backend/src/modules/audit-log/`, `system-change-log/`, `phi-access-log/` |
+| Workspace shell, tables, dialogs, forms, print, access gates | `frontend/lib/shared/components/`, `frontend/lib/shared/layout/`, `frontend/lib/core/permissions/` |
+
+### 13.3 When the target and the existing implementation disagree
+
+- The target column set, statuses, and permissions in Sections 9 and 10 win.
+- The owning module, model, route family, and identifier scheme of the existing implementation win.
+- Reconcile by migrating the existing implementation toward the target, keeping compatible deep links and data, and retiring superseded code only after parity tests pass.
+- If a leaf would introduce a second source of truth for a record another module already owns, do not build it: extend the owning module and link to it instead.

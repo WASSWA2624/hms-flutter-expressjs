@@ -10,6 +10,7 @@ import 'package:hosspi_hms/app/router/route_refresh_listenable.dart';
 import 'package:hosspi_hms/app/router/route_status_pages.dart';
 import 'package:hosspi_hms/app/router/shell_badge_counts.dart';
 import 'package:hosspi_hms/app/router/shell_route_access.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/network/app_connectivity_status.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
@@ -18,6 +19,10 @@ import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/subscriptions/tenant_subscription_summary.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/pages/access_admin_workspace_page.dart';
+import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.dart';
+import 'package:hosspi_hms/features/accounts/presentation/controllers/accounts_workspace_controller.dart';
+import 'package:hosspi_hms/features/accounts/presentation/pages/accounts_workspace_page.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_scope_navigation.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/forgot_password_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/login_page.dart';
@@ -27,8 +32,6 @@ import 'package:hosspi_hms/features/auth/presentation/pages/verify_email_page.da
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_shell_layout.dart';
 import 'package:hosspi_hms/features/billing/domain/entities/billing_entities.dart';
 import 'package:hosspi_hms/features/billing/presentation/pages/billing_workspace_page.dart';
-import 'package:hosspi_hms/features/accounts/domain/entities/accounts_entities.dart';
-import 'package:hosspi_hms/features/accounts/presentation/pages/accounts_workspace_page.dart';
 import 'package:hosspi_hms/features/biomedical/domain/entities/biomedical_entities.dart';
 import 'package:hosspi_hms/features/biomedical/presentation/pages/biomedical_workspace_page.dart';
 import 'package:hosspi_hms/features/claims/domain/entities/claims_entities.dart';
@@ -524,6 +527,7 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
   int? dischargeWorkloadCount,
   int? mortuaryWorkloadCount,
   int? theaterWorkloadCount,
+  List<ShellSubmenuItem> accountsMenuChildren = const <ShellSubmenuItem>[],
 }) {
   // Navigation groups follow primary hospital workflows:
   // - Overview: landing dashboard
@@ -739,6 +743,9 @@ List<_ShellDestinationRoute> _localizedShellDestinations(
         icon: AppRouteIcons.accounts,
         selectedIcon: AppRouteIcons.accountsSelected,
         badgeCount: accountsWorkloadCount,
+        // Accounts & Finance is the one expandable finance menu; its
+        // categories and leaves are menu items, never in-page tabs.
+        children: accountsMenuChildren,
       ),
     ),
     _ShellDestinationRoute(
@@ -888,10 +895,42 @@ class _AppShell extends ConsumerWidget {
       accessPolicy,
     );
     final ShellBadgeCounts badges = ref.watch(shellBadgeCountsProvider);
+    final bool canAccessAccounts = _canAccessShellRoute(
+      AppRoutes.accounts,
+      accessPolicy,
+    );
+    // Category badges sum their sections' scope totals from the workspace
+    // summary the shell already loads. Filtered counts stay on the workspace
+    // tab strip, which owns the query; the menu must not depend on panel state.
+    final AccountsSummary? accountsSummary = canAccessAccounts
+        ? ref.watch(
+            accountsWorkspaceControllerProvider.select(
+              (AsyncValue<Result<AccountsWorkspaceState>> value) =>
+                  switch (value.asData?.value) {
+                    ResultSuccess<AccountsWorkspaceState>(value: final state) =>
+                      state.overview.summary,
+                    _ => null,
+                  },
+            ),
+          )
+        : null;
+    final List<ShellSubmenuItem> accountsMenuChildren = canAccessAccounts
+        ? accountsShellMenuChildren(
+            accessPolicy: accessPolicy,
+            badgeCount: accountsSummary == null
+                ? null
+                : (AccountsDeskCategory category) =>
+                      accountsCategorySummaryCount(
+                        accountsSummary,
+                        accountsVisibleCategorySections(accessPolicy, category),
+                      ),
+          )
+        : const <ShellSubmenuItem>[];
     final List<_ShellDestinationRoute> shellDestinations =
         _localizedShellDestinations(
               l10n,
               accessPolicy: accessPolicy,
+              accountsMenuChildren: accountsMenuChildren,
               billingWorkloadCount: badges.billingWorkloadCount,
               accountsWorkloadCount: badges.accountsWorkloadCount,
               claimsWorkloadCount: badges.claimsWorkloadCount,
@@ -1046,6 +1085,32 @@ class _AppShell extends ConsumerWidget {
             destination.destination,
         ],
         selectedIndex: selectedIndex,
+        selectedChildId: _selectedAccountsCategory(accountsMenuChildren),
+        onChildSelected: (String categoryId) {
+          // A category opens on its first authorized section; the workspace
+          // tab strip covers the rest of that category.
+          for (final AccountsDeskCategory category
+              in AccountsDeskCategory.values) {
+            if (category.name != categoryId) {
+              continue;
+            }
+            final AccountsDeskSection? landing = accountsCategoryLandingSection(
+              accessPolicy,
+              category,
+            );
+            if (landing == null) {
+              return;
+            }
+            context.go(
+              AppRoutes.accounts.location(
+                queryParameters: <String, String>{
+                  'section': landing.sectionQueryValue,
+                },
+              ),
+            );
+            return;
+          }
+        },
         onDestinationSelected: (int index) {
           if (index == selectedIndex) {
             return;
@@ -1058,6 +1123,36 @@ class _AppShell extends ConsumerWidget {
         child: child,
       ),
     );
+  }
+
+  /// Accounts leaf the current location resolves to, or null when elsewhere.
+  ///
+  /// Legacy aliases resolve to their canonical section so an old deep link
+  /// still highlights and expands the owning menu item.
+  AccountsDeskSection? _activeAccountsSection() {
+    if (!AppRoutes.accounts.matchesPath(location.path)) {
+      return null;
+    }
+    return AccountsDeskSection.resolveDeskSlug(
+          location.queryParameters['section'] ??
+              location.queryParameters['tab'],
+        ) ??
+        AccountsDeskSection.fallback;
+  }
+
+  /// Menu item id of the category owning the active section, when authorized.
+  String? _selectedAccountsCategory(
+    List<ShellSubmenuItem> accountsMenuChildren,
+  ) {
+    final AccountsDeskSection? section = _activeAccountsSection();
+    if (section == null || accountsMenuChildren.isEmpty) {
+      return null;
+    }
+    final String categoryId = AccountsDeskCategory.of(section).name;
+    final bool visible = accountsMenuChildren.any(
+      (ShellSubmenuItem item) => item.id == categoryId,
+    );
+    return visible ? categoryId : null;
   }
 
   int _selectedIndexForPath(

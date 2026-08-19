@@ -14,31 +14,43 @@ import 'package:hosspi_hms/features/accounts/presentation/controllers/accounts_w
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_approvals_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_chart_dialogs.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_chart_panel.dart';
-import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_currency_rate_dialogs.dart';
-import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_currency_rates_panel.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_department_dialogs.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_departments_and_cost_centres_panel.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_document_numbering_panel.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_document_sequence_dialogs.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_fiscal_period_dialogs.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_fiscal_periods_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_gl_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_invoices_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_ledgers_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_open_work_panel.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_payment_method_dialogs.dart';
+import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_payment_methods_panel.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_scope_navigation.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_support.dart';
 import 'package:hosspi_hms/features/accounts/presentation/widgets/accounts_to_post_panel.dart';
+import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/layout/layout.dart';
 import 'package:hosspi_hms/shared/routing/workspace_location_sync.dart';
 
-/// Folder strip (Books / Setup & Controls); absent when one folder is visible.
-const Key accountsCategoryTabsKey = Key('accounts-category-tabs');
-
-/// Leaf tab strip for the sections inside the active folder.
+/// Flat tab strip for the sections inside the category the sidebar resolved.
 const Key accountsSectionTabsKey = Key('accounts-section-tabs');
+
+/// Body of the active section.
+const Key accountsSectionBodyKey = Key('accounts-section-body');
 
 /// Accounts desk shell (`/accounts`).
 ///
 /// Books: Open work / To post / Need approval / GL / Ledgers / Chart /
-/// Invoices. Setup & Controls: Fiscal Years & Periods.
+/// Invoices. Setup & Controls: Fiscal Years & Periods / Departments & Cost
+/// Centres / Payment Methods.
+///
+/// Menu depth stops at the category: `Accounts & Finance → <Category>` are the
+/// two menu levels, and the category's sections are this page's tabs
+/// (`.cursor/finance/_shared/navigation-model.md`). There is no category tab
+/// row and no nested tab-strip variant.
 class AccountsWorkspacePage extends ConsumerWidget {
   const AccountsWorkspacePage({super.key, this.initialQuery});
 
@@ -213,45 +225,10 @@ class _AccountsWorkspaceContentState
     _updateUrlForSection(section);
   }
 
-  int _sectionCount(AccountsDeskSection section) {
-    return accountsSectionTabCount(
-      widget.state,
-      section,
-      activeSection: _section,
-      glActivityOverride: ref.watch(accountsGlActivityCountProvider),
-      invoicesOverride: ref.watch(accountsInvoicesCountProvider),
-      ledgersBalanceOverride: ref.watch(
-        accountsPatientLedgersBalanceCountProvider,
-      ),
-      chartActiveOverride: ref.watch(accountsChartActiveCountProvider),
-      fiscalPeriodsOverride: ref.watch(accountsFiscalPeriodCountProvider),
-      currencyRatesOverride: ref.watch(accountsCurrencyRateCountProvider),
-    );
-  }
-
-  int _categoryCount(
-    AccountsDeskCategory category,
-    List<AccountsDeskSection> visibleSections,
-  ) {
-    return accountsCategoryTabCount(
-      widget.state,
-      category,
-      visibleSections,
-      activeSection: _section,
-      glActivityOverride: ref.watch(accountsGlActivityCountProvider),
-      invoicesOverride: ref.watch(accountsInvoicesCountProvider),
-      ledgersBalanceOverride: ref.watch(
-        accountsPatientLedgersBalanceCountProvider,
-      ),
-      chartActiveOverride: ref.watch(accountsChartActiveCountProvider),
-      fiscalPeriodsOverride: ref.watch(accountsFiscalPeriodCountProvider),
-      currencyRatesOverride: ref.watch(accountsCurrencyRateCountProvider),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
+    final AppLocalizations l10n = context.l10n;
     final accessPolicy = ref.watch(appAccessPolicyProvider);
     final List<AccountsDeskSection> visibleSections = AccountsDeskSection.values
         .where(
@@ -277,59 +254,30 @@ class _AccountsWorkspaceContentState
       });
     }
 
-    // Folder → leaf navigation mirrors the menu in `billing-accounts-finance.md`
-    // §9.3: Books holds the day-to-day desks, Setup & Controls the calendar.
-    final List<AccountsDeskCategory> visibleCategories = AccountsDeskCategory
-        .values
-        .where(
-          (AccountsDeskCategory category) => category.sections.any(
-            (AccountsDeskSection section) => visibleSections.contains(section),
-          ),
-        )
-        .toList(growable: false);
-    final AccountsDeskCategory activeCategory = active.category;
-    final List<AccountsDeskSection> categorySections = activeCategory.sections
+    // The sidebar menu resolved the leaf; the page renders only its body.
+    // The sidebar resolved the category; its sections are this page's tabs.
+    final List<AccountsDeskSection> categorySections = active.category.sections
         .where(visibleSections.contains)
         .toList(growable: false);
 
     return ResponsivePage(
       padding: ResponsiveSpacing.workspacePagePaddingFor(
-        spacing: Theme.of(context).spacing,
+        spacing: theme.spacing,
       ),
       maxWidth: PageMaxWidth.dataHeavy,
       scrollable: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          if (visibleCategories.length > 1)
-            AppTabStrip(
-              key: accountsCategoryTabsKey,
-              tabs: <AppTabItem>[
-                for (final AccountsDeskCategory category in visibleCategories)
-                  AppTabItem(
-                    id: category.name,
-                    icon: accountsCategoryIcon(category),
-                    label: accountsCategoryLabel(category),
-                    tooltip: accountsCategoryTooltip(category),
-                    count: _categoryCount(category, visibleSections),
-                  ),
-              ],
-              selectedId: activeCategory.name,
-              onTabTapped: (String tabId) =>
-                  _selectCategory(tabId, visibleSections),
-            ),
           AppTabStrip(
             key: accountsSectionTabsKey,
-            variant: visibleCategories.length > 1
-                ? AppTabStripVariant.nested
-                : AppTabStripVariant.standard,
             tabs: <AppTabItem>[
               for (final AccountsDeskSection section in categorySections)
                 AppTabItem(
                   id: section.name,
                   icon: accountsSectionIcon(section),
-                  label: accountsSectionLabel(section),
-                  tooltip: accountsSectionTooltip(section),
+                  label: accountsSectionLabel(l10n, section),
+                  tooltip: accountsSectionTooltip(l10n, section),
                   count: _sectionCount(section),
                   countTone: accountsSectionCountTone(section),
                 ),
@@ -345,29 +293,28 @@ class _AccountsWorkspaceContentState
             },
           ),
           SizedBox(height: theme.spacing.md),
-          Expanded(child: _sectionBody(active)),
+          Expanded(key: accountsSectionBodyKey, child: _sectionBody(active)),
         ],
       ),
     );
   }
 
-  /// Opening a folder lands on its first authorized leaf tab.
-  void _selectCategory(
-    String categoryId,
-    List<AccountsDeskSection> visibleSections,
-  ) {
-    for (final AccountsDeskCategory category in AccountsDeskCategory.values) {
-      if (category.name != categoryId) {
-        continue;
-      }
-      for (final AccountsDeskSection section in category.sections) {
-        if (visibleSections.contains(section)) {
-          _selectSection(section);
-          return;
-        }
-      }
-      return;
-    }
+  int _sectionCount(AccountsDeskSection section) {
+    return accountsSectionTabCount(
+      widget.state,
+      section,
+      activeSection: _section,
+      glActivityOverride: ref.watch(accountsGlActivityCountProvider),
+      invoicesOverride: ref.watch(accountsInvoicesCountProvider),
+      ledgersBalanceOverride: ref.watch(
+        accountsPatientLedgersBalanceCountProvider,
+      ),
+      chartActiveOverride: ref.watch(accountsChartActiveCountProvider),
+      fiscalPeriodsOverride: ref.watch(accountsFiscalPeriodCountProvider),
+      departmentsOverride: ref.watch(accountsDepartmentCountProvider),
+      paymentMethodsOverride: ref.watch(accountsPaymentMethodCountProvider),
+      documentSequencesOverride: ref.watch(accountsDocumentSequenceCountProvider),
+    );
   }
 
   Widget _sectionBody(AccountsDeskSection section) {
@@ -392,8 +339,12 @@ class _AccountsWorkspaceContentState
       AccountsDeskSection.invoices => const AccountsInvoicesPanel(),
       AccountsDeskSection.fiscalYearsAndPeriods =>
         const AccountsFiscalPeriodsPanel(),
-      AccountsDeskSection.currenciesAndExchangeRates =>
-        const AccountsCurrencyRatesPanel(),
+      AccountsDeskSection.departmentsAndCostCentres =>
+        const AccountsDepartmentsAndCostCentresPanel(),
+      AccountsDeskSection.paymentMethods =>
+        const AccountsPaymentMethodsPanel(),
+      AccountsDeskSection.documentNumbering =>
+        const AccountsDocumentNumberingPanel(),
     };
   }
 }

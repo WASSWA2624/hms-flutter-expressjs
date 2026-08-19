@@ -44,18 +44,21 @@ describe('setup-default-accounts script', () => {
     expect(mockSeedAccessPack).toHaveBeenCalledTimes(1);
   });
 
-  it('skips account setup in production', async () => {
+  it('sets up the same accounts in production', async () => {
     env.setEnvForTests({
       NODE_ENV: 'production',
-      DATABASE_URL: 'mysql://test:test@localhost:3306/test_db',
+      DATABASE_URL: 'mysql://prod:prod@db.prod.internal:3306/hms_production',
       JWT_SECRET: 'test-jwt-secret-key-minimum-32-characters-long',
       CORS_ORIGINS: 'http://localhost:3000'});
 
     const { setupDefaultAccounts } = require('../../../scripts/setup-default-accounts');
     const result = await setupDefaultAccounts();
 
-    expect(result).toEqual({ skipped: true, reason: 'production_environment' });
-    expect(mockSeedOrgPack).not.toHaveBeenCalled();
-    expect(mockSeedAccessPack).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      skipped: false,
+      tenants: ['demo'],
+      users: ['doctor', 'nurse']});
+    expect(mockSeedOrgPack).toHaveBeenCalledTimes(1);
+    expect(mockSeedAccessPack).toHaveBeenCalledTimes(1);
   });
 });

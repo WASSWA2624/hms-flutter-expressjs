@@ -8,6 +8,10 @@
 const SecurityConfig = require('@config/security');
 const { HttpError } = require('@lib/errors');
 const { logger } = require('@lib/logging');
+const { verifyCsrfToken } = require('@lib/security/csrf-token');
+
+const CSRF_MISSING_CODE = 'CSRF_MISSING';
+const CSRF_INVALID_CODE = 'CSRF_INVALID';
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 const CSRF_HEADER = 'x-csrf-token';
@@ -61,32 +65,49 @@ const csrfMiddleware = () => {
         path: req.path,
         ip: req.ip
       });
-      return next(new HttpError('errors.csrf.missing', 403));
+      return next(
+        new HttpError('errors.csrf.missing', 403, [], {
+          problemCode: CSRF_MISSING_CODE
+        })
+      );
     }
 
-    // Get stored CSRF token from session
+    // Primary path: the token is self-verifying, so any worker process can
+    // validate a token issued by any other. This is what makes CSRF survive a
+    // multi-process deployment, where the in-memory session below is not shared.
+    const verification = verifyCsrfToken(token, { sessionId: req.sessionId });
+    if (verification.valid) {
+      if (!verification.sessionBound) {
+        // The token is authentic but the session cookie did not come back.
+        // Usually SameSite/third-party cookie blocking on a cross-site client.
+        logger.warn('CSRF token accepted without session cookie binding', {
+          method: req.method,
+          path: req.path,
+          ip: req.ip
+        });
+      }
+      return next();
+    }
+
+    // Compatibility path: tokens minted before this change (and single-process
+    // dev sessions) still validate against the session copy.
     const sessionToken = req.session?.[CSRF_SESSION_KEY];
-    if (!sessionToken) {
-      logger.warn('CSRF session token not found', {
-        method: req.method,
-        path: req.path,
-        ip: req.ip
-      });
-      return next(new HttpError('errors.csrf.missing', 403));
+    if (sessionToken && token === sessionToken) {
+      return next();
     }
 
-    // Validate token matches session token
-    if (token !== sessionToken) {
-      logger.warn('CSRF token validation failed', {
-        method: req.method,
-        path: req.path,
-        ip: req.ip,
-        tokenMatch: token === sessionToken
-      });
-      return next(new HttpError('errors.csrf.invalid', 403));
-    }
-
-    return next();
+    logger.warn('CSRF token validation failed', {
+      method: req.method,
+      path: req.path,
+      ip: req.ip,
+      reason: verification.reason,
+      hasSessionToken: Boolean(sessionToken)
+    });
+    return next(
+      new HttpError('errors.csrf.invalid', 403, [], {
+        problemCode: CSRF_INVALID_CODE
+      })
+    );
   };
 };
 

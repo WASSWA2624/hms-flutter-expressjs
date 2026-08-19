@@ -36,7 +36,7 @@ CREATE TABLE `registration_follow_up` (
     INDEX `registration_follow_up_deleted_at_idx`(`deleted_at`),
     UNIQUE INDEX `registration_follow_up_user_id_key`(`user_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- AddForeignKey
 ALTER TABLE `registration_follow_up` ADD CONSTRAINT `registration_follow_up_user_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `user`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

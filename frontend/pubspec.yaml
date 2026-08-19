@@ -48,7 +48,7 @@ patrol:
   app_name: HOSSPI Hospital Management System
   test_directory: patrol_test
   android:
-    package_name: com.example.flutter_template
+    package_name: com.hosspi.app
   ios:
     bundle_id: com.example.flutterTemplate
   macos:

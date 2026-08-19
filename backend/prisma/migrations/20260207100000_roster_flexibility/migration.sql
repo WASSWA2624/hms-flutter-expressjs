@@ -20,7 +20,7 @@ CREATE TABLE `shift_template` (
     INDEX `shift_template_is_active_idx`(`is_active`),
     INDEX `shift_template_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable staff_availability
 CREATE TABLE `staff_availability` (
@@ -42,7 +42,7 @@ CREATE TABLE `staff_availability` (
     INDEX `staff_availability_effective_from_idx`(`effective_from`),
     INDEX `staff_availability_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- AlterTable shift - add nurse_roster_id, shift_template_id
 ALTER TABLE `shift` ADD COLUMN `nurse_roster_id` VARCHAR(36) NULL,
@@ -66,7 +66,7 @@ CREATE TABLE `roster_day_off` (
     INDEX `roster_day_off_off_date_idx`(`off_date`),
     INDEX `roster_day_off_deleted_at_idx`(`deleted_at`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- AddForeignKey shift_template
 ALTER TABLE `shift_template` ADD CONSTRAINT `shift_template_tenant_id_fkey` FOREIGN KEY (`tenant_id`) REFERENCES `tenant`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

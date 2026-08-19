@@ -23,7 +23,7 @@ CREATE TABLE `facility_radiology_test_offering` (
     INDEX `frto_deleted_at_idx`(`deleted_at`),
     INDEX `frto_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- AddForeignKey
 ALTER TABLE `facility_radiology_test_offering` ADD CONSTRAINT `frto_tenant_fkey` FOREIGN KEY (`tenant_id`) REFERENCES `tenant`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

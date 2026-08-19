@@ -28,7 +28,7 @@ CREATE TABLE `facility_lab_test_offering` (
     INDEX `facility_lab_test_offering_deleted_at_idx`(`deleted_at`),
     INDEX `facility_lab_test_offering_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `facility_lab_test_reference_range` (
@@ -53,7 +53,7 @@ CREATE TABLE `facility_lab_test_reference_range` (
 
     INDEX `fltr_offering_sort_idx`(`facility_lab_test_offering_id`, `sort_order`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `facility_lab_test_unit_option` (
@@ -70,7 +70,7 @@ CREATE TABLE `facility_lab_test_unit_option` (
     UNIQUE INDEX `fltu_offering_unit_key`(`facility_lab_test_offering_id`, `unit`),
     INDEX `fltu_offering_sort_idx`(`facility_lab_test_offering_id`, `sort_order`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `facility_lab_test_result_option` (
@@ -89,7 +89,7 @@ CREATE TABLE `facility_lab_test_result_option` (
     UNIQUE INDEX `fltro_offering_value_key`(`facility_lab_test_offering_id`, `value`),
     INDEX `fltro_offering_sort_idx`(`facility_lab_test_offering_id`, `sort_order`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateTable
 CREATE TABLE `facility_lab_panel_offering` (
@@ -116,7 +116,7 @@ CREATE TABLE `facility_lab_panel_offering` (
     INDEX `facility_lab_panel_offering_deleted_at_idx`(`deleted_at`),
     INDEX `facility_lab_panel_offering_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- AddForeignKey
 ALTER TABLE `facility_lab_test_offering` ADD CONSTRAINT `flto_tenant_fkey` FOREIGN KEY (`tenant_id`) REFERENCES `tenant`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

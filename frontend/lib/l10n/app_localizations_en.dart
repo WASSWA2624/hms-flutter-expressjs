@@ -9144,9 +9144,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Use your facility account to open the HMS workspace.';
 
   @override
-  String get authIdentifierLabel => 'Email or phone';
-
-  @override
   String get authEmailLabel => 'Email';
 
   @override
@@ -9162,7 +9159,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authLoginActionLabel => 'Sign in';
 
   @override
-  String get authCreateAccountActionLabel => 'Create account';
+  String get authCreateAccountActionLabel => 'Register';
+
+  @override
+  String get authIdentifierModeLabel => 'Sign in with';
+
+  @override
+  String get authIdentifierModeEmailLabel => 'Email';
+
+  @override
+  String get authIdentifierModePhoneLabel => 'Phone';
 
   @override
   String get authRegisterTitle => 'Set up your facility';
@@ -9175,7 +9181,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get authRegisterActionLabel => 'Create account';
 
   @override
-  String get authBackToLoginActionLabel => 'Back to sign in';
+  String get authBackToLoginActionLabel => 'Sign in';
 
   @override
   String get authHowToRegisterActionLabel => 'How to register';
@@ -9341,9 +9347,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get authPhoneOptionalLabel => 'Phone (optional)';
-
-  @override
-  String get authLocationOptionalLabel => 'Location (optional)';
 
   @override
   String get authRegistrationSubmittedTitle => 'Check your email';
@@ -9561,6 +9564,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorUnauthorizedMessage => 'Sign in again to continue.';
+
+  @override
+  String get errorSecurityTokenTitle => 'Security check failed';
+
+  @override
+  String get errorSecurityTokenMessage =>
+      'The security check for this request expired. Please try again — you are still signed in.';
 
   @override
   String get errorForbiddenTitle => 'Access denied';
@@ -27765,4 +27775,1170 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get hrReferenceLeaveHalfDayPeriodAfternoon => 'Afternoon';
+
+  @override
+  String get accountsFiscalPeriodsLabel => 'Fiscal Years & Periods';
+
+  @override
+  String get accountsFiscalPeriodsTooltip =>
+      'Fiscal calendar periods, their open, close, and lock milestones';
+
+  @override
+  String get accountsFiscalPeriodsEmpty => 'No fiscal periods match.';
+
+  @override
+  String get accountsFiscalPeriodsEmptyBody =>
+      'Try another search or add a fiscal period.';
+
+  @override
+  String get accountsFiscalPeriodsSearchHint =>
+      'Reference, fiscal year, period name…';
+
+  @override
+  String get accountsFiscalReferenceColumn => 'Reference';
+
+  @override
+  String get accountsFiscalYearColumn => 'Fiscal Year';
+
+  @override
+  String get accountsFiscalPeriodNoColumn => 'Period No.';
+
+  @override
+  String get accountsFiscalPeriodNameColumn => 'Period Name';
+
+  @override
+  String get accountsFiscalStartDateColumn => 'Start Date';
+
+  @override
+  String get accountsFiscalEndDateColumn => 'End Date';
+
+  @override
+  String get accountsFiscalEntityAndFacilityColumn => 'Entity/Facility';
+
+  @override
+  String get accountsFiscalModuleColumn => 'Module';
+
+  @override
+  String get accountsFiscalOpenDateColumn => 'Open Date';
+
+  @override
+  String get accountsFiscalSoftCloseDateColumn => 'Soft-close Date';
+
+  @override
+  String get accountsFiscalCloseDateColumn => 'Close Date';
+
+  @override
+  String get accountsFiscalLockDateColumn => 'Lock Date';
+
+  @override
+  String get accountsFiscalReopenedAtColumn => 'Reopened At';
+
+  @override
+  String get accountsFiscalReopenedByColumn => 'Reopened By';
+
+  @override
+  String get accountsFiscalPeriodStatusColumn => 'Period Status';
+
+  @override
+  String get accountsFiscalActionsColumn => 'Actions';
+
+  @override
+  String get accountsFiscalStatusDraft => 'Draft';
+
+  @override
+  String get accountsFiscalStatusActive => 'Active';
+
+  @override
+  String get accountsFiscalStatusInactive => 'Inactive';
+
+  @override
+  String get accountsFiscalStatusArchived => 'Archived';
+
+  @override
+  String get accountsFiscalStatusLocked => 'Locked';
+
+  @override
+  String get accountsFiscalModuleAll => 'All modules';
+
+  @override
+  String get accountsFiscalModuleGeneralLedger => 'General ledger';
+
+  @override
+  String get accountsFiscalModuleBilling => 'Billing';
+
+  @override
+  String get accountsFiscalModulePharmacy => 'Pharmacy';
+
+  @override
+  String get accountsFiscalModuleInventory => 'Inventory';
+
+  @override
+  String get accountsFiscalModulePayroll => 'Payroll';
+
+  @override
+  String get accountsFiscalModuleFixedAssets => 'Fixed assets';
+
+  @override
+  String get accountsFiscalDateRangeFilterLabel => 'Period date range';
+
+  @override
+  String get accountsFiscalFacilityFilterLabel => 'Facility';
+
+  @override
+  String get accountsFiscalNewRecordAction => 'New record';
+
+  @override
+  String get accountsFiscalViewAction => 'View';
+
+  @override
+  String get accountsFiscalCloneAction => 'Clone';
+
+  @override
+  String get accountsFiscalActivateAction => 'Activate';
+
+  @override
+  String get accountsFiscalDeactivateAction => 'Deactivate';
+
+  @override
+  String get accountsFiscalArchiveAction => 'Archive';
+
+  @override
+  String get accountsFiscalRestoreAction => 'Restore';
+
+  @override
+  String get accountsFiscalBulkActivateAction => 'Activate selected';
+
+  @override
+  String get accountsFiscalBulkDeactivateAction => 'Deactivate selected';
+
+  @override
+  String get accountsFiscalBulkArchiveAction => 'Archive selected';
+
+  @override
+  String get accountsFiscalCreateTitle => 'Add fiscal period';
+
+  @override
+  String get accountsFiscalEditTitle => 'Edit fiscal period';
+
+  @override
+  String get accountsFiscalCloneTitle => 'Clone fiscal period';
+
+  @override
+  String get accountsFiscalDetailTitle => 'Fiscal period details';
+
+  @override
+  String get accountsFiscalIdentitySection => 'Period identity';
+
+  @override
+  String get accountsFiscalCalendarSection => 'Calendar';
+
+  @override
+  String get accountsFiscalMilestonesSection => 'Close milestones';
+
+  @override
+  String get accountsFiscalSummarySection => 'Summary';
+
+  @override
+  String get accountsFiscalRelatedSection => 'Related records';
+
+  @override
+  String get accountsFiscalAttachmentsSection => 'Attachments';
+
+  @override
+  String get accountsFiscalActivitySection => 'Activity & audit';
+
+  @override
+  String get accountsFiscalRelatedEmpty => 'No related records.';
+
+  @override
+  String get accountsFiscalAttachmentsEmpty => 'No attachments.';
+
+  @override
+  String get accountsFiscalActivityEmpty => 'No recorded activity.';
+
+  @override
+  String get accountsFiscalActivityCreated => 'Created';
+
+  @override
+  String get accountsFiscalActivityUpdated => 'Last updated';
+
+  @override
+  String get accountsFiscalActivityReopened => 'Reopened';
+
+  @override
+  String get accountsFiscalActivityReopenedBy => 'Reopened by';
+
+  @override
+  String get accountsFiscalActivityArchived => 'Archived';
+
+  @override
+  String get accountsFiscalVersionLabel => 'Record version';
+
+  @override
+  String get accountsFiscalLockedNotice =>
+      'This period is locked. Posting, close, reversal, and adjustment actions are blocked.';
+
+  @override
+  String get accountsFiscalNotesLabel => 'Notes';
+
+  @override
+  String get accountsFiscalRequiredField => 'This field is required.';
+
+  @override
+  String get accountsFiscalPeriodNoInvalid =>
+      'Enter a period number between 1 and 366.';
+
+  @override
+  String get accountsFiscalEndBeforeStart =>
+      'End date must not be earlier than the start date.';
+
+  @override
+  String get accountsFiscalMilestoneOutOfOrder =>
+      'Open, soft-close, and close dates must be in order.';
+
+  @override
+  String get accountsFiscalActivateConfirmTitle => 'Activate fiscal period?';
+
+  @override
+  String get accountsFiscalDeactivateConfirmTitle =>
+      'Deactivate fiscal period?';
+
+  @override
+  String get accountsFiscalArchiveConfirmTitle => 'Archive fiscal period?';
+
+  @override
+  String get accountsFiscalRestoreConfirmTitle => 'Restore fiscal period?';
+
+  @override
+  String get accountsFiscalArchiveConfirmBody =>
+      'The period is archived, not deleted. Posted history stays available and the record can be restored.';
+
+  @override
+  String accountsFiscalActivateConfirmBody(String reference) {
+    return 'Activate $reference so permitted workflows can select it?';
+  }
+
+  @override
+  String accountsFiscalDeactivateConfirmBody(String reference) {
+    return 'Deactivate $reference so it is no longer selectable for new work?';
+  }
+
+  @override
+  String accountsFiscalRestoreConfirmBody(String reference) {
+    return 'Restore $reference and record the reopen in the audit trail?';
+  }
+
+  @override
+  String accountsFiscalBulkConfirmBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Apply this change to $count matching fiscal periods? Records that do not allow the change are skipped.',
+      one:
+          'Apply this change to $count matching fiscal period? Records that do not allow the change are skipped.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountsFiscalBulkPartialFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count records could not be changed.',
+      one: '$count record could not be changed.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountsFiscalMobileCaption(String fiscalYear, int periodNo) {
+    return '$fiscalYear · Period $periodNo';
+  }
+
+  @override
+  String accountsFiscalMobileDateRange(String startDate, String endDate) {
+    return '$startDate – $endDate';
+  }
+
+  @override
+  String get accountsDepartmentsLabel => 'Departments & Cost Centres';
+
+  @override
+  String get accountsDepartmentsTooltip =>
+      'Departments, their cost centres, default posting accounts, and ownership';
+
+  @override
+  String get accountsDepartmentsEmpty => 'No departments match.';
+
+  @override
+  String get accountsDepartmentsEmptyBody =>
+      'Try another search or add a department.';
+
+  @override
+  String get accountsDepartmentsSearchHint =>
+      'Reference, department, cost centre…';
+
+  @override
+  String get accountsDepartmentReferenceColumn => 'Reference';
+
+  @override
+  String get accountsDepartmentCodeColumn => 'Department Code';
+
+  @override
+  String get accountsDepartmentNameColumn => 'Department Name';
+
+  @override
+  String get accountsDepartmentCostCentreCodeColumn => 'Cost Centre Code';
+
+  @override
+  String get accountsDepartmentCostCentreNameColumn => 'Cost Centre Name';
+
+  @override
+  String get accountsDepartmentParentColumn => 'Parent';
+
+  @override
+  String get accountsDepartmentFacilityColumn => 'Facility';
+
+  @override
+  String get accountsDepartmentManagerColumn => 'Manager';
+
+  @override
+  String get accountsDepartmentRevenueAccountColumn =>
+      'Default Revenue Account';
+
+  @override
+  String get accountsDepartmentExpenseAccountColumn =>
+      'Default Expense Account';
+
+  @override
+  String get accountsDepartmentBudgetOwnerColumn => 'Budget Owner';
+
+  @override
+  String get accountsDepartmentEffectiveFromColumn => 'Effective From';
+
+  @override
+  String get accountsDepartmentEffectiveToColumn => 'Effective To';
+
+  @override
+  String get accountsDepartmentStatusColumn => 'Status';
+
+  @override
+  String get accountsDepartmentActionsColumn => 'Actions';
+
+  @override
+  String get accountsDepartmentStatusDraft => 'Draft';
+
+  @override
+  String get accountsDepartmentStatusActive => 'Active';
+
+  @override
+  String get accountsDepartmentStatusInactive => 'Inactive';
+
+  @override
+  String get accountsDepartmentStatusArchived => 'Archived';
+
+  @override
+  String get accountsDepartmentDateRangeFilterLabel => 'Effective period';
+
+  @override
+  String get accountsDepartmentFacilityFilterLabel => 'Facility';
+
+  @override
+  String get accountsDepartmentCostCentreFilterLabel =>
+      'Department / cost centre';
+
+  @override
+  String get accountsDepartmentOwnerFilterLabel => 'Owner / assigned user';
+
+  @override
+  String get accountsDepartmentNewRecordAction => 'New record';
+
+  @override
+  String get accountsDepartmentViewAction => 'View';
+
+  @override
+  String get accountsDepartmentCloneAction => 'Clone';
+
+  @override
+  String get accountsDepartmentActivateAction => 'Activate';
+
+  @override
+  String get accountsDepartmentDeactivateAction => 'Deactivate';
+
+  @override
+  String get accountsDepartmentArchiveAction => 'Archive';
+
+  @override
+  String get accountsDepartmentRestoreAction => 'Restore';
+
+  @override
+  String get accountsDepartmentBulkActivateAction => 'Activate selected';
+
+  @override
+  String get accountsDepartmentBulkDeactivateAction => 'Deactivate selected';
+
+  @override
+  String get accountsDepartmentBulkArchiveAction => 'Archive selected';
+
+  @override
+  String get accountsDepartmentCreateTitle => 'Add department';
+
+  @override
+  String get accountsDepartmentEditTitle => 'Edit department';
+
+  @override
+  String get accountsDepartmentCloneTitle => 'Clone department';
+
+  @override
+  String get accountsDepartmentDetailTitle => 'Department details';
+
+  @override
+  String get accountsDepartmentIdentitySection => 'Department identity';
+
+  @override
+  String get accountsDepartmentStructureSection => 'Structure';
+
+  @override
+  String get accountsDepartmentPostingSection => 'Default posting accounts';
+
+  @override
+  String get accountsDepartmentSummarySection => 'Summary';
+
+  @override
+  String get accountsDepartmentRelatedSection => 'Related records';
+
+  @override
+  String get accountsDepartmentAttachmentsSection => 'Attachments';
+
+  @override
+  String get accountsDepartmentActivitySection => 'Activity & audit';
+
+  @override
+  String get accountsDepartmentRelatedEmpty => 'No related records.';
+
+  @override
+  String get accountsDepartmentAttachmentsEmpty => 'No attachments.';
+
+  @override
+  String get accountsDepartmentActivityCreated => 'Created';
+
+  @override
+  String get accountsDepartmentActivityUpdated => 'Last updated';
+
+  @override
+  String get accountsDepartmentActivityArchived => 'Archived';
+
+  @override
+  String get accountsDepartmentVersionLabel => 'Record version';
+
+  @override
+  String get accountsDepartmentOwnedNotice =>
+      'This department is maintained with facility setup. Editing here updates the same record.';
+
+  @override
+  String get accountsDepartmentRequiredField => 'This field is required.';
+
+  @override
+  String get accountsDepartmentEffectiveToBeforeFrom =>
+      'Effective To must not be earlier than Effective From.';
+
+  @override
+  String get accountsDepartmentActivateConfirmTitle => 'Activate department?';
+
+  @override
+  String get accountsDepartmentDeactivateConfirmTitle =>
+      'Deactivate department?';
+
+  @override
+  String get accountsDepartmentArchiveConfirmTitle => 'Archive department?';
+
+  @override
+  String get accountsDepartmentRestoreConfirmTitle => 'Restore department?';
+
+  @override
+  String get accountsDepartmentArchiveConfirmBody =>
+      'The department is archived, not deleted. History stays available and the record can be restored. Archiving is refused while live child departments, units, or wards still reference it.';
+
+  @override
+  String accountsDepartmentActivateConfirmBody(String reference) {
+    return 'Activate $reference so permitted workflows can select it?';
+  }
+
+  @override
+  String accountsDepartmentDeactivateConfirmBody(String reference) {
+    return 'Deactivate $reference so it is no longer selectable for new work?';
+  }
+
+  @override
+  String accountsDepartmentRestoreConfirmBody(String reference) {
+    return 'Restore $reference and record the change in the audit trail?';
+  }
+
+  @override
+  String accountsDepartmentBulkConfirmBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Apply this change to $count matching departments? Records that do not allow the change are skipped.',
+      one:
+          'Apply this change to $count matching department? Records that do not allow the change are skipped.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountsDepartmentBulkPartialFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count records could not be changed.',
+      one: '$count record could not be changed.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountsDepartmentMobileCaption(
+    String departmentCode,
+    String costCentreCode,
+  ) {
+    return '$departmentCode · $costCentreCode';
+  }
+
+  @override
+  String get accountsPaymentMethodsLabel => 'Payment Methods';
+
+  @override
+  String get accountsPaymentMethodsTooltip =>
+      'Accepted tenders, their settlement accounts, fees, and evidence rules';
+
+  @override
+  String get accountsPaymentMethodsEmpty => 'No payment methods match.';
+
+  @override
+  String get accountsPaymentMethodsEmptyBody =>
+      'Try another search or add a payment method.';
+
+  @override
+  String get accountsPaymentMethodsSearchHint =>
+      'Reference, code, name, provider…';
+
+  @override
+  String get accountsPaymentMethodReferenceColumn => 'Reference';
+
+  @override
+  String get accountsPaymentMethodCodeColumn => 'Method Code';
+
+  @override
+  String get accountsPaymentMethodNameColumn => 'Method Name';
+
+  @override
+  String get accountsPaymentMethodTypeColumn => 'Method Type';
+
+  @override
+  String get accountsPaymentMethodDirectionColumn => 'Incoming/Outgoing';
+
+  @override
+  String get accountsPaymentMethodProviderColumn => 'Provider';
+
+  @override
+  String get accountsPaymentMethodSettlementAccountColumn =>
+      'Settlement Account';
+
+  @override
+  String get accountsPaymentMethodClearingAccountColumn => 'Clearing Account';
+
+  @override
+  String get accountsPaymentMethodRequiresReferenceColumn =>
+      'Requires External Reference';
+
+  @override
+  String get accountsPaymentMethodRequiresApprovalColumn => 'Requires Approval';
+
+  @override
+  String get accountsPaymentMethodFeeRuleColumn => 'Fee Rule';
+
+  @override
+  String get accountsPaymentMethodFacilityScopeColumn => 'Facility Scope';
+
+  @override
+  String get accountsPaymentMethodEffectiveFromColumn => 'Effective From';
+
+  @override
+  String get accountsPaymentMethodEffectiveToColumn => 'Effective To';
+
+  @override
+  String get accountsPaymentMethodStatusColumn => 'Status';
+
+  @override
+  String get accountsPaymentMethodActionsColumn => 'Actions';
+
+  @override
+  String get accountsPaymentMethodYes => 'Yes';
+
+  @override
+  String get accountsPaymentMethodNo => 'No';
+
+  @override
+  String get accountsPaymentMethodStatusDraft => 'Draft';
+
+  @override
+  String get accountsPaymentMethodStatusActive => 'Active';
+
+  @override
+  String get accountsPaymentMethodStatusInactive => 'Inactive';
+
+  @override
+  String get accountsPaymentMethodStatusArchived => 'Archived';
+
+  @override
+  String get accountsPaymentMethodTypeCash => 'Cash';
+
+  @override
+  String get accountsPaymentMethodTypeCreditCard => 'Credit card';
+
+  @override
+  String get accountsPaymentMethodTypeDebitCard => 'Debit card';
+
+  @override
+  String get accountsPaymentMethodTypePrepaidCard => 'Prepaid card';
+
+  @override
+  String get accountsPaymentMethodTypeGiftCard => 'Gift card';
+
+  @override
+  String get accountsPaymentMethodTypeVoucher => 'Voucher';
+
+  @override
+  String get accountsPaymentMethodTypeBankCheck => 'Bank cheque';
+
+  @override
+  String get accountsPaymentMethodTypeMobileMoney => 'Mobile money';
+
+  @override
+  String get accountsPaymentMethodTypeBankTransfer => 'Bank transfer';
+
+  @override
+  String get accountsPaymentMethodTypeInsurance => 'Insurance';
+
+  @override
+  String get accountsPaymentMethodTypeOther => 'Other';
+
+  @override
+  String get accountsPaymentMethodDirectionIncoming => 'Incoming';
+
+  @override
+  String get accountsPaymentMethodDirectionOutgoing => 'Outgoing';
+
+  @override
+  String get accountsPaymentMethodDirectionBoth => 'Incoming and outgoing';
+
+  @override
+  String get accountsPaymentMethodDateRangeFilterLabel => 'Effective period';
+
+  @override
+  String get accountsPaymentMethodFacilityFilterLabel => 'Facility';
+
+  @override
+  String get accountsPaymentMethodNewRecordAction => 'New record';
+
+  @override
+  String get accountsPaymentMethodViewAction => 'View';
+
+  @override
+  String get accountsPaymentMethodCloneAction => 'Clone';
+
+  @override
+  String get accountsPaymentMethodActivateAction => 'Activate';
+
+  @override
+  String get accountsPaymentMethodDeactivateAction => 'Deactivate';
+
+  @override
+  String get accountsPaymentMethodArchiveAction => 'Archive';
+
+  @override
+  String get accountsPaymentMethodRestoreAction => 'Restore';
+
+  @override
+  String get accountsPaymentMethodBulkActivateAction => 'Activate selected';
+
+  @override
+  String get accountsPaymentMethodBulkDeactivateAction => 'Deactivate selected';
+
+  @override
+  String get accountsPaymentMethodBulkArchiveAction => 'Archive selected';
+
+  @override
+  String get accountsPaymentMethodCreateTitle => 'Add payment method';
+
+  @override
+  String get accountsPaymentMethodEditTitle => 'Edit payment method';
+
+  @override
+  String get accountsPaymentMethodCloneTitle => 'Clone payment method';
+
+  @override
+  String get accountsPaymentMethodDetailTitle => 'Payment method details';
+
+  @override
+  String get accountsPaymentMethodIdentitySection => 'Method identity';
+
+  @override
+  String get accountsPaymentMethodPostingSection => 'Settlement accounts';
+
+  @override
+  String get accountsPaymentMethodRulesSection => 'Handling rules';
+
+  @override
+  String get accountsPaymentMethodSummarySection => 'Summary';
+
+  @override
+  String get accountsPaymentMethodAllocationsSection => 'Allocations';
+
+  @override
+  String get accountsPaymentMethodSettlementSection => 'Settlement';
+
+  @override
+  String get accountsPaymentMethodDocumentsSection => 'Documents & audit';
+
+  @override
+  String get accountsPaymentMethodAllocationsEmpty =>
+      'Allocations are recorded on the payments that use this method.';
+
+  @override
+  String get accountsPaymentMethodSettlementEmpty =>
+      'No settlement accounts configured.';
+
+  @override
+  String get accountsPaymentMethodActivityCreated => 'Created';
+
+  @override
+  String get accountsPaymentMethodActivityUpdated => 'Last updated';
+
+  @override
+  String get accountsPaymentMethodActivityArchived => 'Archived';
+
+  @override
+  String get accountsPaymentMethodVersionLabel => 'Record version';
+
+  @override
+  String get accountsPaymentMethodNotesLabel => 'Notes';
+
+  @override
+  String get accountsPaymentMethodSharedTypeNotice =>
+      'Method Type is the shared tender taxonomy recorded on every payment; this tab configures how each type behaves.';
+
+  @override
+  String get accountsPaymentMethodRequiredField => 'This field is required.';
+
+  @override
+  String get accountsPaymentMethodEffectiveToBeforeFrom =>
+      'Effective To must not be earlier than Effective From.';
+
+  @override
+  String get accountsPaymentMethodSettlementRequired =>
+      'A clearing account also needs a settlement account.';
+
+  @override
+  String get accountsPaymentMethodActivateConfirmTitle =>
+      'Activate payment method?';
+
+  @override
+  String get accountsPaymentMethodDeactivateConfirmTitle =>
+      'Deactivate payment method?';
+
+  @override
+  String get accountsPaymentMethodArchiveConfirmTitle =>
+      'Archive payment method?';
+
+  @override
+  String get accountsPaymentMethodRestoreConfirmTitle =>
+      'Restore payment method?';
+
+  @override
+  String get accountsPaymentMethodArchiveConfirmBody =>
+      'The method is archived, not deleted. Posted receipts stay available and the record can be restored. Archiving is refused while recorded payments already used this tender.';
+
+  @override
+  String accountsPaymentMethodActivateConfirmBody(String reference) {
+    return 'Activate $reference so permitted workflows can accept it?';
+  }
+
+  @override
+  String accountsPaymentMethodDeactivateConfirmBody(String reference) {
+    return 'Deactivate $reference so it is no longer offered for new payments?';
+  }
+
+  @override
+  String accountsPaymentMethodRestoreConfirmBody(String reference) {
+    return 'Restore $reference and record the change in the audit trail?';
+  }
+
+  @override
+  String accountsPaymentMethodBulkConfirmBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Apply this change to $count matching payment methods? Records that do not allow the change are skipped.',
+      one:
+          'Apply this change to $count matching payment method? Records that do not allow the change are skipped.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountsPaymentMethodBulkPartialFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count records could not be changed.',
+      one: '$count record could not be changed.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountsPaymentMethodMobileCaption(
+    String methodCode,
+    String methodType,
+  ) {
+    return '$methodCode · $methodType';
+  }
+
+  @override
+  String get accountsDocumentNumberingLabel => 'Document Numbering';
+
+  @override
+  String get accountsDocumentNumberingTooltip =>
+      'Prefixes, padding, and reset rules for the references each document family issues';
+
+  @override
+  String get accountsDocumentNumberingEmpty => 'No numbering sequences match.';
+
+  @override
+  String get accountsDocumentNumberingEmptyBody =>
+      'Try another search or add a numbering sequence.';
+
+  @override
+  String get accountsDocumentNumberingSearchHint =>
+      'Reference, code, prefix, module…';
+
+  @override
+  String get accountsDocumentSequenceReferenceColumn => 'Reference';
+
+  @override
+  String get accountsDocumentSequenceCodeColumn => 'Sequence Code';
+
+  @override
+  String get accountsDocumentSequenceTypeColumn => 'Document Type';
+
+  @override
+  String get accountsDocumentSequenceModuleColumn => 'Module';
+
+  @override
+  String get accountsDocumentSequenceFacilityColumn => 'Facility';
+
+  @override
+  String get accountsDocumentSequenceFacilityHelper =>
+      'Leave blank to use the current facility scope.';
+
+  @override
+  String get accountsDocumentSequencePrefixColumn => 'Prefix';
+
+  @override
+  String get accountsDocumentSequenceSuffixColumn => 'Suffix';
+
+  @override
+  String get accountsDocumentSequenceDatePatternColumn => 'Date Pattern';
+
+  @override
+  String get accountsDocumentSequenceDatePatternHelper =>
+      'Literal calendar pattern such as yyyyMM, not a date.';
+
+  @override
+  String get accountsDocumentSequenceNextNumberColumn => 'Next Number';
+
+  @override
+  String get accountsDocumentSequenceNextNumberHelper =>
+      'Read from the counter the documents themselves increment.';
+
+  @override
+  String get accountsDocumentSequenceMinimumLengthColumn => 'Minimum Length';
+
+  @override
+  String get accountsDocumentSequenceResetColumn => 'Reset Frequency';
+
+  @override
+  String get accountsDocumentSequenceLastIssuedNumberColumn =>
+      'Last Issued Number';
+
+  @override
+  String get accountsDocumentSequenceLastIssuedAtColumn => 'Last Issued At';
+
+  @override
+  String get accountsDocumentSequenceGapPolicyColumn => 'Gap Policy';
+
+  @override
+  String get accountsDocumentSequenceStatusColumn => 'Sequence Status';
+
+  @override
+  String get accountsDocumentSequenceActionsColumn => 'Actions';
+
+  @override
+  String get accountsDocumentSequencePreviewLabel => 'Next reference';
+
+  @override
+  String get accountsDocumentSequenceNotesLabel => 'Notes';
+
+  @override
+  String get accountsDocumentSequenceVersionLabel => 'Version';
+
+  @override
+  String get accountsDocumentSequenceStatusDraft => 'Draft';
+
+  @override
+  String get accountsDocumentSequenceStatusActive => 'Active';
+
+  @override
+  String get accountsDocumentSequenceStatusInactive => 'Inactive';
+
+  @override
+  String get accountsDocumentSequenceStatusArchived => 'Archived';
+
+  @override
+  String get accountsDocumentTypeInvoice => 'Patient Invoice';
+
+  @override
+  String get accountsDocumentTypeAccountsInvoice => 'Accounts Invoice';
+
+  @override
+  String get accountsDocumentTypeReceipt => 'Receipt';
+
+  @override
+  String get accountsDocumentTypePayment => 'Payment';
+
+  @override
+  String get accountsDocumentTypeRefund => 'Refund';
+
+  @override
+  String get accountsDocumentTypeCreditNote => 'Credit Note';
+
+  @override
+  String get accountsDocumentTypeDebitNote => 'Debit Note';
+
+  @override
+  String get accountsDocumentTypePurchaseOrder => 'Purchase Order';
+
+  @override
+  String get accountsDocumentTypeGoodsReceipt => 'Goods Receipt';
+
+  @override
+  String get accountsDocumentTypeClaim => 'Insurance Claim';
+
+  @override
+  String get accountsDocumentResetNever => 'Never';
+
+  @override
+  String get accountsDocumentResetDaily => 'Daily';
+
+  @override
+  String get accountsDocumentResetMonthly => 'Monthly';
+
+  @override
+  String get accountsDocumentResetQuarterly => 'Quarterly';
+
+  @override
+  String get accountsDocumentResetYearly => 'Yearly';
+
+  @override
+  String get accountsDocumentGapPolicyAllowGaps => 'Allow gaps';
+
+  @override
+  String get accountsDocumentGapPolicyNoGaps => 'No gaps';
+
+  @override
+  String get accountsDocumentGapPolicyReserveAndVoid => 'Reserve and void';
+
+  @override
+  String get accountsDocumentSequenceIdentitySection => 'Identity';
+
+  @override
+  String get accountsDocumentSequenceShapeSection => 'Reference shape';
+
+  @override
+  String get accountsDocumentSequenceSummarySection => 'Summary';
+
+  @override
+  String get accountsDocumentSequenceRelatedSection => 'Related records';
+
+  @override
+  String get accountsDocumentSequenceRelatedEmpty =>
+      'Issued references belong to the documents this sequence numbers.';
+
+  @override
+  String get accountsDocumentSequenceAttachmentsSection => 'Attachments';
+
+  @override
+  String get accountsDocumentSequenceAttachmentsEmpty =>
+      'No attachments for this sequence.';
+
+  @override
+  String get accountsDocumentSequenceActivitySection => 'Activity & audit';
+
+  @override
+  String get accountsDocumentSequenceActivityCreated => 'Created';
+
+  @override
+  String get accountsDocumentSequenceActivityUpdated => 'Last updated';
+
+  @override
+  String get accountsDocumentSequenceActivityArchived => 'Archived';
+
+  @override
+  String get accountsDocumentSequenceCounterNotice =>
+      'The running number is held by the documents this sequence numbers. This form sets the policy; Next Number is read back from that counter.';
+
+  @override
+  String get accountsDocumentSequenceShapeLockedNotice =>
+      'This sequence has already issued numbers, so its prefix, suffix, pattern, and padding are locked. Changing them would make old and new references indistinguishable.';
+
+  @override
+  String get accountsDocumentSequenceRequiredField => 'Required';
+
+  @override
+  String get accountsDocumentSequenceInvalidCode =>
+      'Use up to 32 letters, digits, hyphens, or underscores.';
+
+  @override
+  String get accountsDocumentSequenceInvalidAffix =>
+      'Use up to 16 letters, digits, hyphens, or slashes.';
+
+  @override
+  String get accountsDocumentSequenceInvalidDatePattern =>
+      'Use only calendar pattern characters such as y, M, d, q, or w.';
+
+  @override
+  String get accountsDocumentSequenceInvalidMinimumLength =>
+      'Enter a number between 1 and 20.';
+
+  @override
+  String accountsDocumentSequenceReferenceTooLong(int maxLength) {
+    return 'Prefix, pattern, padding, and suffix must fit within $maxLength characters.';
+  }
+
+  @override
+  String get accountsDocumentSequenceCreateTitle => 'New numbering sequence';
+
+  @override
+  String get accountsDocumentSequenceEditTitle => 'Edit numbering sequence';
+
+  @override
+  String get accountsDocumentSequenceCloneTitle => 'Clone numbering sequence';
+
+  @override
+  String get accountsDocumentSequenceDetailTitle => 'Numbering sequence';
+
+  @override
+  String get accountsDocumentSequenceNewRecordAction => 'New sequence';
+
+  @override
+  String get accountsDocumentSequenceViewAction => 'View';
+
+  @override
+  String get accountsDocumentSequenceCloneAction => 'Clone';
+
+  @override
+  String get accountsDocumentSequenceActivateAction => 'Activate';
+
+  @override
+  String get accountsDocumentSequenceDeactivateAction => 'Deactivate';
+
+  @override
+  String get accountsDocumentSequenceArchiveAction => 'Archive';
+
+  @override
+  String get accountsDocumentSequenceRestoreAction => 'Restore';
+
+  @override
+  String get accountsDocumentSequenceBulkActivateAction => 'Activate selected';
+
+  @override
+  String get accountsDocumentSequenceBulkDeactivateAction =>
+      'Deactivate selected';
+
+  @override
+  String get accountsDocumentSequenceBulkArchiveAction => 'Archive selected';
+
+  @override
+  String accountsDocumentSequenceBulkConfirmBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'This applies to $count matching sequences.',
+      one: 'This applies to 1 matching sequence.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String accountsDocumentSequenceBulkPartialFailure(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sequences could not be changed.',
+      one: '1 sequence could not be changed.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get accountsDocumentSequenceActivateConfirmTitle =>
+      'Activate this sequence?';
+
+  @override
+  String accountsDocumentSequenceActivateConfirmBody(String reference) {
+    return '$reference will start issuing references for its document type. Only one sequence per document type can be active at a time.';
+  }
+
+  @override
+  String get accountsDocumentSequenceDeactivateConfirmTitle =>
+      'Deactivate this sequence?';
+
+  @override
+  String accountsDocumentSequenceDeactivateConfirmBody(String reference) {
+    return '$reference will stop issuing new references. References it already issued stay valid.';
+  }
+
+  @override
+  String get accountsDocumentSequenceArchiveConfirmTitle =>
+      'Archive this sequence?';
+
+  @override
+  String get accountsDocumentSequenceArchiveConfirmBody =>
+      'The sequence is archived, not deleted, so every reference it already issued stays traceable to the policy that produced it.';
+
+  @override
+  String get accountsDocumentSequenceRestoreConfirmTitle =>
+      'Restore this sequence?';
+
+  @override
+  String accountsDocumentSequenceRestoreConfirmBody(String reference) {
+    return '$reference returns to active and can issue references again.';
+  }
+
+  @override
+  String get accountsDocumentSequenceDateRangeFilterLabel => 'Last changed';
+
+  @override
+  String accountsDocumentSequenceMobileCaption(
+    String documentType,
+    String prefix,
+  ) {
+    return '$documentType · $prefix';
+  }
 }

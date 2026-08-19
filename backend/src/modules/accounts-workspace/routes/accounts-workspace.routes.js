@@ -2,7 +2,10 @@ const express = require('express');
 const router = express.Router();
 const accountsWorkspaceController = require('@controllers/accounts-workspace/accounts-workspace.controller');
 const fiscalPeriodController = require('@controllers/accounts-workspace/fiscal-period.controller');
-const currencyRateController = require('@controllers/accounts-workspace/currency-rate.controller');
+const departmentController = require('@controllers/accounts-workspace/department-cost-centre.controller');
+const paymentMethodController = require('@controllers/accounts-workspace/payment-method.controller');
+const documentSequenceController = require('@controllers/accounts-workspace/document-number-sequence.controller');
+const postingRuleController = require('@controllers/accounts-workspace/posting-rule.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
 const { authenticate, authorize } = require('@middlewares/auth.middleware');
 const { HttpError } = require('@lib/errors');
@@ -27,13 +30,37 @@ const {
   fiscalPeriodActionSchema,
 } = require('@validations/accounts-workspace/fiscal-period.schema');
 const {
-  currencyRatesQuerySchema,
-  currencyRateIdentifierParamsSchema,
-  currencyRateActionParamsSchema,
-  createCurrencyRateSchema,
-  updateCurrencyRateSchema,
-  currencyRateActionSchema,
-} = require('@validations/accounts-workspace/currency-rate.schema');
+  paymentMethodsQuerySchema,
+  paymentMethodIdentifierParamsSchema,
+  paymentMethodActionParamsSchema,
+  createPaymentMethodSchema,
+  updatePaymentMethodSchema,
+  paymentMethodActionSchema,
+} = require('@validations/accounts-workspace/payment-method.schema');
+const {
+  departmentsQuerySchema,
+  departmentIdentifierParamsSchema,
+  departmentActionParamsSchema,
+  createDepartmentSchema,
+  updateDepartmentSchema,
+  departmentActionSchema,
+} = require('@validations/accounts-workspace/department-cost-centre.schema');
+const {
+  documentSequencesQuerySchema,
+  documentSequenceIdentifierParamsSchema,
+  documentSequenceActionParamsSchema,
+  createDocumentSequenceSchema,
+  updateDocumentSequenceSchema,
+  documentSequenceActionSchema,
+} = require('@validations/accounts-workspace/document-number-sequence.schema');
+const {
+  postingRulesQuerySchema,
+  postingRuleIdentifierParamsSchema,
+  postingRuleActionParamsSchema,
+  createPostingRuleSchema,
+  updatePostingRuleSchema,
+  postingRuleActionSchema,
+} = require('@validations/accounts-workspace/posting-rule.schema');
 
 /**
  * Route / queue reads — (`accounts:read` ∪ `accounts:write`).
@@ -138,50 +165,197 @@ router.post(
 );
 
 /**
- * Setup & Controls → Currencies & Exchange Rates.
+ * Setup & Controls → Departments & Cost Centres.
+ *
+ * The department record is owned by `modules/department`; these routes expose
+ * its finance projection. Records are addressed by their public
+ * `human_friendly_id`, and archive is a status transition rather than a
+ * delete, so there is no DELETE route.
+ */
+router.get(
+  '/departments-and-cost-centres',
+  validateRequest({ query: departmentsQuerySchema }),
+  authorize(ACCOUNTS_READ_SCOPES, 'permission'),
+  departmentController.listDepartments
+);
+
+router.get(
+  '/departments-and-cost-centres/:departmentIdentifier',
+  validateRequest({ params: departmentIdentifierParamsSchema }),
+  authorize(ACCOUNTS_READ_SCOPES, 'permission'),
+  departmentController.getDepartment
+);
+
+router.post(
+  '/departments-and-cost-centres',
+  validateRequest({ body: createDepartmentSchema }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  departmentController.createDepartment
+);
+
+router.put(
+  '/departments-and-cost-centres/:departmentIdentifier',
+  validateRequest({
+    params: departmentIdentifierParamsSchema,
+    body: updateDepartmentSchema,
+  }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  departmentController.updateDepartment
+);
+
+router.post(
+  '/departments-and-cost-centres/:departmentIdentifier/:action',
+  validateRequest({
+    params: departmentActionParamsSchema,
+    body: departmentActionSchema,
+  }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  departmentController.applyDepartmentAction
+);
+
+/**
+ * Setup & Controls → Payment Methods.
+ *
+ * `method_type` reuses the canonical tender taxonomy that `payment.method`
+ * stores; these routes configure how each tender behaves. Records are
+ * addressed by their public `human_friendly_id`, and archive is a status
+ * transition rather than a delete, so there is no DELETE route.
+ */
+router.get(
+  '/payment-methods',
+  validateRequest({ query: paymentMethodsQuerySchema }),
+  authorize(ACCOUNTS_READ_SCOPES, 'permission'),
+  paymentMethodController.listPaymentMethods
+);
+
+router.get(
+  '/payment-methods/:paymentMethodIdentifier',
+  validateRequest({ params: paymentMethodIdentifierParamsSchema }),
+  authorize(ACCOUNTS_READ_SCOPES, 'permission'),
+  paymentMethodController.getPaymentMethod
+);
+
+router.post(
+  '/payment-methods',
+  validateRequest({ body: createPaymentMethodSchema }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  paymentMethodController.createPaymentMethod
+);
+
+router.put(
+  '/payment-methods/:paymentMethodIdentifier',
+  validateRequest({
+    params: paymentMethodIdentifierParamsSchema,
+    body: updatePaymentMethodSchema,
+  }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  paymentMethodController.updatePaymentMethod
+);
+
+router.post(
+  '/payment-methods/:paymentMethodIdentifier/:action',
+  validateRequest({
+    params: paymentMethodActionParamsSchema,
+    body: paymentMethodActionSchema,
+  }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  paymentMethodController.applyPaymentMethodAction
+);
+
+/**
+ * Setup & Controls → Document Numbering.
+ *
+ * A row here is numbering *policy*; the running counter stays in
+ * `human_id_counter`, which `src/prisma/client.js` owns. Records are addressed
+ * by their public `human_friendly_id`, and archive is a status transition
+ * rather than a delete, so there is no DELETE route.
+ */
+router.get(
+  '/document-numbering',
+  validateRequest({ query: documentSequencesQuerySchema }),
+  authorize(ACCOUNTS_READ_SCOPES, 'permission'),
+  documentSequenceController.listDocumentSequences
+);
+
+router.get(
+  '/document-numbering/:documentSequenceIdentifier',
+  validateRequest({ params: documentSequenceIdentifierParamsSchema }),
+  authorize(ACCOUNTS_READ_SCOPES, 'permission'),
+  documentSequenceController.getDocumentSequence
+);
+
+router.post(
+  '/document-numbering',
+  validateRequest({ body: createDocumentSequenceSchema }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  documentSequenceController.createDocumentSequence
+);
+
+router.put(
+  '/document-numbering/:documentSequenceIdentifier',
+  validateRequest({
+    params: documentSequenceIdentifierParamsSchema,
+    body: updateDocumentSequenceSchema,
+  }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  documentSequenceController.updateDocumentSequence
+);
+
+router.post(
+  '/document-numbering/:documentSequenceIdentifier/:action',
+  validateRequest({
+    params: documentSequenceActionParamsSchema,
+    body: documentSequenceActionSchema,
+  }),
+  authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
+  documentSequenceController.applyDocumentSequenceAction
+);
+
+/**
+ * Setup & Controls → Posting Rules.
  *
  * Records are addressed by their public `human_friendly_id`. Archive is a
  * status transition, not a delete, so there is no DELETE route.
  */
 router.get(
-  '/currencies-and-exchange-rates',
-  validateRequest({ query: currencyRatesQuerySchema }),
+  '/posting-rules',
+  validateRequest({ query: postingRulesQuerySchema }),
   authorize(ACCOUNTS_READ_SCOPES, 'permission'),
-  currencyRateController.listCurrencyRates
+  postingRuleController.listPostingRules
 );
 
 router.get(
-  '/currencies-and-exchange-rates/:currencyRateIdentifier',
-  validateRequest({ params: currencyRateIdentifierParamsSchema }),
+  '/posting-rules/:postingRuleIdentifier',
+  validateRequest({ params: postingRuleIdentifierParamsSchema }),
   authorize(ACCOUNTS_READ_SCOPES, 'permission'),
-  currencyRateController.getCurrencyRate
+  postingRuleController.getPostingRule
 );
 
 router.post(
-  '/currencies-and-exchange-rates',
-  validateRequest({ body: createCurrencyRateSchema }),
+  '/posting-rules',
+  validateRequest({ body: createPostingRuleSchema }),
   authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
-  currencyRateController.createCurrencyRate
+  postingRuleController.createPostingRule
 );
 
 router.put(
-  '/currencies-and-exchange-rates/:currencyRateIdentifier',
+  '/posting-rules/:postingRuleIdentifier',
   validateRequest({
-    params: currencyRateIdentifierParamsSchema,
-    body: updateCurrencyRateSchema,
+    params: postingRuleIdentifierParamsSchema,
+    body: updatePostingRuleSchema,
   }),
   authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
-  currencyRateController.updateCurrencyRate
+  postingRuleController.updatePostingRule
 );
 
 router.post(
-  '/currencies-and-exchange-rates/:currencyRateIdentifier/:action',
+  '/posting-rules/:postingRuleIdentifier/:action',
   validateRequest({
-    params: currencyRateActionParamsSchema,
-    body: currencyRateActionSchema,
+    params: postingRuleActionParamsSchema,
+    body: postingRuleActionSchema,
   }),
   authorize(ACCOUNTS_WRITE_SCOPES, 'permission'),
-  currencyRateController.applyCurrencyRateAction
+  postingRuleController.applyPostingRuleAction
 );
 
 router.get(

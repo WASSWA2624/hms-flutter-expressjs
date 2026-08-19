@@ -105,7 +105,7 @@ CREATE TABLE `configuration_snapshot` (
     INDEX `configuration_snapshot_human_friendly_id_idx`(`human_friendly_id`),
     UNIQUE INDEX `configuration_snapshot_resource_type_resource_id_configurati_key`(`resource_type`, `resource_id`, `configuration_version`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- CreateIndex
 CREATE INDEX `tenant_configuration_version_id_idx` ON `tenant`(`configuration_version_id`);

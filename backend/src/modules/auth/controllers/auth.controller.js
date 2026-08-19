@@ -9,7 +9,7 @@ const authService = require('@services/auth/auth.service');
 const { asyncHandler } = require('@lib/async');
 const { sendSuccess } = require('@lib/response');
 const { HttpError } = require('@lib/errors');
-const { randomBytes } = require('crypto');
+const { issueCsrfToken } = require('@lib/security/csrf-token');
 
 const getRegistrationRequestContext = (req) => ({
   locale: req.locale || req.get('x-locale') || req.get('accept-language') || null,
@@ -282,15 +282,16 @@ const getMe = asyncHandler(async (req, res) => {
  * @returns {Promise<void>}
  */
 const getCsrfToken = asyncHandler(async (req, res) => {
-  // Generate a secure random token
-  const token = randomBytes(32).toString('hex');
-  
-  // Store token in session
+  // Signed token: verifiable by any worker process without shared session state.
+  const token = issueCsrfToken(req.sessionId);
+
+  // Also mirror into the session so a single-process deployment keeps working
+  // if the signing secret is ever rotated between issue and use.
   if (!req.session) {
     req.session = {};
   }
   req.session._csrf = token;
-  
+
   return sendSuccess(res, 200, 'messages.auth.csrf_token.generated', {
     token,
     header: 'x-csrf-token'

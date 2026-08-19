@@ -178,7 +178,7 @@
   },
   "workspaceToolbarOverflowLabel": "More actions",
   "@workspaceToolbarOverflowLabel": {
-    "description": "Accessibility label for the workspace toolbar overflow menu."
+    "description": "Accessibility label for an overflow menu holding actions that did not fit inline (workspace toolbars and dialog footers)."
   },
   "workspaceNotificationsMenuLabel": "Notifications",
   "@workspaceNotificationsMenuLabel": {
@@ -11654,10 +11654,6 @@
   "@authLoginBody": {
     "description": "Authentication login page supporting text."
   },
-  "authIdentifierLabel": "Email or phone",
-  "@authIdentifierLabel": {
-    "description": "Login identifier field label."
-  },
   "authEmailLabel": "Email",
   "@authEmailLabel": {
     "description": "Email field label."
@@ -11678,9 +11674,21 @@
   "@authLoginActionLabel": {
     "description": "Login submit action label."
   },
-  "authCreateAccountActionLabel": "Create account",
+  "authCreateAccountActionLabel": "Register",
   "@authCreateAccountActionLabel": {
     "description": "Navigate to self-registration action label."
+  },
+  "authIdentifierModeLabel": "Sign in with",
+  "@authIdentifierModeLabel": {
+    "description": "Label for the login identifier type selector (email or phone)."
+  },
+  "authIdentifierModeEmailLabel": "Email",
+  "@authIdentifierModeEmailLabel": {
+    "description": "Login identifier selector option for signing in with an email address."
+  },
+  "authIdentifierModePhoneLabel": "Phone",
+  "@authIdentifierModePhoneLabel": {
+    "description": "Login identifier selector option for signing in with a phone number."
   },
   "authRegisterTitle": "Set up your facility",
   "@authRegisterTitle": {
@@ -11694,7 +11702,7 @@
   "@authRegisterActionLabel": {
     "description": "Self-registration submit action label."
   },
-  "authBackToLoginActionLabel": "Back to sign in",
+  "authBackToLoginActionLabel": "Sign in",
   "@authBackToLoginActionLabel": {
     "description": "Navigate back to login action label."
   },
@@ -11905,10 +11913,6 @@
   "authPhoneOptionalLabel": "Phone (optional)",
   "@authPhoneOptionalLabel": {
     "description": "Optional phone field label."
-  },
-  "authLocationOptionalLabel": "Location (optional)",
-  "@authLocationOptionalLabel": {
-    "description": "Optional location field label."
   },
   "authRegistrationSubmittedTitle": "Check your email",
   "@authRegistrationSubmittedTitle": {
@@ -12207,6 +12211,14 @@
   "errorUnauthorizedMessage": "Sign in again to continue.",
   "@errorUnauthorizedMessage": {
     "description": "Safe user-facing message for an unauthorized failure."
+  },
+  "errorSecurityTokenTitle": "Security check failed",
+  "@errorSecurityTokenTitle": {
+    "description": "Title shown when a request failed its CSRF security-token check."
+  },
+  "errorSecurityTokenMessage": "The security check for this request expired. Please try again — you are still signed in.",
+  "@errorSecurityTokenMessage": {
+    "description": "Message shown when a request failed its CSRF security-token check. Must not suggest signing in again."
   },
   "errorForbiddenTitle": "Access denied",
   "@errorForbiddenTitle": {
@@ -35542,5 +35554,1478 @@
   "hrReferenceLeaveHalfDayPeriodAfternoon": "Afternoon",
   "@hrReferenceLeaveHalfDayPeriodAfternoon": {
     "description": "Localized label for labels.hr.reference.leave_half_day_period.afternoon."
+  },
+  "accountsFiscalPeriodsLabel": "Fiscal Years & Periods",
+  "@accountsFiscalPeriodsLabel": {
+    "description": "Accounts & Finance -> Setup & Controls -> Fiscal Years & Periods tab label."
+  },
+  "accountsFiscalPeriodsTooltip": "Fiscal calendar periods, their open, close, and lock milestones",
+  "@accountsFiscalPeriodsTooltip": {
+    "description": "Tooltip for the Fiscal Years & Periods tab."
+  },
+  "accountsFiscalPeriodsEmpty": "No fiscal periods match.",
+  "@accountsFiscalPeriodsEmpty": {
+    "description": "Empty-state title for the fiscal periods table."
+  },
+  "accountsFiscalPeriodsEmptyBody": "Try another search or add a fiscal period.",
+  "@accountsFiscalPeriodsEmptyBody": {
+    "description": "Empty-state body for the fiscal periods table."
+  },
+  "accountsFiscalPeriodsSearchHint": "Reference, fiscal year, period name…",
+  "@accountsFiscalPeriodsSearchHint": {
+    "description": "Search field hint and accessibility label for the fiscal periods table."
+  },
+  "accountsFiscalReferenceColumn": "Reference",
+  "@accountsFiscalReferenceColumn": {
+    "description": "Human-friendly reference column of the fiscal periods table."
+  },
+  "accountsFiscalYearColumn": "Fiscal Year",
+  "@accountsFiscalYearColumn": {
+    "description": "Fiscal Year column of the fiscal periods table."
+  },
+  "accountsFiscalPeriodNoColumn": "Period No.",
+  "@accountsFiscalPeriodNoColumn": {
+    "description": "Period number column of the fiscal periods table."
+  },
+  "accountsFiscalPeriodNameColumn": "Period Name",
+  "@accountsFiscalPeriodNameColumn": {
+    "description": "Period name column of the fiscal periods table."
+  },
+  "accountsFiscalStartDateColumn": "Start Date",
+  "@accountsFiscalStartDateColumn": {
+    "description": "Start date column of the fiscal periods table."
+  },
+  "accountsFiscalEndDateColumn": "End Date",
+  "@accountsFiscalEndDateColumn": {
+    "description": "End date column of the fiscal periods table."
+  },
+  "accountsFiscalEntityAndFacilityColumn": "Entity/Facility",
+  "@accountsFiscalEntityAndFacilityColumn": {
+    "description": "Entity and facility column of the fiscal periods table."
+  },
+  "accountsFiscalModuleColumn": "Module",
+  "@accountsFiscalModuleColumn": {
+    "description": "Module column of the fiscal periods table."
+  },
+  "accountsFiscalOpenDateColumn": "Open Date",
+  "@accountsFiscalOpenDateColumn": {
+    "description": "Open date column of the fiscal periods table."
+  },
+  "accountsFiscalSoftCloseDateColumn": "Soft-close Date",
+  "@accountsFiscalSoftCloseDateColumn": {
+    "description": "Soft-close date column of the fiscal periods table."
+  },
+  "accountsFiscalCloseDateColumn": "Close Date",
+  "@accountsFiscalCloseDateColumn": {
+    "description": "Close date column of the fiscal periods table."
+  },
+  "accountsFiscalLockDateColumn": "Lock Date",
+  "@accountsFiscalLockDateColumn": {
+    "description": "Lock date column of the fiscal periods table (optional column)."
+  },
+  "accountsFiscalReopenedAtColumn": "Reopened At",
+  "@accountsFiscalReopenedAtColumn": {
+    "description": "Reopened-at column of the fiscal periods table (optional column)."
+  },
+  "accountsFiscalReopenedByColumn": "Reopened By",
+  "@accountsFiscalReopenedByColumn": {
+    "description": "Reopened-by column of the fiscal periods table (optional column)."
+  },
+  "accountsFiscalPeriodStatusColumn": "Period Status",
+  "@accountsFiscalPeriodStatusColumn": {
+    "description": "Period status column of the fiscal periods table."
+  },
+  "accountsFiscalActionsColumn": "Actions",
+  "@accountsFiscalActionsColumn": {
+    "description": "Row actions column of the fiscal periods table."
+  },
+  "accountsFiscalStatusDraft": "Draft",
+  "@accountsFiscalStatusDraft": {
+    "description": "Fiscal period status: not yet available to downstream workflows."
+  },
+  "accountsFiscalStatusActive": "Active",
+  "@accountsFiscalStatusActive": {
+    "description": "Fiscal period status: selectable by permitted workflows."
+  },
+  "accountsFiscalStatusInactive": "Inactive",
+  "@accountsFiscalStatusInactive": {
+    "description": "Fiscal period status: retained but not selectable for new work."
+  },
+  "accountsFiscalStatusArchived": "Archived",
+  "@accountsFiscalStatusArchived": {
+    "description": "Fiscal period status: soft-deleted historical record."
+  },
+  "accountsFiscalStatusLocked": "Locked",
+  "@accountsFiscalStatusLocked": {
+    "description": "Marker shown when a fiscal period is past its lock date."
+  },
+  "accountsFiscalModuleAll": "All modules",
+  "@accountsFiscalModuleAll": {
+    "description": "Fiscal period module scope: the period applies to every module."
+  },
+  "accountsFiscalModuleGeneralLedger": "General ledger",
+  "@accountsFiscalModuleGeneralLedger": {
+    "description": "Fiscal period module scope: general ledger only."
+  },
+  "accountsFiscalModuleBilling": "Billing",
+  "@accountsFiscalModuleBilling": {
+    "description": "Fiscal period module scope: billing only."
+  },
+  "accountsFiscalModulePharmacy": "Pharmacy",
+  "@accountsFiscalModulePharmacy": {
+    "description": "Fiscal period module scope: pharmacy only."
+  },
+  "accountsFiscalModuleInventory": "Inventory",
+  "@accountsFiscalModuleInventory": {
+    "description": "Fiscal period module scope: inventory only."
+  },
+  "accountsFiscalModulePayroll": "Payroll",
+  "@accountsFiscalModulePayroll": {
+    "description": "Fiscal period module scope: payroll only."
+  },
+  "accountsFiscalModuleFixedAssets": "Fixed assets",
+  "@accountsFiscalModuleFixedAssets": {
+    "description": "Fiscal period module scope: fixed assets only."
+  },
+  "accountsFiscalDateRangeFilterLabel": "Period date range",
+  "@accountsFiscalDateRangeFilterLabel": {
+    "description": "Advanced filter label for the fiscal period date range."
+  },
+  "accountsFiscalFacilityFilterLabel": "Facility",
+  "@accountsFiscalFacilityFilterLabel": {
+    "description": "Advanced filter label for the facility that owns a fiscal period."
+  },
+  "accountsFiscalNewRecordAction": "New record",
+  "@accountsFiscalNewRecordAction": {
+    "description": "Toolbar action that opens the fiscal period create dialog."
+  },
+  "accountsFiscalViewAction": "View",
+  "@accountsFiscalViewAction": {
+    "description": "Row action that opens the fiscal period detail dialog."
+  },
+  "accountsFiscalCloneAction": "Clone",
+  "@accountsFiscalCloneAction": {
+    "description": "Row action that copies a fiscal period into a new unsaved draft."
+  },
+  "accountsFiscalActivateAction": "Activate",
+  "@accountsFiscalActivateAction": {
+    "description": "Row action that moves a fiscal period to Active."
+  },
+  "accountsFiscalDeactivateAction": "Deactivate",
+  "@accountsFiscalDeactivateAction": {
+    "description": "Row action that moves a fiscal period to Inactive."
+  },
+  "accountsFiscalArchiveAction": "Archive",
+  "@accountsFiscalArchiveAction": {
+    "description": "Row action that soft-archives a fiscal period."
+  },
+  "accountsFiscalRestoreAction": "Restore",
+  "@accountsFiscalRestoreAction": {
+    "description": "Row action that restores an archived fiscal period."
+  },
+  "accountsFiscalBulkActivateAction": "Activate selected",
+  "@accountsFiscalBulkActivateAction": {
+    "description": "Bulk action that activates every eligible matching fiscal period."
+  },
+  "accountsFiscalBulkDeactivateAction": "Deactivate selected",
+  "@accountsFiscalBulkDeactivateAction": {
+    "description": "Bulk action that deactivates every eligible matching fiscal period."
+  },
+  "accountsFiscalBulkArchiveAction": "Archive selected",
+  "@accountsFiscalBulkArchiveAction": {
+    "description": "Bulk action that archives every eligible matching fiscal period."
+  },
+  "accountsFiscalCreateTitle": "Add fiscal period",
+  "@accountsFiscalCreateTitle": {
+    "description": "Title of the fiscal period create dialog."
+  },
+  "accountsFiscalEditTitle": "Edit fiscal period",
+  "@accountsFiscalEditTitle": {
+    "description": "Title of the fiscal period edit dialog."
+  },
+  "accountsFiscalCloneTitle": "Clone fiscal period",
+  "@accountsFiscalCloneTitle": {
+    "description": "Title of the fiscal period clone dialog."
+  },
+  "accountsFiscalDetailTitle": "Fiscal period details",
+  "@accountsFiscalDetailTitle": {
+    "description": "Title of the fiscal period detail dialog."
+  },
+  "accountsFiscalIdentitySection": "Period identity",
+  "@accountsFiscalIdentitySection": {
+    "description": "Form section grouping the identifying fields of a fiscal period."
+  },
+  "accountsFiscalCalendarSection": "Calendar",
+  "@accountsFiscalCalendarSection": {
+    "description": "Form section grouping the start and end dates of a fiscal period."
+  },
+  "accountsFiscalMilestonesSection": "Close milestones",
+  "@accountsFiscalMilestonesSection": {
+    "description": "Form section grouping the open, soft-close, and close dates of a fiscal period."
+  },
+  "accountsFiscalSummarySection": "Summary",
+  "@accountsFiscalSummarySection": {
+    "description": "Detail dialog section holding the key fiscal period fields."
+  },
+  "accountsFiscalRelatedSection": "Related records",
+  "@accountsFiscalRelatedSection": {
+    "description": "Detail dialog section holding cross-module references."
+  },
+  "accountsFiscalAttachmentsSection": "Attachments",
+  "@accountsFiscalAttachmentsSection": {
+    "description": "Detail dialog section holding fiscal period attachments."
+  },
+  "accountsFiscalActivitySection": "Activity & audit",
+  "@accountsFiscalActivitySection": {
+    "description": "Detail dialog section holding the immutable fiscal period timeline."
+  },
+  "accountsFiscalRelatedEmpty": "No related records.",
+  "@accountsFiscalRelatedEmpty": {
+    "description": "Empty state for the fiscal period related-records section."
+  },
+  "accountsFiscalAttachmentsEmpty": "No attachments.",
+  "@accountsFiscalAttachmentsEmpty": {
+    "description": "Empty state for the fiscal period attachments section."
+  },
+  "accountsFiscalActivityEmpty": "No recorded activity.",
+  "@accountsFiscalActivityEmpty": {
+    "description": "Empty state for the fiscal period activity section."
+  },
+  "accountsFiscalActivityCreated": "Created",
+  "@accountsFiscalActivityCreated": {
+    "description": "Activity timeline label for the fiscal period creation timestamp."
+  },
+  "accountsFiscalActivityUpdated": "Last updated",
+  "@accountsFiscalActivityUpdated": {
+    "description": "Activity timeline label for the fiscal period update timestamp."
+  },
+  "accountsFiscalActivityReopened": "Reopened",
+  "@accountsFiscalActivityReopened": {
+    "description": "Activity timeline label for the fiscal period reopen timestamp."
+  },
+  "accountsFiscalActivityReopenedBy": "Reopened by",
+  "@accountsFiscalActivityReopenedBy": {
+    "description": "Activity timeline label for the actor who reopened a fiscal period."
+  },
+  "accountsFiscalActivityArchived": "Archived",
+  "@accountsFiscalActivityArchived": {
+    "description": "Activity timeline label for the fiscal period archive timestamp."
+  },
+  "accountsFiscalVersionLabel": "Record version",
+  "@accountsFiscalVersionLabel": {
+    "description": "Activity timeline label for the optimistic record version."
+  },
+  "accountsFiscalLockedNotice": "This period is locked. Posting, close, reversal, and adjustment actions are blocked.",
+  "@accountsFiscalLockedNotice": {
+    "description": "Warning banner shown on a locked fiscal period."
+  },
+  "accountsFiscalNotesLabel": "Notes",
+  "@accountsFiscalNotesLabel": {
+    "description": "Notes field label of the fiscal period form."
+  },
+  "accountsFiscalRequiredField": "This field is required.",
+  "@accountsFiscalRequiredField": {
+    "description": "Validation message for a missing required fiscal period value."
+  },
+  "accountsFiscalPeriodNoInvalid": "Enter a period number between 1 and 366.",
+  "@accountsFiscalPeriodNoInvalid": {
+    "description": "Validation message for an out-of-range fiscal period number."
+  },
+  "accountsFiscalEndBeforeStart": "End date must not be earlier than the start date.",
+  "@accountsFiscalEndBeforeStart": {
+    "description": "Validation message for a fiscal period whose end date precedes its start date."
+  },
+  "accountsFiscalMilestoneOutOfOrder": "Open, soft-close, and close dates must be in order.",
+  "@accountsFiscalMilestoneOutOfOrder": {
+    "description": "Validation message for out-of-order fiscal period milestones."
+  },
+  "accountsFiscalActivateConfirmTitle": "Activate fiscal period?",
+  "@accountsFiscalActivateConfirmTitle": {
+    "description": "Confirmation title for activating a fiscal period."
+  },
+  "accountsFiscalDeactivateConfirmTitle": "Deactivate fiscal period?",
+  "@accountsFiscalDeactivateConfirmTitle": {
+    "description": "Confirmation title for deactivating a fiscal period."
+  },
+  "accountsFiscalArchiveConfirmTitle": "Archive fiscal period?",
+  "@accountsFiscalArchiveConfirmTitle": {
+    "description": "Confirmation title for archiving a fiscal period."
+  },
+  "accountsFiscalRestoreConfirmTitle": "Restore fiscal period?",
+  "@accountsFiscalRestoreConfirmTitle": {
+    "description": "Confirmation title for restoring an archived fiscal period."
+  },
+  "accountsFiscalArchiveConfirmBody": "The period is archived, not deleted. Posted history stays available and the record can be restored.",
+  "@accountsFiscalArchiveConfirmBody": {
+    "description": "Confirmation body clarifying that archive is a soft state change."
+  },
+  "accountsFiscalActivateConfirmBody": "Activate {reference} so permitted workflows can select it?",
+  "@accountsFiscalActivateConfirmBody": {
+    "description": "Confirmation body for activating a fiscal period.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsFiscalDeactivateConfirmBody": "Deactivate {reference} so it is no longer selectable for new work?",
+  "@accountsFiscalDeactivateConfirmBody": {
+    "description": "Confirmation body for deactivating a fiscal period.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsFiscalRestoreConfirmBody": "Restore {reference} and record the reopen in the audit trail?",
+  "@accountsFiscalRestoreConfirmBody": {
+    "description": "Confirmation body for restoring an archived fiscal period.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsFiscalBulkConfirmBody": "{count, plural, one{Apply this change to {count} matching fiscal period? Records that do not allow the change are skipped.} other{Apply this change to {count} matching fiscal periods? Records that do not allow the change are skipped.}}",
+  "@accountsFiscalBulkConfirmBody": {
+    "description": "Confirmation body for a bulk fiscal period workflow action.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsFiscalBulkPartialFailure": "{count, plural, one{{count} record could not be changed.} other{{count} records could not be changed.}}",
+  "@accountsFiscalBulkPartialFailure": {
+    "description": "Feedback shown when part of a bulk fiscal period action failed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsFiscalMobileCaption": "{fiscalYear} · Period {periodNo}",
+  "@accountsFiscalMobileCaption": {
+    "description": "Compact mobile row caption pairing the fiscal year with the period number.",
+    "placeholders": {
+      "fiscalYear": {
+        "type": "String"
+      },
+      "periodNo": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsFiscalMobileDateRange": "{startDate} – {endDate}",
+  "@accountsFiscalMobileDateRange": {
+    "description": "Compact mobile row meta pairing the already-formatted start and end dates.",
+    "placeholders": {
+      "startDate": {
+        "type": "String"
+      },
+      "endDate": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsDepartmentsLabel": "Departments & Cost Centres",
+  "@accountsDepartmentsLabel": {
+    "description": "Accounts & Finance -> Setup & Controls -> Departments & Cost Centres tab label."
+  },
+  "accountsDepartmentsTooltip": "Departments, their cost centres, default posting accounts, and ownership",
+  "@accountsDepartmentsTooltip": {
+    "description": "Tooltip for the Departments & Cost Centres tab."
+  },
+  "accountsDepartmentsEmpty": "No departments match.",
+  "@accountsDepartmentsEmpty": {
+    "description": "Empty-state title for the departments table."
+  },
+  "accountsDepartmentsEmptyBody": "Try another search or add a department.",
+  "@accountsDepartmentsEmptyBody": {
+    "description": "Empty-state body for the departments table."
+  },
+  "accountsDepartmentsSearchHint": "Reference, department, cost centre…",
+  "@accountsDepartmentsSearchHint": {
+    "description": "Search field hint and accessibility label for the departments table."
+  },
+  "accountsDepartmentReferenceColumn": "Reference",
+  "@accountsDepartmentReferenceColumn": {
+    "description": "Human-friendly reference column of the departments table."
+  },
+  "accountsDepartmentCodeColumn": "Department Code",
+  "@accountsDepartmentCodeColumn": {
+    "description": "Department code column of the departments table."
+  },
+  "accountsDepartmentNameColumn": "Department Name",
+  "@accountsDepartmentNameColumn": {
+    "description": "Department name column of the departments table."
+  },
+  "accountsDepartmentCostCentreCodeColumn": "Cost Centre Code",
+  "@accountsDepartmentCostCentreCodeColumn": {
+    "description": "Cost centre code column of the departments table."
+  },
+  "accountsDepartmentCostCentreNameColumn": "Cost Centre Name",
+  "@accountsDepartmentCostCentreNameColumn": {
+    "description": "Cost centre name column of the departments table."
+  },
+  "accountsDepartmentParentColumn": "Parent",
+  "@accountsDepartmentParentColumn": {
+    "description": "Parent department column of the departments table."
+  },
+  "accountsDepartmentFacilityColumn": "Facility",
+  "@accountsDepartmentFacilityColumn": {
+    "description": "Facility column of the departments table."
+  },
+  "accountsDepartmentManagerColumn": "Manager",
+  "@accountsDepartmentManagerColumn": {
+    "description": "Manager column of the departments table."
+  },
+  "accountsDepartmentRevenueAccountColumn": "Default Revenue Account",
+  "@accountsDepartmentRevenueAccountColumn": {
+    "description": "Default revenue posting account column of the departments table."
+  },
+  "accountsDepartmentExpenseAccountColumn": "Default Expense Account",
+  "@accountsDepartmentExpenseAccountColumn": {
+    "description": "Default expense posting account column of the departments table."
+  },
+  "accountsDepartmentBudgetOwnerColumn": "Budget Owner",
+  "@accountsDepartmentBudgetOwnerColumn": {
+    "description": "Budget owner column of the departments table."
+  },
+  "accountsDepartmentEffectiveFromColumn": "Effective From",
+  "@accountsDepartmentEffectiveFromColumn": {
+    "description": "Effective-from column of the departments table (optional column)."
+  },
+  "accountsDepartmentEffectiveToColumn": "Effective To",
+  "@accountsDepartmentEffectiveToColumn": {
+    "description": "Effective-to column of the departments table (optional column)."
+  },
+  "accountsDepartmentStatusColumn": "Status",
+  "@accountsDepartmentStatusColumn": {
+    "description": "Status column of the departments table."
+  },
+  "accountsDepartmentActionsColumn": "Actions",
+  "@accountsDepartmentActionsColumn": {
+    "description": "Row actions column of the departments table."
+  },
+  "accountsDepartmentStatusDraft": "Draft",
+  "@accountsDepartmentStatusDraft": {
+    "description": "Department status: not yet available to downstream workflows."
+  },
+  "accountsDepartmentStatusActive": "Active",
+  "@accountsDepartmentStatusActive": {
+    "description": "Department status: selectable by permitted workflows."
+  },
+  "accountsDepartmentStatusInactive": "Inactive",
+  "@accountsDepartmentStatusInactive": {
+    "description": "Department status: retained but not selectable for new work."
+  },
+  "accountsDepartmentStatusArchived": "Archived",
+  "@accountsDepartmentStatusArchived": {
+    "description": "Department status: soft-deleted historical record."
+  },
+  "accountsDepartmentDateRangeFilterLabel": "Effective period",
+  "@accountsDepartmentDateRangeFilterLabel": {
+    "description": "Advanced filter label for the department effective window."
+  },
+  "accountsDepartmentFacilityFilterLabel": "Facility",
+  "@accountsDepartmentFacilityFilterLabel": {
+    "description": "Advanced filter label for the facility that owns a department."
+  },
+  "accountsDepartmentCostCentreFilterLabel": "Department / cost centre",
+  "@accountsDepartmentCostCentreFilterLabel": {
+    "description": "Advanced filter label for the hierarchical department and cost centre picker."
+  },
+  "accountsDepartmentOwnerFilterLabel": "Owner / assigned user",
+  "@accountsDepartmentOwnerFilterLabel": {
+    "description": "Advanced filter label matching a department manager or budget owner."
+  },
+  "accountsDepartmentNewRecordAction": "New record",
+  "@accountsDepartmentNewRecordAction": {
+    "description": "Toolbar action that opens the department create dialog."
+  },
+  "accountsDepartmentViewAction": "View",
+  "@accountsDepartmentViewAction": {
+    "description": "Row action that opens the department detail dialog."
+  },
+  "accountsDepartmentCloneAction": "Clone",
+  "@accountsDepartmentCloneAction": {
+    "description": "Row action that copies a department into a new unsaved draft."
+  },
+  "accountsDepartmentActivateAction": "Activate",
+  "@accountsDepartmentActivateAction": {
+    "description": "Row action that moves a department to Active."
+  },
+  "accountsDepartmentDeactivateAction": "Deactivate",
+  "@accountsDepartmentDeactivateAction": {
+    "description": "Row action that moves a department to Inactive."
+  },
+  "accountsDepartmentArchiveAction": "Archive",
+  "@accountsDepartmentArchiveAction": {
+    "description": "Row action that soft-archives a department."
+  },
+  "accountsDepartmentRestoreAction": "Restore",
+  "@accountsDepartmentRestoreAction": {
+    "description": "Row action that restores an archived department."
+  },
+  "accountsDepartmentBulkActivateAction": "Activate selected",
+  "@accountsDepartmentBulkActivateAction": {
+    "description": "Bulk action that activates every eligible matching department."
+  },
+  "accountsDepartmentBulkDeactivateAction": "Deactivate selected",
+  "@accountsDepartmentBulkDeactivateAction": {
+    "description": "Bulk action that deactivates every eligible matching department."
+  },
+  "accountsDepartmentBulkArchiveAction": "Archive selected",
+  "@accountsDepartmentBulkArchiveAction": {
+    "description": "Bulk action that archives every eligible matching department."
+  },
+  "accountsDepartmentCreateTitle": "Add department",
+  "@accountsDepartmentCreateTitle": {
+    "description": "Title of the department create dialog."
+  },
+  "accountsDepartmentEditTitle": "Edit department",
+  "@accountsDepartmentEditTitle": {
+    "description": "Title of the department edit dialog."
+  },
+  "accountsDepartmentCloneTitle": "Clone department",
+  "@accountsDepartmentCloneTitle": {
+    "description": "Title of the department clone dialog."
+  },
+  "accountsDepartmentDetailTitle": "Department details",
+  "@accountsDepartmentDetailTitle": {
+    "description": "Title of the department detail dialog."
+  },
+  "accountsDepartmentIdentitySection": "Department identity",
+  "@accountsDepartmentIdentitySection": {
+    "description": "Form section grouping the identifying fields of a department."
+  },
+  "accountsDepartmentStructureSection": "Structure",
+  "@accountsDepartmentStructureSection": {
+    "description": "Form section grouping the parent, facility, and manager of a department."
+  },
+  "accountsDepartmentPostingSection": "Default posting accounts",
+  "@accountsDepartmentPostingSection": {
+    "description": "Form section grouping the default revenue and expense accounts."
+  },
+  "accountsDepartmentSummarySection": "Summary",
+  "@accountsDepartmentSummarySection": {
+    "description": "Detail dialog section holding the key department fields."
+  },
+  "accountsDepartmentRelatedSection": "Related records",
+  "@accountsDepartmentRelatedSection": {
+    "description": "Detail dialog section holding cross-module references."
+  },
+  "accountsDepartmentAttachmentsSection": "Attachments",
+  "@accountsDepartmentAttachmentsSection": {
+    "description": "Detail dialog section holding department attachments."
+  },
+  "accountsDepartmentActivitySection": "Activity & audit",
+  "@accountsDepartmentActivitySection": {
+    "description": "Detail dialog section holding the immutable department timeline."
+  },
+  "accountsDepartmentRelatedEmpty": "No related records.",
+  "@accountsDepartmentRelatedEmpty": {
+    "description": "Empty state for the department related-records section."
+  },
+  "accountsDepartmentAttachmentsEmpty": "No attachments.",
+  "@accountsDepartmentAttachmentsEmpty": {
+    "description": "Empty state for the department attachments section."
+  },
+  "accountsDepartmentActivityCreated": "Created",
+  "@accountsDepartmentActivityCreated": {
+    "description": "Activity timeline label for the department creation timestamp."
+  },
+  "accountsDepartmentActivityUpdated": "Last updated",
+  "@accountsDepartmentActivityUpdated": {
+    "description": "Activity timeline label for the department update timestamp."
+  },
+  "accountsDepartmentActivityArchived": "Archived",
+  "@accountsDepartmentActivityArchived": {
+    "description": "Activity timeline label for the department archive timestamp."
+  },
+  "accountsDepartmentVersionLabel": "Record version",
+  "@accountsDepartmentVersionLabel": {
+    "description": "Activity timeline label for the optimistic record version."
+  },
+  "accountsDepartmentOwnedNotice": "This department is maintained with facility setup. Editing here updates the same record.",
+  "@accountsDepartmentOwnedNotice": {
+    "description": "Notice clarifying that the finance tab edits the shared department record."
+  },
+  "accountsDepartmentRequiredField": "This field is required.",
+  "@accountsDepartmentRequiredField": {
+    "description": "Validation message for a missing required department value."
+  },
+  "accountsDepartmentEffectiveToBeforeFrom": "Effective To must not be earlier than Effective From.",
+  "@accountsDepartmentEffectiveToBeforeFrom": {
+    "description": "Validation message for a department effective window that ends before it starts."
+  },
+  "accountsDepartmentActivateConfirmTitle": "Activate department?",
+  "@accountsDepartmentActivateConfirmTitle": {
+    "description": "Confirmation title for activating a department."
+  },
+  "accountsDepartmentDeactivateConfirmTitle": "Deactivate department?",
+  "@accountsDepartmentDeactivateConfirmTitle": {
+    "description": "Confirmation title for deactivating a department."
+  },
+  "accountsDepartmentArchiveConfirmTitle": "Archive department?",
+  "@accountsDepartmentArchiveConfirmTitle": {
+    "description": "Confirmation title for archiving a department."
+  },
+  "accountsDepartmentRestoreConfirmTitle": "Restore department?",
+  "@accountsDepartmentRestoreConfirmTitle": {
+    "description": "Confirmation title for restoring an archived department."
+  },
+  "accountsDepartmentArchiveConfirmBody": "The department is archived, not deleted. History stays available and the record can be restored. Archiving is refused while live child departments, units, or wards still reference it.",
+  "@accountsDepartmentArchiveConfirmBody": {
+    "description": "Confirmation body clarifying that archive is a soft, reference-guarded state change."
+  },
+  "accountsDepartmentActivateConfirmBody": "Activate {reference} so permitted workflows can select it?",
+  "@accountsDepartmentActivateConfirmBody": {
+    "description": "Confirmation body for activating a department.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsDepartmentDeactivateConfirmBody": "Deactivate {reference} so it is no longer selectable for new work?",
+  "@accountsDepartmentDeactivateConfirmBody": {
+    "description": "Confirmation body for deactivating a department.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsDepartmentRestoreConfirmBody": "Restore {reference} and record the change in the audit trail?",
+  "@accountsDepartmentRestoreConfirmBody": {
+    "description": "Confirmation body for restoring an archived department.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsDepartmentBulkConfirmBody": "{count, plural, one{Apply this change to {count} matching department? Records that do not allow the change are skipped.} other{Apply this change to {count} matching departments? Records that do not allow the change are skipped.}}",
+  "@accountsDepartmentBulkConfirmBody": {
+    "description": "Confirmation body for a bulk department workflow action.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsDepartmentBulkPartialFailure": "{count, plural, one{{count} record could not be changed.} other{{count} records could not be changed.}}",
+  "@accountsDepartmentBulkPartialFailure": {
+    "description": "Feedback shown when part of a bulk department action failed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsDepartmentMobileCaption": "{departmentCode} · {costCentreCode}",
+  "@accountsDepartmentMobileCaption": {
+    "description": "Compact mobile row caption pairing the department code with the cost centre code.",
+    "placeholders": {
+      "departmentCode": {
+        "type": "String"
+      },
+      "costCentreCode": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsPaymentMethodsLabel": "Payment Methods",
+  "@accountsPaymentMethodsLabel": {
+    "description": "Accounts & Finance -> Setup & Controls -> Payment Methods tab label."
+  },
+  "accountsPaymentMethodsTooltip": "Accepted tenders, their settlement accounts, fees, and evidence rules",
+  "@accountsPaymentMethodsTooltip": {
+    "description": "Tooltip for the Payment Methods tab."
+  },
+  "accountsPaymentMethodsEmpty": "No payment methods match.",
+  "@accountsPaymentMethodsEmpty": {
+    "description": "Empty-state title for the payment methods table."
+  },
+  "accountsPaymentMethodsEmptyBody": "Try another search or add a payment method.",
+  "@accountsPaymentMethodsEmptyBody": {
+    "description": "Empty-state body for the payment methods table."
+  },
+  "accountsPaymentMethodsSearchHint": "Reference, code, name, provider…",
+  "@accountsPaymentMethodsSearchHint": {
+    "description": "Search field hint and accessibility label for the payment methods table."
+  },
+  "accountsPaymentMethodReferenceColumn": "Reference",
+  "@accountsPaymentMethodReferenceColumn": {
+    "description": "Human-friendly reference column of the payment methods table."
+  },
+  "accountsPaymentMethodCodeColumn": "Method Code",
+  "@accountsPaymentMethodCodeColumn": {
+    "description": "Method code column of the payment methods table."
+  },
+  "accountsPaymentMethodNameColumn": "Method Name",
+  "@accountsPaymentMethodNameColumn": {
+    "description": "Method name column of the payment methods table."
+  },
+  "accountsPaymentMethodTypeColumn": "Method Type",
+  "@accountsPaymentMethodTypeColumn": {
+    "description": "Tender type column of the payment methods table."
+  },
+  "accountsPaymentMethodDirectionColumn": "Incoming/Outgoing",
+  "@accountsPaymentMethodDirectionColumn": {
+    "description": "Direction column of the payment methods table."
+  },
+  "accountsPaymentMethodProviderColumn": "Provider",
+  "@accountsPaymentMethodProviderColumn": {
+    "description": "Provider column of the payment methods table."
+  },
+  "accountsPaymentMethodSettlementAccountColumn": "Settlement Account",
+  "@accountsPaymentMethodSettlementAccountColumn": {
+    "description": "Settlement posting account column of the payment methods table."
+  },
+  "accountsPaymentMethodClearingAccountColumn": "Clearing Account",
+  "@accountsPaymentMethodClearingAccountColumn": {
+    "description": "Clearing posting account column of the payment methods table."
+  },
+  "accountsPaymentMethodRequiresReferenceColumn": "Requires External Reference",
+  "@accountsPaymentMethodRequiresReferenceColumn": {
+    "description": "Column showing whether the tender needs an external reference."
+  },
+  "accountsPaymentMethodRequiresApprovalColumn": "Requires Approval",
+  "@accountsPaymentMethodRequiresApprovalColumn": {
+    "description": "Column showing whether the tender needs approval."
+  },
+  "accountsPaymentMethodFeeRuleColumn": "Fee Rule",
+  "@accountsPaymentMethodFeeRuleColumn": {
+    "description": "Fee rule column of the payment methods table."
+  },
+  "accountsPaymentMethodFacilityScopeColumn": "Facility Scope",
+  "@accountsPaymentMethodFacilityScopeColumn": {
+    "description": "Facility scope column of the payment methods table (optional column)."
+  },
+  "accountsPaymentMethodEffectiveFromColumn": "Effective From",
+  "@accountsPaymentMethodEffectiveFromColumn": {
+    "description": "Effective-from column of the payment methods table (optional column)."
+  },
+  "accountsPaymentMethodEffectiveToColumn": "Effective To",
+  "@accountsPaymentMethodEffectiveToColumn": {
+    "description": "Effective-to column of the payment methods table (optional column)."
+  },
+  "accountsPaymentMethodStatusColumn": "Status",
+  "@accountsPaymentMethodStatusColumn": {
+    "description": "Status column of the payment methods table."
+  },
+  "accountsPaymentMethodActionsColumn": "Actions",
+  "@accountsPaymentMethodActionsColumn": {
+    "description": "Row actions column of the payment methods table."
+  },
+  "accountsPaymentMethodYes": "Yes",
+  "@accountsPaymentMethodYes": {
+    "description": "Affirmative chip for a payment method requirement flag."
+  },
+  "accountsPaymentMethodNo": "No",
+  "@accountsPaymentMethodNo": {
+    "description": "Negative chip for a payment method requirement flag."
+  },
+  "accountsPaymentMethodStatusDraft": "Draft",
+  "@accountsPaymentMethodStatusDraft": {
+    "description": "Payment method status: not yet available to downstream workflows."
+  },
+  "accountsPaymentMethodStatusActive": "Active",
+  "@accountsPaymentMethodStatusActive": {
+    "description": "Payment method status: selectable by permitted workflows."
+  },
+  "accountsPaymentMethodStatusInactive": "Inactive",
+  "@accountsPaymentMethodStatusInactive": {
+    "description": "Payment method status: retained but not selectable for new work."
+  },
+  "accountsPaymentMethodStatusArchived": "Archived",
+  "@accountsPaymentMethodStatusArchived": {
+    "description": "Payment method status: soft-deleted historical record."
+  },
+  "accountsPaymentMethodTypeCash": "Cash",
+  "@accountsPaymentMethodTypeCash": {
+    "description": "Tender type: cash."
+  },
+  "accountsPaymentMethodTypeCreditCard": "Credit card",
+  "@accountsPaymentMethodTypeCreditCard": {
+    "description": "Tender type: credit card."
+  },
+  "accountsPaymentMethodTypeDebitCard": "Debit card",
+  "@accountsPaymentMethodTypeDebitCard": {
+    "description": "Tender type: debit card."
+  },
+  "accountsPaymentMethodTypePrepaidCard": "Prepaid card",
+  "@accountsPaymentMethodTypePrepaidCard": {
+    "description": "Tender type: prepaid card."
+  },
+  "accountsPaymentMethodTypeGiftCard": "Gift card",
+  "@accountsPaymentMethodTypeGiftCard": {
+    "description": "Tender type: gift card."
+  },
+  "accountsPaymentMethodTypeVoucher": "Voucher",
+  "@accountsPaymentMethodTypeVoucher": {
+    "description": "Tender type: voucher."
+  },
+  "accountsPaymentMethodTypeBankCheck": "Bank cheque",
+  "@accountsPaymentMethodTypeBankCheck": {
+    "description": "Tender type: bank cheque."
+  },
+  "accountsPaymentMethodTypeMobileMoney": "Mobile money",
+  "@accountsPaymentMethodTypeMobileMoney": {
+    "description": "Tender type: mobile money."
+  },
+  "accountsPaymentMethodTypeBankTransfer": "Bank transfer",
+  "@accountsPaymentMethodTypeBankTransfer": {
+    "description": "Tender type: bank transfer."
+  },
+  "accountsPaymentMethodTypeInsurance": "Insurance",
+  "@accountsPaymentMethodTypeInsurance": {
+    "description": "Tender type: insurance settlement."
+  },
+  "accountsPaymentMethodTypeOther": "Other",
+  "@accountsPaymentMethodTypeOther": {
+    "description": "Tender type: anything outside the listed tenders."
+  },
+  "accountsPaymentMethodDirectionIncoming": "Incoming",
+  "@accountsPaymentMethodDirectionIncoming": {
+    "description": "Direction: the method takes money in."
+  },
+  "accountsPaymentMethodDirectionOutgoing": "Outgoing",
+  "@accountsPaymentMethodDirectionOutgoing": {
+    "description": "Direction: the method pays money out."
+  },
+  "accountsPaymentMethodDirectionBoth": "Incoming and outgoing",
+  "@accountsPaymentMethodDirectionBoth": {
+    "description": "Direction: the method both receives and pays out."
+  },
+  "accountsPaymentMethodDateRangeFilterLabel": "Effective period",
+  "@accountsPaymentMethodDateRangeFilterLabel": {
+    "description": "Advanced filter label for the payment method effective window."
+  },
+  "accountsPaymentMethodFacilityFilterLabel": "Facility",
+  "@accountsPaymentMethodFacilityFilterLabel": {
+    "description": "Advanced filter label for the facility that owns a payment method."
+  },
+  "accountsPaymentMethodNewRecordAction": "New record",
+  "@accountsPaymentMethodNewRecordAction": {
+    "description": "Toolbar action that opens the payment method create dialog."
+  },
+  "accountsPaymentMethodViewAction": "View",
+  "@accountsPaymentMethodViewAction": {
+    "description": "Row action that opens the payment method detail dialog."
+  },
+  "accountsPaymentMethodCloneAction": "Clone",
+  "@accountsPaymentMethodCloneAction": {
+    "description": "Row action that copies a payment method into a new unsaved draft."
+  },
+  "accountsPaymentMethodActivateAction": "Activate",
+  "@accountsPaymentMethodActivateAction": {
+    "description": "Row action that moves a payment method to Active."
+  },
+  "accountsPaymentMethodDeactivateAction": "Deactivate",
+  "@accountsPaymentMethodDeactivateAction": {
+    "description": "Row action that moves a payment method to Inactive."
+  },
+  "accountsPaymentMethodArchiveAction": "Archive",
+  "@accountsPaymentMethodArchiveAction": {
+    "description": "Row action that soft-archives a payment method."
+  },
+  "accountsPaymentMethodRestoreAction": "Restore",
+  "@accountsPaymentMethodRestoreAction": {
+    "description": "Row action that restores an archived payment method."
+  },
+  "accountsPaymentMethodBulkActivateAction": "Activate selected",
+  "@accountsPaymentMethodBulkActivateAction": {
+    "description": "Bulk action that activates every eligible matching payment method."
+  },
+  "accountsPaymentMethodBulkDeactivateAction": "Deactivate selected",
+  "@accountsPaymentMethodBulkDeactivateAction": {
+    "description": "Bulk action that deactivates every eligible matching payment method."
+  },
+  "accountsPaymentMethodBulkArchiveAction": "Archive selected",
+  "@accountsPaymentMethodBulkArchiveAction": {
+    "description": "Bulk action that archives every eligible matching payment method."
+  },
+  "accountsPaymentMethodCreateTitle": "Add payment method",
+  "@accountsPaymentMethodCreateTitle": {
+    "description": "Title of the payment method create dialog."
+  },
+  "accountsPaymentMethodEditTitle": "Edit payment method",
+  "@accountsPaymentMethodEditTitle": {
+    "description": "Title of the payment method edit dialog."
+  },
+  "accountsPaymentMethodCloneTitle": "Clone payment method",
+  "@accountsPaymentMethodCloneTitle": {
+    "description": "Title of the payment method clone dialog."
+  },
+  "accountsPaymentMethodDetailTitle": "Payment method details",
+  "@accountsPaymentMethodDetailTitle": {
+    "description": "Title of the payment method detail dialog."
+  },
+  "accountsPaymentMethodIdentitySection": "Method identity",
+  "@accountsPaymentMethodIdentitySection": {
+    "description": "Form section grouping the identifying fields of a payment method."
+  },
+  "accountsPaymentMethodPostingSection": "Settlement accounts",
+  "@accountsPaymentMethodPostingSection": {
+    "description": "Form section grouping the settlement and clearing accounts."
+  },
+  "accountsPaymentMethodRulesSection": "Handling rules",
+  "@accountsPaymentMethodRulesSection": {
+    "description": "Form section grouping the evidence, approval, and fee rules."
+  },
+  "accountsPaymentMethodSummarySection": "Summary",
+  "@accountsPaymentMethodSummarySection": {
+    "description": "Detail dialog section holding the key payment method fields."
+  },
+  "accountsPaymentMethodAllocationsSection": "Allocations",
+  "@accountsPaymentMethodAllocationsSection": {
+    "description": "Detail dialog section holding allocation behaviour for this method."
+  },
+  "accountsPaymentMethodSettlementSection": "Settlement",
+  "@accountsPaymentMethodSettlementSection": {
+    "description": "Detail dialog section holding settlement and reconciliation links."
+  },
+  "accountsPaymentMethodDocumentsSection": "Documents & audit",
+  "@accountsPaymentMethodDocumentsSection": {
+    "description": "Detail dialog section holding the immutable payment method timeline."
+  },
+  "accountsPaymentMethodAllocationsEmpty": "Allocations are recorded on the payments that use this method.",
+  "@accountsPaymentMethodAllocationsEmpty": {
+    "description": "Explains that allocation rows belong to payments, not to method configuration."
+  },
+  "accountsPaymentMethodSettlementEmpty": "No settlement accounts configured.",
+  "@accountsPaymentMethodSettlementEmpty": {
+    "description": "Empty state for the payment method settlement section."
+  },
+  "accountsPaymentMethodActivityCreated": "Created",
+  "@accountsPaymentMethodActivityCreated": {
+    "description": "Activity timeline label for the payment method creation timestamp."
+  },
+  "accountsPaymentMethodActivityUpdated": "Last updated",
+  "@accountsPaymentMethodActivityUpdated": {
+    "description": "Activity timeline label for the payment method update timestamp."
+  },
+  "accountsPaymentMethodActivityArchived": "Archived",
+  "@accountsPaymentMethodActivityArchived": {
+    "description": "Activity timeline label for the payment method archive timestamp."
+  },
+  "accountsPaymentMethodVersionLabel": "Record version",
+  "@accountsPaymentMethodVersionLabel": {
+    "description": "Activity timeline label for the optimistic record version."
+  },
+  "accountsPaymentMethodNotesLabel": "Notes",
+  "@accountsPaymentMethodNotesLabel": {
+    "description": "Notes field label of the payment method form."
+  },
+  "accountsPaymentMethodSharedTypeNotice": "Method Type is the shared tender taxonomy recorded on every payment; this tab configures how each type behaves.",
+  "@accountsPaymentMethodSharedTypeNotice": {
+    "description": "Notice clarifying that the tender taxonomy is shared with payment records."
+  },
+  "accountsPaymentMethodRequiredField": "This field is required.",
+  "@accountsPaymentMethodRequiredField": {
+    "description": "Validation message for a missing required payment method value."
+  },
+  "accountsPaymentMethodEffectiveToBeforeFrom": "Effective To must not be earlier than Effective From.",
+  "@accountsPaymentMethodEffectiveToBeforeFrom": {
+    "description": "Validation message for a payment method effective window that ends before it starts."
+  },
+  "accountsPaymentMethodSettlementRequired": "A clearing account also needs a settlement account.",
+  "@accountsPaymentMethodSettlementRequired": {
+    "description": "Validation message when a clearing account is set without a settlement account."
+  },
+  "accountsPaymentMethodActivateConfirmTitle": "Activate payment method?",
+  "@accountsPaymentMethodActivateConfirmTitle": {
+    "description": "Confirmation title for activating a payment method."
+  },
+  "accountsPaymentMethodDeactivateConfirmTitle": "Deactivate payment method?",
+  "@accountsPaymentMethodDeactivateConfirmTitle": {
+    "description": "Confirmation title for deactivating a payment method."
+  },
+  "accountsPaymentMethodArchiveConfirmTitle": "Archive payment method?",
+  "@accountsPaymentMethodArchiveConfirmTitle": {
+    "description": "Confirmation title for archiving a payment method."
+  },
+  "accountsPaymentMethodRestoreConfirmTitle": "Restore payment method?",
+  "@accountsPaymentMethodRestoreConfirmTitle": {
+    "description": "Confirmation title for restoring an archived payment method."
+  },
+  "accountsPaymentMethodArchiveConfirmBody": "The method is archived, not deleted. Posted receipts stay available and the record can be restored. Archiving is refused while recorded payments already used this tender.",
+  "@accountsPaymentMethodArchiveConfirmBody": {
+    "description": "Confirmation body clarifying that archive is a soft, reference-guarded state change."
+  },
+  "accountsPaymentMethodActivateConfirmBody": "Activate {reference} so permitted workflows can accept it?",
+  "@accountsPaymentMethodActivateConfirmBody": {
+    "description": "Confirmation body for activating a payment method.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsPaymentMethodDeactivateConfirmBody": "Deactivate {reference} so it is no longer offered for new payments?",
+  "@accountsPaymentMethodDeactivateConfirmBody": {
+    "description": "Confirmation body for deactivating a payment method.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsPaymentMethodRestoreConfirmBody": "Restore {reference} and record the change in the audit trail?",
+  "@accountsPaymentMethodRestoreConfirmBody": {
+    "description": "Confirmation body for restoring an archived payment method.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsPaymentMethodBulkConfirmBody": "{count, plural, one{Apply this change to {count} matching payment method? Records that do not allow the change are skipped.} other{Apply this change to {count} matching payment methods? Records that do not allow the change are skipped.}}",
+  "@accountsPaymentMethodBulkConfirmBody": {
+    "description": "Confirmation body for a bulk payment method workflow action.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsPaymentMethodBulkPartialFailure": "{count, plural, one{{count} record could not be changed.} other{{count} records could not be changed.}}",
+  "@accountsPaymentMethodBulkPartialFailure": {
+    "description": "Feedback shown when part of a bulk payment method action failed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsPaymentMethodMobileCaption": "{methodCode} · {methodType}",
+  "@accountsPaymentMethodMobileCaption": {
+    "description": "Compact mobile row caption pairing the method code with the localized tender type.",
+    "placeholders": {
+      "methodCode": {
+        "type": "String"
+      },
+      "methodType": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsDocumentNumberingLabel": "Document Numbering",
+  "@accountsDocumentNumberingLabel": {
+    "description": "Accounts & Finance -> Setup & Controls -> Document Numbering tab label."
+  },
+  "accountsDocumentNumberingTooltip": "Prefixes, padding, and reset rules for the references each document family issues",
+  "@accountsDocumentNumberingTooltip": {
+    "description": "Tooltip for the Document Numbering tab."
+  },
+  "accountsDocumentNumberingEmpty": "No numbering sequences match.",
+  "@accountsDocumentNumberingEmpty": {
+    "description": "Empty-state title for the document numbering table."
+  },
+  "accountsDocumentNumberingEmptyBody": "Try another search or add a numbering sequence.",
+  "@accountsDocumentNumberingEmptyBody": {
+    "description": "Empty-state body for the document numbering table."
+  },
+  "accountsDocumentNumberingSearchHint": "Reference, code, prefix, module…",
+  "@accountsDocumentNumberingSearchHint": {
+    "description": "Search field hint and accessibility label for the document numbering table."
+  },
+  "accountsDocumentSequenceReferenceColumn": "Reference",
+  "@accountsDocumentSequenceReferenceColumn": {
+    "description": "Optional human-friendly reference column on the document numbering table."
+  },
+  "accountsDocumentSequenceCodeColumn": "Sequence Code",
+  "@accountsDocumentSequenceCodeColumn": {
+    "description": "Sequence Code column and form field label."
+  },
+  "accountsDocumentSequenceTypeColumn": "Document Type",
+  "@accountsDocumentSequenceTypeColumn": {
+    "description": "Document Type column and form field label."
+  },
+  "accountsDocumentSequenceModuleColumn": "Module",
+  "@accountsDocumentSequenceModuleColumn": {
+    "description": "Module column and form field label on the document numbering table."
+  },
+  "accountsDocumentSequenceFacilityColumn": "Facility",
+  "@accountsDocumentSequenceFacilityColumn": {
+    "description": "Facility column and form field label on the document numbering table."
+  },
+  "accountsDocumentSequenceFacilityHelper": "Leave blank to use the current facility scope.",
+  "@accountsDocumentSequenceFacilityHelper": {
+    "description": "Helper text under the Facility field in the document numbering form."
+  },
+  "accountsDocumentSequencePrefixColumn": "Prefix",
+  "@accountsDocumentSequencePrefixColumn": {
+    "description": "Prefix column and form field label."
+  },
+  "accountsDocumentSequenceSuffixColumn": "Suffix",
+  "@accountsDocumentSequenceSuffixColumn": {
+    "description": "Suffix column and form field label."
+  },
+  "accountsDocumentSequenceDatePatternColumn": "Date Pattern",
+  "@accountsDocumentSequenceDatePatternColumn": {
+    "description": "Date Pattern column and form field label."
+  },
+  "accountsDocumentSequenceDatePatternHelper": "Literal calendar pattern such as yyyyMM, not a date.",
+  "@accountsDocumentSequenceDatePatternHelper": {
+    "description": "Helper text clarifying that Date Pattern is a format, not a calendar date."
+  },
+  "accountsDocumentSequenceNextNumberColumn": "Next Number",
+  "@accountsDocumentSequenceNextNumberColumn": {
+    "description": "Next Number column and read-only form field label."
+  },
+  "accountsDocumentSequenceNextNumberHelper": "Read from the counter the documents themselves increment.",
+  "@accountsDocumentSequenceNextNumberHelper": {
+    "description": "Helper text explaining that Next Number is server-owned and not editable here."
+  },
+  "accountsDocumentSequenceMinimumLengthColumn": "Minimum Length",
+  "@accountsDocumentSequenceMinimumLengthColumn": {
+    "description": "Minimum Length column and form field label."
+  },
+  "accountsDocumentSequenceResetColumn": "Reset Frequency",
+  "@accountsDocumentSequenceResetColumn": {
+    "description": "Reset Frequency column and form field label."
+  },
+  "accountsDocumentSequenceLastIssuedNumberColumn": "Last Issued Number",
+  "@accountsDocumentSequenceLastIssuedNumberColumn": {
+    "description": "Optional Last Issued Number column on the document numbering table."
+  },
+  "accountsDocumentSequenceLastIssuedAtColumn": "Last Issued At",
+  "@accountsDocumentSequenceLastIssuedAtColumn": {
+    "description": "Optional Last Issued At column on the document numbering table."
+  },
+  "accountsDocumentSequenceGapPolicyColumn": "Gap Policy",
+  "@accountsDocumentSequenceGapPolicyColumn": {
+    "description": "Optional Gap Policy column and form field label."
+  },
+  "accountsDocumentSequenceStatusColumn": "Sequence Status",
+  "@accountsDocumentSequenceStatusColumn": {
+    "description": "Sequence Status column and status filter label."
+  },
+  "accountsDocumentSequenceActionsColumn": "Actions",
+  "@accountsDocumentSequenceActionsColumn": {
+    "description": "Row actions column header on the document numbering table."
+  },
+  "accountsDocumentSequencePreviewLabel": "Next reference",
+  "@accountsDocumentSequencePreviewLabel": {
+    "description": "Label for the derived preview of the next reference this policy issues."
+  },
+  "accountsDocumentSequenceNotesLabel": "Notes",
+  "@accountsDocumentSequenceNotesLabel": {
+    "description": "Notes field label in the document numbering form and detail."
+  },
+  "accountsDocumentSequenceVersionLabel": "Version",
+  "@accountsDocumentSequenceVersionLabel": {
+    "description": "Optimistic record version shown in the document numbering detail."
+  },
+  "accountsDocumentSequenceStatusDraft": "Draft",
+  "@accountsDocumentSequenceStatusDraft": {
+    "description": "Document numbering status: not yet available to downstream workflows."
+  },
+  "accountsDocumentSequenceStatusActive": "Active",
+  "@accountsDocumentSequenceStatusActive": {
+    "description": "Document numbering status: selectable by permitted workflows."
+  },
+  "accountsDocumentSequenceStatusInactive": "Inactive",
+  "@accountsDocumentSequenceStatusInactive": {
+    "description": "Document numbering status: retained but not selectable for new work."
+  },
+  "accountsDocumentSequenceStatusArchived": "Archived",
+  "@accountsDocumentSequenceStatusArchived": {
+    "description": "Document numbering status: soft-deleted historical record."
+  },
+  "accountsDocumentTypeInvoice": "Patient Invoice",
+  "@accountsDocumentTypeInvoice": {
+    "description": "Numbered document family: patient billing invoice."
+  },
+  "accountsDocumentTypeAccountsInvoice": "Accounts Invoice",
+  "@accountsDocumentTypeAccountsInvoice": {
+    "description": "Numbered document family: facility outflow invoice."
+  },
+  "accountsDocumentTypeReceipt": "Receipt",
+  "@accountsDocumentTypeReceipt": {
+    "description": "Numbered document family: payment receipt."
+  },
+  "accountsDocumentTypePayment": "Payment",
+  "@accountsDocumentTypePayment": {
+    "description": "Numbered document family: recorded payment."
+  },
+  "accountsDocumentTypeRefund": "Refund",
+  "@accountsDocumentTypeRefund": {
+    "description": "Numbered document family: refund."
+  },
+  "accountsDocumentTypeCreditNote": "Credit Note",
+  "@accountsDocumentTypeCreditNote": {
+    "description": "Numbered document family: credit note."
+  },
+  "accountsDocumentTypeDebitNote": "Debit Note",
+  "@accountsDocumentTypeDebitNote": {
+    "description": "Numbered document family: debit note."
+  },
+  "accountsDocumentTypePurchaseOrder": "Purchase Order",
+  "@accountsDocumentTypePurchaseOrder": {
+    "description": "Numbered document family: purchase order."
+  },
+  "accountsDocumentTypeGoodsReceipt": "Goods Receipt",
+  "@accountsDocumentTypeGoodsReceipt": {
+    "description": "Numbered document family: goods receipt note."
+  },
+  "accountsDocumentTypeClaim": "Insurance Claim",
+  "@accountsDocumentTypeClaim": {
+    "description": "Numbered document family: insurance claim."
+  },
+  "accountsDocumentResetNever": "Never",
+  "@accountsDocumentResetNever": {
+    "description": "Reset frequency: the counter never restarts."
+  },
+  "accountsDocumentResetDaily": "Daily",
+  "@accountsDocumentResetDaily": {
+    "description": "Reset frequency: the counter restarts each day."
+  },
+  "accountsDocumentResetMonthly": "Monthly",
+  "@accountsDocumentResetMonthly": {
+    "description": "Reset frequency: the counter restarts each month."
+  },
+  "accountsDocumentResetQuarterly": "Quarterly",
+  "@accountsDocumentResetQuarterly": {
+    "description": "Reset frequency: the counter restarts each quarter."
+  },
+  "accountsDocumentResetYearly": "Yearly",
+  "@accountsDocumentResetYearly": {
+    "description": "Reset frequency: the counter restarts each year."
+  },
+  "accountsDocumentGapPolicyAllowGaps": "Allow gaps",
+  "@accountsDocumentGapPolicyAllowGaps": {
+    "description": "Gap policy: reserved numbers that are never committed leave gaps."
+  },
+  "accountsDocumentGapPolicyNoGaps": "No gaps",
+  "@accountsDocumentGapPolicyNoGaps": {
+    "description": "Gap policy: the sequence must issue an unbroken run of numbers."
+  },
+  "accountsDocumentGapPolicyReserveAndVoid": "Reserve and void",
+  "@accountsDocumentGapPolicyReserveAndVoid": {
+    "description": "Gap policy: unused reservations are recorded as voided numbers."
+  },
+  "accountsDocumentSequenceIdentitySection": "Identity",
+  "@accountsDocumentSequenceIdentitySection": {
+    "description": "Form section grouping the sequence code, document type, module, and facility."
+  },
+  "accountsDocumentSequenceShapeSection": "Reference shape",
+  "@accountsDocumentSequenceShapeSection": {
+    "description": "Form section grouping the prefix, suffix, pattern, padding, and reset rules."
+  },
+  "accountsDocumentSequenceSummarySection": "Summary",
+  "@accountsDocumentSequenceSummarySection": {
+    "description": "Detail section showing the key document numbering columns."
+  },
+  "accountsDocumentSequenceRelatedSection": "Related records",
+  "@accountsDocumentSequenceRelatedSection": {
+    "description": "Detail section showing the counter-derived issued numbers and cross-module links."
+  },
+  "accountsDocumentSequenceRelatedEmpty": "Issued references belong to the documents this sequence numbers.",
+  "@accountsDocumentSequenceRelatedEmpty": {
+    "description": "Explains that issued references live with the owning documents, not this policy row."
+  },
+  "accountsDocumentSequenceAttachmentsSection": "Attachments",
+  "@accountsDocumentSequenceAttachmentsSection": {
+    "description": "Detail section listing documents attached to a numbering sequence."
+  },
+  "accountsDocumentSequenceAttachmentsEmpty": "No attachments for this sequence.",
+  "@accountsDocumentSequenceAttachmentsEmpty": {
+    "description": "Empty state for the document numbering attachments section."
+  },
+  "accountsDocumentSequenceActivitySection": "Activity & audit",
+  "@accountsDocumentSequenceActivitySection": {
+    "description": "Detail section holding the immutable document numbering audit timeline."
+  },
+  "accountsDocumentSequenceActivityCreated": "Created",
+  "@accountsDocumentSequenceActivityCreated": {
+    "description": "Audit timeline entry for record creation."
+  },
+  "accountsDocumentSequenceActivityUpdated": "Last updated",
+  "@accountsDocumentSequenceActivityUpdated": {
+    "description": "Audit timeline entry for the last update."
+  },
+  "accountsDocumentSequenceActivityArchived": "Archived",
+  "@accountsDocumentSequenceActivityArchived": {
+    "description": "Audit timeline entry for archiving."
+  },
+  "accountsDocumentSequenceCounterNotice": "The running number is held by the documents this sequence numbers. This form sets the policy; Next Number is read back from that counter.",
+  "@accountsDocumentSequenceCounterNotice": {
+    "description": "Banner explaining that the counter is server-owned and not set from this form."
+  },
+  "accountsDocumentSequenceShapeLockedNotice": "This sequence has already issued numbers, so its prefix, suffix, pattern, and padding are locked. Changing them would make old and new references indistinguishable.",
+  "@accountsDocumentSequenceShapeLockedNotice": {
+    "description": "Banner explaining why reference shape fields are disabled once numbers have been issued."
+  },
+  "accountsDocumentSequenceRequiredField": "Required",
+  "@accountsDocumentSequenceRequiredField": {
+    "description": "Validation message for a required document numbering field."
+  },
+  "accountsDocumentSequenceInvalidCode": "Use up to 32 letters, digits, hyphens, or underscores.",
+  "@accountsDocumentSequenceInvalidCode": {
+    "description": "Validation message for a malformed sequence code."
+  },
+  "accountsDocumentSequenceInvalidAffix": "Use up to 16 letters, digits, hyphens, or slashes.",
+  "@accountsDocumentSequenceInvalidAffix": {
+    "description": "Validation message for a malformed prefix or suffix."
+  },
+  "accountsDocumentSequenceInvalidDatePattern": "Use only calendar pattern characters such as y, M, d, q, or w.",
+  "@accountsDocumentSequenceInvalidDatePattern": {
+    "description": "Validation message for a malformed date pattern."
+  },
+  "accountsDocumentSequenceInvalidMinimumLength": "Enter a number between 1 and 20.",
+  "@accountsDocumentSequenceInvalidMinimumLength": {
+    "description": "Validation message for an out-of-range minimum length."
+  },
+  "accountsDocumentSequenceReferenceTooLong": "Prefix, pattern, padding, and suffix must fit within {maxLength} characters.",
+  "@accountsDocumentSequenceReferenceTooLong": {
+    "description": "Validation message when the configured reference shape exceeds the reference column width.",
+    "placeholders": {
+      "maxLength": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsDocumentSequenceCreateTitle": "New numbering sequence",
+  "@accountsDocumentSequenceCreateTitle": {
+    "description": "Title of the document numbering create dialog."
+  },
+  "accountsDocumentSequenceEditTitle": "Edit numbering sequence",
+  "@accountsDocumentSequenceEditTitle": {
+    "description": "Title of the document numbering edit dialog."
+  },
+  "accountsDocumentSequenceCloneTitle": "Clone numbering sequence",
+  "@accountsDocumentSequenceCloneTitle": {
+    "description": "Title of the document numbering clone dialog."
+  },
+  "accountsDocumentSequenceDetailTitle": "Numbering sequence",
+  "@accountsDocumentSequenceDetailTitle": {
+    "description": "Title of the document numbering detail dialog."
+  },
+  "accountsDocumentSequenceNewRecordAction": "New sequence",
+  "@accountsDocumentSequenceNewRecordAction": {
+    "description": "Toolbar action that opens the document numbering create dialog."
+  },
+  "accountsDocumentSequenceViewAction": "View",
+  "@accountsDocumentSequenceViewAction": {
+    "description": "Row action that opens the document numbering detail dialog."
+  },
+  "accountsDocumentSequenceCloneAction": "Clone",
+  "@accountsDocumentSequenceCloneAction": {
+    "description": "Row action that copies a sequence into a new unsaved draft."
+  },
+  "accountsDocumentSequenceActivateAction": "Activate",
+  "@accountsDocumentSequenceActivateAction": {
+    "description": "Row action that activates a numbering sequence."
+  },
+  "accountsDocumentSequenceDeactivateAction": "Deactivate",
+  "@accountsDocumentSequenceDeactivateAction": {
+    "description": "Row action that deactivates a numbering sequence."
+  },
+  "accountsDocumentSequenceArchiveAction": "Archive",
+  "@accountsDocumentSequenceArchiveAction": {
+    "description": "Row action that soft-archives a numbering sequence."
+  },
+  "accountsDocumentSequenceRestoreAction": "Restore",
+  "@accountsDocumentSequenceRestoreAction": {
+    "description": "Row action that restores an archived numbering sequence."
+  },
+  "accountsDocumentSequenceBulkActivateAction": "Activate selected",
+  "@accountsDocumentSequenceBulkActivateAction": {
+    "description": "Toolbar action that activates every eligible matching sequence."
+  },
+  "accountsDocumentSequenceBulkDeactivateAction": "Deactivate selected",
+  "@accountsDocumentSequenceBulkDeactivateAction": {
+    "description": "Toolbar action that deactivates every eligible matching sequence."
+  },
+  "accountsDocumentSequenceBulkArchiveAction": "Archive selected",
+  "@accountsDocumentSequenceBulkArchiveAction": {
+    "description": "Toolbar action that archives every eligible matching sequence."
+  },
+  "accountsDocumentSequenceBulkConfirmBody": "{count, plural, =1{This applies to 1 matching sequence.} other{This applies to {count} matching sequences.}}",
+  "@accountsDocumentSequenceBulkConfirmBody": {
+    "description": "Confirmation body naming how many sequences a bulk action will change.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsDocumentSequenceBulkPartialFailure": "{count, plural, =1{1 sequence could not be changed.} other{{count} sequences could not be changed.}}",
+  "@accountsDocumentSequenceBulkPartialFailure": {
+    "description": "Reports how many rows a bulk action could not change.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "accountsDocumentSequenceActivateConfirmTitle": "Activate this sequence?",
+  "@accountsDocumentSequenceActivateConfirmTitle": {
+    "description": "Title of the document numbering activate confirmation."
+  },
+  "accountsDocumentSequenceActivateConfirmBody": "{reference} will start issuing references for its document type. Only one sequence per document type can be active at a time.",
+  "@accountsDocumentSequenceActivateConfirmBody": {
+    "description": "Body of the document numbering activate confirmation.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsDocumentSequenceDeactivateConfirmTitle": "Deactivate this sequence?",
+  "@accountsDocumentSequenceDeactivateConfirmTitle": {
+    "description": "Title of the document numbering deactivate confirmation."
+  },
+  "accountsDocumentSequenceDeactivateConfirmBody": "{reference} will stop issuing new references. References it already issued stay valid.",
+  "@accountsDocumentSequenceDeactivateConfirmBody": {
+    "description": "Body of the document numbering deactivate confirmation.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsDocumentSequenceArchiveConfirmTitle": "Archive this sequence?",
+  "@accountsDocumentSequenceArchiveConfirmTitle": {
+    "description": "Title of the document numbering archive confirmation."
+  },
+  "accountsDocumentSequenceArchiveConfirmBody": "The sequence is archived, not deleted, so every reference it already issued stays traceable to the policy that produced it.",
+  "@accountsDocumentSequenceArchiveConfirmBody": {
+    "description": "Body of the document numbering archive confirmation, stating that archive is a soft state change."
+  },
+  "accountsDocumentSequenceRestoreConfirmTitle": "Restore this sequence?",
+  "@accountsDocumentSequenceRestoreConfirmTitle": {
+    "description": "Title of the document numbering restore confirmation."
+  },
+  "accountsDocumentSequenceRestoreConfirmBody": "{reference} returns to active and can issue references again.",
+  "@accountsDocumentSequenceRestoreConfirmBody": {
+    "description": "Body of the document numbering restore confirmation.",
+    "placeholders": {
+      "reference": {
+        "type": "String"
+      }
+    }
+  },
+  "accountsDocumentSequenceDateRangeFilterLabel": "Last changed",
+  "@accountsDocumentSequenceDateRangeFilterLabel": {
+    "description": "Date range filter label on the document numbering table."
+  },
+  "accountsDocumentSequenceMobileCaption": "{documentType} · {prefix}",
+  "@accountsDocumentSequenceMobileCaption": {
+    "description": "Compact mobile row caption pairing the localized document type with the prefix.",
+    "placeholders": {
+      "documentType": {
+        "type": "String"
+      },
+      "prefix": {
+        "type": "String"
+      }
+    }
   }
 }

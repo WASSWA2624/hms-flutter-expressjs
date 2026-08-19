@@ -5,7 +5,10 @@ const { resolvePublicIdentifier } = require('@lib/billing/identifiers');
 const { toDecimalNumber, toMoneyString } = require('@lib/billing/financials');
 const billingService = require('@services/billing/billing.service');
 const fiscalPeriodService = require('@services/accounts-workspace/fiscal-period.service');
-const currencyRateService = require('@services/accounts-workspace/currency-rate.service');
+const postingRuleService = require('@services/accounts-workspace/posting-rule.service');
+const departmentService = require('@services/accounts-workspace/department-cost-centre.service');
+const paymentMethodService = require('@services/accounts-workspace/payment-method.service');
+const documentSequenceService = require('@services/accounts-workspace/document-number-sequence.service');
 const repo = require('@repositories/accounts-workspace/accounts-workspace.repository');
 
 const clean = (value) => String(value ?? '').trim();
@@ -216,10 +219,18 @@ const getWorkspace = async (filters = {}, user = {}) => {
     filters,
     user
   );
-  const currencyRatesCount = await currencyRateService.countActiveCurrencyRates(
+  const postingRulesCount = await postingRuleService.countActivePostingRules(
     filters,
     user
   );
+  const departmentsCount = await departmentService.countActiveDepartments(
+    filters,
+    user
+  );
+  const paymentMethodsCount =
+    await paymentMethodService.countActivePaymentMethods(filters, user);
+  const documentSequencesCount =
+    await documentSequenceService.countActiveDocumentSequences(filters, user);
 
   return {
     summary: {
@@ -239,8 +250,14 @@ const getWorkspace = async (filters = {}, user = {}) => {
       invoices_count: invoicesCount,
       fiscal_years_and_periods: fiscalPeriodsCount,
       fiscal_periods_active_count: fiscalPeriodsCount,
-      currencies_and_exchange_rates: currencyRatesCount,
-      currency_rates_active_count: currencyRatesCount,
+      posting_rules: postingRulesCount,
+      posting_rules_active_count: postingRulesCount,
+      departments_and_cost_centres: departmentsCount,
+      departments_active_count: departmentsCount,
+      payment_methods: paymentMethodsCount,
+      payment_methods_active_count: paymentMethodsCount,
+      document_numbering: documentSequencesCount,
+      document_sequences_active_count: documentSequencesCount,
     },
     generated_at: new Date().toISOString(),
   };
@@ -255,8 +272,14 @@ const getWorkspace = async (filters = {}, user = {}) => {
 const WORK_ITEM_SECTION_HANDLERS = {
   [fiscalPeriodService.SECTION_SLUG]: (filters, page, limit, user) =>
     fiscalPeriodService.listFiscalPeriods(filters, page, limit, user),
-  [currencyRateService.SECTION_SLUG]: (filters, page, limit, user) =>
-    currencyRateService.listCurrencyRates(filters, page, limit, user),
+  [postingRuleService.SECTION_SLUG]: (filters, page, limit, user) =>
+    postingRuleService.listPostingRules(filters, page, limit, user),
+  [departmentService.SECTION_SLUG]: (filters, page, limit, user) =>
+    departmentService.listDepartments(filters, page, limit, user),
+  [paymentMethodService.SECTION_SLUG]: (filters, page, limit, user) =>
+    paymentMethodService.listPaymentMethods(filters, page, limit, user),
+  [documentSequenceService.SECTION_SLUG]: (filters, page, limit, user) =>
+    documentSequenceService.listDocumentSequences(filters, page, limit, user),
 };
 
 const listWorkItems = async (filters = {}, page = 1, limit = 20, user = {}) => {

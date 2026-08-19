@@ -114,6 +114,94 @@ void main() {
     expect(controller.selection.baseOffset, '**bold** spoken'.length);
   });
 
+  test('mergeSpeechSegments absorbs resent phrases instead of repeating', () {
+    // Recognizer resends the running utterance (web / iOS accumulate).
+    expect(
+      mergeSpeechSegments('hello', 'hello world'),
+      'hello world',
+    );
+    // Recognizer resends a final that was already committed.
+    expect(mergeSpeechSegments('hello world', 'world'), 'hello world');
+    expect(mergeSpeechSegments('hello world', 'hello world'), 'hello world');
+    // Genuinely new phrase is appended with the mode separator.
+    expect(mergeSpeechSegments('hello', 'there'), 'hello there');
+    expect(mergeSpeechSegments('070', '1234', separator: ''), '0701234');
+    expect(mergeSpeechSegments('', 'hello'), 'hello');
+    expect(mergeSpeechSegments('hello', ''), 'hello');
+  });
+
+  test('appSpeechSegmentSeparatorForFormatMode spaces prose only', () {
+    expect(appSpeechSegmentSeparatorForFormatMode('text'), ' ');
+    expect(appSpeechSegmentSeparatorForFormatMode('phone'), '');
+    expect(appSpeechSegmentSeparatorForFormatMode('email'), '');
+    expect(appSpeechSegmentSeparatorForFormatMode('digits'), '');
+  });
+
+  testWidgets('a repeated final result does not duplicate the dictated text', (
+    WidgetTester tester,
+  ) async {
+    final TextEditingController controller = TextEditingController();
+
+    await pumpSpeechApp(
+      tester,
+      AppTextField(
+        controller: controller,
+        labelText: 'Note',
+        enableSpeechToText: true,
+      ),
+    );
+
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTextField)),
+    );
+    await tester.tap(find.byTooltip(l10n.speechToTextStartTooltip));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    recognizer.emit('hello');
+    await tester.pump();
+    recognizer.emit('hello world');
+    await tester.pump();
+    recognizer.emit('hello world', isFinal: true);
+    await tester.pump();
+    // Some engines flush the same final a second time when the session ends.
+    recognizer.emit('hello world', isFinal: true);
+    await tester.pump();
+
+    expect(controller.text, 'hello world');
+  });
+
+  testWidgets('consecutive phrases in one session append once each', (
+    WidgetTester tester,
+  ) async {
+    final TextEditingController controller = TextEditingController();
+
+    await pumpSpeechApp(
+      tester,
+      AppTextField(
+        controller: controller,
+        labelText: 'Note',
+        enableSpeechToText: true,
+      ),
+    );
+
+    final AppLocalizations l10n = AppLocalizations.of(
+      tester.element(find.byType(AppTextField)),
+    );
+    await tester.tap(find.byTooltip(l10n.speechToTextStartTooltip));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    recognizer.emit('patient is', isFinal: true);
+    await tester.pump();
+    recognizer.emit('stable');
+    await tester.pump();
+    recognizer.emit('stable today', isFinal: true);
+    await tester.pump();
+
+    expect(controller.text, 'patient is stable today');
+  });
+
   test('appSpeechToTextEnabledForField hides passwords only by default', () {
     expect(
       appSpeechToTextEnabledForField(

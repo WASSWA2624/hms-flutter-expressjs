@@ -122,10 +122,13 @@ final class NetworkFailureMapper {
         );
       }
       if (_isCsrfFailure(response?.data)) {
-        // Stale/missing CSRF after session reset looks like forbidden, but the
-        // user usually just needs to retry or sign in again.
-        return AppFailure.unauthorized(
-          code: 'auth.csrf',
+        // A stale or unbound CSRF token is a transport-level problem, not a
+        // rejected identity. Classifying it as `unauthorized` made a signed-in
+        // user see "Sign-in required" (and, on the refresh path, ended the
+        // session outright) whenever the backend could not match the token.
+        // It is retryable: the interceptor refetches a token and replays.
+        return AppFailure.network(
+          code: 'auth.csrf_token',
           statusCode: statusCode,
         );
       }
@@ -435,10 +438,14 @@ final class NetworkFailureMapper {
     }
 
     final String? code = _responseCode(data);
-    if (code == 'MISSING' ||
-        code == 'INVALID' ||
-        code == 'CSRF_MISSING' ||
-        code == 'CSRF_INVALID') {
+    if (code == 'CSRF_MISSING' || code == 'CSRF_INVALID') {
+      return true;
+    }
+
+    // Legacy backends derived the problem code from the last segment of the
+    // message key, so `errors.csrf.missing` arrived as a bare `MISSING`. Kept
+    // for mixed-version deploys; current backends send the explicit codes above.
+    if (code == 'MISSING' || code == 'INVALID') {
       return true;
     }
 

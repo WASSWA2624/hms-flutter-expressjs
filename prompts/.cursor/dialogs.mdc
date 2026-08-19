@@ -5,81 +5,76 @@ alwaysApply: true
 
 # App Dialogs
 
-Conventions for every surface built with `AppDialog` / `showAppDialog` (and call-site wrappers). Prefer extending shared dialog, table, and section components; do not invent parallel chrome.
+Conventions for every surface built with `AppDialog` / `showAppDialog` (and call-site wrappers).
 
 Cross-cutting: [localization.mdc](localization.mdc), [theming.mdc](theming.mdc), [responsiveness.mdc](responsiveness.mdc), [prompt.mdc](prompt.mdc) (RBAC / UI states). Table toolbar/export/print: [tables.mdc](tables.mdc). Forms inside dialogs: [forms.mdc](forms.mdc).
 
 ## Titles
 
-1. **Generic titles only:** Dialog titles name the *action or surface type*, not the concrete record identity.
+1. **Generic titles only:** name the *action or surface type*, never the concrete record identity.
    - Prefer: `Patient details`, `Role selection`, `Receive payment`, `Advanced filters`.
-   - Avoid: patient names, staff names, account numbers, order ids, or other instance-specific strings in the title.
-2. Put identity (name, MRN, code) in the body, a subtitle, or a dedicated field—not the dialog title.
-3. Reuse existing l10n title keys when they already express the surface; do not invent one-off titled variants per record.
-4. Titles are uppercased by shared dialog chrome (`toDialogTitleUppercase`); pass the natural-case label and let the shell normalize it.
+   - Avoid: patient names, staff names, account numbers, order ids.
+2. Put identity (name, MRN, code) in the body, a subtitle, or a dedicated field.
+3. Reuse existing l10n title keys; do not invent one-off titled variants per record.
+4. Pass the natural-case label—shared chrome uppercases it (`toDialogTitleUppercase`).
 
 ## Layout and nesting
 
-1. Keep the dialog body **flat**: one primary content flow, not stacked dialogs, nested scroll shells, or deep widget trees that feel like dialogs-inside-dialogs.
+1. Keep the body **flat**: one primary content flow, not stacked dialogs, nested scroll shells, or sections inside sections.
 2. Prefer progressive disclosure with `AppCollapsibleSection` over nesting another dialog or a second table inside a cell.
-3. **Do not nest** `AppCollapsibleSection` inside another `AppCollapsibleSection`. Sibling sections in a single scroll column are fine.
-4. Prefer reusable shared controls from `frontend/lib/shared/components/` (and shared forms) over one-off layout widgets.
+3. **Do not nest** `AppCollapsibleSection` inside another. Sibling sections in one scroll column are fine.
+4. Avoid clipped content, nested overflow traps, and unreachable primary actions.
 
 ## Sections
 
 1. Group related fields or blocks with `AppCollapsibleSection`.
 2. Place section-scoped actions in `headerActions` (short labels such as `Add`, `Edit`, `Save`, `Clear`).
 3. Collapse defaults on for titled panels unless the body must stay visible (`collapsible: false`).
-4. Keep section headers scannable: one title, optional short subtitle/description, no dense prose in the header.
+4. Keep headers scannable: one title, optional short subtitle, no dense prose.
 
 ## Selection lists (tables in dialogs)
 
 When the dialog’s job is to browse or pick from a list (patients, roles, items, etc.):
 
-1. Render the list with `AppListTable` (plus `AppSearchBar` when search is needed)—not ad-hoc `ListView` / checkbox stacks—unless an existing shared picker already covers the case.
-2. Follow [tables.mdc](tables.mdc) for toolbar order, Filters / Settings / Export / Print labels, and column rules when those controls apply.
-3. Include columns needed to choose confidently; keep cells short (no body prose).
-4. **Selection mode must match intent:**
+1. Render the list with `AppListTable` (plus `AppSearchBar` when search is needed)—not ad-hoc `ListView` / checkbox stacks—unless an existing shared picker already covers the case. Toolbar order, action labels, and column rules follow [tables.mdc](tables.mdc).
+2. Include the columns needed to choose confidently; keep cells short (no body prose).
+3. **Selection mode must match intent:**
    - **Single-select:** one active row (radio-style or exclusive checkbox); no header “select all”.
    - **Multi-select:** per-row checkboxes plus a header checkbox that selects all visible/filtered rows or clears all.
-5. **No indeterminate header checkbox:** the header control is only checked (all selected) or unchecked (none / partial treated as unchecked for display). Toggling when unchecked selects all; toggling when checked clears all. Do not use `tristate` / null value for partial selection.
-6. After confirm, return the selected id(s) (or domain objects) via the dialog result; do not leave selection only in ephemeral UI state the caller cannot read.
+4. The multi-select header checkbox should show an indeterminate (tristate) state when only some rows are selected: toggling from unchecked or indeterminate selects all, toggling from checked clears all.
+5. After confirm, return the selected id(s) or domain objects via the dialog result; do not leave selection only in ephemeral UI state the caller cannot read.
 
 ## Size and maximize
 
-1. **Maximize by default:** Open dialogs with `initialMaximized: true` (the `AppDialog` / `showAppWorkspaceMutationDialog` default) so forms, selection tables, and long bodies stay fully visible without clipped content or cramped scroll regions.
-2. Do not override to `initialMaximized: false` for ordinary create/edit, detail, filter, picker, or multi-section surfaces.
-3. Opt out only for intentionally compact confirmations or short single-field prompts where a full maximized shell would be excessive—and keep that exception rare and justified.
-4. Users may still restore/maximize via header chrome; the default open state must remain maximized for full content visibility.
+1. **Maximize by default:** open with `initialMaximized: true` (the `AppDialog` / `showAppWorkspaceMutationDialog` default) so forms, selection tables, and long bodies stay fully visible without clipping or cramped scroll regions.
+2. Do not override to `false` for ordinary create/edit, detail, filter, picker, or multi-section surfaces.
+3. Opt out only for intentionally compact confirmations or short single-field prompts; keep that exception rare and justified.
+4. Users may still restore/maximize via header chrome—the default open state stays maximized.
 
 ## Footer and chrome
 
-1. Use `AppDialog` footer `actions` for primary/secondary outcomes (`Save`, `Confirm`, `Cancel`, `Close`). Right-align; keep labels short and generic.
-2. Footer actions stay on **one horizontal row**, right-aligned, on every breakpoint. On small/medium screens they are **icon-only** (tooltip + semantics keep the name); on large screens they show icon + label (`showsToolbarActionLabels` / `AppActionLabelScope`). Prefer always supplying a `leadingIcon` on footer `AppButton`s so compact mode can drop the label.
-3. Do **not** stack footer actions vertically on phones by default. Opt into `stackActionsWhenCompact: true` only when a labeled footer truly cannot fit in one row.
-4. Header restore/maximize and close stay icon-only.
-5. Pin footer actions when the body scrolls (`pinActionsToBottom: true`) for long forms and selection tables.
-6. Omit actions the user cannot perform (RBAC/ABAC per [prompt.mdc](prompt.mdc)).
-
-## States
-
-1. Cover loading, empty, error, validation, and success feedback inside the dialog body or via existing shared feedback—not silent no-ops.
-2. Avoid clipped content, nested overflow traps, and inaccessible primary actions.
+1. Use footer `actions` for primary/secondary outcomes (`Save`, `Confirm`, `Cancel`, `Close`). Right-align; keep labels short and generic.
+2. Footer actions stay on **one right-aligned horizontal row** at every breakpoint and always render **icon + label**, including on phones. Always supply a `leadingIcon`.
+3. When the labeled row does not fit, `AppDialog` moves the lowest-priority actions into a trailing **More actions** menu — it never scales the row down, wraps it, or silently drops an action. Priority is inferred: `AppButton.close` is the dismiss action and `AppButtonVariant.primary` is the primary; both always stay inline, everything else is overflow-eligible in author order. Override with `AppDialogAction(priority: ...)` only when the inferred priority is wrong.
+4. Opt into `stackActionsWhenCompact: true` only when a labeled footer truly cannot fit one row; stacking bypasses the overflow menu and keeps every action visible.
+5. Header chrome is icon-only. On `xs`/`sm` the dismiss control is a **leading platform back arrow** at the header start (no trailing ✕); on `md`+ it is the trailing `[maximize/restore] [close ✕]` cluster. Exactly one dismiss control renders at any breakpoint, and `closeEnabled` / `showCloseButton` gate both forms identically.
+6. Pin footer actions when the body scrolls (`pinActionsToBottom: true`) for long forms and selection tables.
 
 ## Implementation constraints
 
-- Build on `AppDialog`, `showAppDialog`, `AppCollapsibleSection`, `AppListTable`, `AppSearchBar`, and existing dialog/button primitives.
-- Keep `initialMaximized: true` unless a compact-prompt exception above applies.
-- Do not fork one-off dialog shells, section chrome, or selection-table patterns per feature when a shared component exists or can be extended.
+- Build on `AppDialog`, `showAppDialog`, `AppCollapsibleSection`, `AppListTable`, `AppSearchBar`, and existing dialog/button primitives. Do not fork one-off dialog shells, section chrome, or selection-table patterns per feature when a shared component exists or can be extended.
+- Surface loading, empty, error, validation, and success feedback inside the dialog body or via shared feedback components—never silent no-ops.
 - This file owns dialog chrome, titles, nesting, sections, size/maximize defaults, and in-dialog selection—not table toolbar/export/print behavior.
 
 ## Relevant files
 
 - `frontend/lib/shared/components/app_dialog.dart`
+- `frontend/lib/shared/components/app_dialog_action.dart` (footer action priority)
+- `frontend/lib/shared/layout/app_overflow_menu_style.dart` (shared overflow menu chrome)
 - `frontend/lib/shared/layout/app_dialog_insets.dart`
 - `frontend/lib/core/utils/app_dialog_title.dart`
 - `frontend/lib/shared/components/app_collapsible_section.dart`
 - `frontend/lib/shared/components/app_list_table.dart`
 - `frontend/lib/shared/components/app_search_bar.dart`
-- `frontend/lib/shared/components/app_role_selection_table_dialog.dart` (multi-select table dialog reference; header checkbox must follow the no-indeterminate rule above when touched)
+- `frontend/lib/shared/components/app_role_selection_table_dialog.dart` (multi-select table dialog reference)
 - Feature `*_dialog.dart` call sites under `frontend/lib/features/` and `frontend/lib/shared/`

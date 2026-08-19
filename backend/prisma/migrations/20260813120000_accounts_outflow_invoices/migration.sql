@@ -27,7 +27,7 @@ CREATE TABLE `accounts_invoice` (
     INDEX `accounts_invoice_deleted_at_idx`(`deleted_at`),
     INDEX `accounts_invoice_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 CREATE TABLE `accounts_invoice_item` (
     `id` VARCHAR(36) NOT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE `accounts_invoice_item` (
     INDEX `accounts_invoice_item_deleted_at_idx`(`deleted_at`),
     INDEX `accounts_invoice_item_human_friendly_id_idx`(`human_friendly_id`),
     PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 ALTER TABLE `accounts_invoice` ADD CONSTRAINT `accounts_invoice_tenant_id_fkey` FOREIGN KEY (`tenant_id`) REFERENCES `tenant`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 ALTER TABLE `accounts_invoice` ADD CONSTRAINT `accounts_invoice_facility_id_fkey` FOREIGN KEY (`facility_id`) REFERENCES `facility`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;

@@ -455,6 +455,10 @@ class _AppPhoneFieldState extends State<AppPhoneField> {
   }
 }
 
+/// Floor for the country segment so short dialling codes (`+1`) do not make the
+/// control noticeably narrower than long ones (`+1242`).
+const double _minCountryWidth = 92;
+
 class _UnifiedPhoneInput extends StatelessWidget {
   const _UnifiedPhoneInput({
     required this.country,
@@ -495,19 +499,6 @@ class _UnifiedPhoneInput extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        final double baseCountryWidth = constraints.maxWidth < 360
-            ? 104
-            : constraints.maxWidth < 520
-            ? 124
-            : 148;
-        // The flag and chevron grow with the reader's text scale, so the fixed
-        // country column has to grow with them or the row clips. Never take
-        // more than half the field, which leaves room for the number itself.
-        final double textScale = MediaQuery.textScalerOf(context).scale(16) / 16;
-        final double countryWidth = math.min(
-          baseCountryWidth * math.max(1, textScale),
-          constraints.maxWidth / 2,
-        );
         final double inputHeight =
             constraints.hasBoundedHeight && constraints.maxHeight.isFinite
             ? constraints.maxHeight
@@ -518,8 +509,12 @@ class _UnifiedPhoneInput extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              SizedBox(
-                width: countryWidth,
+              // Sized to its content, not to a fixed width: the previous
+              // 104/124/148 boxes clipped four-digit dialling codes (+1242,
+              // +3906) behind an ellipsis on narrow viewports. The minimum keeps
+              // short codes from making the control jump as countries change.
+              ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: _minCountryWidth),
                 child: _PhoneCountryButton(
                   country: country,
                   labelText: countryLabelText,
@@ -629,6 +624,7 @@ class _PhoneCountryButton extends StatelessWidget {
           child: Padding(
             padding: EdgeInsets.symmetric(horizontal: theme.spacing.sm),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 _CountryFlagEmoji(
@@ -636,15 +632,15 @@ class _PhoneCountryButton extends StatelessWidget {
                   size: theme.appTokens.listIconSize,
                 ),
                 SizedBox(width: theme.spacing.xs),
-                Flexible(
-                  child: Text(
-                    country.callingCode,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: contentColor,
-                      fontWeight: AppFontWeight.emphasis,
-                    ),
+                // Never flexible and never ellipsized: a partially rendered
+                // dialling code is unreadable, so the segment grows instead.
+                Text(
+                  country.callingCode,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: contentColor,
+                    fontWeight: AppFontWeight.emphasis,
                   ),
                 ),
                 if (isLoading) ...<Widget>[

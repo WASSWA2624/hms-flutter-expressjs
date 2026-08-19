@@ -12,14 +12,16 @@ Cross-cutting: [localization.mdc](localization.mdc), [theming.mdc](theming.mdc),
 ## Toolbar anatomy
 
 1. **Search (when needed):** Place an `AppSearchBar` above the table. Keep built-in speech-to-text (microphone) on the search field enabled unless the surface explicitly disables it.
-2. **Trailing action order (fixed):** After the search field / mic chrome, actions must appear in this order only:
+2. **Search bar buttons (fixed, nothing else):** speech-to-text (mic, on the field) then, in this order only:
    1. **Filters**
    2. **Settings**
    3. **Export**
    4. **Print** (only when printing is allowed for that table)
-   5. Context-specific actions (Create, Assign, etc.)
-3. **Labels:** Use exactly `Filters`, `Settings`, `Export`, and `Print`. Do not rename these shared actions per feature.
-4. **Responsive chrome:** Icon + label vs icon-only follows [responsiveness.mdc](responsiveness.mdc).
+3. **Context actions below the bar:** Context-specific actions (Create, Assign, etc.) never sit in the search bar. Pass them as `AppListTableSearch.trailingActions`; `AppListTable` lays them out in its own row directly under the search bar, packed left to right and wrapping onto further rows only when needed. That row is deliberately compact — flat chrome (no border, no fill), 32dp tall — so it costs as little vertical space as possible.
+4. **Labels:** Use exactly `Filters`, `Settings`, `Export`, and `Print`. Do not rename these shared actions per feature.
+5. **Responsive chrome:** Icon + label vs icon-only follows [responsiveness.mdc](responsiveness.mdc). The action row under the search bar prefers one row on every breakpoint: it keeps icon + label while the labelled buttons fit, drops to icon-only to stay on one row, and wraps only when even the icons overflow.
+6. **One scroll:** search bar, action row, and rows scroll together as a single body — never a pinned toolbar over independently scrolling rows. Only the table footer (row status / pagination + go-to-top) stays put.
+7. **Print behavior:** preview, options, and shared print APIs are owned by [printing.mdc](printing.mdc); this file only fixes Print’s toolbar position.
 
 ## Filters
 
@@ -50,11 +52,6 @@ Cross-cutting: [localization.mdc](localization.mdc), [theming.mdc](theming.mdc),
 3. Footer actions only: **Export** and **Close**.
 4. Reuse shared date/text/select filter components; do not duplicate filter UI outside the shared export path.
 
-## Print
-
-1. When Print is present, place it immediately after Export in the toolbar order above.
-2. Preview, options, labels, and shared print APIs: [printing.mdc](printing.mdc).
-
 ## Cell and layout rules
 
 1. **No body prose in cells:** cells hold short labels, codes, counts, dates, statuses, and compact chips—not paragraphs or multi-sentence descriptions. Put long text in detail panes, dialogs, or progressive disclosure.
@@ -75,10 +72,9 @@ Applies to every list table on a **main workspace tab** (the primary `AppListTab
 
 ## Implementation constraints
 
-- Build on `AppListTable`, `AppListTableSearch`, `AppSearchBar`, `AppListTableExportDialog`, and existing dialog/button primitives.
-- Omit Export, Print, and other actions the user cannot perform (RBAC/ABAC per [prompt.mdc](prompt.mdc)).
+- Build on `AppListTable`, `AppListTableSearch`, `AppSearchBar`, `AppListTableExportDialog`, and existing dialog/button primitives; filter, settings, and export dialogs follow [dialogs.mdc](dialogs.mdc) chrome.
 - Cover loading, empty, error, and success for search, filter apply, export, and print.
-- For main-tab lists, keep horizontal scroll, a pinned/visible footer, and empty-row padding via `AppListTable` defaults; do not opt into `shrinkWrap: true` or `padEmptyRows: false` on those surfaces without a documented exception.
+- This file owns table toolbar anatomy, filter/settings/export dialog contents, cell rules, and main-tab viewport behavior—not print preview or dialog chrome.
 
 ## Relevant files
 

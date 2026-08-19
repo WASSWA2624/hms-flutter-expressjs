@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS `accounts_currency_rate` (
   `deleted_at` DATETIME(3) NULL,
   `version` INTEGER NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- One rate per tenant + facility + currency + rate type + effective date.
 -- MariaDB 10.4 has no functional unique indexes, so a NULL facility_id follows

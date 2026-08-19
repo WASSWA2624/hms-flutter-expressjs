@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS `fiscal_period` (
   `deleted_at` DATETIME(3) NULL,
   `version` INTEGER NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 -- One period number per tenant + facility + fiscal year + module.
 -- MariaDB 10.4 has no functional unique indexes, so a NULL facility_id follows

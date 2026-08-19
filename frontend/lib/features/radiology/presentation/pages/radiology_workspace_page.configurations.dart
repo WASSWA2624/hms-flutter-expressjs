@@ -328,8 +328,6 @@ class _RadiologyConfigurationsDialogState
           items: tests,
           isLoading: tableBusy,
           maxVisibleItems: _maxVisibleItems,
-          maxTrailingActions: 3,
-          trailingActionsOverflowLabel: l10n.workspaceToolbarOverflowLabel,
           shrinkWrap: true,
           columnVisibilityController: _testColumnController,
           columnVisibilityLabel: l10n.commonTableSettingsActionLabel,

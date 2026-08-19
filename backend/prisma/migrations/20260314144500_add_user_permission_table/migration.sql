@@ -14,7 +14,7 @@ CREATE TABLE `user_permission` (
   INDEX `user_permission_deleted_at_idx`(`deleted_at`),
   INDEX `user_permission_human_friendly_id_idx`(`human_friendly_id`),
   PRIMARY KEY (`id`)
-) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE InnoDB;
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci ENGINE=InnoDB;
 
 ALTER TABLE `user_permission`
   ADD CONSTRAINT `user_permission_user_id_fkey`
