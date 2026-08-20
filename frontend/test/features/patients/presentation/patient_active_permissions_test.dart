@@ -832,7 +832,7 @@ void main() {
         await tester.tap(find.text('Ada Active').first);
         await tester.pumpAndSettle();
 
-        expect(find.text('Active work'), findsOneWidget);
+        expect(find.text('Quick actions'), findsOneWidget);
         expect(find.text('Collect sample'), findsNothing);
       },
     );

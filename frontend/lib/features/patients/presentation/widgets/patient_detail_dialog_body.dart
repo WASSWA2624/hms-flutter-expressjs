@@ -258,23 +258,10 @@ class PatientDetailDialog extends ConsumerWidget {
             ),
             SizedBox(height: Theme.of(context).spacing.md),
             if (!hideClinicalSections) ...<Widget>[
-              PatientDetailActiveWorkPanel(
-                detail: detail,
-                applyAdmittedNestedReadFilter: isAdmittedSection,
-                onContinue: (PatientActiveWorkItem item) =>
-                    _continuePatientActiveWork(context, ref, detail, item),
-              ),
-              if ((isAdmittedSection
-                      ? filterPatientActiveWorkForAdmittedNestedRead(
-                          collectPatientActiveWorkItems(detail),
-                          accessPolicy,
-                        )
-                      : collectPatientActiveWorkItems(detail))
-                  .isNotEmpty)
-                SizedBox(height: Theme.of(context).spacing.md),
               PatientDetailQuickActions(
                 detail: detail,
                 registrySection: registrySection,
+                applyAdmittedNestedReadFilter: isAdmittedSection,
                 onAction: (PatientQuickAction action) =>
                     _openPatientQuickAction(
                       context,
@@ -282,6 +269,8 @@ class PatientDetailDialog extends ConsumerWidget {
                       detail.patient,
                       action,
                     ),
+                onContinueActiveWork: (PatientActiveWorkItem item) =>
+                    _continuePatientActiveWork(context, ref, detail, item),
               ),
               SizedBox(height: Theme.of(context).spacing.md),
             ],

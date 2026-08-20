@@ -967,7 +967,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Start OPD encounter'), findsOneWidget);
-    expect(find.text('Continue OPD flow'), findsNothing);
+    expect(find.text('Open OPD workflow'), findsNothing);
     expect(find.text('Triage'), findsNothing);
     expect(find.text('Billing'), findsNothing);
     expect(find.text('Record vitals'), findsNothing);
@@ -1029,7 +1029,7 @@ void main() {
     await tester.tap(find.text('Amina Kato').first);
     await tester.pumpAndSettle();
 
-    expect(find.text('Continue OPD flow'), findsOneWidget);
+    expect(find.text('Open OPD workflow'), findsOneWidget);
     expect(find.text('Start OPD encounter'), findsNothing);
     expect(find.text('Triage'), findsNothing);
     expect(find.text('Billing'), findsNothing);
@@ -1038,7 +1038,7 @@ void main() {
     expect(find.text('Clinical notes'), findsNothing);
     expect(find.text('Manage consultation billing'), findsNothing);
 
-    await tester.tap(find.text('Continue OPD flow'));
+    await tester.tap(find.text('Open OPD workflow'));
     await tester.pumpAndSettle();
 
     // Stage next-action opens vitals directly — no empty Flow Actions hub.

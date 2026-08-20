@@ -28768,22 +28768,6 @@ abstract class AppLocalizations {
   /// **'Scheme'**
   String get billingReceivePaymentSchemeLabel;
 
-  /// Hint when OPD consultation fee is engine-resolved.
-  ///
-  /// In en, this message translates to:
-  /// **'Fee resolved from the price book for this patient.'**
-  String get opdEngineResolvedFeeHint;
-
-  /// OPD consultation fee breakdown resolved for an insured patient.
-  ///
-  /// In en, this message translates to:
-  /// **'Fee resolved from the price book for {payer}. Patient share: {patientShare}. Insurer share: {insurerShare}.'**
-  String opdEngineResolvedFeeInsuredHint(
-    String payer,
-    String patientShare,
-    String insurerShare,
-  );
-
   /// Summary badge for enrollments awaiting eligibility.
   ///
   /// In en, this message translates to:

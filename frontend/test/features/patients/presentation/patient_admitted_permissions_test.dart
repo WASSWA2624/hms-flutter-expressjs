@@ -881,8 +881,7 @@ void main() {
         await tester.tap(find.text('Ada Admitted').first);
         await tester.pumpAndSettle();
 
-        expect(find.text('Active work'), findsNothing);
-        expect(find.text('Inpatient admission'), findsNothing);
+        expect(find.text('Discharge planning'), findsNothing);
       },
     );
 
@@ -921,8 +920,7 @@ void main() {
         await tester.tap(find.text('Ada Admitted').first);
         await tester.pumpAndSettle();
 
-        expect(find.text('Active work'), findsOneWidget);
-        expect(find.text('Inpatient admission'), findsWidgets);
+        expect(find.text('Discharge planning'), findsWidgets);
       },
     );
 

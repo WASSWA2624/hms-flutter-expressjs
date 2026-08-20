@@ -19,13 +19,13 @@ import 'package:hosspi_hms/shared/actions/actions.dart';
 import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/clinical_actions/dialogs/clinical_action_dialog_actions.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
+import 'package:hosspi_hms/shared/components/app_checkbox_field.dart';
 import 'package:hosspi_hms/shared/components/app_currency_amount_field.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_form_information_banner.dart';
 import 'package:hosspi_hms/shared/components/app_loading_indicator.dart';
 import 'package:hosspi_hms/shared/components/app_patient_details.dart';
 import 'package:hosspi_hms/shared/components/app_select_field.dart';
-import 'package:hosspi_hms/shared/components/app_switch_field.dart';
 import 'package:hosspi_hms/shared/components/app_tab_strip.dart';
 import 'package:hosspi_hms/shared/components/app_text_field.dart';
 import 'package:hosspi_hms/shared/components/app_triage_components.dart';
@@ -114,6 +114,10 @@ class _WalkInModeSelector extends StatelessWidget {
     return Opacity(opacity: 0.6, child: strip);
   }
 }
+
+/// Which lookup last wrote the consultation fee, highest precedence last.
+/// A manual edit is detected separately and outranks all of these.
+enum _FeeSource { none, resolved, provider }
 
 typedef OpdEncounterPayloadSubmit =
     Future<Result<OpdFlowDetail>> Function(Map<String, Object?> payload);
@@ -221,8 +225,11 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
   OpdBillingDefaults? _billingDefaults;
   bool _lockArrivalMode = false;
   ClinicalRequestPayerContext? _payerContext;
-  ClinicalRequestBillingLineItem? _resolvedConsultationLine;
-  bool _engineFeeResolved = false;
+
+  /// Last fee written by the dialog itself. Anything else in the field is a
+  /// manual edit and must survive later automatic resolution.
+  String _lastAppliedFeeText = '';
+  _FeeSource _feeSource = _FeeSource.none;
 
   List<AppSelectOption<String>>? _cachedPatientSelectOptions;
   List<Patient>? _cachedPatientSelectSource;
@@ -593,7 +600,8 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
                 onPressed: _blocksDismiss ? null : _retryInitialData,
               ),
             ),
-          if (_shouldShowActiveEncounterNotice()) _activeEncounterNotice(l10n),
+          if (_shouldShowPatientEncounterSummary())
+            _patientEncounterSummary(l10n),
           if (_showPatientSection) ...<Widget>[
             _WalkInModeSelector(
               value: _patientMode,
@@ -607,8 +615,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
               onChanged: _setPatientMode,
             ),
             _patientModeContent(l10n),
-          ] else if (_pinPatientContext)
-            _knownPatientSummary(l10n),
+          ],
           ..._arrivalFields(l10n),
           AppResponsiveFieldRow.two(
             left: _providerField(l10n),
@@ -757,10 +764,6 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     final bool billingAlreadyPaid =
         activeEncounter != null &&
         opdFlowBillingState(activeEncounter) == OpdBillingState.paid;
-    final Locale locale = Localizations.localeOf(context);
-    String formatShare(num? value) => value == null
-        ? l10n.profileUnknownValue
-        : AppFormatters.currency(value, locale, currencyCode: _currency);
 
     return <Widget>[
       if (billingAlreadyPaid)
@@ -768,18 +771,7 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
           title: l10n.opdPaymentStatusLabel,
           message: l10n.opdEncounterBillingPaidBanner,
         ),
-      if (_engineFeeResolved)
-        AppFormInformationBanner.message(
-          title: l10n.opdBillingSectionTitle,
-          message: _payerContext?.insured == true
-              ? l10n.opdEngineResolvedFeeInsuredHint(
-                  _payerContext?.payerLabel ?? l10n.profileUnknownValue,
-                  formatShare(_resolvedConsultationLine?.patientShare),
-                  formatShare(_resolvedConsultationLine?.insurerShare),
-                )
-              : l10n.opdEngineResolvedFeeHint,
-        ),
-      AppSwitchField(
+      AppCheckboxField(
         title: l10n.opdPaymentRequiredLabel,
         value: _requireConsultationPayment,
         enabled: !_blocksDismiss && !billingAlreadyPaid,
@@ -793,139 +785,143 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
     ];
   }
 
-  bool _shouldShowActiveEncounterNotice() {
-    return _patientMode != _WalkInPatientMode.newPatient;
+  bool _shouldShowPatientEncounterSummary() {
+    if (_patientMode == _WalkInPatientMode.newPatient) {
+      return false;
+    }
+    if (_activeEncounter != null) {
+      return true;
+    }
+    return _pinPatientContext;
   }
 
-  Widget _knownPatientSummary(AppLocalizations l10n) {
+  /// Single identity + encounter section: patient facts live in the header and
+  /// context row, active-encounter facts extend the same section so nothing is
+  /// duplicated across two panels.
+  Widget _patientEncounterSummary(AppLocalizations l10n) {
+    final ThemeData theme = Theme.of(context);
     final Patient? patient =
         widget.initialPatient ?? _patientByApiId(_patientId);
-    if (patient == null) {
+    final OpdFlowSummary? flow = _activeEncounter;
+    if (patient == null && flow == null) {
       return const SizedBox.shrink();
     }
 
-    final ThemeData theme = Theme.of(context);
-    final String patientNumber = (patient.effectiveIdentifier ?? '').trim();
-    final String? phone = patient.primaryPhone?.trim();
-    final String? email = patient.primaryEmail?.trim();
+    final String? patientNumber =
+        patient?.effectiveIdentifier ??
+        _firstNonEmptyText(<String?>[
+          patient?.publicId,
+          patient?.id,
+          flow?.patientIdentifier,
+          flow?.patientId,
+        ]);
+    final String patientName =
+        patient?.effectiveDisplayName ??
+        flow?.patientDisplayName ??
+        l10n.profileUnknownValue;
+    final String? phone = _firstNonEmptyText(<String?>[
+      patient?.primaryPhone,
+      flow?.patientPhone,
+    ]);
+    final String? email = patient?.primaryEmail?.trim();
+
     return Padding(
       padding: EdgeInsets.only(bottom: theme.spacing.md),
       child: AppPatientDetails(
-        patientName: patient.effectiveDisplayName,
-        patientNumber: patientNumber,
+        // Re-keyed when the active encounter resolves so the section re-inits
+        // expanded instead of staying collapsed from its first build.
+        key: ValueKey<String>('opd-encounter-summary-${flow?.apiId ?? 'none'}'),
+        patientName: patientName,
+        patientNumber: patientNumber ?? '',
         patientNumberLabel: l10n.opdPatientIdLabel,
         copyPatientNumberTooltip: l10n.opdCopyPatientIdAction,
         copyPatientNumberMessage: l10n.clinicalPatientIdCopiedMessage,
         semanticLabel: l10n.opdPatientSectionTitle,
         showAvatar: false,
         persistExpandPreference: false,
-        initiallyExpanded: false,
-        ageLabel: patient.dateOfBirth == null
+        // Auto-expand so the active-encounter facts are visible immediately.
+        initiallyExpanded: flow != null,
+        status: flow == null
             ? null
-            : formatPatientAge(l10n, patient.dateOfBirth),
-        genderLabel: patient.gender == null
+            : AppWorkspaceStatus(
+                label: opdStageDisplayLabel(
+                  l10n,
+                  flow.displayCode ?? flow.stage ?? flow.status,
+                ),
+                tone: AppWorkspaceStatusTone.warning,
+              ),
+        ageLabel: patient?.dateOfBirth == null
             ? null
-            : patientGenderLabel(l10n, patient.gender!),
-        genderIcon: patientGenderIcon(patient.gender),
+            : formatPatientAge(l10n, patient!.dateOfBirth),
+        genderLabel: patient?.gender == null
+            ? null
+            : patientGenderLabel(l10n, patient!.gender!),
+        genderIcon: patientGenderIcon(patient?.gender),
         phoneLabel: phone,
         emailLabel: email,
+        expandedFields: _activeEncounterContextFields(l10n, flow),
+        expandedChild: flow == null
+            ? null
+            : AppFormInformationBanner.message(
+                title: l10n.opdActiveEncounterFoundTitle,
+                message: l10n.opdActiveEncounterFoundBody,
+                variant: AppFormInformationVariant.warning,
+                icon: AppActionIcons.info,
+              ),
       ),
     );
   }
 
-  Widget _activeEncounterNotice(AppLocalizations l10n) {
-    final ThemeData theme = Theme.of(context);
-    final OpdFlowSummary? flow = _activeEncounter;
-    if (_isResolvingActiveEncounter && flow == null) {
-      return const SizedBox.shrink();
-    }
-
+  List<AppWorkspacePatientContextField> _activeEncounterContextFields(
+    AppLocalizations l10n,
+    OpdFlowSummary? flow,
+  ) {
     if (flow == null) {
-      return const SizedBox.shrink();
+      return const <AppWorkspacePatientContextField>[];
     }
-
-    final Patient? patient =
-        widget.initialPatient ?? _patientByApiId(_patientId);
-    final String stageLabel = opdStageDisplayLabel(
-      l10n,
-      flow.displayCode ?? flow.stage ?? flow.status,
-    );
     final String nextStepLabel = opdNextStepDisplayLabel(
       l10n,
       flow.displayNextStep ?? flow.nextStep,
     );
-    final String? patientId =
-        patient?.effectiveIdentifier ??
-        _firstNonEmptyText(<String?>[
-          patient?.publicId,
-          patient?.id,
-          flow.patientIdentifier,
-          flow.patientId,
-        ]);
-    final List<OpdEncounterSummaryPair> pairs = <OpdEncounterSummaryPair>[
-      OpdEncounterSummaryPair(
+    return <AppWorkspacePatientContextField>[
+      AppWorkspacePatientContextField(
         label: l10n.clinicalEncounterNumberLabel,
         value: flow.apiId,
+        icon: AppActionIcons.decision,
         copyable: true,
+        copyTooltip: l10n.opdCopyEncounterIdAction,
+        copiedMessage: l10n.opdEncounterIdCopiedMessage,
       ),
-      if (patientId != null)
-        OpdEncounterSummaryPair(
-          label: l10n.opdPatientIdLabel,
-          value: patientId,
-          copyable: true,
-        ),
-      OpdEncounterSummaryPair(
+      AppWorkspacePatientContextField(
         label: l10n.opdNextStepColumnLabel,
         value: nextStepLabel.isEmpty ? l10n.profileUnknownValue : nextStepLabel,
+        icon: AppActionIcons.start,
+        tone: AppWorkspaceStatusTone.warning,
       ),
-      OpdEncounterSummaryPair(
+      AppWorkspacePatientContextField(
         label: l10n.opdVisitTypeColumnLabel,
         value: opdArrivalModeDisplayLabel(
           l10n,
           _firstNonEmptyText(<String?>[flow.arrivalMode, flow.encounterType]),
         ),
+        icon: AppActionIcons.personAdd,
       ),
-      OpdEncounterSummaryPair(
+      AppWorkspacePatientContextField(
         label: l10n.opdProviderColumnLabel,
         value: flow.providerDisplayName ?? l10n.profileUnknownValue,
+        icon: AppActionIcons.person,
       ),
-      OpdEncounterSummaryPair(
+      AppWorkspacePatientContextField(
         label: l10n.opdPayerBillingColumnLabel,
         value: _flowBillingLabel(context, flow),
+        icon: AppActionIcons.payment,
       ),
-      OpdEncounterSummaryPair(
+      AppWorkspacePatientContextField(
         label: l10n.opdTimeColumnLabel,
         value: _formatDateTime(context, flow.startedAt),
+        icon: AppActionIcons.calendar,
       ),
     ];
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: theme.spacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          AppFormInformationBanner.message(
-            title: l10n.opdActiveEncounterFoundTitle,
-            message: l10n.opdActiveEncounterFoundBody,
-            variant: AppFormInformationVariant.warning,
-            icon: AppActionIcons.info,
-            children: <Widget>[
-              Align(
-                alignment: Alignment.centerLeft,
-                child: AppWorkspaceStatusBadge(
-                  status: AppWorkspaceStatus(
-                    label: stageLabel,
-                    tone: AppWorkspaceStatusTone.warning,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: theme.spacing.sm),
-          OpdEncounterSummaryRow(pairs: pairs),
-        ],
-      ),
-    );
   }
 
   Future<void> _loadBillingDefaults() async {
@@ -1519,12 +1515,15 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
         billingDefaults?.standardConsultationCurrency ??
         billingDefaults?.defaultCurrency;
 
+    // The doctor's own fee outranks any resolved amount, whichever lookup
+    // happens to land first; only a manual edit outranks the doctor.
     if (providerFee != null &&
-        (overwrite || _feeController.text.trim().isEmpty)) {
-      _feeController.text = _currencyAmountInput(providerFee);
+        (overwrite ||
+            (!_feeEditedByUser && _feeSource != _FeeSource.provider))) {
+      _setFeeText(_currencyAmountInput(providerFee), _FeeSource.provider);
     } else if (fallbackFee != null &&
         (overwrite || _feeController.text.trim().isEmpty)) {
-      _feeController.text = _currencyAmountInput(fallbackFee);
+      _setFeeText(_currencyAmountInput(fallbackFee), _FeeSource.resolved);
     }
 
     if (_isNonEmpty(providerCurrency) &&
@@ -1573,18 +1572,35 @@ class _OpdEncounterDialogState extends ConsumerState<OpdEncounterDialog> {
       return;
     }
     final ClinicalRequestBillingLineItem line = resolved.first;
+    // The doctor's own consultation fee (set by HR) and any manual edit both
+    // outrank the price-book amount; only the payer context is always kept.
+    final bool keepCurrentFee =
+        _feeSource == _FeeSource.provider || _feeEditedByUser;
     setState(() {
       _payerContext = payerContext;
-      _resolvedConsultationLine = line;
-      _engineFeeResolved = true;
-      if (line.unitPrice != null) {
-        _feeController.text = _currencyAmountInput(line.unitPrice);
-      }
-      if (_isNonEmpty(line.currency)) {
-        _currency = line.currency!.trim().toUpperCase();
+      if (!keepCurrentFee) {
+        if (line.unitPrice != null) {
+          _setFeeText(
+            _currencyAmountInput(line.unitPrice),
+            _FeeSource.resolved,
+          );
+        }
+        if (_isNonEmpty(line.currency)) {
+          _currency = line.currency!.trim().toUpperCase();
+        }
       }
     });
   }
+
+  /// Writes a resolved default into the fee field without marking it edited.
+  void _setFeeText(String value, _FeeSource source) {
+    _feeController.text = value;
+    _lastAppliedFeeText = value;
+    _feeSource = source;
+  }
+
+  bool get _feeEditedByUser =>
+      _feeController.text.trim() != _lastAppliedFeeText.trim();
 
   Map<String, Object?> _newPatientRegistrationPayload() {
     return _newPatientFormKey.currentState?.buildPayload() ??

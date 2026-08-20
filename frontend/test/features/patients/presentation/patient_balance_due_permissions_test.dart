@@ -952,7 +952,7 @@ void main() {
         await tester.tap(find.text('Ida Idle').first);
         await tester.pumpAndSettle();
 
-        expect(find.text('Continue OPD flow'), findsOneWidget);
+        expect(find.text('Open OPD workflow'), findsOneWidget);
         expect(find.text('Start OPD encounter'), findsNothing);
         expect(find.text('Request lab'), findsNothing);
       },
@@ -1015,7 +1015,7 @@ void main() {
       await tester.tap(find.text('Bea Balance').first);
       await tester.pumpAndSettle();
 
-      expect(find.text('Active work'), findsOneWidget);
+      expect(find.text('Quick actions'), findsOneWidget);
       expect(find.text('Collect sample'), findsNothing);
     });
 

@@ -20069,25 +20069,6 @@
   "@billingReceivePaymentSchemeLabel": {
     "description": "Scheme summary on receive payment."
   },
-  "opdEngineResolvedFeeHint": "Fee resolved from the price book for this patient.",
-  "@opdEngineResolvedFeeHint": {
-    "description": "Hint when OPD consultation fee is engine-resolved."
-  },
-  "opdEngineResolvedFeeInsuredHint": "Fee resolved from the price book for {payer}. Patient share: {patientShare}. Insurer share: {insurerShare}.",
-  "@opdEngineResolvedFeeInsuredHint": {
-    "description": "OPD consultation fee breakdown resolved for an insured patient.",
-    "placeholders": {
-      "payer": {
-        "type": "String"
-      },
-      "patientShare": {
-        "type": "String"
-      },
-      "insurerShare": {
-        "type": "String"
-      }
-    }
-  },
   "claimsEligibilityPendingSummaryLabel": "Eligibility pending",
   "@claimsEligibilityPendingSummaryLabel": {
     "description": "Summary badge for enrollments awaiting eligibility."

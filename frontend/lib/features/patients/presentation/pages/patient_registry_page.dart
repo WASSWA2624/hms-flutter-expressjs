@@ -1947,7 +1947,19 @@ Future<void> _openPatientQuickAction(
 
   switch (action) {
     case PatientQuickAction.opdActions:
-      await _openActiveOpdActions(context, ref, patient);
+      // Queue-only work has no open visit yet; fall back to the start flow so
+      // the Quick action still lands somewhere useful.
+      if (isActiveOpdPatientVisit(patient.currentVisit)) {
+        await _openActiveOpdActions(context, ref, patient);
+      } else {
+        await openPatientOpdEncounterFlow(
+          context,
+          ref,
+          patient,
+          onSaved: () =>
+              _refreshPatientAfterQuickAction(context, ref, patient.id),
+        );
+      }
     case PatientQuickAction.labOrder:
       await refreshIfChanged(
         await openPatientLabOrderDialog(

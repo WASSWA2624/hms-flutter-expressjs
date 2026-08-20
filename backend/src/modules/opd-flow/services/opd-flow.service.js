@@ -612,6 +612,12 @@ const STAGE_ROLE_TEAM_MAP = {
   [STAGES.DISCHARGED]: [ROLES.RECEPTIONIST, ROLES.OPERATIONS]
 };
 
+// A new encounter is a revenue event: Billing and Accounting are notified on
+// START_FLOW even when the opening stage does not route work to them.
+const ENCOUNTER_CREATED_ROLE_TEAM = [ROLES.BILLING, ROLES.ACCOUNTANT];
+
+const START_FLOW_ACTION = 'START_FLOW';
+
 const formatStageLabel = (stage) =>
   String(stage || 'UPDATED')
     .trim()
@@ -654,6 +660,31 @@ const buildFlowSummary = (snapshot) => {
   };
 };
 
+const buildConsultationSummary = (snapshot) => {
+  const consultation =
+    snapshot?.flow?.consultation || snapshot?.encounter?.extension_json?.opd_flow?.consultation || null;
+  if (!consultation) {
+    return null;
+  }
+  return {
+    require_payment: consultation.require_payment === true,
+    consultation_fee: consultation.consultation_fee ?? null,
+    currency: consultation.currency || null,
+    invoice_id: consultation.invoice_id || null,
+    payment_status: consultation.payment_status || null,
+    is_paid: consultation.is_paid === true
+  };
+};
+
+const formatConsultationAmount = (consultation) => {
+  const fee = consultation?.consultation_fee;
+  if (fee === null || fee === undefined || fee === '') {
+    return null;
+  }
+  const currency = String(consultation?.currency || '').trim();
+  return currency ? `${fee} ${currency}` : String(fee);
+};
+
 const buildRealtimePayload = ({ snapshot, transition, context }) => {
   const encounterPublicId = snapshot?.encounter?.human_friendly_id || null;
   const providerPublicId = snapshot?.encounter?.provider?.human_friendly_id || null;
@@ -687,18 +718,38 @@ const buildRealtimePayload = ({ snapshot, transition, context }) => {
     operation: 'upsert',
     list_entry: buildOpdFlowListEntry(snapshot),
     flow_summary: buildFlowSummary(snapshot),
+    consultation: buildConsultationSummary(snapshot),
     target_path: encounterPublicId ? `/scheduling/opd-flows/${encounterPublicId}` : '/scheduling/opd-flows'
   };
 };
 
-const buildOpdNotificationContent = (payload) => {
+const buildOpdNotificationContent = (payload, { isAssignedProvider = false } = {}) => {
   const stageLabel = formatStageLabel(payload?.stage_to || payload?.flow_summary?.stage);
-  const title = `OPD flow update: ${stageLabel}`;
-  const message = `Encounter ${payload.encounter_public_id || 'unknown'} is now ${stageLabel}.`;
+  const encounterLabel = payload.encounter_public_id || 'unknown';
+
+  if (payload?.action === START_FLOW_ACTION) {
+    const patientSuffix = payload.patient_id ? ` for patient ${payload.patient_id}` : '';
+
+    if (isAssignedProvider) {
+      return {
+        title: 'New OPD patient assigned to you',
+        message: `Encounter ${encounterLabel}${patientSuffix} is assigned to you and is now ${stageLabel}.`
+      };
+    }
+
+    const amount = formatConsultationAmount(payload.consultation);
+    const chargeSuffix = amount
+      ? ` Consultation fee ${amount}${payload.consultation?.require_payment ? ' (payment required)' : ''}.`
+      : '';
+    return {
+      title: 'OPD encounter started',
+      message: `Encounter ${encounterLabel}${patientSuffix} was started and is now ${stageLabel}.${chargeSuffix}`
+    };
+  }
 
   return {
-    title,
-    message
+    title: `OPD flow update: ${stageLabel}`,
+    message: `Encounter ${encounterLabel} is now ${stageLabel}.`
   };
 };
 
@@ -733,7 +784,14 @@ const resolveRoleRecipients = async ({ tenantId, facilityId, roles = [] }) => {
 };
 
 const resolveOpdRecipientUserIds = async ({ payload }) => {
-  const roleTeams = STAGE_ROLE_TEAM_MAP[payload.stage_to] || [];
+  const stageTeams = STAGE_ROLE_TEAM_MAP[payload.stage_to] || [];
+  const roleTeams = Array.from(
+    new Set(
+      payload.action === START_FLOW_ACTION
+        ? [...stageTeams, ...ENCOUNTER_CREATED_ROLE_TEAM]
+        : stageTeams
+    )
+  );
   const roleRecipients = await resolveRoleRecipients({
     tenantId: payload.tenant_internal_id,
     facilityId: payload.facility_internal_id,
@@ -774,12 +832,18 @@ const createAndEmitOpdNotifications = async ({ payload, recipientUserIds }) => {
     return [];
   }
 
-  const priority = payload?.flow_summary?.encounter_type === 'EMERGENCY' ? 'HIGH' : 'MEDIUM';
-  const { title, message } = buildOpdNotificationContent(payload);
+  const isEmergency = payload?.flow_summary?.encounter_type === 'EMERGENCY';
+  const assignedProviderUserId = payload.provider_internal_user_id || null;
 
   const createdNotifications = [];
 
   for (const userId of recipientUserIds) {
+    const isAssignedProvider = Boolean(assignedProviderUserId) && userId === assignedProviderUserId;
+    // The assigned doctor's own hand-off is escalated so it surfaces at once.
+    const priority =
+      isEmergency || (isAssignedProvider && payload.action === START_FLOW_ACTION) ? 'HIGH' : 'MEDIUM';
+    const { title, message } = buildOpdNotificationContent(payload, { isAssignedProvider });
+
     // Keep notification creation resilient and non-blocking per user.
     try {
       const notification = await prisma.notification.create({

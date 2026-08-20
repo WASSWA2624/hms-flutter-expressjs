@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/app/theme/app_theme.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
@@ -25,6 +26,8 @@ import 'package:hosspi_hms/features/patients/data/repositories/patient_repositor
 import 'package:hosspi_hms/features/patients/domain/entities/patient_entities.dart';
 import 'package:hosspi_hms/features/patients/domain/repositories/patient_repository.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_resolve.dart';
+import 'package:hosspi_hms/shared/clinical_actions/clinical_request_billing_state.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_actions.dart';
@@ -37,6 +40,12 @@ class _MockOpdRepository extends Mock implements OpdRepository {}
 class _MockClinicalRepository extends Mock implements ClinicalRepository {}
 
 class _MockApiClient extends Mock implements ApiClient {}
+
+List<ClinicalRequestBillingLineItem> _fallbackBillingLineDecoder(Object? _) =>
+    const <ClinicalRequestBillingLineItem>[];
+
+List<Map<String, Object?>> _fallbackEnrollmentDecoder(Object? _) =>
+    const <Map<String, Object?>>[];
 
 AppAccessPolicy _patientWritePolicy() {
   return AppAccessPolicy.fromSession(
@@ -58,6 +67,13 @@ void main() {
     registerFallbackValue(const OpdFlowQuery());
     registerFallbackValue(const OpdTriageQueueQuery());
     registerFallbackValue(const PatientDuplicateQuery());
+    registerFallbackValue(Uri.parse('https://tests.invalid/'));
+    const ApiResponseDecoder<List<ClinicalRequestBillingLineItem>>
+    billingLineDecoder = _fallbackBillingLineDecoder;
+    const ApiResponseDecoder<List<Map<String, Object?>>> enrollmentDecoder =
+        _fallbackEnrollmentDecoder;
+    registerFallbackValue(billingLineDecoder);
+    registerFallbackValue(enrollmentDecoder);
   });
 
   testWidgets('OpdEncounterDialog loads and submits the new patient flow', (
@@ -238,8 +254,8 @@ void main() {
 
       expect(
         tester
-            .widget<AppSwitchField>(
-              find.widgetWithText(AppSwitchField, 'Payment required'),
+            .widget<AppCheckboxField>(
+              find.widgetWithText(AppCheckboxField, 'Payment required'),
             )
             .value,
         isTrue,
@@ -325,6 +341,121 @@ void main() {
   });
 
   testWidgets(
+    "the price book does not overwrite the doctor's own consultation fee",
+    (WidgetTester tester) async {
+      final _MockPatientRepository patientRepository = _MockPatientRepository();
+      final _MockOpdRepository opdRepository = _MockOpdRepository();
+      const Patient patient = Patient(
+        id: 'patient-1',
+        publicId: 'PAT000001',
+        firstName: 'Jane',
+        lastName: 'Doe',
+      );
+      const OpdProviderOption provider = OpdProviderOption(
+        id: 'doctor-1',
+        displayName: 'Dr Able',
+        consultationFee: 30000,
+        consultationCurrency: 'KES',
+      );
+
+      _stubStartDialogLookups(
+        patientRepository: patientRepository,
+        opdRepository: opdRepository,
+        patients: const <Patient>[patient],
+      );
+      when(() => opdRepository.listProviders()).thenAnswer(
+        (_) async => const Result<List<OpdProviderOption>>.success(
+          <OpdProviderOption>[provider],
+        ),
+      );
+
+      final _MockApiClient apiClient = _MockApiClient();
+      when(
+        () => apiClient.get<List<Map<String, Object?>>>(
+          any(),
+          decoder: any(named: 'decoder'),
+          queryParameters: any(named: 'queryParameters'),
+        ),
+      ).thenAnswer(
+        (_) async => const Result<List<Map<String, Object?>>>.success(
+          <Map<String, Object?>>[],
+        ),
+      );
+      // Price book answers with a different amount than the doctor's fee.
+      when(
+        () => apiClient.post<List<ClinicalRequestBillingLineItem>>(
+          any(),
+          decoder: any(named: 'decoder'),
+          data: any(named: 'data'),
+        ),
+      ).thenAnswer(
+        (_) async => const Result<List<ClinicalRequestBillingLineItem>>.success(
+          <ClinicalRequestBillingLineItem>[
+            ClinicalRequestBillingLineItem(
+              id: 'CONSULTATION',
+              label: 'Consultation fee',
+              unitPrice: 12000,
+              currency: 'UGX',
+            ),
+          ],
+        ),
+      );
+
+      await _pumpStartDialog(
+        tester,
+        patientRepository: patientRepository,
+        opdRepository: opdRepository,
+        extraOverrides: <Override>[
+          initialSessionStateProvider.overrideWithValue(
+            SessionState.authenticated(
+              session: AuthSession(
+                tokens: SessionTokens(accessToken: 'access-token'),
+                user: const AuthUserProfile(
+                  tenantId: 'tenant-1',
+                  facilityId: 'facility-1',
+                ),
+              ),
+            ),
+          ),
+          insuranceCatalogRepositoryProvider.overrideWithValue(
+            InsuranceCatalogRepository(apiClient: apiClient),
+          ),
+          priceBookResolveRepositoryProvider.overrideWithValue(
+            PriceBookResolveRepository(apiClient: apiClient),
+          ),
+        ],
+        dialog: OpdEncounterDialog(
+          providerSchedules: const <OpdProviderSchedule>[],
+          appointments: const <OpdAppointment>[],
+          initialPatient: patient,
+          // Doctor is known up front, so the price-book resolve lands after
+          // the doctor's own fee is already in the field.
+          defaultProviderId: provider.id,
+          onSubmit: (_) async => _successfulOpdSubmit(),
+        ),
+      );
+
+      final Finder amountInput = find.descendant(
+        of: find.byType(AppCurrencyAmountField),
+        matching: find.byType(EditableText),
+      );
+      expect(
+        tester.widget<EditableText>(amountInput).controller.text,
+        '30,000',
+      );
+      expect(find.textContaining('price book'), findsNothing);
+
+      // A manual edit also survives a later resolve.
+      await tester.enterText(amountInput, '27500');
+      await tester.pumpAndSettle();
+      expect(
+        tester.widget<EditableText>(amountInput).controller.text,
+        '27,500',
+      );
+    },
+  );
+
+  testWidgets(
     'OpdEncounterDialog hides patient picker for pinned existing patient',
     (WidgetTester tester) async {
       final _MockPatientRepository patientRepository = _MockPatientRepository();
@@ -359,6 +490,18 @@ void main() {
       expect(find.text('Search patient *'), findsNothing);
       expect(find.text('Arrival mode *'), findsNothing);
       expect(find.text('Search doctor (optional)'), findsOneWidget);
+      expect(
+        tester
+            .widget<AppSelectField<String>>(
+              find.byWidgetPredicate(
+                (Widget widget) =>
+                    widget is AppSelectField<String> &&
+                    widget.labelText == 'Search doctor (optional)',
+              ),
+            )
+            .searchable,
+        isTrue,
+      );
       expect(find.text('Consultation fee (optional)'), findsOneWidget);
       expect(find.text('Payment required'), findsOneWidget);
       expect(find.text('Payment received'), findsNothing);
@@ -677,10 +820,11 @@ void main() {
         ),
       );
 
+      // Patient identity and encounter facts share one merged section.
       expect(find.text('Active OPD encounter found'), findsOneWidget);
-      expect(find.text('Next step'), findsOneWidget);
+      expect(find.textContaining('Next step'), findsWidgets);
       expect(find.text('Continue encounter'), findsOneWidget);
-      expect(find.byType(OpdEncounterSummaryRow), findsOneWidget);
+      expect(find.byType(AppPatientDetails), findsOneWidget);
       expect(find.byType(AppCopyableIdentifier), findsWidgets);
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(find.byType(LinearProgressIndicator), findsNothing);
@@ -1032,8 +1176,9 @@ void main() {
         ),
       );
       when(() => opdRepository.listProviders()).thenAnswer(
-        (_) async =>
-            const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
+        (_) async => const Result<List<OpdProviderOption>>.success(
+          <OpdProviderOption>[],
+        ),
       );
 
       await tester.pumpWidget(
@@ -1378,6 +1523,7 @@ Future<void> _pumpStartDialog(
   required OpdEncounterDialog dialog,
   Size size = const Size(1440, 900),
   bool canRegisterPatient = true,
+  List<Override> extraOverrides = const <Override>[],
 }) async {
   await _setLabeledDialogSurface(tester, size: size);
   await tester.pumpWidget(
@@ -1390,6 +1536,7 @@ Future<void> _pumpStartDialog(
               ? _patientWritePolicy()
               : AppAccessPolicy.fromSession(null),
         ),
+        ...extraOverrides,
       ],
       child: MaterialApp(
         theme: AppTheme.light,
