@@ -34,121 +34,65 @@ class DashboardPriorityPanel extends StatelessWidget {
         data.showFollowUps &&
         data.followUpTitle != null &&
         data.followUpItems.isNotEmpty;
-    final bool hasAlertContent = hasAlerts;
 
     if (!hasQueue && !hasAlerts && !hasResults && !hasFollowUps) {
       return const SizedBox.shrink();
     }
 
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final bool wide = constraints.maxWidth >= 980;
-        final Widget queuePanel = hasQueue
-            ? _DashboardQueuePanel(
-                title: data.queueTitle,
-                items: data.queueItems,
-                emptySectionTitle: data.emptySectionTitle,
-                emptyMessage: data.emptyMessage,
-                emptyActions: data.emptyActions,
-                maxItems: data.maxQueueItems,
-                viewAllLabel: data.viewAllLabel,
-                onViewAll: data.onViewAll,
-              )
-            : const SizedBox.shrink();
-        final Widget alertsPanel = hasAlerts
-            ? _DashboardAlertsPanel(
-                title: data.alertsTitle!,
-                items: data.alertItems,
-              )
-            : const SizedBox.shrink();
-        final Widget resultsPanel = hasResults
-            ? _DashboardSecondaryQueuePanel(
-                title: data.resultsTitle!,
-                icon: Icons.biotech_outlined,
-                items: data.resultsItems,
-                maxItems: data.maxResultsItems,
-                viewAllLabel: data.viewAllLabel,
-                onViewAll: data.onViewAllResults,
-              )
-            : const SizedBox.shrink();
-        final Widget followUpPanel = hasFollowUps
-            ? _DashboardSecondaryQueuePanel(
-                title: data.followUpTitle!,
-                icon: Icons.event_repeat_outlined,
-                items: data.followUpItems,
-                maxItems: data.maxFollowUpItems,
-                viewAllLabel: data.viewAllLabel,
-                onViewAll: data.onViewAllFollowUps,
-              )
-            : const SizedBox.shrink();
+    final Widget queuePanel = hasQueue
+        ? _DashboardQueuePanel(
+            title: data.queueTitle,
+            items: data.queueItems,
+            emptySectionTitle: data.emptySectionTitle,
+            emptyMessage: data.emptyMessage,
+            emptyActions: data.emptyActions,
+            maxItems: data.maxQueueItems,
+            viewAllLabel: data.viewAllLabel,
+            onViewAll: data.onViewAll,
+          )
+        : const SizedBox.shrink();
+    final Widget alertsPanel = hasAlerts
+        ? DashboardAlertsStrip(items: data.alertItems)
+        : const SizedBox.shrink();
+    final Widget resultsPanel = hasResults
+        ? _DashboardSecondaryQueuePanel(
+            title: data.resultsTitle!,
+            icon: Icons.biotech_outlined,
+            items: data.resultsItems,
+            maxItems: data.maxResultsItems,
+            viewAllLabel: data.viewAllLabel,
+            onViewAll: data.onViewAllResults,
+          )
+        : const SizedBox.shrink();
+    final Widget followUpPanel = hasFollowUps
+        ? _DashboardSecondaryQueuePanel(
+            title: data.followUpTitle!,
+            icon: Icons.event_repeat_outlined,
+            items: data.followUpItems,
+            maxItems: data.maxFollowUpItems,
+            viewAllLabel: data.viewAllLabel,
+            onViewAll: data.onViewAllFollowUps,
+          )
+        : const SizedBox.shrink();
 
-        final Widget work =
-            hasWorkContent(
-              hasQueueContent: hasQueueContent,
-              hasAlertContent: hasAlertContent,
-            )
-            ? (wide && hasQueueContent && hasAlertContent
-                  ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Expanded(flex: 3, child: queuePanel),
-                        SizedBox(width: gap),
-                        Expanded(flex: 2, child: alertsPanel),
-                      ],
-                    )
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        if (hasAlerts && !hasQueueContent) ...<Widget>[
-                          alertsPanel,
-                          if (hasQueue) SizedBox(height: gap),
-                        ],
-                        if (hasQueue) queuePanel,
-                        if (hasQueue && hasAlerts && hasQueueContent)
-                          SizedBox(height: gap),
-                        if (hasAlerts && hasQueueContent) alertsPanel,
-                      ],
-                    ))
-            : (hasQueue
-                  ? queuePanel
-                  : hasAlerts
-                  ? alertsPanel
-                  : const SizedBox.shrink());
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            work,
-            if (hasResults) ...<Widget>[
-              if (hasWorkContent(
-                    hasQueueContent: hasQueueContent,
-                    hasAlertContent: hasAlertContent,
-                  ) ||
-                  (hasQueue && !hasQueueContent) ||
-                  (hasAlerts && !hasAlertContent))
-                SizedBox(height: gap),
-              resultsPanel,
-            ],
-            if (hasFollowUps) ...<Widget>[
-              if (hasResults ||
-                  hasWorkContent(
-                    hasQueueContent: hasQueueContent,
-                    hasAlertContent: hasAlertContent,
-                  ))
-                SizedBox(height: gap),
-              followUpPanel,
-            ],
-          ],
-        );
-      },
+    // The alerts strip is a single compact line - it always leads, full width,
+    // instead of competing with the queue for a column.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        if (hasAlerts) alertsPanel,
+        if (hasAlerts && hasQueue) SizedBox(height: gap),
+        if (hasQueue) queuePanel,
+        if (hasResults) ...<Widget>[
+          if (hasAlerts || hasQueue) SizedBox(height: gap),
+          resultsPanel,
+        ],
+        if (hasFollowUps) ...<Widget>[
+          if (hasAlerts || hasQueue || hasResults) SizedBox(height: gap),
+          followUpPanel,
+        ],
+      ],
     );
-  }
-
-  bool hasWorkContent({
-    required bool hasQueueContent,
-    required bool hasAlertContent,
-  }) {
-    return hasQueueContent || hasAlertContent;
   }
 }
 
@@ -162,25 +106,126 @@ class DashboardAlertsPanel extends StatelessWidget {
     if (!data.showAlerts || data.alertsTitle == null) {
       return const SizedBox.shrink();
     }
+    return DashboardAlertsStrip(items: data.alertItems);
+  }
+}
+
+/// Dashboard alerts as one compact line of outlined severity chips:
+/// `icon  Label (count)`. Deliberately card-free - alerts sit inline above the
+/// dashboard body and must not spend vertical space on panel chrome.
+class DashboardAlertsStrip extends StatelessWidget {
+  const DashboardAlertsStrip({required this.items, super.key});
+
+  final List<DashboardWorklistItemData> items;
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
+    return Wrap(
+      spacing: theme.spacing.sm,
+      runSpacing: theme.spacing.xs,
+      children: <Widget>[
+        for (final DashboardWorklistItemData item in items)
+          _DashboardAlertChip(item: item),
+      ],
+    );
+  }
+}
 
-    return DecoratedBox(
-      decoration: dashboardAlertsPanelDecoration(theme, colorScheme),
-      child: _DashboardAlertsPanelContent(
-        title: data.alertsTitle!,
-        items: data.alertItems,
+class _DashboardAlertChip extends StatelessWidget {
+  const _DashboardAlertChip({required this.item});
+
+  final DashboardWorklistItemData item;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final AppWorkspaceStatusTone tone =
+        item.status?.tone ?? AppWorkspaceStatusTone.warning;
+    final Color accent = dashboardToneAccent(theme, tone);
+    final String label = item.title.trim();
+    final String? count = _alertCountLabel(item.subtitle);
+    final BorderRadius radius = BorderRadius.circular(theme.radius.sm);
+    final String severityLabel = item.status?.label.trim() ?? '';
+
+    final Widget content = Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: theme.spacing.sm,
+        vertical: theme.spacing.xs,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Icon(_alertToneIcon(tone), size: 16, color: accent),
+          SizedBox(width: theme.spacing.xs),
+          Flexible(
+            child: Text(
+              count == null ? label : '$label ($count)',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return Semantics(
+      button: item.onTap != null,
+      label: <String>[
+        if (severityLabel.isNotEmpty) severityLabel,
+        label,
+        ?count,
+      ].join(', '),
+      excludeSemantics: true,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          border: theme.borders.all(color: accent.withValues(alpha: 0.45)),
+        ),
+        child: item.onTap == null
+            ? content
+            : Material(
+                color: Colors.transparent,
+                borderRadius: radius,
+                child: InkWell(
+                  onTap: item.onTap,
+                  borderRadius: radius,
+                  hoverColor: accent.withValues(alpha: 0.08),
+                  child: content,
+                ),
+              ),
       ),
     );
   }
 }
 
+/// Alert rows carry their count in [DashboardWorklistItemData.subtitle].
+String? _alertCountLabel(String subtitle) {
+  final String value = subtitle.trim();
+  return value.isEmpty ? null : value;
+}
+
+IconData _alertToneIcon(AppWorkspaceStatusTone tone) {
+  return switch (tone) {
+    AppWorkspaceStatusTone.error => Icons.error_outline,
+    AppWorkspaceStatusTone.warning => Icons.warning_amber_rounded,
+    AppWorkspaceStatusTone.success => Icons.check_circle_outline,
+    AppWorkspaceStatusTone.info => Icons.info_outline,
+    AppWorkspaceStatusTone.neutral => Icons.circle_notifications_outlined,
+  };
+}
+
 class _DashboardSectionShell extends StatelessWidget {
-  const _DashboardSectionShell({required this.child, this.decoration});
+  const _DashboardSectionShell({required this.child});
 
   final Widget child;
-  final BoxDecoration? decoration;
 
   @override
   Widget build(BuildContext context) {
@@ -188,8 +233,7 @@ class _DashboardSectionShell extends StatelessWidget {
     final ColorScheme colorScheme = theme.colorScheme;
 
     return DecoratedBox(
-      decoration:
-          decoration ?? dashboardSurfaceCardDecoration(theme, colorScheme),
+      decoration: dashboardSurfaceCardDecoration(theme, colorScheme),
       child: child,
     );
   }
@@ -303,62 +347,6 @@ class _DashboardSecondaryQueuePanel extends StatelessWidget {
   }
 }
 
-class _DashboardAlertsPanel extends StatelessWidget {
-  const _DashboardAlertsPanel({required this.title, required this.items});
-
-  final String title;
-  final List<DashboardWorklistItemData> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return _DashboardSectionShell(
-      decoration: dashboardAlertsPanelDecoration(theme, colorScheme),
-      child: AppSectionPanel(
-        title: title,
-        leadingIcon: Icons.warning_amber_rounded,
-        density: AppContentPanelDensity.spacious,
-        backgroundColor: Colors.transparent,
-        borderColor: Colors.transparent,
-        children: <Widget>[
-          if (items.isEmpty)
-            const _DashboardQuietState()
-          else
-            _DashboardWorklistGroup(items: items.take(3).toList()),
-        ],
-      ),
-    );
-  }
-}
-
-class _DashboardAlertsPanelContent extends StatelessWidget {
-  const _DashboardAlertsPanelContent({
-    required this.title,
-    required this.items,
-  });
-
-  final String title;
-  final List<DashboardWorklistItemData> items;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppSectionPanel(
-      title: title,
-      leadingIcon: Icons.warning_amber_rounded,
-      density: AppContentPanelDensity.spacious,
-      backgroundColor: Colors.transparent,
-      borderColor: Colors.transparent,
-      children: <Widget>[
-        if (items.isEmpty)
-          const _DashboardQuietState()
-        else
-          _DashboardWorklistGroup(items: items.take(3).toList()),
-      ],
-    );
-  }
-}
 
 class _DashboardWorklistGroup extends StatelessWidget {
   const _DashboardWorklistGroup({required this.items});
@@ -495,46 +483,6 @@ class _DashboardEmptyState extends StatelessWidget {
   }
 }
 
-class _DashboardQuietState extends StatelessWidget {
-  const _DashboardQuietState({this.message = 'All clear'});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final Color successColor = theme.statusColors.success;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.md,
-        vertical: theme.spacing.md,
-      ),
-      child: Row(
-        children: <Widget>[
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: successColor.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.check_rounded, size: 20, color: successColor),
-          ),
-          SizedBox(width: theme.spacing.md),
-          Text(
-            message,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontWeight: AppFontWeight.regular,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 @immutable
 final class _WorklistTitleParts {

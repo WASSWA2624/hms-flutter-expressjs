@@ -176,18 +176,6 @@ BoxDecoration dashboardWorklistGroupDecoration(
   );
 }
 
-BoxDecoration dashboardAlertsPanelDecoration(
-  ThemeData theme,
-  ColorScheme colorScheme,
-) {
-  final Color accent = theme.statusColors.warning;
-  return BoxDecoration(
-    color: Color.lerp(colorScheme.surface, accent, 0.06),
-    borderRadius: BorderRadius.circular(theme.radius.xl),
-    border: theme.borders.all(color: accent.withValues(alpha: 0.22)),
-    boxShadow: dashboardSoftShadow(colorScheme),
-  );
-}
 
 /// Summary KPI columns: 1 on mobile, 3 on tablet, 5 on desktop.
 int dashboardMetricColumnsForWidth(double width) {

@@ -1,0 +1,175 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  :root{
+    --gold:#D8B26A; --gold-soft:#EBD3A0; --gold-line:rgba(216,178,106,.30);
+    --text:#F4F8FD; --muted:#9BB1CB; --hair:rgba(255,255,255,.11);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { width:1080px; height:1920px; }
+  body {
+    font-family:"Inter","Segoe UI",Arial,sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(760px 620px at 88% 4%, rgba(216,178,106,.13), transparent 64%),
+      radial-gradient(980px 820px at -8% 80%, rgba(28,98,178,.38), transparent 66%),
+      linear-gradient(163deg,#061527 0%, #0D2B4C 44%, #0A2039 72%, #050E1C 100%);
+    overflow:hidden; position:relative;
+  }
+  .vign { position:absolute; inset:0;
+    background: radial-gradient(1200px 1200px at 50% 42%, transparent 42%, rgba(0,0,0,.30) 100%); }
+  .frame { position:absolute; inset:34px; border:1px solid var(--gold-line); pointer-events:none; }
+
+  .wrap { position:relative; padding:80px 78px 74px; height:100%;
+          display:flex; flex-direction:column; justify-content:space-between; }
+
+  /* ---------- header ---------- */
+  .brand { display:flex; align-items:center; gap:22px; }
+  .mark { width:104px; height:104px; flex:0 0 auto; border:1px solid var(--gold-line);
+          background:rgba(255,255,255,.035); display:flex; align-items:center; justify-content:center; }
+  .mark img { width:70px; height:70px; filter:drop-shadow(0 8px 18px rgba(0,0,0,.55)); }
+  .bname { font-size:44px; font-weight:600; letter-spacing:11px; line-height:1; }
+  .bsub { margin-top:11px; font-size:16px; letter-spacing:5.4px; text-transform:uppercase;
+          color:var(--gold); font-weight:500; }
+  .live { margin-left:auto; display:flex; align-items:center; gap:11px;
+          font-size:16px; letter-spacing:4px; text-transform:uppercase; color:var(--muted); font-weight:500; }
+  .live .dot { width:9px; height:9px; border-radius:50%; background:var(--gold);
+               box-shadow:0 0 0 6px rgba(216,178,106,.16); }
+  .rule { height:1px; background:var(--hair); margin-top:34px; }
+
+  /* ---------- headline ---------- */
+  h1 { font-family:"Playfair Display",Georgia,serif; font-size:88px; font-weight:600;
+       line-height:1.08; letter-spacing:-.5px; }
+  h1 em { font-style:italic; font-weight:500; color:var(--gold-soft); }
+  .lede { margin-top:26px; font-size:27px; font-weight:300; line-height:1.52; color:var(--muted);
+          max-width:910px; }
+
+  /* ---------- features ---------- */
+  .features { display:grid; grid-template-columns:1fr 1fr; column-gap:58px; row-gap:0; }
+  .f { border-top:1px solid var(--hair); padding:24px 0 22px; }
+  .f .n { font-size:15px; letter-spacing:3.4px; color:var(--gold); font-weight:500; }
+  .f h3 { margin-top:11px; font-size:27px; font-weight:600; letter-spacing:.1px; line-height:1.2; }
+  .f p { margin-top:8px; font-size:20px; font-weight:300; line-height:1.42; color:var(--muted); }
+
+  /* ---------- owners ---------- */
+  .owners { border-left:2px solid var(--gold); padding:6px 0 6px 30px; }
+  .owners .t { font-size:16px; letter-spacing:4.4px; text-transform:uppercase; color:var(--gold); font-weight:600; }
+  .owners ul { margin-top:18px; display:grid; grid-template-columns:1fr 1fr; gap:13px 40px; }
+  .owners li { list-style:none; font-size:22px; font-weight:400; line-height:1.34; color:#E4EDF7;
+               padding-left:28px; position:relative; }
+  .owners li::before { content:""; position:absolute; left:0; top:8px; width:15px; height:2px; background:var(--gold); }
+
+  /* ---------- cta ---------- */
+  .cta { border-top:1px solid var(--gold-line); padding-top:34px; }
+  .link { display:flex; align-items:flex-end; gap:24px; }
+  .link .lbl { font-size:16px; letter-spacing:4.6px; text-transform:uppercase; color:var(--muted); font-weight:500; }
+  .link .url { font-family:"Playfair Display",Georgia,serif; font-size:64px; font-weight:600;
+               color:var(--gold-soft); line-height:1.06; margin-top:12px; letter-spacing:-.5px; }
+  .link .arrow { margin-left:auto; width:76px; height:76px; border-radius:50%;
+                 border:1px solid var(--gold-line); display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  .link .arrow svg { width:32px; height:32px; stroke:var(--gold); stroke-width:1.6; fill:none;
+                     stroke-linecap:round; stroke-linejoin:round; }
+  .foot { margin-top:34px; display:flex; align-items:flex-end; }
+  .foot .lbl { font-size:15px; letter-spacing:4px; text-transform:uppercase; color:var(--muted); font-weight:500; }
+  .foot .tel { margin-top:9px; font-size:34px; font-weight:600; letter-spacing:1px; }
+  .foot .note { margin-left:auto; text-align:right; font-size:19px; font-weight:300; line-height:1.5; color:var(--muted); }
+</style>
+</head>
+<body>
+  <div class="vign"></div>
+  <div class="frame"></div>
+  <div class="wrap">
+
+    <div>
+      <div class="brand">
+        <div class="mark"><img src="logo.png" alt=""></div>
+        <div>
+          <div class="bname">HOSSPI</div>
+          <div class="bsub">Hospital Management System</div>
+        </div>
+        <div class="live"><span class="dot"></span>Now live</div>
+      </div>
+      <div class="rule"></div>
+    </div>
+
+    <div>
+      <h1>The whole hospital,<br>running as <em>one system</em>.</h1>
+      <p class="lede">From registration to discharge &mdash; every consultation, every test and every shilling, held in one calm place.</p>
+    </div>
+
+    <div class="features">
+      <div class="f">
+        <div class="n">01</div>
+        <h3>Patient Registration &amp; Records</h3>
+        <p>Register once. Find any file in seconds.</p>
+      </div>
+      <div class="f">
+        <div class="n">02</div>
+        <h3>Encounters &amp; Clinical Notes</h3>
+        <p>OPD, wards, ICU and theatre, documented as they happen.</p>
+      </div>
+      <div class="f">
+        <div class="n">03</div>
+        <h3>Billing, Invoices &amp; Payments</h3>
+        <p>Cash, mobile money and insurance claims in one till.</p>
+      </div>
+      <div class="f">
+        <div class="n">04</div>
+        <h3>Pharmacy, Lab &amp; Radiology</h3>
+        <p>Orders, results and drug stock, tracked end to end.</p>
+      </div>
+      <div class="f">
+        <div class="n">05</div>
+        <h3>Wards, Beds &amp; Admissions</h3>
+        <p>Know who is admitted, where, and which beds are free.</p>
+      </div>
+      <div class="f">
+        <div class="n">06</div>
+        <h3>Appointments &amp; Reception</h3>
+        <p>Book, check in and route patients without paper.</p>
+      </div>
+      <div class="f">
+        <div class="n">07</div>
+        <h3>Staff, Roles &amp; Permissions</h3>
+        <p>Every user sees only what their role allows.</p>
+      </div>
+      <div class="f">
+        <div class="n">08</div>
+        <h3>Live Reports &amp; Dashboards</h3>
+        <p>Revenue, workload and stock, at a glance.</p>
+      </div>
+    </div>
+
+    <div class="owners">
+      <div class="t">For owners &amp; administrators</div>
+      <ul>
+        <li>Every service billed &mdash; no income lost</li>
+        <li>Monitor your facility from anywhere</li>
+        <li>Shorter queues, faster patient flow</li>
+        <li>All your branches under one login</li>
+      </ul>
+    </div>
+
+    <div class="cta">
+      <div class="link">
+        <div>
+          <div class="lbl">Start today at</div>
+          <div class="url">app.hosspi.com</div>
+        </div>
+        <div class="arrow"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      </div>
+      <div class="foot">
+        <div>
+          <div class="lbl">Call or WhatsApp</div>
+          <div class="tel">+256 783 230 321</div>
+        </div>
+        <div class="note">Works on phone, tablet<br>or computer &mdash; nothing to install</div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

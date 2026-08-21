@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_models.dart';
 import 'package:hosspi_hms/shared/dashboard/dashboard_priority_panel.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
 void main() {
   testWidgets('shows empty section title with management actions', (
@@ -96,11 +97,80 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final Rect alertsTitle = tester.getRect(find.text('Facility alerts'));
+      // Alerts render as one compact chip line - no section title, no card.
+      expect(find.text('Facility alerts'), findsNothing);
+      final Rect alertChip = tester.getRect(
+        find.text('Entitlement Denied Modules (1 facility)'),
+      );
       final Rect managementTitle = tester.getRect(
         find.text('Facility management'),
       );
-      expect(managementTitle.top, greaterThan(alertsTitle.bottom + 8));
+      expect(managementTitle.top, greaterThan(alertChip.bottom));
     },
   );
+
+  testWidgets('renders alerts as minimal outlined chips', (
+    WidgetTester tester,
+  ) async {
+    int taps = 0;
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          localizationsDelegates: const <LocalizationsDelegate<dynamic>>[
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: DashboardPriorityPanel(
+                data: DashboardPriorityPanelData(
+                  showQueue: false,
+                  showAlerts: true,
+                  alertsTitle: 'Alerts',
+                  alertItems: <DashboardWorklistItemData>[
+                    DashboardWorklistItemData(
+                      title: 'Tenants Without Subscription',
+                      subtitle: '3',
+                      icon: Icons.warning_amber_rounded,
+                      status: const AppWorkspaceStatus(
+                        label: 'Warning',
+                        tone: AppWorkspaceStatusTone.warning,
+                      ),
+                      onTap: () => taps += 1,
+                    ),
+                    const DashboardWorklistItemData(
+                      title: 'Integration Errors',
+                      subtitle: '2',
+                      icon: Icons.warning_amber_rounded,
+                      status: AppWorkspaceStatus(
+                        label: 'High',
+                        tone: AppWorkspaceStatusTone.error,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Count sits in brackets beside the label; no separate status badge.
+    expect(
+      find.text('Tenants Without Subscription (3)'),
+      findsOneWidget,
+    );
+    expect(find.text('Integration Errors (2)'), findsOneWidget);
+    expect(find.text('Warning'), findsNothing);
+    expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.error_outline), findsOneWidget);
+
+    await tester.tap(find.text('Tenants Without Subscription (3)'));
+    await tester.pumpAndSettle();
+    expect(taps, 1);
+  });
 }
