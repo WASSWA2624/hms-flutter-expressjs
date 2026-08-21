@@ -12,6 +12,9 @@ const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
 const opdFlowService = require('@services/opd-flow/opd-flow.service');
 const {
+  resolveProviderAvailability,
+} = require('@lib/scheduling/provider-availability');
+const {
   resolveModelIdByIdentifier,
   resolveModelRecordByIdentifier} = require('@lib/identifiers/resolve-entity-id');
 
@@ -23,6 +26,14 @@ jest.mock('@services/opd-flow/opd-flow.service', () => ({
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
   resolveModelIdByIdentifier: jest.fn(),
   resolveModelRecordByIdentifier: jest.fn()}));
+// The roster lookup reads other modules' tables; the service's own contract
+// is what it does with the answer, so the answer is stubbed here.
+jest.mock('@lib/scheduling/provider-availability', () => ({
+  resolveProviderAvailability: jest.fn(),
+  UNAVAILABLE_REASONS: {
+    ON_LEAVE: 'ON_LEAVE',
+    BLOCKED_SLOT: 'BLOCKED_SLOT',
+    OFF_SCHEDULE: 'OFF_SCHEDULE'}}));
 
 /**
  * Service results run through withAppointmentProjection, which always states
@@ -35,6 +46,7 @@ const projected = (appointment) => ({
 describe('Appointment Service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    resolveProviderAvailability.mockResolvedValue({ available: true });
     opdFlowService.startOpdFlow.mockResolvedValue({ encounter: { id: 'enc-1' } });
     createAuditLog.mockResolvedValue({});
     resolveModelIdByIdentifier.mockImplementation(async ({ identifier }) => identifier);
@@ -345,6 +357,100 @@ describe('Appointment Service', () => {
       expect(appointmentRepository.findOverlappingForPatient).not.toHaveBeenCalled();
     });
 
+    describe('staff availability', () => {
+      const staffedData = { ...createData, provider_user_id: 'provider-1' };
+
+      beforeEach(() => {
+        // jest.clearAllMocks() keeps implementations, so the clash mocks are
+        // re-armed rather than inheriting a conflict from a prior case.
+        appointmentRepository.findOverlappingForProvider.mockResolvedValue(null);
+        appointmentRepository.findOverlappingForPatient.mockResolvedValue(null);
+        appointmentRepository.findOverlappingVisitorAppointments.mockResolvedValue([]);
+      });
+
+      it('refuses a booking outside the rostered hours', async () => {
+        resolveProviderAvailability.mockResolvedValue({
+          available: false,
+          reason: 'OFF_SCHEDULE',
+          detail: { timezone: 'Africa/Kampala' }});
+
+        await expect(
+          appointmentService.createAppointment(staffedData, 'user-id', '127.0.0.1')
+        ).rejects.toMatchObject({
+          messageKey: 'errors.appointment.host_off_schedule',
+          statusCode: 409});
+        expect(appointmentRepository.create).not.toHaveBeenCalled();
+      });
+
+      it('names leave and blocked slots separately from off-roster', async () => {
+        resolveProviderAvailability.mockResolvedValue({
+          available: false,
+          reason: 'ON_LEAVE',
+          detail: { leave_id: 'LEV000001' }});
+        await expect(
+          appointmentService.createAppointment(staffedData, 'user-id', '127.0.0.1')
+        ).rejects.toMatchObject({
+          messageKey: 'errors.appointment.host_on_leave'});
+
+        resolveProviderAvailability.mockResolvedValue({
+          available: false,
+          reason: 'BLOCKED_SLOT',
+          detail: { slot_id: 'SLT000001' }});
+        await expect(
+          appointmentService.createAppointment(staffedData, 'user-id', '127.0.0.1')
+        ).rejects.toMatchObject({
+          messageKey: 'errors.appointment.host_slot_blocked'});
+      });
+
+      it('checks the roster for the facility the booking is at', async () => {
+        appointmentRepository.create.mockResolvedValue(mockCreated);
+        appointmentRepository.findById.mockResolvedValue(mockCreated);
+
+        await appointmentService.createAppointment(
+          { ...staffedData, facility_id: 'facility-1' },
+          'user-id',
+          '127.0.0.1'
+        );
+
+        expect(resolveProviderAvailability).toHaveBeenCalledWith(
+          expect.objectContaining({
+            providerUserId: 'provider-1',
+            facilityId: 'facility-1',
+            tenantId: staffedData.tenant_id})
+        );
+      });
+
+      it('skips the roster lookup when no staff member is assigned', async () => {
+        appointmentRepository.create.mockResolvedValue(mockCreated);
+        appointmentRepository.findById.mockResolvedValue(mockCreated);
+
+        await appointmentService.createAppointment(createData, 'user-id', '127.0.0.1');
+
+        expect(resolveProviderAvailability).not.toHaveBeenCalled();
+      });
+
+      it('applies to a visitor meeting host as well', async () => {
+        resolveProviderAvailability.mockResolvedValue({
+          available: false,
+          reason: 'OFF_SCHEDULE'});
+
+        await expect(
+          appointmentService.createAppointment(
+            {
+              ...createData,
+              patient_id: null,
+              subject_type: 'VISITOR',
+              visitor_name: 'Jordan Visitor',
+              provider_user_id: 'provider-1'},
+            'user-id',
+            '127.0.0.1'
+          )
+        ).rejects.toMatchObject({
+          messageKey: 'errors.appointment.host_off_schedule',
+          statusCode: 409});
+      });
+    });
+
     describe('visitor double-booking', () => {
       const visitorData = {
         ...createData,
@@ -582,6 +688,35 @@ describe('Appointment Service', () => {
           tenantId: 'tenant-1',
         })
       );
+      expect(appointmentRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('should re-check the roster when the window moves', async () => {
+      const before = {
+        id: appointmentId,
+        tenant_id: 'tenant-1',
+        facility_id: 'facility-1',
+        provider_user_id: 'provider-1',
+        status: 'SCHEDULED',
+        scheduled_start: '2026-07-20T08:00:00.000Z',
+        scheduled_end: '2026-07-20T08:30:00.000Z'};
+      appointmentRepository.findById.mockResolvedValue(before);
+      resolveProviderAvailability.mockResolvedValue({
+        available: false,
+        reason: 'OFF_SCHEDULE'});
+
+      await expect(
+        appointmentService.updateAppointment(
+          appointmentId,
+          {
+            scheduled_start: '2026-07-21T22:00:00.000Z',
+            scheduled_end: '2026-07-21T22:30:00.000Z'},
+          'user-id',
+          '127.0.0.1'
+        )
+      ).rejects.toMatchObject({
+        messageKey: 'errors.appointment.host_off_schedule',
+        statusCode: 409});
       expect(appointmentRepository.update).not.toHaveBeenCalled();
     });
 

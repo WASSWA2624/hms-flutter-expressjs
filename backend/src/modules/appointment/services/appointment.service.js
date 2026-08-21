@@ -13,6 +13,10 @@ const { HttpError } = require('@lib/errors');
 const opdFlowService = require('@services/opd-flow/opd-flow.service');
 const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
 const {
+  resolveProviderAvailability,
+  UNAVAILABLE_REASONS,
+} = require('@lib/scheduling/provider-availability');
+const {
   resolveModelIdByIdentifier,
   resolveModelRecordByIdentifier,
 } = require('@lib/identifiers/resolve-entity-id');
@@ -356,6 +360,56 @@ const resolveAppointmentPayloadIdentifiers = async (data = {}, existing = null) 
   }
 
   return payload;
+};
+
+/**
+ * Error key for each way the roster can rule a booking out, so the desk is
+ * told which one it hit rather than a flat "not available".
+ */
+const UNAVAILABLE_MESSAGE_KEYS = {
+  [UNAVAILABLE_REASONS.ON_LEAVE]: 'errors.appointment.host_on_leave',
+  [UNAVAILABLE_REASONS.BLOCKED_SLOT]: 'errors.appointment.host_slot_blocked',
+  [UNAVAILABLE_REASONS.OFF_SCHEDULE]: 'errors.appointment.host_off_schedule',
+};
+
+/**
+ * Reject a booking that falls outside the staff member's working hours, on a
+ * blocked-out slot, or during approved leave.
+ *
+ * Separate from the clash check below: an empty diary says only that nobody
+ * else booked that hour, not that the person is at work for it.
+ */
+const assertHostWithinSchedule = async ({
+  providerUserId,
+  scheduledStart,
+  scheduledEnd,
+  tenantId,
+  facilityId,
+}) => {
+  if (!providerUserId || !scheduledStart || !scheduledEnd) {
+    return;
+  }
+
+  const availability = await resolveProviderAvailability({
+    providerUserId,
+    tenantId,
+    facilityId,
+    scheduledStart,
+    scheduledEnd,
+  });
+  if (availability.available) {
+    return;
+  }
+
+  const messageKey =
+    UNAVAILABLE_MESSAGE_KEYS[availability.reason] ||
+    'errors.appointment.host_off_schedule';
+  throw new HttpError(messageKey, 409, [
+    {
+      field: 'provider_user_id',
+      ...(availability.detail || {}),
+    },
+  ]);
 };
 
 const assertHostAvailable = async ({
@@ -794,6 +848,13 @@ const createAppointment = async (data, userId, ipAddress) => {
       ]);
     }
 
+    await assertHostWithinSchedule({
+      providerUserId: payload.provider_user_id,
+      scheduledStart: payload.scheduled_start,
+      scheduledEnd: payload.scheduled_end,
+      tenantId: payload.tenant_id,
+      facilityId: payload.facility_id,
+    });
     await assertHostAvailable({
       providerUserId: payload.provider_user_id,
       scheduledStart: payload.scheduled_start,
@@ -898,6 +959,16 @@ const updateAppointment = async (id, data, userId, ipAddress) => {
       payload.visitor_name !== undefined ||
       payload.visitor_phone !== undefined;
     if (scheduleTouched) {
+      await assertHostWithinSchedule({
+        providerUserId: nextProviderId,
+        scheduledStart: nextStart,
+        scheduledEnd: nextEnd,
+        tenantId: before.tenant_id,
+        facilityId:
+          payload.facility_id !== undefined
+            ? payload.facility_id
+            : before.facility_id,
+      });
       await assertHostAvailable({
         providerUserId: nextProviderId,
         scheduledStart: nextStart,
