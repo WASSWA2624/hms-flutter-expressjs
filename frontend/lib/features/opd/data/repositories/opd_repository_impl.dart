@@ -58,9 +58,13 @@ final class OpdRepositoryImpl implements OpdRepository {
     String appointmentId,
     Map<String, Object?> payload,
   ) {
+    // Sent verbatim, unlike the create call: an update payload is assembled
+    // field by field for exactly the edit being made, and a null in it is the
+    // edit — clearing the assigned provider, say. Stripping nulls here would
+    // turn that into a silent no-op.
     return _apiClient.put<OpdAppointment>(
       ApiEndpoints.byId(HmsApiResource.appointments, appointmentId),
-      data: _withoutEmpty(payload),
+      data: payload,
       decoder: (Object? data) =>
           OpdAppointmentDto(decodeDataMap(data)).toEntity(),
     );

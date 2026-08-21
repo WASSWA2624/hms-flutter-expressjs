@@ -2977,10 +2977,7 @@ class _OpdNextActionCell extends ConsumerWidget {
       if (label == null) {
         return const SizedBox.shrink();
       }
-      final OpdBoardNextActionKind kind =
-          primary == OpdAppointmentPrimaryAction.continueEncounter
-          ? OpdBoardNextActionKind.continueAppointmentEncounter
-          : OpdBoardNextActionKind.checkInAppointment;
+      final OpdBoardNextActionKind kind = opdAppointmentNextActionKind(primary);
       return OpdBoardNextActionCell(
         kind: kind,
         labelOverride: label,

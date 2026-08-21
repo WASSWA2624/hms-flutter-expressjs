@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/features/opd/domain/entities/opd_entities.dart';
 import 'package:hosspi_hms/l10n/app_localizations_en.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_appointment_eligibility.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_board_next_action.dart';
 
 void main() {
   const OpdAppointment scheduled = OpdAppointment(
@@ -77,18 +78,101 @@ void main() {
     expect(opdAppointmentPrimaryActionLabel(l10n, action), 'Reschedule');
   });
 
+  const OpdFlowSummary patientOnlyFlow = OpdFlowSummary(
+    id: 'flow-2',
+    patientId: 'PAT000001',
+    status: 'OPEN',
+    stage: 'WAITING_VITALS',
+  );
+
   test('matches open flow by unique patient when appointment id is absent', () {
-    const OpdFlowSummary patientOnlyFlow = OpdFlowSummary(
-      id: 'flow-2',
-      patientId: 'PAT000001',
-      status: 'OPEN',
-      stage: 'WAITING_VITALS',
-    );
     final OpdFlowSummary? linked = findActiveOpdFlowForAppointment(
-      appointment: scheduled,
+      appointment: scheduled.copyWith(status: 'IN_PROGRESS'),
       flows: <OpdFlowSummary>[patientOnlyFlow],
     );
     expect(linked?.id, 'flow-2');
+  });
+
+  test('a still-scheduled booking is never claimed by an unrelated visit', () {
+    // The patient walking in today does not turn next week's booking into an
+    // encounter: only the server marking the appointment IN_PROGRESS does.
+    expect(
+      findActiveOpdFlowForAppointment(
+        appointment: scheduled,
+        flows: <OpdFlowSummary>[patientOnlyFlow],
+      ),
+      isNull,
+    );
+    expect(
+      isReceptionPreEncounterAppointment(
+        appointment: scheduled,
+        flows: <OpdFlowSummary>[patientOnlyFlow],
+      ),
+      isTrue,
+    );
+    expect(
+      canCancelOpdAppointment(
+        appointment: scheduled,
+        linkedFlow: findActiveOpdFlowForAppointment(
+          appointment: scheduled,
+          flows: <OpdFlowSummary>[patientOnlyFlow],
+        ),
+      ),
+      isTrue,
+    );
+  });
+
+  test('a visitor meeting is completed rather than checked in', () {
+    const OpdAppointment visitorMeeting = OpdAppointment(
+      id: 'appointment-2',
+      publicId: 'APT000002',
+      subjectType: 'VISITOR',
+      visitorName: 'Jane Visitor',
+      status: 'SCHEDULED',
+    );
+    final OpdAppointmentPrimaryAction action =
+        resolveOpdAppointmentPrimaryAction(appointment: visitorMeeting);
+    expect(action, OpdAppointmentPrimaryAction.complete);
+    expect(opdAppointmentPrimaryActionLabel(l10n, action), 'Mark complete');
+  });
+
+  test('allows complete only before a terminal status or an open encounter', () {
+    expect(canCompleteOpdAppointment(appointment: scheduled), isTrue);
+    expect(
+      canCompleteOpdAppointment(appointment: scheduled, linkedFlow: openFlow),
+      isFalse,
+    );
+    expect(
+      canCompleteOpdAppointment(
+        appointment: scheduled.copyWith(status: 'COMPLETED'),
+      ),
+      isFalse,
+    );
+  });
+
+  test('every primary action maps to its own worklist cell', () {
+    expect(
+      opdAppointmentNextActionKind(OpdAppointmentPrimaryAction.startEncounter),
+      OpdBoardNextActionKind.checkInAppointment,
+    );
+    expect(
+      opdAppointmentNextActionKind(
+        OpdAppointmentPrimaryAction.continueEncounter,
+      ),
+      OpdBoardNextActionKind.continueAppointmentEncounter,
+    );
+    expect(
+      opdAppointmentNextActionKind(OpdAppointmentPrimaryAction.reschedule),
+      OpdBoardNextActionKind.rescheduleAppointment,
+    );
+    expect(
+      opdAppointmentNextActionKind(OpdAppointmentPrimaryAction.complete),
+      OpdBoardNextActionKind.completeAppointment,
+    );
+    expect(
+      opdAppointmentNextActionKind(OpdAppointmentPrimaryAction.none),
+      OpdBoardNextActionKind.none,
+    );
   });
 
   test('allows cancel only for pre-encounter appointments', () {

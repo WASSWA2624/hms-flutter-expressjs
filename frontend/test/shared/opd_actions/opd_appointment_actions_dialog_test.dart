@@ -250,6 +250,49 @@ void main() {
     expect(find.text('Close'), findsWidgets);
   });
 
+  testWidgets('shows the contact number the desk calls about the booking', (
+    WidgetTester tester,
+  ) async {
+    await _pumpMountedDialog(
+      tester,
+      appointment.copyWith(patientPhone: '+256700000001'),
+    );
+
+    expect(find.text('+256700000001'), findsOneWidget);
+  });
+
+  testWidgets('Mark complete opens the canonical child dialog', (
+    WidgetTester tester,
+  ) async {
+    await _pumpMountedDialog(tester, appointment);
+    await tester.tap(find.text('Mark complete'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('MARK COMPLETE'), findsOneWidget);
+    expect(find.text('Close'), findsWidgets);
+  });
+
+  testWidgets('a visitor meeting is closed out instead of checked in', (
+    WidgetTester tester,
+  ) async {
+    const OpdAppointment visitorMeeting = OpdAppointment(
+      id: 'appointment-visitor',
+      publicId: 'APT000002',
+      subjectType: 'VISITOR',
+      visitorName: 'Jane Visitor',
+      status: 'SCHEDULED',
+    );
+
+    await _pumpMountedDialog(tester, visitorMeeting);
+
+    // A visitor has no patient record, so there is no encounter to start.
+    expect(find.text('Start OPD encounter'), findsNothing);
+    expect(find.text('Continue encounter'), findsNothing);
+    expect(find.text('Mark complete'), findsOneWidget);
+    expect(find.text('Reschedule'), findsOneWidget);
+    expect(find.text('Cancel appointment'), findsOneWidget);
+  });
+
   testWidgets('remains usable on a compact dark high-text-scale surface', (
     WidgetTester tester,
   ) async {

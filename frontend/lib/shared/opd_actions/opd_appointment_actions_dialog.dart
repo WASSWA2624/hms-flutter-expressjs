@@ -109,13 +109,22 @@ class _OpdAppointmentActionsDialogState
           appointment: widget.appointment,
           linkedFlow: linkedFlow,
         );
+    // A visitor has no patient record, so neither encounter action can run
+    // for one; the hub offers reschedule / complete / cancel instead.
+    final bool isVisitorMeeting = widget.appointment.isVisitorMeeting;
     final bool canStartEncounter =
+        !isVisitorMeeting &&
         primaryAction == OpdAppointmentPrimaryAction.startEncounter;
     final bool canContinueEncounter =
+        !isVisitorMeeting &&
         primaryAction == OpdAppointmentPrimaryAction.continueEncounter &&
         linkedFlow != null;
     final bool canReschedule = !terminal;
     final bool canCancelAppointment = canCancelOpdAppointment(
+      appointment: widget.appointment,
+      linkedFlow: linkedFlow,
+    );
+    final bool canCompleteAppointment = canCompleteOpdAppointment(
       appointment: widget.appointment,
       linkedFlow: linkedFlow,
     );
@@ -162,6 +171,16 @@ class _OpdAppointmentActionsDialogState
                       ),
                 icon: Icons.schedule_outlined,
               ),
+              // Every action offered here — reschedule, cancel, close out —
+              // is one the desk phones the patient or visitor about first.
+              AppWorkspacePatientContextField(
+                label: l10n.patientsPhoneLabel,
+                value:
+                    widget.appointment.patientPhone?.trim().isNotEmpty == true
+                    ? widget.appointment.patientPhone!.trim()
+                    : l10n.profileUnknownValue,
+                icon: Icons.phone_outlined,
+              ),
               AppWorkspacePatientContextField(
                 label: l10n.opdReasonLabel,
                 value: widget.appointment.reason ?? l10n.profileUnknownValue,
@@ -181,6 +200,15 @@ class _OpdAppointmentActionsDialogState
                     fullWidth: true,
                     enabled: !_isSaving,
                     onPressed: _openReschedule,
+                  ),
+                if (canCompleteAppointment)
+                  AppPermissionActionItem(
+                    requirement: widget.actionRequirement,
+                    label: l10n.opdCompleteAppointmentAction,
+                    icon: AppActionIcons.complete,
+                    fullWidth: true,
+                    enabled: !_isSaving,
+                    onPressed: _openComplete,
                   ),
                 if (canCancelAppointment)
                   AppPermissionActionItem(
@@ -345,6 +373,86 @@ class _OpdAppointmentActionsDialogState
     if (changed == true && mounted) {
       Navigator.of(context).pop(true);
     }
+  }
+
+  Future<void> _openComplete() async {
+    if (_isSaving) {
+      return;
+    }
+    final bool? changed = await showOpdCompleteAppointmentDialog(
+      context: context,
+      appointment: widget.appointment,
+    );
+    if (changed == true && mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+}
+
+/// Opens the OPD complete-appointment dialog (mutating; not barrier-dismissible).
+Future<bool?> showOpdCompleteAppointmentDialog({
+  required BuildContext context,
+  required OpdAppointment appointment,
+}) {
+  return showAppDialog<bool>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => OpdCompleteAppointmentDialog(appointment: appointment),
+  );
+}
+
+/// Confirm closing an appointment out as completed.
+class OpdCompleteAppointmentDialog extends ConsumerWidget {
+  const OpdCompleteAppointmentDialog({required this.appointment, super.key});
+
+  final OpdAppointment appointment;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AppLocalizations l10n = context.l10n;
+    final Locale locale = Localizations.localeOf(context);
+    return AppConfirmActionDialog(
+      title: l10n.opdCompleteAppointmentAction,
+      body: l10n.opdCompleteAppointmentConfirmBody,
+      submitLabel: l10n.opdCompleteAppointmentAction,
+      icon: const Icon(AppActionIcons.complete),
+      submitLeadingIcon: AppActionIcons.complete,
+      scrollable: true,
+      pinActionsToBottom: true,
+      maxWidth: 680,
+      sectionDensity: AppFormSectionDensity.compact,
+      leadingContent: <Widget>[
+        AppTriageSummaryPanel(
+          items: <AppInfoTileData>[
+            AppInfoTileData(
+              label: l10n.opdPatientColumnLabel,
+              value: appointment.displayTitle,
+            ),
+            AppInfoTileData(
+              label: l10n.opdStatusColumnLabel,
+              value: opdStageDisplayLabel(l10n, appointment.status ?? ''),
+            ),
+            AppInfoTileData(
+              label: l10n.opdProviderColumnLabel,
+              value:
+                  appointment.providerDisplayName ?? l10n.profileUnknownValue,
+            ),
+            AppInfoTileData(
+              label: l10n.opdTimeColumnLabel,
+              value: appointment.scheduledStart == null
+                  ? l10n.profileUnknownValue
+                  : AppFormatters.dateTime(appointment.scheduledStart!, locale),
+            ),
+          ],
+          emptyValue: l10n.profileUnknownValue,
+        ),
+      ],
+      onConfirm: () {
+        return ref
+            .read(opdWorkspaceControllerProvider.notifier)
+            .completeAppointment(appointment);
+      },
+    );
   }
 }
 

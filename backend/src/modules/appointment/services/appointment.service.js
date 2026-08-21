@@ -63,7 +63,10 @@ const APPOINTMENT_INCLUDE = {
       contacts: {
         where: { deleted_at: null },
         orderBy: [{ is_primary: 'desc' }, { updated_at: 'desc' }],
-        take: 3,
+        // Wide enough that a patient whose primary contact is an email (or a
+        // messaging handle) still carries their phone number into the desk
+        // projection below, which reception dials to confirm the booking.
+        take: 10,
         select: {
           contact_type: true,
           value: true,
@@ -110,6 +113,21 @@ const resolvePrimaryRecord = (records = []) => {
   return records.find((record) => record?.is_primary) || records[0] || null;
 };
 
+/**
+ * Primary contact of a given type. A patient's primary contact is whatever
+ * they nominated, which is often an email, so a phone number has to be picked
+ * by contact_type rather than by taking the first record.
+ */
+const resolvePrimaryContactByType = (contacts = [], contactType) => {
+  if (!Array.isArray(contacts)) return null;
+  const normalizedType = String(contactType || '').trim().toUpperCase();
+  if (!normalizedType) return null;
+  const matches = contacts.filter(
+    (contact) => String(contact?.contact_type || '').trim().toUpperCase() === normalizedType
+  );
+  return matches.find((contact) => contact?.is_primary) || matches[0] || null;
+};
+
 const appendIfPresent = (target, key, value) => {
   if (value === undefined || value === null || value === '') return;
   target[key] = value;
@@ -128,6 +146,10 @@ const withAppointmentProjection = (appointment) => {
       ? appointment.visitor_name.trim()
       : '';
   const primaryContact = resolvePrimaryRecord(appointment?.patient?.contacts);
+  const primaryPhoneContact = resolvePrimaryContactByType(
+    appointment?.patient?.contacts,
+    'PHONE'
+  );
   const primaryIdentifier = resolvePrimaryRecord(appointment?.patient?.identifiers);
   const providerDisplayName = resolveDisplayName(
     appointment?.provider?.profile?.first_name,
@@ -150,7 +172,11 @@ const withAppointmentProjection = (appointment) => {
   appendIfPresent(projected, 'patient_last_name', appointment?.patient?.last_name);
   appendIfPresent(projected, 'patient_date_of_birth', appointment?.patient?.date_of_birth);
   appendIfPresent(projected, 'patient_gender', appointment?.patient?.gender);
-  appendIfPresent(projected, 'patient_primary_phone', primaryContact?.value || appointment?.visitor_phone);
+  appendIfPresent(
+    projected,
+    'patient_primary_phone',
+    primaryPhoneContact?.value || appointment?.visitor_phone
+  );
   appendIfPresent(projected, 'patient_primary_contact_type', primaryContact?.contact_type);
   appendIfPresent(projected, 'patient_primary_identifier', primaryIdentifier?.identifier_value);
   appendIfPresent(projected, 'patient_primary_identifier_type', primaryIdentifier?.identifier_type);
@@ -415,6 +441,13 @@ const assertPatientAvailable = async ({
 };
 
 const normalizeStatus = (value) => String(value || '').trim().toUpperCase();
+
+/**
+ * Statuses that close an appointment out. A visit that already happened (or
+ * was recorded as a no-show) must not be rewritten as a cancellation, which
+ * would silently change what the day's OPD reporting says took place.
+ */
+const CLOSED_APPOINTMENT_STATUSES = new Set(['COMPLETED', 'NO_SHOW']);
 
 const resolveAppointmentRecordByIdentifier = async (identifier) => {
   const resolved = await resolveModelRecordByIdentifier({
@@ -839,8 +872,12 @@ const cancelAppointment = async (id, reason, userId, ipAddress) => {
     }
 
     // Check if already cancelled
-    if (before.status === 'CANCELLED') {
+    if (normalizeStatus(before.status) === 'CANCELLED') {
       throw new HttpError('errors.appointment.already_cancelled', 400);
+    }
+
+    if (CLOSED_APPOINTMENT_STATUSES.has(normalizeStatus(before.status))) {
+      throw new HttpError('errors.appointment.cannot_cancel_closed', 400);
     }
 
     // Update to cancelled status

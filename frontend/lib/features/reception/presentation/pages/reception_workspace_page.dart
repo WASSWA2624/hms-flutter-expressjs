@@ -1719,10 +1719,9 @@ class _ReceptionWorkspaceContentState
         }
         // Check in / Reschedule open the mutation directly (no empty hub shell).
         // Row select opens the hub with that primary omitted.
-        final OpdBoardNextActionKind kind =
-            primary == OpdAppointmentPrimaryAction.continueEncounter
-            ? OpdBoardNextActionKind.continueAppointmentEncounter
-            : OpdBoardNextActionKind.checkInAppointment;
+        final OpdBoardNextActionKind kind = opdAppointmentNextActionKind(
+          primary,
+        );
         return OpdBoardNextActionCell(
           kind: kind,
           labelOverride: label,
@@ -2430,17 +2429,16 @@ class _ReceptionWorkspaceContentState
     final bool? changed;
     switch (primary) {
       case OpdAppointmentPrimaryAction.startEncounter:
-        if (appointment.isVisitorMeeting) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.l10n.receptionVisitorMeetingBannerBody),
-            ),
-          );
-          return;
-        }
+        // Visitor meetings never reach here: with no patient record they
+        // resolve to complete, not to an encounter check-in.
         changed = await _checkInAppointment(appointment);
       case OpdAppointmentPrimaryAction.reschedule:
         changed = await showOpdRescheduleAppointmentDialog(
+          context: context,
+          appointment: appointment,
+        );
+      case OpdAppointmentPrimaryAction.complete:
+        changed = await showOpdCompleteAppointmentDialog(
           context: context,
           appointment: appointment,
         );
@@ -3217,14 +3215,12 @@ class _ReceptionDeskMobileRow extends StatelessWidget {
     final Widget? appointmentTrailing =
         appointmentHasNextAction && appointment != null
         ? OpdBoardNextActionCell(
-            kind:
-                resolveOpdAppointmentPrimaryAction(
-                      appointment: appointment,
-                      linkedFlow: row.flow,
-                    ) ==
-                    OpdAppointmentPrimaryAction.continueEncounter
-                ? OpdBoardNextActionKind.continueAppointmentEncounter
-                : OpdBoardNextActionKind.checkInAppointment,
+            kind: opdAppointmentNextActionKind(
+              resolveOpdAppointmentPrimaryAction(
+                appointment: appointment,
+                linkedFlow: row.flow,
+              ),
+            ),
             labelOverride: row.appointmentNextActionLabel(l10n),
             onPressed: onAppointmentNextAction!,
           )

@@ -15,6 +15,7 @@ import 'package:hosspi_hms/shared/clinical_actions/clinical_actions.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_action_context.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_admission_handoff_dialog.dart';
+import 'package:hosspi_hms/shared/opd_actions/opd_appointment_actions_dialog.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_appointment_eligibility.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_consultation_payment_dialog.dart';
 import 'package:hosspi_hms/shared/opd_actions/opd_disposition_dialog.dart';
@@ -30,6 +31,8 @@ export 'opd_flow_next_action_key.dart';
 enum OpdBoardNextActionKind {
   checkInAppointment,
   continueAppointmentEncounter,
+  rescheduleAppointment,
+  completeAppointment,
   startQueueEncounter,
   openFlowActions,
   payConsultation,
@@ -71,6 +74,8 @@ String? opdFlowActionKeyForBoardKind(OpdBoardNextActionKind kind) {
     OpdBoardNextActionKind.correctStage => 'correct_stage',
     OpdBoardNextActionKind.checkInAppointment ||
     OpdBoardNextActionKind.continueAppointmentEncounter ||
+    OpdBoardNextActionKind.rescheduleAppointment ||
+    OpdBoardNextActionKind.completeAppointment ||
     OpdBoardNextActionKind.startQueueEncounter ||
     OpdBoardNextActionKind.openFlowActions ||
     OpdBoardNextActionKind.none => null,
@@ -137,7 +142,9 @@ OpdBoardNextActionKind? opdBoardNextActionKindFromPanel(String panel) {
 AccessRequirement? opdBoardNextActionRequirement(OpdBoardNextActionKind kind) {
   return switch (kind) {
     OpdBoardNextActionKind.checkInAppointment ||
-    OpdBoardNextActionKind.continueAppointmentEncounter =>
+    OpdBoardNextActionKind.continueAppointmentEncounter ||
+    OpdBoardNextActionKind.rescheduleAppointment ||
+    OpdBoardNextActionKind.completeAppointment =>
       opdFrontDeskActionRequirement,
     OpdBoardNextActionKind.startQueueEncounter =>
       opdEncounterPermissionRequirement,
@@ -164,6 +171,9 @@ String opdBoardNextActionLabel(
     OpdBoardNextActionKind.checkInAppointment => l10n.opdCheckInAction,
     OpdBoardNextActionKind.continueAppointmentEncounter =>
       l10n.opdContinueEncounterAction,
+    OpdBoardNextActionKind.rescheduleAppointment => l10n.opdRescheduleAction,
+    OpdBoardNextActionKind.completeAppointment =>
+      l10n.opdCompleteAppointmentAction,
     OpdBoardNextActionKind.startQueueEncounter => l10n.opdStartEncounterAction,
     OpdBoardNextActionKind.openFlowActions => l10n.opdOpenActions,
     OpdBoardNextActionKind.payConsultation => l10n.opdPayConsultationAction,
@@ -197,6 +207,8 @@ IconData opdBoardNextActionIcon(OpdBoardNextActionKind kind) {
   return switch (kind) {
     OpdBoardNextActionKind.checkInAppointment ||
     OpdBoardNextActionKind.continueAppointmentEncounter => Icons.login_outlined,
+    OpdBoardNextActionKind.rescheduleAppointment => AppActionIcons.reschedule,
+    OpdBoardNextActionKind.completeAppointment => AppActionIcons.complete,
     OpdBoardNextActionKind.startQueueEncounter => AppActionIcons.personAdd,
     OpdBoardNextActionKind.openFlowActions => Icons.medical_services_outlined,
     OpdBoardNextActionKind.payConsultation => AppActionIcons.payment,
@@ -383,10 +395,29 @@ Future<bool?> runOpdBoardNextAction({
       );
     case OpdBoardNextActionKind.checkInAppointment ||
         OpdBoardNextActionKind.continueAppointmentEncounter ||
+        OpdBoardNextActionKind.rescheduleAppointment ||
+        OpdBoardNextActionKind.completeAppointment ||
         OpdBoardNextActionKind.startQueueEncounter ||
         OpdBoardNextActionKind.none:
       return null;
   }
+}
+
+/// Board cell kind for an appointment row's primary action.
+OpdBoardNextActionKind opdAppointmentNextActionKind(
+  OpdAppointmentPrimaryAction action,
+) {
+  return switch (action) {
+    OpdAppointmentPrimaryAction.startEncounter =>
+      OpdBoardNextActionKind.checkInAppointment,
+    OpdAppointmentPrimaryAction.continueEncounter =>
+      OpdBoardNextActionKind.continueAppointmentEncounter,
+    OpdAppointmentPrimaryAction.reschedule =>
+      OpdBoardNextActionKind.rescheduleAppointment,
+    OpdAppointmentPrimaryAction.complete =>
+      OpdBoardNextActionKind.completeAppointment,
+    OpdAppointmentPrimaryAction.none => OpdBoardNextActionKind.none,
+  };
 }
 
 /// Opens appointment check-in or continue-encounter without an empty hub shell.
@@ -423,6 +454,23 @@ Future<bool?> runOpdAppointmentNextAction({
       );
     }
     return showFlowActionsDialog(context: context, flow: linkedFlow);
+  }
+
+  // Reschedule and complete are full appointment mutations in their own
+  // right, not encounter steps; without these the worklist renders their
+  // label and then does nothing when it is pressed.
+  if (resolved == OpdAppointmentPrimaryAction.reschedule) {
+    return showOpdRescheduleAppointmentDialog(
+      context: context,
+      appointment: appointment,
+    );
+  }
+
+  if (resolved == OpdAppointmentPrimaryAction.complete) {
+    return showOpdCompleteAppointmentDialog(
+      context: context,
+      appointment: appointment,
+    );
   }
 
   if (resolved != OpdAppointmentPrimaryAction.startEncounter) {

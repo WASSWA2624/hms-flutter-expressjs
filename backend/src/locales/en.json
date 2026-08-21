@@ -14,6 +14,7 @@
   "errors.api_key.not_found": "API key not found",
   "errors.api_key_permission.not_found": "API key permission not found",
   "errors.appointment.already_cancelled": "Appointment is already cancelled",
+  "errors.appointment.cannot_cancel_closed": "Cannot cancel an appointment that is already completed or marked as a no-show",
   "errors.appointment.not_found": "Appointment not found",
   "errors.appointment.host_unavailable": "The selected staff host is not available for that time",
   "errors.appointment.patient_conflict": "This patient already has an appointment that overlaps this time",

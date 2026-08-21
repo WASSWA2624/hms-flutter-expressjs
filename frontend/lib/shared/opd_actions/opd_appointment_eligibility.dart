@@ -13,6 +13,11 @@ enum OpdAppointmentPrimaryAction {
   /// Reschedule the appointment.
   reschedule,
 
+  /// Close the booking out as done. Visitor meetings never become an OPD
+  /// encounter, and a desk booking handled off-flow still has to reach a
+  /// terminal status instead of sitting on the worklist forever.
+  complete,
+
   /// No appointment action (terminal or empty).
   none,
 }
@@ -56,6 +61,14 @@ OpdFlowSummary? findActiveOpdFlowForAppointment({
     }
   }
 
+  // Fallback for snapshots whose flow omits the appointment id. Only an
+  // appointment the server has already moved to IN_PROGRESS can be the one
+  // that flow is serving, so a booking still sitting at SCHEDULED is never
+  // hidden behind an unrelated visit the same patient happens to have open.
+  if (_normalizeId(appointment.status) != 'IN_PROGRESS') {
+    return null;
+  }
+
   final String patientId = _normalizeId(appointment.patientId);
   if (patientId.isEmpty) {
     return null;
@@ -81,6 +94,12 @@ OpdAppointmentPrimaryAction resolveOpdAppointmentPrimaryAction({
     return OpdAppointmentPrimaryAction.none;
   }
 
+  // A visitor has no patient record and so can never be checked into an OPD
+  // encounter; closing the meeting out is the only step left for it.
+  if (appointment.isVisitorMeeting) {
+    return OpdAppointmentPrimaryAction.complete;
+  }
+
   if (linkedFlow != null) {
     return OpdAppointmentPrimaryAction.continueEncounter;
   }
@@ -94,6 +113,22 @@ OpdAppointmentPrimaryAction resolveOpdAppointmentPrimaryAction({
 
 /// Whether Reception may cancel [appointment] (pre-encounter only).
 bool canCancelOpdAppointment({
+  required OpdAppointment appointment,
+  OpdFlowSummary? linkedFlow,
+}) {
+  if (isOpdAppointmentStatusTerminal(appointment.status)) {
+    return false;
+  }
+  return linkedFlow == null;
+}
+
+/// Whether the desk may close [appointment] out as completed.
+///
+/// Once an encounter is running, the encounter's own closure is what completes
+/// the booking (the server does it), so completing it by hand here would only
+/// desync the two. Everything else — visitor meetings, and bookings handled
+/// without an OPD flow — has no other way to reach a terminal status.
+bool canCompleteOpdAppointment({
   required OpdAppointment appointment,
   OpdFlowSummary? linkedFlow,
 }) {
@@ -130,6 +165,7 @@ String? opdAppointmentPrimaryActionLabel(
     OpdAppointmentPrimaryAction.continueEncounter =>
       l10n.opdContinueEncounterAction,
     OpdAppointmentPrimaryAction.reschedule => l10n.opdRescheduleAction,
+    OpdAppointmentPrimaryAction.complete => l10n.opdCompleteAppointmentAction,
     OpdAppointmentPrimaryAction.none => null,
   };
 }

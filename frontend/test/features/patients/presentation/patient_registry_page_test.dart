@@ -44,6 +44,8 @@ void main() {
     registerFallbackValue(const PatientDuplicateQuery());
     registerFallbackValue(const OpdAppointmentQuery());
     registerFallbackValue(const OpdFlowQuery());
+    registerFallbackValue(const OpdQueueQuery());
+    registerFallbackValue(const OpdTriageQueueQuery());
     registerFallbackValue(<String, Object?>{});
   });
 
@@ -835,6 +837,7 @@ void main() {
       ),
     );
     _stubProviderLookup(opdRepository);
+    _stubOpdWorkspaceLoad(opdRepository);
 
     await _pumpPatientRegistry(
       tester,
@@ -864,18 +867,28 @@ void main() {
           widget is AppTextField && widget.labelText == 'Duration minutes',
     );
 
+    final endTimeField = find.byWidgetPredicate(
+      (Widget widget) =>
+          widget is AppTimeField && widget.labelText == 'End time',
+    );
+
     final Size dateSize = tester.getSize(dateField);
     final Size timeSize = tester.getSize(timeField);
     final Size durationSize = tester.getSize(durationField);
     final double dateTop = tester.getTopLeft(dateField).dy;
     final double timeTop = tester.getTopLeft(timeField).dy;
+    final double endTimeTop = tester.getTopLeft(endTimeField).dy;
     final double durationTop = tester.getTopLeft(durationField).dy;
 
     expect(dateSize.width, greaterThan(200));
     expect(timeSize.width, greaterThan(120));
     expect(durationSize.width, greaterThan(120));
-    expect(dateTop, lessThan(timeTop));
-    expect((timeTop - durationTop).abs(), lessThan(1));
+    // When it starts sits on one row, the two interchangeable ways of saying
+    // when it ends on the next: duration is paired with the end time, because
+    // typing either one fills the other in.
+    expect((dateTop - timeTop).abs(), lessThan(1));
+    expect((endTimeTop - durationTop).abs(), lessThan(1));
+    expect(timeTop, lessThan(endTimeTop));
   });
 
   testWidgets('OPD quick action opens the shared encounter dialog', (
@@ -1886,6 +1899,64 @@ void _stubProviderLookup(_MockOpdRepository opdRepository) {
     (_) async => const Result<List<OpdProviderSchedule>>.success(
       <OpdProviderSchedule>[],
     ),
+  );
+}
+
+/// Stubs the OPD workspace bootstrap the appointment form's option load runs.
+void _stubOpdWorkspaceLoad(_MockOpdRepository opdRepository) {
+  when(() => opdRepository.listAppointments(any())).thenAnswer(
+    (Invocation invocation) async => Result<AppPage<OpdAppointment>>.success(
+      AppPage<OpdAppointment>(
+        items: const <OpdAppointment>[],
+        request: (invocation.positionalArguments.single as OpdAppointmentQuery)
+            .pageRequest,
+        totalItemCount: 0,
+      ),
+    ),
+  );
+  when(() => opdRepository.listVisitQueues(any())).thenAnswer(
+    (_) async => const Result<AppPage<OpdQueueEntry>>.success(
+      AppPage<OpdQueueEntry>(
+        items: <OpdQueueEntry>[],
+        request: AppPageRequest(pageSize: 12),
+        totalItemCount: 0,
+      ),
+    ),
+  );
+  when(() => opdRepository.listOpdFlows(any())).thenAnswer(
+    (_) async => const Result<AppPage<OpdFlowSummary>>.success(
+      AppPage<OpdFlowSummary>(
+        items: <OpdFlowSummary>[],
+        request: AppPageRequest(),
+        totalItemCount: 0,
+      ),
+    ),
+  );
+  when(() => opdRepository.listTriageQueue(any())).thenAnswer(
+    (_) async => const Result<AppPage<OpdFlowSummary>>.success(
+      AppPage<OpdFlowSummary>(
+        items: <OpdFlowSummary>[],
+        request: AppPageRequest(pageSize: 12),
+        totalItemCount: 0,
+      ),
+    ),
+  );
+  when(() => opdRepository.getOpdSummaryCounts()).thenAnswer(
+    (_) async =>
+        const Result<OpdFlowAggregateCounts>.success(OpdFlowAggregateCounts()),
+  );
+  when(
+    () => opdRepository.listClinicalAlertThresholds(
+      vitalType: any(named: 'vitalType'),
+    ),
+  ).thenAnswer(
+    (_) async => const Result<List<OpdClinicalAlertThreshold>>.success(
+      <OpdClinicalAlertThreshold>[],
+    ),
+  );
+  when(() => opdRepository.listProviders(search: any(named: 'search'))).thenAnswer(
+    (_) async =>
+        const Result<List<OpdProviderOption>>.success(<OpdProviderOption>[]),
   );
 }
 

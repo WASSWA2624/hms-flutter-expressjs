@@ -334,6 +334,124 @@ void main() {
       );
     });
 
+    test('rescheduleAppointment clears the provider with an explicit null', () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+      final DateTime updatedStart = DateTime.utc(2026, 7, 21, 10);
+      final DateTime updatedEnd = DateTime.utc(2026, 7, 21, 10, 30);
+      final OpdAppointment appointment = OpdAppointment(
+        id: 'appointment-internal',
+        publicId: 'APT000001',
+        providerUserId: 'provider-1',
+        status: 'SCHEDULED',
+        scheduledStart: DateTime.utc(2026, 7, 20, 8),
+      );
+      Map<String, Object?>? submittedPayload;
+      _stubInitialLoad(repository, appointments: <OpdAppointment>[appointment]);
+      when(() => repository.updateAppointment(any(), any())).thenAnswer((
+        Invocation invocation,
+      ) async {
+        submittedPayload =
+            invocation.positionalArguments[1] as Map<String, Object?>;
+        return Result<OpdAppointment>.success(
+          appointment.copyWith(
+            scheduledStart: updatedStart,
+            scheduledEnd: updatedEnd,
+          ),
+        );
+      });
+
+      final ProviderContainer container = _testContainer(repository);
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .rescheduleAppointment(
+            appointment,
+            updatedStart,
+            updatedEnd,
+            updateProvider: true,
+          );
+
+      expect(failure, isNull);
+      // Unassigning has to reach the API as a null, not as an absent key —
+      // otherwise the desk's "no provider" choice is a silent no-op.
+      expect(submittedPayload!.containsKey('provider_user_id'), isTrue);
+      expect(submittedPayload!['provider_user_id'], isNull);
+    });
+
+    test('rescheduleAppointment omits an unknown status', () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+      final DateTime updatedStart = DateTime.utc(2026, 7, 21, 10);
+      final DateTime updatedEnd = DateTime.utc(2026, 7, 21, 10, 30);
+      const OpdAppointment appointment = OpdAppointment(
+        id: 'appointment-internal',
+        publicId: 'APT000001',
+      );
+      Map<String, Object?>? submittedPayload;
+      _stubInitialLoad(repository, appointments: <OpdAppointment>[appointment]);
+      when(() => repository.updateAppointment(any(), any())).thenAnswer((
+        Invocation invocation,
+      ) async {
+        submittedPayload =
+            invocation.positionalArguments[1] as Map<String, Object?>;
+        return Result<OpdAppointment>.success(
+          appointment.copyWith(
+            scheduledStart: updatedStart,
+            scheduledEnd: updatedEnd,
+          ),
+        );
+      });
+
+      final ProviderContainer container = _testContainer(repository);
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+
+      await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .rescheduleAppointment(appointment, updatedStart, updatedEnd);
+
+      // The API rejects a null status, so a row that arrived without one is
+      // moved without touching it.
+      expect(submittedPayload!.containsKey('status'), isFalse);
+    });
+
+    test('completeAppointment closes the booking out', () async {
+      final _MockOpdRepository repository = _MockOpdRepository();
+      const OpdAppointment appointment = OpdAppointment(
+        id: 'appointment-internal',
+        publicId: 'APT000001',
+        subjectType: 'VISITOR',
+        visitorName: 'Jane Visitor',
+        status: 'SCHEDULED',
+      );
+      _stubInitialLoad(repository, appointments: <OpdAppointment>[appointment]);
+      when(() => repository.updateAppointment(any(), any())).thenAnswer(
+        (_) async => Result<OpdAppointment>.success(
+          appointment.copyWith(status: 'COMPLETED'),
+        ),
+      );
+
+      final ProviderContainer container = _testContainer(repository);
+      addTearDown(container.dispose);
+      await container.read(opdWorkspaceControllerProvider.future);
+
+      final AppFailure? failure = await container
+          .read(opdWorkspaceControllerProvider.notifier)
+          .completeAppointment(appointment);
+
+      expect(failure, isNull);
+      expect(
+        _workspaceState(container).appointments.items.single.status,
+        'COMPLETED',
+      );
+      verify(
+        () => repository.updateAppointment('APT000001', <String, Object?>{
+          'status': 'COMPLETED',
+        }),
+      ).called(1);
+    });
+
     test(
       'rescheduleAppointment failure leaves the schedule unpatched',
       () async {

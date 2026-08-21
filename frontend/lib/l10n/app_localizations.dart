@@ -9493,6 +9493,18 @@ abstract class AppLocalizations {
   /// **'Cancel this appointment and mark it as cancelled? Linked front-desk queue actions for this booking will no longer be available.'**
   String get opdCancelAppointmentConfirmBody;
 
+  /// Action label to close an appointment out as completed.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark complete'**
+  String get opdCompleteAppointmentAction;
+
+  /// Confirmation body for the OPD complete-appointment dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Close this appointment out as completed? Do this once the visit or meeting has taken place — a completed appointment can no longer be cancelled or rescheduled.'**
+  String get opdCompleteAppointmentConfirmBody;
+
   /// Action label to check in an appointment.
   ///
   /// In en, this message translates to:

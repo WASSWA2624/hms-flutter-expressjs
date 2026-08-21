@@ -24,6 +24,14 @@ jest.mock('@lib/identifiers/resolve-entity-id', () => ({
   resolveModelIdByIdentifier: jest.fn(),
   resolveModelRecordByIdentifier: jest.fn()}));
 
+/**
+ * Service results run through withAppointmentProjection, which always states
+ * the subject type. Fixtures stay minimal and are projected at the assertion.
+ */
+const projected = (appointment) => ({
+  ...appointment,
+  subject_type: appointment.subject_type || 'PATIENT'});
+
 describe('Appointment Service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -67,7 +75,7 @@ describe('Appointment Service', () => {
 
       const result = await appointmentService.listAppointments({}, 1, 20, null, 'asc', 'user-id', '127.0.0.1');
 
-      expect(result).toHaveProperty('appointments', mockAppointments);
+      expect(result).toHaveProperty('appointments', mockAppointments.map(projected));
       expect(result).toHaveProperty('pagination');
       expect(result.pagination).toMatchObject({
         page: 1,
@@ -199,8 +207,37 @@ describe('Appointment Service', () => {
 
       const result = await appointmentService.getAppointmentById(appointmentId, 'user-id', '127.0.0.1');
 
-      expect(result).toEqual(mockAppointment);
+      expect(result).toEqual(projected(mockAppointment));
       expect(appointmentRepository.findById).toHaveBeenCalledWith(appointmentId, expect.any(Object));
+    });
+
+    it('should surface the phone contact rather than the primary contact', async () => {
+      // Reception rings this number to confirm the booking, so an email
+      // nominated as the patient's primary contact must not land in it.
+      appointmentRepository.findById.mockResolvedValue({
+        ...mockAppointment,
+        patient: {
+          contacts: [
+            { contact_type: 'EMAIL', value: 'patient@example.com', is_primary: true },
+            { contact_type: 'PHONE', value: '+256700000001', is_primary: false }],
+          identifiers: []}});
+
+      const result = await appointmentService.getAppointmentById(appointmentId, 'user-id', '127.0.0.1');
+
+      expect(result.patient_primary_phone).toBe('+256700000001');
+    });
+
+    it('should fall back to the visitor phone when there is no patient', async () => {
+      appointmentRepository.findById.mockResolvedValue({
+        ...mockAppointment,
+        patient_id: null,
+        subject_type: 'VISITOR',
+        visitor_name: 'Jordan Visitor',
+        visitor_phone: '+256700000002'});
+
+      const result = await appointmentService.getAppointmentById(appointmentId, 'user-id', '127.0.0.1');
+
+      expect(result.patient_primary_phone).toBe('+256700000002');
     });
 
     it('should throw error if appointment not found', async () => {
@@ -246,14 +283,16 @@ describe('Appointment Service', () => {
 
       const result = await appointmentService.createAppointment(createData, 'user-id', '127.0.0.1');
 
-      expect(result).toEqual(mockCreated);
-      expect(appointmentRepository.create).toHaveBeenCalledWith(createData);
+      expect(result).toEqual(projected(mockCreated));
+      // The service stamps the subject type before persisting so a row is
+      // never stored without one.
+      expect(appointmentRepository.create).toHaveBeenCalledWith(projected(createData));
       expect(createAuditLog).toHaveBeenCalledWith({
         user_id: 'user-id',
         action: 'CREATE',
         entity: 'appointment',
         entity_id: mockCreated.id,
-        diff: { after: mockCreated },
+        diff: { after: projected(mockCreated) },
         ip_address: '127.0.0.1'
       });
     });
@@ -272,7 +311,7 @@ describe('Appointment Service', () => {
 
       const result = await appointmentService.createAppointment(createData, 'user-id', '127.0.0.1');
 
-      expect(result).toEqual(mockCreated);
+      expect(result).toEqual(projected(mockCreated));
     });
 
     it('should reject a booking that overlaps another appointment for the same patient', async () => {
@@ -327,7 +366,7 @@ describe('Appointment Service', () => {
 
       const result = await appointmentService.updateAppointment(appointmentId, updateData, 'user-id', '127.0.0.1');
 
-      expect(result).toEqual(mockAfter);
+      expect(result).toEqual(projected(mockAfter));
       expect(appointmentRepository.findById).toHaveBeenNthCalledWith(1, appointmentId, expect.any(Object));
       expect(appointmentRepository.findById).toHaveBeenNthCalledWith(2, appointmentId, expect.any(Object));
       expect(appointmentRepository.update).toHaveBeenCalledWith(appointmentId, updateData);
@@ -336,7 +375,7 @@ describe('Appointment Service', () => {
         action: 'UPDATE',
         entity: 'appointment',
         entity_id: appointmentId,
-        diff: { before: mockBefore, after: mockAfter },
+        diff: { before: projected(mockBefore), after: projected(mockAfter) },
         ip_address: '127.0.0.1'
       });
       expect(opdFlowService.startOpdFlow).not.toHaveBeenCalled();
@@ -369,13 +408,13 @@ describe('Appointment Service', () => {
         '127.0.0.1'
       );
 
-      expect(result).toEqual(after);
+      expect(result).toEqual(projected(after));
       expect(createAuditLog).toHaveBeenCalledWith({
         user_id: 'user-id',
         action: 'RESCHEDULE',
         entity: 'appointment',
         entity_id: appointmentId,
-        diff: { before, after },
+        diff: { before: projected(before), after: projected(after) },
         ip_address: '127.0.0.1'});
     });
 
@@ -431,6 +470,7 @@ describe('Appointment Service', () => {
       const inProgressBefore = {
         id: appointmentId,
         status: 'CONFIRMED',
+        patient_id: 'patient-1',
         tenant_id: 'tenant-1',
         facility_id: 'facility-1'};
       const inProgressAfter = {
@@ -449,7 +489,7 @@ describe('Appointment Service', () => {
         '127.0.0.1'
       );
 
-      expect(result).toEqual(inProgressAfter);
+      expect(result).toEqual(projected(inProgressAfter));
       expect(opdFlowService.startOpdFlow).toHaveBeenCalledWith(
         expect.objectContaining({
           appointment_id: appointmentId,
@@ -493,6 +533,7 @@ describe('Appointment Service', () => {
       const inProgressBefore = {
         id: appointmentId,
         status: 'CONFIRMED',
+        patient_id: 'patient-1',
         tenant_id: 'tenant-1',
         facility_id: 'facility-1'};
       const inProgressAfter = {
@@ -512,7 +553,7 @@ describe('Appointment Service', () => {
           'user-id',
           '127.0.0.1'
         )
-      ).resolves.toEqual(inProgressAfter);
+      ).resolves.toEqual(projected(inProgressAfter));
     });
 
     it('should throw error if appointment not found', async () => {
@@ -559,7 +600,7 @@ describe('Appointment Service', () => {
         action: 'DELETE',
         entity: 'appointment',
         entity_id: appointmentId,
-        diff: { before: mockBefore },
+        diff: { before: projected(mockBefore) },
         ip_address: '127.0.0.1'
       });
     });
@@ -609,7 +650,7 @@ describe('Appointment Service', () => {
 
       const result = await appointmentService.cancelAppointment(appointmentId, 'Patient request', 'user-id', '127.0.0.1');
 
-      expect(result).toEqual(mockAfter);
+      expect(result).toEqual(projected(mockAfter));
       expect(appointmentRepository.findById).toHaveBeenNthCalledWith(1, appointmentId, expect.any(Object));
       expect(appointmentRepository.findById).toHaveBeenNthCalledWith(2, appointmentId, expect.any(Object));
       expect(appointmentRepository.update).toHaveBeenCalledWith(appointmentId, {
@@ -621,7 +662,7 @@ describe('Appointment Service', () => {
         action: 'CANCEL',
         entity: 'appointment',
         entity_id: appointmentId,
-        diff: { before: mockBefore, after: mockAfter },
+        diff: { before: projected(mockBefore), after: projected(mockAfter) },
         ip_address: '127.0.0.1'
       });
     });
@@ -635,7 +676,7 @@ describe('Appointment Service', () => {
 
       const result = await appointmentService.cancelAppointment(appointmentId, null, 'user-id', '127.0.0.1');
 
-      expect(result).toEqual(mockAfterNoReason);
+      expect(result).toEqual(projected(mockAfterNoReason));
       expect(appointmentRepository.update).toHaveBeenCalledWith(appointmentId, {
         status: 'CANCELLED'
       });
@@ -653,6 +694,33 @@ describe('Appointment Service', () => {
         messageKey: 'errors.appointment.not_found',
         statusCode: 404
       });
+    });
+
+    it('should refuse to cancel an appointment that already closed', async () => {
+      // A visit that happened must not be rewritten as a cancellation.
+      appointmentRepository.findById.mockResolvedValue({
+        ...mockBefore,
+        status: 'COMPLETED'});
+
+      await expect(
+        appointmentService.cancelAppointment(appointmentId, null, 'user-id', '127.0.0.1')
+      ).rejects.toMatchObject({
+        messageKey: 'errors.appointment.cannot_cancel_closed',
+        statusCode: 400});
+      expect(appointmentRepository.update).not.toHaveBeenCalled();
+    });
+
+    it('should refuse to cancel an appointment already marked NO_SHOW', async () => {
+      appointmentRepository.findById.mockResolvedValue({
+        ...mockBefore,
+        status: 'NO_SHOW'});
+
+      await expect(
+        appointmentService.cancelAppointment(appointmentId, null, 'user-id', '127.0.0.1')
+      ).rejects.toMatchObject({
+        messageKey: 'errors.appointment.cannot_cancel_closed',
+        statusCode: 400});
+      expect(appointmentRepository.update).not.toHaveBeenCalled();
     });
 
     it('should throw error if appointment already cancelled', async () => {

@@ -579,12 +579,15 @@ final class OpdWorkspaceController
     String? providerUserId,
     bool updateProvider = false,
   }) {
+    // A cancelled booking being moved is a revival, so it goes back to
+    // SCHEDULED; otherwise the status is left exactly as it was. It is only
+    // sent when known, because the API rejects a null status.
+    final String status = (appointment.status ?? '').trim();
     final Map<String, Object?> payload = <String, Object?>{
       'scheduled_start': scheduledStart.toUtc().toIso8601String(),
       'scheduled_end': scheduledEnd.toUtc().toIso8601String(),
-      'status': appointment.status == 'CANCELLED'
-          ? 'SCHEDULED'
-          : appointment.status,
+      if (status.isNotEmpty)
+        'status': status.toUpperCase() == 'CANCELLED' ? 'SCHEDULED' : status,
     };
     if (updateProvider) {
       final String? normalized = providerUserId?.trim();
@@ -594,6 +597,19 @@ final class OpdWorkspaceController
     }
     return _mutateAppointment(
       () => _repository.updateAppointment(appointment.apiId, payload),
+    );
+  }
+
+  /// Closes [appointment] out as completed.
+  ///
+  /// The desk's only way to finish a booking that never became an OPD
+  /// encounter — a visitor meeting, or a visit handled off-flow — which would
+  /// otherwise sit on the worklist indefinitely.
+  Future<AppFailure?> completeAppointment(OpdAppointment appointment) {
+    return _mutateAppointment(
+      () => _repository.updateAppointment(appointment.apiId, <String, Object?>{
+        'status': 'COMPLETED',
+      }),
     );
   }
 

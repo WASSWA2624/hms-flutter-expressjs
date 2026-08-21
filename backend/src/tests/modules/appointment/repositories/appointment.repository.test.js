@@ -22,6 +22,11 @@ jest.mock('@prisma/client', () => ({
 }));
 
 describe('Appointment Repository', () => {
+  // Appointments are visitor-capable: patient_id is nullable, so the soft
+  // delete filter keeps null-patient rows instead of requiring a live patient.
+  const ACTIVE_OR_VISITOR_PATIENT = {
+    OR: [{ patient_id: null }, { patient: { deleted_at: null } }]};
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -47,9 +52,9 @@ describe('Appointment Repository', () => {
         where: {
           id: appointmentId,
           deleted_at: null,
-          AND: [{ patient: { deleted_at: null } }]
+          AND: [ACTIVE_OR_VISITOR_PATIENT]
         },
-        include: undefined
+        include: {}
       });
     });
 
@@ -83,7 +88,7 @@ describe('Appointment Repository', () => {
         where: {
           id: appointmentId,
           deleted_at: null,
-          AND: [{ patient: { deleted_at: null } }]
+          AND: [ACTIVE_OR_VISITOR_PATIENT]
         },
         include
       });
@@ -129,12 +134,12 @@ describe('Appointment Repository', () => {
       expect(prisma.appointment.findMany).toHaveBeenCalledWith({
         where: {
           deleted_at: null,
-          AND: [{ patient: { deleted_at: null } }]
+          AND: [ACTIVE_OR_VISITOR_PATIENT]
         },
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: undefined
+        include: {}
       });
     });
 
@@ -149,7 +154,7 @@ describe('Appointment Repository', () => {
           where: {
             deleted_at: null,
             ...filters,
-            AND: [{ patient: { deleted_at: null } }]
+            AND: [ACTIVE_OR_VISITOR_PATIENT]
           }
         })
       );
@@ -213,7 +218,7 @@ describe('Appointment Repository', () => {
         where: {
           deleted_at: null,
           ...filters,
-          AND: [{ patient: { deleted_at: null } }]
+          AND: [ACTIVE_OR_VISITOR_PATIENT]
         }
       });
     });
@@ -227,7 +232,7 @@ describe('Appointment Repository', () => {
       expect(prisma.appointment.count).toHaveBeenCalledWith({
         where: {
           deleted_at: null,
-          AND: [{ patient: { deleted_at: null } }]
+          AND: [ACTIVE_OR_VISITOR_PATIENT]
         }
       });
     });

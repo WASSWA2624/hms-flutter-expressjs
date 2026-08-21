@@ -6060,6 +6060,8 @@
   "opdRescheduleAction": "Reschedule",
   "opdCancelAction": "Cancel appointment",
   "opdCancelAppointmentConfirmBody": "Cancel this appointment and mark it as cancelled? Linked front-desk queue actions for this booking will no longer be available.",
+  "opdCompleteAppointmentAction": "Mark complete",
+  "opdCompleteAppointmentConfirmBody": "Close this appointment out as completed? Do this once the visit or meeting has taken place — a completed appointment can no longer be cancelled or rescheduled.",
   "opdCheckInAction": "Start OPD encounter",
   "opdAppointmentStartLabel": "Start time",
   "opdAppointmentEndLabel": "End time",
@@ -6797,6 +6799,12 @@
   },
   "@opdCancelAppointmentConfirmBody": {
     "description": "Confirmation body for the OPD cancel-appointment dialog."
+  },
+  "@opdCompleteAppointmentAction": {
+    "description": "Action label to close an appointment out as completed."
+  },
+  "@opdCompleteAppointmentConfirmBody": {
+    "description": "Confirmation body for the OPD complete-appointment dialog."
   },
   "@opdCheckInAction": {
     "description": "Action label to check in an appointment."

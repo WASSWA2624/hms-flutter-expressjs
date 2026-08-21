@@ -5017,6 +5017,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Cancel this appointment and mark it as cancelled? Linked front-desk queue actions for this booking will no longer be available.';
 
   @override
+  String get opdCompleteAppointmentAction => 'Mark complete';
+
+  @override
+  String get opdCompleteAppointmentConfirmBody =>
+      'Close this appointment out as completed? Do this once the visit or meeting has taken place — a completed appointment can no longer be cancelled or rescheduled.';
+
+  @override
   String get opdCheckInAction => 'Start OPD encounter';
 
   @override
