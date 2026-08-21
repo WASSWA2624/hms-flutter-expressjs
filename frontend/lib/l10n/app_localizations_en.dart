@@ -4977,6 +4977,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appSelectNoResults => 'No matching results';
 
   @override
+  String get appSelectSearchHint => 'Type to search';
+
+  @override
   String get opdRegisterNewPatientLabel => 'Register a new patient';
 
   @override

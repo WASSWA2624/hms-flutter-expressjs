@@ -291,6 +291,8 @@ class PatientAppointmentQuickDialogState
           left: AppSelectField<String>.searchable(
             value: _status,
             labelText: l10n.patientsAppointmentStatusLabel,
+            hintText: l10n.appSelectSearchHint,
+            emptyResultsText: l10n.appSelectNoResults,
             enabled: !_isBusy,
             onChanged: (String? value) =>
                 setState(() => _status = value ?? 'SCHEDULED'),
@@ -299,7 +301,9 @@ class PatientAppointmentQuickDialogState
           right: AppSelectField<String>.searchable(
             value: _providerId,
             labelText: l10n.patientsProviderLabel,
+            hintText: l10n.receptionStaffHostSearchHint,
             helperText: l10n.patientsProviderOptionalHelper,
+            emptyResultsText: l10n.appSelectNoResults,
             enabled: !_isBusy,
             isLoading: _isLoadingProviders,
             onChanged: (String? value) => setState(() => _providerId = value),

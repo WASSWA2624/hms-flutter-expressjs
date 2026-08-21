@@ -378,6 +378,8 @@ class PatientReferenceSelectField extends StatelessWidget {
     this.helperText,
     this.errorText,
     this.semanticLabel,
+    this.emptyResultsText,
+    this.hintText,
     this.validator,
     this.onSaved,
     this.autovalidateMode = AutovalidateMode.disabled,
@@ -398,6 +400,14 @@ class PatientReferenceSelectField extends StatelessWidget {
   final String? helperText;
   final String? errorText;
   final String? semanticLabel;
+
+  /// Menu row shown when the typed filter matches nothing. Without it the
+  /// menu just empties out, which reads as a broken search rather than as
+  /// "nothing here matches what you typed".
+  final String? emptyResultsText;
+
+  /// Placeholder telling the reader the field accepts typing.
+  final String? hintText;
   final FormFieldValidator<String>? validator;
   final FormFieldSetter<String>? onSaved;
   final AutovalidateMode autovalidateMode;
@@ -414,9 +424,11 @@ class PatientReferenceSelectField extends StatelessWidget {
     return AppSelectField<String>.searchable(
       value: value,
       labelText: labelText,
+      hintText: hintText ?? context.l10n.appSelectSearchHint,
       helperText: helperText,
       errorText: errorText,
       semanticLabel: semanticLabel,
+      emptyResultsText: emptyResultsText ?? context.l10n.appSelectNoResults,
       validator: validator,
       onSaved: onSaved,
       autovalidateMode: autovalidateMode,

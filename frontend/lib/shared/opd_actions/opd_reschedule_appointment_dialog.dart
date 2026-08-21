@@ -255,6 +255,8 @@ class _OpdRescheduleAppointmentDialogState
               AppSelectField<String>.searchable(
                 value: _providerId,
                 labelText: l10n.patientsProviderLabel,
+                hintText: l10n.receptionStaffHostSearchHint,
+                emptyResultsText: l10n.appSelectNoResults,
                 helperText: providerOptions.isEmpty && !_isLoadingProviders
                     ? l10n.opdNoProvidersHelper
                     : l10n.patientsProviderOptionalHelper,

@@ -9415,6 +9415,12 @@ abstract class AppLocalizations {
   /// **'No matching results'**
   String get appSelectNoResults;
 
+  /// Placeholder telling the reader a select accepts typed search.
+  ///
+  /// In en, this message translates to:
+  /// **'Type to search'**
+  String get appSelectSearchHint;
+
   /// Toggle label for new patient registration in OPD.
   ///
   /// In en, this message translates to:

@@ -344,6 +344,136 @@ describe('Appointment Service', () => {
 
       expect(appointmentRepository.findOverlappingForPatient).not.toHaveBeenCalled();
     });
+
+    describe('visitor double-booking', () => {
+      const visitorData = {
+        ...createData,
+        patient_id: null,
+        subject_type: 'VISITOR',
+        visitor_name: 'Jordan Visitor',
+        visitor_phone: '+256 700 000 001',
+        provider_user_id: 'provider-1',
+      };
+
+      beforeEach(() => {
+        // jest.clearAllMocks() keeps implementations, so the overlap mocks are
+        // re-armed here rather than inheriting a conflict from a prior case.
+        appointmentRepository.findOverlappingForProvider.mockResolvedValue(null);
+        appointmentRepository.findOverlappingForPatient.mockResolvedValue(null);
+        appointmentRepository.findOverlappingVisitorAppointments.mockResolvedValue([]);
+        appointmentRepository.create.mockResolvedValue({ ...mockCreated, ...visitorData });
+        appointmentRepository.findById.mockResolvedValue({ ...mockCreated, ...visitorData });
+      });
+
+      it('rejects the same visitor phone written in another format', async () => {
+        appointmentRepository.findOverlappingVisitorAppointments.mockResolvedValue([
+          {
+            id: 'existing-meeting',
+            human_friendly_id: 'APT000077',
+            visitor_name: 'J. Visitor',
+            visitor_phone: '0700000001'}]);
+
+        await expect(
+          appointmentService.createAppointment(visitorData, 'user-id', '127.0.0.1')
+        ).rejects.toMatchObject({
+          message: 'errors.appointment.visitor_conflict',
+          statusCode: 409});
+        expect(appointmentRepository.create).not.toHaveBeenCalled();
+      });
+
+      it('allows a different visitor in the same window', async () => {
+        appointmentRepository.findOverlappingVisitorAppointments.mockResolvedValue([
+          {
+            id: 'other-meeting',
+            human_friendly_id: 'APT000078',
+            visitor_name: 'Someone Else',
+            visitor_phone: '+256700000999'}]);
+
+        await expect(
+          appointmentService.createAppointment(visitorData, 'user-id', '127.0.0.1')
+        ).resolves.toBeDefined();
+        expect(appointmentRepository.create).toHaveBeenCalled();
+      });
+
+      it('falls back to the visitor name when neither booking has a phone', async () => {
+        appointmentRepository.findOverlappingVisitorAppointments.mockResolvedValue([
+          {
+            id: 'existing-meeting',
+            human_friendly_id: 'APT000079',
+            visitor_name: '  jordan   VISITOR ',
+            visitor_phone: null}]);
+
+        await expect(
+          appointmentService.createAppointment(
+            { ...visitorData, visitor_phone: null },
+            'user-id',
+            '127.0.0.1'
+          )
+        ).rejects.toMatchObject({
+          message: 'errors.appointment.visitor_conflict',
+          statusCode: 409});
+      });
+
+      it('lets the phone override a matching name', async () => {
+        // Two different people can share a name; a number they each gave is
+        // the stronger signal, so it decides when both bookings carry one.
+        appointmentRepository.findOverlappingVisitorAppointments.mockResolvedValue([
+          {
+            id: 'other-meeting',
+            human_friendly_id: 'APT000080',
+            visitor_name: 'Jordan Visitor',
+            visitor_phone: '+256700000999'}]);
+
+        await expect(
+          appointmentService.createAppointment(visitorData, 'user-id', '127.0.0.1')
+        ).resolves.toBeDefined();
+      });
+
+      it('does not run the check for a clinical appointment', async () => {
+        appointmentRepository.create.mockResolvedValue(mockCreated);
+        appointmentRepository.findById.mockResolvedValue(mockCreated);
+
+        await appointmentService.createAppointment(createData, 'user-id', '127.0.0.1');
+
+        expect(
+          appointmentRepository.findOverlappingVisitorAppointments
+        ).not.toHaveBeenCalled();
+      });
+
+      it('rejects a visitor edit that clashes without moving the window', async () => {
+        const meetingId = '550e8400-e29b-41d4-a716-4466554400aa';
+        const before = {
+          id: meetingId,
+          tenant_id: 'tenant-1',
+          subject_type: 'VISITOR',
+          visitor_name: 'Jordan Visitor',
+          visitor_phone: '+256700000001',
+          status: 'SCHEDULED',
+          scheduled_start: '2026-07-20T08:00:00.000Z',
+          scheduled_end: '2026-07-20T08:30:00.000Z'};
+        appointmentRepository.findById.mockResolvedValue(before);
+        appointmentRepository.findOverlappingVisitorAppointments.mockResolvedValue([
+          {
+            id: 'existing-meeting',
+            human_friendly_id: 'APT000081',
+            visitor_name: 'Someone Else',
+            visitor_phone: '+256700000555'}]);
+
+        // Repointing the booking at a different person is as much a clash as
+        // moving it into an occupied slot, even with the times untouched.
+        await expect(
+          appointmentService.updateAppointment(
+            meetingId,
+            { visitor_phone: '0700000555' },
+            'user-id',
+            '127.0.0.1'
+          )
+        ).rejects.toMatchObject({
+          message: 'errors.appointment.visitor_conflict',
+          statusCode: 409});
+        expect(appointmentRepository.update).not.toHaveBeenCalled();
+      });
+    });
   });
 
   describe('updateAppointment', () => {

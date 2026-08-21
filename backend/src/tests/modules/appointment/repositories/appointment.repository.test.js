@@ -399,4 +399,66 @@ describe('Appointment Repository', () => {
       await expect(appointmentRepository.softDelete(appointmentId)).rejects.toThrow(HttpError);
     });
   });
+
+  describe('findOverlappingVisitorAppointments', () => {
+    const scheduledStart = new Date('2026-01-20T09:00:00.000Z');
+    const scheduledEnd = new Date('2026-01-20T09:30:00.000Z');
+
+    it('should scope the candidate set to live visitor meetings in the window', async () => {
+      prisma.appointment.findMany.mockResolvedValue([]);
+
+      await appointmentRepository.findOverlappingVisitorAppointments({
+        scheduledStart,
+        scheduledEnd,
+        excludeAppointmentId: 'appointment-1',
+        tenantId: 'tenant-1'});
+
+      expect(prisma.appointment.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            deleted_at: null,
+            subject_type: 'VISITOR',
+            tenant_id: 'tenant-1',
+            id: { not: 'appointment-1' },
+            status: { notIn: ['CANCELLED', 'NO_SHOW', 'COMPLETED'] },
+            scheduled_start: { lt: scheduledEnd },
+            scheduled_end: { gt: scheduledStart }}})
+      );
+    });
+
+    it('should return the visitor identity fields the service compares on', async () => {
+      prisma.appointment.findMany.mockResolvedValue([]);
+
+      await appointmentRepository.findOverlappingVisitorAppointments({
+        scheduledStart,
+        scheduledEnd});
+
+      const call = prisma.appointment.findMany.mock.calls[0][0];
+      expect(call.select).toEqual(
+        expect.objectContaining({ visitor_name: true, visitor_phone: true })
+      );
+    });
+
+    it('should not query for an inverted or missing window', async () => {
+      await expect(
+        appointmentRepository.findOverlappingVisitorAppointments({
+          scheduledStart: scheduledEnd,
+          scheduledEnd: scheduledStart})
+      ).resolves.toEqual([]);
+      await expect(
+        appointmentRepository.findOverlappingVisitorAppointments({})
+      ).resolves.toEqual([]);
+      expect(prisma.appointment.findMany).not.toHaveBeenCalled();
+    });
+
+    it('should throw HttpError on database error', async () => {
+      prisma.appointment.findMany.mockRejectedValue(new Error('DB Error'));
+
+      await expect(
+        appointmentRepository.findOverlappingVisitorAppointments({
+          scheduledStart,
+          scheduledEnd})
+      ).rejects.toThrow(HttpError);
+    });
+  });
 });

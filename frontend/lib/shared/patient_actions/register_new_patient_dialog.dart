@@ -356,6 +356,8 @@ class RegisterNewPatientFormState extends State<RegisterNewPatientForm> {
           left: AppSelectField<String>.searchable(
             value: selectedIdentifierType,
             labelText: l10n.patientsIdentifierTypeLabel,
+            hintText: l10n.appSelectSearchHint,
+            emptyResultsText: l10n.appSelectNoResults,
             enabled: enabled,
             menuHeight: 320,
             onChanged: (String? value) {

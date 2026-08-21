@@ -400,6 +400,104 @@ const assertHostAvailable = async ({
 };
 
 /**
+ * Digits of a phone number, so two spellings of one number compare equal.
+ */
+const phoneDigits = (value) => String(value || '').replace(/\D+/g, '');
+
+/**
+ * Whether two phone numbers belong to the same person.
+ *
+ * The same visitor is booked as `+256700000001` one day and `0700000001` the
+ * next, so a national number is compared by its last nine digits, which is
+ * what survives both the country code and the trunk prefix. Numbers too short
+ * for that are compared whole rather than guessed at.
+ */
+const SIGNIFICANT_PHONE_DIGITS = 9;
+
+const isSamePhone = (left, right) => {
+  const a = phoneDigits(left);
+  const b = phoneDigits(right);
+  if (!a || !b) return false;
+  if (a.length >= SIGNIFICANT_PHONE_DIGITS && b.length >= SIGNIFICANT_PHONE_DIGITS) {
+    return (
+      a.slice(-SIGNIFICANT_PHONE_DIGITS) === b.slice(-SIGNIFICANT_PHONE_DIGITS)
+    );
+  }
+  return a === b;
+};
+
+const normalizedName = (value) =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+
+const isSameVisitor = (left = {}, right = {}) => {
+  // A phone number is the only thing a visitor gives that is actually theirs,
+  // so it decides identity whenever both bookings carry one. Names only get a
+  // say when there is no number to compare — two different people sharing a
+  // name is rarer than the same person being booked twice.
+  if (phoneDigits(left.visitor_phone) && phoneDigits(right.visitor_phone)) {
+    return isSamePhone(left.visitor_phone, right.visitor_phone);
+  }
+  const leftName = normalizedName(left.visitor_name);
+  const rightName = normalizedName(right.visitor_name);
+  return Boolean(leftName) && leftName === rightName;
+};
+
+/**
+ * Reject booking the same visitor into two overlapping meetings.
+ *
+ * The patient-side counterpart cannot cover this: a visitor has no patient_id
+ * to key on, so without this a single visitor could be booked with two
+ * different hosts at the same hour and neither host would learn of the clash.
+ */
+const assertVisitorAvailable = async ({
+  visitorName,
+  visitorPhone,
+  scheduledStart,
+  scheduledEnd,
+  excludeAppointmentId,
+  tenantId,
+}) => {
+  if (!scheduledStart || !scheduledEnd) {
+    return;
+  }
+  // Nothing identifying to compare against — an unnamed, unreachable visitor
+  // is not evidence of a double booking.
+  if (!phoneDigits(visitorPhone) && !normalizedName(visitorName)) {
+    return;
+  }
+  const start = new Date(scheduledStart);
+  const end = new Date(scheduledEnd);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) {
+    return;
+  }
+
+  const candidates = await appointmentRepository.findOverlappingVisitorAppointments({
+    scheduledStart: start,
+    scheduledEnd: end,
+    excludeAppointmentId,
+    tenantId,
+  });
+  const overlap = (candidates || []).find((candidate) =>
+    isSameVisitor(
+      { visitor_name: visitorName, visitor_phone: visitorPhone },
+      candidate
+    )
+  );
+  if (overlap) {
+    throw new HttpError('errors.appointment.visitor_conflict', 409, [
+      {
+        field: 'visitor_phone',
+        conflicting_appointment_id:
+          overlap.human_friendly_id || overlap.id || null,
+      },
+    ]);
+  }
+};
+
+/**
  * Reject a booking that would put the same patient in two appointments at
  * once. Independent of assertHostAvailable: a patient conflict can happen
  * even across two different providers, and a provider conflict says nothing
@@ -708,6 +806,15 @@ const createAppointment = async (data, userId, ipAddress) => {
       scheduledEnd: payload.scheduled_end,
       tenantId: payload.tenant_id,
     });
+    if (subjectType === 'VISITOR') {
+      await assertVisitorAvailable({
+        visitorName: payload.visitor_name,
+        visitorPhone: payload.visitor_phone,
+        scheduledStart: payload.scheduled_start,
+        scheduledEnd: payload.scheduled_end,
+        tenantId: payload.tenant_id,
+      });
+    }
 
     const createdAppointment = await appointmentRepository.create(payload);
     const appointment = await appointmentRepository.findById(createdAppointment.id, APPOINTMENT_INCLUDE);
@@ -764,11 +871,32 @@ const updateAppointment = async (id, data, userId, ipAddress) => {
       payload.scheduled_end !== undefined
         ? payload.scheduled_end
         : before.scheduled_end;
+    const nextSubjectType = String(
+      payload.subject_type !== undefined
+        ? payload.subject_type
+        : before.subject_type || 'PATIENT'
+    )
+      .trim()
+      .toUpperCase();
+    const nextVisitorName =
+      payload.visitor_name !== undefined
+        ? payload.visitor_name
+        : before.visitor_name;
+    const nextVisitorPhone =
+      payload.visitor_phone !== undefined
+        ? payload.visitor_phone
+        : before.visitor_phone;
+    // Re-pointing a booking at a different person clashes exactly as a moved
+    // window does, so identity edits re-run the checks even when the times
+    // are untouched.
     const scheduleTouched =
       payload.provider_user_id !== undefined ||
       payload.patient_id !== undefined ||
       payload.scheduled_start !== undefined ||
-      payload.scheduled_end !== undefined;
+      payload.scheduled_end !== undefined ||
+      payload.subject_type !== undefined ||
+      payload.visitor_name !== undefined ||
+      payload.visitor_phone !== undefined;
     if (scheduleTouched) {
       await assertHostAvailable({
         providerUserId: nextProviderId,
@@ -784,6 +912,16 @@ const updateAppointment = async (id, data, userId, ipAddress) => {
         excludeAppointmentId: before.id,
         tenantId: before.tenant_id,
       });
+      if (nextSubjectType === 'VISITOR') {
+        await assertVisitorAvailable({
+          visitorName: nextVisitorName,
+          visitorPhone: nextVisitorPhone,
+          scheduledStart: nextStart,
+          scheduledEnd: nextEnd,
+          excludeAppointmentId: before.id,
+          tenantId: before.tenant_id,
+        });
+      }
     }
 
     const updatedAppointment = await appointmentRepository.update(before.id, payload);

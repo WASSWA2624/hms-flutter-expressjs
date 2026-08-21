@@ -247,6 +247,58 @@ const findOverlappingForPatient = async ({
   }
 };
 
+/**
+ * Non-terminal visitor appointments whose window overlaps
+ * [scheduledStart, scheduledEnd).
+ *
+ * Visitors have no patient row to key on, so identity is decided in the
+ * service from the returned name/phone rather than in SQL: stored numbers
+ * differ by formatting and dialling prefix, which no equality filter can see
+ * through. The window plus tenant keeps the candidate set small.
+ */
+const findOverlappingVisitorAppointments = async ({
+  scheduledStart,
+  scheduledEnd,
+  excludeAppointmentId,
+  tenantId,
+  take = 50,
+}) => {
+  try {
+    if (!scheduledStart || !scheduledEnd) {
+      return [];
+    }
+    const start = new Date(scheduledStart);
+    const end = new Date(scheduledEnd);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) {
+      return [];
+    }
+
+    return await prisma.appointment.findMany({
+      where: {
+        deleted_at: null,
+        subject_type: 'VISITOR',
+        ...(tenantId ? { tenant_id: tenantId } : {}),
+        ...(excludeAppointmentId ? { id: { not: excludeAppointmentId } } : {}),
+        status: { notIn: ['CANCELLED', 'NO_SHOW', 'COMPLETED'] },
+        scheduled_start: { lt: end },
+        scheduled_end: { gt: start },
+      },
+      take,
+      select: {
+        id: true,
+        human_friendly_id: true,
+        visitor_name: true,
+        visitor_phone: true,
+        scheduled_start: true,
+        scheduled_end: true,
+        status: true,
+      },
+    });
+  } catch (error) {
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 module.exports = {
   findById,
   findMany,
@@ -256,4 +308,5 @@ module.exports = {
   softDelete,
   findOverlappingForProvider,
   findOverlappingForPatient,
+  findOverlappingVisitorAppointments,
 };
