@@ -43,17 +43,14 @@ void main() {
       }
     });
 
-    test('platform admin profile uses platform create and manage actions', () {
+    test('platform admin home keeps KPIs and alerts without action strips', () {
       final profile = homeProfileForRole(AppRole.platformAdmin);
 
       expect(profile.quickActionIds, isEmpty);
-      expect(profile.emptyActionIds, <String>[
-        'manage_tenants',
-        'manage_facilities',
-        'manage_roles_access',
-        'manage_users',
-      ]);
-      expect(profile.quickActionIds, isNot(contains('select_context')));
+      expect(profile.suppressHomeQuickActions, isTrue);
+      expect(profile.emptyActionIds, isEmpty);
+      expect(profile.showQueuePanel, isFalse);
+      expect(profile.showAlertsWithoutQueuePanel, isTrue);
       expect(profile.shortcutIds.length, greaterThanOrEqualTo(4));
     });
 

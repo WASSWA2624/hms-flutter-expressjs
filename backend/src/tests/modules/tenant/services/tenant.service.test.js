@@ -115,6 +115,65 @@ describe('Tenant Service', () => {
       );
     });
 
+    it('should list only tenants without a live subscription', async () => {
+      tenantRepository.findMany.mockResolvedValue([{ id: 'tenant-1', name: 'Hospital A' }]);
+      tenantRepository.count.mockResolvedValue(1);
+
+      await listTenants({ subscription: 'none' }, 1, 20);
+
+      expect(tenantRepository.findMany).toHaveBeenCalledWith(
+        {
+          subscriptions: {
+            none: {
+              deleted_at: null,
+              status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] }
+            }
+          }
+        },
+        0,
+        20,
+        { created_at: 'desc' },
+        { includeDeleted: false }
+      );
+    });
+
+    it('should list only tenants that have a live subscription', async () => {
+      tenantRepository.findMany.mockResolvedValue([{ id: 'tenant-2', name: 'Hospital B' }]);
+      tenantRepository.count.mockResolvedValue(1);
+
+      await listTenants({ subscription: 'active' }, 1, 20);
+
+      expect(tenantRepository.findMany).toHaveBeenCalledWith(
+        {
+          subscriptions: {
+            some: {
+              deleted_at: null,
+              status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] }
+            }
+          }
+        },
+        0,
+        20,
+        { created_at: 'desc' },
+        { includeDeleted: false }
+      );
+    });
+
+    it('should ignore an unknown subscription filter', async () => {
+      tenantRepository.findMany.mockResolvedValue([]);
+      tenantRepository.count.mockResolvedValue(0);
+
+      await listTenants({ subscription: 'bogus' }, 1, 20);
+
+      expect(tenantRepository.findMany).toHaveBeenCalledWith(
+        {},
+        0,
+        20,
+        { created_at: 'desc' },
+        { includeDeleted: false }
+      );
+    });
+
     it('should filter by search term', async () => {
       const mockTenants = [{ id: 'tenant-1', name: 'Test Hospital' }];
       tenantRepository.findMany.mockResolvedValue(mockTenants);

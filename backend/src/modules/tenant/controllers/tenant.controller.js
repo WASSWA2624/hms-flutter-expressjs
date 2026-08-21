@@ -34,12 +34,22 @@ const isSystemAdmin = (context) =>
  * @returns {Promise<void>}
  */
 const listTenants = asyncHandler(async (req, res) => {
-  const { page, limit, sort_by, order, is_active, search, include_deleted } = req.query;
+  const {
+    page,
+    limit,
+    sort_by,
+    order,
+    is_active,
+    search,
+    subscription,
+    include_deleted
+  } = req.query;
   const context = buildRequestContext(req);
 
   const filters = {};
   if (is_active) filters.is_active = is_active;
   if (search) filters.search = search;
+  if (subscription) filters.subscription = subscription;
   if (include_deleted === 'true') {
     if (!isSystemAdmin(context)) {
       throw new HttpError('errors.auth.insufficient_permissions', 403);

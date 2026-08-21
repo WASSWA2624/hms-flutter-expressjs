@@ -8306,6 +8306,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityTenantStatusDeleted => 'Deleted';
 
   @override
+  String get tenantFacilityTenantSubscriptionFilterLabel => 'Subscription';
+
+  @override
+  String get tenantFacilityTenantSubscriptionFilterNone => 'No subscription';
+
+  @override
+  String get tenantFacilityTenantSubscriptionFilterActive => 'Has subscription';
+
+  @override
   String get tenantFacilityRestoreTenantAction => 'Restore';
 
   @override

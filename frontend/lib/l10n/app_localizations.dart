@@ -15349,6 +15349,24 @@ abstract class AppLocalizations {
   /// **'Deleted'**
   String get tenantFacilityTenantStatusDeleted;
 
+  /// Subscription filter group label in the manage tenants list.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription'**
+  String get tenantFacilityTenantSubscriptionFilterLabel;
+
+  /// Filter choice listing only tenants without a live subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'No subscription'**
+  String get tenantFacilityTenantSubscriptionFilterNone;
+
+  /// Filter choice listing only tenants with a live subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'Has subscription'**
+  String get tenantFacilityTenantSubscriptionFilterActive;
+
   /// Restore soft-deleted tenant action label.
   ///
   /// In en, this message translates to:

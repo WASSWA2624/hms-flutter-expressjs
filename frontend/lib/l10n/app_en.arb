@@ -10575,6 +10575,18 @@
   "@tenantFacilityTenantStatusDeleted": {
     "description": "Soft-deleted tenant status label."
   },
+  "tenantFacilityTenantSubscriptionFilterLabel": "Subscription",
+  "@tenantFacilityTenantSubscriptionFilterLabel": {
+    "description": "Subscription filter group label in the manage tenants list."
+  },
+  "tenantFacilityTenantSubscriptionFilterNone": "No subscription",
+  "@tenantFacilityTenantSubscriptionFilterNone": {
+    "description": "Filter choice listing only tenants without a live subscription."
+  },
+  "tenantFacilityTenantSubscriptionFilterActive": "Has subscription",
+  "@tenantFacilityTenantSubscriptionFilterActive": {
+    "description": "Filter choice listing only tenants with a live subscription."
+  },
   "tenantFacilityRestoreTenantAction": "Restore",
   "@tenantFacilityRestoreTenantAction": {
     "description": "Restore soft-deleted tenant action label."

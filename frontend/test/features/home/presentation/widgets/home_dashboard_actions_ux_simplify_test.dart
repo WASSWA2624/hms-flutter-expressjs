@@ -74,7 +74,7 @@ void main() {
       );
     });
 
-    test('empty actions omit ids already shown as next steps', () {
+    test('platform admin exposes no quick or manage entry points', () {
       final AppAccessPolicy policy = _elevatedPolicy(
         roles: <String>['PLATFORM_ADMIN'],
         permissions: AppPermissions.all,
@@ -97,15 +97,7 @@ void main() {
       );
 
       expect(quick, isEmpty);
-      expect(
-        empty.map((HomeActionDefinition action) => action.id),
-        <String>[
-          'manage_tenants',
-          'manage_facilities',
-          'manage_roles_access',
-          'manage_users',
-        ],
-      );
+      expect(empty, isEmpty);
     });
 
     test('unauthorized manage actions do not render', () {

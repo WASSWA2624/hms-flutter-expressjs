@@ -1356,6 +1356,11 @@ AppRouteData? homeRouteForTarget(
     return null;
   }
 
+  // Tenant rows live on the setup desk, not the settings workspace.
+  if (homeTargetsTenantSetupTenants(target)) {
+    return AppRoutes.tenantFacilitySetup;
+  }
+
   final AppRouteData? route = switch (moduleSlug) {
     'patients' || 'patient' => AppRoutes.patients,
     'scheduling' || 'opd' || 'appointments' => AppRoutes.opd,

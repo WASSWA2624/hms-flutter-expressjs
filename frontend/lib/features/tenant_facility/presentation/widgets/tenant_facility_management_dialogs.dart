@@ -153,6 +153,7 @@ class ManageTenantsPanel extends ConsumerStatefulWidget {
     this.reloadListenable,
     this.onMutated,
     this.onListTotalChanged,
+    this.initialSubscriptionFilter,
     super.key,
   });
 
@@ -163,6 +164,10 @@ class ManageTenantsPanel extends ConsumerStatefulWidget {
   final ValueChanged<bool>? onMutated;
   final ValueChanged<int>? onListTotalChanged;
 
+  /// Preselected subscription filter from `?subscription=` deep links
+  /// (platform dashboard "tenants without subscription" alert).
+  final String? initialSubscriptionFilter;
+
   @override
   ConsumerState<ManageTenantsPanel> createState() => _ManageTenantsPanelState();
 }
@@ -171,6 +176,9 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
   static const String _statusFilterKey = 'status';
   static const String _statusActive = 'active';
   static const String _statusDeleted = 'deleted';
+  static const String _subscriptionFilterKey = 'subscription';
+  static const String _subscriptionNone = 'none';
+  static const String _subscriptionActive = 'active';
 
   final TextEditingController _searchController = TextEditingController();
   Timer? _searchDebounce;
@@ -181,6 +189,7 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
   List<TenantProfile> _tenants = const <TenantProfile>[];
   TenantProfile? _scopedTenant;
   AppSearchBarFilterValue _filterValue = AppSearchBarFilterValue.empty;
+  String? _subscriptionFilter;
   bool _mutated = false;
   int _reloadGeneration = 0;
   PlatformManagementListSync? _realtimeSync;
@@ -199,6 +208,7 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
   @override
   void initState() {
     super.initState();
+    _applySubscriptionDeepLink(widget.initialSubscriptionFilter);
     widget.reloadListenable?.addListener(_onReloadListenable);
     _searchController.addListener(_onSearchChanged);
     if (_isScopedTenantManager) {
@@ -216,6 +226,12 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
   @override
   void didUpdateWidget(covariant ManageTenantsPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.initialSubscriptionFilter !=
+            oldWidget.initialSubscriptionFilter &&
+        _applySubscriptionDeepLink(widget.initialSubscriptionFilter) &&
+        !_isScopedTenantManager) {
+      unawaited(_reload(resetPage: true, silent: _tenants.isNotEmpty));
+    }
     if (_isScopedTenantManager &&
         widget.sessionTenant != null &&
         widget.sessionTenant != oldWidget.sessionTenant) {
@@ -265,6 +281,42 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
     _searchDebounce = Timer(const Duration(milliseconds: 300), () {
       unawaited(_reload(resetPage: true));
     });
+  }
+
+  /// Seeds the subscription filter from a deep link. Returns true when the
+  /// applied value differs from the current one.
+  bool _applySubscriptionDeepLink(String? value) {
+    final String normalized = (value ?? '').trim().toLowerCase();
+    final String? resolved =
+        normalized == _subscriptionNone || normalized == _subscriptionActive
+        ? normalized
+        : null;
+    if (resolved == _subscriptionFilter) {
+      return false;
+    }
+    _subscriptionFilter = resolved;
+    final Map<String, String> options = Map<String, String>.from(
+      _filterValue.options,
+    );
+    if (resolved == null) {
+      options.remove(_subscriptionFilterKey);
+    } else {
+      options[_subscriptionFilterKey] = resolved;
+    }
+    _filterValue = _filterValue.copyWith(options: options);
+    return true;
+  }
+
+  Future<void> _applyTenantFilters(AppSearchBarFilterValue value) async {
+    final String? nextSubscription = value.option(_subscriptionFilterKey);
+    final bool reloadNeeded = nextSubscription != _subscriptionFilter;
+    setState(() {
+      _filterValue = value;
+      _subscriptionFilter = nextSubscription;
+    });
+    if (reloadNeeded) {
+      await _reload(resetPage: true, silent: _tenants.isNotEmpty);
+    }
   }
 
   List<TenantProfile> get _visibleTenants {
@@ -377,7 +429,10 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
     final Result<AppPage<TenantProfile>> result = await repository.listTenants(
       request: _pageRequest,
       search: _searchController.text.trim(),
-      includeDeleted: true,
+      subscription: _subscriptionFilter,
+      // Subscription filtering mirrors the platform alert, which ignores
+      // soft-deleted tenants - keep the two counts in step.
+      includeDeleted: _subscriptionFilter == null,
     );
 
     if (!mounted || generation != _reloadGeneration) return;
@@ -983,7 +1038,8 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
 
   Widget _buildTableBody(AppLocalizations l10n) {
     final List<TenantProfile> visibleTenants = _visibleTenants;
-    final bool hasActiveFilters = _filterValue.option(_statusFilterKey) != null;
+    final bool statusFiltered = _filterValue.option(_statusFilterKey) != null;
+    final bool hasActiveFilters = statusFiltered || _subscriptionFilter != null;
 
     if (_failure != null) {
       return AppFailureStateView(failure: _failure!);
@@ -993,7 +1049,7 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
       page: AppPage<TenantProfile>(
         items: visibleTenants,
         request: _pageRequest,
-        totalItemCount: hasActiveFilters
+        totalItemCount: statusFiltered
             ? visibleTenants.length
             : _totalItemCount,
       ),
@@ -1138,11 +1194,28 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
               ),
             ],
           ),
+          AppSearchBarFilterGroup(
+            key: _subscriptionFilterKey,
+            label: l10n.tenantFacilityTenantSubscriptionFilterLabel,
+            allLabel: l10n.commonAllLabel,
+            choices: <AppSearchBarFilterChoice>[
+              AppSearchBarFilterChoice(
+                value: _subscriptionNone,
+                label: l10n.tenantFacilityTenantSubscriptionFilterNone,
+                icon: Icons.money_off_outlined,
+              ),
+              AppSearchBarFilterChoice(
+                value: _subscriptionActive,
+                label: l10n.tenantFacilityTenantSubscriptionFilterActive,
+                icon: Icons.workspace_premium_outlined,
+              ),
+            ],
+          ),
         ],
         filterValue: _filterValue,
         hasActiveFilters: hasActiveFilters,
         onFilterChanged: (AppSearchBarFilterValue value) {
-          setState(() => _filterValue = value);
+          unawaited(_applyTenantFilters(value));
         },
         trailingActions: widget.showCreateAction && _canCreate
             ? <AppSearchBarAction>[

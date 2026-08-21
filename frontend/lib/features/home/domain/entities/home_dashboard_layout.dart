@@ -49,6 +49,8 @@ HomeDashboardLayoutTier homeLayoutTierForRole(AppRole role) {
 extension HomeDashboardProfileLayout on HomeDashboardProfile {
   HomeDashboardLayoutTier get layoutTier => homeLayoutTierForRole(role);
 
+  bool get isPlatformAdminDashboard => id == 'platform_admin';
+
   bool get isDoctorClinicalDashboard => id == 'doctor';
 
   bool get isNurseClinicalDashboard => id == 'nurse';
@@ -147,7 +149,15 @@ extension HomeDashboardProfileLayout on HomeDashboardProfile {
 
   bool get showMetricsSection => true;
 
+  /// Roles that keep the alerts strip even with the queue panel hidden.
+  bool get showAlertsWithoutQueuePanel => isPlatformAdminDashboard;
+
   bool get showQueuePanel {
+    // Platform home is KPIs + alerts only - tenant/facility work starts from
+    // the setup desk, so no management strip here.
+    if (isPlatformAdminDashboard) {
+      return false;
+    }
     // Department desks own their worklists; home omits the queue collapsible
     // (pharmacy-parity). Clinical / facility-command keep priority worklists.
     if (isPharmacistDepartmentDashboard ||

@@ -151,7 +151,8 @@ DashboardPriorityPanelData homeDashboardPriorityData({
   final HomeDashboardProfile profile = dashboard.profile;
   final bool queuePanelAllowed = profile.showQueuePanel;
   final bool alertsAllowed =
-      profile.showQueuePanel && profile.showAlertsInPriorityPanel;
+      (profile.showQueuePanel || profile.showAlertsWithoutQueuePanel) &&
+      profile.showAlertsInPriorityPanel;
   final List<DashboardWorklistItemData> worklistItems = queuePanelAllowed
       ? homeDashboardWorklistItems(
           context: context,

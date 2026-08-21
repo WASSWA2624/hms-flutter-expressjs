@@ -87,8 +87,10 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
         requiredPermissions: <AppPermission>[AppPermissions.platformAdmin],
       ),
     ],
-    // Create intents are covered by Platform management Manage hubs.
+    // Platform admins navigate from the shell menu: the home dashboard keeps
+    // only KPIs, alerts and charts - no quick actions, no Manage hub strip.
     quickActionIds: const <String>[],
+    suppressHomeQuickActions: true,
     shortcutIds: <String>[
       'subscriptions',
       'tenant_facility_setup',
@@ -96,12 +98,7 @@ homeDashboardProfiles = <AppRole, HomeDashboardProfile>{
       'settings',
       'reports',
     ],
-    emptyActionIds: <String>[
-      'manage_tenants',
-      'manage_facilities',
-      'manage_roles_access',
-      'manage_users',
-    ],
+    emptyActionIds: <String>[],
     metricRouteTargets: <String, HomeMetricRouteTarget>{
       'pending_registration_approvals': HomeMetricRouteTarget(
         queryParameters: <String, String>{

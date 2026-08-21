@@ -358,6 +358,16 @@ describe('Tenant Schema Validation', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should validate with subscription filter', () => {
+      expect(listTenantsQuerySchema.safeParse({ subscription: 'none' }).success).toBe(true);
+      expect(listTenantsQuerySchema.safeParse({ subscription: 'active' }).success).toBe(true);
+    });
+
+    it('should reject invalid subscription value', () => {
+      const result = listTenantsQuerySchema.safeParse({ subscription: 'expired' });
+      expect(result.success).toBe(false);
+    });
+
     it('should validate with all params', () => {
       const validData = {
         page: 2,
@@ -365,7 +375,8 @@ describe('Tenant Schema Validation', () => {
         sort_by: 'name',
         order: 'asc',
         is_active: 'false',
-        search: 'clinic'
+        search: 'clinic',
+        subscription: 'none'
       };
       const result = listTenantsQuerySchema.safeParse(validData);
       expect(result.success).toBe(true);

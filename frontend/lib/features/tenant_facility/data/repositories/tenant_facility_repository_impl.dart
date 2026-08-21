@@ -81,6 +81,7 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
     required AppPageRequest request,
     String? search,
     bool? isActive,
+    String? subscription,
     bool includeDeleted = false,
   }) {
     return _apiClient.get<AppPage<TenantProfile>>(
@@ -91,6 +92,7 @@ final class TenantFacilityRepositoryImpl implements TenantFacilityRepository {
           'limit': '${request.pageSize}',
           'search': search,
           'is_active': isActive?.toString(),
+          'subscription': subscription,
           'include_deleted': includeDeleted ? 'true' : null,
           'sort_by': 'name',
           'order': 'asc',

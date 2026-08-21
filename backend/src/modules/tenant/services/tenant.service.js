@@ -35,6 +35,9 @@ const {
 
 const TENANT_SIMILARITY_LOOKUP_LIMIT = 7500;
 
+// Subscription states that count as "this tenant has a subscription".
+const LIVE_SUBSCRIPTION_STATUSES = ['ACTIVE', 'TRIAL', 'PAST_DUE'];
+
 const isSystemAdminContext = (context = {}) =>
   Array.isArray(context.permissions)
   && context.permissions.includes(PERMISSIONS.PLATFORM_ADMIN);
@@ -252,6 +255,7 @@ const normalizeTenantRecord = (tenant) => {
  * @param {Object} filters - Filter criteria
  * @param {boolean} [filters.is_active] - Filter by active status
  * @param {string} [filters.search] - Search by name or slug
+ * @param {'none'|'active'} [filters.subscription] - Filter by live subscription presence
  * @param {number} page - Page number
  * @param {number} limit - Items per page
  * @param {string} [sort_by] - Field to sort by
@@ -281,6 +285,19 @@ const listTenants = async (filters = {}, page = 1, limit = 20, sort_by = 'create
       { name: { contains: filters.search } },
       { slug: { contains: filters.search } }
     ];
+  }
+
+  // Subscription presence filter - mirrors the platform dashboard
+  // "tenants without subscription" alert so the deep link and the badge agree.
+  if (filters.subscription === 'none' || filters.subscription === 'active') {
+    const liveSubscription = {
+      deleted_at: null,
+      status: { in: LIVE_SUBSCRIPTION_STATUSES }
+    };
+    repoFilters.subscriptions =
+      filters.subscription === 'none'
+        ? { none: liveSubscription }
+        : { some: liveSubscription };
   }
 
   // Calculate pagination

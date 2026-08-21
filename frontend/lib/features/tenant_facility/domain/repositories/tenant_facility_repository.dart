@@ -16,6 +16,8 @@ abstract interface class TenantFacilityRepository {
     required AppPageRequest request,
     String? search,
     bool? isActive,
+    /// `none` keeps only tenants without a live subscription, `active` the rest.
+    String? subscription,
     bool includeDeleted = false,
   });
 

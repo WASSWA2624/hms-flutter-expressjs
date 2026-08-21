@@ -107,18 +107,26 @@ enum TenantFacilitySetupDeskSection {
 /// Deep-link targeting parsed from the `/admin/setup` route query string.
 @immutable
 final class TenantFacilitySetupPageQuery {
-  const TenantFacilitySetupPageQuery({this.section = ''});
+  const TenantFacilitySetupPageQuery({this.section = '', this.subscription});
 
   /// Active desk tab from `?section=` or `?tab=`.
   final String section;
 
+  /// Tenants tab subscription filter from `?subscription=` (`none`/`active`).
+  final String? subscription;
+
   factory TenantFacilitySetupPageQuery.fromUri(Uri uri) {
     final Map<String, String> params = uri.queryParameters;
     final String section = (params['section'] ?? params['tab'] ?? '').trim();
-    return TenantFacilitySetupPageQuery(section: section);
+    final String subscription = (params['subscription'] ?? '').trim();
+    return TenantFacilitySetupPageQuery(
+      section: section,
+      subscription: subscription.isEmpty ? null : subscription.toLowerCase(),
+    );
   }
 
-  String get signature => section.toLowerCase();
+  String get signature =>
+      '${section.toLowerCase()}|${subscription ?? ''}';
 
   bool get hasRouteTargeting => section.trim().isNotEmpty;
 }

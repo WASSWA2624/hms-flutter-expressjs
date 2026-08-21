@@ -118,7 +118,7 @@ void main() {
       expect(profile.quickActionIds, isNot(contains('create_invoice')));
     });
 
-    test('platform admin drops Create when Manage hubs cover them', () {
+    test('platform admin home offers neither Create nor Manage hubs', () {
       // Platform elevated: no tenant context so grantsAll is unrestricted.
       final AppAccessPolicy policy = _policy(
         roles: <String>['PLATFORM_ADMIN'],
@@ -145,15 +145,7 @@ void main() {
       );
 
       expect(quick, isEmpty);
-      expect(
-        manage.map((HomeActionDefinition a) => a.id),
-        <String>[
-          'manage_tenants',
-          'manage_facilities',
-          'manage_roles_access',
-          'manage_users',
-        ],
-      );
+      expect(manage, isEmpty);
     });
 
     test('keeps Create when Manage hub is unauthorized', () {
@@ -213,15 +205,12 @@ void main() {
       );
 
       expect(homeQueueTitle(AppRole.tenantAdmin), 'Facility management');
-      expect(homeQueueTitle(AppRole.platformAdmin), 'Platform management');
       expect(
         homeEmptyManagementSectionTitle(tenant, l10n),
         l10n.homeFacilityManagementTitle,
       );
-      expect(
-        homeEmptyManagementSectionTitle(platform, l10n),
-        l10n.homePlatformManagementTitle,
-      );
+      // Platform home drops the management strip entirely.
+      expect(homeEmptyManagementSectionTitle(platform, l10n), isNull);
       expect(tenant.emptyMessage, isEmpty);
       expect(platform.emptyMessage, isEmpty);
     });

@@ -376,10 +376,25 @@ void main() {
             Uri.parse('/admin/setup?section=users'),
           );
       expect(query.section, 'users');
+      expect(query.subscription, isNull);
       expect(
         TenantFacilitySetupDeskSection.fromQuery(query.section),
         TenantFacilitySetupDeskSection.users,
       );
+    });
+
+    test('parses the tenants subscription filter from uri query', () {
+      final TenantFacilitySetupPageQuery query =
+          TenantFacilitySetupPageQuery.fromUri(
+            Uri.parse('/admin/setup?section=tenants&subscription=NONE'),
+          );
+      expect(query.section, 'tenants');
+      expect(query.subscription, 'none');
+      expect(query.signature, isNot(
+        TenantFacilitySetupPageQuery.fromUri(
+          Uri.parse('/admin/setup?section=tenants'),
+        ).signature,
+      ));
     });
   });
 

@@ -678,6 +678,7 @@ class _SetupBodyState extends ConsumerState<_SetupBody> {
     return switch (section) {
       TenantFacilitySetupDeskSection.tenants => ManageTenantsPanel(
         sessionTenant: snapshot.tenant,
+        initialSubscriptionFilter: widget.initialQuery?.subscription,
         onMutated: (_) => _refreshSetup(),
         onListTotalChanged: (int count) =>
             _setLiveSectionCount(TenantFacilitySetupDeskSection.tenants, count),

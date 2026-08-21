@@ -159,6 +159,9 @@ const tenantIdParamsSchema = z.object({
 const listTenantsQuerySchema = listQuerySchema.extend({
   is_active: z.enum(['true', 'false']).optional(),
   search: z.string().trim().optional(),
+  // 'none' lists tenants with no live subscription (dashboard alert deep link),
+  // 'active' lists the complement.
+  subscription: z.enum(['none', 'active']).optional(),
   include_deleted: z.enum(['true', 'false']).optional()});
 
 /**

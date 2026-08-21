@@ -6,6 +6,7 @@ import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard_profiles.dart';
+import 'package:hosspi_hms/features/home/presentation/widgets/home_dashboard_actions.dart';
 import 'package:hosspi_hms/features/home/presentation/widgets/home_metric_routes.dart';
 
 AppAccessPolicy _policyForRoles(List<String> roles) {
@@ -109,6 +110,31 @@ void main() {
           const HomeRouteTarget(moduleSlug: 'lab', resource: 'results'),
         ),
         <String, String>{'section': 'worklist'},
+      );
+    });
+
+    test('tenants-without-subscription alert opens the filtered tenants tab', () {
+      const HomeRouteTarget target = HomeRouteTarget(
+        moduleSlug: 'settings',
+        resource: 'tenants',
+        action: 'list',
+      );
+
+      expect(homeTargetsTenantSetupTenants(target), isTrue);
+      expect(
+        homeRouteForTarget(target),
+        AppRoutes.tenantFacilitySetup,
+      );
+      expect(homeRouteQueryForTarget(target), <String, String>{
+        'section': 'tenants',
+        'subscription': 'none',
+      });
+      // Other settings targets keep the settings workspace.
+      expect(
+        homeRouteForTarget(
+          const HomeRouteTarget(moduleSlug: 'settings', resource: 'integrations'),
+        ),
+        AppRoutes.settings,
       );
     });
 

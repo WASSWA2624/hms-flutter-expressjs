@@ -637,11 +637,37 @@ Map<String, String> homeRouteQueryForTarget(HomeRouteTarget? target) {
     return const <String, String>{};
   }
 
+  final Map<String, String> tenantSetup = homeTenantSetupQueryForTarget(target);
+  if (tenantSetup.isNotEmpty) {
+    return tenantSetup;
+  }
   final Map<String, String> hr = homeHrQueryForTarget(target);
   if (hr.isNotEmpty) {
     return hr;
   }
   return homeLabQueryForTarget(target);
+}
+
+/// True when a target points at the tenants tab of `/admin/setup`.
+bool homeTargetsTenantSetupTenants(HomeRouteTarget? target) {
+  if (target == null) {
+    return false;
+  }
+  return target.moduleSlug.trim().toLowerCase() == 'settings' &&
+      (target.resource ?? '').trim().toLowerCase() == 'tenants';
+}
+
+/// Maps the platform "tenants without subscription" alert to the tenants tab
+/// of `/admin/setup`, preselecting the no-subscription filter so the list
+/// shows exactly the tenants the alert counted.
+Map<String, String> homeTenantSetupQueryForTarget(HomeRouteTarget? target) {
+  if (!homeTargetsTenantSetupTenants(target)) {
+    return const <String, String>{};
+  }
+  return const <String, String>{
+    'section': 'tenants',
+    'subscription': 'none',
+  };
 }
 
 /// Maps HR workspace queue row targets to `/hr` deep-link query parameters.
