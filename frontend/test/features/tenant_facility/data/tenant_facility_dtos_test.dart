@@ -108,5 +108,51 @@ void main() {
       expect(snapshot.permissions.canManageTenant, isTrue);
       expect(snapshot.completedChecklistItems, 7);
     });
+
+    test('parses the current subscription on a tenant row', () {
+      final TenantProfile tenant = TenantProfileDto.fromJson(<String, Object?>{
+        'id': 'TEN0001',
+        'name': 'Acme Hospital',
+        'is_active': true,
+        'current_subscription': <String, Object?>{
+          'plan_name': 'Pro',
+          'plan_code': 'PRO',
+          'status': 'ACTIVE',
+          'start_date': '2025-12-18T00:00:00.000Z',
+          'end_date': '2026-12-18T00:00:00.000Z',
+        },
+      }).toEntity();
+
+      expect(tenant.subscription?.packageLabel, 'Pro');
+      expect(tenant.subscription?.status, 'ACTIVE');
+      expect(tenant.subscription?.startDate, DateTime.utc(2025, 12, 18));
+      expect(tenant.subscription?.endDate, DateTime.utc(2026, 12, 18));
+    });
+
+    test('leaves the subscription null for unsubscribed tenants', () {
+      final TenantProfile tenant = TenantProfileDto.fromJson(<String, Object?>{
+        'id': 'TEN0002',
+        'name': 'Browser Sim',
+        'is_active': true,
+        'current_subscription': null,
+      }).toEntity();
+
+      expect(tenant.subscription, isNull);
+    });
+
+    test('falls back to the plan code when the plan name is missing', () {
+      final TenantProfile tenant = TenantProfileDto.fromJson(<String, Object?>{
+        'id': 'TEN0003',
+        'name': 'Fast Facility',
+        'is_active': true,
+        'current_subscription': <String, Object?>{
+          'plan_code': 'STARTER',
+          'status': 'TRIAL',
+        },
+      }).toEntity();
+
+      expect(tenant.subscription?.packageLabel, 'STARTER');
+      expect(tenant.subscription?.endDate, isNull);
+    });
   });
 }

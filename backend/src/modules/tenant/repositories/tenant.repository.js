@@ -17,7 +17,40 @@ const {
   PRIMARY_TENANT_ADMIN_INCLUDE,
 } = require('@lib/tenant/resolve-tenant-contact');
 
-const TENANT_ADMIN_RELATION_INCLUDE = PRIMARY_TENANT_ADMIN_INCLUDE;
+// Current subscription for tenant list/detail rows: the live one (ACTIVE /
+// TRIAL / PAST_DUE), most recent first. Tenants without one read as unsubscribed,
+// matching the platform dashboard alert and the `subscription=none` filter.
+const CURRENT_SUBSCRIPTION_INCLUDE = Object.freeze({
+  subscriptions: {
+    where: {
+      deleted_at: null,
+      status: { in: ['ACTIVE', 'TRIAL', 'PAST_DUE'] }
+    },
+    orderBy: [{ start_date: 'desc' }, { created_at: 'desc' }],
+    take: 1,
+    select: {
+      id: true,
+      human_friendly_id: true,
+      status: true,
+      start_date: true,
+      end_date: true,
+      plan: {
+        select: {
+          id: true,
+          human_friendly_id: true,
+          name: true,
+          code: true,
+          tier_code: true
+        }
+      }
+    }
+  }
+});
+
+const TENANT_ADMIN_RELATION_INCLUDE = Object.freeze({
+  ...PRIMARY_TENANT_ADMIN_INCLUDE,
+  ...CURRENT_SUBSCRIPTION_INCLUDE
+});
 
 const TENANT_SLUG_MAX_LENGTH = 191;
 const RELEASED_SLUG_SUFFIX = '__deleted__';

@@ -213,14 +213,50 @@ const buildPrimaryTenantAdmin = (userRole = null) => {
     user_role_human_friendly_id: normalizeString(userRole?.human_friendly_id)};
 };
 
+/**
+ * Flattens the included live subscription (if any) into a list-friendly shape.
+ * Returns null when the tenant has no live subscription.
+ */
+const buildCurrentSubscription = (subscriptions) => {
+  if (!Array.isArray(subscriptions) || subscriptions.length === 0) {
+    return null;
+  }
+
+  const subscription = subscriptions[0];
+  if (!subscription || typeof subscription !== 'object') {
+    return null;
+  }
+
+  const plan = subscription.plan || {};
+  return {
+    id: subscription.id || null,
+    display_id: resolvePublicIdentifier(subscription.human_friendly_id, subscription.id) || null,
+    status: subscription.status || null,
+    start_date: subscription.start_date || null,
+    end_date: subscription.end_date || null,
+    plan_id: plan.id || null,
+    plan_display_id: resolvePublicIdentifier(plan.human_friendly_id, plan.id) || null,
+    plan_name: normalizeText(plan.name) || null,
+    plan_code: normalizeText(plan.code) || null,
+    plan_tier_code: plan.tier_code || null
+  };
+};
+
 const normalizeTenantRecord = (tenant) => {
   if (!tenant || typeof tenant !== 'object') return tenant;
 
+  // `subscriptions` is a query-shaped relation - expose the current one only.
+  const { subscriptions, ...tenantFields } = tenant;
+  const currentSubscription = buildCurrentSubscription(subscriptions);
+
   const normalized = {
-    ...tenant,
+    ...tenantFields,
     resource_uuid: tenant.id,
     display_id:
-      resolvePublicIdentifier(tenant.human_friendly_id, tenant.id) || tenant.id};
+      resolvePublicIdentifier(tenant.human_friendly_id, tenant.id) || tenant.id,
+    ...(Array.isArray(subscriptions)
+      ? { current_subscription: currentSubscription }
+      : {})};
 
   if (!Array.isArray(tenant.user_roles)) {
     return normalized;

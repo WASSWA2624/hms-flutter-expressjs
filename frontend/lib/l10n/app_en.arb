@@ -10587,6 +10587,26 @@
   "@tenantFacilityTenantSubscriptionFilterActive": {
     "description": "Filter choice listing only tenants with a live subscription."
   },
+  "tenantFacilityTenantSubscriptionPlanLabel": "Package",
+  "@tenantFacilityTenantSubscriptionPlanLabel": {
+    "description": "Subscription package column label in the manage tenants list."
+  },
+  "tenantFacilityTenantSubscriptionStartLabel": "Start date",
+  "@tenantFacilityTenantSubscriptionStartLabel": {
+    "description": "Subscription start date column label in the manage tenants list."
+  },
+  "tenantFacilityTenantSubscriptionEndLabel": "End date",
+  "@tenantFacilityTenantSubscriptionEndLabel": {
+    "description": "Subscription end date column label in the manage tenants list."
+  },
+  "tenantFacilityTenantSubscriptionNoneValue": "No subscription",
+  "@tenantFacilityTenantSubscriptionNoneValue": {
+    "description": "Cell value shown when a tenant has no live subscription."
+  },
+  "tenantFacilityTenantSubscriptionOpenEndedValue": "Open-ended",
+  "@tenantFacilityTenantSubscriptionOpenEndedValue": {
+    "description": "Cell value shown when a live subscription has no end date."
+  },
   "tenantFacilityRestoreTenantAction": "Restore",
   "@tenantFacilityRestoreTenantAction": {
     "description": "Restore soft-deleted tenant action label."

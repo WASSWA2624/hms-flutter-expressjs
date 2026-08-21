@@ -115,6 +115,50 @@ describe('Tenant Service', () => {
       );
     });
 
+    it('should expose the current subscription package and window', async () => {
+      tenantRepository.findMany.mockResolvedValue([
+        {
+          id: 'tenant-1',
+          name: 'Hospital A',
+          subscriptions: [
+            {
+              id: 'sub-1',
+              human_friendly_id: 'SUB0000001',
+              status: 'ACTIVE',
+              start_date: new Date('2025-12-18T00:00:00.000Z'),
+              end_date: new Date('2026-12-18T00:00:00.000Z'),
+              plan: { id: 'plan-1', name: 'Pro', code: 'PRO', tier_code: 'PRO' }
+            }
+          ]
+        }
+      ]);
+      tenantRepository.count.mockResolvedValue(1);
+
+      const result = await listTenants({}, 1, 20);
+
+      expect(result.tenants[0].subscriptions).toBeUndefined();
+      expect(result.tenants[0].current_subscription).toEqual(
+        expect.objectContaining({
+          status: 'ACTIVE',
+          plan_name: 'Pro',
+          plan_code: 'PRO',
+          start_date: new Date('2025-12-18T00:00:00.000Z'),
+          end_date: new Date('2026-12-18T00:00:00.000Z')
+        })
+      );
+    });
+
+    it('should report a null current subscription for unsubscribed tenants', async () => {
+      tenantRepository.findMany.mockResolvedValue([
+        { id: 'tenant-1', name: 'Hospital A', subscriptions: [] }
+      ]);
+      tenantRepository.count.mockResolvedValue(1);
+
+      const result = await listTenants({}, 1, 20);
+
+      expect(result.tenants[0].current_subscription).toBeNull();
+    });
+
     it('should list only tenants without a live subscription', async () => {
       tenantRepository.findMany.mockResolvedValue([{ id: 'tenant-1', name: 'Hospital A' }]);
       tenantRepository.count.mockResolvedValue(1);

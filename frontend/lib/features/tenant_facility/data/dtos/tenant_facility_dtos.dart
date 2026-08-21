@@ -15,6 +15,7 @@ final class TenantProfileDto {
     this.resourceUuid,
     this.displayId,
     this.deletedAt,
+    this.subscription,
   });
 
   factory TenantProfileDto.fromJson(JsonMap json) {
@@ -59,6 +60,7 @@ final class TenantProfileDto {
           _optionalString(json, 'resource_uuid') ?? _requiredString(json, 'id'),
       displayId: _optionalString(json, 'display_id'),
       deletedAt: _optionalDateTime(json, 'deleted_at'),
+      subscription: _tenantSubscription(json['current_subscription']),
     );
   }
 
@@ -74,6 +76,7 @@ final class TenantProfileDto {
   final String? resourceUuid;
   final String? displayId;
   final DateTime? deletedAt;
+  final TenantSubscriptionProfile? subscription;
 
   TenantProfile toEntity() {
     return TenantProfile(
@@ -89,6 +92,7 @@ final class TenantProfileDto {
       resourceUuid: resourceUuid,
       displayId: displayId,
       deletedAt: deletedAt,
+      subscription: subscription,
     );
   }
 }
@@ -624,6 +628,27 @@ DateTime? _optionalDateTime(JsonMap json, String key) {
     return null;
   }
   return DateTime.tryParse(text);
+}
+
+/// Decodes the `current_subscription` payload the tenants API returns for the
+/// live subscription (absent/null when the tenant has none).
+TenantSubscriptionProfile? _tenantSubscription(Object? value) {
+  if (value is! JsonMap) {
+    return null;
+  }
+  final TenantSubscriptionProfile subscription = TenantSubscriptionProfile(
+    planName: _optionalString(value, 'plan_name'),
+    planCode: _optionalString(value, 'plan_code'),
+    status: _optionalString(value, 'status'),
+    startDate: _optionalDateTime(value, 'start_date'),
+    endDate: _optionalDateTime(value, 'end_date'),
+  );
+  final bool isEmpty =
+      subscription.packageLabel == null &&
+      subscription.status == null &&
+      subscription.startDate == null &&
+      subscription.endDate == null;
+  return isEmpty ? null : subscription;
 }
 
 JsonMap _map(Object? value) {

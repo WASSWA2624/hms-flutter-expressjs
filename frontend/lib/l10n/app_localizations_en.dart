@@ -8315,6 +8315,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tenantFacilityTenantSubscriptionFilterActive => 'Has subscription';
 
   @override
+  String get tenantFacilityTenantSubscriptionPlanLabel => 'Package';
+
+  @override
+  String get tenantFacilityTenantSubscriptionStartLabel => 'Start date';
+
+  @override
+  String get tenantFacilityTenantSubscriptionEndLabel => 'End date';
+
+  @override
+  String get tenantFacilityTenantSubscriptionNoneValue => 'No subscription';
+
+  @override
+  String get tenantFacilityTenantSubscriptionOpenEndedValue => 'Open-ended';
+
+  @override
   String get tenantFacilityRestoreTenantAction => 'Restore';
 
   @override

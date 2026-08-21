@@ -10,6 +10,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
 import 'package:hosspi_hms/core/realtime/realtime_events.dart';
 import 'package:hosspi_hms/core/realtime/realtime_message.dart';
+import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/core/utils/app_media_url.dart';
 import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_repository_impl.dart';
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
@@ -317,6 +318,37 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
     if (reloadNeeded) {
       await _reload(resetPage: true, silent: _tenants.isNotEmpty);
     }
+  }
+
+  String _tenantPackageLabel(AppLocalizations l10n, TenantProfile tenant) {
+    return tenant.subscription?.packageLabel ??
+        l10n.tenantFacilityTenantSubscriptionNoneValue;
+  }
+
+  String _tenantSubscriptionStartLabel(
+    AppLocalizations l10n,
+    Locale locale,
+    TenantProfile tenant,
+  ) {
+    final DateTime? start = tenant.subscription?.startDate;
+    return start == null
+        ? l10n.profileUnknownValue
+        : AppFormatters.mediumDate(start.toLocal(), locale);
+  }
+
+  String _tenantSubscriptionEndLabel(
+    AppLocalizations l10n,
+    Locale locale,
+    TenantProfile tenant,
+  ) {
+    final TenantSubscriptionProfile? subscription = tenant.subscription;
+    if (subscription == null) {
+      return l10n.profileUnknownValue;
+    }
+    final DateTime? end = subscription.endDate;
+    return end == null
+        ? l10n.tenantFacilityTenantSubscriptionOpenEndedValue
+        : AppFormatters.mediumDate(end.toLocal(), locale);
   }
 
   List<TenantProfile> get _visibleTenants {
@@ -815,6 +847,8 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
       id: tenant.id.isNotEmpty ? tenant.id : previous.id,
       resourceUuid: tenant.resourceUuid ?? previous.resourceUuid,
       displayId: tenant.displayId ?? previous.displayId,
+      // Tenant edits never carry subscription relations - keep what we know.
+      subscription: tenant.subscription ?? previous.subscription,
       deletedAt: tenant.deletedAt,
       clearDeletedAt: tenant.deletedAt == null && previous.deletedAt != null,
     );
@@ -1037,6 +1071,7 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
   }
 
   Widget _buildTableBody(AppLocalizations l10n) {
+    final Locale locale = Localizations.localeOf(context);
     final List<TenantProfile> visibleTenants = _visibleTenants;
     final bool statusFiltered = _filterValue.option(_statusFilterKey) != null;
     final bool hasActiveFilters = statusFiltered || _subscriptionFilter != null;
@@ -1117,6 +1152,34 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
                 _tenantStatusLabel(l10n, tenant),
             cellBuilder: (_, TenantProfile tenant) =>
                 tenantFacilitySetupAtomicCell(_tenantStatusLabel(l10n, tenant)),
+          ),
+          AppListTableColumn<TenantProfile>(
+            id: 'subscription_plan',
+            label: l10n.tenantFacilityTenantSubscriptionPlanLabel,
+            exportValue: (TenantProfile tenant) =>
+                _tenantPackageLabel(l10n, tenant),
+            cellBuilder: (_, TenantProfile tenant) =>
+                tenantFacilitySetupAtomicCell(_tenantPackageLabel(l10n, tenant)),
+          ),
+          AppListTableColumn<TenantProfile>(
+            id: 'subscription_start',
+            label: l10n.tenantFacilityTenantSubscriptionStartLabel,
+            exportValue: (TenantProfile tenant) =>
+                _tenantSubscriptionStartLabel(l10n, locale, tenant),
+            cellBuilder: (_, TenantProfile tenant) =>
+                tenantFacilitySetupAtomicCell(
+                  _tenantSubscriptionStartLabel(l10n, locale, tenant),
+                ),
+          ),
+          AppListTableColumn<TenantProfile>(
+            id: 'subscription_end',
+            label: l10n.tenantFacilityTenantSubscriptionEndLabel,
+            exportValue: (TenantProfile tenant) =>
+                _tenantSubscriptionEndLabel(l10n, locale, tenant),
+            cellBuilder: (_, TenantProfile tenant) =>
+                tenantFacilitySetupAtomicCell(
+                  _tenantSubscriptionEndLabel(l10n, locale, tenant),
+                ),
           ),
           AppListTableColumn<TenantProfile>(
             id: 'id',
@@ -1258,6 +1321,57 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
           cellBuilder: (_, TenantProfile tenant) =>
               tenantFacilitySetupAtomicCell(_tenantStatusLabel(l10n, tenant)),
         ),
+        AppListTableColumn<TenantProfile>(
+          id: 'subscription_plan',
+          label: l10n.tenantFacilityTenantSubscriptionPlanLabel,
+          preferredWidth: 160,
+          sortComparator: (TenantProfile left, TenantProfile right) =>
+              appListTableCompareText(
+                left.subscription?.packageLabel,
+                right.subscription?.packageLabel,
+              ),
+          exportValue: (TenantProfile tenant) =>
+              _tenantPackageLabel(l10n, tenant),
+          cellBuilder: (_, TenantProfile tenant) =>
+              tenantFacilitySetupAtomicCell(
+                _tenantPackageLabel(l10n, tenant),
+                muted: tenant.subscription == null,
+              ),
+        ),
+        AppListTableColumn<TenantProfile>(
+          id: 'subscription_start',
+          label: l10n.tenantFacilityTenantSubscriptionStartLabel,
+          preferredWidth: 150,
+          sortComparator: (TenantProfile left, TenantProfile right) =>
+              appListTableCompareDateTime(
+                left.subscription?.startDate,
+                right.subscription?.startDate,
+              ),
+          exportValue: (TenantProfile tenant) =>
+              _tenantSubscriptionStartLabel(l10n, locale, tenant),
+          cellBuilder: (_, TenantProfile tenant) =>
+              tenantFacilitySetupAtomicCell(
+                _tenantSubscriptionStartLabel(l10n, locale, tenant),
+                muted: tenant.subscription?.startDate == null,
+              ),
+        ),
+        AppListTableColumn<TenantProfile>(
+          id: 'subscription_end',
+          label: l10n.tenantFacilityTenantSubscriptionEndLabel,
+          preferredWidth: 150,
+          sortComparator: (TenantProfile left, TenantProfile right) =>
+              appListTableCompareDateTime(
+                left.subscription?.endDate,
+                right.subscription?.endDate,
+              ),
+          exportValue: (TenantProfile tenant) =>
+              _tenantSubscriptionEndLabel(l10n, locale, tenant),
+          cellBuilder: (_, TenantProfile tenant) =>
+              tenantFacilitySetupAtomicCell(
+                _tenantSubscriptionEndLabel(l10n, locale, tenant),
+                muted: tenant.subscription?.endDate == null,
+              ),
+        ),
         if (_canEdit)
           AppListTableColumn<TenantProfile>(
             id: 'actions',
@@ -1340,6 +1454,12 @@ class _ManageTenantsPanelState extends ConsumerState<ManageTenantsPanel> {
           caption: displayId ?? (slug != null && slug.isNotEmpty ? slug : null),
           meta: <AppListTableMobileMeta>[
             AppListTableMobileMeta(label: _tenantStatusLabel(l10n, tenant)),
+            AppListTableMobileMeta(label: _tenantPackageLabel(l10n, tenant)),
+            if (tenant.subscription != null)
+              AppListTableMobileMeta(
+                label:
+                    '${_tenantSubscriptionStartLabel(l10n, locale, tenant)} – ${_tenantSubscriptionEndLabel(l10n, locale, tenant)}',
+              ),
           ],
         );
       },

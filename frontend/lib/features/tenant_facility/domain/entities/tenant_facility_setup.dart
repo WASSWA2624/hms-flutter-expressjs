@@ -37,6 +37,48 @@ enum BedSetupStatus {
   outOfService,
 }
 
+/// Live subscription a tenant is currently on (`ACTIVE`/`TRIAL`/`PAST_DUE`).
+/// Null on [TenantProfile] when the tenant has no live subscription.
+final class TenantSubscriptionProfile {
+  const TenantSubscriptionProfile({
+    this.planName,
+    this.planCode,
+    this.status,
+    this.startDate,
+    this.endDate,
+  });
+
+  final String? planName;
+  final String? planCode;
+  final String? status;
+  final DateTime? startDate;
+  final DateTime? endDate;
+
+  /// Package label, falling back to the plan code when the name is missing.
+  String? get packageLabel {
+    final String? name = planName?.trim();
+    if (name != null && name.isNotEmpty) {
+      return name;
+    }
+    final String? code = planCode?.trim();
+    return code != null && code.isNotEmpty ? code : null;
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is TenantSubscriptionProfile &&
+        other.planName == planName &&
+        other.planCode == planCode &&
+        other.status == status &&
+        other.startDate == startDate &&
+        other.endDate == endDate;
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(planName, planCode, status, startDate, endDate);
+}
+
 final class TenantProfile {
   const TenantProfile({
     required this.id,
@@ -51,6 +93,7 @@ final class TenantProfile {
     this.resourceUuid,
     this.displayId,
     this.deletedAt,
+    this.subscription,
   });
 
   final String id;
@@ -65,6 +108,7 @@ final class TenantProfile {
   final String? resourceUuid;
   final String? displayId;
   final DateTime? deletedAt;
+  final TenantSubscriptionProfile? subscription;
 
   bool get isDeleted => deletedAt != null;
 
@@ -84,6 +128,8 @@ final class TenantProfile {
     String? resourceUuid,
     String? displayId,
     DateTime? deletedAt,
+    TenantSubscriptionProfile? subscription,
+    bool clearSubscription = false,
     bool clearDeletedAt = false,
     bool clearCurrency = false,
     bool clearStandardConsultationFee = false,
@@ -110,6 +156,9 @@ final class TenantProfile {
       resourceUuid: resourceUuid ?? this.resourceUuid,
       displayId: displayId ?? this.displayId,
       deletedAt: clearDeletedAt ? null : (deletedAt ?? this.deletedAt),
+      subscription: clearSubscription
+          ? null
+          : (subscription ?? this.subscription),
     );
   }
 }

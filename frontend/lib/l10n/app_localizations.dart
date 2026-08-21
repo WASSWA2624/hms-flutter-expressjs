@@ -15367,6 +15367,36 @@ abstract class AppLocalizations {
   /// **'Has subscription'**
   String get tenantFacilityTenantSubscriptionFilterActive;
 
+  /// Subscription package column label in the manage tenants list.
+  ///
+  /// In en, this message translates to:
+  /// **'Package'**
+  String get tenantFacilityTenantSubscriptionPlanLabel;
+
+  /// Subscription start date column label in the manage tenants list.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get tenantFacilityTenantSubscriptionStartLabel;
+
+  /// Subscription end date column label in the manage tenants list.
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get tenantFacilityTenantSubscriptionEndLabel;
+
+  /// Cell value shown when a tenant has no live subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'No subscription'**
+  String get tenantFacilityTenantSubscriptionNoneValue;
+
+  /// Cell value shown when a live subscription has no end date.
+  ///
+  /// In en, this message translates to:
+  /// **'Open-ended'**
+  String get tenantFacilityTenantSubscriptionOpenEndedValue;
+
   /// Restore soft-deleted tenant action label.
   ///
   /// In en, this message translates to:
