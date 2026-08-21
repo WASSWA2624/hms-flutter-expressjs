@@ -100,7 +100,10 @@ void main() {
       // Alerts render as one compact chip line - no section title, no card.
       expect(find.text('Facility alerts'), findsNothing);
       final Rect alertChip = tester.getRect(
-        find.text('Entitlement Denied Modules (1 facility)'),
+        find.text(
+          'Entitlement Denied Modules (1 facility)',
+          findRichText: true,
+        ),
       );
       final Rect managementTitle = tester.getRect(
         find.text('Facility management'),
@@ -109,7 +112,7 @@ void main() {
     },
   );
 
-  testWidgets('renders alerts as minimal outlined chips', (
+  testWidgets('renders alerts as minimal square-edged tags', (
     WidgetTester tester,
   ) async {
     int taps = 0;
@@ -161,15 +164,30 @@ void main() {
 
     // Count sits in brackets beside the label; no separate status badge.
     expect(
-      find.text('Tenants Without Subscription (3)'),
+      find.text('Tenants Without Subscription (3)', findRichText: true),
       findsOneWidget,
     );
-    expect(find.text('Integration Errors (2)'), findsOneWidget);
+    expect(
+      find.text('Integration Errors (2)', findRichText: true),
+      findsOneWidget,
+    );
     expect(find.text('Warning'), findsNothing);
     expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
     expect(find.byIcon(Icons.error_outline), findsOneWidget);
 
-    await tester.tap(find.text('Tenants Without Subscription (3)'));
+    // Square edges: alert tags never round their corners.
+    for (final DecoratedBox box in tester.widgetList<DecoratedBox>(
+      find.descendant(
+        of: find.byType(DashboardAlertsStrip),
+        matching: find.byType(DecoratedBox),
+      ),
+    )) {
+      expect((box.decoration as BoxDecoration).borderRadius, isNull);
+    }
+
+    await tester.tap(
+      find.text('Tenants Without Subscription (3)', findRichText: true),
+    );
     await tester.pumpAndSettle();
     expect(taps, 1);
   });

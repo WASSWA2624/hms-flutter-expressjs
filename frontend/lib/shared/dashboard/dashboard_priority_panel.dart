@@ -110,9 +110,10 @@ class DashboardAlertsPanel extends StatelessWidget {
   }
 }
 
-/// Dashboard alerts as one compact line of outlined severity chips:
-/// `icon  Label (count)`. Deliberately card-free - alerts sit inline above the
-/// dashboard body and must not spend vertical space on panel chrome.
+/// Dashboard alerts as one compact line of square-edged severity tags:
+/// `icon  Label (count)`, the count tinted by severity. Deliberately
+/// card-free and radius-free - alerts sit inline above the dashboard body
+/// and must not spend vertical space on panel chrome.
 class DashboardAlertsStrip extends StatelessWidget {
   const DashboardAlertsStrip({required this.items, super.key});
 
@@ -149,27 +150,52 @@ class _DashboardAlertChip extends StatelessWidget {
     final Color accent = dashboardToneAccent(theme, tone);
     final String label = item.title.trim();
     final String? count = _alertCountLabel(item.subtitle);
-    final BorderRadius radius = BorderRadius.circular(theme.radius.sm);
     final String severityLabel = item.status?.label.trim() ?? '';
+    final TextStyle? labelStyle = theme.textTheme.bodySmall?.copyWith(
+      color: theme.colorScheme.onSurface,
+      letterSpacing: 0.1,
+      height: 1.2,
+    );
+
+    // Square edges: a hairline rule with one weighted severity edge, so the
+    // tag reads as a rule of text rather than a chip.
+    final Border border = Border(
+      left: theme.borders.side(color: accent, width: 2),
+      top: theme.borders.side(color: accent.withValues(alpha: 0.24)),
+      right: theme.borders.side(color: accent.withValues(alpha: 0.24)),
+      bottom: theme.borders.side(color: accent.withValues(alpha: 0.24)),
+    );
 
     final Widget content = Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.xs,
+      padding: EdgeInsets.fromLTRB(
+        theme.spacing.sm,
+        theme.spacing.xs,
+        theme.spacing.sm,
+        theme.spacing.xs,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(_alertToneIcon(tone), size: 16, color: accent),
-          SizedBox(width: theme.spacing.xs),
+          Icon(_alertToneIcon(tone), size: 15, color: accent),
+          SizedBox(width: theme.spacing.sm),
           Flexible(
-            child: Text(
-              count == null ? label : '$label ($count)',
+            child: Text.rich(
+              TextSpan(
+                children: <InlineSpan>[
+                  TextSpan(text: label),
+                  if (count != null)
+                    TextSpan(
+                      text: ' ($count)',
+                      style: TextStyle(
+                        color: accent,
+                        fontWeight: AppFontWeight.emphasis,
+                      ),
+                    ),
+                ],
+              ),
+              style: labelStyle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurface,
-              ),
             ),
           ),
         ],
@@ -185,19 +211,14 @@ class _DashboardAlertChip extends StatelessWidget {
       ].join(', '),
       excludeSemantics: true,
       child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: radius,
-          border: theme.borders.all(color: accent.withValues(alpha: 0.45)),
-        ),
+        decoration: BoxDecoration(border: border),
         child: item.onTap == null
             ? content
             : Material(
                 color: Colors.transparent,
-                borderRadius: radius,
                 child: InkWell(
                   onTap: item.onTap,
-                  borderRadius: radius,
-                  hoverColor: accent.withValues(alpha: 0.08),
+                  hoverColor: accent.withValues(alpha: 0.06),
                   child: content,
                 ),
               ),

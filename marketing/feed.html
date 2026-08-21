@@ -7,80 +7,164 @@
   :root{
     --gold:#D8B26A; --gold-soft:#EBD3A0; --gold-line:rgba(216,178,106,.30);
     --text:#F4F8FD; --muted:#9BB1CB; --hair:rgba(255,255,255,.11);
+    --blue:#1565C0; --ink:#0E2F5C;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   html, body { width:1080px; height:1350px; }
   body {
-    font-family:"Inter","Segoe UI",Arial,sans-serif;
-    color:var(--text);
+    font-family:"Inter","Segoe UI",Arial,sans-serif; color:var(--text);
     background:
-      radial-gradient(760px 620px at 88% 4%, rgba(216,178,106,.13), transparent 64%),
-      radial-gradient(980px 820px at -8% 80%, rgba(28,98,178,.38), transparent 66%),
+      radial-gradient(760px 620px at 88% 2%, rgba(216,178,106,.14), transparent 64%),
+      radial-gradient(1000px 820px at -8% 62%, rgba(28,98,178,.40), transparent 66%),
       linear-gradient(163deg,#061527 0%, #0D2B4C 44%, #0A2039 72%, #050E1C 100%);
     overflow:hidden; position:relative;
   }
   .vign { position:absolute; inset:0;
-    background: radial-gradient(1200px 1200px at 50% 42%, transparent 42%, rgba(0,0,0,.30) 100%); }
+    background: radial-gradient(1200px 1200px at 50% 40%, transparent 44%, rgba(0,0,0,.34) 100%); }
+  .arcs { position:absolute; top:-260px; right:-300px; width:900px; height:900px; opacity:.5; }
+  .arcs circle { fill:none; stroke:var(--gold); stroke-opacity:.16; }
   .frame { position:absolute; inset:28px; border:1px solid var(--gold-line); pointer-events:none; }
 
-  .wrap { position:relative; padding:62px 66px 60px; height:100%;
+  .wrap { position:relative; padding:54px 66px 52px; height:100%;
           display:flex; flex-direction:column; justify-content:space-between; }
 
   /* ---------- header ---------- */
   .brand { display:flex; align-items:center; gap:22px; }
-  .mark { width:92px; height:92px; flex:0 0 auto; border:1px solid var(--gold-line);
+  .mark { width:88px; height:88px; flex:0 0 auto; border:1px solid var(--gold-line);
           background:rgba(255,255,255,.035); display:flex; align-items:center; justify-content:center; }
-  .mark img { width:62px; height:62px; filter:drop-shadow(0 8px 18px rgba(0,0,0,.55)); }
-  .bname { font-size:38px; font-weight:600; letter-spacing:9.5px; line-height:1; }
-  .bsub { margin-top:9px; font-size:14px; letter-spacing:4.8px; text-transform:uppercase;
+  .mark img { width:60px; height:60px; filter:drop-shadow(0 8px 18px rgba(0,0,0,.55)); }
+  .bname { font-size:36px; font-weight:600; letter-spacing:9px; line-height:1; }
+  .bsub { margin-top:8px; font-size:13px; letter-spacing:4.6px; text-transform:uppercase;
           color:var(--gold); font-weight:500; }
   .live { margin-left:auto; display:flex; align-items:center; gap:10px;
-          font-size:14px; letter-spacing:4px; text-transform:uppercase; color:var(--muted); font-weight:500; }
+          font-size:13px; letter-spacing:3.6px; text-transform:uppercase; color:var(--muted); font-weight:500; }
   .live .dot { width:9px; height:9px; border-radius:50%; background:var(--gold);
                box-shadow:0 0 0 6px rgba(216,178,106,.16); }
-  .rule { height:1px; background:var(--hair); margin-top:26px; }
+  .ecg { display:block; width:100%; height:22px; margin-top:20px; }
+  .ecg path { fill:none; stroke:var(--gold); stroke-width:1.6; stroke-opacity:.55;
+              stroke-linecap:round; stroke-linejoin:round; }
 
   /* ---------- headline ---------- */
-  h1 { font-family:"Playfair Display",Georgia,serif; font-size:72px; font-weight:600;
+  h1 { font-family:"Playfair Display",Georgia,serif; font-size:60px; font-weight:600;
        line-height:1.08; letter-spacing:-.5px; }
   h1 em { font-style:italic; font-weight:500; color:var(--gold-soft); }
-  .lede { margin-top:20px; font-size:24px; font-weight:300; line-height:1.52; color:var(--muted);
-          max-width:880px; }
+  .lede { margin-top:14px; font-size:22px; font-weight:300; line-height:1.5; color:var(--muted); max-width:880px; }
+
+  /* ---------- product shot ---------- */
+  .shotbox { height:404px; }
+  .shot { position:relative; width:948px; height:516px; transform:scale(.78); transform-origin:top center; }
+  .shot::before { content:""; position:absolute; left:50%; top:46%; width:900px; height:420px;
+    transform:translate(-50%,-50%); background:radial-gradient(closest-side, rgba(64,140,220,.34), transparent 72%);
+    filter:blur(12px); }
+  .win { position:absolute; left:0; top:0; width:812px; border-radius:14px; overflow:hidden;
+    background:#F4F8FE; border:1px solid rgba(255,255,255,.5);
+    box-shadow:0 44px 90px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.35);
+    transform:perspective(1600px) rotateX(5deg) rotateY(-7deg) translateZ(0); transform-origin:left center; }
+  .tb { height:40px; background:#E7EEF8; border-bottom:1px solid #D3E0F0; display:flex; align-items:center; gap:8px; padding:0 14px; }
+  .tb i { width:10px; height:10px; border-radius:50%; background:#C8D6E8; display:block; }
+  .tb .tools { margin-left:auto; display:flex; gap:7px; align-items:center; }
+  .tb .tools o { width:16px; height:16px; border-radius:4px; background:#D3E0F0; display:block; }
+  .tb .tools o.av { border-radius:50%; background:#1565C0; }
+  .tb .addr { margin-left:12px; height:22px; width:330px; flex:0 0 auto; border-radius:11px; background:#F6FAFF; border:1px solid #D7E3F2;
+    display:flex; align-items:center; padding:0 12px; font-size:12px; color:#6B87A8; letter-spacing:.4px; }
+  .ui { display:flex; }
+  .side { width:196px; background:linear-gradient(180deg,#0F3568,#0B2547); padding:16px 14px; }
+  .side .slogo { display:flex; align-items:center; gap:9px; padding-bottom:14px; border-bottom:1px solid rgba(255,255,255,.12); }
+  .side .slogo b { font-size:14px; letter-spacing:2.6px; color:#EAF2FF; font-weight:600; }
+  .side .slogo span { width:22px; height:22px; border-radius:6px; background:var(--blue); display:block; }
+  .nav { margin-top:14px; display:flex; flex-direction:column; gap:5px; }
+  .nav div { display:flex; align-items:center; gap:10px; padding:8px 9px; border-radius:7px;
+             font-size:13px; color:#A9C2E2; font-weight:500; }
+  .nav div s { width:14px; height:14px; border-radius:4px; background:rgba(255,255,255,.20); display:block; }
+  .nav div.on { background:rgba(255,255,255,.13); color:#fff; }
+  .nav div.on s { background:var(--gold); }
+  .main { flex:1; padding:16px 18px 18px; }
+  .mhead { display:flex; align-items:center; }
+  .mhead h4 { font-size:17px; color:#12294A; font-weight:600; }
+  .mhead .chip { margin-left:auto; font-size:11px; color:#3C6FB4; border:1px solid #CBDDF3; background:#EFF6FF;
+                 padding:5px 11px; border-radius:20px; font-weight:600; }
+  .kpis { margin-top:13px; display:grid; grid-template-columns:repeat(3,1fr); gap:11px; }
+  .kpi { background:#fff; border:1px solid #E0EAF6; border-radius:10px; padding:11px 12px; box-shadow:0 2px 6px rgba(20,50,90,.05); }
+  .kpi .l { font-size:10.5px; letter-spacing:1.1px; text-transform:uppercase; color:#7B94B3; font-weight:600; }
+  .kpi .v { margin-top:5px; font-size:24px; font-weight:700; color:#12294A; letter-spacing:-.4px; }
+  .kpi .d { margin-top:3px; font-size:11px; color:#12A05C; font-weight:600; }
+  .kpi .d.blue { color:#3C6FB4; }
+  .panels { margin-top:12px; display:grid; grid-template-columns:1fr 1.15fr; gap:11px; }
+  .panel { background:#fff; border:1px solid #E0EAF6; border-radius:10px; padding:12px; box-shadow:0 2px 6px rgba(20,50,90,.05); }
+  .panel .pt { font-size:12px; color:#12294A; font-weight:600; }
+  .panel .ps { font-size:10px; color:#8AA2BF; margin-top:2px; }
+  .bars { margin-top:14px; height:150px; display:flex; align-items:flex-end; gap:11px; }
+  .bars b { flex:1; border-radius:4px 4px 2px 2px; background:linear-gradient(180deg,#4E9AE8,#1565C0); display:block; }
+  .bars b.hi { background:linear-gradient(180deg,#F0C97C,#D8B26A); }
+  .rows { margin-top:10px; display:flex; flex-direction:column; gap:8px; }
+  .r { display:flex; align-items:center; gap:9px; }
+  .r u { width:26px; height:26px; border-radius:50%; background:#E8F0FB; display:block; flex:0 0 auto; }
+  .r .nm { font-size:11.5px; color:#22405F; font-weight:600; }
+  .r .sb { font-size:10px; color:#93A9C4; margin-top:1px; }
+  .r .pill { margin-left:auto; font-size:9.5px; font-weight:700; padding:3px 8px; border-radius:20px;
+             background:#E7F6EE; color:#12A05C; letter-spacing:.3px; }
+  .r .pill.amber { background:#FCF2DF; color:#B58224; }
+  .r .pill.blue { background:#EAF2FE; color:#2C68B4; }
+
+  .phone { position:absolute; right:-26px; bottom:-14px; width:186px; height:376px; border-radius:26px;
+    background:#0B1B2E; border:1px solid rgba(255,255,255,.16); padding:9px;
+    box-shadow:0 40px 70px rgba(0,0,0,.6); transform:perspective(1400px) rotateY(-11deg) rotateX(3deg); }
+  .phone .scr { width:100%; height:100%; border-radius:19px; background:#F4F8FE; overflow:hidden; }
+  .phone .ph { background:linear-gradient(135deg,#1565C0,#0F3568); padding:13px 12px 15px; }
+  .phone .ph .t1 { font-size:9px; letter-spacing:1.6px; color:#BBD6F5; text-transform:uppercase; font-weight:600; }
+  .phone .ph .t2 { margin-top:4px; font-size:15px; color:#fff; font-weight:700; }
+  .phone .pb { padding:10px; display:flex; flex-direction:column; gap:8px; }
+  .phone .card { background:#fff; border:1px solid #E2EBF7; border-radius:9px; padding:9px 10px; }
+  .phone .card .a { font-size:9px; letter-spacing:.8px; text-transform:uppercase; color:#8AA2BF; font-weight:600; }
+  .phone .card .b2 { margin-top:3px; font-size:14px; color:#12294A; font-weight:700; }
+  .phone .card .c { margin-top:2px; font-size:9.5px; color:#12A05C; font-weight:600; }
+  .phone .mini { display:flex; align-items:flex-end; gap:5px; height:44px; margin-top:7px; }
+  .phone .mini i { flex:1; background:#CFE0F6; border-radius:3px; display:block; }
+  .phone .mini i.on { background:var(--blue); }
 
   /* ---------- features ---------- */
-  .features { display:grid; grid-template-columns:1fr 1fr; column-gap:48px; row-gap:0; }
-  .f { border-top:1px solid var(--hair); padding:18px 0 16px; }
-  .f .n { font-size:13px; letter-spacing:3.4px; color:var(--gold); font-weight:500; }
-  .f h3 { margin-top:8px; font-size:24px; font-weight:600; letter-spacing:.1px; line-height:1.2; }
-  .f p { margin-top:6px; font-size:18px; font-weight:300; line-height:1.42; color:var(--muted); }
+  .features { display:grid; grid-template-columns:1fr 1fr; column-gap:44px; row-gap:0; }
+  .f { border-top:1px solid var(--hair); padding:13px 0 11px; display:flex; gap:16px; align-items:flex-start; }
+  .fi { width:42px; height:42px; border-radius:50%; border:1px solid var(--gold-line); flex:0 0 auto;
+        display:flex; align-items:center; justify-content:center; background:rgba(216,178,106,.07); }
+  .fi svg { width:21px; height:21px; stroke:var(--gold); stroke-width:1.5; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+  .f h3 { font-size:23px; font-weight:600; line-height:1.2; margin-top:2px; }
+  .f p { margin-top:5px; font-size:18px; font-weight:300; line-height:1.4; color:var(--muted); }
 
   /* ---------- owners ---------- */
-  .owners { border-left:2px solid var(--gold); padding:4px 0 4px 26px; }
-  .owners .t { font-size:14px; letter-spacing:4.4px; text-transform:uppercase; color:var(--gold); font-weight:600; }
-  .owners ul { margin-top:14px; display:grid; grid-template-columns:1fr 1fr; gap:13px 40px; }
-  .owners li { list-style:none; font-size:20px; font-weight:400; line-height:1.34; color:#E4EDF7;
-               padding-left:28px; position:relative; }
-  .owners li::before { content:""; position:absolute; left:0; top:8px; width:15px; height:2px; background:var(--gold); }
+  .owners { display:flex; align-items:center; gap:26px; border-left:2px solid var(--gold); padding:4px 0 4px 24px; }
+  .owners .t { font-size:13px; letter-spacing:3.8px; text-transform:uppercase; color:var(--gold); font-weight:600; }
+  .owners ul { margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:10px 36px; }
+  .owners li { list-style:none; font-size:19px; font-weight:400; line-height:1.32; color:#E4EDF7;
+               padding-left:26px; position:relative; }
+  .owners li::before { content:""; position:absolute; left:0; top:8px; width:14px; height:2px; background:var(--gold); }
+  .spark { flex:0 0 auto; width:158px; height:88px; }
+  .spark .ln { fill:none; stroke:var(--gold); stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; }
+  .spark .ar { fill:url(#g1); }
+  .spark .dt { fill:var(--gold-soft); }
+  .spark text { fill:#9BB1CB; font-family:"Inter",sans-serif; font-size:11px; letter-spacing:2px; }
 
   /* ---------- cta ---------- */
-  .cta { border-top:1px solid var(--gold-line); padding-top:26px; }
+  .cta { border-top:1px solid var(--gold-line); padding-top:24px; }
   .link { display:flex; align-items:flex-end; gap:24px; }
-  .link .lbl { font-size:14px; letter-spacing:4.6px; text-transform:uppercase; color:var(--muted); font-weight:500; }
-  .link .url { font-family:"Playfair Display",Georgia,serif; font-size:54px; font-weight:600;
-               color:var(--gold-soft); line-height:1.06; margin-top:12px; letter-spacing:-.5px; }
-  .link .arrow { margin-left:auto; width:66px; height:66px; border-radius:50%;
-                 border:1px solid var(--gold-line); display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
-  .link .arrow svg { width:32px; height:32px; stroke:var(--gold); stroke-width:1.6; fill:none;
-                     stroke-linecap:round; stroke-linejoin:round; }
-  .foot { margin-top:24px; display:flex; align-items:flex-end; }
-  .foot .lbl { font-size:13px; letter-spacing:4px; text-transform:uppercase; color:var(--muted); font-weight:500; }
-  .foot .tel { margin-top:7px; font-size:30px; font-weight:600; letter-spacing:1px; }
-  .foot .note { margin-left:auto; text-align:right; font-size:17px; font-weight:300; line-height:1.5; color:var(--muted); }
+  .link .lbl { font-size:13px; letter-spacing:4.6px; text-transform:uppercase; color:var(--muted); font-weight:500; }
+  .link .url { font-family:"Playfair Display",Georgia,serif; font-size:50px; font-weight:600;
+               color:var(--gold-soft); line-height:1.06; margin-top:10px; letter-spacing:-.5px; }
+  .link .arrow { margin-left:auto; width:62px; height:62px; border-radius:50%;
+                 border:1px solid var(--gold-line); background:rgba(216,178,106,.08);
+                 display:flex; align-items:center; justify-content:center; flex:0 0 auto; }
+  .link .arrow svg { width:30px; height:30px; stroke:var(--gold); stroke-width:1.6; fill:none; stroke-linecap:round; stroke-linejoin:round; }
+  .foot { margin-top:20px; display:flex; align-items:flex-end; }
+  .foot .lbl { font-size:12px; letter-spacing:4px; text-transform:uppercase; color:var(--muted); font-weight:500; }
+  .foot .tel { margin-top:6px; font-size:28px; font-weight:600; letter-spacing:1px; }
+  .foot .note { margin-left:auto; text-align:right; font-size:16px; font-weight:300; line-height:1.5; color:var(--muted); }
 </style>
 </head>
 <body>
   <div class="vign"></div>
+  <svg class="arcs" viewBox="0 0 900 900"><circle cx="450" cy="450" r="240"/><circle cx="450" cy="450" r="330"/><circle cx="450" cy="450" r="420"/></svg>
   <div class="frame"></div>
+
   <div class="wrap">
 
     <div>
@@ -92,57 +176,124 @@
         </div>
         <div class="live"><span class="dot"></span>Now live</div>
       </div>
-      <div class="rule"></div>
+      <svg class="ecg" viewBox="0 0 924 26" preserveAspectRatio="none">
+        <path d="M0 13h330l12-9 9 18 11-24 12 30 10-15h18l8 6 7-6h60l9-7 8 14 9-19 10 24 8-12h403"/>
+      </svg>
     </div>
 
     <div>
       <h1>The whole hospital,<br>running as <em>one system</em>.</h1>
-      <p class="lede">From registration to discharge &mdash; every consultation, every test and every shilling, held in one calm place.</p>
+      <p class="lede">Registration, consultations, pharmacy, wards and payments &mdash; all connected, all visible in real time.</p>
     </div>
 
+    <!-- ============ product graphic ============ -->
+    <div class="shotbox"><div class="shot">
+      <div class="win">
+        <div class="tb"><i></i><i></i><i></i><div class="addr">app.hosspi.com &nbsp;&mdash;&nbsp; Facility dashboard</div><div class="tools"><o></o><o></o><o class="av"></o></div></div>
+        <div class="ui">
+          <div class="side">
+            <div class="slogo"><span></span><b>HOSSPI</b></div>
+            <div class="nav">
+              <div class="on"><s></s>Dashboard</div>
+              <div><s></s>Patients</div>
+              <div><s></s>Appointments</div>
+              <div><s></s>Wards &amp; Beds</div>
+              <div><s></s>Pharmacy</div>
+              <div><s></s>Laboratory</div>
+              <div><s></s>Billing</div>
+              <div><s></s>Reports</div>
+            </div>
+          </div>
+          <div class="main">
+            <div class="mhead"><h4>Facility Dashboard</h4><div class="chip">Today</div></div>
+            <div class="kpis">
+              <div class="kpi"><div class="l">Patients today</div><div class="v">128</div><div class="d">&#9650; 14% vs yesterday</div></div>
+              <div class="kpi"><div class="l">Revenue today</div><div class="v">4.6M</div><div class="d">&#9650; 9% this week</div></div>
+              <div class="kpi"><div class="l">Beds free</div><div class="v">12</div><div class="d blue">of 48 beds</div></div>
+            </div>
+            <div class="panels">
+              <div class="panel">
+                <div class="pt">Live patient queue</div>
+                <div class="rows">
+                  <div class="r"><u></u><div><div class="nm">Nakato A.</div><div class="sb">OPD &middot; Room 3</div></div><div class="pill">Seen</div></div>
+                  <div class="r"><u></u><div><div class="nm">Okello J.</div><div class="sb">Lab &middot; CBC</div></div><div class="pill amber">Waiting</div></div>
+                  <div class="r"><u></u><div><div class="nm">Namara P.</div><div class="sb">Ward B &middot; Bed 12</div></div><div class="pill blue">Admitted</div></div>
+                  <div class="r"><u></u><div><div class="nm">Kirabo S.</div><div class="sb">Billing &middot; Invoice</div></div><div class="pill">Paid</div></div>
+                  <div class="r"><u></u><div><div class="nm">Mugisha D.</div><div class="sb">Pharmacy &middot; Dispensing</div></div><div class="pill amber">In progress</div></div>
+                  <div class="r"><u></u><div><div class="nm">Achieng L.</div><div class="sb">Theatre &middot; Pre-op</div></div><div class="pill blue">Scheduled</div></div>
+                </div>
+              </div>
+              <div class="panel">
+                <div class="pt">Encounters this week</div>
+                <div class="ps">OPD &middot; IPD &middot; Theatre</div>
+                <div class="bars">
+                  <b style="height:44%"></b><b style="height:62%"></b><b style="height:51%"></b>
+                  <b style="height:78%"></b><b style="height:66%"></b><b class="hi" style="height:93%"></b>
+                  <b style="height:58%"></b>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone">
+        <div class="scr">
+          <div class="ph"><div class="t1">Today &middot; Main branch</div><div class="t2">Collections</div></div>
+          <div class="pb">
+            <div class="card"><div class="a">Cash &amp; mobile money</div><div class="b2">UGX 4,612,000</div><div class="c">&#9650; 9% this week</div></div>
+            <div class="card"><div class="a">Ward occupancy</div><div class="b2">36 / 48 beds</div><div class="c">12 beds free</div></div>
+            <div class="card"><div class="a">Outstanding</div><div class="b2">UGX 380,000</div>
+              <div class="mini"><i style="height:40%"></i><i style="height:62%"></i><i style="height:48%"></i><i class="on" style="height:86%"></i><i style="height:70%"></i></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div></div>
+
+    <!-- ============ features ============ -->
     <div class="features">
       <div class="f">
-        <div class="n">01</div>
-        <h3>Patient Registration &amp; Records</h3>
-        <p>Register once. Find any file in seconds.</p>
+        <div class="fi"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg></div>
+        <div><h3>Patient Registration</h3><p>Register once. Find any file in seconds.</p></div>
       </div>
       <div class="f">
-        <div class="n">02</div>
-        <h3>Encounters &amp; Clinical Notes</h3>
-        <p>OPD, wards, ICU and theatre, fully documented.</p>
+        <div class="fi"><svg viewBox="0 0 24 24"><path d="M9 2h6a1 1 0 0 1 1 1v2H8V3a1 1 0 0 1 1-1z"/><rect x="4" y="5" width="16" height="17" rx="2"/><path d="M12 10v7M8.5 13.5h7"/></svg></div>
+        <div><h3>Encounters &amp; Notes</h3><p>OPD, IPD, ICU and theatre records.</p></div>
       </div>
       <div class="f">
-        <div class="n">03</div>
-        <h3>Billing, Invoices &amp; Payments</h3>
-        <p>Cash, mobile money and insurance in one till.</p>
+        <div class="fi"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 11h20M6 15.5h4"/></svg></div>
+        <div><h3>Billing &amp; Payments</h3><p>Cash, mobile money and insurance.</p></div>
       </div>
       <div class="f">
-        <div class="n">04</div>
-        <h3>Pharmacy, Lab &amp; Radiology</h3>
-        <p>Orders, results and drug stock, end to end.</p>
-      </div>
-      <div class="f">
-        <div class="n">05</div>
-        <h3>Wards, Beds &amp; Admissions</h3>
-        <p>Who is admitted, where, and which beds are free.</p>
-      </div>
-      <div class="f">
-        <div class="n">06</div>
-        <h3>Live Reports &amp; Dashboards</h3>
-        <p>Revenue, workload and stock, at a glance.</p>
+        <div class="fi"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></div>
+        <div><h3>Reports &amp; Dashboards</h3><p>Revenue and workload at a glance.</p></div>
       </div>
     </div>
 
+    <!-- ============ owners ============ -->
     <div class="owners">
-      <div class="t">For owners &amp; administrators</div>
-      <ul>
-        <li>Every service billed &mdash; no income lost</li>
-        <li>Monitor your facility from anywhere</li>
-        <li>Shorter queues, faster patient flow</li>
-        <li>All your branches under one login</li>
-      </ul>
+      <div>
+        <div class="t">For owners &amp; administrators</div>
+        <ul>
+          <li>Every service billed</li>
+          <li>Monitor from anywhere</li>
+          <li>Shorter patient queues</li>
+          <li>All branches, one login</li>
+        </ul>
+      </div>
+      <svg class="spark" viewBox="0 0 196 104">
+        <defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#D8B26A" stop-opacity=".34"/><stop offset="1" stop-color="#D8B26A" stop-opacity="0"/>
+        </linearGradient></defs>
+        <path class="ar" d="M4 78 L38 68 L72 72 L106 50 L140 40 L174 16 L174 92 L4 92 Z"/>
+        <path class="ln" d="M4 78 L38 68 L72 72 L106 50 L140 40 L174 16"/>
+        <circle class="dt" cx="174" cy="16" r="4.5"/>
+        <text x="4" y="104">REVENUE VISIBILITY</text>
+      </svg>
     </div>
 
+    <!-- ============ cta ============ -->
     <div class="cta">
       <div class="link">
         <div>
