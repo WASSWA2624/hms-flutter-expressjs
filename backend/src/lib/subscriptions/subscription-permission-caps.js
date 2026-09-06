@@ -4,16 +4,30 @@
  * Runtime grants are intersected with these action caps after module
  * entitlement filtering. Custom plans may provide extension_json
  * `allowed_permissions`; Developer is unrestricted only outside production.
+ *
+ * Two invariants keep this file consistent with the rest of access control:
+ *
+ * 1. Caps only bite on module-scoped permissions (see permission-module-map).
+ *    Listing a core/platform key here is inert — do not add one.
+ * 2. A key's tier must be >= its module's `minimum_plan_tier_code` in
+ *    plan-module-matrix.js, otherwise the cap admits a permission whose module
+ *    the plan does not entitle and the workspace stays unreachable anyway.
+ *
+ * Both are asserted in src/tests/lib/subscriptions/subscription-permission-caps.test.js.
  */
 const FREE = Object.freeze([
   'patient:read',
   'patient:write',
+  // patient:delete is deliberately withheld here: FREE (and production
+  // DEVELOPER, which resolves to FREE) must not admit destructive patient
+  // actions. It enters at BASIC, the first tier with tenant/facility admins.
   'patients:read',
   'reports:read',
 ]);
 
 const BASIC = Object.freeze([
   ...FREE,
+  'patient:delete',
   'reception:read',
   'opd:read',
   'clinical:read',
@@ -25,12 +39,11 @@ const BASIC = Object.freeze([
   'billing:write',
   'accounts:read',
   'accounts:write',
-  'pricing:pharmacy_read',
-  'pricing:pharmacy_write',
-  'pricing:facility_read',
-  'pricing:facility_write',
+  // pricing:* is intentionally absent — it is a cross-module rights-layer
+  // permission with no module mapping, so a cap entry for it would be inert.
   'subscriptions:read',
   'subscriptions:write',
+  'subscriptions:delete',
 ]);
 
 const ADVANCED = Object.freeze([
@@ -40,20 +53,25 @@ const ADVANCED = Object.freeze([
   'radiology:read',
   'radiology:write',
   'reports:write',
+  'reports:delete',
   'financial:approve',
   'claims:read',
+  // inpatient-bed-management is entitled from BASIC, but the IPD / nursing /
+  // discharge workspaces open at ADVANCED — the cap is the binding gate.
   'ipd:read',
   // rooms_beds:* and physiotherapy:* withheld — version-disabled-screens.
   'nursing:read',
-  'icu:read',
   'discharge:read',
-  'theater:read',
 ]);
 
 const PRO = Object.freeze([
   ...ADVANCED,
   // operations:*, housekeeping:*, biomed:*, mortuary:*, integration:*
   // withheld — version-disabled-screens.
+  // icu-critical-care and theatre-anesthesia are PRO modules in
+  // plan-module-matrix.js; their entry keys must not sit in a lower cap.
+  'icu:read',
+  'theater:read',
   'hr:read',
   'hr:write',
   'unit:read',

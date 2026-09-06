@@ -231,16 +231,9 @@ const DEMO_ROLE_CODES = Object.freeze([
   'PATIENT',
 ]);
 
-const DEMO_PERMISSION_CATALOG = Object.freeze([
-  'subscriptions.manage',
-  'communications.manage',
-  'patients.manage',
-  'diagnostics.manage',
-  'billing.manage',
-  'biomedical.manage',
-  'compliance.manage',
-  'integrations.manage',
-]);
+// Permissions are seeded from the canonical catalog (`@config/permissions`) in
+// seed-access-pack.js. A second, dot-notation list used to live here; it was
+// unreachable and violated the `resource:action` key format in permissions.mdc.
 
 const DEMO_TENANTS = Object.freeze([
   {
@@ -458,7 +451,6 @@ module.exports = {
   CURATED_MODELS,
   DEMO_ADD_ON_CATALOG,
   DEMO_CORE_MODULE_CATALOG,
-  DEMO_PERMISSION_CATALOG,
   DEMO_PLAN_CATALOG,
   DEMO_ROLE_CODES,
   DEMO_TENANT,

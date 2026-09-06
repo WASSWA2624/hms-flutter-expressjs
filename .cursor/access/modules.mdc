@@ -1,5 +1,5 @@
 ---
-description: Source-controlled module catalog defining shipped module keys and status.
+description: Source-controlled module catalog defining shipped module slugs, tiers, and permission mapping.
 globs:
   - "backend/**"
   - "frontend/**"
@@ -8,31 +8,132 @@ alwaysApply: false
 
 # Module Catalog
 
-This file owns shipped `module_key` values, package coverage, and status; seed only active modules from it.
+Owns the shipped module identifiers, their minimum plan tier, and which permission
+domains they gate. Seed only modules from this catalog.
+
+Canonical source: `backend/src/lib/subscriptions/plan-module-matrix.js`. Nothing here may
+be edited without changing that file — the tables below are a description of it, not a
+second catalog.
+
+## Two identifiers, one module
+
+Every module carries both. Confusing them is the most common bug in this area.
+
+- `code` — snake_case (`inpatient_bed_management`). Seed/backfill identity only.
+- `slug` — kebab-case (`inpatient-bed-management`). **The runtime identifier.** Module
+  entitlements, `activeModules` requirements in frontend access files, and the
+  permission→module map all use the slug.
+
+`normalizeModuleCode` lowercases and converts `_`/whitespace to `-`, so a code will
+usually resolve, but always write the slug. One pair is deliberately mismatched:
+code `mortuary_operations` has slug `mortuary`.
+
+## Module keys are not permission domains
+
+A module is not a screen and not a permission prefix. Several domains share one module,
+and the names differ:
+
+- `reception`, `opd` and `emergency` → `scheduling-queue`
+- `ipd`, `nursing`, `discharge` and `rooms_beds` → `inpatient-bed-management`
+- `hr`, `unit` and `roster` → `hr-rosters`
+- `operations` and `housekeeping` → `facilities-maintenance`
+- `billing` and `financial` → `billing-payments`
+
+Mapping lives in `DOMAIN_TO_MODULE` (`backend/src/lib/authorization/permission-module-map.js`),
+mirrored in `frontend/lib/core/permissions/permission_module_map.dart`. The two must stay
+identical.
+
+`pricing:*` is deliberately **not** in the map. It is a rights-layer permission that
+crosses modules: the Billing price book (gated by `billing-payments`) hosts both facility
+tariff rows and pharmacy retail rows, so `pricing:pharmacy_write` must work there without
+requiring `pharmacy-dispensing`. The screen is module-gated; the permission is not.
+
+## Platform infrastructure modules
+
+Always entitled, on every package. Not sellable, not removable.
+
+| Slug | Code | Min tier | Permission domains |
+| ---- | ---- | -------- | ------------------ |
+| `platform-identity` | `platform_identity` | FREE | — (entitlement only) |
+| `platform-facility-structure` | `platform_facility_structure` | FREE | — (entitlement only) |
+| `platform-workspace-shell` | `platform_workspace_shell` | FREE | — (entitlement only) |
+| `reporting-analytics` | `reporting_analytics` | FREE | `reports` |
+
+`reporting-analytics` is special-cased in `isPermissionAllowedByPlan`: it passes the module
+gate regardless of entitlement rows, so reporting is available on every package.
+
+## Commercial modules
+
+`*` marks a domain that is version-disabled — the module ships and may be entitled, but
+every permission in that domain is stripped from effective access. See
+`version-disabled-screens.mdc`.
+
+| Slug | Code | Min tier | Permission domains |
+| ---- | ---- | -------- | ------------------ |
+| `auth-rbac-basics` | `auth_rbac_basics` | FREE | — (entitlement only) |
+| `billing-insurance` | `billing_insurance` | FREE | — deprecated legacy alias |
+| `patient-registry` | `patient_registry` | FREE | `patient`, `patients` |
+| `billing-payments` | `billing_payments` | BASIC | `billing`, `financial` |
+| `encounters-vitals` | `encounters_vitals` | BASIC | `clinical` |
+| `facility-accounts` | `facility_accounts` | BASIC | `accounts` |
+| `inpatient-bed-management` | `inpatient_bed_management` | BASIC | `ipd`, `nursing`, `discharge`, `rooms_beds`* |
+| `notifications-communications` | `notifications_communications` | BASIC | `communications`* |
+| `pharmacy-dispensing` | `pharmacy_dispensing` | BASIC | `pharmacy` |
+| `scheduling-queue` | `scheduling_queue` | BASIC | `reception`, `opd`, `emergency`* |
+| `subscription-controls` | `subscription_controls` | BASIC | `subscriptions` |
+| `extra-storage` | `extra_storage` | ADVANCED | — (quota only) |
+| `insurance-claims` | `insurance_claims` | ADVANCED | `claims` |
+| `inventory-procurement` | `inventory_procurement` | ADVANCED | — (API-path gated) |
+| `lab-workflows` | `lab_workflows` | ADVANCED | `lab` |
+| `physiotherapy` | `physiotherapy` | ADVANCED | `physiotherapy`* |
+| `radiology-workflows` | `radiology_workflows` | ADVANCED | `radiology` |
+| `biomedical-engineering-suite` | `biomedical_engineering_suite` | PRO | `biomed`* |
+| `facilities-maintenance` | `facilities_maintenance` | PRO | `operations`*, `housekeeping`* |
+| `hr-rosters` | `hr_rosters` | PRO | `hr`, `unit`, `roster` |
+| `icu-critical-care` | `icu_critical_care` | PRO | `icu` |
+| `integrations-core` | `integrations_core` | PRO | `integration`* |
+| `inventory-procurement-lite` | `inventory_procurement_lite` | PRO | — (API-path gated) |
+| `mortuary` | `mortuary_operations` | PRO | `mortuary`* |
+| `theatre-anesthesia` | `theatre_anesthesia` | PRO | `theater` |
+| `advanced-analytics` | `advanced_analytics` | CUSTOM | — (entitlement only) |
+| `compliance-audit-core` | `compliance_audit_core` | CUSTOM | — (entitlement only) |
+| `sms-credits` | `sms_credits` | CUSTOM | — (quota only) |
+| `developer-tools` | `developer_tools` | DEVELOPER | — (entitlement only) |
+
+## Modules with no permission domain
+
+Three different reasons, all legitimate — do not "fix" them by inventing permission keys:
+
+- **Entitlement/quota only** — `extra-storage`, `sms-credits`, `advanced-analytics`,
+  `auth-rbac-basics`, and the `platform-*` modules. Nothing routes through a permission
+  domain; they gate capacity or are structural.
+- **API-path gated** — `inventory-procurement`, `inventory-procurement-lite`. Enforced by
+  `api_path_segments` in `module-entitlement.middleware.js`, not by permission domain.
+- **Deprecated** — `billing-insurance` is a legacy alias for
+  `billing-payments` + `insurance-claims` (`extension_json.deprecated = true`), kept so old
+  entitlement rows still resolve. Never seed it into a new plan.
 
 ## Rules
 
-- Seed shipped active modules from this catalog.
-- Default permissions must align with `permissions.mdc`.
-- Package coverage must align with `subscriptions.mdc`.
-- Reset must restore the shipped mapping atomically.
-- Admin changes must stay auditable and versioned.
-- Planned modules must not enter default seed data.
-
-## Active Module Keys
-
-`app_shell`, `auth_session`, `general_settings`, `tenant_settings`, `facility_settings`, `access_admin`, `subscriptions`, `rooms_beds`, `patient_registry`, `opd`, `triage`, `clinical`, `nursing`, `ipd`, `icu`, `theater`, `discharge`, `emergency`, `lab`, `radiology`, `physiotherapy`, `pharmacy`, `billing`, `accounts`, `claims`, `hr`, `biomedical`, `operations`, `housekeeping`, `mortuary`, `communications`, `reports_audit`, `integrations`, `demo_seed`.
-
-## Finance module notes
-
-- `billing` — cashier desk (`/billing`, subscription slug `billing-payments`): invoices, collect, claims handoff, price book.
-- `accounts` — books desk (`/accounts`, subscription slug `facility-accounts`): journals, GL, patient ledgers, chart of accounts, period open/close. Not a Billing tab; Reporting & analytics owns period KPIs.
+- Seed shipped modules from the matrix; planned modules must not enter default seed data.
+- A commercial module's minimum tier must match `subscriptions.mdc` and the caps in
+  `subscription-permission-caps.js` (a permission may not sit in a cap tier below its
+  module's minimum tier). Asserted by
+  `backend/src/tests/lib/subscriptions/subscription-permission-caps.test.js`.
+- `frontend/lib/core/permissions/commercial_module_tiers.dart` mirrors the minimum tiers
+  and must stay in step.
+- Reset must restore the shipped mapping atomically; admin changes stay auditable and
+  versioned.
 
 ## Planned Modules
 
-- `dental` (Custom/Pro+) is planned and must not seed as a standalone entitlement.
-- `analytics`, `decision_support`, `workflow_engine`, `device_integration`, `marketplace`, `research`, and `ai_automation` are planned; must not seed them.
+`dental` is planned (Custom/Pro+) and must not seed as a standalone entitlement.
+`decision_support`, `workflow_engine`, `device_integration`, `marketplace`, `research`,
+and `ai_automation` are planned and must not seed.
+
+Note: `advanced-analytics` **is** shipped as a CUSTOM-tier module — it is not the planned
+`analytics` module.
 
 ## Related Rules
 
-- `permissions.mdc`, `subscriptions.mdc`, `default_user_roles.mdc`, `app-write-up.mdc`
+- `permissions.mdc`, `subscriptions.mdc`, `default_user_roles.mdc`, `version-disabled-screens.mdc`

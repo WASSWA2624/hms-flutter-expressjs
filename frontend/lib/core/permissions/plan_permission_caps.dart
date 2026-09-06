@@ -1,5 +1,6 @@
 import 'package:hosspi_hms/core/permissions/app_permission.dart';
 import 'package:hosspi_hms/core/permissions/permission_module_map.dart';
+import 'package:hosspi_hms/core/permissions/permission_read_dependency.dart';
 import 'package:hosspi_hms/core/permissions/version_disabled_permissions.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 
@@ -7,16 +8,28 @@ import 'package:hosspi_hms/core/security/auth_session.dart';
 ///
 /// Runtime grants are intersected with these action caps after module
 /// entitlement filtering so the shell cannot show Pro routes the API will 403.
+///
+/// Two invariants keep this in step with the rest of access control:
+///
+/// 1. Caps only bite on module-scoped permissions ([PermissionModuleMap]).
+///    Listing a core/platform key here is inert — do not add one.
+/// 2. A key's tier must be >= its module's minimum tier in
+///    [CommercialModuleTiers], otherwise the cap admits a permission whose
+///    module the plan does not entitle and the workspace stays unreachable.
 abstract final class PlanPermissionCaps {
   static const Set<String> free = <String>{
     'patient:read',
     'patient:write',
+    // patient:delete is deliberately withheld here: FREE (and DEVELOPER, which
+    // the client always resolves to FREE) must not admit destructive patient
+    // actions. It enters at BASIC, the first tier with tenant/facility admins.
     'patients:read',
     'reports:read',
   };
 
   static const Set<String> basic = <String>{
     ...free,
+    'patient:delete',
     'reception:read',
     'opd:read',
     'clinical:read',
@@ -28,12 +41,11 @@ abstract final class PlanPermissionCaps {
     'billing:write',
     'accounts:read',
     'accounts:write',
-    'pricing:pharmacy_read',
-    'pricing:pharmacy_write',
-    'pricing:facility_read',
-    'pricing:facility_write',
+    // pricing:* is intentionally absent — it is a cross-module rights-layer
+    // permission with no module mapping, so a cap entry for it would be inert.
     'subscriptions:read',
     'subscriptions:write',
+    'subscriptions:delete',
   };
 
   static const Set<String> advanced = <String>{
@@ -43,20 +55,25 @@ abstract final class PlanPermissionCaps {
     'radiology:read',
     'radiology:write',
     'reports:write',
+    'reports:delete',
     'financial:approve',
     'claims:read',
+    // inpatient-bed-management is entitled from BASIC, but the IPD / nursing /
+    // discharge workspaces open at ADVANCED — the cap is the binding gate.
     'ipd:read',
     // rooms_beds:* and physiotherapy:* withheld — version-disabled-screens.
     'nursing:read',
-    'icu:read',
     'discharge:read',
-    'theater:read',
   };
 
   static const Set<String> pro = <String>{
     ...advanced,
     // operations:*, housekeeping:*, biomed:*, mortuary:*, integration:*
     // withheld — version-disabled-screens.
+    // icu-critical-care and theatre-anesthesia are PRO modules in
+    // CommercialModuleTiers; their entry keys must not sit in a lower cap.
+    'icu:read',
+    'theater:read',
     'hr:read',
     'hr:write',
     'unit:read',
@@ -82,14 +99,19 @@ abstract final class PlanPermissionCaps {
     String? planTierCode,
     Iterable<String> allowedPermissions = const <String>[],
   }) {
-    final List<String> explicit = VersionDisabledPermissions.applyNames(
+    final Set<String> explicit = VersionDisabledPermissions.applyNames(
       allowedPermissions
           .map((String value) => value.trim())
           .where((String value) => value.isNotEmpty)
           .toSet(),
-    ).toList(growable: false);
+    );
     if (explicit.isNotEmpty) {
-      return Set<String>.unmodifiable(explicit);
+      // Match backend resolveSubscriptionPermissionCap, which expands required
+      // reads on the explicit Custom-plan list. Without this a Custom plan
+      // computes a narrower cap on the client than the API enforces.
+      return Set<String>.unmodifiable(
+        expandPermissionCodesWithRequiredReads(explicit),
+      );
     }
 
     final String tier = (planTierCode ?? '').trim().toUpperCase();

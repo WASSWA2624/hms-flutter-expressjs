@@ -28,6 +28,7 @@ abstract final class CommercialModuleTiers {
     'insurance-claims': 'ADVANCED',
     'physiotherapy': 'ADVANCED',
     'extra-storage': 'ADVANCED',
+    'inventory-procurement': 'ADVANCED',
     'theatre-anesthesia': 'PRO',
     'facilities-maintenance': 'PRO',
     'icu-critical-care': 'PRO',

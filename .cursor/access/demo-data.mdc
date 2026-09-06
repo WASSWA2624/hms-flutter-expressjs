@@ -30,6 +30,19 @@ Owns curated + volume demo seeding for local/demo environments. Never seed produ
 - Extended volume (lived-in facility): diagnoses, vitals, procedures, nursing notes/ward rounds/MAR/discharges, visit queues, refunds/adjustments/insurance claims/pre-auths/enrollments, triage/ambulance trips, shifts/payroll, audit/PHI logs, report definitions/runs/schedules, KPIs, analytics events, patient report jobs, messages, clinical notes/care plans/alerts/allergies, theatre cases, beds/assignments, imaging studies, referrals/follow-ups, price books/scheme offers.
 - Exclude intentional singletons/catalogs: one demo tenant/facility/subscription/license; plan/add-on/module catalogs; role/permission catalogs; `_prisma_migrations`.
 
+## Access Catalog Seeding
+
+- Roles seed from `DEMO_ROLE_CODES` in `seed-catalog.js`: **63 of the 70** canonical roles.
+  The 7 omitted (`IT_SUPPORT`, `SECURITY_OFFICER`, `CHAPLAIN`, `FOOD_SERVICE_WORKER`,
+  `PORTER`, `MAINTENANCE_ENGINEER`, `OTHER`) are derived aliases with no distinct pack.
+- Permissions seed from the **canonical catalog only** (`Object.values(PERMISSIONS)` in
+  `seed-access-pack.js`). Never add a second, hand-written permission list to the seeders —
+  keys must stay `resource:action` per `permissions.mdc`.
+- **58 curated accounts** across the demo tenant; each `users[]` entry names a canonical
+  role code, and `extra_roles` adds further `user_role` rows (rights are the union).
+- Modules seed from `plan-module-matrix.js` via `DEMO_CORE_MODULE_CATALOG` — do not
+  hand-list module slugs in the seeders.
+
 ## Scenario Coverage
 
 - Keep curated hero scenarios asserted by `verify-demo-data` (roles/emails, subscription health, communications variants, biomedical/compliance baselines, break-glass pending + **ACTIVE** approved).

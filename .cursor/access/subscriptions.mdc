@@ -1,5 +1,5 @@
 ---
-description: Subscription package tiers and access limits.
+description: Subscription package tiers, module coverage, and permission ceilings.
 globs:
   - "backend/**"
   - "frontend/**"
@@ -8,22 +8,108 @@ alwaysApply: true
 
 # Subscriptions
 
-Package tiers are the hard upper bound on access. See `permissions.mdc` for the effective-access formula.
+Package tiers are the hard upper bound on access. See `permissions.mdc` for the
+effective-access formula.
+
+## The plan gate is two gates
+
+A tier restricts access twice, and both must pass. Describing a tier by its modules alone
+is not enough — that was the source of several stale claims in this file.
+
+1. **Module entitlement** — the tier's modules, from `minimum_plan_tier_code` in
+   `plan-module-matrix.js`. A permission whose module is not entitled is dropped.
+2. **Permission cap** — the tier's action ceiling, from
+   `subscription-permission-caps.js` (mirrored in `plan_permission_caps.dart`). A
+   module-scoped permission not in the cap is dropped even when its module is entitled.
+
+So a workspace opens at `max(module minimum tier, entry-key cap tier)`. Where the two
+differ, the **cap** is the binding gate. Both are cumulative: every tier contains the one
+below it.
+
+Invariant: a permission may never sit in a cap tier below its module's minimum tier —
+that would advertise access the module gate then denies. Asserted by
+`backend/src/tests/lib/subscriptions/subscription-permission-caps.test.js`.
 
 ## Tiers
 
-- `Free`: `app_shell`, `auth_session`, `general_settings`, `patient_registry`. Reporting (`reports_audit` / `reporting-analytics`) is platform infrastructure on every package.
-- `Basic`: Free plus tenant, facility, access admin, OPD, triage, clinical, limited IPD, pharmacy dispense, billing, and accounts (facility books / `facility-accounts`). Emergency, rooms/beds, and communications are version-disabled.
-- `Advanced`: Basic plus full IPD, nursing, discharge, lab, radiology, pharmacy clinical, and claims. Physiotherapy is version-disabled.
-- `Pro`: Advanced plus ICU, theater, HR, and dental when enabled. Biomedical, operations, housekeeping, mortuary, and integrations are version-disabled.
-- `Custom`: Tenant-specific subset or extension of Pro; every entitlement must be explicit and still respect version-disabled domains.
-- `Developer`: Non-production only; may include `demo_seed` manage.
+Modules are named by slug; see `modules.mdc` for the full matrix.
+
+### Free
+
+- Modules: `patient-registry`, `auth-rbac-basics`, plus all platform infrastructure.
+- Cap: `patient:read`, `patient:write`, `patients:read`, `reports:read`.
+- Reporting (`reporting-analytics`) is platform infrastructure on every package.
+- `patient:delete` is deliberately withheld: Free admits no destructive patient action.
+
+### Basic
+
+- Adds modules: `scheduling-queue`, `encounters-vitals`, `pharmacy-dispensing`,
+  `billing-payments`, `facility-accounts`, `inpatient-bed-management`,
+  `subscription-controls`, `notifications-communications`.
+- Adds cap: `patient:delete`, `reception:read`, `opd:read`, `clinical:read/write`,
+  `pharmacy:read/write`, `billing:read/write`, `accounts:read/write`,
+  `subscriptions:read/write/delete`. (`pricing:*` is not capped — see below.)
+- Workspaces: Reception, OPD, Clinical, Pharmacy, Billing, Accounts, Subscriptions.
+- `inpatient-bed-management` is entitled here, but no IPD / nursing / discharge entry key
+  is capped below Advanced, so those workspaces stay closed until Advanced.
+- `notifications-communications` is entitled but the `communications` domain is
+  version-disabled, so the module grants nothing.
+
+### Advanced
+
+- Adds modules: `lab-workflows`, `radiology-workflows`, `insurance-claims`,
+  `inventory-procurement`, `extra-storage`, `physiotherapy`.
+- Adds cap: `lab:read/write`, `radiology:read/write`, `claims:read`, `ipd:read`,
+  `nursing:read`, `discharge:read`, `reports:write`, `reports:delete`,
+  `financial:approve`.
+- Workspaces: Lab, Radiology, Claims, IPD, Nursing, Discharge.
+- `physiotherapy` is version-disabled; `inventory-procurement` and `extra-storage` carry
+  no permission domain.
+
+### Pro
+
+- Adds modules: `icu-critical-care`, `theatre-anesthesia`, `hr-rosters`,
+  `facilities-maintenance`, `biomedical-engineering-suite`, `mortuary`,
+  `integrations-core`, `inventory-procurement-lite`.
+- Adds cap: `icu:read`, `theater:read`, `hr:read/write`, `unit:read/manage`,
+  `roster:read/write/publish/approve`.
+- Workspaces: ICU, Theatre, HR.
+- `facilities-maintenance`, `biomedical-engineering-suite`, `mortuary` and
+  `integrations-core` are entitled but their domains are version-disabled, so they grant
+  nothing. Dental is planned, not shipped.
+
+### Custom
+
+Tenant-specific subset or extension of Pro. Adds `compliance-audit-core`,
+`advanced-analytics`, `sms-credits`. Every entitlement must be explicit and still respect
+version-disabled domains.
+
+When `extension_json.allowed_permissions` is set, it **replaces** the tier cap rather than
+intersecting with it: `resolveSubscriptionPermissionCap` returns the explicit list (after
+stripping version-disabled keys and expanding required reads) and never consults the tier
+table. An explicit list that omits a needed key silently closes that workspace.
+
+### Developer
+
+Non-production only; entitles `developer-tools`. (There is no `demo_seed` module — demo
+seeding is gated by `demo-safety.js` and `SEED_RECORD_COUNT`, not by an entitlement.)
+
+Backend and frontend deliberately differ, and both are correct:
+
+- Backend outside production: unrestricted (cap resolves to `null`).
+- Backend in production: falls back to the **Free** cap.
+- Frontend: always resolves to the **Free** cap — the client never treats Developer as
+  unrestricted.
 
 ## Enforcement
 
-- Package checks must run in UI and API paths.
+- Package checks must run in UI and API paths; the backend is authoritative.
 - Grants must not exceed the active package.
-- Version-disabled domains must stay omitted from plan caps and effective access.
+- Version-disabled domains stay omitted from plan caps and effective access.
+- Caps apply only to module-scoped permissions. Core/platform keys (`profile:*`,
+  `setup:read`, `access_admin:read`, `break_glass:*`, `compliance:*`, `evidence:export`,
+  `last_office:*`, `pricing:*`, and the `*:admin` / `platform:owner` keys) are not
+  plan-gated at this layer — listing one in a cap is inert. See `permissions.mdc`.
 - Package changes, resets, upgrades, and downgrades must be atomic and auditable.
 - Failed changes must roll back completely.
 

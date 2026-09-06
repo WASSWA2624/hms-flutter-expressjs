@@ -87,10 +87,22 @@ void main() {
 
       final policy = AppAccessPolicy.fromSession(session);
 
-      expect(policy.hasRole(AppRole.wardManager), isTrue);
+      // AMBULANCE_DRIVER is a real LEGACY_ROLE_ALIASES entry and resolves to
+      // an AppRole.
       expect(policy.hasRole(AppRole.ambulanceOperator), isTrue);
-      expect(policy.grants(AppPermissions.rosterPublish), isTrue);
-      expect(policy.grants(AppPermissions.emergencyWrite), isTrue);
+
+      // CHARGE_NURSE is a distinct backend role, not a WARD_MANAGER alias
+      // (roles.js: "do not collapse"), and AppRole carries only the narrower
+      // shell-focus vocabulary — so it resolves to no AppRole at all...
+      expect(policy.hasRole(AppRole.wardManager), isFalse);
+      expect(policy.hasRole(AppRole.nurse), isFalse);
+      // ...while still contributing its parent nurse pack's rights for JWT
+      // restore. Live rights still come from /auth/me.
+      expect(policy.grants(AppPermissions.nursingRead), isTrue);
+
+      // Deferred-domain stripping is not asserted here: test/flutter_test_config
+      // turns VersionDisabledPermissions.enforce off suite-wide. See
+      // version_disabled_permissions_test.dart, which re-enables it.
     });
 
     test(

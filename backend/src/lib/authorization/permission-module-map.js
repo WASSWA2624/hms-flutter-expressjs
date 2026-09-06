@@ -43,6 +43,12 @@ const DOMAIN_TO_MODULE = Object.freeze({
   subscriptions: 'subscription-controls',
 });
 
+// `pricing:*` is deliberately absent from this map. It is a rights-layer
+// permission that crosses modules: the Billing price book (gated by
+// `billing-payments`) hosts both facility tariff rows and pharmacy retail rows,
+// so `pricing:pharmacy_write` must keep working there without requiring
+// `pharmacy-dispensing`. The screen is module-gated; the permission is not.
+
 const text = (value) => String(value || '').trim();
 
 const normalizeModuleCode = (value) =>

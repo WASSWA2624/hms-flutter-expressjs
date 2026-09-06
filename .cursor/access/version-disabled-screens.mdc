@@ -5,23 +5,58 @@ alwaysApply: true
 
 # Version-Disabled Screens
 
-These workspaces are shipped in code but must stay unreachable for every user and every subscription package until a later version re-enables them.
+These workspaces are shipped in code but must stay unreachable for every user and every
+subscription package until a later version re-enables them.
 
 ## Disabled destinations
 
-Emergency, Rooms & beds, Physiotherapy, Operations, Housekeeping, Biomedical Engineering, Mortuary, Communications, Integrations.
+Emergency, Rooms & beds, Physiotherapy, Operations, Housekeeping, Biomedical Engineering,
+Mortuary, Communications, Integrations.
+
+That is 9 of the 32 route atoms in `route_access_catalog.dart`, leaving 23 live
+destinations — 3 authenticated-core (`home`, `settings`, `profile`) and 20
+permission-gated.
 
 ## Permission domains (hard deny)
 
-`emergency`, `rooms_beds`, `physiotherapy`, `operations`, `housekeeping`, `biomed`, `mortuary`, `communications`, `integration`.
+`emergency`, `rooms_beds`, `physiotherapy`, `operations`, `housekeeping`, `biomed`,
+`mortuary`, `communications`, `integration`.
+
+Domain names, not module slugs — `biomed` (not `biomedical`) and `integration` (not
+`integrations`). 25 of the 85 catalog keys fall in these domains.
 
 ## Enforcement
 
-- Strip these domains from effective access on API and UI (including elevated roles).
+- Strip these domains from effective access on API and UI (including elevated roles and
+  platform-owner paths that skip plan caps). Stripping is the **last** step of
+  effective-access, after grants, modules and caps.
 - Omit them from all `PLAN_PERMISSION_CAPS` / `PlanPermissionCaps` tiers.
 - Menu items and routes stay permission-gated; denied keys must hide shell destinations.
 - Do not re-grant via role packs, custom plans, module entitlements, or direct user grants.
-- To re-enable: remove the domain from `version-disabled-permissions` (BE + FE), restore plan caps, then drop this rule.
+  Role packs and the permission catalog may still **list** these keys — that is expected;
+  the strip is what enforces the rule.
+- To re-enable: remove the domain from `version-disabled-permissions` (BE + FE), restore
+  plan caps and the module's permission mapping, then drop it from this rule.
+
+## Modules stay entitled
+
+The matching modules still ship and may be entitled by a package —
+`notifications-communications` (BASIC), `physiotherapy` (ADVANCED),
+`facilities-maintenance`, `biomedical-engineering-suite`, `mortuary`, `integrations-core`
+(PRO). They simply grant nothing while their domain is stripped. Do not remove them from
+`plan-module-matrix.js`; that would change package composition rather than defer a screen.
+
+`scheduling-queue` and `inpatient-bed-management` are only *partly* affected — they carry
+live domains (`reception`/`opd`, `ipd`/`nursing`/`discharge`) alongside disabled ones
+(`emergency`, `rooms_beds`).
+
+## Testing caveat
+
+`frontend/test/flutter_test_config.dart` sets `VersionDisabledPermissions.enforce = false`
+for the whole `test/` suite so deferred-screen feature tests can still exercise their
+permission matrices. Deferred-domain denial is therefore **not** asserted by default. A
+test that needs to prove a disabled key is denied must set `enforce = true` itself and
+restore it — see `frontend/test/core/permissions/version_disabled_permissions_test.dart`.
 
 ## Canonical files
 
@@ -32,4 +67,4 @@ Emergency, Rooms & beds, Physiotherapy, Operations, Housekeeping, Biomedical Eng
 
 ## Related Rules
 
-- `permissions.mdc`, `subscriptions.mdc`, `modules.mdc`
+- `permissions.mdc`, `subscriptions.mdc`, `modules.mdc`, `default_user_roles.mdc`
