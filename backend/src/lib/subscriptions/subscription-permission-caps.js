@@ -87,8 +87,14 @@ const PLAN_PERMISSION_CAPS = Object.freeze({
   BASIC,
   ADVANCED,
   PRO,
+  // Custom without an explicit extension_json.allowed_permissions list falls
+  // back to the Pro ceiling.
   CUSTOM: PRO,
-  DEVELOPER: PRO,
+  // Developer never reaches this table: resolveSubscriptionPermissionCap
+  // short-circuits to null outside production and to FREE in production (the
+  // client always resolves Developer to FREE). The entry mirrors the
+  // production ceiling so a direct table read cannot over-report.
+  DEVELOPER: FREE,
 });
 
 const {

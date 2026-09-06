@@ -9,4 +9,6 @@
 
 Export and print additionally require `evidence:export`.
 
-Effective access is `union(role/module/user grants) ∩ subscription ∩ assigned modules ∩ ABAC`. Backend enforcement is authoritative. Unauthorized menus, tabs, columns, amounts, and buttons are omitted. Claims must not introduce `claims:write` until both canonical permission catalogs, seeds, roles, API gates, and frontend gates are updated together.
+`financial:approve` maps to the `billing-payments` module and is capped at ADVANCED, so every Approve gate above also needs `billing-payments` entitled on an Advanced (or higher) package — including on the Accounts & Finance desk, which itself opens at Basic.
+
+Effective access is `union(role/module/user grants) ∩ subscription modules ∩ per-user assigned modules ∩ plan permission cap`, plus the universal `reports:read` baseline, minus version-disabled domains, then ∩ ABAC. The authoritative pipeline and its order live in `.cursor/access/permissions.mdc`. Backend enforcement is authoritative. Unauthorized menus, tabs, columns, amounts, and buttons are omitted. Claims must not introduce `claims:write` until both canonical permission catalogs, seeds, roles, API gates, and frontend gates are updated together.

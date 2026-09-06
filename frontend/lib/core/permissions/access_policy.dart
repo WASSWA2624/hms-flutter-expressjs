@@ -907,44 +907,213 @@ final class AppAccessPolicy {
     return values.map(_normalizeRole).whereType<AppRole>().toSet();
   }
 
+  /// Canonical role codes that carry no [AppRole] of their own but whose
+  /// backend pack is byte-identical to a parent pack — the
+  /// `ROLE_PERMISSION_TEMPLATES` entries in `backend/src/config/permissions.js`
+  /// plus the legacy aliases that resolve onto them.
+  ///
+  /// Roles whose backend pack *differs* from every [AppRole] pack must not
+  /// appear here; they belong in [_exactRolePermissionPacks], otherwise JWT
+  /// restore over- or under-grants the shell. Live rights always come from
+  /// `/auth/me`.
   static const Map<String, AppRole> _extendedRolePermissionParents =
       <String, AppRole>{
         'ATTENDING_PHYSICIAN': AppRole.doctor,
         'RESIDENT_PHYSICIAN': AppRole.doctor,
-        'SURGEON': AppRole.doctor,
-        'ANESTHESIOLOGIST': AppRole.doctor,
         'PHYSICIAN_ASSISTANT': AppRole.doctor,
-        'EMERGENCY_PHYSICIAN': AppRole.doctor,
         'NURSE_PRACTITIONER': AppRole.doctor,
         'LICENSED_PRACTICAL_NURSE': AppRole.nurse,
         'TRIAGE_NURSE': AppRole.nurse,
         'MIDWIFE': AppRole.nurse,
-        // Charge nurse is nursing-led (not a full ward-manager clone).
-        'CHARGE_NURSE': AppRole.nurse,
         'PHYSIOTHERAPIST': AppRole.nurse,
         'OCCUPATIONAL_THERAPIST': AppRole.nurse,
         'RESPIRATORY_THERAPIST': AppRole.nurse,
         'DIETITIAN': AppRole.nurse,
-        'SOCIAL_WORKER': AppRole.receptionist,
         'CLINICAL_PSYCHOLOGIST': AppRole.nurse,
-        'MEDICAL_LABORATORY_SCIENTIST': AppRole.labTech,
-        'PATHOLOGIST': AppRole.labTech,
-        'SONOGRAPHER': AppRole.radiologyTech,
-        // JWT restore uses parent packs; live rights still come from /auth/me.
-        'PHARMACY_TECHNICIAN': AppRole.pharmacist,
-        'FACILITY_BILLING': AppRole.billing,
-        'PARAMEDIC': AppRole.ambulanceOperator,
-        'EMT': AppRole.ambulanceOperator,
+        'SOCIAL_WORKER': AppRole.receptionist,
         'MEDICAL_RECORDS_CLERK': AppRole.receptionist,
         'ADMISSIONS_COORDINATOR': AppRole.receptionist,
-        'MEDICAL_CODER': AppRole.billing,
-        'ACCOUNTANT': AppRole.billing,
+        'MEDICAL_LABORATORY_SCIENTIST': AppRole.labTech,
+        'SONOGRAPHER': AppRole.radiologyTech,
+        'FACILITY_BILLING': AppRole.billing,
+        'EMT': AppRole.ambulanceOperator,
         'IT_SUPPORT': AppRole.operations,
         'SECURITY_OFFICER': AppRole.houseKeeper,
-        'CHAPLAIN': AppRole.other,
         'FOOD_SERVICE_WORKER': AppRole.houseKeeper,
         'PORTER': AppRole.houseKeeper,
         'MAINTENANCE_ENGINEER': AppRole.biomed,
+        'CHAPLAIN': AppRole.other,
+      };
+
+  /// Canonical role codes that carry no [AppRole] pack of their own and whose
+  /// backend pack differs from every [AppRole] pack. Mirrors
+  /// `BASE_ROLE_PERMISSIONS` in `backend/src/config/permissions.js`
+  /// byte-for-byte; resolving these onto a parent instead would over- or
+  /// under-grant the shell on JWT restore.
+  ///
+  /// Checked before [_normalizeRole] and [_extendedRolePermissionParents], so a
+  /// code listed here must not also appear in [_extendedRolePermissionParents].
+  /// A code may still alias to an [AppRole] in [_normalizeRole] — that governs
+  /// shell focus only, not rights (ACCOUNTANT is the one such case).
+  static final Map<String, List<AppPermission>> _exactRolePermissionPacks =
+      <String, List<AppPermission>>{
+        // Distinct from BILLING (adds accounts:*; no last-office cashier).
+        // ACCOUNTANT still maps to AppRole.billing for shell focus only.
+        'ACCOUNTANT': <AppPermission>[
+          AppPermissions.accountsRead,
+          AppPermissions.accountsWrite,
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+          AppPermissions.pricingFacilityRead,
+          AppPermissions.pricingFacilityWrite,
+          AppPermissions.claimsRead,
+          AppPermissions.financialApprove,
+          AppPermissions.evidenceExport,
+          AppPermissions.reportsRead,
+          AppPermissions.profileRead,
+          AppPermissions.patientRead,
+          AppPermissions.communicationsRead,
+          AppPermissions.communicationsWrite,
+        ],
+        // Outpatient clinician — narrower than DOCTOR (no IPD / ICU / theatre).
+        'OPD_DOCTOR': <AppPermission>[
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+          AppPermissions.communicationsRead,
+          AppPermissions.communicationsWrite,
+          AppPermissions.profileRead,
+          AppPermissions.patientRead,
+          AppPermissions.patientWrite,
+          AppPermissions.patientsRead,
+          AppPermissions.opdRead,
+          AppPermissions.breakGlassRequest,
+          AppPermissions.reportsRead,
+        ],
+        // Critical-care clinician — narrower than DOCTOR (no OPD / theatre).
+        'ICU_DOCTOR': <AppPermission>[
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+          AppPermissions.communicationsRead,
+          AppPermissions.communicationsWrite,
+          AppPermissions.profileRead,
+          AppPermissions.patientRead,
+          AppPermissions.patientWrite,
+          AppPermissions.patientsRead,
+          AppPermissions.ipdRead,
+          AppPermissions.icuRead,
+          AppPermissions.breakGlassRequest,
+          AppPermissions.reportsRead,
+        ],
+        // Pharmacy counter cashier — pharmacy retail pricing, never facility
+        // pricing, so it must not inherit the BILLING pack.
+        'PHARMACY_BILLING': <AppPermission>[
+          AppPermissions.billingRead,
+          AppPermissions.billingWrite,
+          AppPermissions.pricingPharmacyRead,
+          AppPermissions.pricingPharmacyWrite,
+          AppPermissions.pharmacyRead,
+          AppPermissions.claimsRead,
+          AppPermissions.lastOfficeRead,
+          AppPermissions.lastOfficeWrite,
+          AppPermissions.communicationsRead,
+          AppPermissions.communicationsWrite,
+          AppPermissions.reportsRead,
+          AppPermissions.profileRead,
+          AppPermissions.patientRead,
+        ],
+        // Surgical clinician — inpatient + theatre focus, no OPD destination.
+        'SURGEON': <AppPermission>[
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+          AppPermissions.communicationsRead,
+          AppPermissions.communicationsWrite,
+          AppPermissions.profileRead,
+          AppPermissions.patientRead,
+          AppPermissions.patientWrite,
+          AppPermissions.patientsRead,
+          AppPermissions.ipdRead,
+          AppPermissions.icuRead,
+          AppPermissions.theaterRead,
+          AppPermissions.breakGlassRequest,
+          AppPermissions.reportsRead,
+        ],
+        // Anaesthesia — theatre + critical care support. Byte-identical to the
+        // SURGEON pack today; kept separate for job title and ABAC scope.
+        'ANESTHESIOLOGIST': <AppPermission>[
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+          AppPermissions.communicationsRead,
+          AppPermissions.communicationsWrite,
+          AppPermissions.profileRead,
+          AppPermissions.patientRead,
+          AppPermissions.patientWrite,
+          AppPermissions.patientsRead,
+          AppPermissions.ipdRead,
+          AppPermissions.icuRead,
+          AppPermissions.theaterRead,
+          AppPermissions.breakGlassRequest,
+          AppPermissions.reportsRead,
+        ],
+        // Emergency physician — ED + clinical without a theatre destination.
+        'EMERGENCY_PHYSICIAN': <AppPermission>[
+          AppPermissions.clinicalRead,
+          AppPermissions.clinicalWrite,
+          AppPermissions.emergencyRead,
+          AppPermissions.emergencyWrite,
+          AppPermissions.communicationsRead,
+          AppPermissions.communicationsWrite,
+          AppPermissions.profileRead,
+          AppPermissions.patientRead,
+          AppPermissions.patientWrite,
+          AppPermissions.patientsRead,
+          AppPermissions.opdRead,
+          AppPermissions.ipdRead,
+          AppPermissions.icuRead,
+          AppPermissions.breakGlassRequest,
+          AppPermissions.reportsRead,
+        ],
+        // Charge nurse — NURSE plus limited unit/roster oversight.
+        'CHARGE_NURSE': <AppPermission>[
+          ..._permissionsForRole(AppRole.nurse),
+          AppPermissions.unitRead,
+          AppPermissions.rosterRead,
+          AppPermissions.rosterWrite,
+        ],
+        // Pathologist — LAB_TECH plus clinical context.
+        'PATHOLOGIST': <AppPermission>[
+          ..._permissionsForRole(AppRole.labTech),
+          AppPermissions.clinicalRead,
+        ],
+        // Dispense assist — no pharmacy write and no pricing.
+        'PHARMACY_TECHNICIAN': <AppPermission>[
+          AppPermissions.pharmacyRead,
+          AppPermissions.patientRead,
+          AppPermissions.reportsRead,
+          AppPermissions.communicationsRead,
+          AppPermissions.communicationsWrite,
+          AppPermissions.profileRead,
+        ],
+        // Coding / claims review without cashier write or financial approve.
+        'MEDICAL_CODER': <AppPermission>[
+          AppPermissions.billingRead,
+          AppPermissions.claimsRead,
+          AppPermissions.patientRead,
+          AppPermissions.patientsRead,
+          AppPermissions.reportsRead,
+          AppPermissions.profileRead,
+          AppPermissions.communicationsRead,
+        ],
+        // Paramedic — ambulance ops plus field clinical/patient context.
+        'PARAMEDIC': <AppPermission>[
+          AppPermissions.profileRead,
+          AppPermissions.communicationsRead,
+          AppPermissions.communicationsWrite,
+          AppPermissions.emergencyRead,
+          AppPermissions.emergencyWrite,
+          AppPermissions.clinicalRead,
+          AppPermissions.patientRead,
+          AppPermissions.reportsRead,
+        ],
       };
 
   static Iterable<AppPermission> _permissionsForRoleCode(String value) {
@@ -952,25 +1121,9 @@ final class AppAccessPolicy {
       RegExp(r'[\s-]+'),
       '_',
     );
-    // Accountant pack is distinct from BILLING (includes accounts:*; no
-    // last-office). Keep ACCOUNTANT → AppRole.billing for shell focus only.
-    if (normalized == 'ACCOUNTANT') {
-      return const <AppPermission>[
-        AppPermissions.accountsRead,
-        AppPermissions.accountsWrite,
-        AppPermissions.billingRead,
-        AppPermissions.billingWrite,
-        AppPermissions.pricingFacilityRead,
-        AppPermissions.pricingFacilityWrite,
-        AppPermissions.claimsRead,
-        AppPermissions.financialApprove,
-        AppPermissions.evidenceExport,
-        AppPermissions.reportsRead,
-        AppPermissions.profileRead,
-        AppPermissions.patientRead,
-        AppPermissions.communicationsRead,
-        AppPermissions.communicationsWrite,
-      ];
+    final List<AppPermission>? exact = _exactRolePermissionPacks[normalized];
+    if (exact != null) {
+      return exact;
     }
     final AppRole? knownRole = _normalizeRole(value);
     if (knownRole != null) {
@@ -1135,7 +1288,6 @@ final class AppAccessPolicy {
         AppPermissions.lastOfficeRead,
         AppPermissions.lastOfficeWrite,
         AppPermissions.reportsRead,
-        AppPermissions.evidenceExport,
       ],
       // patients:read omitted — no Patients registry; patient:read for Billing embeds.
       AppRole.billing => const <AppPermission>[
@@ -1144,6 +1296,8 @@ final class AppAccessPolicy {
         AppPermissions.pricingFacilityRead,
         AppPermissions.pricingFacilityWrite,
         AppPermissions.claimsRead,
+        AppPermissions.lastOfficeRead,
+        AppPermissions.lastOfficeWrite,
         AppPermissions.financialApprove,
         AppPermissions.evidenceExport,
         AppPermissions.communicationsRead,
@@ -1331,10 +1485,12 @@ final class AppAccessPolicy {
         AppPermissions.profileRead,
         AppPermissions.profileUpdate,
         AppPermissions.patientRead,
+        AppPermissions.reportsRead,
       ],
       AppRole.other => const <AppPermission>[
         AppPermissions.profileRead,
         AppPermissions.patientRead,
+        AppPermissions.reportsRead,
       ],
     };
   }

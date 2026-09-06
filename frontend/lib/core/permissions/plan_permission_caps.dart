@@ -89,8 +89,12 @@ abstract final class PlanPermissionCaps {
     'BASIC': basic,
     'ADVANCED': advanced,
     'PRO': pro,
+    // Custom without an explicit allowedPermissions list falls back to Pro.
     'CUSTOM': pro,
-    'DEVELOPER': pro,
+    // Developer never reaches this table: [resolve] short-circuits it to [free]
+    // (the client never treats Developer as unrestricted). The entry mirrors
+    // that ceiling so a direct table read cannot over-report.
+    'DEVELOPER': free,
   };
 
   /// Returns the allowed module-scoped permission codes, or `null` when

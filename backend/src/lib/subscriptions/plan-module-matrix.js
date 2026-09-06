@@ -22,7 +22,11 @@ const PLAN_TIER_RANK = Object.freeze({
  * extension_json.is_platform_infrastructure = true.
  */
 const COMMERCIAL_MODULE_MATRIX = Object.freeze([
-  // —— Free (all packages) ——
+  // Grouped by `minimum_plan_tier_code`. Tiers are cumulative, so every group
+  // below is also included in every higher tier. Deprecated legacy aliases are
+  // listed last, after the shipped catalog.
+
+  // ---- Free ----
   {
     code: 'auth_rbac_basics',
     slug: 'auth-rbac-basics',
@@ -37,6 +41,8 @@ const COMMERCIAL_MODULE_MATRIX = Object.freeze([
     module_group: 2,
     minimum_plan_tier_code: 'FREE',
   },
+
+  // ---- Basic ----
   {
     code: 'scheduling_queue',
     slug: 'scheduling-queue',
@@ -52,11 +58,13 @@ const COMMERCIAL_MODULE_MATRIX = Object.freeze([
     minimum_plan_tier_code: 'BASIC',
   },
   {
-    code: 'lab_workflows',
-    slug: 'lab-workflows',
-    name: 'Lab Workflows',
-    module_group: 8,
-    minimum_plan_tier_code: 'ADVANCED',
+    // Entitled from Basic, but the ipd / nursing / discharge entry keys sit at
+    // ADVANCED in subscription-permission-caps.js — the cap is the binding gate.
+    code: 'inpatient_bed_management',
+    slug: 'inpatient-bed-management',
+    name: 'IPD and Bed Management',
+    module_group: 5,
+    minimum_plan_tier_code: 'BASIC',
   },
   {
     code: 'pharmacy_dispensing',
@@ -80,104 +88,14 @@ const COMMERCIAL_MODULE_MATRIX = Object.freeze([
     minimum_plan_tier_code: 'BASIC',
   },
   {
-    code: 'insurance_claims',
-    slug: 'insurance-claims',
-    name: 'Insurance and Claims',
-    module_group: 13,
-    minimum_plan_tier_code: 'ADVANCED',
-  },
-  {
+    // Entitled from Basic, but the `communications` domain is version-disabled,
+    // so this module currently grants nothing.
     code: 'notifications_communications',
     slug: 'notifications-communications',
     name: 'Notifications and Communications',
     module_group: 16,
     minimum_plan_tier_code: 'BASIC',
   },
-
-  // —— Basic ——
-  {
-    code: 'radiology_workflows',
-    slug: 'radiology-workflows',
-    name: 'Radiology Workflows',
-    module_group: 9,
-    minimum_plan_tier_code: 'ADVANCED',
-  },
-
-  // —— Pro ——
-  {
-    code: 'inpatient_bed_management',
-    slug: 'inpatient-bed-management',
-    name: 'IPD and Bed Management',
-    module_group: 5,
-    minimum_plan_tier_code: 'BASIC',
-  },
-  {
-    code: 'theatre_anesthesia',
-    slug: 'theatre-anesthesia',
-    name: 'Theatre and Anesthesia',
-    module_group: 7,
-    minimum_plan_tier_code: 'PRO',
-  },
-  {
-    code: 'physiotherapy',
-    slug: 'physiotherapy',
-    name: 'Physiotherapy and Rehabilitation',
-    module_group: 7,
-    minimum_plan_tier_code: 'ADVANCED',
-  },
-  {
-    code: 'facilities_maintenance',
-    slug: 'facilities-maintenance',
-    name: 'Facilities and Maintenance',
-    module_group: 15,
-    minimum_plan_tier_code: 'PRO',
-  },
-
-  // —— Advanced ——
-  {
-    code: 'icu_critical_care',
-    slug: 'icu-critical-care',
-    name: 'ICU and Critical Care',
-    module_group: 6,
-    minimum_plan_tier_code: 'PRO',
-  },
-  {
-    code: 'inventory_procurement_lite',
-    slug: 'inventory-procurement-lite',
-    name: 'Inventory and Procurement',
-    module_group: 11,
-    minimum_plan_tier_code: 'PRO',
-  },
-  {
-    code: 'mortuary_operations',
-    slug: 'mortuary',
-    name: 'Mortuary',
-    module_group: 12,
-    minimum_plan_tier_code: 'PRO',
-  },
-  {
-    code: 'biomedical_engineering_suite',
-    slug: 'biomedical-engineering-suite',
-    name: 'Biomedical Engineering Suite',
-    module_group: 15,
-    minimum_plan_tier_code: 'PRO',
-  },
-  {
-    code: 'extra_storage',
-    slug: 'extra-storage',
-    name: 'Extra Storage',
-    module_group: 17,
-    minimum_plan_tier_code: 'ADVANCED',
-  },
-  {
-    code: 'hr_rosters',
-    slug: 'hr-rosters',
-    name: 'HR and Rosters',
-    module_group: 14,
-    minimum_plan_tier_code: 'PRO',
-  },
-
-  // —— Custom / Developer ——
   {
     code: 'subscription_controls',
     slug: 'subscription-controls',
@@ -187,19 +105,118 @@ const COMMERCIAL_MODULE_MATRIX = Object.freeze([
     description:
       'Plan management, renewals, upgrades, licensing, and module self-service.',
   },
+
+  // ---- Advanced ----
+  {
+    code: 'lab_workflows',
+    slug: 'lab-workflows',
+    name: 'Lab Workflows',
+    module_group: 8,
+    minimum_plan_tier_code: 'ADVANCED',
+  },
+  {
+    code: 'radiology_workflows',
+    slug: 'radiology-workflows',
+    name: 'Radiology Workflows',
+    module_group: 9,
+    minimum_plan_tier_code: 'ADVANCED',
+  },
+  {
+    code: 'insurance_claims',
+    slug: 'insurance-claims',
+    name: 'Insurance and Claims',
+    module_group: 13,
+    minimum_plan_tier_code: 'ADVANCED',
+  },
+  {
+    // `physiotherapy` domain is version-disabled — entitled but grants nothing.
+    code: 'physiotherapy',
+    slug: 'physiotherapy',
+    name: 'Physiotherapy and Rehabilitation',
+    module_group: 7,
+    minimum_plan_tier_code: 'ADVANCED',
+  },
+  {
+    // Quota only — no permission domain, no API path segments.
+    code: 'extra_storage',
+    slug: 'extra-storage',
+    name: 'Extra Storage',
+    module_group: 17,
+    minimum_plan_tier_code: 'ADVANCED',
+  },
+
+  // ---- Pro ----
+  {
+    code: 'icu_critical_care',
+    slug: 'icu-critical-care',
+    name: 'ICU and Critical Care',
+    module_group: 6,
+    minimum_plan_tier_code: 'PRO',
+  },
+  {
+    code: 'theatre_anesthesia',
+    slug: 'theatre-anesthesia',
+    name: 'Theatre and Anesthesia',
+    module_group: 7,
+    minimum_plan_tier_code: 'PRO',
+  },
+  {
+    code: 'hr_rosters',
+    slug: 'hr-rosters',
+    name: 'HR and Rosters',
+    module_group: 14,
+    minimum_plan_tier_code: 'PRO',
+  },
+  {
+    // `operations` and `housekeeping` domains are version-disabled.
+    code: 'facilities_maintenance',
+    slug: 'facilities-maintenance',
+    name: 'Facilities and Maintenance',
+    module_group: 15,
+    minimum_plan_tier_code: 'PRO',
+  },
+  {
+    // `biomed` domain is version-disabled.
+    code: 'biomedical_engineering_suite',
+    slug: 'biomedical-engineering-suite',
+    name: 'Biomedical Engineering Suite',
+    module_group: 15,
+    minimum_plan_tier_code: 'PRO',
+  },
+  {
+    // Deliberate code/slug mismatch: `mortuary_operations` maps to slug
+    // `mortuary`. The `mortuary` domain is version-disabled.
+    code: 'mortuary_operations',
+    slug: 'mortuary',
+    name: 'Mortuary',
+    module_group: 12,
+    minimum_plan_tier_code: 'PRO',
+  },
+  {
+    // `integration` domain is version-disabled.
+    code: 'integrations_core',
+    slug: 'integrations-core',
+    name: 'Integrations and Webhooks',
+    module_group: 20,
+    minimum_plan_tier_code: 'PRO',
+  },
+  {
+    // No permission domain — gated by first route segment in
+    // module-entitlement.middleware.js (MODULE_SEGMENT_SLUG_OVERRIDES).
+    code: 'inventory_procurement_lite',
+    slug: 'inventory-procurement-lite',
+    name: 'Inventory and Procurement',
+    module_group: 11,
+    minimum_plan_tier_code: 'PRO',
+  },
+
+  // ---- Custom ----
   {
     code: 'compliance_audit_core',
     slug: 'compliance-audit-core',
     name: 'Compliance and Audit Core',
     module_group: 19,
     minimum_plan_tier_code: 'CUSTOM',
-  },
-  {
-    code: 'integrations_core',
-    slug: 'integrations-core',
-    name: 'Integrations and Webhooks',
-    module_group: 20,
-    minimum_plan_tier_code: 'PRO',
   },
   {
     code: 'advanced_analytics',
@@ -209,12 +226,15 @@ const COMMERCIAL_MODULE_MATRIX = Object.freeze([
     minimum_plan_tier_code: 'CUSTOM',
   },
   {
+    // Quota only — no permission domain.
     code: 'sms_credits',
     slug: 'sms-credits',
     name: 'SMS Credits',
     module_group: 16,
     minimum_plan_tier_code: 'CUSTOM',
   },
+
+  // ---- Developer ----
   {
     code: 'developer_tools',
     slug: 'developer-tools',
@@ -225,7 +245,9 @@ const COMMERCIAL_MODULE_MATRIX = Object.freeze([
       'API keys, webhook debugging, sandbox utilities, and full integration tooling.',
   },
 
-  // Legacy aliases for older tenants / path maps (not preferred for new allowlists).
+  // ---- Deprecated legacy aliases ----
+  // Kept so older entitlement rows still resolve. Never seed into a new plan;
+  // `modulesForPlanTier(tier, { includeLegacyAliases: false })` drops them.
   {
     code: 'billing_insurance',
     slug: 'billing-insurance',

@@ -28,11 +28,14 @@ describe('custom role RBAC effective access', () => {
       }
     );
 
+    // reports:read is the platform-infrastructure baseline every authenticated
+    // role carries — see effective-access.js and `.cursor/access/permissions.mdc`.
     expect(access.permissions.sort()).toEqual(
       [
         PERMISSIONS.BILLING_READ,
         PERMISSIONS.CLINICAL_READ,
         PERMISSIONS.LAB_READ,
+        PERMISSIONS.REPORTS_READ,
       ].sort()
     );
     expect(access.role_permissions.sort()).toEqual(
@@ -56,7 +59,9 @@ describe('custom role RBAC effective access', () => {
       }
     );
 
-    expect(access.permissions).toEqual([]);
+    // Only the reports:read baseline — no shipped pack is invented for an
+    // unknown role name.
+    expect(access.permissions).toEqual([PERMISSIONS.REPORTS_READ]);
     expect(access.role_permissions).toEqual([]);
   });
 

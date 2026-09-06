@@ -8,8 +8,8 @@ alwaysApply: true
 
 # Subscriptions
 
-Package tiers are the hard upper bound on access. See `permissions.mdc` for the
-effective-access formula.
+Package tiers are the hard upper bound on access. See `permissions.mdc` for the full
+effective-access pipeline.
 
 ## The plan gate is two gates
 
@@ -26,19 +26,28 @@ So a workspace opens at `max(module minimum tier, entry-key cap tier)`. Where th
 differ, the **cap** is the binding gate. Both are cumulative: every tier contains the one
 below it.
 
-Invariant: a permission may never sit in a cap tier below its module's minimum tier —
-that would advertise access the module gate then denies. Asserted by
-`backend/src/tests/lib/subscriptions/subscription-permission-caps.test.js`.
+Invariants, all asserted by
+`backend/src/tests/lib/subscriptions/subscription-permission-caps.test.js`:
+
+- A permission may never sit in a cap tier below its module's minimum tier.
+- A cap may not list a core/platform key — such an entry is inert.
+- A cap may not list a version-disabled key.
+- Every live module-scoped key must appear by PRO; the PRO cap is exactly the 39 live
+  module-scoped keys.
 
 ## Tiers
 
-Modules are named by slug; see `modules.mdc` for the full matrix.
+Modules are named by slug; see `modules.mdc` for the full matrix. "Workspaces" lists the
+top-level shell destinations the tier's cap unlocks, for a role that holds the entry key.
 
 ### Free
 
 - Modules: `patient-registry`, `auth-rbac-basics`, plus all platform infrastructure.
-- Cap: `patient:read`, `patient:write`, `patients:read`, `reports:read`.
-- Reporting (`reporting-analytics`) is platform infrastructure on every package.
+- Cap (4): `patient:read`, `patient:write`, `patients:read`, `reports:read`.
+- Workspaces: Patients, Reports.
+- Reporting (`reporting-analytics`) is platform infrastructure on every package, and
+  `reports:read` is additionally re-granted as a baseline after the caps run, so Reports is
+  reachable for any authenticated role on any tier.
 - `patient:delete` is deliberately withheld: Free admits no destructive patient action.
 
 ### Basic
@@ -46,10 +55,14 @@ Modules are named by slug; see `modules.mdc` for the full matrix.
 - Adds modules: `scheduling-queue`, `encounters-vitals`, `pharmacy-dispensing`,
   `billing-payments`, `facility-accounts`, `inpatient-bed-management`,
   `subscription-controls`, `notifications-communications`.
-- Adds cap: `patient:delete`, `reception:read`, `opd:read`, `clinical:read/write`,
+- Adds cap (18 total): `patient:delete`, `reception:read`, `opd:read`, `clinical:read/write`,
   `pharmacy:read/write`, `billing:read/write`, `accounts:read/write`,
-  `subscriptions:read/write/delete`. (`pricing:*` is not capped — see below.)
-- Workspaces: Reception, OPD, Clinical, Pharmacy, Billing, Accounts, Subscriptions.
+  `subscriptions:read/write/delete`. (`pricing:*` is not capped — it is core; see below.)
+- Workspaces: Reception, OPD, Clinical, Pharmacy, Billing, Accounts.
+- `subscriptions:*` does **not** open the `/subscriptions` route — that workspace requires
+  `platform:owner` / `platform:admin`. These keys gate the tenant-facing subscription
+  controls (shell upgrade/renew chrome, dashboard subscription cards) and the
+  module/licence/module-subscription APIs.
 - `inpatient-bed-management` is entitled here, but no IPD / nursing / discharge entry key
   is capped below Advanced, so those workspaces stay closed until Advanced.
 - `notifications-communications` is entitled but the `communications` domain is
@@ -58,31 +71,32 @@ Modules are named by slug; see `modules.mdc` for the full matrix.
 ### Advanced
 
 - Adds modules: `lab-workflows`, `radiology-workflows`, `insurance-claims`,
-  `inventory-procurement`, `extra-storage`, `physiotherapy`.
-- Adds cap: `lab:read/write`, `radiology:read/write`, `claims:read`, `ipd:read`,
+  `physiotherapy`, `extra-storage`.
+- Adds cap (29 total): `lab:read/write`, `radiology:read/write`, `claims:read`, `ipd:read`,
   `nursing:read`, `discharge:read`, `reports:write`, `reports:delete`,
   `financial:approve`.
 - Workspaces: Lab, Radiology, Claims, IPD, Nursing, Discharge.
-- `physiotherapy` is version-disabled; `inventory-procurement` and `extra-storage` carry
-  no permission domain.
+- `physiotherapy` is version-disabled; `extra-storage` carries no permission domain.
+- `inventory-procurement` (ADVANCED) is a deprecated legacy alias — never seed it.
 
 ### Pro
 
 - Adds modules: `icu-critical-care`, `theatre-anesthesia`, `hr-rosters`,
   `facilities-maintenance`, `biomedical-engineering-suite`, `mortuary`,
   `integrations-core`, `inventory-procurement-lite`.
-- Adds cap: `icu:read`, `theater:read`, `hr:read/write`, `unit:read/manage`,
+- Adds cap (39 total): `icu:read`, `theater:read`, `hr:read/write`, `unit:read/manage`,
   `roster:read/write/publish/approve`.
 - Workspaces: ICU, Theatre, HR.
 - `facilities-maintenance`, `biomedical-engineering-suite`, `mortuary` and
   `integrations-core` are entitled but their domains are version-disabled, so they grant
-  nothing. Dental is planned, not shipped.
+  nothing. `inventory-procurement-lite` is route-segment gated, not permission gated.
+  Dental is planned, not shipped.
 
 ### Custom
 
 Tenant-specific subset or extension of Pro. Adds `compliance-audit-core`,
 `advanced-analytics`, `sms-credits`. Every entitlement must be explicit and still respect
-version-disabled domains.
+version-disabled domains. Without an explicit permission list, the cap falls back to Pro.
 
 When `extension_json.allowed_permissions` is set, it **replaces** the tier cap rather than
 intersecting with it: `resolveSubscriptionPermissionCap` returns the explicit list (after
@@ -94,12 +108,16 @@ table. An explicit list that omits a needed key silently closes that workspace.
 Non-production only; entitles `developer-tools`. (There is no `demo_seed` module — demo
 seeding is gated by `demo-safety.js` and `SEED_RECORD_COUNT`, not by an entitlement.)
 
-Backend and frontend deliberately differ, and both are correct:
+Developer never reads the tier cap table — the resolver short-circuits it. Backend and
+frontend deliberately differ, and both are correct:
 
 - Backend outside production: unrestricted (cap resolves to `null`).
 - Backend in production: falls back to the **Free** cap.
 - Frontend: always resolves to the **Free** cap — the client never treats Developer as
   unrestricted.
+
+The `DEVELOPER` entry in `PLAN_PERMISSION_CAPS` / `PlanPermissionCaps.byTier` mirrors the
+Free ceiling so a direct table read cannot over-report; it is never reached at runtime.
 
 ## Enforcement
 

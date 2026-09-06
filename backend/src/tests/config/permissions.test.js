@@ -1,5 +1,14 @@
-const { ROLES, normalizeRoleName } = require('@config/roles');
-const { PERMISSIONS, ROLE_PERMISSIONS } = require('@config/permissions');
+const {
+  ROLES,
+  ROLE_VALUES,
+  LEGACY_ROLE_ALIASES,
+  normalizeRoleName,
+} = require('@config/roles');
+const {
+  PERMISSIONS,
+  ROLE_PERMISSIONS,
+  ROLE_PERMISSION_TEMPLATES,
+} = require('@config/permissions');
 
 describe('permissions config', () => {
   it('includes AMBULANCE_OPERATOR in the canonical role catalog', () => {
@@ -202,5 +211,72 @@ describe('permissions config', () => {
 
     expect(PERMISSIONS.ACCOUNTS_READ).toBe('accounts:read');
     expect(PERMISSIONS.ACCOUNTS_WRITE).toBe('accounts:write');
+  });
+});
+
+// Shape assertions behind `.cursor/access/default_user_roles.mdc`. Changing a
+// count here means the rule file must change with it.
+describe('shipped role catalog shape', () => {
+  const baseRoles = ROLE_VALUES.filter(
+    (role) => !ROLE_PERMISSION_TEMPLATES[role]
+  );
+
+  const packSignature = (role) =>
+    [...new Set(ROLE_PERMISSIONS[role] || [])].sort().join('|');
+
+  it('ships 70 canonical roles, 40 base packs and 30 template roles', () => {
+    expect(ROLE_VALUES).toHaveLength(70);
+    expect(baseRoles).toHaveLength(40);
+    expect(Object.keys(ROLE_PERMISSION_TEMPLATES)).toHaveLength(30);
+    expect(Object.keys(ROLE_PERMISSIONS)).toHaveLength(70);
+  });
+
+  it('gives every canonical role a resolvable permission pack', () => {
+    const missing = ROLE_VALUES.filter(
+      (role) => !Array.isArray(ROLE_PERMISSIONS[role])
+    );
+    expect(missing).toEqual([]);
+  });
+
+  it('resolves every template role to its parent pack byte-for-byte', () => {
+    for (const [role, parent] of Object.entries(ROLE_PERMISSION_TEMPLATES)) {
+      expect(ROLE_PERMISSIONS[role]).toEqual(ROLE_PERMISSIONS[parent]);
+    }
+  });
+
+  it('keeps base packs distinct apart from two pinned historical pairs', () => {
+    const bySignature = new Map();
+    for (const role of baseRoles) {
+      const signature = packSignature(role);
+      bySignature.set(signature, [
+        ...(bySignature.get(signature) || []),
+        role,
+      ]);
+    }
+
+    const duplicates = [...bySignature.values()]
+      .filter((roles) => roles.length > 1)
+      .map((roles) => roles.sort())
+      .sort((left, right) => left[0].localeCompare(right[0]));
+
+    // Two base packs are byte-identical to a sibling. They stay separate roles
+    // for job title and ABAC scope. Any *new* duplicate is a bug: give the new
+    // role rights of its own, or make it a ROLE_PERMISSION_TEMPLATES entry.
+    expect(duplicates).toEqual([
+      ['AMBULANCE_OPERATOR', 'EMT'],
+      ['ANESTHESIOLOGIST', 'SURGEON'],
+    ]);
+    expect(bySignature.size).toBe(38);
+  });
+
+  it('never aliases one canonical role onto another', () => {
+    const canonical = new Set(ROLE_VALUES);
+    const aliasKeys = Object.keys(LEGACY_ROLE_ALIASES);
+
+    expect(aliasKeys).toHaveLength(40);
+    expect(aliasKeys.filter((alias) => canonical.has(alias))).toEqual([]);
+    for (const target of Object.values(LEGACY_ROLE_ALIASES)) {
+      expect(canonical.has(target)).toBe(true);
+    }
   });
 });

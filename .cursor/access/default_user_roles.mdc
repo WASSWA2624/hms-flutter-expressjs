@@ -9,53 +9,82 @@ alwaysApply: false
 # Default User Roles
 
 Seeded on install; see `permissions.mdc` for semantics. Canonical catalogs:
-`backend/src/config/roles.js` (identity) and `BASE_ROLE_PERMISSIONS` /
-`DERIVED_ROLE_PARENTS` in `backend/src/config/permissions.js` (packs).
+`backend/src/config/roles.js` (identity, aliases, hierarchy) and `BASE_ROLE_PERMISSIONS` /
+`ROLE_PERMISSION_TEMPLATES` in `backend/src/config/permissions.js` (packs).
+`ROLE_PERMISSIONS` is the resolved export both are folded into. Counts below are asserted
+by `backend/src/tests/config/permissions.test.js`.
 
 ## Structure
 
 - **70 canonical roles**, all uppercase snake_case (`LAB_TECH`, `HOUSE_KEEPER`). Always
   write the canonical code; the lowercase job-title forms below are display names, not
   identifiers.
-- **38 distinct permission packs.** The other 32 roles are `DERIVED_ROLE_PARENTS` entries
-  that reuse a parent's pack byte-for-byte (`MIDWIFE` → `NURSE`, `SURGEON` → `DOCTOR`).
-  A derived role exists for job title and ABAC scope, not for different rights.
+- **40 base packs** in `BASE_ROLE_PERMISSIONS`. The other **30 roles** are
+  `ROLE_PERMISSION_TEMPLATES` entries that reuse a parent's pack byte-for-byte
+  (`MIDWIFE` → `NURSE`, `DENTIST` → `DOCTOR`). A template role exists for job title and
+  ABAC scope, not for different rights.
+- The 40 base packs produce **38 distinct permission sets**. Two pairs are byte-identical
+  and stay separate roles for job title and ABAC scope: `AMBULANCE_OPERATOR` ≡ `EMT`, and
+  `SURGEON` ≡ `ANESTHESIOLOGIST`. That set is pinned by test — any *new* duplicate is a
+  bug: give the role rights of its own, or make it a `ROLE_PERMISSION_TEMPLATES` entry.
 - **40 `LEGACY_ROLE_ALIASES`** map historical names onto canonical codes
   (`SUPER_ADMIN` → `PLATFORM_ADMIN`, `RADIOGRAPHER` → `RADIOLOGY_TECH`,
-  `AMBULANCE_DRIVER` → `AMBULANCE_OPERATOR`). `normalizeRoleName` resolves them.
-- Keep roles specific: no two **base** packs may be identical, and no canonical role may be
-  aliased onto another in `LEGACY_ROLE_ALIASES`. `EMT`, `PARAMEDIC` and `CHARGE_NURSE`
-  stay distinct — do not collapse them.
+  `AMBULANCE_DRIVER` → `AMBULANCE_OPERATOR`). `normalizeRoleName` resolves them. No alias
+  key may itself be a canonical role code — `EMT`, `PARAMEDIC` and `CHARGE_NURSE` stay
+  distinct roles, not aliases.
 - A user may hold several roles via `user_role`; rights are the **union** of their packs.
+- `reports:read` is in every shipped pack, and is re-granted as a baseline after plan
+  gating regardless (`permissions.mdc`, step 5).
 
-Frontend note: `AppRole` carries only the 27 shell-focus roles. Other canonical roles
-resolve through `_extendedRolePermissionParents` to a parent pack for JWT restore and
-produce **no** `AppRole` — `hasRole` is false for them while their rights still apply. Live
-rights come from `/auth/me`.
+## Client-side role resolution
+
+`AppRole` (`frontend/lib/core/permissions/access_policy.dart`) carries only the **27
+shell-focus roles**. Every canonical role still resolves to a client pack for JWT-only
+restore, through one of three paths, checked in this order:
+
+1. `_exactRolePermissionPacks` — roles whose backend pack matches no `AppRole` pack
+   (`ACCOUNTANT`, `OPD_DOCTOR`, `ICU_DOCTOR`, `PHARMACY_BILLING`, `SURGEON`,
+   `ANESTHESIOLOGIST`, `EMERGENCY_PHYSICIAN`, `CHARGE_NURSE`, `PATHOLOGIST`,
+   `PHARMACY_TECHNICIAN`, `MEDICAL_CODER`, `PARAMEDIC`).
+2. `_normalizeRole` — canonical `AppRole` codes plus display/legacy aliases.
+3. `_extendedRolePermissionParents` — template roles that mirror a parent pack exactly.
+
+A role code must appear in at most one of paths 1 and 3. Roles outside `AppRole` produce no
+`AppRole`, so `hasRole` is false for them and the shell applies permission-domain scoping,
+while their rights still apply. Live rights always come from `/auth/me`; role packs are the
+pre-hydration fallback only, and are never unioned on top of backend grants.
+`frontend/test/core/permissions/role_pack_parity_test.dart` asserts every canonical role
+resolves.
 
 ## Shipped roles and their top-level destinations
 
-Destinations below are the workspaces the pack's entry keys open, before plan gating.
-Every staff role also has `profile:*` and `reports:read`.
+Destinations are the workspaces the pack's entry keys open, **before** plan gating. Every
+staff role also has `profile:read` and `reports:read`.
 
 | Role | Destinations |
 | ---- | ------------ |
 | `PLATFORM_OWNER` | everything, all tenants |
-| `PLATFORM_ADMIN` | everything except platform-owner-only keys |
-| `TENANT_ADMIN` | every workspace incl. Setup, Access admin, Subscriptions; tenant scope |
-| `FACILITY_ADMIN` | same set, facility scope (no tenant-scoped keys) |
+| `PLATFORM_ADMIN` | everything except `platform:owner` |
+| `TENANT_ADMIN` | every workspace except `/subscriptions`, incl. Setup and Access admin; tenant scope |
+| `FACILITY_ADMIN` | same set, facility scope (no `tenant:admin`) |
 | `INTEGRATION_ADMIN` | Integrations, Reports (`integration` is version-disabled) |
 | `DOCTOR` | Patients, OPD, IPD, ICU, Clinical, Theatre, Reports |
-| `OPD_DOCTOR` / `ICU_DOCTOR` | narrower doctor packs scoped to their unit |
+| `OPD_DOCTOR` | Patients, OPD, Clinical, Reports |
+| `ICU_DOCTOR` | Patients, IPD, ICU, Clinical, Reports |
+| `SURGEON` / `ANESTHESIOLOGIST` | Patients, IPD, ICU, Clinical, Theatre, Reports (no OPD) |
+| `EMERGENCY_PHYSICIAN` | Patients, OPD, IPD, ICU, Clinical, Reports (no Theatre) |
 | `NURSE` | Patients, OPD, IPD, ICU, Nursing, Clinical, Discharge, Lab, Reports |
 | `CHARGE_NURSE` | `NURSE` plus `unit:read`, `roster:read`, `roster:write` |
 | `RECEPTIONIST` | Reception, Patients, Reports |
 | `LAB_TECH` | Patients, Lab, Reports |
+| `PATHOLOGIST` | `LAB_TECH` plus `clinical:read` |
 | `RADIOLOGY_TECH` | Patients, Radiology, Reports |
 | `PHARMACIST` | Pharmacy, Reports (+ `pricing:pharmacy_*`, `patient:read`) |
-| `PHARMACY_BILLING` | Pharmacy cashier: `billing:*`, `patient:read`, `last_office:read` |
-| `BILLING` | Billing, Claims, Reports |
-| `ACCOUNTANT` | Billing, Accounts, Claims, Reports |
+| `PHARMACY_TECHNICIAN` | Pharmacy read-only (no `pharmacy:write`, no pricing) |
+| `PHARMACY_BILLING` | Pharmacy cashier: `billing:*`, `pricing:pharmacy_*`, `pharmacy:read`, `claims:read`, `last_office:*`, `patient:read` |
+| `BILLING` | Billing, Claims, Reports (+ `pricing:facility_*`, `last_office:*`, `financial:approve`) |
+| `MEDICAL_CODER` | Patients, Billing (read), Claims, Reports — no billing write or approve |
+| `ACCOUNTANT` | Billing, Accounts, Claims, Reports (+ `financial:approve`; no `last_office:*`) |
 | `HR` / `HR_STAFF` | HR, Reports, Setup (facility users/roles/permissions tabs) |
 | `UNIT_MANAGER`, `WARD_MANAGER`, `ICU_MANAGER`, `THEATRE_MANAGER` | unit-scoped management packs |
 | `OPERATIONS`, `HOUSE_KEEPER`, `BIOMED`, `MORTUARY_STAFF`, `MORTUARY_MANAGER`, `HOUSEKEEPING_MANAGER`, `BIOMED_MANAGER` | version-disabled domains — no reachable destination this release |
@@ -67,9 +96,13 @@ Corrections against earlier drafts of this file, verified against `BASE_ROLE_PER
 
 - `DOCTOR` does **not** hold `nursing:read`. Nursing is a nurse/ward destination; doctors
   reach nursing context through Clinical.
-- `RECEPTIONIST` does **not** hold `billing:read`. There is no receptionist billing view.
+- `RECEPTIONIST` does **not** hold `billing:read` or `evidence:export`. There is no
+  receptionist billing view.
 - `PHARMACIST` does **not** hold `billing:read` or `patients:read`. Patient details are
   reachable only via pharmacy/dashboard embeds; the cashier pack is `PHARMACY_BILLING`.
+- No admin role reaches `/subscriptions`. That route requires `platform:owner` or
+  `platform:admin` *and* the matching role; tenant admins use the shell's upgrade/renew
+  chrome, gated by `subscriptions:*`.
 - There is no `triage` permission domain or module. Triage is part of the
   `scheduling-queue` module and the nursing packs.
 
@@ -82,9 +115,10 @@ Corrections against earlier drafts of this file, verified against `BASE_ROLE_PER
   role. Payroll may later post summary journals into Accounts without opening `/accounts`.
 - Module `facility-accounts` (BASIC) is a second gate; role keys alone do not open
   `/accounts` when the module is not entitled.
-- `financial:approve` maps to `billing-payments` and is capped at ADVANCED, so Accounts
-  approve/reject needs an Advanced package even though the desk opens at Basic.
-- See `prompts/02-accounts/02-roles.md`.
+- Approve / Reject additionally needs `financial:approve`, which maps to `billing-payments`
+  and is capped at ADVANCED — so it needs an Advanced package **and** both
+  `facility-accounts` and `billing-payments` entitled, even though the desk opens at Basic.
+- See `.cursor/finance/_shared/permissions-and-entitlements.md`.
 
 ## Administration
 
@@ -97,4 +131,4 @@ Corrections against earlier drafts of this file, verified against `BASE_ROLE_PER
 ## Related Rules
 
 - `permissions.mdc`, `modules.mdc`, `subscriptions.mdc`, `version-disabled-screens.mdc`
-- `backend/scripts/seeders/seed-catalog.js` (the 58 seeded demo accounts)
+- `backend/scripts/seeders/seed-catalog.js` (63 seeded roles, 58 seeded demo accounts)

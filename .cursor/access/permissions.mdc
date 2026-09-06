@@ -12,13 +12,24 @@ deny by default.
 
 - Keys are lowercase `resource:action`, each part snake_case — `clinical:write`,
   `rooms_beds:read`, `pricing:pharmacy_read`.
-- Canonical catalog: `backend/src/config/permissions.js` (85 keys). The frontend mirrors it
-  in `AppPermissions` (`frontend/lib/core/permissions/app_permission.dart`); parity is
-  asserted by `frontend/test/core/permissions/app_permission_catalog_parity_test.dart`.
+- Canonical catalog: `PERMISSIONS` in `backend/src/config/permissions.js` (85 keys across 42
+  domains). The frontend mirrors it in `AppPermissions`
+  (`frontend/lib/core/permissions/access_policy.dart`); parity is asserted by
+  `frontend/test/core/permissions/app_permission_catalog_parity_test.dart`.
 - Dot-notation (`billing.manage`) is not a permission key and must not appear anywhere.
-- Shell entry uses exactly one `*:read` key per menu destination (`opd:read`). One key ↔
-  one destination; never reuse an entry key for a second route.
 - New keys must land in both catalogs before seeds, gates, or APIs use them.
+
+### Shell entry keys
+
+- Each of the 29 permission-gated route atoms in `route_access_catalog.dart` declares one
+  `entryPermission`, and no key may be the entry for two atoms. The other 3 atoms (`home`,
+  `settings`, `profile`) are authenticated-core and declare none.
+- Entry keys are `{domain}:read` atoms, with one deliberate exception: `/subscriptions` is a
+  platform workspace whose entry key is `platform:admin` (requirement: `platform:owner` ∪
+  `platform:admin`, plus the matching role). Tenant staff reach subscription controls
+  through in-shell chrome gated by `subscriptions:*`, never through this route.
+- A route may accept more keys than its entry key (`accountsEntry` is `accounts:read` ∪
+  `accounts:write`); the entry key is what the shell menu resolves from.
 
 ## Vocabulary
 
@@ -26,41 +37,74 @@ deny by default.
   `publish`, `admin`, `audit`.
 - Module-specific actions may be added (`request`, `review`, `release`, `manage_storage`).
 - Prefer `own` / `assigned` ABAC scope over manage-all grants.
-- Non-read actions imply their sibling read; `permission-read-dependency.js` expands them
-  and blocks deselecting a read while sibling actions remain.
+- Non-read actions imply their sibling read. `permission-read-dependency.js` (mirrored in
+  `permission_read_dependency.dart`) expands them and blocks deselecting a read while
+  sibling actions remain.
+- The read dependency applies only when `{domain}:read` exists in the catalog. Domains with
+  no read atom are exempt: `financial:approve`, `evidence:export`, `break_glass:*`,
+  `pricing:*` (its actions are `pharmacy_read` / `facility_write`, not `read` / `write`),
+  and the `*:admin` / `platform:owner` keys.
 
 ## Access Model
 
-Effective access is a union of grants, then narrowed by three independent ceilings:
+Effective access is a union of grants, then narrowed by four independent ceilings. Order
+matters — this is the pipeline in `resolveEffectiveAccess`:
 
 ```
-union(role packs ∪ module grants ∪ direct user grants)
-  ∩ assigned modules          (module entitlement)
-  ∩ subscription cap          (plan permission ceiling)
-  ∩ ABAC scope                (evaluated in middleware/services)
-  − version-disabled domains  (stripped for everyone)
+1. union(role packs ∪ module grants ∪ direct user grants)
+2. ∩ subscription module entitlement      (tenant plan's modules)
+3. ∩ per-user assigned modules            (only when explicitly set; skipped for elevated)
+4. ∩ subscription permission cap          (plan action ceiling)
+5. ∪ reports:read                         (platform baseline for any authenticated role)
+6. − version-disabled domains             (stripped for everyone, last)
+     ∩ ABAC scope                         (evaluated in middleware/services)
 ```
 
 Authority order is plan → role → rights. Owned by
-`backend/src/lib/authorization/effective-access.js`; the client mirrors the same order in
+`backend/src/lib/authorization/effective-access.js`; the client mirrors steps 2–6 in
 `AppAccessPolicy.fromSession`.
 
+- Steps 2 and 3 are **two different gates**. Step 2 is the tenant's plan entitlement; step 3
+  is an optional per-user module assignment that narrows further. An empty assignment list
+  means "no extra restriction".
+- Step 5 is an unconditional re-grant that runs *after* the caps, so `reports:read` survives
+  on every package for any actor holding a role or any grant.
 - Users may hold multiple scoped roles via `user_role`; net rights are the **union** of
   every assigned role's pack, not the intersection.
+- When every assigned role is a shipped catalog role, the shipped pack is authoritative and
+  stale `role_permission` rows are ignored. Custom roles union their DB rows with the packs.
 - Grants must not exceed the active package or the actor's own ceiling.
 - Version-disabled domains (`version-disabled-screens.mdc`) are stripped last, from all
   users and all packages, including platform-elevated paths that skip plan caps.
 
+### Platform-elevated actors
+
+`PLATFORM_OWNER` / `PLATFORM_ADMIN` are exempt from step 3 always, and from step 2 when they
+carry no tenant context. In a tenant context they are gated like anyone else — a platform
+admin acting inside a tenant cannot exceed that tenant's package. `resolveRequestPermissionNames`
+returns the token grants untouched for an elevated actor with no tenant context, so steps
+2–4 are all skipped on that path. Step 6 is never skipped, for anyone.
+
+### Client-side deviation (deliberate)
+
+`AppAccessPolicy.fromSession` does **not** union role packs on top of backend grants — that
+would over-grant the UI relative to the API. It uses the backend's explicit permission set
+when the session is hydrated, and falls back to the client role packs only for JWT-only
+restore. There is no client equivalent of step 3 (per-user assigned modules); an elevated
+session without tenant context skips steps 2 and 4. Client role packs must mirror
+`BASE_ROLE_PERMISSIONS` byte-for-byte — see `default_user_roles.mdc`.
+
 ### Module-scoped vs core permissions
 
-The plan gates only bite on **module-scoped** permissions — those whose domain maps to a
-module in `permission-module-map.js`. 64 of the 85 keys are module-scoped.
+Steps 2–4 only bite on **module-scoped** permissions — those whose domain maps to a module
+in `permission-module-map.js`. 64 of the 85 keys are module-scoped (39 of those are live;
+25 sit in version-disabled domains).
 
 The other 21 are core/platform and bypass both the module gate and the plan cap:
 
-`profile:*`, `setup:read`, `access_admin:read`, `pricing:*`, `last_office:*`,
-`compliance:*`, `break_glass:*`, `evidence:export`, `facility:admin`, `tenant:admin`,
-`platform:admin`, `platform:owner`.
+`profile:*` (2), `setup:read`, `access_admin:read`, `pricing:*` (4), `last_office:*` (3),
+`compliance:*` (2), `break_glass:*` (3), `evidence:export`, `facility:admin`,
+`tenant:admin`, `platform:admin`, `platform:owner`.
 
 Consequences to keep in mind:
 
@@ -70,10 +114,11 @@ Consequences to keep in mind:
   role and by ABAC scope, not by package tier. Tier differences inside `/admin/setup`
   (tenant vs facility vs partial) come from role packs, not from the subscription.
 - `reporting-analytics` is platform infrastructure and passes the module gate on every
-  package, so `reports:read` is effectively universal for any user holding a role.
-- `pricing:*` is unmapped on purpose. It crosses modules — the Billing price book hosts
-  both facility tariff rows and pharmacy retail rows — so mapping it would break the
-  cross-module screen. It is gated by role and by the host screen's own module.
+  package; combined with the step-5 baseline, `reports:read` is universal for any user
+  holding a role.
+- `pricing:*` is unmapped on purpose. It crosses modules — the Billing price book hosts both
+  facility tariff rows and pharmacy retail rows — so mapping it would break the cross-module
+  screen. It is gated by role and by the host screen's own module.
 
 ## ABAC
 
@@ -84,21 +129,29 @@ Consequences to keep in mind:
 
 ## Accounts (books desk)
 
+Canonical matrix: `.cursor/finance/_shared/permissions-and-entitlements.md`. Frontend gates:
+`frontend/lib/features/accounts/presentation/accounts_access.dart`.
+
 - Keys: `accounts:read`, `accounts:write`. Domain `accounts` → module `facility-accounts`
   (same pattern as `billing` → `billing-payments`), BASIC tier.
 - Route `/accounts`: (`accounts:read` ∪ `accounts:write`) ∩ `facility-accounts`. Fallback
   tab when other sections are unauthorized: Open work.
-- Write (Journal / Post / Reverse / Void / Send / Open period / Close period / chart
-  mutate): `accounts:write`.
-- Approve / Reject: `accounts:write` ∩ `financial:approve`. Note `financial:approve` maps
-  to `billing-payments` and is capped at ADVANCED, so approval needs Advanced even though
-  the Accounts desk itself opens at Basic.
+- Write (Journal / Post / Reverse / Void / Send / Open period / Close period):
+  `accounts:write` ∩ `facility-accounts`.
+- Chart of accounts mutate: (`accounts:write` ∪ `tenant:admin` ∪ `facility:admin`) ∩
+  `facility-accounts` — broader than the other write actions.
+- Approve / Reject: `accounts:write` ∩ `financial:approve` ∩ **both** `facility-accounts`
+  and `billing-payments`. `financial:approve` maps to `billing-payments` and is capped at
+  ADVANCED, so approval needs Advanced even though the desk itself opens at Basic.
+- Setup & Controls tabs (Fiscal years, Departments & cost centres, Payment methods,
+  Document numbering) are `accounts:read`-gated, not entry-gated: a write-only grant must
+  not surface them. Their mutations still need `accounts:write`.
+- Export / Print: `evidence:export`. Omit the control when unauthorized.
 - Patient ledgers browse: `accounts:read`. Pay deep-link only: `billing:write` ∩
   `billing-payments` — do not invent an accounts-only pay.
 - Do not grant Accounts via `hr:read` / `hr:write` alone. Billing cashier (`billing:*`)
   does not imply Accounts keys.
-- Unauthorized Accounts tabs/actions must be absent, not disabled "no access" chrome. See
-  `prompts/02-accounts/01-permissions.md`.
+- Unauthorized Accounts tabs/actions must be absent, not disabled "no access" chrome.
 
 ## Enforcement
 
@@ -114,9 +167,10 @@ Consequences to keep in mind:
 - `backend/src/lib/authorization/effective-access.js`, `permission-module-map.js`,
   `permission-read-dependency.js`
 - `backend/src/lib/subscriptions/subscription-permission-caps.js`, `plan-module-matrix.js`
-- `frontend/lib/core/permissions/*` (`app_permission.dart`, `access_policy.dart`,
+- `frontend/lib/core/permissions/*` (`access_policy.dart` — `AppPermissions`, `AppRole`,
+  `AppAccessPolicy`; `app_permission.dart` — the `AppPermission` value type;
   `permission_module_map.dart`, `plan_permission_caps.dart`, `commercial_module_tiers.dart`,
-  `route_access_catalog.dart`)
+  `route_access_catalog.dart`, `version_disabled_permissions.dart`)
 
 ## Testing note
 
@@ -130,4 +184,4 @@ version-disabled key is denied must set `enforce = true` itself.
 
 - `modules.mdc`, `subscriptions.mdc`, `default_user_roles.mdc`, `version-disabled-screens.mdc`
 - `frontend/.cursor/permissions.mdc`, `backend/.cursor/auth-security.mdc`
-- `prompts/02-accounts/01-permissions.md`, `prompts/02-accounts/02-roles.md`, root `accounts.md` §9
+- `.cursor/finance/_shared/permissions-and-entitlements.md`

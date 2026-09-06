@@ -11,9 +11,10 @@ alwaysApply: false
 Owns the shipped module identifiers, their minimum plan tier, and which permission
 domains they gate. Seed only modules from this catalog.
 
-Canonical source: `backend/src/lib/subscriptions/plan-module-matrix.js`. Nothing here may
-be edited without changing that file — the tables below are a description of it, not a
-second catalog.
+Canonical source: `backend/src/lib/subscriptions/plan-module-matrix.js` — 29 commercial
+entries grouped by `minimum_plan_tier_code`, plus 4 platform infrastructure entries.
+Nothing here may be edited without changing that file; the tables below describe it, they
+are not a second catalog.
 
 ## Two identifiers, one module
 
@@ -38,10 +39,12 @@ and the names differ:
 - `hr`, `unit` and `roster` → `hr-rosters`
 - `operations` and `housekeeping` → `facilities-maintenance`
 - `billing` and `financial` → `billing-payments`
+- `patient` and `patients` → `patient-registry`
 
-Mapping lives in `DOMAIN_TO_MODULE` (`backend/src/lib/authorization/permission-module-map.js`),
-mirrored in `frontend/lib/core/permissions/permission_module_map.dart`. The two must stay
-identical.
+Mapping lives in `DOMAIN_TO_MODULE` (`backend/src/lib/authorization/permission-module-map.js`,
+31 domains), mirrored in `frontend/lib/core/permissions/permission_module_map.dart`. The
+two must stay identical. The remaining 11 domains are core/platform — see
+`permissions.mdc`.
 
 `pricing:*` is deliberately **not** in the map. It is a rights-layer permission that
 crosses modules: the Billing price book (gated by `billing-payments`) hosts both facility
@@ -50,7 +53,9 @@ requiring `pharmacy-dispensing`. The screen is module-gated; the permission is n
 
 ## Platform infrastructure modules
 
-Always entitled, on every package. Not sellable, not removable.
+Always entitled, on every package. Not sellable, not removable. Each carries
+`extension_json.is_platform_infrastructure = true` and an `api_path_segments` list that
+`module-entitlement.middleware.js` reads to let those routes through.
 
 | Slug | Code | Min tier | Permission domains |
 | ---- | ---- | -------- | ------------------ |
@@ -71,47 +76,57 @@ every permission in that domain is stripped from effective access. See
 | Slug | Code | Min tier | Permission domains |
 | ---- | ---- | -------- | ------------------ |
 | `auth-rbac-basics` | `auth_rbac_basics` | FREE | — (entitlement only) |
-| `billing-insurance` | `billing_insurance` | FREE | — deprecated legacy alias |
 | `patient-registry` | `patient_registry` | FREE | `patient`, `patients` |
-| `billing-payments` | `billing_payments` | BASIC | `billing`, `financial` |
-| `encounters-vitals` | `encounters_vitals` | BASIC | `clinical` |
-| `facility-accounts` | `facility_accounts` | BASIC | `accounts` |
-| `inpatient-bed-management` | `inpatient_bed_management` | BASIC | `ipd`, `nursing`, `discharge`, `rooms_beds`* |
-| `notifications-communications` | `notifications_communications` | BASIC | `communications`* |
-| `pharmacy-dispensing` | `pharmacy_dispensing` | BASIC | `pharmacy` |
 | `scheduling-queue` | `scheduling_queue` | BASIC | `reception`, `opd`, `emergency`* |
+| `encounters-vitals` | `encounters_vitals` | BASIC | `clinical` |
+| `inpatient-bed-management` | `inpatient_bed_management` | BASIC | `ipd`, `nursing`, `discharge`, `rooms_beds`* |
+| `pharmacy-dispensing` | `pharmacy_dispensing` | BASIC | `pharmacy` |
+| `billing-payments` | `billing_payments` | BASIC | `billing`, `financial` |
+| `facility-accounts` | `facility_accounts` | BASIC | `accounts` |
+| `notifications-communications` | `notifications_communications` | BASIC | `communications`* |
 | `subscription-controls` | `subscription_controls` | BASIC | `subscriptions` |
-| `extra-storage` | `extra_storage` | ADVANCED | — (quota only) |
-| `insurance-claims` | `insurance_claims` | ADVANCED | `claims` |
-| `inventory-procurement` | `inventory_procurement` | ADVANCED | — (API-path gated) |
 | `lab-workflows` | `lab_workflows` | ADVANCED | `lab` |
-| `physiotherapy` | `physiotherapy` | ADVANCED | `physiotherapy`* |
 | `radiology-workflows` | `radiology_workflows` | ADVANCED | `radiology` |
-| `biomedical-engineering-suite` | `biomedical_engineering_suite` | PRO | `biomed`* |
-| `facilities-maintenance` | `facilities_maintenance` | PRO | `operations`*, `housekeeping`* |
-| `hr-rosters` | `hr_rosters` | PRO | `hr`, `unit`, `roster` |
+| `insurance-claims` | `insurance_claims` | ADVANCED | `claims` |
+| `physiotherapy` | `physiotherapy` | ADVANCED | `physiotherapy`* |
+| `extra-storage` | `extra_storage` | ADVANCED | — (quota only) |
 | `icu-critical-care` | `icu_critical_care` | PRO | `icu` |
-| `integrations-core` | `integrations_core` | PRO | `integration`* |
-| `inventory-procurement-lite` | `inventory_procurement_lite` | PRO | — (API-path gated) |
-| `mortuary` | `mortuary_operations` | PRO | `mortuary`* |
 | `theatre-anesthesia` | `theatre_anesthesia` | PRO | `theater` |
-| `advanced-analytics` | `advanced_analytics` | CUSTOM | — (entitlement only) |
+| `hr-rosters` | `hr_rosters` | PRO | `hr`, `unit`, `roster` |
+| `facilities-maintenance` | `facilities_maintenance` | PRO | `operations`*, `housekeeping`* |
+| `biomedical-engineering-suite` | `biomedical_engineering_suite` | PRO | `biomed`* |
+| `mortuary` | `mortuary_operations` | PRO | `mortuary`* |
+| `integrations-core` | `integrations_core` | PRO | `integration`* |
+| `inventory-procurement-lite` | `inventory_procurement_lite` | PRO | — (route-segment gated) |
 | `compliance-audit-core` | `compliance_audit_core` | CUSTOM | — (entitlement only) |
+| `advanced-analytics` | `advanced_analytics` | CUSTOM | — (entitlement only) |
 | `sms-credits` | `sms_credits` | CUSTOM | — (quota only) |
 | `developer-tools` | `developer_tools` | DEVELOPER | — (entitlement only) |
+
+### Deprecated legacy aliases
+
+Two entries carry `extension_json.deprecated = true` and are kept only so old entitlement
+rows still resolve. Never seed either into a new plan;
+`modulesForPlanTier(tier, { includeLegacyAliases: false })` drops them.
+
+| Slug | Code | Min tier | Alias for |
+| ---- | ---- | -------- | --------- |
+| `billing-insurance` | `billing_insurance` | FREE | `billing-payments` + `insurance-claims` |
+| `inventory-procurement` | `inventory_procurement` | ADVANCED | `inventory-procurement-lite` |
 
 ## Modules with no permission domain
 
 Three different reasons, all legitimate — do not "fix" them by inventing permission keys:
 
 - **Entitlement/quota only** — `extra-storage`, `sms-credits`, `advanced-analytics`,
-  `auth-rbac-basics`, and the `platform-*` modules. Nothing routes through a permission
-  domain; they gate capacity or are structural.
-- **API-path gated** — `inventory-procurement`, `inventory-procurement-lite`. Enforced by
-  `api_path_segments` in `module-entitlement.middleware.js`, not by permission domain.
-- **Deprecated** — `billing-insurance` is a legacy alias for
-  `billing-payments` + `insurance-claims` (`extension_json.deprecated = true`), kept so old
-  entitlement rows still resolve. Never seed it into a new plan.
+  `compliance-audit-core`, `auth-rbac-basics`, `developer-tools`, and the `platform-*`
+  modules. Nothing routes through a permission domain; they gate capacity or are structural.
+- **Route-segment gated** — `inventory-procurement-lite`. Enforced by
+  `MODULE_SEGMENT_SLUG_OVERRIDES` in `module-entitlement.middleware.js`, which maps the
+  first API path segment (`inventory`, `suppliers`, `purchase-orders`, …) to the slug and
+  then checks the DB entitlement. `api_path_segments` is a *platform-infrastructure*
+  mechanism and is not used by commercial modules.
+- **Deprecated** — the two legacy aliases above.
 
 ## Rules
 
@@ -121,7 +136,8 @@ Three different reasons, all legitimate — do not "fix" them by inventing permi
   module's minimum tier). Asserted by
   `backend/src/tests/lib/subscriptions/subscription-permission-caps.test.js`.
 - `frontend/lib/core/permissions/commercial_module_tiers.dart` mirrors the minimum tiers
-  and must stay in step.
+  and must stay in step. FREE-tier and platform modules are deliberately unlisted there —
+  the map only exists to fail closed on stale higher-tier entitlement rows.
 - Reset must restore the shipped mapping atomically; admin changes stay auditable and
   versioned.
 

@@ -33,8 +33,10 @@ Owns curated + volume demo seeding for local/demo environments. Never seed produ
 ## Access Catalog Seeding
 
 - Roles seed from `DEMO_ROLE_CODES` in `seed-catalog.js`: **63 of the 70** canonical roles.
-  The 7 omitted (`IT_SUPPORT`, `SECURITY_OFFICER`, `CHAPLAIN`, `FOOD_SERVICE_WORKER`,
-  `PORTER`, `MAINTENANCE_ENGINEER`, `OTHER`) are derived aliases with no distinct pack.
+  Six of the 7 omitted (`IT_SUPPORT`, `SECURITY_OFFICER`, `CHAPLAIN`,
+  `FOOD_SERVICE_WORKER`, `PORTER`, `MAINTENANCE_ENGINEER`) are
+  `ROLE_PERMISSION_TEMPLATES` entries with no distinct pack; the seventh (`OTHER`) is the
+  minimal visitor pack, already covered by its `VISITOR_GUEST` template.
 - Permissions seed from the **canonical catalog only** (`Object.values(PERMISSIONS)` in
   `seed-access-pack.js`). Never add a second, hand-written permission list to the seeders —
   keys must stay `resource:action` per `permissions.mdc`.

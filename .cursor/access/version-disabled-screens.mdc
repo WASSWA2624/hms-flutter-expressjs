@@ -14,8 +14,8 @@ Emergency, Rooms & beds, Physiotherapy, Operations, Housekeeping, Biomedical Eng
 Mortuary, Communications, Integrations.
 
 That is 9 of the 32 route atoms in `route_access_catalog.dart`, leaving 23 live
-destinations — 3 authenticated-core (`home`, `settings`, `profile`) and 20
-permission-gated.
+destinations — 3 authenticated-core (`home`, `settings`, `profile`) and 20 of the 29
+permission-gated atoms.
 
 ## Permission domains (hard deny)
 
@@ -35,8 +35,10 @@ Domain names, not module slugs — `biomed` (not `biomedical`) and `integration`
 - Do not re-grant via role packs, custom plans, module entitlements, or direct user grants.
   Role packs and the permission catalog may still **list** these keys — that is expected;
   the strip is what enforces the rule.
-- To re-enable: remove the domain from `version-disabled-permissions` (BE + FE), restore
-  plan caps and the module's permission mapping, then drop it from this rule.
+- To re-enable: remove the domain from `version-disabled-permissions` (BE + FE), add its
+  keys to the appropriate `PLAN_PERMISSION_CAPS` / `PlanPermissionCaps` tier (at or above
+  the module's minimum tier), then drop it from this rule. `DOMAIN_TO_MODULE` already maps
+  every disabled domain — nothing was removed from it, so nothing needs restoring there.
 
 ## Modules stay entitled
 
