@@ -13,7 +13,10 @@ describe('demo-safety script guard', () => {
   it('allows demo tasks in a non-production environment with a safe database name', () => {
     const { assertDemoTaskAllowed } = require('../../../scripts/demo-safety');
 
-    expect(assertDemoTaskAllowed('demo seed')).toEqual({ allowed: true, reason: null });
+    expect(assertDemoTaskAllowed('demo seed')).toEqual({
+      allowed: true,
+      reason: null,
+      productionOverride: false});
   });
 
   it('returns a skip result in production', () => {
@@ -27,7 +30,8 @@ describe('demo-safety script guard', () => {
 
     expect(assertDemoTaskAllowed('demo seed')).toEqual({
       allowed: false,
-      reason: 'production_environment'});
+      reason: 'production_environment',
+      productionOverride: false});
   });
 
   describe('production override', () => {
@@ -50,7 +54,8 @@ describe('demo-safety script guard', () => {
 
       expect(assertDemoTaskAllowed('demo seed', { allowProductionOverride: true })).toEqual({
         allowed: true,
-        reason: null});
+        reason: null,
+        productionOverride: true});
     });
 
     it('still blocks callers that do not opt in, even with the variable set', () => {
@@ -63,7 +68,8 @@ describe('demo-safety script guard', () => {
       // variable must never unlock them.
       expect(assertDemoTaskAllowed('demo data clear')).toEqual({
         allowed: false,
-        reason: 'production_environment'});
+        reason: 'production_environment',
+        productionOverride: false});
     });
 
     it('still blocks an opted-in caller when the variable is unset', () => {
@@ -73,7 +79,8 @@ describe('demo-safety script guard', () => {
 
       expect(assertDemoTaskAllowed('demo seed', { allowProductionOverride: true })).toEqual({
         allowed: false,
-        reason: 'production_environment'});
+        reason: 'production_environment',
+        productionOverride: false});
     });
   });
 

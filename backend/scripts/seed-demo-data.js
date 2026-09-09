@@ -213,7 +213,10 @@ const seedDemoData = async ({
     }
   }
 
-  const verification = await verifyDemoData();
+  // A production database carries real tenants beside the demo workspace, so
+  // the "demo workspace is the whole database" assertions cannot hold there.
+  // Everything that checks the demo dataset itself still runs.
+  const verification = await verifyDemoData({ exclusive: !safety.productionOverride });
 
   if (!verification.ok) {
     throw new Error(`Demo data verification failed: ${verification.errors.join(' | ')}`);

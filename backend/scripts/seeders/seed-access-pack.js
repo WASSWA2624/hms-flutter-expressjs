@@ -242,7 +242,9 @@ const seedAccessPack = async (ctx, orgPack) => {
           facility_id: anchorFacility?.id || null,
           position_title: userDefinition.title,
           email: userDefinition.email,
-          phone: `+2567${ctx.hash(userDefinition.email).slice(0, 8)}`,
+          // An explicit phone in the catalog wins; everyone else gets a
+          // deterministic hash-derived number so they stay unique.
+          phone: userDefinition.phone || `+2567${ctx.hash(userDefinition.email).slice(0, 8)}`,
           password_hash: passwordHash,
           status: 'ACTIVE',
           deleted_at: null,

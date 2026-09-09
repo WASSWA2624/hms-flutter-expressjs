@@ -117,7 +117,19 @@ const countFacilityOwnershipMismatches = async (allowedFacilityIds = []) => {
   return mismatches;
 };
 
-const verifyDemoData = async () => {
+/**
+ * @param {object} [options]
+ * @param {boolean} [options.exclusive=true]
+ *   When true (the default, and what a dev database wants), assert that the
+ *   demo workspace is the *only* thing in the database: exactly one tenant,
+ *   exactly the seeded user count, exactly one holder per demo role.
+ *
+ *   Set false when seeding a database that legitimately carries other data -
+ *   production, where real tenants register alongside the demo workspace.
+ *   Those global counts can never hold there, so they are skipped; every
+ *   check that the demo dataset itself is present and correct still runs.
+ */
+const verifyDemoData = async ({ exclusive = true } = {}) => {
   const errors = [];
 
   const [
@@ -318,22 +330,30 @@ const verifyDemoData = async () => {
     ]),
   ]);
 
-  if (tenants.length !== 1) {
+  // Resolve the demo workspace by its known slug rather than taking the first
+  // row. On a database with more than one tenant, tenants[0] is whichever
+  // sorted first by name - frequently a real tenant - and every downstream
+  // scope check then measures the wrong workspace.
+  const demoTenant =
+    tenants.find((entry) => entry.slug === DEMO_TENANT.slug) || tenants[0] || null;
+  const demoTenantFacilities = demoTenant
+    ? facilities.filter((entry) => entry.tenant_id === demoTenant.id)
+    : facilities;
+
+  if (exclusive && tenants.length !== 1) {
     errors.push(`Expected exactly 1 tenant but found ${tenants.length}.`);
   }
 
-  if (facilities.length < 1 || facilities.length > 3) {
+  if (demoTenantFacilities.length < 1 || demoTenantFacilities.length > 3) {
     errors.push(
-      `Expected 1–3 demo facilities (Pro max) but found ${facilities.length}.`
+      `Expected 1–3 demo facilities (Pro max) but found ${demoTenantFacilities.length}.`
     );
   }
-  if (facilities.length < 2) {
+  if (demoTenantFacilities.length < 2) {
     errors.push(
       'Expected at least 2 facilities for pharmacy stock transfer sending/receiving reports.'
     );
   }
-
-  const demoTenant = tenants[0] || null;
   const demoFacilities = facilities.filter(
     (entry) => !demoTenant || entry.tenant_id === demoTenant.id
   );
@@ -390,7 +410,7 @@ const verifyDemoData = async () => {
   }
 
   const expectedDemoUserCount = (DEMO_TENANT.users || []).length;
-  if (usersCount !== expectedDemoUserCount) {
+  if (exclusive && usersCount !== expectedDemoUserCount) {
     errors.push(`Expected ${expectedDemoUserCount} users but found ${usersCount}.`);
   }
 
@@ -416,20 +436,24 @@ const verifyDemoData = async () => {
   for (const roleName of DEMO_ROLE_CODES) {
     const expectedCount = expectedCountByRole[roleName] || 1;
     const actualCount = userRolesByName[roleName] || 0;
-    if (actualCount !== expectedCount) {
+    // Outside exclusive mode other tenants hold their own copies of these
+    // roles, so the demo assignments are a floor rather than an exact count.
+    if (exclusive ? actualCount !== expectedCount : actualCount < expectedCount) {
       errors.push(
-        `Expected exactly ${expectedCount} user(s) assigned to role ${roleName} but found ${actualCount}.`
+        `Expected ${exclusive ? 'exactly' : 'at least'} ${expectedCount} user(s) ` +
+        `assigned to role ${roleName} but found ${actualCount}.`
       );
       continue;
     }
 
     if (expectedCount === 1) {
-      const roleAssignment = userRoles.find((entry) => entry.role?.name === roleName);
       const expectedEmail = expectedEmailsByRole[roleName]?.[0];
-      const actualEmail = roleAssignment?.user?.email || null;
-      if (expectedEmail && actualEmail !== expectedEmail) {
+      const holders = userRoles
+        .filter((entry) => entry.role?.name === roleName)
+        .map((entry) => entry.user?.email || null);
+      if (expectedEmail && !holders.includes(expectedEmail)) {
         errors.push(
-          `Expected role ${roleName} to use email ${expectedEmail} but found ${actualEmail || 'none'}.`
+          `Expected role ${roleName} to use email ${expectedEmail} but found ${holders[0] || 'none'}.`
         );
       }
     }
@@ -1122,7 +1146,9 @@ const verifyDemoData = async () => {
     errors.push('Expected a ready closeout pack.');
   }
 
-  if (demoTenant?.id) {
+  // Ownership sweeps ask "does every row in the database belong to the demo
+  // tenant?" - true only where the demo workspace is the whole database.
+  if (exclusive && demoTenant?.id) {
     const tenantMismatches = await countOwnershipMismatches('tenant_id', demoTenant.id);
     if (tenantMismatches.length > 0) {
       errors.push(
@@ -1133,7 +1159,7 @@ const verifyDemoData = async () => {
     }
   }
 
-  if (demoFacilityIds.size > 0) {
+  if (exclusive && demoFacilityIds.size > 0) {
     const facilityMismatches = await countFacilityOwnershipMismatches(
       Array.from(demoFacilityIds)
     );
@@ -1169,7 +1195,12 @@ const verifyDemoData = async () => {
 
 const main = async () => {
   try {
-    const result = await verifyDemoData({ randomSeed: DEFAULT_RANDOM_SEED });
+    // Same opt-in the seed uses: on a database that carries real tenants
+    // beside the demo workspace, skip the exclusivity assertions.
+    const exclusive =
+      !process.argv.includes('--non-exclusive') &&
+      String(process.env.ALLOW_PRODUCTION_DEMO_SEED || '').trim() !== '1';
+    const result = await verifyDemoData({ randomSeed: DEFAULT_RANDOM_SEED, exclusive });
     if (!result.ok) {
       console.error('Demo data verification failed:');
       result.errors.forEach((entry) => console.error(` - ${entry}`));

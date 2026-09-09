@@ -37,10 +37,12 @@ const hasDangerousDatabaseToken = (value) => {
 };
 
 const assertDemoTaskAllowed = (taskName, { allowProductionOverride = false } = {}) => {
+  let productionOverride = false;
   if (env.NODE_ENV === 'production') {
     if (!allowProductionOverride || !isProductionOverrideRequested()) {
-      return { allowed: false, reason: 'production_environment' };
+      return { allowed: false, reason: 'production_environment', productionOverride };
     }
+    productionOverride = true;
   }
 
   const parsedUrl = parseDatabaseUrl(env.DATABASE_URL);
@@ -56,7 +58,7 @@ const assertDemoTaskAllowed = (taskName, { allowProductionOverride = false } = {
     );
   }
 
-  return { allowed: true, reason: null };
+  return { allowed: true, reason: null, productionOverride };
 };
 
 module.exports = {
