@@ -31,7 +31,7 @@ const {
 } = require('./seeders/seed-volume-pack');
 const { seedVolumeExtendedPack } = require('./seeders/seed-volume-extended-pack');
 const { seedFillerPack } = require('./seeders/seed-filler-pack');
-const { assertDemoTaskAllowed } = require('./demo-safety');
+const { PRODUCTION_OVERRIDE_VAR, assertDemoTaskAllowed } = require('./demo-safety');
 const { verifyDemoData } = require('./verify-demo-data');
 
 try {
@@ -75,9 +75,13 @@ const seedDemoData = async ({
   targetCount,
   randomSeed = DEFAULT_RANDOM_SEED,
 } = {}) => {
-  const safety = assertDemoTaskAllowed('demo seed');
+  const safety = assertDemoTaskAllowed('demo seed', { allowProductionOverride: true });
   if (!safety.allowed) {
-    console.warn('Skipping seed: NODE_ENV=production');
+    console.warn(
+      `Skipping seed: NODE_ENV=production. Set ${PRODUCTION_OVERRIDE_VAR}=1 to seed the ` +
+      'production database - every pack upserts on deterministic IDs, so a run updates ' +
+      'demo rows in place and clears nothing.'
+    );
     return { skipped: true, reason: safety.reason };
   }
 

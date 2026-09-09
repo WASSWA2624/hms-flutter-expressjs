@@ -917,7 +917,7 @@ const verifyDemoData = async () => {
     }
 
     const lateReceiptCandidates = await prisma.goods_receipt.findMany({
-      where: { deleted_at: null, received_at: { not: null } },
+      where: { deleted_at: null },
       select: {
         received_at: true,
         purchase_order: {
