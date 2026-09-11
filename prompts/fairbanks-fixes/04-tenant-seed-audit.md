@@ -1,6 +1,6 @@
 # 04 — Audit New-Tenant Data Creation
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 2, Step 4
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 2, Step 4
 **Depends on:** 02
 **Applies to:** development and production
 

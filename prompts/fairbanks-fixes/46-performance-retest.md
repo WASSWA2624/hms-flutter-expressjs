@@ -1,6 +1,6 @@
 # 46 — Re-test Performance
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 13, Step 46
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 13, Step 46
 **Depends on:** 43, 44, 45
 **Applies to:** development and production
 

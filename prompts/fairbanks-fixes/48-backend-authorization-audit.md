@@ -1,6 +1,6 @@
 # 48 — Verify Backend Authorization
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 15, Step 48
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 15, Step 48
 **Depends on:** 11, 12, 31, 47
 **Applies to:** development and production
 

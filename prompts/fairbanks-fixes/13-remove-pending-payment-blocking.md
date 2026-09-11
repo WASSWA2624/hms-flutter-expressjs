@@ -1,6 +1,6 @@
 # 13 — Remove Unnecessary Pending-Payment Blocking
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 4, Step 13
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 4, Step 13
 **Depends on:** 12
 **Applies to:** development and production
 

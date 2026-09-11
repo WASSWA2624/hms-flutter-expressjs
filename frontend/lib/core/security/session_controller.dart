@@ -15,6 +15,9 @@ final sessionStateProvider = NotifierProvider<SessionController, SessionState>(
 );
 
 final class SessionController extends Notifier<SessionState> {
+  /// In-flight session teardown, shared by every caller that saw a rejection.
+  Future<void>? _pendingUnauthorized;
+
   @override
   SessionState build() {
     // Seed from startup restore only. Watching the override re-applies the
@@ -85,7 +88,35 @@ final class SessionController extends Notifier<SessionState> {
     }
   }
 
-  Future<void> handleUnauthorizedResponse() async {
+  /// Ends the session once, however many requests were rejected.
+  ///
+  /// Concurrent requests fail together: five in-flight calls all see the same
+  /// dead refresh token and all report it. Tearing down five times disposes
+  /// providers, closes the HTTP clients, and clears the local caches five times
+  /// over, and each pass races the others — and a sign-in started during that
+  /// window can be wiped by a teardown that began before it.
+  Future<void> handleUnauthorizedResponse() {
+    final Future<void>? pendingUnauthorized = _pendingUnauthorized;
+    if (pendingUnauthorized != null) {
+      return pendingUnauthorized;
+    }
+
+    // Already ended; nothing left to tear down.
+    if (state.status == SessionStatus.expired ||
+        state.status == SessionStatus.unauthenticated) {
+      return Future<void>.value();
+    }
+
+    final Future<void> request = _performHandleUnauthorizedResponse();
+    _pendingUnauthorized = request;
+    return request.whenComplete(() {
+      if (identical(_pendingUnauthorized, request)) {
+        _pendingUnauthorized = null;
+      }
+    });
+  }
+
+  Future<void> _performHandleUnauthorizedResponse() async {
     state = const SessionState.notReady();
     await ref.read(sessionIsolationServiceProvider).disposeAuthenticatedState();
     await ref.read(sessionManagerProvider).handleUnauthorizedResponse();

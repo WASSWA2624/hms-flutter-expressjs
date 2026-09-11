@@ -1,6 +1,6 @@
 # 26 — Implement Flexible Drug Strength
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 8, Step 26
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 8, Step 26
 **Depends on:** 06
 **Applies to:** development and production
 

@@ -1734,6 +1734,13 @@ model user_session {
   ip_address         String?   @db.VarChar(45)
   user_agent         String?   @db.VarChar(255)
   expires_at         DateTime
+  // Original sign-in of this refresh chain. Inherited by every rotation, so
+  // the absolute timeout is measured from the login and cannot be pushed out
+  // by refreshing. NULL only on rows written before the lifetime policy.
+  chain_started_at   DateTime?
+  // Last successful use of this chain. Reset on each rotation; the idle
+  // timeout is measured from it.
+  last_used_at       DateTime?
   revoked_at         DateTime?
   created_at         DateTime  @default(now())
   updated_at         DateTime  @updatedAt
@@ -1744,6 +1751,7 @@ model user_session {
 
   @@index([user_id])
   @@index([expires_at])
+  @@index([last_used_at])
   @@index([deleted_at])
   @@index([human_friendly_id])
 }

@@ -1,6 +1,6 @@
 # 23 — Replace the Country Selector Globally
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 7, Step 23
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 7, Step 23
 **Depends on:** 22
 **Applies to:** development and production
 

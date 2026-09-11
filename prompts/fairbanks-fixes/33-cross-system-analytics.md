@@ -1,6 +1,6 @@
 # 33 — Implement Core Cross-System Analytics
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 9, Step 33
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 9, Step 33
 **Depends on:** 27, 28, 31, 32
 **Applies to:** development and production
 

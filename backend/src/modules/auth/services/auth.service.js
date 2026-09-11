@@ -24,6 +24,10 @@ const {
 const {
   resolveEffectiveAccess,
 } = require('@lib/authorization/effective-access');
+const {
+  evaluateSessionLifetime,
+  resolveSessionExpiry,
+} = require('@config/session-policy');
 const env = require('@config/env');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -63,8 +67,17 @@ const MAX_INTERESTS_LENGTH = 2000;
 const hashToken = (value) =>
   crypto.createHash('sha256').update(String(value || '')).digest('hex');
 
-const resolveSessionExpiryDate = () =>
-  new Date(Date.now() + Number(env.AUTH_SESSION_TTL_DAYS || 7) * 24 * 60 * 60 * 1000);
+/**
+ * Refresh-token expiry for a session in the chain that began at `chainStartedAt`.
+ *
+ * Clamped to the chain's absolute deadline by the session policy, so rotating a
+ * refresh token cannot extend a chain past its ceiling.
+ *
+ * @param {Date|string|null} [chainStartedAt] - Chain origin; defaults to now
+ * @returns {Date} Expiry timestamp
+ */
+const resolveSessionExpiryDate = (chainStartedAt = null) =>
+  resolveSessionExpiry({ chainStartedAt });
 
 const resolveAccountStatusErrorKey = (status) => {
   if (status === 'PENDING') return 'errors.auth.account_pending';
@@ -1717,15 +1730,20 @@ const login = async (data) => {
   const refreshToken = generateRefreshToken();
   const refreshTokenHash = crypto.createHash('sha256').update(refreshToken).digest('hex');
 
-  // Create session
-  const expiresAt = resolveSessionExpiryDate();
+  // Create session. Sign-in starts a new refresh chain, so this row is its own
+  // origin: the absolute timeout is measured from here for every rotation that
+  // follows.
+  const chainStartedAt = new Date();
+  const expiresAt = resolveSessionExpiryDate(chainStartedAt);
 
   const session = await authRepository.createSession({
     user_id: user.id,
     refresh_token_hash: refreshTokenHash,
     ip_address,
     user_agent,
-    expires_at: expiresAt
+    expires_at: expiresAt,
+    chain_started_at: chainStartedAt,
+    last_used_at: chainStartedAt
   });
 
   // Create audit log
@@ -1741,6 +1759,7 @@ const login = async (data) => {
     details: {
       session_id: session.id,
       session_expires_at: expiresAt.toISOString(),
+      session_chain_started_at: chainStartedAt.toISOString(),
     }
   });
 
@@ -2188,6 +2207,26 @@ const refresh = async (data) => {
     throw new HttpError('errors.auth.session_revoked', 401);
   }
 
+  // Enforce the configured lifetime policy. These are the only time-based rules
+  // that may end a session: an expired ACCESS token is recoverable and never
+  // reaches here, and a transport failure never reaches the backend at all.
+  const lifetime = evaluateSessionLifetime(session);
+  if (!lifetime.allowed) {
+    await authRepository.revokeSession(session.id);
+    await createAuditLog({
+      action: 'SESSION_POLICY_REVOKED',
+      entity: 'user_session',
+      entity_id: session.id,
+      user_id: session.user?.id,
+      tenant_id: session.user?.tenant_id,
+      facility_id: session.user?.facility_id,
+      ip_address,
+      user_agent,
+      details: { reason: lifetime.reason },
+    });
+    throw new HttpError(lifetime.messageKey, 401);
+  }
+
   // Check if user is active
   await assertUserCanAuthenticate(session.user);
   assertTenantAllowsLogin(session.user);
@@ -2215,15 +2254,23 @@ const refresh = async (data) => {
   const newRefreshToken = generateRefreshToken();
   const newRefreshTokenHash = crypto.createHash('sha256').update(newRefreshToken).digest('hex');
 
-  // Create new session
-  const expiresAt = resolveSessionExpiryDate();
+  // Create new session. Rotation inherits the chain origin, so the absolute
+  // deadline still counts from the original sign-in and `expires_at` is clamped
+  // to it -- refreshing extends a session, it does not renew it forever.
+  const refreshedAt = new Date();
+  const chainStartedAt = session.chain_started_at
+    ? new Date(session.chain_started_at)
+    : new Date(session.created_at || refreshedAt);
+  const expiresAt = resolveSessionExpiryDate(chainStartedAt);
 
   const newSession = await authRepository.createSession({
     user_id: session.user.id,
     refresh_token_hash: newRefreshTokenHash,
     ip_address,
     user_agent,
-    expires_at: expiresAt
+    expires_at: expiresAt,
+    chain_started_at: chainStartedAt,
+    last_used_at: refreshedAt
   });
 
   // Create audit log
@@ -2239,6 +2286,7 @@ const refresh = async (data) => {
     details: {
       old_session_id: session.id,
       session_expires_at: expiresAt.toISOString(),
+      session_chain_started_at: chainStartedAt.toISOString(),
     }
   });
 

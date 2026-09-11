@@ -1,6 +1,6 @@
 # 05 — Remove Patient and Transactional Data From Tenant Initialization
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 2, Step 5
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 2, Step 5
 **Depends on:** 04
 **Applies to:** development and production
 

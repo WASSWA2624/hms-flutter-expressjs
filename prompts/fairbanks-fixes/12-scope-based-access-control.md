@@ -1,6 +1,6 @@
 # 12 — Add Scope-Based Access Control
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 3, Step 12
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 3, Step 12
 **Depends on:** 11
 **Applies to:** development and production
 

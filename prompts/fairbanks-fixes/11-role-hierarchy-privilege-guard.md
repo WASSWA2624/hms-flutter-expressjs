@@ -1,6 +1,6 @@
 # 11 — Implement Role Hierarchy and Privilege Protection
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 3, Step 11
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 3, Step 11
 **Depends on:** 09, 10
 **Applies to:** development and production
 

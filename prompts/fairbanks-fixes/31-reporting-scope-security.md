@@ -1,6 +1,6 @@
 # 31 — Implement Reporting Scope and Data Security
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 9, Step 31
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 9, Step 31
 **Depends on:** 12, 28
 **Applies to:** development and production
 

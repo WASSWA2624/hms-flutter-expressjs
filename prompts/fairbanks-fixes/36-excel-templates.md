@@ -1,6 +1,6 @@
 # 36 — Create Official Excel Templates
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 10, Step 36
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 10, Step 36
 **Depends on:** 35
 **Applies to:** development and production
 

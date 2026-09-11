@@ -1,6 +1,6 @@
 # 37 — Implement Safe Import Validation
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 10, Step 37
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 10, Step 37
 **Depends on:** 36
 **Applies to:** development and production
 

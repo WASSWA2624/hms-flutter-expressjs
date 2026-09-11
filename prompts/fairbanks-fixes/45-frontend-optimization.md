@@ -1,6 +1,6 @@
 # 45 — Optimize the Frontend
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 13, Step 45
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 13, Step 45
 **Depends on:** 43, 44
 **Applies to:** development and production
 

@@ -1,6 +1,6 @@
 # 35 — Design the Import, Update, and Export Data Model
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 10, Step 35
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 10, Step 35
 **Depends on:** 06, 12
 **Applies to:** development and production
 

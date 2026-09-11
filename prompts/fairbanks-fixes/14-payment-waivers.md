@@ -1,6 +1,6 @@
 # 14 — Implement Payment Waivers
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 4, Step 14
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 4, Step 14
 **Depends on:** 12, 13
 **Applies to:** development and production
 

@@ -1,6 +1,6 @@
 # 49 — Verify Audit Trails
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 15, Step 49
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 15, Step 49
 **Depends on:** 48
 **Applies to:** development and production
 

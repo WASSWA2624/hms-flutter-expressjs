@@ -1,6 +1,6 @@
 # 41 — Implement Consistent PDF Naming
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 11, Step 41
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 11, Step 41
 **Depends on:** 39, 40
 **Applies to:** development and production
 

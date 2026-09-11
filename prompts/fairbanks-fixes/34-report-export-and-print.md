@@ -1,6 +1,6 @@
 # 34 — Implement Report Export and Print Integration
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 9, Step 34
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 9, Step 34
 **Depends on:** 31, 32, 33
 **Applies to:** development and production
 

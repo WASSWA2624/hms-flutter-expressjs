@@ -1,6 +1,6 @@
 # 16 — Fix Refund Approval
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 4, Step 16
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 4, Step 16
 **Depends on:** 14, 15
 **Applies to:** development and production
 

@@ -1,6 +1,6 @@
 # 28 — Implement Role- and Permission-Based Reporting and Analytics
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 9, Step 28
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 9, Step 28
 **Depends on:** 12, 27
 **Applies to:** development and production
 

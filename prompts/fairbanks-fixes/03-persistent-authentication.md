@@ -1,6 +1,6 @@
 # 03 — Implement Persistent Authentication
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 1, Step 3
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 1, Step 3
 **Depends on:** 01, 02
 **Applies to:** development and production
 
@@ -8,8 +8,7 @@
 
 Sessions are lost too easily: users are logged out mid-workflow, and reopening the app forces re-authentication. The frontend already has a session layer (`frontend/lib/core/security/`) with `secure_session_storage.dart`, `session_refresh_service.dart`, and `session_refresh_coordinator.dart`; the backend has `user-session` and `auth` modules plus `session.middleware.js`. This step makes session persistence and renewal reliable rather than replacing the architecture.
 
-## Requirements
-
+1. Requirements
 1. Persist session tokens through the existing secure storage layer on every supported platform (web, Android, Windows), and document the storage mechanism used per platform.
 2. Restore the session during startup before the first authenticated route renders, with a deterministic readiness state so no screen flashes an unauthenticated view for a valid session.
 3. Implement refresh-token renewal with a single-flight coordinator: concurrent 401 responses trigger one refresh, queued requests replay after it succeeds, and a failed refresh logs out once.

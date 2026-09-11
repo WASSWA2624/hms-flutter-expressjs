@@ -1,6 +1,6 @@
 # 01 — Fix the Login Password Field
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 1, Step 1
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 1, Step 1
 **Depends on:** none
 **Applies to:** development and production
 

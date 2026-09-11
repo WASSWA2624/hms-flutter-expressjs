@@ -1,6 +1,6 @@
 # 20 — Fix Create Staff in Facility Details
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 6, Step 20
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 6, Step 20
 **Depends on:** 08, 18
 **Applies to:** development and production
 

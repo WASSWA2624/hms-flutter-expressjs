@@ -1,6 +1,6 @@
 # 09 — Implement Global Default Roles
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 3, Step 9
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 3, Step 9
 **Depends on:** 06, 08
 **Applies to:** development and production
 

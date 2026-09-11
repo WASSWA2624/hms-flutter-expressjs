@@ -1,6 +1,6 @@
 # 17 — Remove Unnecessary Clinical Blocking
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 5, Step 17
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 5, Step 17
 **Depends on:** 13
 **Applies to:** development and production
 

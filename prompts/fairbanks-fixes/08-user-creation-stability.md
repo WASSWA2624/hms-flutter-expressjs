@@ -1,6 +1,6 @@
 # 08 — Stabilize User Creation
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 3, Step 8
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 3, Step 8
 **Depends on:** 03, 07
 **Applies to:** development and production
 

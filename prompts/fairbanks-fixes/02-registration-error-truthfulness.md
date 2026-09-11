@@ -1,6 +1,6 @@
 # 02 — Fix Registration False Errors
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 1, Step 2
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 1, Step 2
 **Depends on:** 01
 **Applies to:** development and production
 

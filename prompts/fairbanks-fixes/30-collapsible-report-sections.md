@@ -1,6 +1,6 @@
 # 30 — Implement Searchable, Collapsible Reporting Sections
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 9, Step 30
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 9, Step 30
 **Depends on:** 28, 29
 **Applies to:** development and production
 

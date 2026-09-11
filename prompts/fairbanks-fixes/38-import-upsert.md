@@ -1,6 +1,6 @@
 # 38 — Implement Update and Upsert
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 10, Step 38
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 10, Step 38
 **Depends on:** 37
 **Applies to:** development and production
 

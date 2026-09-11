@@ -1,6 +1,6 @@
 # 47 — Test Complete Facility Journeys
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 14, Step 47
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 14, Step 47
 **Depends on:** 01–46
 **Applies to:** development and production
 

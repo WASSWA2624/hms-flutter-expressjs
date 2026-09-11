@@ -35,7 +35,10 @@ final class AppStartupInitializer {
     );
 
     final preferences = await SharedPreferences.getInstance();
-    const secureStorage = FlutterSecureStorage();
+    // Explicit per-platform options, not the package defaults: see
+    // [AppSecureStorageOptions] for what each one guarantees about a session
+    // surviving app close and device restart.
+    const secureStorage = AppSecureStorageOptions.storage;
     const appSecureStorage = FlutterAppSecureStorage(secureStorage);
     const secureSessionStorage = SecureAppSessionStorage(appSecureStorage);
     const storageReadiness = StorageReadiness.ready();

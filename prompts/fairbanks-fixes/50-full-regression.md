@@ -1,6 +1,6 @@
 # 50 — Full Regression Test and Release Gate
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 15, Step 50 and Final Release Gate
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 15, Step 50 and Final Release Gate
 **Depends on:** 01–49
 **Applies to:** development and production
 
@@ -56,4 +56,4 @@ The final pass covers the whole application and closes the release gate: `Correc
 - `backend/src/tests/`, `frontend/test/`, `frontend/integration_test/`, `frontend/patrol_test/`
 - `deploy/README.md`, `deploy/deploy-backend.py`, `deploy/deploy-frontend.py`, `deploy/deploy-android.py`
 - `backend/docs/` (verification documents from steps 04, 07, 35, 43, 48, 49)
-- `prompts/fairpanks-fixes/00-progress-tracker.md`
+- `prompts/fairbanks-fixes/00-progress-tracker.md`

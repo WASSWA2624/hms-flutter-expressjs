@@ -1,6 +1,6 @@
 # 24 — Change the Active Toggle to a Checkbox
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 7, Step 24
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 7, Step 24
 **Depends on:** 18
 **Applies to:** development and production
 

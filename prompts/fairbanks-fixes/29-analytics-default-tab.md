@@ -1,6 +1,6 @@
 # 29 — Define Analytics Tab Selection and Default View
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 9, Step 29
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 9, Step 29
 **Depends on:** 28
 **Applies to:** development and production
 

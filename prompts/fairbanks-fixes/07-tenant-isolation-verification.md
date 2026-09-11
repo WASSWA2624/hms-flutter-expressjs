@@ -1,6 +1,6 @@
 # 07 — Verify Tenant Isolation
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 2, Step 7
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 2, Step 7
 **Depends on:** 04, 05, 06
 **Applies to:** development and production
 

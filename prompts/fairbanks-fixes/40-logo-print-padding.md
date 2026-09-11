@@ -1,6 +1,6 @@
 # 40 — Fix the Logo Print Layout
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 11, Step 40
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 11, Step 40
 **Depends on:** 19
 **Applies to:** development and production
 

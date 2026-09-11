@@ -1,6 +1,6 @@
 # 10 — Implement Custom Role Creation
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 3, Step 10
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 3, Step 10
 **Depends on:** 09
 **Applies to:** development and production
 

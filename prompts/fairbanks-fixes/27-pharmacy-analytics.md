@@ -1,6 +1,6 @@
 # 27 — Implement Pharmacy Analytics
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 8, Step 27
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 8, Step 27
 **Depends on:** 12, 14, 16, 25, 26
 **Applies to:** development and production
 

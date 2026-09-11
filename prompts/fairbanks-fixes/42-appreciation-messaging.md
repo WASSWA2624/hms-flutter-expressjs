@@ -1,6 +1,6 @@
 # 42 — Implement Automated Appreciation Messages
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 12, Step 42
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 12, Step 42
 **Depends on:** 12, 17
 **Applies to:** development and production
 

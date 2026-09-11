@@ -131,6 +131,25 @@ const splitAdminName = (value) => {
   };
 };
 
+/**
+ * True when Prisma rejected a write because a column is absent from the client
+ * or the database -- the shape a not-yet-applied migration takes.
+ *
+ * @param {Error} error - Prisma error
+ * @returns {boolean} Whether the column is unknown
+ */
+const isUnknownColumnError = (error) => {
+  const message = String(
+    error?.message || error?.meta?.cause || error?.meta?.driverAdapterError?.message || ''
+  );
+
+  return (
+    /Unknown arg(?:ument)? `[^`]+`/i.test(message) ||
+    /Unknown field `[^`]+` for (?:data|select|create)/i.test(message) ||
+    /Unknown column '[^']+'/i.test(message)
+  );
+};
+
 const isMissingSchemaArtifactError = (error) => {
   if (error?.code === 'P2021' || error?.code === 'P2022') {
     return true;
@@ -755,7 +774,27 @@ const createSession = async (data) => {
       })
     );
   } catch (error) {
-    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+    if (!isMissingSchemaArtifactError(error) && !isUnknownColumnError(error)) {
+      throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+    }
+  }
+
+  // The lifetime-policy columns may not exist yet on a host that has the new
+  // application code but not migration `20260911140000_session_lifetime_policy`.
+  // Signing in must not fail for that: drop the anchors and let the session
+  // fall back to the plain refresh TTL until the migration lands.
+  const { chain_started_at: _chainStartedAt, last_used_at: _lastUsedAt, ...withoutLifetime } = data;
+
+  try {
+    return await withPrismaConnectionRetry(() =>
+      prisma.user_session.create({
+        data: withoutLifetime
+      })
+    );
+  } catch (fallbackError) {
+    throw new HttpError('errors.database.unexpected', 500, [
+      { originalError: fallbackError.message }
+    ]);
   }
 };
 

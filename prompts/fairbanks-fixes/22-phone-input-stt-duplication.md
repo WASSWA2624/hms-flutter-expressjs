@@ -1,6 +1,6 @@
 # 22 — Fix Phone Number and Speech-to-Text Duplication
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 7, Step 22
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 7, Step 22
 **Depends on:** none
 **Applies to:** development and production
 

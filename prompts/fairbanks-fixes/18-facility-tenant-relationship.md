@@ -1,6 +1,6 @@
 # 18 — Fix Facility and Tenant Relationship Display
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 6, Step 18
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 6, Step 18
 **Depends on:** 07
 **Applies to:** development and production
 

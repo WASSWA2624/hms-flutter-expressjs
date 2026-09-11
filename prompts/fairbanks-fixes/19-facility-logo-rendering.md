@@ -1,6 +1,6 @@
 # 19 — Fix Facility Logo Rendering
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 6, Step 19
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 6, Step 19
 **Depends on:** 18
 **Applies to:** development and production
 

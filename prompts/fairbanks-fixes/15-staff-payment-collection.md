@@ -1,6 +1,6 @@
 # 15 — Allow Authorized Performing Staff to Receive Payment
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 4, Step 15
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 4, Step 15
 **Depends on:** 12, 13, 14
 **Applies to:** development and production
 

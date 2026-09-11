@@ -1,6 +1,6 @@
 # 39 — Uncheck Internal Information From Default Printouts
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 11, Step 39
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 11, Step 39
 **Depends on:** none
 **Applies to:** development and production
 

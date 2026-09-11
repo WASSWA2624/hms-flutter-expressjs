@@ -1,6 +1,6 @@
 # 43 — Profile Slow Screens
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 13, Step 43
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 13, Step 43
 **Depends on:** 42
 **Applies to:** development and production
 

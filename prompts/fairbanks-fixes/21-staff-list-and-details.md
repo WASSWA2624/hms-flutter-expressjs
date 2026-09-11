@@ -1,6 +1,6 @@
 # 21 — Improve the Staff List and Add Nested Staff Details
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 6, Step 21
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 6, Step 21
 **Depends on:** 20
 **Applies to:** development and production
 

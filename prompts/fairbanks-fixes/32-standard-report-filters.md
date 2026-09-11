@@ -1,6 +1,6 @@
 # 32 — Implement Standard Reporting Dimensions
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 9, Step 32
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 9, Step 32
 **Depends on:** 30, 31
 **Applies to:** development and production
 

@@ -1,6 +1,6 @@
 # 06 — Implement Proper Platform Presets
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 2, Step 6
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 2, Step 6
 **Depends on:** 04, 05
 **Applies to:** development and production
 

@@ -1,6 +1,6 @@
 # 25 — Simplify the Pharmacy Journey
 
-**Source:** [fairpanks-fixes.md](../fairpanks-fixes.md) → Phase 8, Step 25
+**Source:** [fairbanks-fixes.md](../fairbanks-fixes.md) → Phase 8, Step 25
 **Depends on:** 13, 14, 15
 **Applies to:** development and production
 
