@@ -5338,6 +5338,55 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AuthActionRequest'
+  /api/v1/auth/registration-status:
+    post:
+      tags:
+        - Auth
+      summary: Registration Status Auth
+      description: |-
+        Authentication, session bootstrap, credential lifecycle, and current-user identity endpoints.
+
+        Offline policy: `no-store`.
+      operationId: post_api_v1_auth_registration_status
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/AcceptLanguage'
+      responses:
+        '200':
+          description: Successful response envelope.
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControl'
+            X-Offline-Policy:
+              $ref: '#/components/headers/XOfflinePolicy'
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ResourceEnvelope'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/GenericRecord'
+        '401':
+          $ref: '#/components/responses/UnauthorizedProblem'
+        '403':
+          $ref: '#/components/responses/ForbiddenProblem'
+        '409':
+          $ref: '#/components/responses/ConflictProblem'
+        '422':
+          $ref: '#/components/responses/ValidationProblem'
+        '500':
+          $ref: '#/components/responses/InternalProblem'
+      x-route-family: auth
+      x-offline-policy: no-store
+      x-route-source: src/modules/auth/routes/auth.routes.js
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthActionRequest'
   /api/v1/auth/verify-email:
     post:
       tags:

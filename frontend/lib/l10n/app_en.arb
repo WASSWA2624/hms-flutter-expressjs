@@ -11794,6 +11794,24 @@
   "@authRegistrationGuideStepSignInBody": {
     "description": "Step 4 body in the registration guide."
   },
+  "authAccountCreatedTitle": "Account created",
+  "@authAccountCreatedTitle": {
+    "description": "Banner title shown on the verification page when the account exists but its verification email has not gone out."
+  },
+  "authVerificationEmailDelayedMessage": "Your workspace is ready. The verification email has not gone out yet \u2014 choose Send new code to get one now.",
+  "@authVerificationEmailDelayedMessage": {
+    "description": "Banner body telling the user their account was created but the verification email is delayed, and to use the resend action."
+  },
+  "authAccountCreatedEmailDelayedBody": "Account created for {email}. Request a new code to finish verifying.",
+  "@authAccountCreatedEmailDelayedBody": {
+    "description": "Verification page subtitle when the account was created but the verification email is delayed.",
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "name@example.com"
+      }
+    }
+  },
   "authVerifyEmailActionLabel": "Verify",
   "@authVerifyEmailActionLabel": {
     "description": "Email verification form submit action label."

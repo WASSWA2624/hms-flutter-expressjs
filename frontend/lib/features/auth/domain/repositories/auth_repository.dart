@@ -4,6 +4,7 @@ import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/email_verification_result.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/password_reset_request_result.dart';
+import 'package:hosspi_hms/features/auth/domain/entities/registration_result.dart';
 
 abstract interface class AuthRepository {
   Future<Result<AuthSession?>> restoreSession();
@@ -15,16 +16,30 @@ abstract interface class AuthRepository {
     String? facilityId,
   });
 
-  Future<Result<void>> register({
+  /// Submits a registration.
+  ///
+  /// [idempotencyKey] identifies the logical submission: retries of the same
+  /// submission must reuse it so the backend replays the original outcome
+  /// instead of bootstrapping a second workspace.
+  Future<Result<RegistrationResult>> register({
     required String email,
     required String password,
     required String facilityName,
     required String adminName,
     required String facilityType,
     required String phone,
+    required String idempotencyKey,
     String? tenantName,
     String? location,
     String? interests,
+  });
+
+  /// Asks the backend what actually happened to a registration submission.
+  ///
+  /// Used after a timeout or connection error so the UI can report the truth
+  /// rather than assuming the registration failed.
+  Future<Result<RegistrationResult>> registrationStatus({
+    required String idempotencyKey,
   });
 
   Future<Result<EmailVerificationResult>> verifyEmail({

@@ -4,6 +4,7 @@ import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/network/api_client.dart';
 import 'package:hosspi_hms/core/network/api_endpoints.dart';
 import 'package:hosspi_hms/core/network/api_response.dart';
+import 'package:hosspi_hms/core/network/idempotency.dart';
 import 'package:hosspi_hms/core/network/network_providers.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_manager.dart';
@@ -14,6 +15,7 @@ import 'package:hosspi_hms/features/auth/data/dtos/auth_session_dto.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/email_verification_result.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/password_reset_request_result.dart';
+import 'package:hosspi_hms/features/auth/domain/entities/registration_result.dart';
 import 'package:hosspi_hms/features/auth/domain/repositories/auth_repository.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -90,19 +92,21 @@ final class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Result<void>> register({
+  Future<Result<RegistrationResult>> register({
     required String email,
     required String password,
     required String facilityName,
     required String adminName,
     required String facilityType,
     required String phone,
+    required String idempotencyKey,
     String? tenantName,
     String? location,
     String? interests,
   }) {
-    return _publicApiClient.post<void>(
+    return _publicApiClient.post<RegistrationResult>(
       ApiEndpoints.auth(AuthEndpoint.register),
+      options: idempotentRequestOptions(idempotencyKey: idempotencyKey),
       data: <String, Object?>{
         'email': email.trim().toLowerCase(),
         'password': password,
@@ -118,8 +122,33 @@ final class AuthRepositoryImpl implements AuthRepository {
         if (_normalizedOptional(interests) != null)
           'interests': _normalizedOptional(interests),
       },
-      decoder: (data) =>
-          ApiResponseEnvelope.decodeData<void>(data, decoder: (_) {}),
+      decoder: (data) => ApiResponseEnvelope.decodeData<RegistrationResult>(
+        data,
+        decoder: RegistrationResult.fromResponseData,
+      ),
+    );
+  }
+
+  @override
+  Future<Result<RegistrationResult>> registrationStatus({
+    required String idempotencyKey,
+  }) {
+    final String key = idempotencyKey.trim();
+    if (key.isEmpty) {
+      return Future<Result<RegistrationResult>>.value(
+        const Result<RegistrationResult>.success(
+          RegistrationResult(outcome: RegistrationOutcome.unknown),
+        ),
+      );
+    }
+
+    return _publicApiClient.post<RegistrationResult>(
+      ApiEndpoints.auth(AuthEndpoint.registrationStatus),
+      data: <String, Object?>{'idempotency_key': key},
+      decoder: (data) => ApiResponseEnvelope.decodeData<RegistrationResult>(
+        data,
+        decoder: RegistrationResult.fromResponseData,
+      ),
     );
   }
 

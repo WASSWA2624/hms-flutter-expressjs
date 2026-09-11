@@ -16,6 +16,7 @@ const {
   identifyBodySchema,
   loginBodySchema,
   registerBodySchema,
+  registrationStatusBodySchema,
   verifyEmailBodySchema,
   verifyPhoneBodySchema,
   resendVerificationBodySchema,
@@ -66,6 +67,18 @@ router.post(
   rateLimit(rateLimitConfig.endpoints.register),
   validateRequest({ body: registerBodySchema }),
   authController.register
+);
+
+/**
+ * @route POST /api/v1/auth/registration-status
+ * @desc Resolve the true outcome of a registration attempt by its idempotency key
+ * @access Public
+ */
+router.post(
+  '/registration-status',
+  rateLimit(rateLimitConfig.endpoints.registrationStatus),
+  validateRequest({ body: registrationStatusBodySchema }),
+  authController.registrationStatus
 );
 
 /**

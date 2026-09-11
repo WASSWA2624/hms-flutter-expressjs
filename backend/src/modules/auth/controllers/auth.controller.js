@@ -66,8 +66,33 @@ const login = asyncHandler(async (req, res) => {
   }
 });
 
+const REGISTRATION_RESPONSE_BY_OUTCOME = Object.freeze({
+  [authService.REGISTRATION_OUTCOME.ACCOUNT_CREATED_EMAIL_SENT]: {
+    status: 201,
+    messageKey: 'messages.auth.register.success',
+  },
+  [authService.REGISTRATION_OUTCOME.ACCOUNT_CREATED_EMAIL_PENDING]: {
+    status: 201,
+    messageKey: 'messages.auth.register.email_pending',
+  },
+  [authService.REGISTRATION_OUTCOME.IN_PROGRESS]: {
+    status: 202,
+    messageKey: 'messages.auth.register.in_progress',
+  },
+});
+
+const resolveRegistrationResponse = (outcome) =>
+  REGISTRATION_RESPONSE_BY_OUTCOME[outcome] || {
+    status: 201,
+    messageKey: 'messages.auth.register.success',
+  };
+
 /**
  * Register new user
+ *
+ * The optional `Idempotency-Key` header makes the submission replayable: the
+ * same key returns the original outcome instead of bootstrapping a second
+ * workspace, which is what lets a client that timed out resolve the truth.
  *
  * @param {Object} req - Express request
  * @param {Object} res - Express response
@@ -78,6 +103,7 @@ const register = asyncHandler(async (req, res) => {
   const ip_address = req.ip;
   const user_agent = req.get('user-agent');
   const request_context = getRegistrationRequestContext(req);
+  const idempotency_key = String(req.get('idempotency-key') || '').trim();
 
   const result = await authService.register({
     email,
@@ -91,9 +117,27 @@ const register = asyncHandler(async (req, res) => {
     ip_address,
     user_agent,
     request_context,
+    idempotency_key,
   });
 
-  return sendSuccess(res, 201, 'messages.auth.register.success', result);
+  const { status, messageKey } = resolveRegistrationResponse(result?.outcome);
+  return sendSuccess(res, status, messageKey, result);
+});
+
+/**
+ * Resolve the true state of a registration submission after a client timeout.
+ *
+ * @param {Object} req - Express request
+ * @param {Object} res - Express response
+ * @returns {Promise<void>}
+ */
+const registrationStatus = asyncHandler(async (req, res) => {
+  const idempotency_key =
+    String(req.body?.idempotency_key || req.get('idempotency-key') || '').trim();
+
+  const result = await authService.getRegistrationStatus({ idempotency_key });
+
+  return sendSuccess(res, 200, 'messages.auth.registration_status.success', result);
 });
 
 /**
@@ -302,6 +346,7 @@ module.exports = {
   identify,
   login,
   register,
+  registrationStatus,
   verifyEmail,
   verifyPhone,
   resendVerification,

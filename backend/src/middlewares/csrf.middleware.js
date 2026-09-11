@@ -20,6 +20,7 @@ const CSRF_EXEMPT_ROUTES = new Set([
   'POST /api/v1/auth/identify',
   'POST /api/v1/auth/login',
   'POST /api/v1/auth/register',
+  'POST /api/v1/auth/registration-status',
   'POST /api/v1/auth/logout',
   'POST /api/v1/auth/change-password',
   'POST /api/v1/auth/verify-email',

@@ -83,6 +83,14 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
+            if (_emailDelayed && !_codeResent) ...<Widget>[
+              AppFormInformationBanner.message(
+                title: l10n.authAccountCreatedTitle,
+                message: l10n.authVerificationEmailDelayedMessage,
+                variant: AppFormInformationVariant.warning,
+              ),
+              SizedBox(height: theme.spacing.md),
+            ],
             if (_codeResent) ...<Widget>[
               Text(
                 l10n.authVerificationCodeResentMessage,
@@ -168,6 +176,10 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
     );
   }
 
+  /// The account exists but its verification email did not go out. The page
+  /// still shows the normal verify flow, with a prompt to request a new code.
+  bool get _emailDelayed => widget.reason == 'email_delayed';
+
   String? get _normalizedEmail {
     final email = widget.email?.trim().toLowerCase();
     if (email == null || email.isEmpty) {
@@ -179,6 +191,12 @@ class _VerifyEmailPageState extends ConsumerState<VerifyEmailPage> {
   String _bodyText(AppLocalizations l10n, String? email) {
     if (widget.reason == 'pending' && email != null) {
       return l10n.authPendingVerificationBody(email);
+    }
+
+    if (_emailDelayed) {
+      return email == null
+          ? l10n.authVerifyEmailBodyNoEmail
+          : l10n.authAccountCreatedEmailDelayedBody(email);
     }
 
     if (email == null) {

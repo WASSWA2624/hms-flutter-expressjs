@@ -476,6 +476,7 @@ enum AuthEndpoint {
   identify('identify'),
   login('login'),
   register('register'),
+  registrationStatus('registration-status'),
   verifyEmail('verify-email'),
   verifyPhone('verify-phone'),
   resendVerification('resend-verification'),

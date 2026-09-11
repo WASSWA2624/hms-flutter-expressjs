@@ -9258,6 +9258,18 @@ class AppLocalizationsEn extends AppLocalizations {
       'Once your account is approved, sign in with the same email (or phone) and password you used during registration to open your facility workspace.';
 
   @override
+  String get authAccountCreatedTitle => 'Account created';
+
+  @override
+  String get authVerificationEmailDelayedMessage =>
+      'Your workspace is ready. The verification email has not gone out yet — choose Send new code to get one now.';
+
+  @override
+  String authAccountCreatedEmailDelayedBody(String email) {
+    return 'Account created for $email. Request a new code to finish verifying.';
+  }
+
+  @override
   String get authVerifyEmailActionLabel => 'Verify';
 
   @override

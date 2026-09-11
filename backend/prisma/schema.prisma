@@ -39,6 +39,18 @@ enum VerificationTokenType {
   PASSWORD_RESET
 }
 
+enum RegistrationAttemptStatus {
+  IN_PROGRESS
+  SUCCEEDED
+  REJECTED
+}
+
+enum RegistrationEmailStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
 enum Gender {
   MALE
   FEMALE
@@ -1144,6 +1156,7 @@ model tenant {
   kpi_snapshots                   kpi_snapshot[]
   analytics_events                analytics_event[]
   registration_follow_ups         registration_follow_up[]
+  registration_attempts           registration_attempt[]
   clinical_vital_alert_thresholds clinical_vital_alert_threshold[]
   clinical_term_favorites         clinical_term_favorite[]
   clinical_term_catalogs          clinical_term_catalog[]
@@ -1278,6 +1291,7 @@ model facility {
   staff_positions                 staff_position[]
   user_profiles                   user_profile[]
   registration_follow_ups         registration_follow_up[]
+  registration_attempts           registration_attempt[]
   clinical_vital_alert_thresholds clinical_vital_alert_threshold[]
   clinical_term_favorites         clinical_term_favorite[]
   clinical_term_catalogs          clinical_term_catalog[]
@@ -1642,6 +1656,7 @@ model user {
   report_schedules_created      report_schedule[]       @relation("report_schedule_created_by")
   purchase_requests             purchase_request[]
   registration_follow_ups       registration_follow_up[]
+  registration_attempts         registration_attempt[]
   configuration_snapshots       configuration_snapshot[]  @relation("configuration_snapshot_created_by")
   billing_approval_requests     billing_approval[]        @relation("billing_approval_requested_by")
   billing_approval_decisions    billing_approval[]        @relation("billing_approval_approved_by")
@@ -1773,6 +1788,50 @@ model registration_follow_up {
   @@index([email])
   @@index([account_status])
   @@index([last_registration_attempt_at])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
+}
+
+model registration_attempt {
+  id                String                    @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id String?                   @db.VarChar(32)
+  idempotency_key   String                    @db.VarChar(191)
+  request_hash      String?                   @db.VarChar(64)
+  email             String                    @db.VarChar(255)
+  // Set only by the attempt that actually bootstrapped the account. The unique
+  // index on this nullable column is the database-level guarantee that one
+  // email owns at most one self-serve tenant, even under concurrent retries.
+  claimed_email     String?                   @db.VarChar(255)
+  status            RegistrationAttemptStatus @default(IN_PROGRESS)
+  outcome_code      String?                   @db.VarChar(64)
+  email_status      RegistrationEmailStatus   @default(PENDING)
+  error_status_code Int?
+  error_code        String?                   @db.VarChar(191)
+  user_id           String?                   @db.VarChar(36)
+  tenant_id         String?                   @db.VarChar(36)
+  facility_id       String?                   @db.VarChar(36)
+  // Replay payload for a repeated idempotency key. Never holds credentials,
+  // tokens, or verification links.
+  result_json       Json?
+  started_at        DateTime                  @default(now())
+  completed_at      DateTime?
+  expires_at        DateTime
+  created_at        DateTime                  @default(now())
+  updated_at        DateTime                  @updatedAt
+  deleted_at        DateTime?
+  version           Int                       @default(1)
+
+  user     user?     @relation(fields: [user_id], references: [id])
+  tenant   tenant?   @relation(fields: [tenant_id], references: [id])
+  facility facility? @relation(fields: [facility_id], references: [id])
+
+  @@unique([idempotency_key])
+  @@unique([claimed_email])
+  @@index([email])
+  @@index([status])
+  @@index([expires_at])
+  @@index([tenant_id])
+  @@index([facility_id])
   @@index([deleted_at])
   @@index([human_friendly_id])
 }

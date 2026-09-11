@@ -34,6 +34,29 @@ const PHONE_VERIFICATION_TOKEN_TYPE = 'PHONE_VERIFICATION';
 const PASSWORD_RESET_TOKEN_TYPE = 'PASSWORD_RESET';
 const EMAIL_VERIFICATION_EXPIRY_MINUTES = 15;
 const PASSWORD_RESET_EXPIRY_HOURS = 1;
+// Machine-readable registration outcomes. The client renders messaging from
+// these, never from the transport result, so a timed-out request can never be
+// reported as a failed registration.
+//
+//   REGISTRATION_REJECTED          - nothing was created (validation/duplicate)
+//   ACCOUNT_CREATED_EMAIL_SENT     - account exists, verification email accepted
+//   ACCOUNT_CREATED_EMAIL_PENDING  - account exists, email delayed or failed
+//   REGISTRATION_IN_PROGRESS       - the attempt is still running
+//   REGISTRATION_UNKNOWN           - no attempt with that key ever reached us
+const REGISTRATION_OUTCOME = Object.freeze({
+  REJECTED: 'REGISTRATION_REJECTED',
+  ACCOUNT_CREATED_EMAIL_SENT: 'ACCOUNT_CREATED_EMAIL_SENT',
+  ACCOUNT_CREATED_EMAIL_PENDING: 'ACCOUNT_CREATED_EMAIL_PENDING',
+  IN_PROGRESS: 'REGISTRATION_IN_PROGRESS',
+  UNKNOWN: 'REGISTRATION_UNKNOWN',
+});
+
+const REGISTRATION_EMAIL_STATUS = Object.freeze({
+  PENDING: 'PENDING',
+  SENT: 'SENT',
+  FAILED: 'FAILED',
+});
+
 const MAX_LOCATION_LENGTH = 255;
 const MAX_INTERESTS_LENGTH = 2000;
 
@@ -1089,6 +1112,47 @@ const deliverAuthEmail = async (sendPromise, context, options = {}) => {
   ensureEmailDelivered(deliveryResult, context, options);
 };
 
+/**
+ * Deliver a registration verification email without ever failing registration.
+ *
+ * The account, tenant, and facility are already committed by the time this
+ * runs, so a mail-transport problem must be reported as a delayed email, not as
+ * a failed registration. Behaviour is identical under every NODE_ENV: the
+ * outcome is reported, never thrown.
+ *
+ * @param {Promise} sendPromise - In-flight delivery promise
+ * @param {string} context - Log context label
+ * @param {Object} [options] - Extra log fields (never returned to the client)
+ * @returns {Promise<string>} `SENT` or `FAILED`
+ */
+const deliverRegistrationEmail = async (sendPromise, context, options = {}) => {
+  try {
+    const deliveryResult = await sendPromise;
+    if (deliveryResult?.sent) {
+      return REGISTRATION_EMAIL_STATUS.SENT;
+    }
+
+    logger.warn('Registration verification email was not delivered; account is still usable.', {
+      context: context || 'verification_email',
+      provider: deliveryResult?.provider || 'unknown',
+      verification_code: options.code || undefined,
+    });
+    return REGISTRATION_EMAIL_STATUS.FAILED;
+  } catch (error) {
+    logger.warn('Registration verification email delivery threw; account is still usable.', {
+      context: context || 'verification_email',
+      error: error?.message || 'unknown_error',
+      verification_code: options.code || undefined,
+    });
+    return REGISTRATION_EMAIL_STATUS.FAILED;
+  }
+};
+
+const resolveRegistrationOutcome = (emailStatus) =>
+  emailStatus === REGISTRATION_EMAIL_STATUS.SENT
+    ? REGISTRATION_OUTCOME.ACCOUNT_CREATED_EMAIL_SENT
+    : REGISTRATION_OUTCOME.ACCOUNT_CREATED_EMAIL_PENDING;
+
 const resolveAdminDisplayName = (user, fallbackName) => {
   const first = String(user?.profile?.first_name || '').trim();
   const last = String(user?.profile?.last_name || '').trim();
@@ -1273,15 +1337,19 @@ const buildRegisterResponse = (
   normalizedEmail,
   verification = {},
   flow = 'NEW_REGISTRATION',
-  nextPath = '/login'
+  nextPath = '/login',
+  outcome = REGISTRATION_OUTCOME.ACCOUNT_CREATED_EMAIL_SENT,
+  emailStatus = REGISTRATION_EMAIL_STATUS.SENT
 ) => {
   const { password_hash: _, ...userData } = user;
   return {
     user: userData,
+    outcome,
     flow,
     next_path: nextPath,
     verification: {
       email: normalizedEmail,
+      email_status: emailStatus,
       expires_in_minutes: EMAIL_VERIFICATION_EXPIRY_MINUTES,
       ...verification,
     },
@@ -1308,7 +1376,7 @@ const handleExistingEmailRegistration = async ({
     facility_type
   );
   const verification = await createEmailVerificationTokens(user.id);
-  await deliverAuthEmail(
+  const emailStatus = await deliverRegistrationEmail(
     sendVerificationEmail({
       email: normalizedEmail,
       adminName: resolveAdminDisplayName(user, admin_name),
@@ -1357,7 +1425,8 @@ const handleExistingEmailRegistration = async ({
       verification_expires_in_minutes: EMAIL_VERIFICATION_EXPIRY_MINUTES,
       email_already_used: true,
       account_already_active: Boolean(accountAlreadyActive),
-      verification_resent: true,
+      verification_resent: emailStatus === REGISTRATION_EMAIL_STATUS.SENT,
+      email_status: emailStatus,
       facility_details_differ: facilityDetailsDiffer,
     },
   });
@@ -1371,7 +1440,9 @@ const handleExistingEmailRegistration = async ({
       facility_details_differ: facilityDetailsDiffer,
     },
     accountAlreadyActive ? 'EXISTING_ACTIVE_ACCOUNT' : 'EXISTING_PENDING_ACCOUNT',
-    nextPath
+    nextPath,
+    resolveRegistrationOutcome(emailStatus),
+    emailStatus
   );
 };
 
@@ -1683,7 +1754,15 @@ const login = async (data) => {
 };
 
 /**
- * Register facility owner (self-serve onboarding)
+ * Run one self-serve registration end to end.
+ *
+ * Steps in order: reject or divert on an existing email, hash the password,
+ * bootstrap tenant + facility + role + user + profile + role assignment in a
+ * single transaction, then - only after that commit - issue the verification
+ * code, dispatch the email, record follow-up tracking, and write the audit log.
+ * Nothing after the commit can turn a created account into a failure.
+ *
+ * Callers go through register(), which adds idempotency around this.
  *
  * @param {Object} data - Registration data
  * @param {string} data.email - User email
@@ -1697,9 +1776,10 @@ const login = async (data) => {
  * @param {string} [data.ip_address] - IP address
  * @param {string} [data.user_agent] - User agent
  * @param {Object} [data.request_context] - Request metadata (locale/timezone/platform/origin)
- * @returns {Promise<Object>} Created user data (tenant admin)
+ * @param {string|null} [attemptId] - Registration attempt row claiming the email
+ * @returns {Promise<Object>} Registration outcome payload
  */
-const register = async (data) => {
+const performRegistration = async (data, attemptId = null) => {
   const {
     email,
     password,
@@ -1769,6 +1849,7 @@ const register = async (data) => {
       admin_name,
       facility_type,
       status: 'PENDING',
+      registration_attempt_id: attemptId,
     });
   } catch (error) {
     const isDuplicateEmail =
@@ -1803,23 +1884,35 @@ const register = async (data) => {
     throw new HttpError('errors.database.unexpected', 500);
   }
 
-  // Create a verification code for the email verification form.
-  const verification = await createEmailVerificationTokens(user.id);
+  // Everything above is committed. From here on nothing may fail the
+  // registration: the verification code and its email are produced after the
+  // commit, and every outcome is reported rather than thrown. A user who ends
+  // up without a code requests a new one from the verification page.
+  let emailStatus = REGISTRATION_EMAIL_STATUS.FAILED;
+  try {
+    const verification = await createEmailVerificationTokens(user.id);
 
-  await deliverAuthEmail(
-    sendVerificationEmail({
-      email: normalizedEmail,
-      adminName: admin_name,
-      facilityName: facility_name,
-      code: verification.code,
-      plainPassword: password,
-      expiresAt: verification.expiresAt,
-      locale: request_context?.locale,
-      timeZone: request_context?.timezone,
-    }),
-    'register_new_user',
-    { code: verification.code }
-  );
+    emailStatus = await deliverRegistrationEmail(
+      sendVerificationEmail({
+        email: normalizedEmail,
+        adminName: admin_name,
+        facilityName: facility_name,
+        code: verification.code,
+        plainPassword: password,
+        expiresAt: verification.expiresAt,
+        locale: request_context?.locale,
+        timeZone: request_context?.timezone,
+      }),
+      'register_new_user',
+      { code: verification.code }
+    );
+  } catch (error) {
+    logger.warn('Could not issue a verification code after registration; account is still usable.', {
+      context: 'register_new_user',
+      user_id: user.id,
+      error: error?.message || 'unknown_error',
+    });
+  }
 
   await persistRegistrationFollowUp({
     user,
@@ -1857,11 +1950,210 @@ const register = async (data) => {
       admin_name,
       role: 'TENANT_ADMIN',
       self_serve: true,
+      verification_email_status: emailStatus,
       verification_expires_in_minutes: EMAIL_VERIFICATION_EXPIRY_MINUTES,
     }
   });
 
-  return buildRegisterResponse(user, normalizedEmail, {}, 'NEW_REGISTRATION', '/login');
+  return buildRegisterResponse(
+    user,
+    normalizedEmail,
+    {},
+    'NEW_REGISTRATION',
+    '/login',
+    resolveRegistrationOutcome(emailStatus),
+    emailStatus
+  );
+};
+
+const buildInProgressResponse = (attempt) => ({
+  user: null,
+  outcome: REGISTRATION_OUTCOME.IN_PROGRESS,
+  flow: 'REGISTRATION_IN_PROGRESS',
+  next_path: null,
+  verification: {
+    email: attempt?.email || null,
+    email_status: attempt?.email_status || REGISTRATION_EMAIL_STATUS.PENDING,
+    expires_in_minutes: EMAIL_VERIFICATION_EXPIRY_MINUTES,
+  },
+});
+
+const buildUnknownRegistrationResponse = () => ({
+  user: null,
+  outcome: REGISTRATION_OUTCOME.UNKNOWN,
+  flow: 'REGISTRATION_UNKNOWN',
+  next_path: null,
+  verification: null,
+});
+
+const toRejectionError = (attempt) =>
+  new HttpError(
+    attempt?.error_code || 'errors.database.unexpected',
+    attempt?.error_status_code || 400,
+    Array.isArray(attempt?.result_json?.errors) ? attempt.result_json.errors : []
+  );
+
+const replayRegistrationAttempt = (attempt) => {
+  if (attempt.status === 'REJECTED') {
+    throw toRejectionError(attempt);
+  }
+
+  if (attempt.status === 'SUCCEEDED') {
+    const stored = attempt.result_json;
+    if (stored && typeof stored === 'object' && !Array.isArray(stored)) {
+      return { ...stored, replayed: true };
+    }
+
+    // The outcome is known even when the payload was lost; report the truth.
+    return {
+      user: null,
+      outcome: attempt.outcome_code || REGISTRATION_OUTCOME.ACCOUNT_CREATED_EMAIL_PENDING,
+      flow: 'NEW_REGISTRATION',
+      next_path: '/login',
+      verification: {
+        email: attempt.email,
+        email_status: attempt.email_status,
+        expires_in_minutes: EMAIL_VERIFICATION_EXPIRY_MINUTES,
+      },
+      replayed: true,
+    };
+  }
+
+  return { ...buildInProgressResponse(attempt), replayed: true };
+};
+
+const buildRegistrationRequestHash = (data) =>
+  crypto
+    .createHash('sha256')
+    .update(
+      JSON.stringify({
+        email: String(data?.email || '').trim().toLowerCase(),
+        facility_name: normalizeComparableText(data?.facility_name),
+        tenant_name: normalizeComparableText(data?.tenant_name),
+        admin_name: normalizeComparableText(data?.admin_name),
+        facility_type: normalizeComparableEnum(data?.facility_type),
+      })
+    )
+    .digest('hex');
+
+/**
+ * Register facility owner (self-serve onboarding), idempotently.
+ *
+ * With an idempotency key the attempt is recorded before any work starts, so a
+ * repeat of the same key replays the original outcome instead of creating a
+ * second user, tenant, or facility - including when the first response never
+ * reached the client. Without a key the registration still runs; the database
+ * claim on the registration email remains the last line of defence.
+ *
+ * @param {Object} data - Registration data (see performRegistration)
+ * @param {string} [data.idempotency_key] - Stable key for this submission
+ * @returns {Promise<Object>} Registration outcome payload
+ */
+const register = async (data) => {
+  const idempotencyKey = String(data?.idempotency_key || '').trim();
+  if (!idempotencyKey) {
+    return performRegistration(data);
+  }
+
+  const normalizedEmail = String(data?.email || '').trim().toLowerCase();
+  const claim = await authRepository.beginRegistrationAttempt({
+    idempotency_key: idempotencyKey,
+    email: normalizedEmail,
+    request_hash: buildRegistrationRequestHash(data),
+    expires_at: new Date(
+      Date.now() + Number(env.REGISTRATION_IDEMPOTENCY_TTL_HOURS || 24) * 60 * 60 * 1000
+    ),
+  });
+
+  if (!claim) {
+    // Attempt tracking unavailable (pre-migration host): register anyway.
+    return performRegistration(data);
+  }
+
+  if (claim.replayed) {
+    return replayRegistrationAttempt(claim.attempt);
+  }
+
+  const attemptId = claim.attempt.id;
+
+  try {
+    const result = await performRegistration(data, attemptId);
+
+    await authRepository.completeRegistrationAttempt(attemptId, {
+      status: 'SUCCEEDED',
+      outcome_code: result.outcome,
+      email_status: result.verification?.email_status || REGISTRATION_EMAIL_STATUS.PENDING,
+      user_id: result.user?.id || null,
+      tenant_id: result.user?.tenant_id || null,
+      facility_id: result.user?.facility_id || null,
+      result_json: result,
+    });
+
+    return result;
+  } catch (error) {
+    const statusCode = Number(error?.statusCode);
+    const isClientRejection =
+      error instanceof HttpError && statusCode >= 400 && statusCode < 500;
+
+    if (isClientRejection) {
+      await authRepository.completeRegistrationAttempt(attemptId, {
+        status: 'REJECTED',
+        outcome_code: REGISTRATION_OUTCOME.REJECTED,
+        error_status_code: statusCode,
+        error_code: error.messageKey || null,
+        result_json: { errors: Array.isArray(error.errors) ? error.errors : [] },
+      });
+    } else {
+      // Infrastructure failure: nothing was committed, so free the key for a
+      // clean retry rather than pinning the client to a server error.
+      await authRepository.releaseRegistrationAttempt(attemptId);
+    }
+
+    throw error;
+  }
+};
+
+/**
+ * Resolve the true state of a registration submission.
+ *
+ * The idempotency key is the capability: only the client that generated it can
+ * ask about that attempt, and an unknown key reports REGISTRATION_UNKNOWN
+ * rather than revealing whether any account exists for an email.
+ *
+ * @param {Object} data - Lookup data
+ * @param {string} data.idempotency_key - Key used for the registration attempt
+ * @returns {Promise<Object>} Registration outcome payload
+ */
+const getRegistrationStatus = async (data) => {
+  const idempotencyKey = String(data?.idempotency_key || '').trim();
+  if (!idempotencyKey) {
+    return buildUnknownRegistrationResponse();
+  }
+
+  const attempt = await authRepository.findRegistrationAttemptByKey(idempotencyKey);
+  if (!attempt) {
+    return buildUnknownRegistrationResponse();
+  }
+
+  if (attempt.status === 'IN_PROGRESS') {
+    return buildInProgressResponse(attempt);
+  }
+
+  if (attempt.status === 'REJECTED') {
+    return {
+      user: null,
+      outcome: REGISTRATION_OUTCOME.REJECTED,
+      flow: 'REGISTRATION_REJECTED',
+      next_path: null,
+      verification: null,
+      rejection: {
+        code: attempt.error_code || null,
+        status: attempt.error_status_code || null,
+      },
+    };
+  }
+
+  return replayRegistrationAttempt(attempt);
 };
 
 /**
@@ -2482,6 +2774,8 @@ module.exports = {
   identify,
   login,
   register,
+  getRegistrationStatus,
+  REGISTRATION_OUTCOME,
   verifyEmail,
   verifyPhone,
   resendVerification,

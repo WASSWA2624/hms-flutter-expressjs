@@ -1,8 +1,10 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/network/api_client.dart';
 import 'package:hosspi_hms/core/network/api_endpoints.dart';
+import 'package:hosspi_hms/core/network/idempotency.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/secure_session_storage.dart';
 import 'package:hosspi_hms/core/security/session_manager.dart';
@@ -11,6 +13,7 @@ import 'package:hosspi_hms/core/security/session_refresh_service.dart';
 import 'package:hosspi_hms/core/security/session_tokens.dart';
 import 'package:hosspi_hms/core/storage/secure/app_secure_storage.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
+import 'package:hosspi_hms/features/auth/domain/entities/registration_result.dart';
 
 void main() {
   group('AuthRepositoryImpl password recovery', () {
@@ -118,12 +121,53 @@ void main() {
         adminName: 'Jane Doe',
         facilityType: 'CLINIC',
         phone: '+256700000000',
+        idempotencyKey: 'key-1',
       );
 
       expect(result.isSuccess, isTrue);
       expect(apiClient.lastPostUri, ApiEndpoints.auth(AuthEndpoint.register));
       expect(apiClient.lastPostData?['facility_name'], 'Mirembe Clinic');
       expect(apiClient.lastPostData?.containsKey('tenant_name'), isFalse);
+    });
+
+    test('register carries the idempotency key as a header', () async {
+      await repository.register(
+        email: 'admin@example.com',
+        password: 'Password1!',
+        facilityName: 'Mirembe Clinic',
+        adminName: 'Jane Doe',
+        facilityType: 'CLINIC',
+        phone: '+256700000000',
+        idempotencyKey: 'key-42',
+      );
+
+      final Options? options = apiClient.lastPostOptions as Options?;
+      expect(options?.headers?[idempotencyHeaderName], 'key-42');
+    });
+
+    test('registrationStatus posts the key without hitting the network for an empty one', () async {
+      final result = await repository.registrationStatus(idempotencyKey: '  ');
+
+      expect(result.isSuccess, isTrue);
+      result.when(
+        success: (RegistrationResult status) =>
+            expect(status.outcome, RegistrationOutcome.unknown),
+        failure: (_) => fail('expected success'),
+      );
+      expect(
+        apiClient.lastPostUri,
+        isNot(ApiEndpoints.auth(AuthEndpoint.registrationStatus)),
+      );
+    });
+
+    test('registrationStatus posts the key to the status endpoint', () async {
+      await repository.registrationStatus(idempotencyKey: 'key-42');
+
+      expect(
+        apiClient.lastPostUri,
+        ApiEndpoints.auth(AuthEndpoint.registrationStatus),
+      );
+      expect(apiClient.lastPostData?['idempotency_key'], 'key-42');
     });
   });
 }
@@ -133,6 +177,7 @@ final class _FakeApiClient implements ApiClient {
 
   Uri? lastPostUri;
   Map<String, Object?>? lastPostData;
+  Object? lastPostOptions;
 
   @override
   Uri get baseUri => Uri.parse('http://localhost:8080');
@@ -160,6 +205,7 @@ final class _FakeApiClient implements ApiClient {
     Object? options,
   }) async {
     lastPostUri = endpoint;
+    lastPostOptions = options;
     if (data is Map<String, Object?>) {
       lastPostData = data;
     }

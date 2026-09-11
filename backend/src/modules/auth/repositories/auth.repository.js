@@ -364,7 +364,12 @@ const createUser = async (data) => {
 /**
  * Self-register facility owner and bootstrap tenant workspace.
  *
+ * Tenant, facility, role, user, profile, role assignment, and the registration
+ * attempt's email claim all commit or roll back together, so a failure part way
+ * through can never leave an orphaned tenant or facility behind.
+ *
  * @param {Object} data - Registration data
+ * @param {string} [data.registration_attempt_id] - Attempt row that claims the email
  * @returns {Promise<Object>} Created user with tenant/facility/profile/roles
  */
 const registerFacilityOwner = async (data) => {
@@ -377,6 +382,7 @@ const registerFacilityOwner = async (data) => {
     facility_type,
     admin_name,
     status = 'ACTIVE',
+    registration_attempt_id = null,
   } = data;
   const parsedName = splitAdminName(admin_name);
   const resolvedTenantName = String(tenant_name || facility_name || '').trim();
@@ -444,6 +450,21 @@ const registerFacilityOwner = async (data) => {
         },
       });
 
+      if (registration_attempt_id) {
+        // Inside the transaction on purpose: the unique index on
+        // `claimed_email` is what stops a concurrent retry from bootstrapping a
+        // second tenant, and a conflict here rolls the whole bootstrap back.
+        await tx.registration_attempt.update({
+          where: { id: registration_attempt_id },
+          data: {
+            claimed_email: email,
+            user_id: user.id,
+            tenant_id: tenant.id,
+            facility_id: facility.id,
+          },
+        });
+      }
+
       return tx.user.findFirst({
         where: {
           id: user.id,
@@ -465,9 +486,188 @@ const registerFacilityOwner = async (data) => {
   } catch (error) {
     if (error.code === 'P2002') {
       const target = Array.isArray(error.meta?.target) ? error.meta.target.join(',') : String(error.meta?.target || '');
+      // Covers both `user(tenant_id, email)` and the registration email claim.
       if (target.toLowerCase().includes('email')) {
         throw new HttpError('errors.auth.user_exists', 409);
       }
+    }
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+// A registration attempt left IN_PROGRESS for longer than this lost its
+// process (deploy, crash, killed container). The key is then reusable; the
+// `claimed_email` unique index still prevents a double bootstrap if the
+// original request is somehow alive.
+const REGISTRATION_ATTEMPT_STALE_MS = 5 * 60 * 1000;
+
+const getRegistrationAttemptDelegate = () => {
+  const delegate = prisma?.registration_attempt;
+  if (!delegate || typeof delegate.create !== 'function') {
+    return null;
+  }
+  return delegate;
+};
+
+const isStaleInProgressAttempt = (attempt) => {
+  if (!attempt || attempt.status !== 'IN_PROGRESS' || attempt.claimed_email) {
+    return false;
+  }
+  const startedAt = attempt.started_at ? new Date(attempt.started_at).getTime() : 0;
+  return Date.now() - startedAt > REGISTRATION_ATTEMPT_STALE_MS;
+};
+
+/**
+ * Claim an idempotency key for a registration submission.
+ *
+ * @param {Object} data - Attempt data
+ * @param {string} data.idempotency_key - Client-supplied key for this attempt
+ * @param {string} data.email - Normalized registration email
+ * @param {Date} data.expires_at - When the stored outcome stops being replayable
+ * @param {string} [data.request_hash] - Hash of the submitted payload
+ * @returns {Promise<{ attempt: Object, replayed: boolean }|null>} Claim result,
+ *   or null when the table is not migrated yet
+ */
+const beginRegistrationAttempt = async ({
+  idempotency_key,
+  email,
+  expires_at,
+  request_hash = null,
+}) => {
+  const delegate = getRegistrationAttemptDelegate();
+  if (!delegate) {
+    return null;
+  }
+
+  try {
+    const attempt = await delegate.create({
+      data: {
+        idempotency_key,
+        email,
+        request_hash,
+        expires_at,
+      },
+    });
+    return { attempt, replayed: false };
+  } catch (error) {
+    if (isMissingSchemaArtifactError(error)) {
+      return null;
+    }
+
+    if (error?.code !== 'P2002') {
+      throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+    }
+
+    const existing = await delegate.findUnique({ where: { idempotency_key } });
+    if (!existing) {
+      // Lost the row between the conflict and the read; treat as unusable.
+      return null;
+    }
+
+    if (!isStaleInProgressAttempt(existing)) {
+      return { attempt: existing, replayed: true };
+    }
+
+    const reclaimed = await delegate.update({
+      where: { id: existing.id },
+      data: {
+        email,
+        request_hash,
+        expires_at,
+        started_at: new Date(),
+        completed_at: null,
+        outcome_code: null,
+        error_status_code: null,
+        error_code: null,
+        result_json: null,
+        email_status: 'PENDING',
+      },
+    });
+    return { attempt: reclaimed, replayed: false };
+  }
+};
+
+/**
+ * Read a registration attempt by its idempotency key.
+ *
+ * @param {string} idempotencyKey - Key supplied when the attempt was submitted
+ * @returns {Promise<Object|null>} Attempt row or null
+ */
+const findRegistrationAttemptByKey = async (idempotencyKey) => {
+  const delegate = getRegistrationAttemptDelegate();
+  if (!delegate) {
+    return null;
+  }
+
+  try {
+    return await delegate.findUnique({ where: { idempotency_key: idempotencyKey } });
+  } catch (error) {
+    if (isMissingSchemaArtifactError(error)) {
+      return null;
+    }
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
+ * Record the final outcome of a registration attempt.
+ *
+ * @param {string} attemptId - Attempt row id
+ * @param {Object} data - Outcome fields
+ * @returns {Promise<Object|null>} Updated attempt row or null
+ */
+const completeRegistrationAttempt = async (attemptId, data = {}) => {
+  const delegate = getRegistrationAttemptDelegate();
+  if (!delegate || !attemptId) {
+    return null;
+  }
+
+  try {
+    return await delegate.update({
+      where: { id: attemptId },
+      data: {
+        status: data.status,
+        outcome_code: data.outcome_code || null,
+        email_status: data.email_status || undefined,
+        user_id: data.user_id || undefined,
+        tenant_id: data.tenant_id || undefined,
+        facility_id: data.facility_id || undefined,
+        result_json: data.result_json === undefined ? undefined : data.result_json,
+        error_status_code: data.error_status_code ?? null,
+        error_code: data.error_code || null,
+        completed_at: new Date(),
+      },
+    });
+  } catch (error) {
+    if (isMissingSchemaArtifactError(error) || error?.code === 'P2025') {
+      return null;
+    }
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
+ * Drop an attempt that failed for an infrastructure reason so the same key can
+ * be retried.
+ *
+ * Deliberately a `deleteMany` filtered on `claimed_email: null`: an attempt
+ * that already claimed an email owns a committed account, and dropping its row
+ * would hand that email back and allow a second tenant.
+ *
+ * @param {string} attemptId - Attempt row id
+ * @returns {Promise<void>}
+ */
+const releaseRegistrationAttempt = async (attemptId) => {
+  const delegate = getRegistrationAttemptDelegate();
+  if (!delegate || !attemptId) {
+    return;
+  }
+
+  try {
+    await delegate.deleteMany({ where: { id: attemptId, claimed_email: null } });
+  } catch (error) {
+    if (isMissingSchemaArtifactError(error) || error?.code === 'P2025') {
+      return;
     }
     throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
   }
@@ -1191,6 +1391,10 @@ module.exports = {
   getUserFacilities,
   createUser,
   registerFacilityOwner,
+  beginRegistrationAttempt,
+  findRegistrationAttemptByKey,
+  completeRegistrationAttempt,
+  releaseRegistrationAttempt,
   updateUserPassword,
   findEnabledUserMfas,
   touchUserMfaLastUsed,

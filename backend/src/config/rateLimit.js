@@ -34,6 +34,14 @@ const RateLimitConfig = {
       max: NODE_ENV === 'development' ? 100 : 3
     },
     
+    // Registration status lookup. Deliberately looser than `register`: a client
+    // that timed out must be able to resolve the truth without being throttled
+    // into showing a false failure. The endpoint creates nothing.
+    registrationStatus: {
+      windowMs: 60 * 60 * 1000, // 1 hour
+      max: NODE_ENV === 'development' ? 300 : 60
+    },
+
     // Password reset endpoint
     passwordReset: {
       windowMs: 60 * 60 * 1000, // 1 hour

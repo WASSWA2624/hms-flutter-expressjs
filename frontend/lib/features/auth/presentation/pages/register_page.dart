@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:hosspi_hms/app/router/app_routes.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
+import 'package:hosspi_hms/features/auth/domain/entities/registration_result.dart';
 import 'package:hosspi_hms/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_page_frame.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_primary_button.dart';
@@ -257,7 +258,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
     TextInput.finishAutofillContext();
     final email = _emailController.text.trim().toLowerCase();
-    final registered = await ref
+    final RegistrationResult? registration = await ref
         .read(authControllerProvider.notifier)
         .register(
           email: email,
@@ -268,13 +269,19 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
           phone: _phoneController.text,
         );
 
-    if (!mounted || !registered) {
+    // Null means the backend confirmed no account exists; the banner above the
+    // form carries the reason. Anything else is a created account, even when
+    // the request itself timed out.
+    if (!mounted || registration == null) {
       return;
     }
 
     context.go(
       AppRoutes.verifyEmail.location(
-        queryParameters: <String, String>{'email': email},
+        queryParameters: <String, String>{
+          'email': registration.email ?? email,
+          if (registration.needsVerificationResend) 'reason': 'email_delayed',
+        },
       ),
     );
   }

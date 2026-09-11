@@ -11,6 +11,7 @@ import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.
 import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/email_verification_result.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/password_reset_request_result.dart';
+import 'package:hosspi_hms/features/auth/domain/entities/registration_result.dart';
 import 'package:hosspi_hms/features/auth/domain/repositories/auth_repository.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/register_page.dart';
 import 'package:hosspi_hms/features/auth/presentation/widgets/auth_shell_layout.dart';
@@ -301,19 +302,30 @@ final class _FailingRegisterRepository extends _BaseAuthRepository {
   final AppFailure failure;
 
   @override
-  Future<Result<void>> register({
+  Future<Result<RegistrationResult>> register({
     required String email,
     required String password,
     required String facilityName,
     required String adminName,
     required String facilityType,
     required String phone,
+    required String idempotencyKey,
     String? tenantName,
     String? location,
     String? interests,
   }) async {
     await Future<void>.delayed(Duration.zero);
-    return Result<void>.failure(failure);
+    return Result<RegistrationResult>.failure(failure);
+  }
+
+  @override
+  Future<Result<RegistrationResult>> registrationStatus({
+    required String idempotencyKey,
+  }) async {
+    // The backend confirms nothing was created, so the failure is the truth.
+    return const Result<RegistrationResult>.success(
+      RegistrationResult(outcome: RegistrationOutcome.unknown),
+    );
   }
 }
 
@@ -322,16 +334,18 @@ final class _SucceedingRegisterRepository extends _BaseAuthRepository {
   String? lastEmail;
   String? lastFacilityName;
   String? lastTenantName;
+  String? lastIdempotencyKey;
   bool lastPayloadContainsTenantName = false;
 
   @override
-  Future<Result<void>> register({
+  Future<Result<RegistrationResult>> register({
     required String email,
     required String password,
     required String facilityName,
     required String adminName,
     required String facilityType,
     required String phone,
+    required String idempotencyKey,
     String? tenantName,
     String? location,
     String? interests,
@@ -341,9 +355,16 @@ final class _SucceedingRegisterRepository extends _BaseAuthRepository {
     lastEmail = email;
     lastFacilityName = facilityName;
     lastTenantName = tenantName;
+    lastIdempotencyKey = idempotencyKey;
     lastPayloadContainsTenantName =
         tenantName != null && tenantName.trim().isNotEmpty;
-    return const Result<void>.success(null);
+    return Result<RegistrationResult>.success(
+      RegistrationResult(
+        outcome: RegistrationOutcome.accountCreatedEmailSent,
+        email: email,
+        nextPath: '/login',
+      ),
+    );
   }
 }
 
@@ -370,18 +391,26 @@ abstract class _BaseAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<Result<void>> register({
+  Future<Result<RegistrationResult>> register({
     required String email,
     required String password,
     required String facilityName,
     required String adminName,
     required String facilityType,
     required String phone,
+    required String idempotencyKey,
     String? tenantName,
     String? location,
     String? interests,
   }) {
     throw UnsupportedError('register is not used by this test.');
+  }
+
+  @override
+  Future<Result<RegistrationResult>> registrationStatus({
+    required String idempotencyKey,
+  }) {
+    throw UnsupportedError('registrationStatus is not used by this test.');
   }
 
   @override

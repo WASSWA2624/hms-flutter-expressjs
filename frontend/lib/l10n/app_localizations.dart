@@ -17035,6 +17035,24 @@ abstract class AppLocalizations {
   /// **'Once your account is approved, sign in with the same email (or phone) and password you used during registration to open your facility workspace.'**
   String get authRegistrationGuideStepSignInBody;
 
+  /// Banner title shown on the verification page when the account exists but its verification email has not gone out.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created'**
+  String get authAccountCreatedTitle;
+
+  /// Banner body telling the user their account was created but the verification email is delayed, and to use the resend action.
+  ///
+  /// In en, this message translates to:
+  /// **'Your workspace is ready. The verification email has not gone out yet — choose Send new code to get one now.'**
+  String get authVerificationEmailDelayedMessage;
+
+  /// Verification page subtitle when the account was created but the verification email is delayed.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created for {email}. Request a new code to finish verifying.'**
+  String authAccountCreatedEmailDelayedBody(String email);
+
   /// Email verification form submit action label.
   ///
   /// In en, this message translates to:

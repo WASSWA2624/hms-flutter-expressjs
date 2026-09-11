@@ -28,7 +28,7 @@ Status values: `Not started` · `In progress` · `Dev done` · `Prod done` · `B
 | # | Prompt | Depends on | Status | Dev | Prod | Notes |
 | - | ------ | ---------- | ------ | --- | ---- | ----- |
 | 01 | [Login password field](01-login-password-field.md) | — | Not started | ☐ | ☐ | |
-| 02 | [Registration error truthfulness](02-registration-error-truthfulness.md) | 01 | Not started | ☐ | ☐ | |
+| 02 | [Registration error truthfulness](02-registration-error-truthfulness.md) | 01 | In progress | ☐ | ☐ | Code, migration, backfill and tests landed; needs `prisma:migrate`, backfill run and manual throttled checks in both environments |
 | 03 | [Persistent authentication](03-persistent-authentication.md) | 01, 02 | Not started | ☐ | ☐ | |
 
 ## Phase 2 — Tenant Architecture and Data Isolation

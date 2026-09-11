@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -19,6 +18,7 @@ import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.
 import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/email_verification_result.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/password_reset_request_result.dart';
+import 'package:hosspi_hms/features/auth/domain/entities/registration_result.dart';
 import 'package:hosspi_hms/features/auth/domain/repositories/auth_repository.dart';
 import 'package:hosspi_hms/features/auth/presentation/controllers/auth_controller.dart';
 import 'package:hosspi_hms/features/auth/presentation/pages/login_page.dart';
@@ -505,18 +505,26 @@ abstract class _BaseAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<Result<void>> register({
+  Future<Result<RegistrationResult>> register({
     required String email,
     required String password,
     required String facilityName,
     required String adminName,
     required String facilityType,
     required String phone,
+    required String idempotencyKey,
     String? tenantName,
     String? location,
     String? interests,
   }) {
     throw UnsupportedError('register is not used by this test.');
+  }
+
+  @override
+  Future<Result<RegistrationResult>> registrationStatus({
+    required String idempotencyKey,
+  }) {
+    throw UnsupportedError('registrationStatus is not used by this test.');
   }
 
   @override

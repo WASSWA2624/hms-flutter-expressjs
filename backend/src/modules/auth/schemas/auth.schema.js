@@ -49,6 +49,18 @@ const registerBodySchema = z.object({
   interests: z.string().trim().max(2000).optional(),
 });
 
+// ==================== Registration Status ====================
+// The idempotency key is a capability: whoever generated it may ask what
+// happened to that submission. Shape-checked so an arbitrary string cannot be
+// used to probe the table.
+const registrationStatusBodySchema = z.object({
+  idempotency_key: z
+    .string()
+    .trim()
+    .min(8, 'errors.validation.field.required')
+    .max(191, 'errors.validation.field.required'),
+});
+
 // ==================== Verify Email ====================
 const verifyEmailBodySchema = z.object({
   token: z.string().min(1, 'errors.validation.token.required'),
@@ -140,6 +152,7 @@ module.exports = {
   identifyBodySchema,
   loginBodySchema,
   registerBodySchema,
+  registrationStatusBodySchema,
   verifyEmailBodySchema,
   verifyPhoneBodySchema,
   resendVerificationBodySchema,

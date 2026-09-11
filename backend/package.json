@@ -24,6 +24,8 @@
     "db:backfill:plan-module-matrix": "node scripts/backfill-plan-module-matrix.js",
     "db:backfill:catalog-modules": "node scripts/backfill-catalog-modules.js",
     "db:backfill:user-position-title": "node scripts/backfill-user-position-title.js",
+    "db:backfill:registration-claims": "node scripts/backfill-registration-email-claims.js --yes",
+    "db:backfill:registration-claims:dry-run": "node scripts/backfill-registration-email-claims.js --dry-run",
     "db:backfill:drug-inventory-map": "node scripts/backfill-drug-inventory-map.js",
     "db:report:user-position-title": "node scripts/report-user-position-title.js",
     "db:clean:duplicate-encounters": "node scripts/clean-duplicate-encounters.js --yes",

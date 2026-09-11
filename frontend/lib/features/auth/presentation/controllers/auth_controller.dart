@@ -1,11 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
+import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/network/idempotency.dart';
 import 'package:hosspi_hms/core/security/auth_session.dart';
 import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/features/auth/data/repositories/auth_repository_impl.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/auth_identify_result.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/email_verification_result.dart';
 import 'package:hosspi_hms/features/auth/domain/entities/password_reset_request_result.dart';
+import 'package:hosspi_hms/features/auth/domain/entities/registration_result.dart';
 import 'package:hosspi_hms/features/auth/domain/repositories/auth_repository.dart';
 
 final authControllerProvider =
@@ -104,6 +107,11 @@ final class AuthControllerState {
 }
 
 final class AuthController extends Notifier<AuthControllerState> {
+  /// Idempotency key for the registration submission currently being retried,
+  /// with the form fingerprint it belongs to.
+  String? _pendingRegistrationKey;
+  String? _pendingRegistrationFingerprint;
+
   @override
   AuthControllerState build() {
     return const AuthControllerState();
@@ -230,7 +238,14 @@ final class AuthController extends Notifier<AuthControllerState> {
     }
   }
 
-  Future<bool> register({
+  /// Submits a registration and returns the outcome the backend confirmed.
+  ///
+  /// Returns `null` only when the backend confirmed that no account exists, or
+  /// rejected the submission; the failure is on [AuthControllerState.failure].
+  /// A transport error alone never produces `null` — it triggers a status
+  /// lookup first, because a timed-out request may well have created the
+  /// account.
+  Future<RegistrationResult?> register({
     required String email,
     required String password,
     required String facilityName,
@@ -242,8 +257,17 @@ final class AuthController extends Notifier<AuthControllerState> {
     String? interests,
   }) async {
     if (state.isSubmitting) {
-      return false;
+      return null;
     }
+
+    final String idempotencyKey = _idempotencyKeyForRegistration(
+      email: email,
+      facilityName: facilityName,
+      adminName: adminName,
+      facilityType: facilityType,
+      phone: phone,
+      tenantName: tenantName,
+    );
 
     state = state.copyWith(
       isSubmitting: true,
@@ -260,28 +284,170 @@ final class AuthController extends Notifier<AuthControllerState> {
             adminName: adminName,
             facilityType: facilityType,
             phone: phone,
+            idempotencyKey: idempotencyKey,
             tenantName: tenantName,
             location: location,
             interests: interests,
           );
 
-      return result.when(
-        success: (_) {
-          state = state.copyWith(
-            isSubmitting: false,
-            clearFailure: true,
-            registrationSubmitted: false,
+      return await result.when(
+        success: (RegistrationResult registration) async {
+          if (registration.accountExists) {
+            return _completeRegistration(registration);
+          }
+
+          // A success envelope that reports no account means an earlier
+          // submission with this key is still running. Keep asking until it
+          // settles rather than rendering it as a completed registration.
+          return _resolveAndReport(
+            idempotencyKey: idempotencyKey,
+            fallbackFailure: const AppFailure.timeout(),
           );
-          return true;
         },
-        failure: (AppFailure failure) {
-          state = state.copyWith(isSubmitting: false, failure: failure);
-          return false;
+        failure: (AppFailure failure) async {
+          if (!_warrantsRegistrationStatusLookup(failure)) {
+            state = state.copyWith(isSubmitting: false, failure: failure);
+            return null;
+          }
+
+          // The request did not complete, but the backend may still have
+          // created the account. Resolve the truth before reporting anything.
+          return _resolveAndReport(
+            idempotencyKey: idempotencyKey,
+            fallbackFailure: failure,
+          );
         },
       );
     } finally {
       _finishSubmitting();
     }
+  }
+
+  /// Reports whatever the backend confirms about an unfinished submission,
+  /// falling back to [fallbackFailure] when it confirms nothing.
+  Future<RegistrationResult?> _resolveAndReport({
+    required String idempotencyKey,
+    required AppFailure fallbackFailure,
+  }) async {
+    final RegistrationResult? resolved = await _resolveRegistrationStatus(
+      idempotencyKey,
+    );
+
+    if (resolved != null && resolved.accountExists) {
+      return _completeRegistration(resolved);
+    }
+
+    if (resolved != null &&
+        resolved.outcome != RegistrationOutcome.inProgress) {
+      // The backend confirmed it has no record of this attempt, or rejected
+      // it, so a failure message is the truth and the next submit is new.
+      _clearPendingRegistration();
+    }
+
+    // Otherwise nothing was confirmed either way: keep the key so a resubmit
+    // replays the same attempt instead of creating a second workspace.
+    state = state.copyWith(isSubmitting: false, failure: fallbackFailure);
+    return null;
+  }
+
+  RegistrationResult _completeRegistration(RegistrationResult registration) {
+    _clearPendingRegistration();
+    state = state.copyWith(
+      isSubmitting: false,
+      clearFailure: true,
+      registrationSubmitted: false,
+    );
+    return registration;
+  }
+
+  /// Transport-level failures where the backend may still have succeeded.
+  bool _warrantsRegistrationStatusLookup(AppFailure failure) {
+    return switch (failure.category) {
+      AppFailureCategory.timeout ||
+      AppFailureCategory.network ||
+      AppFailureCategory.offline => true,
+      AppFailureCategory.unexpectedResponse => (failure.statusCode ?? 0) >= 500,
+      _ => false,
+    };
+  }
+
+  /// Asks the backend what happened, re-checking a few times while the attempt
+  /// is still running. This resolves truth rather than waiting longer on the
+  /// original request: the lookup is a separate, cheap, non-mutating call.
+  Future<RegistrationResult?> _resolveRegistrationStatus(
+    String idempotencyKey,
+  ) async {
+    const List<Duration> backoff = <Duration>[
+      Duration.zero,
+      Duration(seconds: 1),
+      Duration(seconds: 2),
+    ];
+
+    RegistrationResult? latest;
+    for (final Duration delay in backoff) {
+      if (delay > Duration.zero) {
+        await Future<void>.delayed(delay);
+      }
+      if (!ref.mounted) {
+        return latest;
+      }
+
+      final Result<RegistrationResult> lookup = await ref
+          .read(authRepositoryProvider)
+          .registrationStatus(idempotencyKey: idempotencyKey);
+
+      final RegistrationResult? resolved = lookup.when(
+        success: (RegistrationResult registration) => registration,
+        failure: (_) => null,
+      );
+
+      if (resolved == null) {
+        // The lookup itself failed; nothing was confirmed either way.
+        return latest;
+      }
+
+      latest = resolved;
+      if (resolved.outcome != RegistrationOutcome.inProgress) {
+        return resolved;
+      }
+    }
+
+    return latest;
+  }
+
+  String _idempotencyKeyForRegistration({
+    required String email,
+    required String facilityName,
+    required String adminName,
+    required String facilityType,
+    required String phone,
+    String? tenantName,
+  }) {
+    final String fingerprint = <String>[
+      email.trim().toLowerCase(),
+      facilityName.trim(),
+      adminName.trim(),
+      facilityType.trim(),
+      phone.trim(),
+      tenantName?.trim() ?? '',
+    ].join('|');
+
+    // Resubmitting the same details reuses the key, so a retry after a timeout
+    // replays the original attempt. Editing any of them starts a new attempt.
+    if (_pendingRegistrationFingerprint == fingerprint &&
+        _pendingRegistrationKey != null) {
+      return _pendingRegistrationKey!;
+    }
+
+    final String key = createIdempotencyKey();
+    _pendingRegistrationFingerprint = fingerprint;
+    _pendingRegistrationKey = key;
+    return key;
+  }
+
+  void _clearPendingRegistration() {
+    _pendingRegistrationFingerprint = null;
+    _pendingRegistrationKey = null;
   }
 
   Future<bool> changePassword({
