@@ -92,7 +92,10 @@ const main = async () => {
       continue;
     }
 
-    if (seen.has(email) || claimed.has(email)) {
+    // Rows are ordered oldest first, so the first row for an email is the
+    // claim holder and any later row is a genuine second self-serve
+    // registration for that address.
+    if (seen.has(email)) {
       duplicates.push({
         email,
         user_id: row.user_id,
@@ -103,6 +106,12 @@ const main = async () => {
     }
 
     seen.add(email);
+
+    // Claimed by an earlier run of this script, or by a live registration.
+    // Not a duplicate — nothing to do.
+    if (claimed.has(email)) {
+      continue;
+    }
 
     toCreate.push({
       idempotency_key: `${BACKFILL_KEY_PREFIX}${row.user_id}`,
