@@ -32,7 +32,12 @@ class LoginPage extends ConsumerStatefulWidget {
 }
 
 class _LoginPageState extends ConsumerState<LoginPage> {
-  GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  /// Stable for the life of the page. Replacing a [GlobalKey] changes the
+  /// [Form] widget's identity, so Flutter tears the whole form subtree down and
+  /// inflates a new one; the rebuilt `EditableText` never reopens its text
+  /// input connection because the focus node it shares never changed focus, and
+  /// the field silently stops accepting keystrokes.
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final _identifierController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -67,6 +72,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       final String? loginPrefillIdentifier = authState.loginPrefillIdentifier;
       final String? loginPrefillPassword = authState.loginPrefillPassword;
       auth.clearFailure();
+      // The auth notifier outlives this route, so a submit left in flight by a
+      // sibling auth page would render every field here disabled.
+      auth.clearSubmitting();
       auth.clearIdentifyTenants();
       auth.clearPasswordResetSubmitted();
       if (loginPrefillIdentifier != null && loginPrefillIdentifier.isNotEmpty) {
@@ -152,9 +160,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         case AuthIdentifierMode.phone:
           _identifierController.clear();
       }
-      _formKey = GlobalKey<FormState>();
       _autovalidateMode = AutovalidateMode.disabled;
     });
+    _formKey.currentState?.clearError();
   }
 
   @override
@@ -318,7 +326,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       return;
     }
 
-    TextInput.finishAutofillContext();
     final success = await ref
         .read(authControllerProvider.notifier)
         .login(
@@ -357,6 +364,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       return;
     }
 
+    // Only once the credentials are known good: on web this tears down the
+    // group's autofill context (and prompts "Save password?"), which would
+    // detach the live inputs if it ran on every rejected attempt.
+    TextInput.finishAutofillContext();
+
     final from = widget.from;
     context.go(
       from == null || from.isEmpty || from == AppRoutes.login.path
@@ -392,9 +404,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     }
 
     setState(() {
-      _formKey = GlobalKey<FormState>();
       _autovalidateMode = AutovalidateMode.disabled;
     });
+    // Drops the visible validation errors without touching field values or
+    // remounting the form, so the focused field keeps its input connection.
+    _formKey.currentState?.clearError();
   }
 }
 

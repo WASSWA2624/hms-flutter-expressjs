@@ -117,8 +117,15 @@ final class AuthController extends Notifier<AuthControllerState> {
     state = state.copyWith(clearFailure: true);
   }
 
-  void clearSubmitting() {
-    if (!state.isSubmitting) {
+  void clearSubmitting() => _finishSubmitting();
+
+  /// The single reset point for the submit-in-flight flag. Every submit flow
+  /// runs this in a `finally`, so success, server failure, a thrown timeout or
+  /// network error, and provider disposal all leave the auth forms enabled —
+  /// this notifier is shared by every auth page, and a flag left set here
+  /// renders their fields `enabled: false` until a full page reload.
+  void _finishSubmitting() {
+    if (!ref.mounted || !state.isSubmitting) {
       return;
     }
 
@@ -212,8 +219,14 @@ final class AuthController extends Notifier<AuthControllerState> {
         },
       );
     } catch (_) {
-      state = state.copyWith(isSubmitting: false);
-      rethrow;
+      // Report rather than rethrow: an escaping error from the sign-in button
+      // leaves the user with a dead form and no message.
+      if (ref.mounted) {
+        state = state.copyWith(failure: const AppFailure.unexpected());
+      }
+      return false;
+    } finally {
+      _finishSubmitting();
     }
   }
 
@@ -266,9 +279,8 @@ final class AuthController extends Notifier<AuthControllerState> {
           return false;
         },
       );
-    } catch (_) {
-      state = state.copyWith(isSubmitting: false);
-      rethrow;
+    } finally {
+      _finishSubmitting();
     }
   }
 
@@ -286,29 +298,33 @@ final class AuthController extends Notifier<AuthControllerState> {
       clearFailure: true,
       passwordChanged: false,
     );
-    final result = await ref
-        .read(authRepositoryProvider)
-        .changePassword(
-          currentPassword: currentPassword,
-          newPassword: newPassword,
-          confirmPassword: confirmPassword,
-        );
+    try {
+      final result = await ref
+          .read(authRepositoryProvider)
+          .changePassword(
+            currentPassword: currentPassword,
+            newPassword: newPassword,
+            confirmPassword: confirmPassword,
+          );
 
-    return result.when(
-      success: (_) async {
-        await ref.read(sessionStateProvider.notifier).logout();
-        state = state.copyWith(
-          isSubmitting: false,
-          clearFailure: true,
-          passwordChanged: true,
-        );
-        return true;
-      },
-      failure: (AppFailure failure) {
-        state = state.copyWith(isSubmitting: false, failure: failure);
-        return false;
-      },
-    );
+      return await result.when<Future<bool>>(
+        success: (_) async {
+          await ref.read(sessionStateProvider.notifier).logout();
+          state = state.copyWith(
+            isSubmitting: false,
+            clearFailure: true,
+            passwordChanged: true,
+          );
+          return true;
+        },
+        failure: (AppFailure failure) async {
+          state = state.copyWith(isSubmitting: false, failure: failure);
+          return false;
+        },
+      );
+    } finally {
+      _finishSubmitting();
+    }
   }
 
   Future<bool> requestPasswordReset({
@@ -330,50 +346,54 @@ final class AuthController extends Notifier<AuthControllerState> {
     final AuthRepository repository = ref.read(authRepositoryProvider);
     final normalizedEmail = email.trim().toLowerCase();
 
-    if (tenantId == null || tenantId.trim().isEmpty) {
-      final identifyResult = await repository.identify(
-        identifier: normalizedEmail,
-      );
+    try {
+      if (tenantId == null || tenantId.trim().isEmpty) {
+        final identifyResult = await repository.identify(
+          identifier: normalizedEmail,
+        );
 
-      return identifyResult.when(
-        success: (AuthIdentifyResult result) async {
-          if (result.tenants.isEmpty) {
+        return await identifyResult.when<Future<bool>>(
+          success: (AuthIdentifyResult result) async {
+            if (result.tenants.isEmpty) {
+              state = state.copyWith(
+                isSubmitting: false,
+                failure: const AppFailure.unauthorized(
+                  code: 'auth.account_not_found',
+                ),
+                passwordResetSubmitted: false,
+              );
+              return false;
+            }
+
+            if (result.tenants.length == 1) {
+              return _submitForgotPassword(
+                repository: repository,
+                email: normalizedEmail,
+                tenantId: result.tenants.first.tenantId,
+              );
+            }
+
             state = state.copyWith(
               isSubmitting: false,
-              failure: const AppFailure.unauthorized(
-                code: 'auth.account_not_found',
-              ),
-              passwordResetSubmitted: false,
+              identifyTenants: result.tenants,
             );
             return false;
-          }
+          },
+          failure: (AppFailure failure) async {
+            state = state.copyWith(isSubmitting: false, failure: failure);
+            return false;
+          },
+        );
+      }
 
-          if (result.tenants.length == 1) {
-            return _submitForgotPassword(
-              repository: repository,
-              email: normalizedEmail,
-              tenantId: result.tenants.first.tenantId,
-            );
-          }
-
-          state = state.copyWith(
-            isSubmitting: false,
-            identifyTenants: result.tenants,
-          );
-          return false;
-        },
-        failure: (AppFailure failure) {
-          state = state.copyWith(isSubmitting: false, failure: failure);
-          return false;
-        },
+      return await _submitForgotPassword(
+        repository: repository,
+        email: normalizedEmail,
+        tenantId: tenantId.trim(),
       );
+    } finally {
+      _finishSubmitting();
     }
-
-    return _submitForgotPassword(
-      repository: repository,
-      email: normalizedEmail,
-      tenantId: tenantId.trim(),
-    );
   }
 
   Future<bool> resetPassword({
@@ -395,35 +415,39 @@ final class AuthController extends Notifier<AuthControllerState> {
       clearLoginPrefill: true,
     );
 
-    final result = await ref
-        .read(authRepositoryProvider)
-        .resetPassword(
-          token: token,
-          email: email,
-          code: code,
-          newPassword: newPassword,
-          confirmPassword: confirmPassword,
-        );
+    try {
+      final result = await ref
+          .read(authRepositoryProvider)
+          .resetPassword(
+            token: token,
+            email: email,
+            code: code,
+            newPassword: newPassword,
+            confirmPassword: confirmPassword,
+          );
 
-    return result.when(
-      success: (_) {
-        final String? prefillId =
-            (loginPrefillIdentifier ?? email)?.trim().toLowerCase();
-        state = state.copyWith(
-          isSubmitting: false,
-          clearFailure: true,
-          passwordResetCompleted: true,
-          loginPrefillIdentifier:
-              prefillId != null && prefillId.isNotEmpty ? prefillId : null,
-          loginPrefillPassword: newPassword,
-        );
-        return true;
-      },
-      failure: (AppFailure failure) {
-        state = state.copyWith(isSubmitting: false, failure: failure);
-        return false;
-      },
-    );
+      return result.when(
+        success: (_) {
+          final String? prefillId =
+              (loginPrefillIdentifier ?? email)?.trim().toLowerCase();
+          state = state.copyWith(
+            isSubmitting: false,
+            clearFailure: true,
+            passwordResetCompleted: true,
+            loginPrefillIdentifier:
+                prefillId != null && prefillId.isNotEmpty ? prefillId : null,
+            loginPrefillPassword: newPassword,
+          );
+          return true;
+        },
+        failure: (AppFailure failure) {
+          state = state.copyWith(isSubmitting: false, failure: failure);
+          return false;
+        },
+      );
+    } finally {
+      _finishSubmitting();
+    }
   }
 
   Future<bool> verifyEmail({required String token, String? email}) async {
@@ -439,26 +463,30 @@ final class AuthController extends Notifier<AuthControllerState> {
       clearPlatformAdminContacts: true,
     );
 
-    final result = await ref
-        .read(authRepositoryProvider)
-        .verifyEmail(token: token, email: email);
+    try {
+      final result = await ref
+          .read(authRepositoryProvider)
+          .verifyEmail(token: token, email: email);
 
-    return result.when(
-      success: (EmailVerificationResult verification) {
-        state = state.copyWith(
-          isSubmitting: false,
-          clearFailure: true,
-          emailVerificationCompleted: true,
-          awaitingPlatformApproval: verification.awaitingPlatformApproval,
-          platformAdminContacts: verification.platformAdminContacts,
-        );
-        return true;
-      },
-      failure: (AppFailure failure) {
-        state = state.copyWith(isSubmitting: false, failure: failure);
-        return false;
-      },
-    );
+      return result.when(
+        success: (EmailVerificationResult verification) {
+          state = state.copyWith(
+            isSubmitting: false,
+            clearFailure: true,
+            emailVerificationCompleted: true,
+            awaitingPlatformApproval: verification.awaitingPlatformApproval,
+            platformAdminContacts: verification.platformAdminContacts,
+          );
+          return true;
+        },
+        failure: (AppFailure failure) {
+          state = state.copyWith(isSubmitting: false, failure: failure);
+          return false;
+        },
+      );
+    } finally {
+      _finishSubmitting();
+    }
   }
 
   Future<bool> resendEmailVerification({required String email}) async {
@@ -468,20 +496,24 @@ final class AuthController extends Notifier<AuthControllerState> {
 
     state = state.copyWith(isSubmitting: true, clearFailure: true);
 
-    final result = await ref
-        .read(authRepositoryProvider)
-        .resendEmailVerification(email: email);
+    try {
+      final result = await ref
+          .read(authRepositoryProvider)
+          .resendEmailVerification(email: email);
 
-    return result.when(
-      success: (_) {
-        state = state.copyWith(isSubmitting: false, clearFailure: true);
-        return true;
-      },
-      failure: (AppFailure failure) {
-        state = state.copyWith(isSubmitting: false, failure: failure);
-        return false;
-      },
-    );
+      return result.when(
+        success: (_) {
+          state = state.copyWith(isSubmitting: false, clearFailure: true);
+          return true;
+        },
+        failure: (AppFailure failure) {
+          state = state.copyWith(isSubmitting: false, failure: failure);
+          return false;
+        },
+      );
+    } finally {
+      _finishSubmitting();
+    }
   }
 
   Future<bool> _submitForgotPassword({
