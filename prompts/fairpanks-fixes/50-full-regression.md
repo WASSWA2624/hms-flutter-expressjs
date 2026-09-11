@@ -56,4 +56,4 @@ The final pass covers the whole application and closes the release gate: `Correc
 - `backend/src/tests/`, `frontend/test/`, `frontend/integration_test/`, `frontend/patrol_test/`
 - `deploy/README.md`, `deploy/deploy-backend.py`, `deploy/deploy-frontend.py`, `deploy/deploy-android.py`
 - `backend/docs/` (verification documents from steps 04, 07, 35, 43, 48, 49)
-- `prompts/fairpanks-fixes/progress-tracker.md`
+- `prompts/fairpanks-fixes/00-progress-tracker.md`

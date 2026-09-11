@@ -13,6 +13,78 @@ numeric order; each prompt lists its own dependencies.
 
 Status values: `Not started` · `In progress` · `Dev done` · `Prod done` · `Blocked`
 
+## Progress
+
+Recomputed on every tracker update. 50 steps total.
+
+| Metric | Count | Percent |
+| ------ | ----- | ------- |
+| **Overall progress** (weighted) | 0.0 / 50 | **0%** |
+| Prod done | 0 / 50 | 0% |
+| Dev done or better | 0 / 50 | 0% |
+| In progress | 1 / 50 | 2% |
+| Not started | 49 / 50 | 98% |
+| Blocked | 0 / 50 | 0% |
+| Gates passed | 0 / 5 | 0% |
+
+Phase completion (`Prod done` steps / steps in phase):
+
+| Phase | Steps | Prod done | Percent |
+| ----- | ----- | --------- | ------- |
+| 1 — Authentication, Registration and Session Stability | 01-03 | 0 / 3 | 0% |
+| 2 — Tenant Architecture and Data Isolation | 04-07 | 0 / 4 | 0% |
+| 3 — Users, Roles and Permissions | 08-12 | 0 / 5 | 0% |
+| 4 — Billing, Payments, Waivers and Refunds | 13-16 | 0 / 4 | 0% |
+| 5 — Clinical Workflow Flexibility | 17 | 0 / 1 | 0% |
+| 6 — Facility and Staff Management | 18-21 | 0 / 4 | 0% |
+| 7 — Shared UI Components | 22-24 | 0 / 3 | 0% |
+| 8 — Pharmacy Workflow and Data Model | 25-27 | 0 / 3 | 0% |
+| 9 — Reporting and Analytics Framework | 28-34 | 0 / 7 | 0% |
+| 10 — Excel Data Exchange | 35-38 | 0 / 4 | 0% |
+| 11 — Printouts and PDF | 39-41 | 0 / 3 | 0% |
+| 12 — Client Communication | 42 | 0 / 1 | 0% |
+| 13 — Performance Optimization | 43-46 | 0 / 4 | 0% |
+| 14 — End-to-End Integration Testing | 47 | 0 / 1 | 0% |
+| 15 — Security, Audit and Regression | 48-50 | 0 / 3 | 0% |
+
+## Updating this tracker
+
+**Whenever a prompt in `prompts/fairpanks-fixes/` is successfully implemented, update this file in
+the same commit as the implementation.** A prompt is "successfully implemented" when every
+acceptance criterion in it is met and its verification commands pass — first in development, then in
+production.
+
+Do this, in order:
+
+1. **Update the step row** in its phase table: set `Status`, tick `Dev` and/or `Prod` (`☐` → `☑`),
+   and replace the note with what remains (or clear it when nothing does).
+   - Code merged and verified in development → `Dev done`, `Dev` = `☑`.
+   - Verified against `https://api.hosspi.com` and `https://app.hosspi.com` → `Prod done`,
+     `Prod` = `☑`. Only then is the step done.
+   - Work started but not passing in development → `In progress`. Waiting on something external →
+     `Blocked`, with the blocker in the note.
+2. **Update the Gates table** if the step owns a gate (07, 31, 48, 49, 50): a gate reaches
+   `Prod done` only when its owning step does.
+3. **Recompute the Progress tables** with the weighting below and rewrite both tables — the overall
+   percent, every metric row, and the phase row the step belongs to.
+4. **Append a Change log row**: date (`YYYY-MM-DD`), step number, what changed, and who.
+
+### Progress weighting
+
+Each step is worth 1.0. Score every step, sum, then divide by 50:
+
+| Status | Weight |
+| ------ | ------ |
+| `Prod done` | 1.0 |
+| `Dev done` | 0.5 |
+| `In progress` | 0.0 |
+| `Blocked` | 0.0 |
+| `Not started` | 0.0 |
+
+`Overall progress % = round(sum of weights / 50 × 100)`. Percentages are whole numbers, rounded half
+up. `Prod done %` is the release-readiness number — the project ships at 100% Prod done with all five
+gates passed, not at 100% overall.
+
 ## Gates
 
 | Gate | Owning step | Rule | Status |
@@ -163,10 +235,12 @@ Copy into the pull request for each step:
 - [ ] Acceptance checks repeated against `https://api.hosspi.com` and `https://app.hosspi.com`
 - [ ] No behavior gated on `NODE_ENV` or on a development-only flag, seed, or account
 - [ ] Tenant isolation, scope, authorization, and audit behavior unchanged or improved
-- [ ] Tracker row updated with Status, Dev, Prod, and notes
+- [ ] Tracker row updated with Status, Dev, Prod, and notes, gates re-checked, Progress
+      tables recomputed, and a Change log row appended (see **Updating this tracker**)
 
 ## Change log
 
 | Date | Step | Change | By |
 | ---- | ---- | ------ | -- |
 | 2026-09-11 | — | Prompts generated from `fairpanks-fixes.md` | — |
+| 2026-09-11 | — | Tracker renamed to `00-progress-tracker.md`; progress tables and update protocol added | — |
