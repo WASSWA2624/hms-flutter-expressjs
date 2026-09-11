@@ -1138,27 +1138,107 @@ const deliverAuthEmail = async (sendPromise, context, options = {}) => {
  * @param {Object} [options] - Extra log fields (never returned to the client)
  * @returns {Promise<string>} `SENT` or `FAILED`
  */
-const deliverRegistrationEmail = async (sendPromise, context, options = {}) => {
-  try {
-    const deliveryResult = await sendPromise;
-    if (deliveryResult?.sent) {
-      return REGISTRATION_EMAIL_STATUS.SENT;
-    }
+/**
+ * Callback that records a background delivery against a registration attempt.
+ *
+ * @param {string|null} attemptId - Attempt row id, when one is tracked
+ * @returns {Function|undefined} `onSettled` handler, or undefined when untracked
+ */
+const registrationEmailRecorder = (attemptId) => {
+  if (!attemptId) return undefined;
 
-    logger.warn('Registration verification email was not delivered; account is still usable.', {
-      context: context || 'verification_email',
-      provider: deliveryResult?.provider || 'unknown',
-      verification_code: options.code || undefined,
+  return (status) =>
+    authRepository.updateRegistrationAttemptEmailStatus(attemptId, status);
+};
+
+// Sentinel distinguishing "the wait elapsed" from any real delivery status.
+const PENDING_DELIVERY = Symbol('registration_email_pending');
+
+const deliverRegistrationEmail = async (sendPromise, context, options = {}) => {
+  const logContext = context || 'verification_email';
+
+  // Resolve the send to a status exactly once, whether it is awaited here or
+  // finishes later in the background. Attached immediately so a late rejection
+  // can never surface as an unhandled promise.
+  const settled = Promise.resolve(sendPromise).then(
+    (deliveryResult) => {
+      if (deliveryResult?.sent) {
+        return REGISTRATION_EMAIL_STATUS.SENT;
+      }
+
+      logger.warn('Registration verification email was not delivered; account is still usable.', {
+        context: logContext,
+        provider: deliveryResult?.provider || 'unknown',
+        verification_code: options.code || undefined,
+      });
+      return REGISTRATION_EMAIL_STATUS.FAILED;
+    },
+    (error) => {
+      logger.warn('Registration verification email delivery threw; account is still usable.', {
+        context: logContext,
+        error: error?.message || 'unknown_error',
+        verification_code: options.code || undefined,
+      });
+      return REGISTRATION_EMAIL_STATUS.FAILED;
+    }
+  );
+
+  const waitMs = Number(env.REGISTRATION_EMAIL_WAIT_MS ?? 3000);
+  if (waitMs > 0) {
+    let timer = null;
+    const deadline = new Promise((resolve) => {
+      timer = setTimeout(() => resolve(PENDING_DELIVERY), waitMs);
+      // Never hold the process open for a send nobody is waiting on.
+      timer?.unref?.();
     });
-    return REGISTRATION_EMAIL_STATUS.FAILED;
-  } catch (error) {
-    logger.warn('Registration verification email delivery threw; account is still usable.', {
-      context: context || 'verification_email',
-      error: error?.message || 'unknown_error',
-      verification_code: options.code || undefined,
-    });
-    return REGISTRATION_EMAIL_STATUS.FAILED;
+
+    try {
+      const status = await Promise.race([settled, deadline]);
+      if (status !== PENDING_DELIVERY) {
+        return status;
+      }
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
   }
+
+  // Still in flight. The account, facility and verification code are already
+  // committed, so the client is told PENDING now and moves to the verification
+  // step instead of watching a spinner until the mail transport answers.
+  reportRegistrationEmailWhenSettled(settled, logContext, options);
+  return REGISTRATION_EMAIL_STATUS.PENDING;
+};
+
+/**
+ * Record a background delivery once it finishes, after the response has gone.
+ *
+ * Keeps the stored attempt honest: a status lookup or an idempotent replay then
+ * reports what actually happened rather than the snapshot taken at response
+ * time.
+ *
+ * @param {Promise<string>} settled - Delivery promise already reduced to a status
+ * @param {string} logContext - Log context label
+ * @param {Object} options - `onSettled` receives the final status
+ * @returns {void}
+ */
+const reportRegistrationEmailWhenSettled = (settled, logContext, options = {}) => {
+  settled
+    .then(async (status) => {
+      logger.info('Registration verification email settled after the response.', {
+        context: logContext,
+        email_status: status,
+      });
+
+      if (typeof options.onSettled === 'function') {
+        await options.onSettled(status);
+      }
+    })
+    .catch((error) => {
+      logger.warn('Could not record a background verification email result.', {
+        context: logContext,
+        error: error?.message || 'unknown_error',
+      });
+    });
 };
 
 const resolveRegistrationOutcome = (emailStatus) =>
@@ -1381,6 +1461,7 @@ const handleExistingEmailRegistration = async ({
   ip_address,
   user_agent,
   request_context,
+  attemptId = null,
 }) => {
   const nextPath = '/login';
   const facilityDetailsDiffer = hasFacilityDetailsDifference(
@@ -1401,7 +1482,7 @@ const handleExistingEmailRegistration = async ({
       timeZone: request_context?.timezone,
     }),
     'register_existing_email',
-    { code: verification.code }
+    { code: verification.code, onSettled: registrationEmailRecorder(attemptId) }
   );
 
   await persistRegistrationFollowUp({
@@ -1831,6 +1912,7 @@ const performRegistration = async (data, attemptId = null) => {
         location,
         interests,
         request_context,
+        attemptId,
       });
     }
 
@@ -1847,6 +1929,7 @@ const performRegistration = async (data, attemptId = null) => {
         location,
         interests,
         request_context,
+        attemptId,
       });
     }
 
@@ -1894,6 +1977,7 @@ const performRegistration = async (data, attemptId = null) => {
         location,
         interests,
         request_context,
+        attemptId,
       });
     }
 
@@ -1923,7 +2007,7 @@ const performRegistration = async (data, attemptId = null) => {
         timeZone: request_context?.timezone,
       }),
       'register_new_user',
-      { code: verification.code }
+      { code: verification.code, onSettled: registrationEmailRecorder(attemptId) }
     );
   } catch (error) {
     logger.warn('Could not issue a verification code after registration; account is still usable.', {
@@ -2012,6 +2096,47 @@ const toRejectionError = (attempt) =>
     Array.isArray(attempt?.result_json?.errors) ? attempt.result_json.errors : []
   );
 
+/**
+ * The email status to persist, or undefined while delivery is still running.
+ *
+ * @param {string|undefined} emailStatus - Status observed at response time
+ * @returns {string|undefined} Settled status, or undefined
+ */
+const settledEmailStatus = (emailStatus) =>
+  emailStatus && emailStatus !== REGISTRATION_EMAIL_STATUS.PENDING
+    ? emailStatus
+    : undefined;
+
+/**
+ * Overlay the attempt's current email status on a stored replay payload.
+ *
+ * The payload is frozen at response time, so a registration answered while the
+ * email was still sending stored `PENDING`. The row is updated when delivery
+ * settles, and that is the value a replay or a status lookup must report.
+ *
+ * @param {Object} payload - Stored response payload
+ * @param {Object} attempt - Attempt row
+ * @returns {Object} Payload carrying the attempt's current email status
+ */
+const withCurrentEmailStatus = (payload, attempt) => {
+  const currentStatus = attempt?.email_status;
+  if (!currentStatus || !payload?.verification) {
+    return payload;
+  }
+
+  if (payload.verification.email_status === currentStatus) {
+    return payload;
+  }
+
+  return {
+    ...payload,
+    outcome: payload.user
+      ? resolveRegistrationOutcome(currentStatus)
+      : payload.outcome,
+    verification: { ...payload.verification, email_status: currentStatus },
+  };
+};
+
 const replayRegistrationAttempt = (attempt) => {
   if (attempt.status === 'REJECTED') {
     throw toRejectionError(attempt);
@@ -2020,7 +2145,7 @@ const replayRegistrationAttempt = (attempt) => {
   if (attempt.status === 'SUCCEEDED') {
     const stored = attempt.result_json;
     if (stored && typeof stored === 'object' && !Array.isArray(stored)) {
-      return { ...stored, replayed: true };
+      return { ...withCurrentEmailStatus(stored, attempt), replayed: true };
     }
 
     // The outcome is known even when the payload was lost; report the truth.
@@ -2101,7 +2226,11 @@ const register = async (data) => {
     await authRepository.completeRegistrationAttempt(attemptId, {
       status: 'SUCCEEDED',
       outcome_code: result.outcome,
-      email_status: result.verification?.email_status || REGISTRATION_EMAIL_STATUS.PENDING,
+      // Only a settled status is written here. A delivery still in flight
+      // leaves the row on its PENDING default, so the background recorder --
+      // which may land before or after this write -- owns the final value and
+      // cannot be overwritten by a stale snapshot.
+      email_status: settledEmailStatus(result.verification?.email_status),
       user_id: result.user?.id || null,
       tenant_id: result.user?.tenant_id || null,
       facility_id: result.user?.facility_id || null,

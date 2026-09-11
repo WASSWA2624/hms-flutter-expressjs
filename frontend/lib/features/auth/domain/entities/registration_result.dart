@@ -29,10 +29,6 @@ enum RegistrationOutcome {
       this == RegistrationOutcome.accountCreatedEmailSent ||
       this == RegistrationOutcome.accountCreatedEmailPending;
 
-  /// True when the verification email did not go out and the user needs to
-  /// request a new code.
-  bool get needsVerificationResend =>
-      this == RegistrationOutcome.accountCreatedEmailPending;
 
   static RegistrationOutcome fromWire(Object? raw) {
     final String value = raw?.toString().trim().toUpperCase() ?? '';
@@ -45,16 +41,54 @@ enum RegistrationOutcome {
   }
 }
 
+/// Delivery state of the verification email, as the backend last observed it.
+///
+/// Separate from [RegistrationOutcome] because "still sending" and "could not
+/// send" are the same outcome code but very different things to tell a user.
+enum RegistrationEmailStatus {
+  /// Handed to the mail transport; the result was not known yet when the
+  /// backend answered. The code is normally in the inbox moments later.
+  pending('PENDING'),
+
+  /// The transport accepted the message.
+  sent('SENT'),
+
+  /// Delivery failed. The user needs a new code.
+  failed('FAILED'),
+
+  /// The backend did not report a status.
+  unknown('');
+
+  const RegistrationEmailStatus(this.wireValue);
+
+  final String wireValue;
+
+  static RegistrationEmailStatus fromWire(Object? raw) {
+    final String value = raw?.toString().trim().toUpperCase() ?? '';
+    for (final RegistrationEmailStatus status in RegistrationEmailStatus.values) {
+      if (status != RegistrationEmailStatus.unknown &&
+          status.wireValue == value) {
+        return status;
+      }
+    }
+    return RegistrationEmailStatus.unknown;
+  }
+}
+
 /// Outcome of `POST /auth/register` or `POST /auth/registration-status`.
 final class RegistrationResult {
   const RegistrationResult({
     required this.outcome,
     this.email,
+    this.emailStatus = RegistrationEmailStatus.unknown,
     this.nextPath,
     this.rejectionCode,
   });
 
   final RegistrationOutcome outcome;
+
+  /// What the backend last knew about the verification email.
+  final RegistrationEmailStatus emailStatus;
 
   /// Email the verification code was (or will be) sent to.
   final String? email;
@@ -68,7 +102,18 @@ final class RegistrationResult {
 
   bool get accountExists => outcome.accountExists;
 
-  bool get needsVerificationResend => outcome.needsVerificationResend;
+  /// True when the verification page should lead with "request a new code"
+  /// rather than "check your inbox".
+  ///
+  /// A send still in flight is not a failure: the backend answers without
+  /// waiting for the mail transport, so `pending` is the ordinary path and the
+  /// code usually arrives seconds later. Only a delivery the backend could not
+  /// complete — or an outcome that reports no status at all — earns the
+  /// delayed-email copy.
+  bool get needsVerificationResend =>
+      outcome == RegistrationOutcome.accountCreatedEmailPending &&
+      emailStatus != RegistrationEmailStatus.pending &&
+      emailStatus != RegistrationEmailStatus.sent;
 
   static RegistrationResult fromResponseData(Object? data) {
     if (data is! Map) {
@@ -86,6 +131,9 @@ final class RegistrationResult {
     final String? email = verification is Map
         ? readString(verification['email'])
         : null;
+    final RegistrationEmailStatus emailStatus = verification is Map
+        ? RegistrationEmailStatus.fromWire(verification['email_status'])
+        : RegistrationEmailStatus.unknown;
 
     final Object? rejection = map['rejection'];
     final String? rejectionCode = rejection is Map
@@ -95,6 +143,7 @@ final class RegistrationResult {
     return RegistrationResult(
       outcome: RegistrationOutcome.fromWire(map['outcome']),
       email: email,
+      emailStatus: emailStatus,
       nextPath: readString(map['next_path']),
       rejectionCode: rejectionCode,
     );

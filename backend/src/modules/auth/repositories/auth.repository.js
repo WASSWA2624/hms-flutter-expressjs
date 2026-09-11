@@ -666,6 +666,36 @@ const completeRegistrationAttempt = async (attemptId, data = {}) => {
 };
 
 /**
+ * Record the final verification-email status for an attempt.
+ *
+ * Narrow on purpose: a background delivery settles after the response has been
+ * sent and after `completeRegistrationAttempt` has written the outcome, so it
+ * must touch `email_status` and nothing else.
+ *
+ * @param {string} attemptId - Attempt row id
+ * @param {string} emailStatus - `SENT` or `FAILED`
+ * @returns {Promise<Object|null>} Updated attempt, or null when unavailable
+ */
+const updateRegistrationAttemptEmailStatus = async (attemptId, emailStatus) => {
+  const delegate = getRegistrationAttemptDelegate();
+  if (!delegate || !attemptId || !emailStatus) {
+    return null;
+  }
+
+  try {
+    return await delegate.update({
+      where: { id: attemptId },
+      data: { email_status: emailStatus },
+    });
+  } catch (error) {
+    if (isMissingSchemaArtifactError(error) || error?.code === 'P2025') {
+      return null;
+    }
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
  * Drop an attempt that failed for an infrastructure reason so the same key can
  * be retried.
  *
@@ -1433,6 +1463,7 @@ module.exports = {
   beginRegistrationAttempt,
   findRegistrationAttemptByKey,
   completeRegistrationAttempt,
+  updateRegistrationAttemptEmailStatus,
   releaseRegistrationAttempt,
   updateUserPassword,
   findEnabledUserMfas,

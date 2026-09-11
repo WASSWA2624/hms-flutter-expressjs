@@ -45,6 +45,7 @@ const { hashPassword } = require('@lib/crypto');
 const { createAuditLog } = require('@lib/audit');
 const { sendEmail } = require('@lib/notifications');
 const { HttpError } = require('@lib/errors');
+const env = require('@config/env');
 
 const IDEMPOTENCY_KEY = 'f1a2b3c4-0000-4000-8000-000000000001';
 
@@ -89,6 +90,8 @@ describe('Registration truthfulness', () => {
     authRepository.upsertRegistrationFollowUp.mockResolvedValue({});
     authRepository.completeRegistrationAttempt.mockResolvedValue({});
     authRepository.releaseRegistrationAttempt.mockResolvedValue(undefined);
+    authRepository.updateRegistrationAttemptEmailStatus.mockResolvedValue({});
+    env.REGISTRATION_EMAIL_WAIT_MS = 3000;
   });
 
   describe('outcome codes', () => {
@@ -448,6 +451,103 @@ describe('Registration truthfulness', () => {
       const serialized = JSON.stringify(result);
       expect(serialized).not.toContain('password');
       expect(serialized).not.toMatch(/"code"\s*:\s*"\d{6}"/);
+    });
+  });
+
+  describe('the response never waits on the mail transport', () => {
+    /** A send that has been handed to SMTP and has not come back. */
+    const pendingDelivery = () => {
+      let settle;
+      const promise = new Promise((resolve) => {
+        settle = resolve;
+      });
+      sendEmail.mockReturnValue(promise);
+      return { settle };
+    };
+
+    it('answers ACCOUNT_CREATED_EMAIL_PENDING instead of blocking on a slow send', async () => {
+      env.REGISTRATION_EMAIL_WAIT_MS = 20;
+      mockFreshAttempt();
+      pendingDelivery();
+
+      const startedAt = Date.now();
+      const result = await authService.register(registerData);
+      const elapsed = Date.now() - startedAt;
+
+      // The account exists and the client is told so straight away; it does not
+      // sit on a spinner until the mail server answers.
+      expect(result.outcome).toBe('ACCOUNT_CREATED_EMAIL_PENDING');
+      expect(result.user).toHaveProperty('id', 'user-123');
+      expect(result.verification.email_status).toBe('PENDING');
+      expect(elapsed).toBeLessThan(1000);
+    });
+
+    it('waits for a send that settles inside the budget and reports it as sent', async () => {
+      mockFreshAttempt();
+      sendEmail.mockResolvedValue({ sent: true, provider: 'smtp' });
+
+      const result = await authService.register(registerData);
+
+      expect(result.outcome).toBe('ACCOUNT_CREATED_EMAIL_SENT');
+      expect(result.verification.email_status).toBe('SENT');
+    });
+
+    it('records the delivery against the attempt once it settles', async () => {
+      env.REGISTRATION_EMAIL_WAIT_MS = 20;
+      mockFreshAttempt();
+      const { settle } = pendingDelivery();
+
+      await authService.register(registerData);
+      expect(
+        authRepository.updateRegistrationAttemptEmailStatus
+      ).not.toHaveBeenCalled();
+
+      settle({ sent: true, provider: 'smtp' });
+      await new Promise((resolve) => setImmediate(resolve));
+
+      // The row now carries the truth, so a replay or status lookup reports
+      // SENT rather than the PENDING snapshot taken at response time.
+      expect(
+        authRepository.updateRegistrationAttemptEmailStatus
+      ).toHaveBeenCalledWith('attempt-1', 'SENT');
+    });
+
+    it('never writes a PENDING snapshot over a settled delivery', async () => {
+      env.REGISTRATION_EMAIL_WAIT_MS = 20;
+      mockFreshAttempt();
+      pendingDelivery();
+
+      await authService.register(registerData);
+
+      // Leaving email_status unset keeps the row on its PENDING default, so the
+      // background recorder owns the final value and cannot lose a race with
+      // this write.
+      const [, completion] =
+        authRepository.completeRegistrationAttempt.mock.calls[0];
+      expect(completion.status).toBe('SUCCEEDED');
+      expect(completion.email_status).toBeUndefined();
+    });
+
+    it('reports the settled status on a later status lookup, not the snapshot', async () => {
+      authRepository.findRegistrationAttemptByKey.mockResolvedValue({
+        id: 'attempt-1',
+        status: 'SUCCEEDED',
+        email: 'owner@example.com',
+        email_status: 'SENT',
+        outcome_code: 'ACCOUNT_CREATED_EMAIL_PENDING',
+        result_json: {
+          user: { id: 'user-123', email: 'owner@example.com' },
+          outcome: 'ACCOUNT_CREATED_EMAIL_PENDING',
+          verification: { email: 'owner@example.com', email_status: 'PENDING' },
+        },
+      });
+
+      const result = await authService.getRegistrationStatus({
+        idempotency_key: IDEMPOTENCY_KEY,
+      });
+
+      expect(result.verification.email_status).toBe('SENT');
+      expect(result.outcome).toBe('ACCOUNT_CREATED_EMAIL_SENT');
     });
   });
 });

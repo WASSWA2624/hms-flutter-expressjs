@@ -21,7 +21,7 @@ Sources: `src/modules/auth/routes/auth.routes.js`,
 | 5 | Password hash | `@lib/crypto` | n/a | Yes — 500, nothing created |
 | 6 | **Bootstrap transaction**: tenant → facility → role → user → user_profile → user_role → `claimed_email` | `registerFacilityOwner`, one `prisma.$transaction` | **Yes** | Yes — all-or-nothing, no orphan rows |
 | 7 | Verification code issued (`verification_token`) | `createEmailVerificationTokens` | Single insert | No — a failure here reports `ACCOUNT_CREATED_EMAIL_PENDING` |
-| 8 | Verification email dispatch | `deliverRegistrationEmail` | **Asynchronous to the account** | **No** — reported as `email_status` |
+| 8 | Verification email dispatch | `deliverRegistrationEmail` | **Asynchronous to the account**, and bounded by `REGISTRATION_EMAIL_WAIT_MS` | **No** — reported as `email_status`; a send still running when the budget elapses reports `PENDING` and finishes in the background |
 | 9 | Follow-up tracking upsert | `persistRegistrationFollowUp` | Best-effort | No — swallowed by design |
 | 10 | Audit log `USER_REGISTERED` | `createAuditLog` | Best-effort | No |
 | 11 | Stamp the attempt `SUCCEEDED` with its outcome | `completeRegistrationAttempt` | Single update | No |
@@ -51,7 +51,7 @@ same idempotency key and renders the answer:
 | Outcome | Meaning | UI |
 | ------- | ------- | -- |
 | `ACCOUNT_CREATED_EMAIL_SENT` | Account exists, email accepted | Success → verify-email |
-| `ACCOUNT_CREATED_EMAIL_PENDING` | Account exists, email delayed or failed | Success → verify-email with a resend prompt |
+| `ACCOUNT_CREATED_EMAIL_PENDING` | Account exists; the email is still sending, or failed | Success → verify-email. `verification.email_status` decides the copy: `PENDING` uses the normal "check your inbox", `FAILED` leads with a resend |
 | `REGISTRATION_IN_PROGRESS` | The attempt is still running | Keep waiting, re-poll |
 | `REGISTRATION_REJECTED` | The backend rejected it; nothing created | Show the rejection |
 | `REGISTRATION_UNKNOWN` | No attempt with that key reached the backend | Show the connection failure |
@@ -97,6 +97,28 @@ sees a success outcome, not a conflict.
 Registration behaves identically under both. The former development-only branch
 in `deliverAuthEmail` (queue and continue in development, await and throw a 503
 in production) no longer applies to registration: `deliverRegistrationEmail`
-awaits delivery and reports the result in every environment. `deliverAuthEmail`
-still serves `resend-verification`, where a delivery failure is the whole
-outcome and reporting it is correct.
+reports the result in every environment, waiting the same
+`REGISTRATION_EMAIL_WAIT_MS` for it in both. `deliverAuthEmail` still serves
+`resend-verification`, where a delivery failure is the whole outcome and
+reporting it is correct.
+
+## Why the response does not wait for the mail transport
+
+The account, facility and verification code are committed at step 7. Holding the
+HTTP response open through step 8 bought nothing — the user was already
+registered and the code was already on its way — but it put the mail server's
+latency in front of the user as a spinner on a form they had finished with, with
+no way to reach the verification screen and type the code they had just
+received.
+
+So step 8 is awaited only up to `REGISTRATION_EMAIL_WAIT_MS` (default 3000). A
+send that settles inside the budget still reports `SENT` or `FAILED` exactly as
+before. One that does not returns `PENDING` immediately and keeps running; when
+it settles, `updateRegistrationAttemptEmailStatus` writes the real status to the
+attempt row, so a later status lookup or idempotent replay reports the truth
+rather than the snapshot taken at response time. `completeRegistrationAttempt`
+deliberately does not write `PENDING`, leaving the column on its default so the
+background write cannot lose a race with it.
+
+This is not a longer timeout and not a shorter one: it removes a wait the client
+never needed to do.

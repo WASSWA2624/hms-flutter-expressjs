@@ -20,8 +20,77 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 
 /// A registration request that never completes must not be reported as a
 /// failed registration. These cover the timeout-then-resolve path: the client
-/// asks the backend what actually happened and renders that.
+/// asks the backend what actually happened and renders that — and the ordinary
+/// path where the backend answers before the verification email has finished
+/// sending, which must still land the user on the verification step.
 void main() {
+  testWidgets(
+    'a send still in flight opens verify-email with the normal copy',
+    (WidgetTester tester) async {
+      // The backend answers as soon as the account exists rather than waiting
+      // for the mail transport, so PENDING is the ordinary path — the code is
+      // usually already in the inbox. Telling the user delivery failed would be
+      // wrong, and leaving them on a spinner would be worse.
+      final repository = _DirectRegisterRepository(
+        const RegistrationResult(
+          outcome: RegistrationOutcome.accountCreatedEmailPending,
+          email: 'admin@example.com',
+          emailStatus: RegistrationEmailStatus.pending,
+        ),
+      );
+
+      await _pumpRegister(tester, repository);
+      final l10n = tester.element(find.byType(RegisterPage)).l10n;
+
+      await _fillRequiredFields(tester);
+      await _submitAndSettle(tester, l10n.authRegisterActionLabel);
+
+      expect(find.byType(RegisterPage), findsNothing);
+      expect(find.text('verify:admin@example.com|'), findsOneWidget);
+    },
+  );
+
+  testWidgets('a delivery the backend could not complete asks for a resend', (
+    WidgetTester tester,
+  ) async {
+    final repository = _DirectRegisterRepository(
+      const RegistrationResult(
+        outcome: RegistrationOutcome.accountCreatedEmailPending,
+        email: 'admin@example.com',
+        emailStatus: RegistrationEmailStatus.failed,
+      ),
+    );
+
+    await _pumpRegister(tester, repository);
+    final l10n = tester.element(find.byType(RegisterPage)).l10n;
+
+    await _fillRequiredFields(tester);
+    await _submitAndSettle(tester, l10n.authRegisterActionLabel);
+
+    expect(find.text('verify:admin@example.com|email_delayed'), findsOneWidget);
+  });
+
+  testWidgets('a confirmed send opens verify-email', (
+    WidgetTester tester,
+  ) async {
+    final repository = _DirectRegisterRepository(
+      const RegistrationResult(
+        outcome: RegistrationOutcome.accountCreatedEmailSent,
+        email: 'admin@example.com',
+        emailStatus: RegistrationEmailStatus.sent,
+      ),
+    );
+
+    await _pumpRegister(tester, repository);
+    final l10n = tester.element(find.byType(RegisterPage)).l10n;
+
+    await _fillRequiredFields(tester);
+    await _submitAndSettle(tester, l10n.authRegisterActionLabel);
+
+    expect(find.text('verify:admin@example.com|'), findsOneWidget);
+    expect(repository.statusCalls, 0);
+  });
+
   testWidgets(
     'timeout with a created account opens verify-email and shows no error',
     (WidgetTester tester) async {
@@ -263,6 +332,39 @@ Future<void> _pumpRegister(
 
 /// Registration always times out; the status lookup returns the queued
 /// outcomes in order, repeating the last one.
+/// A backend that answers the registration request directly, with no timeout.
+final class _DirectRegisterRepository extends _BaseAuthRepository {
+  _DirectRegisterRepository(this.result);
+
+  final RegistrationResult result;
+  int statusCalls = 0;
+
+  @override
+  Future<Result<RegistrationResult>> register({
+    required String email,
+    required String password,
+    required String facilityName,
+    required String adminName,
+    required String facilityType,
+    required String phone,
+    required String idempotencyKey,
+    String? tenantName,
+    String? location,
+    String? interests,
+  }) async {
+    await Future<void>.delayed(Duration.zero);
+    return Result<RegistrationResult>.success(result);
+  }
+
+  @override
+  Future<Result<RegistrationResult>> registrationStatus({
+    required String idempotencyKey,
+  }) async {
+    statusCalls += 1;
+    return Result<RegistrationResult>.success(result);
+  }
+}
+
 final class _ResolvingRegisterRepository extends _BaseAuthRepository {
   _ResolvingRegisterRepository({required this.statuses});
 
