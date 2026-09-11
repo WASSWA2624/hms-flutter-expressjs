@@ -240,7 +240,10 @@ const assertFacilityAllowsLogin = (
 const APP_DISPLAY_NAME =
   String(env.APP_DISPLAY_NAME || 'Hospital Management System').trim() ||
   'Hospital Management System';
-const VERIFICATION_EMAIL_APP_NAME = 'HOSSPI HMS';
+// Registration, verification and approval emails carry the short brand name so
+// subjects and headers stay compact in inbox previews.
+const ACCOUNT_LIFECYCLE_EMAIL_APP_NAME =
+  String(env.APP_SHORT_NAME || 'HMS').trim() || 'HMS';
 const EMAIL_LOGO_CID = 'hms-app-logo';
 const EMAIL_LOGO_PATHS = [
   path.resolve(__dirname, '../../../../../frontend/assets/logos/logo.png'),
@@ -513,7 +516,7 @@ const buildVerificationEmailMessage = ({
     timeZone
   );
   const subject = translate('messages.auth.email_verification.subject', resolvedLocale, {
-    app_name: VERIFICATION_EMAIL_APP_NAME,
+    app_name: ACCOUNT_LIFECYCLE_EMAIL_APP_NAME,
   });
   const preheader = translate('messages.auth.email_verification.preheader', resolvedLocale, {
     code,
@@ -536,7 +539,7 @@ const buildVerificationEmailMessage = ({
   const safeLogoSrc = logoSrc ? escapeHtml(logoSrc) : '';
   const logoHeaderCell = logoSrc
     ? `<td style="padding:0 8px 0 0;vertical-align:middle;width:34px;">
-        <img src="${safeLogoSrc}" alt="${escapeHtml(`${VERIFICATION_EMAIL_APP_NAME} logo`)}" width="28" height="28" style="display:block;width:28px;height:28px;border:0;outline:none;text-decoration:none;background:#ffffff;" />
+        <img src="${safeLogoSrc}" alt="${escapeHtml(`${ACCOUNT_LIFECYCLE_EMAIL_APP_NAME} logo`)}" width="28" height="28" style="display:block;width:28px;height:28px;border:0;outline:none;text-decoration:none;background:#ffffff;" />
       </td>`
     : '';
 
@@ -561,7 +564,7 @@ const buildVerificationEmailMessage = ({
                 <tr>
                   ${logoHeaderCell}
                   <td style="vertical-align:middle;">
-                    <h1 style="margin:0;font-size:18px;line-height:24px;font-weight:700;color:#0f172a;">${escapeHtml(VERIFICATION_EMAIL_APP_NAME)}</h1>
+                    <h1 style="margin:0;font-size:18px;line-height:24px;font-weight:700;color:#0f172a;">${escapeHtml(ACCOUNT_LIFECYCLE_EMAIL_APP_NAME)}</h1>
                   </td>
                 </tr>
               </table>
@@ -733,7 +736,7 @@ const buildAwaitingApprovalEmailMessage = ({
   const subject = translate(
     'messages.auth.awaiting_approval.subject',
     resolvedLocale,
-    { app_name: APP_DISPLAY_NAME }
+    { app_name: ACCOUNT_LIFECYCLE_EMAIL_APP_NAME }
   );
   const preheader = translate(
     'messages.auth.awaiting_approval.preheader',
@@ -746,7 +749,7 @@ const buildAwaitingApprovalEmailMessage = ({
   const intro = translate(
     'messages.auth.awaiting_approval.intro',
     resolvedLocale,
-    { app_name: APP_DISPLAY_NAME }
+    { app_name: ACCOUNT_LIFECYCLE_EMAIL_APP_NAME }
   );
   const nextStepsTitle = translate(
     'messages.auth.awaiting_approval.next_steps_title',
@@ -775,12 +778,12 @@ const buildAwaitingApprovalEmailMessage = ({
   const signature = translate(
     'messages.auth.awaiting_approval.signature',
     resolvedLocale,
-    { app_name: APP_DISPLAY_NAME }
+    { app_name: ACCOUNT_LIFECYCLE_EMAIL_APP_NAME }
   );
   const logoAlt = translate(
     'messages.auth.awaiting_approval.logo_alt',
     resolvedLocale,
-    { app_name: APP_DISPLAY_NAME }
+    { app_name: ACCOUNT_LIFECYCLE_EMAIL_APP_NAME }
   );
   const { logoSrc, attachments } = resolveEmailLogoAsset();
 
@@ -842,7 +845,7 @@ const buildAwaitingApprovalEmailMessage = ({
         ? `<img src="${escapeHtml(logoSrc)}" alt="${escapeHtml(logoAlt)}" width="44" height="44" style="display:block;width:44px;height:44px;border:0;border-radius:10px;background:#ffffff;padding:4px;" />`
         : ''}
       <div>
-        <p style="margin:0 0 4px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;">${escapeHtml(APP_DISPLAY_NAME)}</p>
+        <p style="margin:0 0 4px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;">${escapeHtml(ACCOUNT_LIFECYCLE_EMAIL_APP_NAME)}</p>
         <h1 style="margin:0;font-size:22px;color:#0f172a;">${escapeHtml(title)}</h1>
       </div>
     </div>
@@ -925,7 +928,7 @@ const buildAccountApprovedEmailMessage = ({
   const subject = translate(
     'messages.auth.account_approved.subject',
     resolvedLocale,
-    { app_name: APP_DISPLAY_NAME }
+    { app_name: ACCOUNT_LIFECYCLE_EMAIL_APP_NAME }
   );
   const preheader = translate(
     'messages.auth.account_approved.preheader',
@@ -940,7 +943,7 @@ const buildAccountApprovedEmailMessage = ({
     'messages.auth.account_approved.intro',
     resolvedLocale,
     {
-      app_name: APP_DISPLAY_NAME,
+      app_name: ACCOUNT_LIFECYCLE_EMAIL_APP_NAME,
       admin_name: resolvedAdminName,
       facility_name: resolvedFacilityName,
     }
@@ -968,12 +971,12 @@ const buildAccountApprovedEmailMessage = ({
   const signature = translate(
     'messages.auth.account_approved.signature',
     resolvedLocale,
-    { app_name: APP_DISPLAY_NAME }
+    { app_name: ACCOUNT_LIFECYCLE_EMAIL_APP_NAME }
   );
   const logoAlt = translate(
     'messages.auth.account_approved.logo_alt',
     resolvedLocale,
-    { app_name: APP_DISPLAY_NAME }
+    { app_name: ACCOUNT_LIFECYCLE_EMAIL_APP_NAME }
   );
   const { logoSrc, attachments } = resolveEmailLogoAsset();
 
@@ -1008,7 +1011,7 @@ const buildAccountApprovedEmailMessage = ({
         ? `<img src="${escapeHtml(logoSrc)}" alt="${escapeHtml(logoAlt)}" width="44" height="44" style="display:block;width:44px;height:44px;border:0;border-radius:10px;background:#ffffff;padding:4px;" />`
         : ''}
       <div>
-        <p style="margin:0 0 4px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;">${escapeHtml(APP_DISPLAY_NAME)}</p>
+        <p style="margin:0 0 4px;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;">${escapeHtml(ACCOUNT_LIFECYCLE_EMAIL_APP_NAME)}</p>
         <h1 style="margin:0;font-size:22px;color:#0f172a;">${escapeHtml(title)}</h1>
       </div>
     </div>

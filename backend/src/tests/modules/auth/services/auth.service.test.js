@@ -46,6 +46,7 @@ jest.mock('@config/env', () => ({
   JWT_SECRET: '12345678901234567890123456789012',
   APP_PUBLIC_URL: 'http://localhost:8081',
   APP_DISPLAY_NAME: 'Hospital Management System',
+  APP_SHORT_NAME: 'HOSSPI HMS',
   ALLOW_PLAINTEXT_PASSWORD_EMAIL: false,
   AUTH_SESSION_TTL_DAYS: 7}));
 
@@ -1038,7 +1039,7 @@ describe('Auth Service', () => {
       );
       expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
         to: 'test@example.com',
-        subject: 'Next steps for your Hospital Management System account',
+        subject: 'Next steps for your HOSSPI HMS account',
         text: expect.stringContaining('platform admin approval'),
         html: expect.stringContaining('/login'),
       }));
@@ -1111,7 +1112,7 @@ describe('Auth Service', () => {
       expect(sendEmail).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'owner@example.com',
-          subject: 'Your Hospital Management System account has been approved',
+          subject: 'Your HOSSPI HMS account has been approved',
           text: expect.stringContaining('Jane Doe'),
           html: expect.stringContaining('/login'),
         })
