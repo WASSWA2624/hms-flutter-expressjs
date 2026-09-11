@@ -13,7 +13,7 @@
 | :--- | :-: | :--- | :-: | :-: |
 | **1 · Auth & Sessions**<br>`▰▰▱` 2/3 | 01 | [Login password field](01-login-password-field.md) | — | 🟩 |
 | | 02 | [Registration error truthfulness](02-registration-error-truthfulness.md) | 01 | 🟩 |
-| | 03 | [Persistent authentication](03-persistent-authentication.md) | 01, 02 | ⬜ |
+| | 03 | [Persistent authentication](03-persistent-authentication.md) | 01, 02 | 🟨 |
 | **2 · Tenancy & Isolation**<br>`▱▱▱▱` 0/4 | 04 | [Tenant seed audit](04-tenant-seed-audit.md) | 02 | ⬜ |
 | | 05 | [Remove tenant operational seed](05-remove-tenant-operational-seed.md) | 04 | ⬜ |
 | | 06 | [Platform presets model](06-platform-presets-model.md) | 04, 05 | ⬜ |
