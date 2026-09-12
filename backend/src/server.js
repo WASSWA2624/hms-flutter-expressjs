@@ -155,6 +155,11 @@ const startServer = async () => {
     // Environment variables are validated in @config/env on import
     // If validation fails, the import will throw an error
 
+    // Marks this process as the request-serving API. The demo seeders refuse to
+    // initialise when they see it, so no request path can ever reach them -
+    // in any environment. See scripts/seeders/seed-runtime.js.
+    process.env.HMS_PROCESS_ROLE = 'api-server';
+
     await assertDatabaseConnection();
 
     // Create Express app

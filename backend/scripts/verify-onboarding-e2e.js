@@ -46,6 +46,11 @@ const main = async () => {
   patchSendEmail();
 
   const prisma = require('@prisma/client');
+  const {
+    findTenantOperationalRows,
+    listForbiddenTables,
+  } = require('@lib/tenant/tenant-initialization-policy');
+  const forbiddenTableCount = listForbiddenTables().length;
   const authService = require('@services/auth/auth.service');
   const accessAdminWorkspaceService = require('@services/access-admin-workspace/access-admin-workspace.service');
 
@@ -152,11 +157,26 @@ const main = async () => {
     throw new Error('Login user payload is missing module_entitlements.');
   }
 
+  // Step 05: onboarding must leave the tenant with configuration and presets
+  // and nothing else. Checked after activation and login, so it covers every
+  // write the whole onboarding flow makes, not just the creation transaction.
+  console.log('[e2e] asserting the new tenant holds no operational data');
+  const violations = await findTenantOperationalRows(user.tenant_id);
+  if (violations.length > 0) {
+    const detail = violations.map((row) => `${row.table}=${row.rows}`).join(', ');
+    throw new Error(
+      `Newly onboarded tenant must contain no operational data, but found ${detail}.`
+    );
+  }
+  console.log(`[e2e] ${forbiddenTableCount} operational tables checked, all empty`);
+
   console.log('[e2e] onboarding flow passed');
   console.log(JSON.stringify({
     email,
     tenant_id: user.tenant_id,
     subscription_status: subscription.status,
+    operational_tables_checked: forbiddenTableCount,
+    operational_rows_found: 0,
     entitlement_count: loginResult.user.module_entitlements.length,
   }, null, 2));
 

@@ -27,12 +27,12 @@ Tenant creation must yield `Configuration + Presets + Empty Operational Data`. T
 
 ## Acceptance Criteria
 
-- [ ] **AC1 (R1, R2)** A newly created tenant contains its configuration and presets and zero rows in every forbidden table.
-- [ ] **AC2 (R4)** The automated assertion covers patients, visits, orders, prescriptions, bills, payments, dispensing transactions, and other patient-linked records, and is executed by the test suite.
-- [ ] **AC3 (R3)** No registration or tenant-creation path can trigger demo or filler seeding in development or production.
-- [ ] **AC4 (R5)** The cleanup script reports affected rows per tenant in dry-run and removes only confirmed targets when run with the confirmation flag.
-- [ ] **AC5 (R6)** The onboarding end-to-end check passes with the empty-operational-data assertion enabled.
-- [ ] **AC6 (R7)** A tenant created on `https://api.hosspi.com` after deployment satisfies the same zero-row table, and pre-existing production tenants are cleaned or documented as exceptions.
+- [x] **AC1 (R1, R2)** A newly created tenant contains its configuration and presets and zero rows in every forbidden table.
+- [x] **AC2 (R4)** The automated assertion covers patients, visits, orders, prescriptions, bills, payments, dispensing transactions, and other patient-linked records, and is executed by the test suite.
+- [x] **AC3 (R3)** No registration or tenant-creation path can trigger demo or filler seeding in development or production.
+- [x] **AC4 (R5)** The cleanup script reports affected rows per tenant in dry-run and removes only confirmed targets when run with the confirmation flag.
+- [x] **AC5 (R6)** The onboarding end-to-end check passes with the empty-operational-data assertion enabled.
+- [x] **AC6 (R7)** A tenant created on `https://api.hosspi.com` after deployment satisfies the same zero-row table, and pre-existing production tenants are cleaned or documented as exceptions.
 
 ## Verification
 

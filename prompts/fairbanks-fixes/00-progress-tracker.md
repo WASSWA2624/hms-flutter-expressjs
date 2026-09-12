@@ -2,7 +2,7 @@
 
 <p align="center">
 <code>▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱</code><br>
-<b>4%</b> &nbsp;·&nbsp; 2 / 50 shipped &nbsp;·&nbsp; 0 / 5 gates
+<b>6%</b> &nbsp;·&nbsp; 3 / 50 shipped &nbsp;·&nbsp; 0 / 5 gates
 </p>
 
 <p align="center">
@@ -14,8 +14,8 @@
 | **1 · Auth & Sessions**<br>`▰▱▱` 1/3 | 01 | [Login password field](01-login-password-field.md) | — | 🟩 |
 | | 02 | [Registration error truthfulness](02-registration-error-truthfulness.md) | 01 | 🟨 |
 | | 03 | [Persistent authentication](03-persistent-authentication.md) | 01, 02 | 🟨 |
-| **2 · Tenancy & Isolation**<br>`▰▱▱▱` 1/4 | 04 | [Tenant seed audit](04-tenant-seed-audit.md) | 02 | 🟩 |
-| | 05 | [Remove tenant operational seed](05-remove-tenant-operational-seed.md) | 04 | ⬜ |
+| **2 · Tenancy & Isolation**<br>`▰▰▱▱` 2/4 | 04 | [Tenant seed audit](04-tenant-seed-audit.md) | 02 | 🟩 |
+| | 05 | [Remove tenant operational seed](05-remove-tenant-operational-seed.md) | 04 | 🟩 |
 | | 06 | [Platform presets model](06-platform-presets-model.md) | 04, 05 | ⬜ |
 | | 07 | [Tenant isolation verification](07-tenant-isolation-verification.md) 🚩 | 04-06 | ⬜ |
 | **3 · Users & Roles**<br>`▱▱▱▱▱` 0/5 | 08 | [User creation stability](08-user-creation-stability.md) | 03, 07 | ⬜ |

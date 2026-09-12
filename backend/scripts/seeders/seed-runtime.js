@@ -50,6 +50,18 @@ try {
 const prisma = require('@prisma/client');
 const { hashPassword } = require('@lib/crypto/hashPassword');
 
+// Demo seeding is an operator action, never a request-time one. `src/server.js`
+// stamps HMS_PROCESS_ROLE before it starts listening, so loading any seeder
+// inside the running API - directly or through a chain of requires - fails here
+// instead of writing demo rows into a live tenant. Identical in every
+// environment; there is no flag that relaxes it.
+if (String(process.env.HMS_PROCESS_ROLE || '').trim() === 'api-server') {
+  throw new Error(
+    'Demo seeders cannot be loaded inside the API server process. '
+    + 'Run them from the command line instead (see backend/scripts/README.md).'
+  );
+}
+
 // Shared password for the curated accounts. Override with SEED_DEFAULT_PASSWORD
 // when seeding an environment where the committed demo password is not
 // acceptable (e.g. production).

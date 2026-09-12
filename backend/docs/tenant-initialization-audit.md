@@ -399,6 +399,96 @@ design and would need a deliberate, reviewed exception).
 
 ---
 
+## 7. Step 05 outcome
+
+Step 05 acted on this audit. Summary of what changed and what was deliberately
+left alone.
+
+### 7.1 Nothing had to be removed from the creation paths
+
+The audit found no forbidden insert in tenant or facility creation, so there was
+no operational seeding to delete. Instead the invariant is now enforced so it
+cannot regress:
+
+| Guarantee | Where |
+| :--- | :--- |
+| One definition of allowed vs forbidden tables | [`src/lib/tenant/tenant-initialization-policy.js`](../src/lib/tenant/tenant-initialization-policy.js) |
+| No tenant-reachable table left unclassified | `tenant-initialization-policy.test.js` |
+| Creation paths write only configuration and identity | `tenant-creation-writes.test.js` |
+| Demo seeding unreachable from any request path | `demo-seed-unreachable.test.js` |
+| Onboarding leaves zero operational rows | `scripts/verify-onboarding-e2e.js` |
+
+The classification covers all 141 tenant-reachable tables: 76 allowed as
+configuration or presets, 65 forbidden. A newly added model is forbidden by
+default, so whoever adds one has to classify it on purpose.
+
+### 7.2 Demo seeding is now structurally gated
+
+`src/server.js` stamps `HMS_PROCESS_ROLE=api-server` before it starts listening,
+and `scripts/seeders/seed-runtime.js` throws if it is loaded in that process.
+The guard does not branch on `NODE_ENV`, so development and production behave
+identically. `ALLOW_PRODUCTION_DEMO_SEED` is now documented in
+`backend/env.template.txt` with explicit guidance to leave it unset.
+
+### 7.3 Cleanup script
+
+[`scripts/clean-tenant-operational-seed.js`](../scripts/clean-tenant-operational-seed.js)
+(`npm run db:clean:tenant-operational-seed`) reports per tenant and deletes only
+on `--yes`. It distinguishes seeder-owned demo tenants — where every operational
+row is demo data — from real tenants, where only rows carrying the
+`extension_json.seed_pack` marker are removed. Clearing unmarked rows from a real
+tenant additionally requires `--include-unmarked --i-have-a-backup`. Production is
+blocked by `scripts/demo-safety.js`.
+
+Verified on development: dry-run report, backup guard refusal, marked-only
+delete, idempotent re-run, then a confirmed full delete.
+
+### 7.4 Production exceptions
+
+Neither pre-existing production tenant was cleaned. Both are documented here as
+deliberate exceptions.
+
+| Tenant | Operational rows | Decision |
+| :--- | :--- | :--- |
+| `FAIRBANKS MEDICAL CENTRE` (`TEN0000003`) | 432 rows over 36 tables | **Keep.** §6.4 established these are real user activity — 2 patients, 3 invoices, 3 payments created hours apart across two days. Deleting them would destroy live customer data. Not seeded, so not in scope for this step. |
+| `DemoCare General Hospital` (`TEN-9322E26AFD`) | 42,843 rows over 112 tables, incl. 1,209 synthetic patients | **Keep for now, pending a decision.** Seeder-owned and safely removable by the cleanup script, but removal is a product call, not a code-correctness one: it is the dataset behind demos on the live host. The safety guard blocks the script against production by design, so removing it needs a deliberate, reviewed exception. |
+
+The step 05 invariant is about what tenant creation *produces*. Neither exception
+is produced by tenant creation, and both are now provably impossible to recreate
+through a request path.
+
+### 7.5 Production verification after deployment
+
+Deployed 2026-09-12 via `deploy/update-deploys/backend.py` then
+`deploy/upload-deploys/backend.py`. The release took a code backup
+(`~/api-backup-20260912-040852.tar.gz`) and a database backup
+(`~/db-backup-20260912-040852.sql.gz`) first, applied no migrations — the change
+carries none — and skipped demo seeding. The before/after row census recorded 232
+tables with no table losing rows.
+
+A verification tenant was then created on `https://api.hosspi.com` through the
+deployed onboarding path:
+
+| | |
+| :--- | :--- |
+| Tenant | `E2E Org 1789175531863` (`TEN0000008`, `8513bd2c-f769-403f-b1d6-d85242891a6b`) |
+| Created | 2026-09-12T01:12:12Z |
+| Tables with rows | 10 of 143 — `module_subscription` 35, `audit_log` 4, and one row each of `facility`, `role`, `subscription`, `user`, `user_profile`, `user_role`, `verification_token`, `registration_follow_up` |
+| Operational tables checked | 65 |
+| **Operational rows found** | **0** |
+
+It carries 1 role rather than 58, because nobody has opened its HR workspace —
+which is the lazy bootstrap of §5.2 showing through, exactly as documented.
+
+Both safety guards were exercised against production and behave as designed:
+
+| Guard | Result on production |
+| :--- | :--- |
+| `clean-tenant-operational-seed.js` | Refused, exit 1 — demo-safety blocks it |
+| `seed-runtime.js` with `HMS_PROCESS_ROLE=api-server` | Refused to load |
+
+---
+
 ## Acceptance criteria
 
 | AC | State |
