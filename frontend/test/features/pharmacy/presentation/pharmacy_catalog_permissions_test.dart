@@ -267,6 +267,7 @@ void main() {
         expect(find.byType(PharmacyCatalogPanel), findsOneWidget);
         expect(find.text('Amoxicillin'), findsWidgets);
         expect(find.text('Create'), findsNothing);
+        expect(find.text('Import'), findsNothing);
         expect(find.text('Edit'), findsNothing);
         expect(find.textContaining('no access'), findsNothing);
 
@@ -315,6 +316,13 @@ void main() {
         expect(find.byTooltip('Export'), findsNothing);
         expect(find.byTooltip('Print'), findsNothing);
         expect(find.text('Create'), findsOneWidget);
+        expect(find.text('Import'), findsOneWidget);
+        expect(
+          table.search?.trailingActions.map(
+            (AppSearchBarAction action) => action.label,
+          ),
+          <String>['Import', 'Create'],
+        );
       },
     );
 

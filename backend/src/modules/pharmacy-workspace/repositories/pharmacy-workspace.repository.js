@@ -93,8 +93,55 @@ const countDrugs = async (where) =>
       where: { deleted_at: null, ...(where || {}) }})
   );
 
-const withTransaction = async (callback) =>
-  withDbErrorHandling(() => prisma.$transaction((tx) => callback(tx)));
+const withTransaction = async (callback, options = undefined) =>
+  withDbErrorHandling(() => prisma.$transaction((tx) => callback(tx), options));
+
+/**
+ * Tenant drugs with the inventory stock held at one facility, for import matching.
+ */
+const findDrugsForImport = async (tenantId, facilityId) =>
+  withDbErrorHandling(() =>
+    prisma.drug.findMany({
+      where: { deleted_at: null, tenant_id: tenantId },
+      orderBy: { updated_at: 'desc' },
+      select: {
+        id: true,
+        human_friendly_id: true,
+        name: true,
+        generic_name: true,
+        brand_name: true,
+        code: true,
+        form: true,
+        strength: true,
+        buy_unit_price: true,
+        unit_price: true,
+        currency: true,
+        supplier_id: true,
+        supplier: { select: { name: true } },
+        inventory_maps: {
+          where: { deleted_at: null },
+          select: {
+            inventory_item_id: true,
+            inventory_item: {
+              select: {
+                stocks: {
+                  where: { deleted_at: null, facility_id: facilityId },
+                  select: { quantity: true }}}}}}}})
+  );
+
+const findSuppliersForImport = async (tenantId) =>
+  withDbErrorHandling(() =>
+    prisma.supplier.findMany({
+      where: { deleted_at: null, tenant_id: tenantId },
+      select: { id: true, name: true }})
+  );
+
+const findFacilityForImport = async (facilityId, tenantId) =>
+  withDbErrorHandling(() =>
+    prisma.facility.findFirst({
+      where: { id: facilityId, tenant_id: tenantId, deleted_at: null },
+      select: { id: true, human_friendly_id: true, name: true }})
+  );
 
 const txFindOrderById = async (tx, id, include) =>
   tx.pharmacy_order.findFirst({
@@ -350,6 +397,22 @@ const txUpdateDrugBatch = async (tx, id, data) =>
     where: { id },
     data});
 
+const txUpdateDrug = async (tx, id, data) =>
+  tx.drug.update({
+    where: { id },
+    data});
+
+const txCreateSupplier = async (tx, data) => tx.supplier.create({ data });
+
+const txFindDrugBatchesByDrug = async (tx, drugId) =>
+  tx.drug_batch.findMany({
+    where: { deleted_at: null, drug_id: drugId },
+    select: {
+      id: true,
+      batch_number: true,
+      quantity: true,
+      storage_room: { select: { facility_id: true } }}});
+
 const txFindInventoryMapByInventoryItem = async (tx, inventoryItemId, tenantId = null) =>
   tx.drug_inventory_map.findFirst({
     where: {
@@ -369,6 +432,9 @@ module.exports = {
   findManyDrugs,
   countDrugs,
   withTransaction,
+  findDrugsForImport,
+  findSuppliersForImport,
+  findFacilityForImport,
   txFindOrderById,
   txUpdateOrder,
   txUpdateOrderItem,
@@ -397,4 +463,7 @@ module.exports = {
   txFindDrugBatchByDrugAndNumber,
   txCreateDrugBatch,
   txUpdateDrugBatch,
+  txUpdateDrug,
+  txCreateSupplier,
+  txFindDrugBatchesByDrug,
   txFindInventoryMapByInventoryItem};

@@ -1,4 +1,7 @@
 const express = require('express');
+const multer = require('multer');
+const { HttpError } = require('@lib/errors');
+const { DRUG_IMPORT_LIMITS } = require('@lib/pharmacy/drug-import/drug-import-sources');
 const { validateRequest } = require('@middlewares/validate.middleware');
 const { authenticate, authorize } = require('@middlewares/auth.middleware');
 const { PERMISSIONS } = require('@config/permissions');
@@ -30,13 +33,36 @@ const {
   updatePharmacyStorageShelfSchema,
   checkPharmacyStorageShelfSimilaritySchema,
   checkPharmacyDrugSimilaritySchema,
-  pharmacyStorageShelfParamsSchema} = require('@validations/pharmacy-workspace/pharmacy-workspace.schema');
+  pharmacyStorageShelfParamsSchema,
+  previewDrugImportSchema,
+  commitDrugImportSchema} = require('@validations/pharmacy-workspace/pharmacy-workspace.schema');
 
 const router = express.Router();
 
 const PHARMACY_WORKSPACE_READ_SCOPES = [PERMISSIONS.PHARMACY_READ, PERMISSIONS.OPERATIONS_READ];
 const PHARMACY_WORKSPACE_WRITE_SCOPES = [PERMISSIONS.PHARMACY_WRITE];
 const INVENTORY_WRITE_SCOPES = [PERMISSIONS.OPERATIONS_WRITE, PERMISSIONS.PHARMACY_WRITE];
+
+const drugImportUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    files: 1,
+    fileSize: DRUG_IMPORT_LIMITS.max_file_bytes}});
+
+// Runs after authorization so unauthenticated callers cannot buffer uploads;
+// multer's own errors become localized 400s instead of generic 500s.
+const acceptDrugImportFile = (req, res, next) =>
+  drugImportUpload.single('file')(req, res, (error) => {
+    if (!error) return next();
+    if (error instanceof multer.MulterError) {
+      const messageKey =
+        error.code === 'LIMIT_FILE_SIZE'
+          ? 'errors.pharmacy_drug_import.file_too_large'
+          : 'errors.pharmacy_drug_import.invalid_file';
+      return next(new HttpError(messageKey, 400, [{ field: 'file' }]));
+    }
+    return next(error);
+  });
 
 router.get(
   '/workbench',
@@ -60,6 +86,24 @@ router.post(
   authenticate(),
   authorize(INVENTORY_WRITE_SCOPES, 'permission'),
   pharmacyWorkspaceController.setupPharmacyDrug
+);
+
+router.post(
+  '/drugs/import/preview',
+  authenticate(),
+  authorize(INVENTORY_WRITE_SCOPES, 'permission'),
+  acceptDrugImportFile,
+  validateRequest({ body: previewDrugImportSchema }),
+  pharmacyWorkspaceController.previewDrugImport
+);
+
+router.post(
+  '/drugs/import/commit',
+  authenticate(),
+  authorize(INVENTORY_WRITE_SCOPES, 'permission'),
+  acceptDrugImportFile,
+  validateRequest({ body: commitDrugImportSchema }),
+  pharmacyWorkspaceController.commitDrugImport
 );
 
 router.put(

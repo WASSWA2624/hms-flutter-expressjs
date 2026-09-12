@@ -1,4 +1,5 @@
 const pharmacyWorkspaceService = require('@services/pharmacy-workspace/pharmacy-workspace.service');
+const pharmacyDrugImportService = require('@services/pharmacy-workspace/pharmacy-drug-import.service');
 const { asyncHandler } = require('@lib/async');
 const { sendSuccess } = require('@lib/response');
 const { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT } = require('@config/constants');
@@ -231,6 +232,26 @@ const setupPharmacyDrug = asyncHandler(async (req, res) => {
   return sendSuccess(res, 201, 'messages.pharmacy_workspace.drug.setup.success', data);
 });
 
+const previewDrugImport = asyncHandler(async (req, res) => {
+  const data = await pharmacyDrugImportService.previewDrugImport({
+    file: req.file,
+    payload: req.body,
+    user: req.user || {}});
+
+  return sendSuccess(res, 200, 'messages.pharmacy_workspace.drug_import.preview.success', data);
+});
+
+const commitDrugImport = asyncHandler(async (req, res) => {
+  const data = await pharmacyDrugImportService.commitDrugImport({
+    file: req.file,
+    payload: req.body,
+    userId: req.user?.id,
+    ipAddress: req.ip,
+    user: req.user || {}});
+
+  return sendSuccess(res, 201, 'messages.pharmacy_workspace.drug_import.commit.success', data);
+});
+
 const upsertPharmacyDrugFacilityOffering = asyncHandler(async (req, res) => {
   const data = await pharmacyWorkspaceService.upsertPharmacyDrugFacilityOffering(
     req.params.drugId,
@@ -406,6 +427,8 @@ module.exports = {
   getInventoryStock,
   adjustInventoryStock,
   setupPharmacyDrug,
+  previewDrugImport,
+  commitDrugImport,
   upsertPharmacyDrugFacilityOffering,
   checkPharmacyDrugSimilarity,
   resolveLegacyRoute,

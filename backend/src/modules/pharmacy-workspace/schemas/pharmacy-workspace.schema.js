@@ -2,6 +2,7 @@ const { z } = require('zod');
 const { listQuerySchema, uuidOrFriendlyIdentifierSchema } = require('@lib/validation/zod');
 const { createPharmacyOrderSchema } = require('@validations/pharmacy-order/pharmacy-order.schema');
 const { clinicalRequestBillingSchema } = require('@lib/billing/clinical-request-billing.schema');
+const { DRUG_IMPORT_SOURCE_IDS } = require('@lib/pharmacy/drug-import/drug-import-sources');
 
 const pharmacyOrderStatusSchema = z.enum([
   'ORDERED',
@@ -280,6 +281,47 @@ const upsertPharmacyDrugFacilityOfferingSchema = z
     }
   });
 
+// Drug import bodies arrive as multipart form fields, so every value is a string.
+const multipartOptionalBooleanSchema = z.preprocess((value) => {
+  if (typeof value !== 'string') return value;
+  const normalized = value.trim().toLowerCase();
+  if (['true', '1', 'yes', 'on'].includes(normalized)) return true;
+  if (['false', '0', 'no', 'off'].includes(normalized)) return false;
+  return normalized === '' ? undefined : value;
+}, z.boolean().optional());
+
+const drugImportSourceSchema = z.preprocess(
+  (value) => (typeof value === 'string' ? value.trim().toUpperCase() : value),
+  z.enum([...DRUG_IMPORT_SOURCE_IDS])
+);
+
+const drugImportDecisionSchema = z.object({
+  key: z.string().min(1).max(600),
+  action: z.enum(['CREATE', 'MERGE', 'UPDATE', 'SKIP']),
+  target_drug_id: uuidOrFriendlyIdentifierSchema.optional().nullable()});
+
+const drugImportDecisionsSchema = z.preprocess((value) => {
+  if (value == null || value === '') return [];
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch (_error) {
+    return value;
+  }
+}, z.array(drugImportDecisionSchema).max(5000));
+
+const previewDrugImportSchema = z.object({
+  source: drugImportSourceSchema});
+
+const commitDrugImportSchema = z.object({
+  source: drugImportSourceSchema,
+  plan_hash: z.string().trim().regex(/^[a-f0-9]{64}$/),
+  decisions: drugImportDecisionsSchema,
+  stock_mode: z.enum(['REPLACE', 'ADD']).optional(),
+  clear_missing_stock: multipartOptionalBooleanSchema,
+  confirm_review: multipartOptionalBooleanSchema,
+  currency: z.string().trim().max(10).optional().nullable()});
+
 module.exports = {
   pharmacyOrderStatusSchema,
   stockStatusSchema,
@@ -310,4 +352,6 @@ module.exports = {
   checkPharmacyDrugSimilaritySchema,
   pharmacyStorageShelfParamsSchema,
   pharmacyDrugParamsSchema,
-  upsertPharmacyDrugFacilityOfferingSchema};
+  upsertPharmacyDrugFacilityOfferingSchema,
+  previewDrugImportSchema,
+  commitDrugImportSchema};

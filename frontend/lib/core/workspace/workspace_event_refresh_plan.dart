@@ -141,6 +141,9 @@ abstract final class WorkspaceEventRefreshPlan {
   }
 
   static WorkspaceRefreshPlan forPharmacy(String event) {
+    if (event == RealtimeEvents.pharmacyCatalogUpdated) {
+      return const WorkspaceRefreshPlan(catalogs: true, inventory: true);
+    }
     if (RealtimeEventGroups.pharmacy.contains(event) ||
         RealtimeEventGroups.billing.contains(event) ||
         RealtimeCrudEvents.matches(event)) {

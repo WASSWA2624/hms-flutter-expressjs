@@ -10,13 +10,16 @@ import 'package:hosspi_hms/core/permissions/access_gate.dart';
 import 'package:hosspi_hms/core/permissions/access_policy.dart';
 import 'package:hosspi_hms/core/permissions/access_requirement.dart';
 import 'package:hosspi_hms/core/permissions/permission_providers.dart';
+import 'package:hosspi_hms/core/security/session_controller.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
+import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_drug_import.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/controllers/pharmacy_workspace_controller.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/pharmacy_access.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_catalog_tabs.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_drug_details_dialog.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_drug_edit_dialog.dart';
+import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_drug_import_dialog.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_storage_panel.dart';
 import 'package:hosspi_hms/features/pharmacy/presentation/widgets/pharmacy_workspace_print_helpers.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -26,6 +29,7 @@ import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace_feedback.dart';
 
 const String _inventoryStockStatusFilterKey = 'stock_status';
 const String _storageRoomFilterKey = 'storage_room';
@@ -282,6 +286,9 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
           writeRequirement: widget.writeRequirement,
           isBusy: isBusy,
           hasSelection: hasSelection,
+          importLabel: l10n.pharmacyDrugImportAction,
+          importSemanticLabel: l10n.pharmacyDrugImportActionTooltip,
+          onImport: () => unawaited(_openDrugImportDialog(context)),
           addLabel: l10n.commonCreateActionLabel,
           addSemanticLabel: l10n.pharmacyAddDrugAction,
           onAdd: () => _openDrugDialog(context),
@@ -511,6 +518,37 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
     );
 
     return table;
+  }
+
+  Future<void> _openDrugImportDialog(BuildContext context) async {
+    final PharmacyWorkspaceController controller = ref.read(
+      pharmacyWorkspaceControllerProvider.notifier,
+    );
+    final PharmacyDrugImportResult? result =
+        await showAppDialog<PharmacyDrugImportResult>(
+          context: context,
+          builder: (_) => PharmacyDrugImportDialog(
+            facilityName: ref
+                .read(sessionStateProvider)
+                .session
+                ?.user
+                ?.facilityName,
+            onPreview: controller.previewDrugImport,
+            onCommit: controller.commitDrugImport,
+          ),
+        );
+    if (!context.mounted || result == null) {
+      return;
+    }
+    showAppSuccessSnackBar(
+      context,
+      context.l10n.pharmacyDrugImportSuccessMessage(
+        AppFormatters.decimal(
+          result.importedProducts,
+          Localizations.localeOf(context),
+        ),
+      ),
+    );
   }
 
   Future<void> _openDrugDialog(BuildContext context, {PharmacyDrug? drug}) async {
@@ -3430,12 +3468,15 @@ List<PharmacyStorageShelf> _shelfOptionsForRoom(
 }
 
 /// Builds search-bar trailing actions (after Filters → Settings → Export).
-/// Selection bulk actions and Add are mutually exclusive.
+/// Selection bulk actions replace Import and Add while rows are selected.
 List<AppSearchBarAction> _catalogSearchTrailingActions({
   required WidgetRef ref,
   required AccessRequirement writeRequirement,
   required bool isBusy,
   required bool hasSelection,
+  String? importLabel,
+  String? importSemanticLabel,
+  VoidCallback? onImport,
   String? addLabel,
   String? addSemanticLabel,
   VoidCallback? onAdd,
@@ -3461,8 +3502,20 @@ List<AppSearchBarAction> _catalogSearchTrailingActions({
     ];
   }
 
-  if (!hasSelection && addLabel != null && onAdd != null) {
-    return <AppSearchBarAction>[
+  if (hasSelection) {
+    return const <AppSearchBarAction>[];
+  }
+
+  return <AppSearchBarAction>[
+    if (importLabel != null && onImport != null)
+      AppSearchBarAction(
+        icon: Icons.upload_file_outlined,
+        label: importLabel,
+        tooltip: importSemanticLabel ?? importLabel,
+        enabled: !isBusy,
+        onPressed: isBusy ? null : onImport,
+      ),
+    if (addLabel != null && onAdd != null)
       AppSearchBarAction(
         icon: Icons.add,
         label: addLabel,
@@ -3470,10 +3523,7 @@ List<AppSearchBarAction> _catalogSearchTrailingActions({
         enabled: !isBusy,
         onPressed: isBusy ? null : onAdd,
       ),
-    ];
-  }
-
-  return const <AppSearchBarAction>[];
+  ];
 }
 
 List<AppSearchBarFilterGroup> _storageLocationFilterGroups({

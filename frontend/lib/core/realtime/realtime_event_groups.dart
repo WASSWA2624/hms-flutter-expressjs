@@ -65,6 +65,7 @@ abstract final class RealtimeEventGroups {
     RealtimeEvents.pharmacyOrderUpdated,
     RealtimeEvents.pharmacyOrderDispensed,
     RealtimeEvents.pharmacyOrderCanceled,
+    RealtimeEvents.pharmacyCatalogUpdated,
     RealtimeEvents.inventoryStockUpdated,
     RealtimeEvents.inventoryLowStock,
     RealtimeEvents.inventoryStockAdjusted,

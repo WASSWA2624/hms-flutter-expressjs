@@ -1,10 +1,13 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
 import 'package:hosspi_hms/core/network/api_client.dart';
 import 'package:hosspi_hms/core/network/api_endpoints.dart';
 import 'package:hosspi_hms/core/network/network_providers.dart';
+import 'package:hosspi_hms/features/pharmacy/data/dtos/pharmacy_drug_import_dtos.dart';
 import 'package:hosspi_hms/features/pharmacy/data/dtos/pharmacy_dtos.dart';
+import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_drug_import.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/repositories/pharmacy_repository.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -199,6 +202,71 @@ final class PharmacyRepositoryImpl implements PharmacyRepository {
         final PharmacyJsonMap response = _expectMap(data);
         return PharmacyDrugDto(_map(response['data'])).toEntity();
       },
+    );
+  }
+
+  // A full stock migration commits in one server transaction, so allow longer
+  // than the default API timeout for both upload and response.
+  static final Options _drugImportRequestOptions = Options(
+    sendTimeout: const Duration(minutes: 5),
+    receiveTimeout: const Duration(minutes: 5),
+  );
+
+  Uri _drugImportEndpoint(String action) {
+    return ApiEndpoints.apiV1(<String>[
+      HmsApiResource.pharmacy.path,
+      'drugs',
+      'import',
+      action,
+    ]);
+  }
+
+  MapEntry<String, MultipartFile> _drugImportFileEntry(
+    PharmacyDrugImportFile file,
+  ) {
+    return MapEntry<String, MultipartFile>(
+      'file',
+      MultipartFile.fromBytes(
+        file.bytes,
+        filename: file.name,
+        contentType: DioMediaType(
+          'application',
+          'vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ),
+      ),
+    );
+  }
+
+  @override
+  Future<Result<PharmacyDrugImportPreview>> previewDrugImport({
+    required PharmacyDrugImportSource source,
+    required PharmacyDrugImportFile file,
+  }) {
+    final FormData formData = FormData.fromMap(<String, Object?>{
+      'source': source.apiValue,
+    });
+    formData.files.add(_drugImportFileEntry(file));
+    return _apiClient.post<PharmacyDrugImportPreview>(
+      _drugImportEndpoint('preview'),
+      data: formData,
+      options: _drugImportRequestOptions,
+      decoder: (Object? data) =>
+          PharmacyDrugImportPreviewDto.fromResponse(data).toEntity(),
+    );
+  }
+
+  @override
+  Future<Result<PharmacyDrugImportResult>> commitDrugImport(
+    PharmacyDrugImportCommitInput input,
+  ) {
+    final FormData formData = FormData.fromMap(input.toFormFields());
+    formData.files.add(_drugImportFileEntry(input.file));
+    return _apiClient.post<PharmacyDrugImportResult>(
+      _drugImportEndpoint('commit'),
+      data: formData,
+      options: _drugImportRequestOptions,
+      decoder: (Object? data) =>
+          PharmacyDrugImportResultDto.fromResponse(data).toEntity(),
     );
   }
 

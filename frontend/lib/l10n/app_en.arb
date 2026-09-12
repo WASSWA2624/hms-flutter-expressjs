@@ -37070,5 +37070,951 @@
         "type": "String"
       }
     }
+  },
+  "pharmacyDrugImportAction": "Import",
+  "@pharmacyDrugImportAction": {
+    "description": "Drug catalog toolbar action that opens the drug import dialog."
+  },
+  "pharmacyDrugImportActionTooltip": "Import drugs from another system",
+  "@pharmacyDrugImportActionTooltip": {
+    "description": "Tooltip for the drug catalog Import action."
+  },
+  "pharmacyDrugImportDialogTitle": "Import drugs",
+  "@pharmacyDrugImportDialogTitle": {
+    "description": "Drug import dialog title."
+  },
+  "pharmacyDrugImportFacilityTitle": "Importing into {facility}",
+  "@pharmacyDrugImportFacilityTitle": {
+    "description": "Drug import banner naming the facility that receives stock.",
+    "placeholders": {
+      "facility": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportFacilityFallbackTitle": "Importing into your current facility",
+  "@pharmacyDrugImportFacilityFallbackTitle": {
+    "description": "Drug import banner title when the facility name is unknown."
+  },
+  "pharmacyDrugImportFacilityBody": "Catalog drugs are shared across the organization; stock and batches are added only to this facility. Nothing is saved until you review the file and confirm the import.",
+  "@pharmacyDrugImportFacilityBody": {
+    "description": "Drug import banner explaining import scope."
+  },
+  "pharmacyDrugImportSourceLabel": "Import from",
+  "@pharmacyDrugImportSourceLabel": {
+    "description": "Drug import source system select label."
+  },
+  "pharmacyDrugImportSourceHelper": "The system the Excel file was exported from.",
+  "@pharmacyDrugImportSourceHelper": {
+    "description": "Drug import source system select helper."
+  },
+  "pharmacyDrugImportSourceMedicErp": "Medic-ERP",
+  "@pharmacyDrugImportSourceMedicErp": {
+    "description": "Medic-ERP import source name."
+  },
+  "pharmacyDrugImportTemplateTitle": "{source} template columns",
+  "@pharmacyDrugImportTemplateTitle": {
+    "description": "Drug import panel listing the columns a source template requires.",
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportTemplateBody": "The first row of the sheet must contain these column names. The column order does not matter.",
+  "@pharmacyDrugImportTemplateBody": {
+    "description": "Drug import template columns explanation."
+  },
+  "pharmacyDrugImportFileTitle": "Excel file (.xlsx)",
+  "@pharmacyDrugImportFileTitle": {
+    "description": "Drug import file picker panel title."
+  },
+  "pharmacyDrugImportFileEmpty": "No file selected. Files up to 5 MB and 5,000 rows are supported.",
+  "@pharmacyDrugImportFileEmpty": {
+    "description": "Drug import file picker empty state."
+  },
+  "pharmacyDrugImportChooseFileAction": "Choose file",
+  "@pharmacyDrugImportChooseFileAction": {
+    "description": "Drug import choose file action."
+  },
+  "pharmacyDrugImportReplaceFileAction": "Choose another file",
+  "@pharmacyDrugImportReplaceFileAction": {
+    "description": "Drug import replace selected file action."
+  },
+  "pharmacyDrugImportFileTypeLabel": "Excel workbook",
+  "@pharmacyDrugImportFileTypeLabel": {
+    "description": "File type label shown in the drug import file picker."
+  },
+  "pharmacyDrugImportFileReadFailedTitle": "The file could not be opened",
+  "@pharmacyDrugImportFileReadFailedTitle": {
+    "description": "Drug import error title when the selected file cannot be read."
+  },
+  "pharmacyDrugImportFileReadFailedBody": "Choose the file again, or export it from the source system again.",
+  "@pharmacyDrugImportFileReadFailedBody": {
+    "description": "Drug import error body when the selected file cannot be read."
+  },
+  "pharmacyDrugImportAnalyzeAction": "Review file",
+  "@pharmacyDrugImportAnalyzeAction": {
+    "description": "Drug import action that analyzes the selected file."
+  },
+  "pharmacyDrugImportAnalyzingTitle": "Checking the file",
+  "@pharmacyDrugImportAnalyzingTitle": {
+    "description": "Drug import loading title while the file is analyzed."
+  },
+  "pharmacyDrugImportAnalyzingBody": "Looking for duplicates, conflicts, and matches with your catalog.",
+  "@pharmacyDrugImportAnalyzingBody": {
+    "description": "Drug import loading body while the file is analyzed."
+  },
+  "pharmacyDrugImportTemplateMismatchTitle": "This file does not match the {source} template",
+  "@pharmacyDrugImportTemplateMismatchTitle": {
+    "description": "Drug import error title when template columns are missing.",
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportTemplateMismatchBody": "Missing columns: {columns}",
+  "@pharmacyDrugImportTemplateMismatchBody": {
+    "description": "Drug import error body listing missing template columns.",
+    "placeholders": {
+      "columns": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportEmptyPlanTitle": "Nothing to import",
+  "@pharmacyDrugImportEmptyPlanTitle": {
+    "description": "Drug import warning title when no row is usable."
+  },
+  "pharmacyDrugImportEmptyPlanBody": "No row in this file has a usable product. Fix the source file and try again.",
+  "@pharmacyDrugImportEmptyPlanBody": {
+    "description": "Drug import warning body when no row is usable."
+  },
+  "pharmacyDrugImportReviewTitle": "Review {file}",
+  "@pharmacyDrugImportReviewTitle": {
+    "description": "Drug import review step banner title.",
+    "placeholders": {
+      "file": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportReviewBody": "Choose what happens to each product. Nothing is saved until you select Import.",
+  "@pharmacyDrugImportReviewBody": {
+    "description": "Drug import review step banner body."
+  },
+  "pharmacyDrugImportSummaryRows": "Rows: {count}",
+  "@pharmacyDrugImportSummaryRows": {
+    "description": "Drug import summary badge for rows read.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportSummaryProducts": "Products: {count}",
+  "@pharmacyDrugImportSummaryProducts": {
+    "description": "Drug import summary badge for products found.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportSummaryNew": "New: {count}",
+  "@pharmacyDrugImportSummaryNew": {
+    "description": "Drug import summary badge for new products.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportSummaryExisting": "In catalog: {count}",
+  "@pharmacyDrugImportSummaryExisting": {
+    "description": "Drug import summary badge for products already in the catalog.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportSummaryReview": "Needs review: {count}",
+  "@pharmacyDrugImportSummaryReview": {
+    "description": "Drug import summary badge for products similar to catalog drugs.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportSummaryDuplicates": "Duplicate rows: {count}",
+  "@pharmacyDrugImportSummaryDuplicates": {
+    "description": "Drug import summary badge for exact duplicate rows.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportSummaryErrors": "Rows skipped: {count}",
+  "@pharmacyDrugImportSummaryErrors": {
+    "description": "Drug import summary badge for unusable rows.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportSummaryWarnings": "Warnings: {count}",
+  "@pharmacyDrugImportSummaryWarnings": {
+    "description": "Drug import summary badge for warnings.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportSummaryQuantity": "Units: {quantity} in {batches} batches",
+  "@pharmacyDrugImportSummaryQuantity": {
+    "description": "Drug import summary badge for total units and batches.",
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      },
+      "batches": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportPricingTitle": "Prices will not be imported",
+  "@pharmacyDrugImportPricingTitle": {
+    "description": "Drug import warning title when the user cannot write pharmacy prices."
+  },
+  "pharmacyDrugImportPricingBody": "You do not have permission to set pharmacy prices, so retail prices and costs in the file are ignored.",
+  "@pharmacyDrugImportPricingBody": {
+    "description": "Drug import warning body when the user cannot write pharmacy prices."
+  },
+  "pharmacyDrugImportStockModeLabel": "Stock quantities",
+  "@pharmacyDrugImportStockModeLabel": {
+    "description": "Drug import stock mode radio group label."
+  },
+  "pharmacyDrugImportStockModeReplace": "Replace with file quantities",
+  "@pharmacyDrugImportStockModeReplace": {
+    "description": "Drug import stock mode that sets stock to file quantities."
+  },
+  "pharmacyDrugImportStockModeReplaceDescription": "Sets this facility's stock and matching batches to the available quantities in the file. Importing the same file again gives the same result.",
+  "@pharmacyDrugImportStockModeReplaceDescription": {
+    "description": "Drug import replace stock mode description."
+  },
+  "pharmacyDrugImportStockModeAdd": "Add to current stock",
+  "@pharmacyDrugImportStockModeAdd": {
+    "description": "Drug import stock mode that adds file quantities to stock."
+  },
+  "pharmacyDrugImportStockModeAddDescription": "Adds the quantities in the file to current stock, like receiving a delivery. Importing the same file twice counts it twice.",
+  "@pharmacyDrugImportStockModeAddDescription": {
+    "description": "Drug import add stock mode description."
+  },
+  "pharmacyDrugImportClearMissingLabel": "Clear stock for items not in the file ({count})",
+  "@pharmacyDrugImportClearMissingLabel": {
+    "description": "Drug import option to zero stock for stocked drugs missing from the file.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportClearMissingSubtitle": "Sets stock at this facility to zero for: {names}",
+  "@pharmacyDrugImportClearMissingSubtitle": {
+    "description": "Drug import clear missing stock option detail.",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportClearMissingReplaceOnly": "Available only when replacing stock with file quantities.",
+  "@pharmacyDrugImportClearMissingReplaceOnly": {
+    "description": "Drug import note that clearing missing stock needs replace mode."
+  },
+  "pharmacyDrugImportMoreNames": "{names} and {count} more",
+  "@pharmacyDrugImportMoreNames": {
+    "description": "Drug import truncated list of drug names.",
+    "placeholders": {
+      "names": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportFilterLabel": "Show",
+  "@pharmacyDrugImportFilterLabel": {
+    "description": "Drug import product filter select label."
+  },
+  "pharmacyDrugImportFilterOption": "{label} ({count})",
+  "@pharmacyDrugImportFilterOption": {
+    "description": "Drug import product filter option with its product count.",
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportFilterAll": "All products",
+  "@pharmacyDrugImportFilterAll": {
+    "description": "Drug import product filter for all products."
+  },
+  "pharmacyDrugImportFilterNew": "New",
+  "@pharmacyDrugImportFilterNew": {
+    "description": "Drug import product filter for new products."
+  },
+  "pharmacyDrugImportFilterExisting": "In catalog",
+  "@pharmacyDrugImportFilterExisting": {
+    "description": "Drug import product filter for exact catalog matches."
+  },
+  "pharmacyDrugImportFilterReview": "Needs review",
+  "@pharmacyDrugImportFilterReview": {
+    "description": "Drug import product filter for products needing review."
+  },
+  "pharmacyDrugImportFilterIssues": "With issues",
+  "@pharmacyDrugImportFilterIssues": {
+    "description": "Drug import product filter for products with issues."
+  },
+  "pharmacyDrugImportFilterSkipped": "Skipped",
+  "@pharmacyDrugImportFilterSkipped": {
+    "description": "Drug import product filter for skipped products."
+  },
+  "pharmacyDrugImportNoProductsInFilter": "No products in this view.",
+  "@pharmacyDrugImportNoProductsInFilter": {
+    "description": "Drug import empty state for a product filter."
+  },
+  "pharmacyDrugImportStatusNew": "New",
+  "@pharmacyDrugImportStatusNew": {
+    "description": "Drug import status badge for a product not in the catalog."
+  },
+  "pharmacyDrugImportStatusExisting": "In catalog",
+  "@pharmacyDrugImportStatusExisting": {
+    "description": "Drug import status badge for an exact catalog match."
+  },
+  "pharmacyDrugImportStatusSimilar": "Needs review",
+  "@pharmacyDrugImportStatusSimilar": {
+    "description": "Drug import status badge for a product similar to catalog drugs."
+  },
+  "pharmacyDrugImportActionLabel": "Action",
+  "@pharmacyDrugImportActionLabel": {
+    "description": "Drug import per-product action select label."
+  },
+  "pharmacyDrugImportActionCreate": "Create new drug",
+  "@pharmacyDrugImportActionCreate": {
+    "description": "Drug import action that creates a catalog drug."
+  },
+  "pharmacyDrugImportActionMerge": "Link and fill blanks",
+  "@pharmacyDrugImportActionMerge": {
+    "description": "Drug import action that links to a catalog drug and fills empty fields."
+  },
+  "pharmacyDrugImportActionUpdate": "Link and overwrite",
+  "@pharmacyDrugImportActionUpdate": {
+    "description": "Drug import action that links to a catalog drug and overwrites fields."
+  },
+  "pharmacyDrugImportActionSkip": "Skip",
+  "@pharmacyDrugImportActionSkip": {
+    "description": "Drug import action that skips a product."
+  },
+  "pharmacyDrugImportTargetLabel": "Catalog drug",
+  "@pharmacyDrugImportTargetLabel": {
+    "description": "Drug import select label for the catalog drug to link."
+  },
+  "pharmacyDrugImportCandidateOption": "{name} · {score}% match",
+  "@pharmacyDrugImportCandidateOption": {
+    "description": "Drug import catalog drug option with similarity score.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "score": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportExactMatchOption": "{name} · exact match",
+  "@pharmacyDrugImportExactMatchOption": {
+    "description": "Drug import catalog drug option for an exact match.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportQuantityLabel": "Qty {quantity}",
+  "@pharmacyDrugImportQuantityLabel": {
+    "description": "Drug import product detail for total quantity.",
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportBatchesLabel": "Batches {count}",
+  "@pharmacyDrugImportBatchesLabel": {
+    "description": "Drug import product detail for batch count.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportRetailPriceLabel": "Retail {price}",
+  "@pharmacyDrugImportRetailPriceLabel": {
+    "description": "Drug import product detail for retail price.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportCostLabel": "Cost {price}",
+  "@pharmacyDrugImportCostLabel": {
+    "description": "Drug import product detail for cost.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportRowsLabel": "Rows {rows}",
+  "@pharmacyDrugImportRowsLabel": {
+    "description": "Drug import product detail listing source rows.",
+    "placeholders": {
+      "rows": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportBatchLine": "{batch} (expires {expiry}, qty {quantity})",
+  "@pharmacyDrugImportBatchLine": {
+    "description": "Drug import batch summary.",
+    "placeholders": {
+      "batch": {
+        "type": "String"
+      },
+      "expiry": {
+        "type": "String"
+      },
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportMoreBatches": "+{count} more",
+  "@pharmacyDrugImportMoreBatches": {
+    "description": "Drug import suffix for additional batches.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportUnlabeledBatch": "Unlabeled batch",
+  "@pharmacyDrugImportUnlabeledBatch": {
+    "description": "Drug import label for a batch without a number."
+  },
+  "pharmacyDrugImportNoExpiry": "no date",
+  "@pharmacyDrugImportNoExpiry": {
+    "description": "Drug import placeholder for a batch without an expiry date."
+  },
+  "pharmacyDrugImportCurrentStock": "Current stock at this facility: {quantity}",
+  "@pharmacyDrugImportCurrentStock": {
+    "description": "Drug import current facility stock of the linked drug.",
+    "placeholders": {
+      "quantity": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportNoChanges": "No catalog fields change.",
+  "@pharmacyDrugImportNoChanges": {
+    "description": "Drug import note when linking changes no catalog fields."
+  },
+  "pharmacyDrugImportChangeValue": "{field}: {current} → {incoming}",
+  "@pharmacyDrugImportChangeValue": {
+    "description": "Drug import catalog field change.",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      },
+      "current": {
+        "type": "String"
+      },
+      "incoming": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportChangeFillsBlank": "{field}: {incoming} (currently empty)",
+  "@pharmacyDrugImportChangeFillsBlank": {
+    "description": "Drug import catalog field that fills an empty value.",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      },
+      "incoming": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportShowMoreAction": "Show {count} more",
+  "@pharmacyDrugImportShowMoreAction": {
+    "description": "Drug import action that reveals more list items.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportRowIssuesTitle": "Row issues ({count})",
+  "@pharmacyDrugImportRowIssuesTitle": {
+    "description": "Drug import panel title for row-level issues.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportRowLabel": "Row {row}",
+  "@pharmacyDrugImportRowLabel": {
+    "description": "Drug import spreadsheet row reference.",
+    "placeholders": {
+      "row": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportReviewConfirm": "I reviewed the products that look like existing drugs ({count})",
+  "@pharmacyDrugImportReviewConfirm": {
+    "description": "Drug import confirmation checkbox for similar products.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportSubmitAction": "Import {count} products",
+  "@pharmacyDrugImportSubmitAction": {
+    "description": "Drug import submit action.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportImportingTitle": "Importing drugs",
+  "@pharmacyDrugImportImportingTitle": {
+    "description": "Drug import loading title while saving."
+  },
+  "pharmacyDrugImportImportingBody": "Saving catalog changes, stock, and batches. Keep this window open.",
+  "@pharmacyDrugImportImportingBody": {
+    "description": "Drug import loading body while saving."
+  },
+  "pharmacyDrugImportReanalyzeAction": "Review file again",
+  "@pharmacyDrugImportReanalyzeAction": {
+    "description": "Drug import action that re-analyzes the file after a conflict."
+  },
+  "pharmacyDrugImportResultTitle": "Import complete",
+  "@pharmacyDrugImportResultTitle": {
+    "description": "Drug import result banner title."
+  },
+  "pharmacyDrugImportResultBody": "The catalog and stock at {facility} are updated.",
+  "@pharmacyDrugImportResultBody": {
+    "description": "Drug import result banner body.",
+    "placeholders": {
+      "facility": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportResultBodyFallback": "The catalog and facility stock are updated.",
+  "@pharmacyDrugImportResultBodyFallback": {
+    "description": "Drug import result banner body when the facility name is unknown."
+  },
+  "pharmacyDrugImportResultCreated": "Drugs created: {count}",
+  "@pharmacyDrugImportResultCreated": {
+    "description": "Drug import result count of created drugs.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportResultMerged": "Drugs linked, blanks filled: {count}",
+  "@pharmacyDrugImportResultMerged": {
+    "description": "Drug import result count of merged drugs.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportResultUpdated": "Drugs linked and overwritten: {count}",
+  "@pharmacyDrugImportResultUpdated": {
+    "description": "Drug import result count of updated drugs.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportResultSkipped": "Products skipped: {count}",
+  "@pharmacyDrugImportResultSkipped": {
+    "description": "Drug import result count of skipped products.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportResultSuppliers": "Suppliers created: {count}",
+  "@pharmacyDrugImportResultSuppliers": {
+    "description": "Drug import result count of created suppliers.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportResultBatches": "Batches created: {created}, updated: {updated}, cleared: {cleared}",
+  "@pharmacyDrugImportResultBatches": {
+    "description": "Drug import result batch counts.",
+    "placeholders": {
+      "created": {
+        "type": "String"
+      },
+      "updated": {
+        "type": "String"
+      },
+      "cleared": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportResultStock": "Stock records created: {created}, adjusted: {adjusted}, cleared: {cleared}",
+  "@pharmacyDrugImportResultStock": {
+    "description": "Drug import result stock counts.",
+    "placeholders": {
+      "created": {
+        "type": "String"
+      },
+      "adjusted": {
+        "type": "String"
+      },
+      "cleared": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportResultQuantity": "Units imported: {count}",
+  "@pharmacyDrugImportResultQuantity": {
+    "description": "Drug import result total units.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportDoneAction": "Done",
+  "@pharmacyDrugImportDoneAction": {
+    "description": "Drug import action that closes the result step."
+  },
+  "pharmacyDrugImportSuccessMessage": "Drug import complete: {count} products imported",
+  "@pharmacyDrugImportSuccessMessage": {
+    "description": "Snackbar after a drug import.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportIssueMissingProductName": "Product name is empty, so the row is skipped.",
+  "@pharmacyDrugImportIssueMissingProductName": {
+    "description": "Drug import review issue message."
+  },
+  "pharmacyDrugImportIssueValueTooLong": "{field} is longer than {max} characters, so the row is skipped.",
+  "@pharmacyDrugImportIssueValueTooLong": {
+    "description": "Drug import review issue message.",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportIssueValueTruncated": "{field} was shortened to {max} characters.",
+  "@pharmacyDrugImportIssueValueTruncated": {
+    "description": "Drug import review issue message.",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      },
+      "max": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportIssueInvalidNumber": "{field} is not a number: {value}",
+  "@pharmacyDrugImportIssueInvalidNumber": {
+    "description": "Drug import review issue message.",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportIssueMissingQuantity": "Available quantity is empty, so 0 is used.",
+  "@pharmacyDrugImportIssueMissingQuantity": {
+    "description": "Drug import review issue message."
+  },
+  "pharmacyDrugImportIssueNegativeQuantity": "Available quantity is negative ({value}), so 0 is used.",
+  "@pharmacyDrugImportIssueNegativeQuantity": {
+    "description": "Drug import review issue message.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportIssueFractionalQuantity": "Available quantity {value} is not a whole number, so it is rounded down.",
+  "@pharmacyDrugImportIssueFractionalQuantity": {
+    "description": "Drug import review issue message.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportIssueQuantityExceedsReceived": "Available quantity {available} is more than the received quantity {received}.",
+  "@pharmacyDrugImportIssueQuantityExceedsReceived": {
+    "description": "Drug import review issue message.",
+    "placeholders": {
+      "available": {
+        "type": "String"
+      },
+      "received": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportIssueNegativePrice": "{field} is negative ({value}), so it is ignored.",
+  "@pharmacyDrugImportIssueNegativePrice": {
+    "description": "Drug import review issue message.",
+    "placeholders": {
+      "field": {
+        "type": "String"
+      },
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportIssuePriceBelowCost": "Retail price {price} is below cost {cost}.",
+  "@pharmacyDrugImportIssuePriceBelowCost": {
+    "description": "Drug import review issue message.",
+    "placeholders": {
+      "price": {
+        "type": "String"
+      },
+      "cost": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportIssueMaxPriceBelowPrice": "Maximum retail price {maxPrice} is below retail price {price}.",
+  "@pharmacyDrugImportIssueMaxPriceBelowPrice": {
+    "description": "Drug import review issue message.",
+    "placeholders": {
+      "maxPrice": {
+        "type": "String"
+      },
+      "price": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportIssueMissingBatchNumber": "Batch number is empty, so the stock is recorded as an unlabeled batch.",
+  "@pharmacyDrugImportIssueMissingBatchNumber": {
+    "description": "Drug import review issue message."
+  },
+  "pharmacyDrugImportIssueMissingExpiryDate": "Expiry date is empty.",
+  "@pharmacyDrugImportIssueMissingExpiryDate": {
+    "description": "Drug import review issue message."
+  },
+  "pharmacyDrugImportIssueInvalidDate": "Expiry date {value} is not a valid date, so it is ignored.",
+  "@pharmacyDrugImportIssueInvalidDate": {
+    "description": "Drug import review issue message.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportIssueExpiredBatch": "This batch expired on {date}.",
+  "@pharmacyDrugImportIssueExpiredBatch": {
+    "description": "Drug import review issue message.",
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportIssueDuplicateRow": "Exact copy of row {row}, so it is skipped.",
+  "@pharmacyDrugImportIssueDuplicateRow": {
+    "description": "Drug import review issue message.",
+    "placeholders": {
+      "row": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportIssueConflictingRetailPrice": "Rows have different retail prices ({values}); the latest, {chosen}, is used.",
+  "@pharmacyDrugImportIssueConflictingRetailPrice": {
+    "description": "Drug import review issue message.",
+    "placeholders": {
+      "values": {
+        "type": "String"
+      },
+      "chosen": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportIssueConflictingCost": "Rows have different costs ({values}); the latest, {chosen}, is used.",
+  "@pharmacyDrugImportIssueConflictingCost": {
+    "description": "Drug import review issue message.",
+    "placeholders": {
+      "values": {
+        "type": "String"
+      },
+      "chosen": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportIssueConflictingSupplier": "Rows have different suppliers ({values}); the latest, {chosen}, is used.",
+  "@pharmacyDrugImportIssueConflictingSupplier": {
+    "description": "Drug import review issue message.",
+    "placeholders": {
+      "values": {
+        "type": "String"
+      },
+      "chosen": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportIssueConflictingBatchExpiry": "Batch {batch} has different expiry dates ({values}); the latest, {chosen}, is used.",
+  "@pharmacyDrugImportIssueConflictingBatchExpiry": {
+    "description": "Drug import review issue message.",
+    "placeholders": {
+      "batch": {
+        "type": "String"
+      },
+      "values": {
+        "type": "String"
+      },
+      "chosen": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportIssueBatchRowsMerged": "{count} rows of batch {batch} were combined.",
+  "@pharmacyDrugImportIssueBatchRowsMerged": {
+    "description": "Drug import review issue message.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      },
+      "batch": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportIssueAmbiguousExistingMatch": "{count} catalog drugs have this exact name and brand. Choose which one to link.",
+  "@pharmacyDrugImportIssueAmbiguousExistingMatch": {
+    "description": "Drug import review issue message.",
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportIssueSimilarProductInFile": "Looks like {product} (rows {rows}) in this file.",
+  "@pharmacyDrugImportIssueSimilarProductInFile": {
+    "description": "Drug import review issue message.",
+    "placeholders": {
+      "product": {
+        "type": "String"
+      },
+      "rows": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportIssueUnknown": "Check this value ({code}).",
+  "@pharmacyDrugImportIssueUnknown": {
+    "description": "Drug import issue with an unrecognized code.",
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportFieldProductName": "Product name",
+  "@pharmacyDrugImportFieldProductName": {
+    "description": "Drug import source column label."
+  },
+  "pharmacyDrugImportFieldBrand": "Brand",
+  "@pharmacyDrugImportFieldBrand": {
+    "description": "Drug import source column label."
+  },
+  "pharmacyDrugImportFieldAvailableQuantity": "Available quantity",
+  "@pharmacyDrugImportFieldAvailableQuantity": {
+    "description": "Drug import source column label."
+  },
+  "pharmacyDrugImportFieldReceivedQuantity": "Received quantity",
+  "@pharmacyDrugImportFieldReceivedQuantity": {
+    "description": "Drug import source column label."
+  },
+  "pharmacyDrugImportFieldRetailPrice": "Retail price",
+  "@pharmacyDrugImportFieldRetailPrice": {
+    "description": "Drug import source column label."
+  },
+  "pharmacyDrugImportFieldMaxRetailPrice": "Maximum retail price",
+  "@pharmacyDrugImportFieldMaxRetailPrice": {
+    "description": "Drug import source column label."
+  },
+  "pharmacyDrugImportFieldCost": "Cost",
+  "@pharmacyDrugImportFieldCost": {
+    "description": "Drug import source column label."
+  },
+  "pharmacyDrugImportFieldBatchNumber": "Batch number",
+  "@pharmacyDrugImportFieldBatchNumber": {
+    "description": "Drug import source column label."
+  },
+  "pharmacyDrugImportFieldExpiryDate": "Expiry date",
+  "@pharmacyDrugImportFieldExpiryDate": {
+    "description": "Drug import source column label."
+  },
+  "pharmacyDrugImportFieldSupplier": "Supplier",
+  "@pharmacyDrugImportFieldSupplier": {
+    "description": "Drug import source column label."
   }
 }

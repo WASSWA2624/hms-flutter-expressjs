@@ -1,4 +1,5 @@
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_drug_import.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
 
@@ -37,6 +38,17 @@ abstract interface class PharmacyRepository {
   );
 
   Future<Result<void>> deleteDrug(String drugId);
+
+  /// Analyzes an exported stock file for the current facility without saving.
+  Future<Result<PharmacyDrugImportPreview>> previewDrugImport({
+    required PharmacyDrugImportSource source,
+    required PharmacyDrugImportFile file,
+  });
+
+  /// Applies a reviewed import to the catalog and current facility stock.
+  Future<Result<PharmacyDrugImportResult>> commitDrugImport(
+    PharmacyDrugImportCommitInput input,
+  );
 
   Future<Result<AppPage<PharmacyFormularyItem>>> listFormularyItems(
     PharmacyFormularyQuery query,

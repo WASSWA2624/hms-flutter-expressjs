@@ -28974,4 +28974,597 @@ class AppLocalizationsEn extends AppLocalizations {
   ) {
     return '$documentType · $prefix';
   }
+
+  @override
+  String get pharmacyDrugImportAction => 'Import';
+
+  @override
+  String get pharmacyDrugImportActionTooltip =>
+      'Import drugs from another system';
+
+  @override
+  String get pharmacyDrugImportDialogTitle => 'Import drugs';
+
+  @override
+  String pharmacyDrugImportFacilityTitle(String facility) {
+    return 'Importing into $facility';
+  }
+
+  @override
+  String get pharmacyDrugImportFacilityFallbackTitle =>
+      'Importing into your current facility';
+
+  @override
+  String get pharmacyDrugImportFacilityBody =>
+      'Catalog drugs are shared across the organization; stock and batches are added only to this facility. Nothing is saved until you review the file and confirm the import.';
+
+  @override
+  String get pharmacyDrugImportSourceLabel => 'Import from';
+
+  @override
+  String get pharmacyDrugImportSourceHelper =>
+      'The system the Excel file was exported from.';
+
+  @override
+  String get pharmacyDrugImportSourceMedicErp => 'Medic-ERP';
+
+  @override
+  String pharmacyDrugImportTemplateTitle(String source) {
+    return '$source template columns';
+  }
+
+  @override
+  String get pharmacyDrugImportTemplateBody =>
+      'The first row of the sheet must contain these column names. The column order does not matter.';
+
+  @override
+  String get pharmacyDrugImportFileTitle => 'Excel file (.xlsx)';
+
+  @override
+  String get pharmacyDrugImportFileEmpty =>
+      'No file selected. Files up to 5 MB and 5,000 rows are supported.';
+
+  @override
+  String get pharmacyDrugImportChooseFileAction => 'Choose file';
+
+  @override
+  String get pharmacyDrugImportReplaceFileAction => 'Choose another file';
+
+  @override
+  String get pharmacyDrugImportFileTypeLabel => 'Excel workbook';
+
+  @override
+  String get pharmacyDrugImportFileReadFailedTitle =>
+      'The file could not be opened';
+
+  @override
+  String get pharmacyDrugImportFileReadFailedBody =>
+      'Choose the file again, or export it from the source system again.';
+
+  @override
+  String get pharmacyDrugImportAnalyzeAction => 'Review file';
+
+  @override
+  String get pharmacyDrugImportAnalyzingTitle => 'Checking the file';
+
+  @override
+  String get pharmacyDrugImportAnalyzingBody =>
+      'Looking for duplicates, conflicts, and matches with your catalog.';
+
+  @override
+  String pharmacyDrugImportTemplateMismatchTitle(String source) {
+    return 'This file does not match the $source template';
+  }
+
+  @override
+  String pharmacyDrugImportTemplateMismatchBody(String columns) {
+    return 'Missing columns: $columns';
+  }
+
+  @override
+  String get pharmacyDrugImportEmptyPlanTitle => 'Nothing to import';
+
+  @override
+  String get pharmacyDrugImportEmptyPlanBody =>
+      'No row in this file has a usable product. Fix the source file and try again.';
+
+  @override
+  String pharmacyDrugImportReviewTitle(String file) {
+    return 'Review $file';
+  }
+
+  @override
+  String get pharmacyDrugImportReviewBody =>
+      'Choose what happens to each product. Nothing is saved until you select Import.';
+
+  @override
+  String pharmacyDrugImportSummaryRows(String count) {
+    return 'Rows: $count';
+  }
+
+  @override
+  String pharmacyDrugImportSummaryProducts(String count) {
+    return 'Products: $count';
+  }
+
+  @override
+  String pharmacyDrugImportSummaryNew(String count) {
+    return 'New: $count';
+  }
+
+  @override
+  String pharmacyDrugImportSummaryExisting(String count) {
+    return 'In catalog: $count';
+  }
+
+  @override
+  String pharmacyDrugImportSummaryReview(String count) {
+    return 'Needs review: $count';
+  }
+
+  @override
+  String pharmacyDrugImportSummaryDuplicates(String count) {
+    return 'Duplicate rows: $count';
+  }
+
+  @override
+  String pharmacyDrugImportSummaryErrors(String count) {
+    return 'Rows skipped: $count';
+  }
+
+  @override
+  String pharmacyDrugImportSummaryWarnings(String count) {
+    return 'Warnings: $count';
+  }
+
+  @override
+  String pharmacyDrugImportSummaryQuantity(String quantity, String batches) {
+    return 'Units: $quantity in $batches batches';
+  }
+
+  @override
+  String get pharmacyDrugImportPricingTitle => 'Prices will not be imported';
+
+  @override
+  String get pharmacyDrugImportPricingBody =>
+      'You do not have permission to set pharmacy prices, so retail prices and costs in the file are ignored.';
+
+  @override
+  String get pharmacyDrugImportStockModeLabel => 'Stock quantities';
+
+  @override
+  String get pharmacyDrugImportStockModeReplace =>
+      'Replace with file quantities';
+
+  @override
+  String get pharmacyDrugImportStockModeReplaceDescription =>
+      'Sets this facility\'s stock and matching batches to the available quantities in the file. Importing the same file again gives the same result.';
+
+  @override
+  String get pharmacyDrugImportStockModeAdd => 'Add to current stock';
+
+  @override
+  String get pharmacyDrugImportStockModeAddDescription =>
+      'Adds the quantities in the file to current stock, like receiving a delivery. Importing the same file twice counts it twice.';
+
+  @override
+  String pharmacyDrugImportClearMissingLabel(String count) {
+    return 'Clear stock for items not in the file ($count)';
+  }
+
+  @override
+  String pharmacyDrugImportClearMissingSubtitle(String names) {
+    return 'Sets stock at this facility to zero for: $names';
+  }
+
+  @override
+  String get pharmacyDrugImportClearMissingReplaceOnly =>
+      'Available only when replacing stock with file quantities.';
+
+  @override
+  String pharmacyDrugImportMoreNames(String names, String count) {
+    return '$names and $count more';
+  }
+
+  @override
+  String get pharmacyDrugImportFilterLabel => 'Show';
+
+  @override
+  String pharmacyDrugImportFilterOption(String label, String count) {
+    return '$label ($count)';
+  }
+
+  @override
+  String get pharmacyDrugImportFilterAll => 'All products';
+
+  @override
+  String get pharmacyDrugImportFilterNew => 'New';
+
+  @override
+  String get pharmacyDrugImportFilterExisting => 'In catalog';
+
+  @override
+  String get pharmacyDrugImportFilterReview => 'Needs review';
+
+  @override
+  String get pharmacyDrugImportFilterIssues => 'With issues';
+
+  @override
+  String get pharmacyDrugImportFilterSkipped => 'Skipped';
+
+  @override
+  String get pharmacyDrugImportNoProductsInFilter =>
+      'No products in this view.';
+
+  @override
+  String get pharmacyDrugImportStatusNew => 'New';
+
+  @override
+  String get pharmacyDrugImportStatusExisting => 'In catalog';
+
+  @override
+  String get pharmacyDrugImportStatusSimilar => 'Needs review';
+
+  @override
+  String get pharmacyDrugImportActionLabel => 'Action';
+
+  @override
+  String get pharmacyDrugImportActionCreate => 'Create new drug';
+
+  @override
+  String get pharmacyDrugImportActionMerge => 'Link and fill blanks';
+
+  @override
+  String get pharmacyDrugImportActionUpdate => 'Link and overwrite';
+
+  @override
+  String get pharmacyDrugImportActionSkip => 'Skip';
+
+  @override
+  String get pharmacyDrugImportTargetLabel => 'Catalog drug';
+
+  @override
+  String pharmacyDrugImportCandidateOption(String name, String score) {
+    return '$name · $score% match';
+  }
+
+  @override
+  String pharmacyDrugImportExactMatchOption(String name) {
+    return '$name · exact match';
+  }
+
+  @override
+  String pharmacyDrugImportQuantityLabel(String quantity) {
+    return 'Qty $quantity';
+  }
+
+  @override
+  String pharmacyDrugImportBatchesLabel(String count) {
+    return 'Batches $count';
+  }
+
+  @override
+  String pharmacyDrugImportRetailPriceLabel(String price) {
+    return 'Retail $price';
+  }
+
+  @override
+  String pharmacyDrugImportCostLabel(String price) {
+    return 'Cost $price';
+  }
+
+  @override
+  String pharmacyDrugImportRowsLabel(String rows) {
+    return 'Rows $rows';
+  }
+
+  @override
+  String pharmacyDrugImportBatchLine(
+    String batch,
+    String expiry,
+    String quantity,
+  ) {
+    return '$batch (expires $expiry, qty $quantity)';
+  }
+
+  @override
+  String pharmacyDrugImportMoreBatches(String count) {
+    return '+$count more';
+  }
+
+  @override
+  String get pharmacyDrugImportUnlabeledBatch => 'Unlabeled batch';
+
+  @override
+  String get pharmacyDrugImportNoExpiry => 'no date';
+
+  @override
+  String pharmacyDrugImportCurrentStock(String quantity) {
+    return 'Current stock at this facility: $quantity';
+  }
+
+  @override
+  String get pharmacyDrugImportNoChanges => 'No catalog fields change.';
+
+  @override
+  String pharmacyDrugImportChangeValue(
+    String field,
+    String current,
+    String incoming,
+  ) {
+    return '$field: $current → $incoming';
+  }
+
+  @override
+  String pharmacyDrugImportChangeFillsBlank(String field, String incoming) {
+    return '$field: $incoming (currently empty)';
+  }
+
+  @override
+  String pharmacyDrugImportShowMoreAction(String count) {
+    return 'Show $count more';
+  }
+
+  @override
+  String pharmacyDrugImportRowIssuesTitle(String count) {
+    return 'Row issues ($count)';
+  }
+
+  @override
+  String pharmacyDrugImportRowLabel(String row) {
+    return 'Row $row';
+  }
+
+  @override
+  String pharmacyDrugImportReviewConfirm(String count) {
+    return 'I reviewed the products that look like existing drugs ($count)';
+  }
+
+  @override
+  String pharmacyDrugImportSubmitAction(String count) {
+    return 'Import $count products';
+  }
+
+  @override
+  String get pharmacyDrugImportImportingTitle => 'Importing drugs';
+
+  @override
+  String get pharmacyDrugImportImportingBody =>
+      'Saving catalog changes, stock, and batches. Keep this window open.';
+
+  @override
+  String get pharmacyDrugImportReanalyzeAction => 'Review file again';
+
+  @override
+  String get pharmacyDrugImportResultTitle => 'Import complete';
+
+  @override
+  String pharmacyDrugImportResultBody(String facility) {
+    return 'The catalog and stock at $facility are updated.';
+  }
+
+  @override
+  String get pharmacyDrugImportResultBodyFallback =>
+      'The catalog and facility stock are updated.';
+
+  @override
+  String pharmacyDrugImportResultCreated(String count) {
+    return 'Drugs created: $count';
+  }
+
+  @override
+  String pharmacyDrugImportResultMerged(String count) {
+    return 'Drugs linked, blanks filled: $count';
+  }
+
+  @override
+  String pharmacyDrugImportResultUpdated(String count) {
+    return 'Drugs linked and overwritten: $count';
+  }
+
+  @override
+  String pharmacyDrugImportResultSkipped(String count) {
+    return 'Products skipped: $count';
+  }
+
+  @override
+  String pharmacyDrugImportResultSuppliers(String count) {
+    return 'Suppliers created: $count';
+  }
+
+  @override
+  String pharmacyDrugImportResultBatches(
+    String created,
+    String updated,
+    String cleared,
+  ) {
+    return 'Batches created: $created, updated: $updated, cleared: $cleared';
+  }
+
+  @override
+  String pharmacyDrugImportResultStock(
+    String created,
+    String adjusted,
+    String cleared,
+  ) {
+    return 'Stock records created: $created, adjusted: $adjusted, cleared: $cleared';
+  }
+
+  @override
+  String pharmacyDrugImportResultQuantity(String count) {
+    return 'Units imported: $count';
+  }
+
+  @override
+  String get pharmacyDrugImportDoneAction => 'Done';
+
+  @override
+  String pharmacyDrugImportSuccessMessage(String count) {
+    return 'Drug import complete: $count products imported';
+  }
+
+  @override
+  String get pharmacyDrugImportIssueMissingProductName =>
+      'Product name is empty, so the row is skipped.';
+
+  @override
+  String pharmacyDrugImportIssueValueTooLong(String field, String max) {
+    return '$field is longer than $max characters, so the row is skipped.';
+  }
+
+  @override
+  String pharmacyDrugImportIssueValueTruncated(String field, String max) {
+    return '$field was shortened to $max characters.';
+  }
+
+  @override
+  String pharmacyDrugImportIssueInvalidNumber(String field, String value) {
+    return '$field is not a number: $value';
+  }
+
+  @override
+  String get pharmacyDrugImportIssueMissingQuantity =>
+      'Available quantity is empty, so 0 is used.';
+
+  @override
+  String pharmacyDrugImportIssueNegativeQuantity(String value) {
+    return 'Available quantity is negative ($value), so 0 is used.';
+  }
+
+  @override
+  String pharmacyDrugImportIssueFractionalQuantity(String value) {
+    return 'Available quantity $value is not a whole number, so it is rounded down.';
+  }
+
+  @override
+  String pharmacyDrugImportIssueQuantityExceedsReceived(
+    String available,
+    String received,
+  ) {
+    return 'Available quantity $available is more than the received quantity $received.';
+  }
+
+  @override
+  String pharmacyDrugImportIssueNegativePrice(String field, String value) {
+    return '$field is negative ($value), so it is ignored.';
+  }
+
+  @override
+  String pharmacyDrugImportIssuePriceBelowCost(String price, String cost) {
+    return 'Retail price $price is below cost $cost.';
+  }
+
+  @override
+  String pharmacyDrugImportIssueMaxPriceBelowPrice(
+    String maxPrice,
+    String price,
+  ) {
+    return 'Maximum retail price $maxPrice is below retail price $price.';
+  }
+
+  @override
+  String get pharmacyDrugImportIssueMissingBatchNumber =>
+      'Batch number is empty, so the stock is recorded as an unlabeled batch.';
+
+  @override
+  String get pharmacyDrugImportIssueMissingExpiryDate =>
+      'Expiry date is empty.';
+
+  @override
+  String pharmacyDrugImportIssueInvalidDate(String value) {
+    return 'Expiry date $value is not a valid date, so it is ignored.';
+  }
+
+  @override
+  String pharmacyDrugImportIssueExpiredBatch(String date) {
+    return 'This batch expired on $date.';
+  }
+
+  @override
+  String pharmacyDrugImportIssueDuplicateRow(String row) {
+    return 'Exact copy of row $row, so it is skipped.';
+  }
+
+  @override
+  String pharmacyDrugImportIssueConflictingRetailPrice(
+    String values,
+    String chosen,
+  ) {
+    return 'Rows have different retail prices ($values); the latest, $chosen, is used.';
+  }
+
+  @override
+  String pharmacyDrugImportIssueConflictingCost(String values, String chosen) {
+    return 'Rows have different costs ($values); the latest, $chosen, is used.';
+  }
+
+  @override
+  String pharmacyDrugImportIssueConflictingSupplier(
+    String values,
+    String chosen,
+  ) {
+    return 'Rows have different suppliers ($values); the latest, $chosen, is used.';
+  }
+
+  @override
+  String pharmacyDrugImportIssueConflictingBatchExpiry(
+    String batch,
+    String values,
+    String chosen,
+  ) {
+    return 'Batch $batch has different expiry dates ($values); the latest, $chosen, is used.';
+  }
+
+  @override
+  String pharmacyDrugImportIssueBatchRowsMerged(String count, String batch) {
+    return '$count rows of batch $batch were combined.';
+  }
+
+  @override
+  String pharmacyDrugImportIssueAmbiguousExistingMatch(String count) {
+    return '$count catalog drugs have this exact name and brand. Choose which one to link.';
+  }
+
+  @override
+  String pharmacyDrugImportIssueSimilarProductInFile(
+    String product,
+    String rows,
+  ) {
+    return 'Looks like $product (rows $rows) in this file.';
+  }
+
+  @override
+  String pharmacyDrugImportIssueUnknown(String code) {
+    return 'Check this value ($code).';
+  }
+
+  @override
+  String get pharmacyDrugImportFieldProductName => 'Product name';
+
+  @override
+  String get pharmacyDrugImportFieldBrand => 'Brand';
+
+  @override
+  String get pharmacyDrugImportFieldAvailableQuantity => 'Available quantity';
+
+  @override
+  String get pharmacyDrugImportFieldReceivedQuantity => 'Received quantity';
+
+  @override
+  String get pharmacyDrugImportFieldRetailPrice => 'Retail price';
+
+  @override
+  String get pharmacyDrugImportFieldMaxRetailPrice => 'Maximum retail price';
+
+  @override
+  String get pharmacyDrugImportFieldCost => 'Cost';
+
+  @override
+  String get pharmacyDrugImportFieldBatchNumber => 'Batch number';
+
+  @override
+  String get pharmacyDrugImportFieldExpiryDate => 'Expiry date';
+
+  @override
+  String get pharmacyDrugImportFieldSupplier => 'Supplier';
 }

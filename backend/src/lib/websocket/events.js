@@ -129,7 +129,8 @@ const PHARMACY_EVENTS = {
   PHARMACY_ORDER_UPDATED: 'pharmacy.order_updated',
   PHARMACY_ORDER_CREATED: 'pharmacy.order_created',
   PHARMACY_ORDER_DISPENSED: 'pharmacy.order_dispensed',
-  PHARMACY_ORDER_CANCELED: 'pharmacy.order_canceled'
+  PHARMACY_ORDER_CANCELED: 'pharmacy.order_canceled',
+  PHARMACY_CATALOG_UPDATED: 'pharmacy.catalog_updated'
 };
 
 /**

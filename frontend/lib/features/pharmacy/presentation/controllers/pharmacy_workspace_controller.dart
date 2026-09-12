@@ -15,6 +15,7 @@ import 'package:hosspi_hms/core/workspace/workspace_fast_sync.dart';
 import 'package:hosspi_hms/core/workspace/workspace_session_guard.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_mutation.dart';
 import 'package:hosspi_hms/features/pharmacy/data/repositories/pharmacy_repository_impl.dart';
+import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_drug_import.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_entities.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/repositories/pharmacy_repository.dart';
 import 'package:hosspi_hms/shared/data/data.dart';
@@ -1148,6 +1149,27 @@ final class PharmacyWorkspaceController
       },
       failure: (AppFailure failure) => failure,
     );
+  }
+
+  Future<Result<PharmacyDrugImportPreview>> previewDrugImport({
+    required PharmacyDrugImportSource source,
+    required PharmacyDrugImportFile file,
+  }) {
+    return _repository.previewDrugImport(source: source, file: file);
+  }
+
+  /// Applies a reviewed import, then reloads the catalog and stock it touched.
+  Future<Result<PharmacyDrugImportResult>> commitDrugImport(
+    PharmacyDrugImportCommitInput input,
+  ) async {
+    final Result<PharmacyDrugImportResult> result = await _repository
+        .commitDrugImport(input);
+    if (result case ResultSuccess<PharmacyDrugImportResult>()) {
+      await _refreshDrugs(showLoading: false);
+      await _refreshInventory(showLoading: false);
+      unawaited(_refreshStockAlertSummary());
+    }
+    return result;
   }
 
   Future<Result<PharmacyDrug>> createDrug(
