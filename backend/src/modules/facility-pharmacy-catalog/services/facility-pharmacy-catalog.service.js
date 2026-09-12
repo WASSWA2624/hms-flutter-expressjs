@@ -6,6 +6,9 @@ const drugRepository = require('@repositories/drug/drug.repository');
 const facilityPharmacyCatalogRepository = require('@repositories/facility-pharmacy-catalog/facility-pharmacy-catalog.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const {
+  buildVisibleDefinitionWhere,
+} = require('@lib/catalog/preset-ownership');
 const { resolveOperationalFacilityId } = require('@lib/facility-context');
 const {
   assertFacilityTariffMutationAllowed,
@@ -50,8 +53,15 @@ const resolveDrugIdOrThrow = async ({ identifier, tenantId, errorKey = 'errors.d
     errorKey,
   });
 
+/**
+ * Definitions a facility may adopt: the platform catalog plus the tenant's own.
+ *
+ * Visibility lives in `AND` because the search filter owns the top-level `OR`.
+ * A bare `OR` here would be overwritten by it, widening the query across tenants
+ * instead of narrowing it.
+ */
 const buildDrugSearchWhere = (tenantId, searchTerm) => {
-  const where = { tenant_id: tenantId, deleted_at: null };
+  const where = { AND: [buildVisibleDefinitionWhere(tenantId)], deleted_at: null };
   if (!searchTerm?.raw) return where;
   return {
     ...where,

@@ -79,6 +79,16 @@ const PRESET_DOMAINS = Object.freeze({
       'default_storage_shelf_id',
     ]),
   },
+  consultation_type: {
+    definitionModel: 'consultation_type',
+    adoptionModel: 'facility_consultation_type_offering',
+    adoptionKey: 'consultation_type_id',
+    platformOwned: Object.freeze(['name', 'code', 'category']),
+    overridable: Object.freeze([
+      'is_active', 'sort_order', 'unit_price', 'currency',
+      'default_duration_minutes',
+    ]),
+  },
   clinical_term_catalog: {
     definitionModel: 'clinical_term_catalog',
     // Keyed by (term_type, item_id) rather than a single FK column, because one

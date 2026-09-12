@@ -32,10 +32,10 @@ Tenant isolation is the highest-priority data-integrity property in the plan. St
 
 - [ ] **AC1 (R2)** No record from tenant A is visible anywhere in the tenant B interface.
 - [ ] **AC2 (R3)** Every direct-identifier cross-tenant API attempt is denied and reveals nothing about the target resource.
-- [ ] **AC3 (R4)** The route coverage list shows tenant-scope enforcement for every tenant-scoped route, with no unenforced route remaining.
-- [ ] **AC4 (R5)** No repository or raw query returns cross-tenant rows.
+- [x] **AC3 (R4)** The route coverage list shows tenant-scope enforcement for every tenant-scoped route, with no unenforced route remaining.
+- [x] **AC4 (R5)** No repository or raw query returns cross-tenant rows.
 - [ ] **AC5 (R6)** Configuration and preset changes in A leave B unchanged.
-- [ ] **AC6 (R7)** The automated cross-tenant test suite passes and fails when a guard is deliberately removed.
+- [x] **AC6 (R7)** The automated cross-tenant test suite passes and fails when a guard is deliberately removed.
 - [ ] **AC7 (R8, R9)** The verification document records passing results for both development and production.
 
 ## Verification

@@ -7,6 +7,9 @@ const facilityRadiologyCatalogRepository = require('@repositories/facility-radio
 const clinicalTermRepository = require('@repositories/clinical-term/clinical-term.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const {
+  buildVisibleDefinitionWhere,
+} = require('@lib/catalog/preset-ownership');
 const { resolveOrCreateStandardRadiologyTest } = require('@services/radiology-procedure/radiology-procedure.service');
 const {
   buildPagination,
@@ -108,8 +111,15 @@ const syncLegacyOffering = async ({ tenantId, facilityId, radiologyTestId, isAct
   }
 };
 
+/**
+ * Definitions a facility may adopt: the platform catalog plus the tenant's own.
+ *
+ * Visibility lives in `AND` because the search filter owns the top-level `OR`.
+ * A bare `OR` here would be overwritten by it, widening the query across tenants
+ * instead of narrowing it.
+ */
 const buildTestSearchWhere = (tenantId, searchTerm) => {
-  const where = { tenant_id: tenantId };
+  const where = { AND: [buildVisibleDefinitionWhere(tenantId)] };
   if (!searchTerm?.raw) return where;
   const or = buildRadiologyProcedureSearchOr(searchTerm.raw);
   if (or.length === 0) return where;

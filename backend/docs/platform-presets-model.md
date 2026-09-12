@@ -40,6 +40,7 @@ so the API, tests and UI agree.
 | `lab_panel` | `lab_panel` | `facility_lab_panel_offering` | `is_active`, `sort_order`, `unit_price`, `currency` |
 | `radiology_procedure` | `radiology_procedure` | `facility_radiology_procedure_offering` | `is_active`, `sort_order`, `unit_price`, `currency` |
 | `drug` | `drug` | `facility_pharmacy_offering` | `is_active`, `sort_order`, `unit_price`, `currency`, `default_storage_shelf_id` |
+| `consultation_type` | `consultation_type` | `facility_consultation_type_offering` | `is_active`, `sort_order`, `unit_price`, `currency`, `default_duration_minutes` |
 | `clinical_term_catalog` | `clinical_term_catalog` | `facility_catalog_offering` | `is_active`, `sort_order` |
 
 The naming field and `code` are never overridable — they are the identity a
@@ -81,6 +82,9 @@ caller** — verified in `preset-ownership.test.js`.
 | Referrer graph, parsed from the schema | ✅ `src/lib/catalog/preset-references.js` |
 | Platform catalog seeder (2,169 presets) | ✅ `scripts/seed-platform-presets.js`, seeded on development |
 | Duplication survey, read-only | ✅ `scripts/analyze-catalog-duplication.js` |
+| Currency + consultation preset tables | ✅ migration `20260912060000_currency_and_consultation_presets` |
+| Adoption browse surface widened to the platform tier | ✅ lab, radiology and pharmacy catalog services |
+| Adoption isolation tests (12) | ✅ `src/tests/modules/catalog/preset-adoption-isolation.test.js` |
 | Unit tests (41) | ✅ `src/tests/lib/catalog/preset-ownership.test.js` |
 | Schema: platform scope | ✅ `lab_test`, `lab_panel`, `radiology_procedure`, `drug`, `clinical_term_catalog` |
 | Migration | ✅ `20260912020000_platform_preset_scope`, applied to development |
@@ -102,13 +106,10 @@ existed and serves clinical terms, so no new adoption table was needed for them.
 
 | Item | Requirement |
 | :--- | :--- |
-| Collapse tenant rows onto presets (§5.3) | R6 |
-| Adoption API — browse, adopt, customise, facility-specific entries | R3 |
-| New tables: currency preset + tenant adoption | R2 |
-| New tables: consultation type preset + facility adoption | R2 |
-| Dedup backfill preserving order references | R6 |
 | Frontend catalog surfaces | R7, AC6 |
 | Production migration and rollout | R9, AC8 |
+| Collapse tenant rows onto presets (§5.3) | R6 — **deferred**, see §5.4 |
+| Dedup backfill preserving order references | R6 |
 
 ### 3.3 Deliberate exclusions
 
@@ -141,6 +142,8 @@ curated Uganda clinical catalogs that already ship in the repo.
 
 | Domain | Presets | Source |
 | :--- | ---: | :--- |
+| `currency_preset` | 8 | `scripts/seeders/data/platform-billing-catalog.js` |
+| `consultation_type` | 10 | same |
 | `lab_test` | 147, with 91 unit options, 442 reference ranges and 180 result options | `scripts/seeders/data/uganda-lab-catalog.js` |
 | `lab_panel` | 40, with 351 panel items | same |
 | `radiology_procedure` | 146 | `scripts/seeders/data/uganda-radiology-catalog.js` |
@@ -262,3 +265,30 @@ every model, so it deserves its own change rather than being folded into this
 one. The fix is a field check against the schema before assigning. Affected
 tables include `lab_panel_item`, `lab_test_unit_option`,
 `lab_test_reference_range` and `lab_test_result_option`.
+
+## 7. The collapse, deferred
+
+Retiring the 613 tenant catalog rows onto the platform presets (§5.2) is **not
+being done**, on purpose.
+
+Measured cost against measured benefit:
+
+| | |
+| :--- | :--- |
+| Cost | Repointing roughly 4,100 operational references — `lab_order_item`, `radiology_order`, `pharmacy_order_item`, `drug_batch`, `formulary_item` — one-directionally, on live data |
+| Benefit | Tidying the seeded `DemoCare` tenant. The one real production tenant owns **one** drug. |
+
+The preset model treats a tenant-owned definition sitting alongside a platform
+one as a **supported state**, not a defect — R3 explicitly allows a tenant to
+create its own entries. So leaving these rows where they are is a legitimate end
+state rather than unfinished work.
+
+It also interacts with an open product decision: whether the seeded demo tenant
+belongs in the production database at all
+([tenant-initialization-audit.md](tenant-initialization-audit.md) §7.4). If it is
+removed, most of the collapse disappears with it.
+
+`scripts/analyze-catalog-duplication.js` and
+[`preset-references.js`](../src/lib/catalog/preset-references.js) remain, so the
+work can be picked up with the referrer graph and conflict detection already in
+place should the decision change.

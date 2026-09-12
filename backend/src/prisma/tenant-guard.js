@@ -131,7 +131,33 @@ const appendConstraint = (where, constraint) => {
   };
 };
 
-const PLATFORM_SHARED_MODELS = new Set(['role', 'permission']);
+/**
+ * Models that carry a platform tier alongside tenant-owned rows.
+ *
+ * For these, `tenant_id IS NULL` means "owned by the platform, readable by every
+ * tenant": reads are widened to include those rows, and an explicit
+ * `tenant_id: null` on write is preserved rather than overwritten with the
+ * actor's tenant.
+ *
+ * Listed literally rather than imported from `@lib/catalog/preset-ownership`,
+ * because this module sits under the Prisma client and pulling the authorization
+ * chain in here would create a require cycle. `tenant-guard.platform-models.test.js`
+ * asserts this set stays in step with the preset registry.
+ *
+ * Widening reads is not permission to write: the service layer still refuses a
+ * tenant actor mutating a platform row (`assertCanMutatePresetDefinition` for the
+ * catalog domains, `assertRoleScopeAllowed` for roles).
+ */
+const PLATFORM_SHARED_MODELS = new Set([
+  'role',
+  'permission',
+  'lab_test',
+  'lab_panel',
+  'radiology_procedure',
+  'drug',
+  'clinical_term_catalog',
+  'consultation_type',
+]);
 
 const buildGuardedWhere = (where, metadata, tenantId, options = {}) => {
   const tenantConstraint = options.includePlatformCatalog

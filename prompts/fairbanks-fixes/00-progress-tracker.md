@@ -17,7 +17,7 @@
 | **2 · Tenancy & Isolation**<br>`▰▰▱▱` 2/4 | 04 | [Tenant seed audit](04-tenant-seed-audit.md) | 02 | 🟩 |
 | | 05 | [Remove tenant operational seed](05-remove-tenant-operational-seed.md) | 04 | 🟩 |
 | | 06 | [Platform presets model](06-platform-presets-model.md) | 04, 05 | 🟦 |
-| | 07 | [Tenant isolation verification](07-tenant-isolation-verification.md) 🚩 | 04-06 | ⬜ |
+| | 07 | [Tenant isolation verification](07-tenant-isolation-verification.md) 🚩 | 04-06 | 🟦 |
 | **3 · Users & Roles**<br>`▱▱▱▱▱` 0/5 | 08 | [User creation stability](08-user-creation-stability.md) | 03, 07 | ⬜ |
 | | 09 | [Global default roles](09-global-default-roles.md) | 06, 08 | ⬜ |
 | | 10 | [Custom role creation](10-custom-role-creation.md) | 09 | ⬜ |

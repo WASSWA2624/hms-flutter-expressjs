@@ -58,6 +58,10 @@ const {
 } = require('./seeders/data/uganda-lab-catalog');
 const { RADIOLOGY_TEST_CATALOG } = require('./seeders/data/uganda-radiology-catalog');
 const { DRUG_CATALOG } = require('./seeders/seed-clinical-catalog-pack');
+const {
+  CURRENCY_CATALOG,
+  CONSULTATION_TYPE_CATALOG,
+} = require('./seeders/data/platform-billing-catalog');
 const { UGANDA_DIAGNOSIS_CATALOG } = require('./seeders/data/uganda-diagnosis-catalog');
 
 /** Stable ids so a re-run updates the same rows rather than inserting new ones. */
@@ -312,6 +316,67 @@ const seedDrugs = async ({ dryRun }) => {
   return { counts };
 };
 
+const seedCurrencies = async ({ dryRun }) => {
+  const counts = tally();
+
+  for (const [index, spec] of CURRENCY_CATALOG.entries()) {
+    const id = presetId('currency_preset', spec.key);
+
+    // currency_preset has no tenant_id at all - a currency is never a tenant's
+    // to own - so it is upserted directly rather than through upsertPreset.
+    const existing = await prisma.currency_preset.findFirst({
+      where: { id },
+      select: { id: true },
+    });
+    const data = {
+      human_friendly_id: friendlyId('CUR', 'currency_preset', spec.key),
+      code: spec.code,
+      name: spec.name,
+      symbol: spec.symbol,
+      decimal_places: spec.decimal_places,
+      is_active: true,
+      sort_order: index,
+    };
+
+    if (dryRun) {
+      record(counts, existing ? 'update' : 'create');
+      continue;
+    }
+
+    if (existing) {
+      await prisma.currency_preset.update({
+        where: { id },
+        data: { ...data, deleted_at: null },
+      });
+      record(counts, 'update');
+    } else {
+      await prisma.currency_preset.create({ data: { ...data, id } });
+      record(counts, 'create');
+    }
+  }
+
+  return { counts };
+};
+
+const seedConsultationTypes = async ({ dryRun }) => {
+  const counts = tally();
+
+  for (const spec of CONSULTATION_TYPE_CATALOG) {
+    const id = presetId('consultation_type', spec.key);
+
+    record(counts, await upsertPreset('consultation_type', id, {
+      human_friendly_id: friendlyId('CTYP', 'consultation_type', spec.key),
+      name: text(spec.name, 160),
+      code: text(spec.code, 80),
+      category: text(spec.category, 80),
+      description: text(spec.description),
+      default_duration_minutes: spec.default_duration_minutes ?? null,
+    }, { dryRun }));
+  }
+
+  return { counts };
+};
+
 const seedDiagnoses = async ({ dryRun }) => {
   const counts = tally();
 
@@ -341,7 +406,10 @@ const main = async () => {
   const wanted = (domain) => !args.domain || args.domain === domain;
 
   if (args.domain
-    && !['lab_test', 'lab_panel', 'radiology_procedure', 'drug', 'clinical_term_catalog'].includes(args.domain)) {
+    && ![
+      'lab_test', 'lab_panel', 'radiology_procedure', 'drug',
+      'currency_preset', 'consultation_type', 'clinical_term_catalog',
+    ].includes(args.domain)) {
     throw new Error(`Unknown domain "${args.domain}".`);
   }
 
@@ -378,6 +446,14 @@ const main = async () => {
 
   if (wanted('drug')) {
     report.domains.drug = (await seedDrugs({ dryRun: args.dryRun })).counts;
+  }
+
+  if (wanted('currency_preset')) {
+    report.domains.currency_preset = (await seedCurrencies({ dryRun: args.dryRun })).counts;
+  }
+
+  if (wanted('consultation_type')) {
+    report.domains.consultation_type = (await seedConsultationTypes({ dryRun: args.dryRun })).counts;
   }
 
   if (wanted('clinical_term_catalog')) {

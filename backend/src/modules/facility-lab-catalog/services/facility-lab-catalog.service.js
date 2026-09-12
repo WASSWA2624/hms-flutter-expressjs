@@ -9,6 +9,9 @@ const facilityLabCatalogRepository = require('@repositories/facility-lab-catalog
 const clinicalTermRepository = require('@repositories/clinical-term/clinical-term.repository');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const {
+  buildVisibleDefinitionWhere,
+} = require('@lib/catalog/preset-ownership');
 const { STANDARD_LAB_TESTS, STANDARD_LAB_PANELS } = require('@services/lab-order/lab-order.service');
 const {
   LAB_TEST_WITH_RELATIONS_INCLUDE,
@@ -455,8 +458,15 @@ const syncLegacyOffering = async ({ tenantId, facilityId, labTestId, isActive })
   }
 };
 
+/**
+ * Definitions a facility may adopt: the platform catalog plus the tenant's own.
+ *
+ * Visibility lives in `AND` because the search filter below owns the top-level
+ * `OR`. A bare `OR` here would be overwritten by it, which would widen the query
+ * across tenants instead of narrowing it.
+ */
 const buildTestSearchWhere = (tenantId, searchTerm) => {
-  const where = { tenant_id: tenantId };
+  const where = { AND: [buildVisibleDefinitionWhere(tenantId)] };
   if (!searchTerm?.raw) return where;
   return {
     ...where,
@@ -471,7 +481,7 @@ const buildTestSearchWhere = (tenantId, searchTerm) => {
 };
 
 const buildPanelSearchWhere = (tenantId, searchTerm) => {
-  const where = { tenant_id: tenantId };
+  const where = { AND: [buildVisibleDefinitionWhere(tenantId)] };
   if (!searchTerm?.raw) return where;
   return {
     ...where,

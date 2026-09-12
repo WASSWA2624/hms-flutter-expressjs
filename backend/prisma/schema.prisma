@@ -1161,10 +1161,13 @@ model tenant {
   clinical_term_favorites                clinical_term_favorite[]
   clinical_term_catalogs                 clinical_term_catalog[]
   facility_catalog_offerings             facility_catalog_offering[]
+  consultation_types                     consultation_type[]
+  currency_adoptions                     tenant_currency_adoption[]
   facility_lab_test_offerings            facility_lab_test_offering[]
   facility_lab_panel_offerings           facility_lab_panel_offering[]
   facility_radiology_procedure_offerings facility_radiology_procedure_offering[]
   facility_pharmacy_offerings            facility_pharmacy_offering[]
+  facility_consultation_type_offerings   facility_consultation_type_offering[]
   staff_positions                        staff_position[]
   staff_profiles                         staff_profile[]
   shifts                                 shift[]
@@ -1300,6 +1303,7 @@ model facility {
   facility_lab_panel_offerings           facility_lab_panel_offering[]
   facility_radiology_procedure_offerings facility_radiology_procedure_offering[]
   facility_pharmacy_offerings            facility_pharmacy_offering[]
+  facility_consultation_type_offerings   facility_consultation_type_offering[]
   pharmacy_storage_rooms                 pharmacy_storage_room[]
   pharmacy_storage_shelves               pharmacy_storage_shelf[]
   shifts                                 shift[]
@@ -2830,7 +2834,7 @@ model clinical_term_catalog {
   deleted_at        DateTime?
   version           Int              @default(1)
 
-  tenant   tenant?   @relation(fields: [tenant_id], references: [id])
+  tenant   tenant?   @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   facility facility? @relation(fields: [facility_id], references: [id])
 
   @@unique([tenant_id, term_type, catalog_key])
@@ -3578,7 +3582,7 @@ model lab_test {
   deleted_at        DateTime?
   version           Int               @default(1)
 
-  tenant             tenant?                      @relation(fields: [tenant_id], references: [id])
+  tenant             tenant?                      @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   order_items        lab_order_item[]
   panel_items        lab_panel_item[]
   qc_logs            lab_qc_log[]
@@ -3613,7 +3617,7 @@ model lab_panel {
   deleted_at        DateTime?
   version           Int       @default(1)
 
-  tenant             tenant?                       @relation(fields: [tenant_id], references: [id])
+  tenant             tenant?                       @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   panel_items        lab_panel_item[]
   facility_offerings facility_lab_panel_offering[]
 
@@ -3871,7 +3875,7 @@ model radiology_procedure {
   deleted_at        DateTime?
   version           Int             @default(1)
 
-  tenant             tenant?                                 @relation(fields: [tenant_id], references: [id])
+  tenant             tenant?                                 @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   orders             radiology_order[]
   facility_offerings facility_radiology_procedure_offering[]
 
@@ -4045,7 +4049,7 @@ model drug {
   deleted_at          DateTime?
   version             Int       @default(1)
 
-  tenant                      tenant?                      @relation(fields: [tenant_id], references: [id])
+  tenant                      tenant?                      @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
   supplier                    supplier?                    @relation(fields: [supplier_id], references: [id])
   batches                     drug_batch[]
   formulary_items             formulary_item[]
@@ -8486,6 +8490,116 @@ model mortuary_billable_event {
   @@index([status])
   @@index([charged_at])
   @@index([settled_at])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
+}
+
+/// Platform-owned currency catalog. Always platform-scoped: a currency is not a
+/// tenant's to invent, so unlike the clinical catalogs there is no tenant tier.
+model currency_preset {
+  id                String    @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id String?   @db.VarChar(32)
+  code              String    @db.VarChar(3)
+  name              String    @db.VarChar(120)
+  symbol            String?   @db.VarChar(8)
+  decimal_places    Int       @default(2)
+  is_active         Boolean   @default(true)
+  sort_order        Int       @default(0)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+  deleted_at        DateTime?
+  version           Int       @default(1)
+
+  adoptions tenant_currency_adoption[]
+
+  @@unique([code])
+  @@index([is_active])
+  @@index([sort_order])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
+}
+
+/// A tenant taking a platform currency into use. Carries only what a tenant may
+/// decide: whether it is offered, and which one is its default.
+model tenant_currency_adoption {
+  id                 String    @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id  String?   @db.VarChar(32)
+  tenant_id          String    @db.VarChar(36)
+  currency_preset_id String    @db.VarChar(36)
+  is_active          Boolean   @default(true)
+  is_default         Boolean   @default(false)
+  sort_order         Int       @default(0)
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
+  deleted_at         DateTime?
+  version            Int       @default(1)
+
+  tenant          tenant          @relation(fields: [tenant_id], references: [id])
+  currency_preset currency_preset @relation(fields: [currency_preset_id], references: [id])
+
+  @@unique([tenant_id, currency_preset_id])
+  @@index([tenant_id])
+  @@index([currency_preset_id])
+  @@index([is_active])
+  @@index([is_default])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
+}
+
+/// Consultation types. Follows the clinical catalogs: null tenant_id is a
+/// platform preset, a tenant id is that tenant's own entry.
+model consultation_type {
+  id                String    @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id String?   @db.VarChar(32)
+  /// Null tenant_id = platform-owned preset definition; a tenant id makes it that tenant's own entry.
+  tenant_id         String?   @db.VarChar(36)
+  name              String    @db.VarChar(160)
+  code              String?   @db.VarChar(80)
+  category          String?   @db.VarChar(80)
+  description       String?   @db.VarChar(255)
+  default_duration_minutes Int? 
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+  deleted_at        DateTime?
+  version           Int       @default(1)
+
+  tenant             tenant?                                @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+  facility_offerings facility_consultation_type_offering[]
+
+  @@index([tenant_id])
+  @@index([code])
+  @@index([category])
+  @@index([deleted_at])
+  @@index([human_friendly_id])
+}
+
+/// A facility adopting a consultation type, carrying its local fee.
+model facility_consultation_type_offering {
+  id                     String    @id @default(uuid()) @db.VarChar(36)
+  human_friendly_id      String?   @db.VarChar(32)
+  tenant_id              String    @db.VarChar(36)
+  facility_id            String    @db.VarChar(36)
+  consultation_type_id   String    @db.VarChar(36)
+  is_active              Boolean   @default(true)
+  sort_order             Int       @default(0)
+  unit_price             Decimal   @db.Decimal(12, 2)
+  currency               String?   @db.VarChar(10)
+  default_duration_minutes Int?
+  created_at             DateTime  @default(now())
+  updated_at             DateTime  @updatedAt
+  deleted_at             DateTime?
+  version                Int       @default(1)
+
+  tenant            tenant            @relation(fields: [tenant_id], references: [id])
+  facility          facility          @relation(fields: [facility_id], references: [id])
+  consultation_type consultation_type @relation(fields: [consultation_type_id], references: [id])
+
+  @@unique([facility_id, consultation_type_id], map: "fcto_facility_type_key")
+  @@index([tenant_id])
+  @@index([facility_id])
+  @@index([consultation_type_id])
+  @@index([is_active])
+  @@index([sort_order])
   @@index([deleted_at])
   @@index([human_friendly_id])
 }
