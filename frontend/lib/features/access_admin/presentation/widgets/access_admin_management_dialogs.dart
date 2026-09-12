@@ -85,6 +85,91 @@ Future<bool> confirmSoftDeleteAccessAdminUser(
   return confirmed == true;
 }
 
+/// Whether [user] may be permanently deleted under Access Admin / HR Users
+/// CRUD rules. Only a soft-deleted account can be purged.
+bool canPermanentDeleteAccessAdminUser(
+  AccessAdminItem user, {
+  required AppAccessPolicy policy,
+}) {
+  if (!user.isDeleted || !canMutateAccessAdminDemoAccount(user)) {
+    return false;
+  }
+  if (!canWriteAccessAdmin(policy)) {
+    return false;
+  }
+  if (policy.canManagePlatformAdmins()) {
+    return true;
+  }
+  return !user.isSystemCritical;
+}
+
+/// Confirms and permanently deletes an Access Admin user. Returns `true` when
+/// the account was purged. The typed-name step mirrors the role purge flow.
+Future<bool> confirmPermanentDeleteAccessAdminUser(
+  BuildContext context, {
+  required AccessAdminRepository repository,
+  required AccessAdminItem user,
+}) async {
+  if (!context.mounted) {
+    return false;
+  }
+  final AppLocalizations l10n = context.l10n;
+  final String confirmName = user.title.trim();
+  final String? typed = await showAppDialog<String>(
+    context: context,
+    builder: (BuildContext dialogContext) => AppTextInputActionDialog(
+      title: l10n.tenantFacilityPermanentDeleteConfirmationTitle,
+      description: l10n.accessAdminPermanentDeleteUserWarningBody(confirmName),
+      fieldLabel: l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(
+        confirmName,
+      ),
+      submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
+      cancelLabel: l10n.commonCancelActionLabel,
+      requiredMessage: l10n.validationRequired,
+      confirmMismatchMessage:
+          l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(confirmName),
+      confirmMatches: (String value) =>
+          value.trim().toLowerCase() == confirmName.toLowerCase(),
+      destructive: true,
+      minLines: 1,
+      maxLines: 1,
+      icon: const Icon(Icons.delete_forever_outlined),
+    ),
+  );
+
+  if (!context.mounted || typed == null) {
+    return false;
+  }
+
+  final bool? confirmed = await showAppDialog<bool>(
+    context: context,
+    builder: (BuildContext dialogContext) => AppConfirmActionDialog(
+      title: l10n.tenantFacilityPermanentDeleteConfirmationTitle,
+      body: l10n.accessAdminPermanentDeleteUserConfirmationBody(confirmName),
+      highlightedText: confirmName,
+      submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
+      destructive: true,
+      icon: const Icon(Icons.delete_forever_outlined),
+      onConfirm: () async {
+        final Result<void> result = await repository.permanentDeleteUser(
+          user.mutationId,
+        );
+        return result.when(
+          success: (_) => null,
+          failure: (AppFailure failure) {
+            // A concurrent purge already removed the row: treat as done.
+            if (failure.category == AppFailureCategory.notFound) {
+              return null;
+            }
+            return failure;
+          },
+        );
+      },
+    ),
+  );
+  return confirmed == true;
+}
+
 Future<bool?> showManageRolesPermissionsDialog(
   BuildContext context,
   WidgetRef ref, {
@@ -484,6 +569,13 @@ class _ManageUsersPanelState
     );
   }
 
+  bool _canPermanentDeleteUser(AccessAdminItem user) {
+    return canPermanentDeleteAccessAdminUser(
+      user,
+      policy: ref.read(appAccessPolicyProvider),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -719,6 +811,28 @@ class _ManageUsersPanelState
         ];
       });
       unawaited(reload(resetPage: false, silent: true));
+    }
+  }
+
+  Future<void> _confirmPermanentDeleteUser(AccessAdminItem user) async {
+    if (!_canPermanentDeleteUser(user)) {
+      return;
+    }
+    final bool purged = await confirmPermanentDeleteAccessAdminUser(
+      context,
+      repository: repository,
+      user: user,
+    );
+    if (purged && mounted) {
+      mutated = true;
+      setState(() {
+        items = <AccessAdminItem>[
+          for (final AccessAdminItem entry in items)
+            if (entry.id != user.id && entry.mutationId != user.mutationId)
+              entry,
+        ];
+      });
+      unawaited(reload(resetPage: items.isEmpty, silent: true));
     }
   }
 
@@ -1075,15 +1189,37 @@ class _ManageUsersPanelState
                       padding: EdgeInsetsDirectional.only(
                         end: theme.spacing.sm,
                       ),
-                      child: AppButton.tertiary(
-                        leadingIcon: Icons.restore_outlined,
-                        label: l10n.accessAdminRestoreUserAction,
-                        semanticLabel: l10n.accessAdminRestoreUserAction,
-                        tooltip: l10n.accessAdminRestoreUserAction,
-                        enabled: actionsEnabled,
-                        onPressed: actionsEnabled
-                            ? () => unawaited(_confirmRestoreUser(user))
-                            : null,
+                      child: Wrap(
+                        spacing: actionGap,
+                        runSpacing: theme.spacing.xs,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: <Widget>[
+                          AppButton.tertiary(
+                            leadingIcon: Icons.restore_outlined,
+                            label: l10n.accessAdminRestoreUserAction,
+                            semanticLabel: l10n.accessAdminRestoreUserAction,
+                            tooltip: l10n.accessAdminRestoreUserAction,
+                            enabled: actionsEnabled,
+                            onPressed: actionsEnabled
+                                ? () => unawaited(_confirmRestoreUser(user))
+                                : null,
+                          ),
+                          if (_canPermanentDeleteUser(user))
+                            AppButton.tertiary(
+                              leadingIcon: Icons.delete_forever_outlined,
+                              label: l10n.tenantFacilityPermanentDeleteAction,
+                              semanticLabel:
+                                  l10n.tenantFacilityPermanentDeleteAction,
+                              tooltip: l10n.tenantFacilityPermanentDeleteAction,
+                              color: colorScheme.error,
+                              enabled: actionsEnabled,
+                              onPressed: actionsEnabled
+                                  ? () => unawaited(
+                                      _confirmPermanentDeleteUser(user),
+                                    )
+                                  : null,
+                            ),
+                        ],
                       ),
                     );
                   }

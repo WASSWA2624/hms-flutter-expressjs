@@ -532,6 +532,299 @@ const restore = async (id) => {
   }
 };
 
+/**
+ * Rows that exist only to describe the account itself. A permanent delete
+ * removes them; children are listed before their parents so foreign keys stay
+ * satisfied while the purge runs.
+ */
+const USER_OWNED_RELATIONS = Object.freeze([
+  { model: 'user_session', column: 'user_id' },
+  { model: 'verification_token', column: 'user_id' },
+  { model: 'user_mfa', column: 'user_id' },
+  { model: 'oauth_account', column: 'user_id' },
+  { model: 'user_role', column: 'user_id' },
+  { model: 'user_permission', column: 'user_id' },
+  { model: 'user_module_assignment', column: 'user_id' },
+  { model: 'terms_acceptance', column: 'user_id' },
+  { model: 'registration_follow_up', column: 'user_id' },
+  { model: 'conversation_participant', column: 'user_id' },
+  { model: 'clinical_term_favorite', column: 'owner_user_id' },
+  { model: 'provider_schedule', column: 'provider_user_id' },
+  { model: 'office_context', column: 'opened_by_user_id' },
+  { model: 'unit_management_assignment', column: 'user_id' }
+]);
+
+/**
+ * Employment rows that only describe the purged staff profile.
+ */
+const STAFF_PROFILE_OWNED_RELATIONS = Object.freeze([
+  { model: 'shift_swap_request', column: 'requester_staff_id' },
+  { model: 'staff_assignment', column: 'staff_profile_id' },
+  { model: 'staff_availability', column: 'staff_profile_id' },
+  { model: 'staff_compensation', column: 'staff_profile_id' },
+  { model: 'staff_leave', column: 'staff_profile_id' },
+  { model: 'shift_assignment', column: 'staff_profile_id' },
+  { model: 'roster_day_off', column: 'staff_profile_id' },
+  { model: 'address', column: 'staff_profile_id' },
+  { model: 'contact', column: 'staff_profile_id' }
+]);
+
+/**
+ * Attribution columns on records that outlive the account. Clinical, financial
+ * and audit history belongs to the patient or tenant, not to the staff member,
+ * so the purge clears the link and keeps the record.
+ */
+const USER_ATTRIBUTION_LINKS = Object.freeze([
+  { model: 'abac_policy', column: 'created_by_user_id' },
+  { model: 'abac_policy', column: 'updated_by_user_id' },
+  { model: 'analytics_event', column: 'user_id' },
+  { model: 'anesthesia_record', column: 'anesthetist_user_id' },
+  { model: 'appointment', column: 'provider_user_id' },
+  { model: 'appointment_participant', column: 'participant_user_id' },
+  { model: 'audit_log', column: 'user_id' },
+  { model: 'billable_charge_event', column: 'actor_user_id' },
+  { model: 'billing_approval', column: 'approved_by_user_id' },
+  { model: 'break_glass_access', column: 'approved_by_user_id' },
+  { model: 'break_glass_access', column: 'revoked_by_user_id' },
+  { model: 'clinical_alert', column: 'acknowledged_by_user_id' },
+  { model: 'clinical_alert', column: 'resolved_by_user_id' },
+  { model: 'closeout_pack', column: 'generated_by_user_id' },
+  { model: 'configuration_snapshot', column: 'created_by_user_id' },
+  { model: 'conversation', column: 'created_by_user_id' },
+  { model: 'data_processing_log', column: 'user_id' },
+  { model: 'day_close', column: 'approved_by_user_id' },
+  { model: 'department', column: 'manager_id' },
+  { model: 'department', column: 'budget_owner_id' },
+  { model: 'department', column: 'updated_by' },
+  { model: 'encounter', column: 'provider_user_id' },
+  { model: 'fiscal_period', column: 'reopened_by' },
+  { model: 'follow_up', column: 'completed_by_user_id' },
+  { model: 'lab_order', column: 'ordered_by_user_id' },
+  { model: 'message', column: 'sender_user_id' },
+  { model: 'message_attachment', column: 'uploaded_by_user_id' },
+  { model: 'office_context', column: 'current_holder_user_id' },
+  { model: 'opening_balance_entry', column: 'approved_by' },
+  { model: 'patient_report_job', column: 'requested_by_user_id' },
+  { model: 'payment_method', column: 'updated_by' },
+  { model: 'posting_rule', column: 'reopened_by' },
+  { model: 'purchase_request', column: 'requested_by_user_id' },
+  { model: 'radiology_order', column: 'assigned_user_id' },
+  { model: 'registration_attempt', column: 'user_id' },
+  { model: 'report_definition', column: 'created_by' },
+  { model: 'report_run', column: 'requested_by_user_id' },
+  { model: 'report_schedule', column: 'created_by' },
+  { model: 'shift_close', column: 'approved_by_user_id' },
+  { model: 'system_change_log', column: 'user_id' },
+  { model: 'therapy_episode', column: 'therapist_user_id' },
+  { model: 'therapy_session', column: 'therapist_user_id' },
+  { model: 'visit_queue', column: 'provider_user_id' }
+]);
+
+const STAFF_PROFILE_ATTRIBUTION_LINKS = Object.freeze([
+  { model: 'housekeeping_task', column: 'assigned_to_staff_id' },
+  { model: 'staff_leave', column: 'covering_staff_profile_id' },
+  { model: 'shift_swap_request', column: 'target_staff_id' }
+]);
+
+/**
+ * Records that must be retained and cannot exist without their actor: clinical
+ * authorship, PHI access history, break-glass trails and financial closes.
+ * Any hit blocks the purge, and the account stays soft-deleted instead.
+ */
+const USER_PURGE_BLOCKERS = Object.freeze([
+  { model: 'clinical_note', column: 'author_user_id' },
+  { model: 'nursing_note', column: 'nurse_user_id' },
+  { model: 'phi_access_log', column: 'user_id' },
+  { model: 'break_glass_access', column: 'requested_by_user_id' },
+  { model: 'break_glass_review', column: 'reviewer_user_id' },
+  { model: 'billing_approval', column: 'requested_by_user_id' },
+  { model: 'custody_snapshot', column: 'captured_by_user_id' },
+  { model: 'day_close', column: 'submitted_by_user_id' },
+  { model: 'shift_close', column: 'closed_by_user_id' },
+  { model: 'handover', column: 'from_user_id' },
+  { model: 'handover', column: 'to_user_id' }
+]);
+
+const STAFF_PROFILE_PURGE_BLOCKERS = Object.freeze([
+  { model: 'payroll_item', column: 'staff_profile_id' }
+]);
+
+/**
+ * Count retained records that block a permanent delete.
+ *
+ * @param {string} id - User ID
+ * @param {string[]} staffProfileIds - Staff profile IDs owned by the user
+ * @returns {Promise<Array<{entity: string, field: string, count: number}>>}
+ */
+const countPurgeBlockers = async (id, staffProfileIds = []) => {
+  const checks = [
+    ...USER_PURGE_BLOCKERS.map((entry) => ({ ...entry, value: id })),
+    ...(staffProfileIds.length > 0
+      ? STAFF_PROFILE_PURGE_BLOCKERS.map((entry) => ({
+          ...entry,
+          value: { in: staffProfileIds }
+        }))
+      : [])
+  ];
+
+  const counted = await Promise.all(
+    checks.map(async ({ model, column, value }) => ({
+      entity: model,
+      field: column,
+      count: await prisma[model].count({ where: { [column]: value } })
+    }))
+  );
+
+  return counted.filter((entry) => entry.count > 0);
+};
+
+/**
+ * Permanently delete a soft-deleted user.
+ *
+ * Account-owned rows (sessions, roles, permissions, employment records) are
+ * removed, attribution links on records that outlive the account are cleared,
+ * and the purge is refused when retained clinical or financial history would be
+ * orphaned.
+ *
+ * @param {string} id - User ID
+ * @returns {Promise<{removed_rows: number, cleared_links: number, staff_profile_ids: string[]}>}
+ */
+const permanentDelete = async (id) => {
+  try {
+    // Soft-deleted rows are invisible to the tenant guard, which forces
+    // deleted_at: null on find/update/delete: the purge would no-op without it.
+    return await runWithoutTenantGuard(async () => {
+      const existing = await prisma.user.findFirst({
+        where: userWhereById(id, { includeDeleted: true }),
+        select: { id: true, deleted_at: true }
+      });
+
+      if (!existing) {
+        return { removed_rows: 0, cleared_links: 0, staff_profile_ids: [] };
+      }
+      if (!existing.deleted_at) {
+        throw new HttpError('errors.user.permanent_delete_requires_soft_delete', 400);
+      }
+
+      const staffProfiles = await prisma.staff_profile.findMany({
+        where: { user_id: id },
+        select: { id: true }
+      });
+      const staffProfileIds = staffProfiles.map((row) => row.id);
+
+      const blockers = await countPurgeBlockers(id, staffProfileIds);
+      if (blockers.length > 0) {
+        throw new HttpError(
+          'errors.user.permanent_delete_has_retained_records',
+          409,
+          blockers
+        );
+      }
+
+      const userProfiles = await prisma.user_profile.findMany({
+        where: { user_id: id },
+        select: { id: true }
+      });
+      const userProfileIds = userProfiles.map((row) => row.id);
+
+      return await prisma.$transaction(
+        async (tx) => {
+          let removedRows = 0;
+          let clearedLinks = 0;
+
+          const removeMany = async (model, where) => {
+            const { count } = await tx[model].deleteMany({ where });
+            removedRows += count || 0;
+          };
+          const clearMany = async (model, column, where) => {
+            const { count } = await tx[model].updateMany({
+              where,
+              data: { [column]: null }
+            });
+            clearedLinks += count || 0;
+          };
+
+          const apiKeys = await tx.api_key.findMany({
+            where: { user_id: id },
+            select: { id: true }
+          });
+          const apiKeyIds = apiKeys.map((row) => row.id);
+          if (apiKeyIds.length > 0) {
+            await removeMany('api_key_permission', {
+              api_key_id: { in: apiKeyIds }
+            });
+            await removeMany('api_key', { id: { in: apiKeyIds } });
+          }
+
+          const notifications = await tx.notification.findMany({
+            where: { user_id: id },
+            select: { id: true }
+          });
+          const notificationIds = notifications.map((row) => row.id);
+          if (notificationIds.length > 0) {
+            await removeMany('notification_delivery', {
+              notification_id: { in: notificationIds }
+            });
+            await removeMany('notification', { id: { in: notificationIds } });
+          }
+
+          if (staffProfileIds.length > 0) {
+            for (const { model, column } of STAFF_PROFILE_ATTRIBUTION_LINKS) {
+              await clearMany(model, column, {
+                [column]: { in: staffProfileIds }
+              });
+            }
+            for (const { model, column } of STAFF_PROFILE_OWNED_RELATIONS) {
+              await removeMany(model, { [column]: { in: staffProfileIds } });
+            }
+          }
+
+          for (const { model, column } of USER_OWNED_RELATIONS) {
+            await removeMany(model, { [column]: id });
+          }
+
+          if (userProfileIds.length > 0) {
+            await removeMany('address', {
+              user_profile_id: { in: userProfileIds }
+            });
+            await removeMany('contact', {
+              user_profile_id: { in: userProfileIds }
+            });
+          }
+
+          for (const { model, column } of USER_ATTRIBUTION_LINKS) {
+            await clearMany(model, column, { [column]: id });
+          }
+
+          if (staffProfileIds.length > 0) {
+            await removeMany('staff_profile', { id: { in: staffProfileIds } });
+          }
+          await removeMany('user_profile', { user_id: id });
+          await tx.user.delete({ where: { id } });
+          removedRows += 1;
+
+          return {
+            removed_rows: removedRows,
+            cleared_links: clearedLinks,
+            staff_profile_ids: staffProfileIds
+          };
+        },
+        { timeout: 120000 }
+      );
+    });
+  } catch (error) {
+    if (error instanceof HttpError) {
+      throw error;
+    }
+    if (error.code === 'P2025') {
+      throw new HttpError('errors.user.not_found', 404);
+    }
+    throw new HttpError('errors.database.unexpected', 500, [
+      { originalError: error.message }
+    ]);
+  }
+};
+
 module.exports = {
   findById,
   findMany,
@@ -540,5 +833,6 @@ module.exports = {
   update,
   softDelete,
   restore,
+  permanentDelete,
   findActiveByTenantEmail,
   findActiveByTenantPhone};

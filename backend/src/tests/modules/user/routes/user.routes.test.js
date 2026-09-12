@@ -7,4 +7,14 @@ describe('user.routes contract', () => {
     expect(Array.isArray(subject.stack)).toBe(true);
     expect(subject.stack.length).toBeGreaterThan(0);
   });
+
+  it('registers the permanent delete route', () => {
+    const registered = subject.stack
+      .filter((layer) => layer.route)
+      .map((layer) => `${Object.keys(layer.route.methods)[0]} ${layer.route.path}`);
+
+    expect(registered).toContain('delete /:id');
+    expect(registered).toContain('delete /:id/permanent');
+    expect(registered).toContain('post /:id/restore');
+  });
 });

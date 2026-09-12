@@ -50064,6 +50064,18 @@ abstract class AppLocalizations {
   /// **'Final confirmation: permanently delete role \"{name}\", remove it from all attached staff, and erase related permission links? This action is irreversible.'**
   String accessAdminPermanentDeleteRoleConfirmationBody(String name);
 
+  /// Warning before permanently deleting a soft-deleted staff account.
+  ///
+  /// In en, this message translates to:
+  /// **'WARNING: Permanently deleting \"{name}\" erases the account, its sign-in sessions, roles, permissions and employment records forever. Clinical, audit and financial history is kept, but this staff member is no longer named on it. This cannot be recovered.'**
+  String accessAdminPermanentDeleteUserWarningBody(String name);
+
+  /// Final confirmation body for permanent staff account delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Final confirmation: permanently delete the account \"{name}\" and everything that only describes it? This action is irreversible.'**
+  String accessAdminPermanentDeleteUserConfirmationBody(String name);
+
   /// Access admin tenant context required title.
   ///
   /// In en, this message translates to:

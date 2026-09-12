@@ -16,6 +16,7 @@ import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart';
 import 'package:hosspi_hms/features/home/domain/entities/home_dashboard.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_controller.dart';
 import 'package:hosspi_hms/features/home/presentation/controllers/home_dashboard_optimistic_patch.dart';
@@ -2673,6 +2674,7 @@ class _FacilityDetailsDialogState
         RealtimeEvents.userUpdated,
         RealtimeEvents.userDeleted,
         RealtimeEvents.userRestored,
+        RealtimeEvents.userPermanentlyDeleted,
       },
       onMutated: () => _mutated = true,
       reload: ({bool silent = false, RealtimeMessage? message}) async {
@@ -2975,6 +2977,25 @@ class _FacilityDetailsDialogState
       ),
     );
     if (!mounted || confirmed != true) {
+      return;
+    }
+    _mutated = true;
+    await _loadUsers(resetPage: _users.length <= 1, silent: true);
+  }
+
+  Future<void> _permanentDeleteUser(AccessAdminItem user) async {
+    if (!canPermanentDeleteAccessAdminUser(
+      user,
+      policy: ref.read(appAccessPolicyProvider),
+    )) {
+      return;
+    }
+    final bool purged = await confirmPermanentDeleteAccessAdminUser(
+      context,
+      repository: ref.read(accessAdminRepositoryProvider),
+      user: user,
+    );
+    if (!mounted || !purged) {
       return;
     }
     _mutated = true;
@@ -3470,6 +3491,13 @@ class _FacilityDetailsDialogState
           onEdit: (AccessAdminItem user) => unawaited(_editUser(user)),
           onDelete: (AccessAdminItem user) => unawaited(_deleteUser(user)),
           onRestore: (AccessAdminItem user) => unawaited(_restoreUser(user)),
+          onPermanentDelete: (AccessAdminItem user) =>
+              unawaited(_permanentDeleteUser(user)),
+          canPermanentDelete: (AccessAdminItem user) =>
+              canPermanentDeleteAccessAdminUser(
+                user,
+                policy: ref.read(appAccessPolicyProvider),
+              ),
         );
       case _FacilityDetailsPanel.departments:
         return _FacilityStructureCrudPanel<DepartmentProfile>(
@@ -4342,6 +4370,8 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
     required this.onEdit,
     required this.onDelete,
     required this.onRestore,
+    required this.onPermanentDelete,
+    required this.canPermanentDelete,
   });
 
   final TextEditingController searchController;
@@ -4356,6 +4386,8 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
   final ValueChanged<AccessAdminItem> onEdit;
   final ValueChanged<AccessAdminItem> onDelete;
   final ValueChanged<AccessAdminItem> onRestore;
+  final ValueChanged<AccessAdminItem> onPermanentDelete;
+  final bool Function(AccessAdminItem user) canPermanentDelete;
 
   String _userStatusLabel(AppLocalizations l10n, AccessAdminItem user) {
     if (user.isDeleted) {
@@ -4474,13 +4506,33 @@ class _FacilityDetailsUsersPanel extends StatelessWidget {
                         cellBuilder:
                             (BuildContext context, AccessAdminItem user) {
                               if (user.isDeleted) {
-                                return AppButton.tertiary(
-                                  leadingIcon: Icons.restore_outlined,
-                                  label: l10n.accessAdminRestoreUserAction,
-                                  semanticLabel:
-                                      l10n.accessAdminRestoreUserAction,
-                                  tooltip: l10n.accessAdminRestoreUserAction,
-                                  onPressed: () => onRestore(user),
+                                return Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    AppButton.tertiary(
+                                      leadingIcon: Icons.restore_outlined,
+                                      label: l10n.accessAdminRestoreUserAction,
+                                      semanticLabel:
+                                          l10n.accessAdminRestoreUserAction,
+                                      tooltip:
+                                          l10n.accessAdminRestoreUserAction,
+                                      onPressed: () => onRestore(user),
+                                    ),
+                                    if (canPermanentDelete(user))
+                                      AppButton.tertiary(
+                                        leadingIcon:
+                                            Icons.delete_forever_outlined,
+                                        label: l10n
+                                            .tenantFacilityPermanentDeleteAction,
+                                        semanticLabel: l10n
+                                            .tenantFacilityPermanentDeleteAction,
+                                        tooltip: l10n
+                                            .tenantFacilityPermanentDeleteAction,
+                                        color: colorScheme.error,
+                                        onPressed: () =>
+                                            onPermanentDelete(user),
+                                      ),
+                                  ],
                                 );
                               }
                               return Row(

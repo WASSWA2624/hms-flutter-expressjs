@@ -27303,6 +27303,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String accessAdminPermanentDeleteUserWarningBody(String name) {
+    return 'WARNING: Permanently deleting \"$name\" erases the account, its sign-in sessions, roles, permissions and employment records forever. Clinical, audit and financial history is kept, but this staff member is no longer named on it. This cannot be recovered.';
+  }
+
+  @override
+  String accessAdminPermanentDeleteUserConfirmationBody(String name) {
+    return 'Final confirmation: permanently delete the account \"$name\" and everything that only describes it? This action is irreversible.';
+  }
+
+  @override
   String get accessAdminTenantContextRequiredTitle => 'Tenant context required';
 
   @override

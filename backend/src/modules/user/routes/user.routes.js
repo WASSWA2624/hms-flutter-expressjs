@@ -172,4 +172,27 @@ router.delete(
   userController.deleteUser
 );
 
+/**
+ * @description Permanently delete a soft-deleted user (irreversible)
+ * @method DELETE
+ * @route /api/v1/users/:id/permanent
+ * @authentication Required (JWT)
+ * @permissions HR write / tenant, facility or platform admin
+ * @urlParams {string} id - User ID (UUID)
+ * @queryParams None
+ * @bodyParams None
+ * @returns {void} 204 No Content
+ * @throws 400 User is not soft-deleted, or is the acting account
+ * @throws 401 Unauthorized
+ * @throws 404 User not found
+ * @throws 409 Retained clinical, audit or financial records block the purge
+ */
+router.delete(
+  '/:id/permanent',
+  validateRequest({ params: userIdParamsSchema }),
+  authenticate(),
+  authorize(USER_WRITE_SCOPES, 'permission'),
+  userController.permanentDeleteUser
+);
+
 module.exports = router;

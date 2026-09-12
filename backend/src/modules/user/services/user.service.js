@@ -762,10 +762,71 @@ const restoreUser = async (id, userId, ipAddress, actor = {}) => {
   }
 };
 
+/**
+ * Permanently delete a soft-deleted user.
+ *
+ * Irreversible: the account row and everything that only describes it are
+ * removed. Retained clinical / financial history blocks the purge instead of
+ * being deleted along with the account.
+ */
+const permanentDeleteUser = async (id, userId, ipAddress, actor = {}) => {
+  try {
+    const resolvedUserId = await resolveUserId(id, { includeDeleted: true });
+    const before = await userRepository.findById(resolvedUserId, USER_DETAIL_INCLUDE, {
+      includeDeleted: true,
+    });
+
+    // resolveUserId falls back to the raw identifier when lookup misses; never
+    // treat that as a successful purge.
+    if (!before) {
+      throw new HttpError('errors.user.not_found', 404);
+    }
+    if (!before.deleted_at) {
+      throw new HttpError('errors.user.permanent_delete_requires_soft_delete', 400);
+    }
+
+    assertDemoUserNotMutable(before, 'delete');
+    await assertActorCanMutateTargetAccount(before.id, actor);
+
+    const actorId = String(actor?.id || userId || '').trim();
+    if (actorId && actorId === String(before.id)) {
+      throw new HttpError('errors.user.permanent_delete_self_forbidden', 400);
+    }
+
+    const summary = await userRepository.permanentDelete(before.id);
+
+    createAuditLog({
+      user_id: userId,
+      action: 'USER_PERMANENTLY_DELETED',
+      entity: 'user',
+      entity_id: before.id,
+      diff: {
+        before,
+        irreversible: true,
+        removed_rows: summary.removed_rows,
+        cleared_links: summary.cleared_links,
+        staff_profile_ids: summary.staff_profile_ids,
+      },
+      ip_address: ipAddress}).catch(() => {});
+
+    await publishUserRealtimeEvent(
+      PLATFORM_ADMIN_EVENTS.USER_PERMANENTLY_DELETED,
+      before,
+      userId
+    );
+
+    return summary;
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 module.exports = {
   listUsers,
   getUserById,
   createUser,
   updateUser,
   deleteUser,
-  restoreUser};
+  restoreUser,
+  permanentDeleteUser};

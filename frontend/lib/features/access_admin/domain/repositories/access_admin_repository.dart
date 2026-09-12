@@ -40,6 +40,10 @@ abstract interface class AccessAdminRepository {
 
   Future<Result<void>> restoreUser(String userId);
 
+  /// Irreversibly removes a soft-deleted account and everything that only
+  /// describes it. Retained clinical / financial history blocks the purge.
+  Future<Result<void>> permanentDeleteUser(String userId);
+
   Future<Result<void>> setUserStatus(String userId, String status);
 
   Future<Result<List<AccessAdminUserRoleAssignment>>> listUserRoles({
