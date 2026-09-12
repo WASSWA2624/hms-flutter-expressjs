@@ -67,6 +67,31 @@ const PRESET_DOMAINS = Object.freeze({
       'is_active', 'sort_order', 'unit_price', 'currency',
     ]),
   },
+  drug: {
+    definitionModel: 'drug',
+    adoptionModel: 'facility_pharmacy_offering',
+    adoptionKey: 'drug_id',
+    platformOwned: Object.freeze([
+      'name', 'code', 'generic_name', 'form', 'strength',
+    ]),
+    overridable: Object.freeze([
+      'is_active', 'sort_order', 'unit_price', 'currency',
+      'default_storage_shelf_id',
+    ]),
+  },
+  clinical_term_catalog: {
+    definitionModel: 'clinical_term_catalog',
+    // Keyed by (term_type, item_id) rather than a single FK column, because one
+    // offering table serves diagnoses, procedures and the rest.
+    adoptionModel: 'facility_catalog_offering',
+    adoptionKey: 'item_id',
+    platformOwned: Object.freeze([
+      'description', 'code', 'term_type', 'catalog_key', 'category',
+    ]),
+    overridable: Object.freeze([
+      'is_active', 'sort_order',
+    ]),
+  },
 });
 
 const DOMAIN_NAMES = Object.freeze(Object.keys(PRESET_DOMAINS));

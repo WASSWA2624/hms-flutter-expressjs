@@ -15,8 +15,13 @@ const {
 } = require('@lib/billing/pricing-permissions');
 const {
   resolveScopedUserContext,
-  buildTenantScopeWhere,
 } = require('@services/pharmacy-workspace/pharmacy.shared');
+const {
+  assertCanMutatePresetDefinition,
+  buildVisibleDefinitionWhere,
+  isPlatformDefinition,
+  resolvePresetDefinitionScope,
+} = require('@lib/catalog/preset-ownership');
 const {
   resolveIdentifierForFilter,
   resolveIdentifierForPayload,
@@ -42,10 +47,18 @@ const findScopedDrugOrThrow = async (id, user = {}) => {
     supplier: { select: { id: true, name: true } },
   });
 
-  if (
-    !drug ||
-    (!scope.can_manage_all_tenants && String(drug.tenant_id || '') !== String(scope.tenant_id || ''))
-  ) {
+  // A platform preset (`tenant_id: null`) is readable by every tenant - that is
+  // how a facility finds one to adopt. Writing it is refused separately, by
+  // assertCanMutatePresetDefinition, so visibility here is not permission.
+  const visible =
+    Boolean(drug)
+    && (
+      scope.can_manage_all_tenants
+      || isPlatformDefinition(drug)
+      || String(drug.tenant_id || '') === String(scope.tenant_id || '')
+    );
+
+  if (!visible) {
     throw new HttpError('errors.drug.not_found', 404);
   }
 
@@ -137,10 +150,15 @@ const listDrugs = async (filters, page, limit, sortBy, order, userId, ipAddress,
     const skip = (page - 1) * limit;
     const orderBy = sortBy ? { [sortBy]: order } : { created_at: 'desc' };
 
-    // Build filter object
-    const whereClause = {
-      ...buildTenantScopeWhere(scope),
-    };
+    // Build filter object.
+    // A tenant sees the platform catalog plus its own drugs, never another
+    // tenant's. Kept in `AND` because the search filter below owns `OR`, and a
+    // bare `OR` here would be overwritten by it - which would widen the query
+    // to every tenant rather than narrowing it.
+    const whereClause = {};
+    if (!scope.can_manage_all_tenants) {
+      whereClause.AND = [buildVisibleDefinitionWhere(scope.tenant_id)];
+    }
 
     if (scope.can_manage_all_tenants && filters.tenant_id) {
       const tenantId = await resolveIdentifierForFilter({
@@ -228,11 +246,21 @@ const createDrug = async (data, userId, ipAddress, user = {}) => {
     const confirmSimilar = data?.confirm_similar === true;
     const { confirm_similar: _confirmSimilar, ...rawPayload } = data || {};
     const payload = { ...rawPayload };
-    if (!scope.can_manage_all_tenants) {
+    // `scope: 'platform'` asks for a preset every tenant can adopt, and is
+    // refused unless the actor holds platform authority.
+    const presetScope = resolvePresetDefinitionScope(
+      { tenant_id: payload.tenant_id, scope: data?.scope },
+      user
+    );
+    delete payload.scope;
+
+    if (presetScope.tenant_id === null) {
+      payload.tenant_id = null;
+    } else if (!scope.can_manage_all_tenants) {
       payload.tenant_id = scope.tenant_id;
     } else {
       payload.tenant_id = await resolveIdentifierForPayload({
-        value: payload.tenant_id,
+        value: presetScope.tenant_id,
         field: 'tenant_id',
         model: 'tenant',
         where: { deleted_at: null },
@@ -320,6 +348,9 @@ const updateDrug = async (id, data, userId, ipAddress, user = {}) => {
     assertPharmacyRetailPriceMutationAllowed(user, data);
     // Get current state for audit
     const { scope, drug: before } = await findScopedDrugOrThrow(id, user);
+    // Readable does not mean writable: a platform preset is the shared source
+    // definition, customised on the facility offering rather than here.
+    assertCanMutatePresetDefinition(before, user);
     const confirmSimilar = data?.confirm_similar === true;
     const { confirm_similar: _confirmSimilar, ...rawPayload } = data || {};
     const payload = { ...rawPayload };
@@ -427,6 +458,7 @@ const deleteDrug = async (id, userId, ipAddress, user = {}) => {
   try {
     // Get current state for audit
     const { scope, drug: before } = await findScopedDrugOrThrow(id, user);
+    assertCanMutatePresetDefinition(before, user, { action: 'delete' });
 
     await drugRepository.softDelete(before.id);
 

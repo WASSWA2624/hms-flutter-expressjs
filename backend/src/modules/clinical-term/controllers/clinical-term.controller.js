@@ -21,6 +21,9 @@ const buildContext = (req) => ({
     req.body?.facility_id,
   roles: req.user?.roles || [],
   role: req.user?.role,
+  // Carried so the preset guards can tell a request actor from a trusted
+  // in-process caller. Without it every request would look internal.
+  permissions: req.user?.permissions || [],
   ip_address: req.ip,
 });
 

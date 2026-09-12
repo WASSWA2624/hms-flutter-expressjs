@@ -49,11 +49,23 @@ describe('preset-ownership', () => {
       }
     });
 
-    it('always permits price and availability overrides', () => {
+    it('always permits an availability override', () => {
+      // Every adoption can be switched off for a facility, whatever the domain.
       for (const domain of DOMAIN_NAMES) {
         const { overridable } = getPresetDomain(domain);
-        expect(overridable).toEqual(expect.arrayContaining(['unit_price', 'is_active']));
+        expect(overridable).toContain('is_active');
       }
+    });
+
+    it('permits a price override wherever the domain is priced', () => {
+      // clinical_term_catalog is deliberately absent: a diagnosis is not sold,
+      // and facility_catalog_offering carries no price column to override.
+      const pricedDomains = ['lab_test', 'lab_panel', 'radiology_procedure', 'drug'];
+
+      for (const domain of pricedDomains) {
+        expect(getPresetDomain(domain).overridable).toContain('unit_price');
+      }
+      expect(getPresetDomain('clinical_term_catalog').overridable).not.toContain('unit_price');
     });
 
     it('rejects an unknown domain', () => {
@@ -259,15 +271,18 @@ describe('preset-ownership', () => {
       ).toEqual({ unit_price: 50, is_active: true });
     });
 
-    it.each(DOMAIN_NAMES)('never lets %s override a platform-owned field', (domain) => {
+    it.each(DOMAIN_NAMES)('never lets %s override its identity fields', (domain) => {
       const { platformOwned, overridable } = PRESET_DOMAINS[domain];
-      // Fields that identify the preset centrally must not be tenant-overridable,
-      // except where the domain deliberately allows a local clinical variation.
-      const identityFields = platformOwned.filter(
-        (field) => !overridable.includes(field)
-      );
+      const protectedFields = platformOwned.filter((field) => !overridable.includes(field));
 
-      expect(identityFields).toEqual(expect.arrayContaining(['name', 'code']));
+      // `code` is how a shared preset is recognised across tenants, and the
+      // naming field is how a clinician recognises it. Neither may be
+      // overridden locally, whatever else the domain allows.
+      const namingField = domain === 'clinical_term_catalog' ? 'description' : 'name';
+
+      expect(protectedFields).toEqual(expect.arrayContaining(['code', namingField]));
+      expect(overridable).not.toContain('code');
+      expect(overridable).not.toContain(namingField);
     });
   });
 });

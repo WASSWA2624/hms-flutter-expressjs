@@ -9,6 +9,9 @@ const clinicalTermRepository = require('@repositories/clinical-term/clinical-ter
 const clinicalTermService = require('@services/clinical-term/clinical-term.service');
 const { createAuditLog } = require('@lib/audit');
 const { HttpError } = require('@lib/errors');
+const {
+  assertCanMutatePresetDefinition,
+} = require('@lib/catalog/preset-ownership');
 const { mapCatalogUnitPriceFields } = require('@lib/billing/clinical-request-billing');
 const { buildRadiologyCatalogMetadata } = require('@lib/radiology/radiology-catalog-metadata');
 const { COMMON_PROCEDURE_TERMS } = require('../data/common-procedure-terms');
@@ -763,14 +766,17 @@ const updateCatalogTerm = async (id, payload = {}, context = {}) => {
     throw new HttpError('errors.auth.unauthorized', 401);
   }
 
+  // Looked up across scopes on purpose. Filtering by tenant here would turn a
+  // platform preset into a 404, and AC3 asks for an explicit forbidden
+  // response rather than pretending the preset does not exist.
   const existing = await clinicalTermRepository.findCatalogTerm({
     id,
-    tenant_id: tenantId,
     deleted_at: null,
   });
   if (!existing) {
     throw new HttpError('errors.clinical_term_catalog.not_found', 404);
   }
+  assertCanMutatePresetDefinition(existing, context);
 
   const data = {};
   if (payload.code !== undefined) data.code = payload.code ? normalizeText(payload.code) : null;
@@ -805,12 +811,12 @@ const deleteCatalogTerm = async (id, context = {}) => {
 
   const existing = await clinicalTermRepository.findCatalogTerm({
     id,
-    tenant_id: tenantId,
     deleted_at: null,
   });
   if (!existing) {
     throw new HttpError('errors.clinical_term_catalog.not_found', 404);
   }
+  assertCanMutatePresetDefinition(existing, context, { action: 'delete' });
 
   await clinicalTermRepository.updateCatalogTerm(id, { deleted_at: new Date() });
 
