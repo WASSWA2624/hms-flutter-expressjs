@@ -1240,6 +1240,28 @@ model tenant {
   @@index([is_active])
   @@index([configuration_version_id])
   @@index([human_friendly_id])
+  adverse_events                        adverse_event[]
+  bed_assignments                       bed_assignment[]
+  care_plans                            care_plan[]
+  clinical_alerts                       clinical_alert[]
+  clinical_notes                        clinical_note[]
+  diagnosiss                            diagnosis[]
+  discharge_summarys                    discharge_summary[]
+  follow_ups                            follow_up[]
+  icu_stays                             icu_stay[]
+  lab_orders                            lab_order[]
+  medication_administrations            medication_administration[]
+  nursing_notes                         nursing_note[]
+  pharmacy_orders                       pharmacy_order[]
+  pre_authorizations                    pre_authorization[]
+  procedures                            procedure[]
+  radiology_orders                      radiology_order[]
+  referrals                             referral[]
+  theatre_cases                         theatre_case[]
+  therapy_episodes                      therapy_episode[]
+  transfer_requests                     transfer_request[]
+  vital_signs                           vital_sign[]
+  ward_rounds                           ward_round[]
 }
 
 model facility {
@@ -2582,6 +2604,8 @@ model encounter {
 
 model clinical_note {
   id                String    @id @default(uuid()) @db.VarChar(36)
+  /// Denormalised from the parent clinical record so the tenant guard can scope this table directly.
+  tenant_id         String?   @db.VarChar(36)
   human_friendly_id String?   @db.VarChar(32)
   encounter_id      String    @db.VarChar(36)
   author_user_id    String    @db.VarChar(36)
@@ -2598,10 +2622,15 @@ model clinical_note {
   @@index([author_user_id])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  tenant tenant? @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id])
 }
 
 model diagnosis {
   id                String        @id @default(uuid()) @db.VarChar(36)
+  /// Denormalised from the parent clinical record so the tenant guard can scope this table directly.
+  tenant_id         String?   @db.VarChar(36)
   human_friendly_id String?       @db.VarChar(32)
   encounter_id      String        @db.VarChar(36)
   diagnosis_type    DiagnosisType
@@ -2619,10 +2648,15 @@ model diagnosis {
   @@index([code])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  tenant tenant? @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id])
 }
 
 model procedure {
   id                String    @id @default(uuid()) @db.VarChar(36)
+  /// Denormalised from the parent clinical record so the tenant guard can scope this table directly.
+  tenant_id         String?   @db.VarChar(36)
   human_friendly_id String?   @db.VarChar(32)
   encounter_id      String    @db.VarChar(36)
   code              String?   @db.VarChar(80)
@@ -2641,10 +2675,15 @@ model procedure {
   @@index([performed_at])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  tenant tenant? @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id])
 }
 
 model vital_sign {
   id                String        @id @default(uuid()) @db.VarChar(36)
+  /// Denormalised from the parent clinical record so the tenant guard can scope this table directly.
+  tenant_id         String?   @db.VarChar(36)
   human_friendly_id String?       @db.VarChar(32)
   encounter_id      String        @db.VarChar(36)
   vital_type        VitalSignType
@@ -2667,10 +2706,15 @@ model vital_sign {
   @@index([recorded_at])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  tenant tenant? @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id])
 }
 
 model care_plan {
   id                String    @id @default(uuid()) @db.VarChar(36)
+  /// Denormalised from the parent clinical record so the tenant guard can scope this table directly.
+  tenant_id         String?   @db.VarChar(36)
   human_friendly_id String?   @db.VarChar(32)
   encounter_id      String    @db.VarChar(36)
   plan              String    @db.Text
@@ -2688,10 +2732,15 @@ model care_plan {
   @@index([end_date])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  tenant tenant? @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id])
 }
 
 model clinical_alert {
   id                      String              @id @default(uuid()) @db.VarChar(36)
+  /// Denormalised from the parent clinical record so the tenant guard can scope this table directly.
+  tenant_id         String?   @db.VarChar(36)
   human_friendly_id       String?             @db.VarChar(32)
   encounter_id            String              @db.VarChar(36)
   severity                EmergencySeverity
@@ -2722,10 +2771,15 @@ model clinical_alert {
   @@index([resolved_by_user_id])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  tenant tenant? @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id])
 }
 
 model referral {
   id                     String         @id @default(uuid()) @db.VarChar(36)
+  /// Denormalised from the parent clinical record so the tenant guard can scope this table directly.
+  tenant_id         String?   @db.VarChar(36)
   human_friendly_id      String?        @db.VarChar(32)
   encounter_id           String         @db.VarChar(36)
   external_facility_name String?        @db.VarChar(255)
@@ -2754,10 +2808,15 @@ model referral {
   @@index([status])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  tenant tenant? @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id])
 }
 
 model follow_up {
   id                   String         @id @default(uuid()) @db.VarChar(36)
+  /// Denormalised from the parent clinical record so the tenant guard can scope this table directly.
+  tenant_id         String?   @db.VarChar(36)
   human_friendly_id    String?        @db.VarChar(32)
   encounter_id         String         @db.VarChar(36)
   scheduled_at         DateTime
@@ -2781,6 +2840,9 @@ model follow_up {
   @@index([completed_by_user_id])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  tenant tenant? @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id])
 }
 
 model clinical_vital_alert_threshold {
@@ -3116,6 +3178,8 @@ model admission {
 
 model bed_assignment {
   id                String    @id @default(uuid()) @db.VarChar(36)
+  /// Denormalised from the parent clinical record so the tenant guard can scope this table directly.
+  tenant_id         String?   @db.VarChar(36)
   human_friendly_id String?   @db.VarChar(32)
   admission_id      String    @db.VarChar(36)
   bed_id            String    @db.VarChar(36)
@@ -3134,10 +3198,15 @@ model bed_assignment {
   @@index([assigned_at])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  tenant tenant? @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id])
 }
 
 model ward_round {
   id                String    @id @default(uuid()) @db.VarChar(36)
+  /// Denormalised from the parent clinical record so the tenant guard can scope this table directly.
+  tenant_id         String?   @db.VarChar(36)
   human_friendly_id String?   @db.VarChar(32)
   admission_id      String    @db.VarChar(36)
   round_at          DateTime  @default(now())
@@ -3154,10 +3223,15 @@ model ward_round {
   @@index([round_at])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  tenant tenant? @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id])
 }
 
 model nursing_note {
   id                String    @id @default(uuid()) @db.VarChar(36)
+  /// Denormalised from the parent clinical record so the tenant guard can scope this table directly.
+  tenant_id         String?   @db.VarChar(36)
   human_friendly_id String?   @db.VarChar(32)
   admission_id      String    @db.VarChar(36)
   nurse_user_id     String    @db.VarChar(36)
@@ -3175,10 +3249,15 @@ model nursing_note {
   @@index([nurse_user_id])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  tenant tenant? @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id])
 }
 
 model medication_administration {
   id                String          @id @default(uuid()) @db.VarChar(36)
+  /// Denormalised from the parent clinical record so the tenant guard can scope this table directly.
+  tenant_id         String?   @db.VarChar(36)
   human_friendly_id String?         @db.VarChar(32)
   admission_id      String          @db.VarChar(36)
   prescription_id   String?         @db.VarChar(36)
@@ -3197,10 +3276,15 @@ model medication_administration {
   @@index([route])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  tenant tenant? @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id])
 }
 
 model discharge_summary {
   id                 String          @id @default(uuid()) @db.VarChar(36)
+  /// Denormalised from the parent clinical record so the tenant guard can scope this table directly.
+  tenant_id         String?   @db.VarChar(36)
   human_friendly_id  String?         @db.VarChar(32)
   admission_id       String          @db.VarChar(36)
   summary            String          @db.Text
@@ -3218,10 +3302,15 @@ model discharge_summary {
   @@index([status])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  tenant tenant? @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id])
 }
 
 model transfer_request {
   id                String         @id @default(uuid()) @db.VarChar(36)
+  /// Denormalised from the parent clinical record so the tenant guard can scope this table directly.
+  tenant_id         String?   @db.VarChar(36)
   human_friendly_id String?        @db.VarChar(32)
   admission_id      String         @db.VarChar(36)
   from_ward_id      String?        @db.VarChar(36)
@@ -3243,10 +3332,15 @@ model transfer_request {
   @@index([status])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  tenant tenant? @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id])
 }
 
 model icu_stay {
   id                String    @id @default(uuid()) @db.VarChar(36)
+  /// Denormalised from the parent clinical record so the tenant guard can scope this table directly.
+  tenant_id         String?   @db.VarChar(36)
   human_friendly_id String?   @db.VarChar(32)
   admission_id      String    @db.VarChar(36)
   started_at        DateTime  @default(now())
@@ -3264,6 +3358,9 @@ model icu_stay {
   @@index([started_at])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  tenant tenant? @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id])
 }
 
 model icu_observation {
@@ -3306,6 +3403,8 @@ model critical_alert {
 
 model theatre_case {
   id                   String            @id @default(uuid()) @db.VarChar(36)
+  /// Denormalised from the parent clinical record so the tenant guard can scope this table directly.
+  tenant_id         String?   @db.VarChar(36)
   human_friendly_id    String?           @db.VarChar(32)
   encounter_id         String            @db.VarChar(36)
   admission_id         String?           @db.VarChar(36)
@@ -3350,6 +3449,9 @@ model theatre_case {
   @@index([completed_at])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  tenant tenant? @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id])
 }
 
 model anesthesia_record {
@@ -3487,6 +3589,8 @@ model anesthesia_observation {
 
 model therapy_episode {
   id                String               @id @default(uuid()) @db.VarChar(36)
+  /// Denormalised from the parent clinical record so the tenant guard can scope this table directly.
+  tenant_id         String?   @db.VarChar(36)
   human_friendly_id String?              @db.VarChar(32)
   encounter_id      String               @db.VarChar(36)
   admission_id      String?              @db.VarChar(36)
@@ -3532,6 +3636,9 @@ model therapy_episode {
   @@index([closed_at])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  tenant tenant? @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id])
 }
 
 model therapy_session {
@@ -3715,6 +3822,8 @@ model lab_panel_item {
 
 model lab_order {
   id                 String         @id @default(uuid()) @db.VarChar(36)
+  /// Denormalised from the parent clinical record so the tenant guard can scope this table directly.
+  tenant_id         String?   @db.VarChar(36)
   human_friendly_id  String?        @db.VarChar(32)
   encounter_id       String?        @db.VarChar(36)
   patient_id         String         @db.VarChar(36)
@@ -3741,6 +3850,9 @@ model lab_order {
   @@index([ordered_by_user_id])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  tenant tenant? @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id])
 }
 
 model lab_order_item {
@@ -3890,6 +4002,8 @@ model radiology_procedure {
 
 model radiology_order {
   id                     String               @id @default(uuid()) @db.VarChar(36)
+  /// Denormalised from the parent clinical record so the tenant guard can scope this table directly.
+  tenant_id         String?   @db.VarChar(36)
   human_friendly_id      String?              @db.VarChar(32)
   encounter_id           String?              @db.VarChar(36)
   patient_id             String               @db.VarChar(36)
@@ -3925,6 +4039,9 @@ model radiology_order {
   @@index([ordered_at])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  tenant tenant? @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id])
 }
 
 model radiology_result {
@@ -4203,6 +4320,8 @@ model formulary_item {
 
 model pharmacy_order {
   id                String              @id @default(uuid()) @db.VarChar(36)
+  /// Denormalised from the parent clinical record so the tenant guard can scope this table directly.
+  tenant_id         String?   @db.VarChar(36)
   human_friendly_id String?             @db.VarChar(32)
   encounter_id      String?             @db.VarChar(36)
   patient_id        String?             @db.VarChar(36)
@@ -4225,6 +4344,9 @@ model pharmacy_order {
   @@index([ordered_at])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  tenant tenant? @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id])
 }
 
 model pharmacy_order_item {
@@ -4287,6 +4409,8 @@ model dispense_log {
 
 model adverse_event {
   id                String          @id @default(uuid()) @db.VarChar(36)
+  /// Denormalised from the parent clinical record so the tenant guard can scope this table directly.
+  tenant_id         String?   @db.VarChar(36)
   human_friendly_id String?         @db.VarChar(32)
   patient_id        String          @db.VarChar(36)
   drug_id           String?         @db.VarChar(36)
@@ -4307,6 +4431,9 @@ model adverse_event {
   @@index([reported_at])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  tenant tenant? @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id])
 }
 
 model inventory_item {
@@ -5576,6 +5703,8 @@ model insurance_claim {
 
 model pre_authorization {
   id                String              @id @default(uuid()) @db.VarChar(36)
+  /// Denormalised from the parent clinical record so the tenant guard can scope this table directly.
+  tenant_id         String?   @db.VarChar(36)
   human_friendly_id String?             @db.VarChar(32)
   coverage_plan_id  String              @db.VarChar(36)
   patient_id        String?             @db.VarChar(36)
@@ -5607,6 +5736,9 @@ model pre_authorization {
   @@index([requested_at])
   @@index([deleted_at])
   @@index([human_friendly_id])
+  tenant tenant? @relation(fields: [tenant_id], references: [id], onDelete: Restrict)
+
+  @@index([tenant_id])
 }
 
 model billing_adjustment {

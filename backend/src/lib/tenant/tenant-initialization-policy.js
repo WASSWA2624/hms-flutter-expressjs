@@ -164,10 +164,28 @@ const CORE_FORBIDDEN_TABLES = Object.freeze([
 
 const hasField = (model, field) => model.fields.some((entry) => entry.name === field);
 
-/** Every model scoped to a tenant directly or through a facility. */
+/**
+ * Every model reachable from a tenant.
+ *
+ * Clinical parents (`patient_id`, `encounter_id`, `admission_id`) are included
+ * deliberately. An earlier version of this list matched only `tenant_id` and
+ * `facility_id`, which silently skipped twenty-two clinical tables and let the
+ * step 05 audit report a new tenant as empty while `lab_order`,
+ * `radiology_order` and `theatre_case` were leaking across tenants. Those
+ * tables now carry their own `tenant_id`, but the clinical keys stay in this
+ * filter so a future table that forgets one is still counted rather than
+ * silently ignored.
+ */
+const CLINICAL_PARENT_KEYS = Object.freeze([
+  'patient_id', 'encounter_id', 'admission_id', 'visit_id',
+]);
+
 const listTenantReachableTables = () =>
   Prisma.dmmf.datamodel.models
-    .filter((model) => hasField(model, 'tenant_id') || hasField(model, 'facility_id'))
+    .filter((model) =>
+      hasField(model, 'tenant_id')
+      || hasField(model, 'facility_id')
+      || CLINICAL_PARENT_KEYS.some((key) => hasField(model, key)))
     .map((model) => model.name)
     .filter((name) => name !== 'tenant')
     .sort();
