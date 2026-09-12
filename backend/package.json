@@ -28,6 +28,8 @@
     "db:backfill:registration-claims:dry-run": "node scripts/backfill-registration-email-claims.js --dry-run",
     "db:backfill:drug-inventory-map": "node scripts/backfill-drug-inventory-map.js",
     "db:report:user-position-title": "node scripts/report-user-position-title.js",
+    "db:audit:tenant-init": "node scripts/audit-tenant-initialization.js",
+    "db:probe:tenant-init": "node scripts/probe-tenant-initialization.js",
     "db:clean:duplicate-encounters": "node scripts/clean-duplicate-encounters.js --yes",
     "db:clean:duplicate-encounters:dry-run": "node scripts/clean-duplicate-encounters.js --dry-run",
     "db:clear:demo": "node scripts/clear-demo-data.js --yes",

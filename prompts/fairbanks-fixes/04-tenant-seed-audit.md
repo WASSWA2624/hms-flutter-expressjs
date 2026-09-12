@@ -26,12 +26,12 @@ Creating a tenant or facility currently inserts records automatically. Some of t
 
 ## Acceptance Criteria
 
-- [ ] **AC1 (R1, R2)** The audit document exists and lists every table written by tenant and facility creation with its code path.
-- [ ] **AC2 (R3)** Every listed table is classified as allowed or forbidden, with no unclassified entries.
-- [ ] **AC3 (R4)** Every demo, filler, and volume seeding entry point reachable from tenant creation is documented with its trigger per environment.
-- [ ] **AC4 (R5)** Production counts for a recently created tenant are attached and reconciled against development counts.
-- [ ] **AC5 (R6)** Each forbidden entry names its removal target and the cleanup needed for existing tenants.
-- [ ] **AC6 (R7)** The audit reflects the code and data of both environments at the same commit.
+- [x] **AC1 (R1, R2)** The audit document exists and lists every table written by tenant and facility creation with its code path.
+- [x] **AC2 (R3)** Every listed table is classified as allowed or forbidden, with no unclassified entries.
+- [x] **AC3 (R4)** Every demo, filler, and volume seeding entry point reachable from tenant creation is documented with its trigger per environment.
+- [x] **AC4 (R5)** Production counts for a recently created tenant are attached and reconciled against development counts.
+- [x] **AC5 (R6)** Each forbidden entry names its removal target and the cleanup needed for existing tenants.
+- [x] **AC6 (R7)** The audit reflects the code and data of both environments at the same commit.
 
 ## Verification
 
