@@ -38,6 +38,8 @@
     "db:clear:demo:dry-run": "node scripts/clear-demo-data.js --dry-run",
     "db:seed:clinical-catalog": "node scripts/seed-clinical-catalog-data.js",
     "db:seed:lab-catalog": "node scripts/seed-lab-catalog-data.js",
+    "db:seed:platform-presets": "node scripts/seed-platform-presets.js",
+    "db:analyze:catalog-duplication": "node scripts/analyze-catalog-duplication.js",
     "db:seed:demo": "node scripts/seed-demo-data.js",
     "db:verify:demo": "node scripts/verify-demo-data.js",
     "verify:onboarding": "node scripts/verify-onboarding-e2e.js",
