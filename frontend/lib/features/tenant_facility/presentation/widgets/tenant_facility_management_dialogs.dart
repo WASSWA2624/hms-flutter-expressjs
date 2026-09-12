@@ -2312,45 +2312,6 @@ class _TenantStatusBadge extends StatelessWidget {
   }
 }
 
-class _TenantMetaRow extends StatelessWidget {
-  const _TenantMetaRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: theme.spacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          SizedBox(
-            width: 118,
-            child: Text(
-              label,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: AppFontWeight.emphasis,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _TenantDetailsFacilitiesPanel extends StatelessWidget {
   const _TenantDetailsFacilitiesPanel({
     required this.searchController,
@@ -3894,19 +3855,29 @@ class _FacilityDetailsSummary extends StatelessWidget {
             SizedBox(height: theme.spacing.md),
             const Divider(height: 1),
             SizedBox(height: theme.spacing.md),
-            _TenantMetaRow(label: l10n.profileTenantLabel, value: tenantLabel),
-            _TenantMetaRow(
+            AppPropertyValue(
+              label: l10n.profileTenantLabel, value: tenantLabel,
+              expand: true,
+              padding: EdgeInsets.only(bottom: theme.spacing.sm),
+            ),
+            AppPropertyValue(
               label: l10n.profileFacilityTypeLabel,
               value: facility.type.name,
+              expand: true,
+              padding: EdgeInsets.only(bottom: theme.spacing.sm),
             ),
             if (displayId != null)
-              _TenantMetaRow(
+              AppPropertyValue(
                 label: l10n.tenantFacilityFacilityIdLabel,
                 value: displayId,
+                expand: true,
+                padding: EdgeInsets.only(bottom: theme.spacing.sm),
               ),
-            _TenantMetaRow(
+            AppPropertyValue(
               label: l10n.tenantFacilityTenantStatusLabel,
               value: statusLabel,
+              expand: true,
+              padding: EdgeInsets.only(bottom: theme.spacing.sm),
             ),
             SizedBox(height: theme.spacing.md),
             AppCollapsibleSection(
@@ -4001,19 +3972,25 @@ class _FacilityDetailsSummary extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
                     if (phone != null && phone.isNotEmpty)
-                      _TenantMetaRow(
+                      AppPropertyValue(
                         label: l10n.profilePhoneLabel,
                         value: phone,
+                        expand: true,
+                        padding: EdgeInsets.only(bottom: theme.spacing.sm),
                       ),
                     if (email != null && email.isNotEmpty)
-                      _TenantMetaRow(
+                      AppPropertyValue(
                         label: l10n.profileEmailLabel,
                         value: email,
+                        expand: true,
+                        padding: EdgeInsets.only(bottom: theme.spacing.sm),
                       ),
                     if (address.isNotEmpty)
-                      _TenantMetaRow(
+                      AppPropertyValue(
                         label: l10n.tenantFacilityAddressLineLabel,
                         value: address,
+                        expand: true,
+                        padding: EdgeInsets.only(bottom: theme.spacing.sm),
                       ),
                   ],
                 ),

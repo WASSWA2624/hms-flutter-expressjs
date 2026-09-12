@@ -19,7 +19,16 @@ const {
   listUserRolesQuerySchema
 } = require('@validations/user-role/user-role.schema');
 
-const ADMIN_ROLE_SET = ['TENANT_ADMIN', 'FACILITY_ADMIN', 'PLATFORM_ADMIN', 'OPERATIONS', 'HR'];
+// Platform owners sit above platform admins: leaving them out denied them
+// every role assignment even though they may create and edit the user.
+const ADMIN_ROLE_SET = [
+  'PLATFORM_OWNER',
+  'PLATFORM_ADMIN',
+  'TENANT_ADMIN',
+  'FACILITY_ADMIN',
+  'OPERATIONS',
+  'HR'
+];
 
 /**
  * @description List user-roles with pagination and filters

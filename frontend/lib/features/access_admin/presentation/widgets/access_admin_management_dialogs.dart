@@ -126,8 +126,8 @@ Future<bool> confirmPermanentDeleteAccessAdminUser(
       submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
       cancelLabel: l10n.commonCancelActionLabel,
       requiredMessage: l10n.validationRequired,
-      confirmMismatchMessage:
-          l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(confirmName),
+      confirmMismatchMessage: l10n
+          .tenantFacilityPermanentDeleteConfirmFieldLabel(confirmName),
       confirmMatches: (String value) =>
           value.trim().toLowerCase() == confirmName.toLowerCase(),
       destructive: true,
@@ -177,10 +177,7 @@ Future<bool?> showManageRolesPermissionsDialog(
 }) {
   return showAppDialog<bool>(
     context: context,
-    builder: (_) => ManageRolesPermissionsPanel(
-      dialogMode: true,
-      panel: panel,
-    ),
+    builder: (_) => ManageRolesPermissionsPanel(dialogMode: true, panel: panel),
   );
 }
 
@@ -400,7 +397,9 @@ abstract class _ScopedAccessAdminListDialogState<
       columnVisibilityResetLabel: l10n.receptionResetColumnsAction,
       columnVisibilityCloseLabel: l10n.commonCloseActionLabel,
       columnVisibilityStorageKey: columnVisibilityStorageKey,
-      canExport: canExportAccessAdminWorkspace(ref.watch(appAccessPolicyProvider)),
+      canExport: canExportAccessAdminWorkspace(
+        ref.watch(appAccessPolicyProvider),
+      ),
       exportLabel: l10n.commonTableExportActionLabel,
       exportDialogTitle: l10n.commonTableExportDialogTitle,
       exportCancelLabel: l10n.commonCancelActionLabel,
@@ -412,20 +411,22 @@ abstract class _ScopedAccessAdminListDialogState<
       exportFailureMessage: l10n.commonTableExportFailureMessage,
       exportInvalidDateMessage: l10n.opdInvalidDateMessage,
       enablePrint: true,
-      canPrint: canPrintAccessAdminWorkspace(ref.watch(appAccessPolicyProvider)),
+      canPrint: canPrintAccessAdminWorkspace(
+        ref.watch(appAccessPolicyProvider),
+      ),
       printLabel: l10n.commonPrintActionLabel,
       onPrint: (List<AccessAdminItem> matchingItems) =>
           printAccessAdminListTable<AccessAdminItem>(
-        ref: ref,
-        context: context,
-        title: l10n.accessAdminTitle,
-        columns: <AppListTableColumn<AccessAdminItem>>[
-          ...columns,
-          ...?columnChoices,
-        ],
-        items: matchingItems,
-        emptyText: l10n.accessAdminEmptyTitle,
-      ),
+            ref: ref,
+            context: context,
+            title: l10n.accessAdminTitle,
+            columns: <AppListTableColumn<AccessAdminItem>>[
+              ...columns,
+              ...?columnChoices,
+            ],
+            items: matchingItems,
+            emptyText: l10n.accessAdminEmptyTitle,
+          ),
       goToTopLabel: l10n.commonGoToTopActionLabel,
       loadingMoreLabel: l10n.commonLoadingMoreLabel,
       allRowsLoadedLabel: l10n.commonAllRowsLoadedLabel,
@@ -492,7 +493,8 @@ abstract class _ScopedAccessAdminListDialogState<
       enableDateFilter: false,
       showAdvancedFilterButton: showAdvancedFilterButton,
       advancedFilterButtonLabel: l10n.commonFiltersActionLabel,
-      advancedFilterTitle: advancedFilterTitle ?? l10n.commonAdvancedFiltersTitle,
+      advancedFilterTitle:
+          advancedFilterTitle ?? l10n.commonAdvancedFiltersTitle,
       advancedFilterApplyLabel: l10n.opdApplyFiltersAction,
       advancedFilterResetLabel: l10n.opdClearFiltersAction,
       advancedFilterCloseLabel: l10n.commonCloseActionLabel,
@@ -667,11 +669,7 @@ class _ManageUsersPanelState
       return;
     }
     final AccessAdminItem? createdOrExisting =
-        await openAccessAdminCreateUserDialog(
-      context,
-      ref,
-      state,
-    );
+        await openAccessAdminCreateUserDialog(context, ref, state);
     if (createdOrExisting != null && mounted) {
       mutated = true;
       // Restore widest allowed defaults so the new user is not hidden.
@@ -738,12 +736,12 @@ class _ManageUsersPanelState
     if (!mounted) return;
     final AccessAdminItem? updatedOrExisting =
         await openAccessAdminEditUserDialog(
-      context,
-      ref,
-      state,
-      user: resolvedDetail.item,
-      detail: resolvedDetail,
-    );
+          context,
+          ref,
+          state,
+          user: resolvedDetail.item,
+          detail: resolvedDetail,
+        );
     if (updatedOrExisting != null && mounted) {
       mutated = true;
       // Mirror create: open details immediately; refresh list in the background.
@@ -1068,160 +1066,119 @@ class _ManageUsersPanelState
 
     final Widget table = SizedBox.expand(
       child: buildTable(
+        l10n: l10n,
+        columnVisibilityStorageKey: 'access_admin_manage_users_v4',
+        onRowSelected: (AccessAdminItem item) =>
+            unawaited(_openUserDetail(item)),
+        emptyAction: widget.showCreateAction && canWrite
+            ? AppButton.primary(
+                label: l10n.accessAdminCreateUserAction,
+                leadingIcon: Icons.person_add_alt_1_outlined,
+                enabled: !loading && !mutating,
+                onPressed: loading || mutating
+                    ? null
+                    : () => unawaited(_openCreateUserDialog()),
+              )
+            : null,
+        search: buildTableSearch(
           l10n: l10n,
-          columnVisibilityStorageKey: 'access_admin_manage_users_v4',
-          onRowSelected: (AccessAdminItem item) =>
-              unawaited(_openUserDetail(item)),
-          emptyAction: widget.showCreateAction && canWrite
-              ? AppButton.primary(
-                  label: l10n.accessAdminCreateUserAction,
-                  leadingIcon: Icons.person_add_alt_1_outlined,
-                  enabled: !loading && !mutating,
-                  onPressed: loading || mutating
-                      ? null
-                      : () => unawaited(_openCreateUserDialog()),
-                )
-              : null,
-          search: buildTableSearch(
-            l10n: l10n,
-            showAdvancedFilterButton: true,
-            advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
-            filterGroups: filterGroups,
-            filterValue: filterOptions.isEmpty
-                ? AppSearchBarFilterValue.empty
-                : AppSearchBarFilterValue(options: filterOptions),
-            hasActiveFilters: hasActiveFilters,
-            onFilterChanged: (AppSearchBarFilterValue value) {
-              unawaited(_applyUserFilters(value));
-            },
-            trailingActions: widget.showCreateAction && canWrite
-                ? <AppSearchBarAction>[
-                    AppSearchBarAction(
-                      icon: Icons.person_add_alt_1_outlined,
-                      label: l10n.accessAdminCreateUserAction,
-                      tooltip: l10n.accessAdminCreateUserAction,
-                      onPressed: loading || mutating
-                          ? null
-                          : () => unawaited(_openCreateUserDialog()),
-                    ),
-                  ]
-                : const <AppSearchBarAction>[],
-          ),
-          columns: <AppListTableColumn<AccessAdminItem>>[
-            AppListTableColumn<AccessAdminItem>(
-              id: 'name',
-              label: l10n.accessAdminColumnName,
-              sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
-                  appListTableCompareText(left.title, right.title),
-              exportValue: (AccessAdminItem item) => item.title,
-              cellBuilder: (_, AccessAdminItem item) => Text(
-                item.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            AppListTableColumn<AccessAdminItem>(
-              id: 'roles',
-              label: l10n.accessAdminColumnRoles,
-              sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
-                  appListTableCompareText(
-                    left.roles
-                        .map((AccessAdminRoleRef role) => role.name)
-                        .join(', '),
-                    right.roles
-                        .map((AccessAdminRoleRef role) => role.name)
-                        .join(', '),
+          showAdvancedFilterButton: true,
+          advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+          filterGroups: filterGroups,
+          filterValue: filterOptions.isEmpty
+              ? AppSearchBarFilterValue.empty
+              : AppSearchBarFilterValue(options: filterOptions),
+          hasActiveFilters: hasActiveFilters,
+          onFilterChanged: (AppSearchBarFilterValue value) {
+            unawaited(_applyUserFilters(value));
+          },
+          trailingActions: widget.showCreateAction && canWrite
+              ? <AppSearchBarAction>[
+                  AppSearchBarAction(
+                    icon: Icons.person_add_alt_1_outlined,
+                    label: l10n.accessAdminCreateUserAction,
+                    tooltip: l10n.accessAdminCreateUserAction,
+                    onPressed: loading || mutating
+                        ? null
+                        : () => unawaited(_openCreateUserDialog()),
                   ),
-              exportValue: (AccessAdminItem item) => item.roles
-                  .map((AccessAdminRoleRef role) => role.name)
-                  .join(', '),
-              cellBuilder: (_, AccessAdminItem item) {
-                if (item.roles.isEmpty) {
-                  return const Text('—');
-                }
-                return Text(
-                  item.roles
+                ]
+              : const <AppSearchBarAction>[],
+        ),
+        columns: <AppListTableColumn<AccessAdminItem>>[
+          AppListTableColumn<AccessAdminItem>(
+            id: 'name',
+            label: l10n.accessAdminColumnName,
+            sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
+                appListTableCompareText(left.title, right.title),
+            exportValue: (AccessAdminItem item) => item.title,
+            cellBuilder: (_, AccessAdminItem item) =>
+                Text(item.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+          ),
+          AppListTableColumn<AccessAdminItem>(
+            id: 'roles',
+            label: l10n.accessAdminColumnRoles,
+            sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
+                appListTableCompareText(
+                  left.roles
                       .map((AccessAdminRoleRef role) => role.name)
                       .join(', '),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                );
-              },
-            ),
-            AppListTableColumn<AccessAdminItem>(
-              id: 'status',
-              label: l10n.accessAdminColumnStatus,
-              sortComparator: (AccessAdminItem left, AccessAdminItem right) {
-                final String leftStatus = left.isDeleted
-                    ? l10n.tenantFacilityStructureDeletedStatus
-                    : (left.status ?? '—');
-                final String rightStatus = right.isDeleted
-                    ? l10n.tenantFacilityStructureDeletedStatus
-                    : (right.status ?? '—');
-                return appListTableCompareText(leftStatus, rightStatus);
-              },
-              exportValue: (AccessAdminItem item) => item.isDeleted
-                  ? l10n.tenantFacilityStructureDeletedStatus
-                  : (item.status ?? '—'),
-              cellBuilder: (_, AccessAdminItem item) => Text(
-                item.isDeleted
-                    ? l10n.tenantFacilityStructureDeletedStatus
-                    : (item.status ?? '—'),
+                  right.roles
+                      .map((AccessAdminRoleRef role) => role.name)
+                      .join(', '),
+                ),
+            exportValue: (AccessAdminItem item) => item.roles
+                .map((AccessAdminRoleRef role) => role.name)
+                .join(', '),
+            cellBuilder: (_, AccessAdminItem item) {
+              if (item.roles.isEmpty) {
+                return const Text('—');
+              }
+              return Text(
+                item.roles
+                    .map((AccessAdminRoleRef role) => role.name)
+                    .join(', '),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-              ),
+              );
+            },
+          ),
+          AppListTableColumn<AccessAdminItem>(
+            id: 'status',
+            label: l10n.accessAdminColumnStatus,
+            sortComparator: (AccessAdminItem left, AccessAdminItem right) {
+              final String leftStatus = left.isDeleted
+                  ? l10n.tenantFacilityStructureDeletedStatus
+                  : (left.status ?? '—');
+              final String rightStatus = right.isDeleted
+                  ? l10n.tenantFacilityStructureDeletedStatus
+                  : (right.status ?? '—');
+              return appListTableCompareText(leftStatus, rightStatus);
+            },
+            exportValue: (AccessAdminItem item) => item.isDeleted
+                ? l10n.tenantFacilityStructureDeletedStatus
+                : (item.status ?? '—'),
+            cellBuilder: (_, AccessAdminItem item) => Text(
+              item.isDeleted
+                  ? l10n.tenantFacilityStructureDeletedStatus
+                  : (item.status ?? '—'),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            if (canWrite)
-              AppListTableColumn<AccessAdminItem>(
-                id: 'actions',
-                label: l10n.accessAdminColumnActions,
-                alwaysVisible: true,
-                exportable: false,
-                cellBuilder: (BuildContext context, AccessAdminItem user) {
-                  final ThemeData theme = Theme.of(context);
-                  final double actionGap = theme.spacing.md;
-                  final bool actionsEnabled = !loading && !mutating;
-                  if (user.isDeleted) {
-                    if (!canMutateAccessAdminDemoAccount(user)) {
-                      return const SizedBox.shrink();
-                    }
-                    return Padding(
-                      padding: EdgeInsetsDirectional.only(
-                        end: theme.spacing.sm,
-                      ),
-                      child: Wrap(
-                        spacing: actionGap,
-                        runSpacing: theme.spacing.xs,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: <Widget>[
-                          AppButton.tertiary(
-                            leadingIcon: Icons.restore_outlined,
-                            label: l10n.accessAdminRestoreUserAction,
-                            semanticLabel: l10n.accessAdminRestoreUserAction,
-                            tooltip: l10n.accessAdminRestoreUserAction,
-                            enabled: actionsEnabled,
-                            onPressed: actionsEnabled
-                                ? () => unawaited(_confirmRestoreUser(user))
-                                : null,
-                          ),
-                          if (_canPermanentDeleteUser(user))
-                            AppButton.tertiary(
-                              leadingIcon: Icons.delete_forever_outlined,
-                              label: l10n.tenantFacilityPermanentDeleteAction,
-                              semanticLabel:
-                                  l10n.tenantFacilityPermanentDeleteAction,
-                              tooltip: l10n.tenantFacilityPermanentDeleteAction,
-                              color: colorScheme.error,
-                              enabled: actionsEnabled,
-                              onPressed: actionsEnabled
-                                  ? () => unawaited(
-                                      _confirmPermanentDeleteUser(user),
-                                    )
-                                  : null,
-                            ),
-                        ],
-                      ),
-                    );
+          ),
+          if (canWrite)
+            AppListTableColumn<AccessAdminItem>(
+              id: 'actions',
+              label: l10n.accessAdminColumnActions,
+              alwaysVisible: true,
+              exportable: false,
+              cellBuilder: (BuildContext context, AccessAdminItem user) {
+                final ThemeData theme = Theme.of(context);
+                final double actionGap = theme.spacing.md;
+                final bool actionsEnabled = !loading && !mutating;
+                if (user.isDeleted) {
+                  if (!canMutateAccessAdminDemoAccount(user)) {
+                    return const SizedBox.shrink();
                   }
                   return Padding(
                     padding: EdgeInsetsDirectional.only(end: theme.spacing.sm),
@@ -1230,93 +1187,129 @@ class _ManageUsersPanelState
                       runSpacing: theme.spacing.xs,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: <Widget>[
-                        if (_canMutateUser(user))
+                        AppButton.tertiary(
+                          leadingIcon: Icons.restore_outlined,
+                          label: l10n.accessAdminRestoreUserAction,
+                          semanticLabel: l10n.accessAdminRestoreUserAction,
+                          tooltip: l10n.accessAdminRestoreUserAction,
+                          enabled: actionsEnabled,
+                          onPressed: actionsEnabled
+                              ? () => unawaited(_confirmRestoreUser(user))
+                              : null,
+                        ),
+                        if (_canPermanentDeleteUser(user))
                           AppButton.tertiary(
-                            leadingIcon: Icons.edit_outlined,
-                            label: l10n.tenantFacilityEditAction,
-                            semanticLabel: l10n.tenantFacilityEditAction,
-                            tooltip: l10n.tenantFacilityEditAction,
-                            enabled: actionsEnabled,
-                            onPressed: actionsEnabled
-                                ? () => unawaited(_openEditUserDialog(user))
-                                : null,
-                          ),
-                        if (_canDeleteUser(user))
-                          AppButton.tertiary(
-                            leadingIcon: Icons.delete_outline,
-                            label: l10n.tenantFacilityDeleteAction,
-                            semanticLabel: l10n.tenantFacilityDeleteAction,
-                            tooltip: l10n.tenantFacilityDeleteAction,
+                            leadingIcon: Icons.delete_forever_outlined,
+                            label: l10n.tenantFacilityPermanentDeleteAction,
+                            semanticLabel:
+                                l10n.tenantFacilityPermanentDeleteAction,
+                            tooltip: l10n.tenantFacilityPermanentDeleteAction,
                             color: colorScheme.error,
                             enabled: actionsEnabled,
                             onPressed: actionsEnabled
-                                ? () => unawaited(_confirmDeleteUser(user))
+                                ? () => unawaited(
+                                    _confirmPermanentDeleteUser(user),
+                                  )
                                 : null,
                           ),
                       ],
                     ),
                   );
-                },
-              ),
-          ],
-          columnChoices: <AppListTableColumn<AccessAdminItem>>[
-            AppListTableColumn<AccessAdminItem>(
-              id: 'id',
-              label: l10n.accessAdminColumnId,
-              sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
-                  appListTableCompareText(
-                    left.effectiveDisplayId,
-                    right.effectiveDisplayId,
+                }
+                return Padding(
+                  padding: EdgeInsetsDirectional.only(end: theme.spacing.sm),
+                  child: Wrap(
+                    spacing: actionGap,
+                    runSpacing: theme.spacing.xs,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: <Widget>[
+                      if (_canMutateUser(user))
+                        AppButton.tertiary(
+                          leadingIcon: Icons.edit_outlined,
+                          label: l10n.tenantFacilityEditAction,
+                          semanticLabel: l10n.tenantFacilityEditAction,
+                          tooltip: l10n.tenantFacilityEditAction,
+                          enabled: actionsEnabled,
+                          onPressed: actionsEnabled
+                              ? () => unawaited(_openEditUserDialog(user))
+                              : null,
+                        ),
+                      if (_canDeleteUser(user))
+                        AppButton.tertiary(
+                          leadingIcon: Icons.delete_outline,
+                          label: l10n.tenantFacilityDeleteAction,
+                          semanticLabel: l10n.tenantFacilityDeleteAction,
+                          tooltip: l10n.tenantFacilityDeleteAction,
+                          color: colorScheme.error,
+                          enabled: actionsEnabled,
+                          onPressed: actionsEnabled
+                              ? () => unawaited(_confirmDeleteUser(user))
+                              : null,
+                        ),
+                    ],
                   ),
-              exportValue: (AccessAdminItem item) => item.effectiveDisplayId,
-              cellBuilder: (_, AccessAdminItem item) => Text(
-                item.effectiveDisplayId,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+                );
+              },
             ),
-            AppListTableColumn<AccessAdminItem>(
-              id: 'facility',
-              label: l10n.accessAdminColumnFacility,
-              sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
-                  appListTableCompareText(
-                    left.facilityName?.trim().isNotEmpty == true
-                        ? left.facilityName!
-                        : (left.facilityId ?? '—'),
-                    right.facilityName?.trim().isNotEmpty == true
-                        ? right.facilityName!
-                        : (right.facilityId ?? '—'),
-                  ),
-              exportValue: (AccessAdminItem item) =>
-                  item.facilityName?.trim().isNotEmpty == true
+        ],
+        columnChoices: <AppListTableColumn<AccessAdminItem>>[
+          AppListTableColumn<AccessAdminItem>(
+            id: 'id',
+            label: l10n.accessAdminColumnId,
+            sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
+                appListTableCompareText(
+                  left.effectiveDisplayId,
+                  right.effectiveDisplayId,
+                ),
+            exportValue: (AccessAdminItem item) => item.effectiveDisplayId,
+            cellBuilder: (_, AccessAdminItem item) => Text(
+              item.effectiveDisplayId,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          AppListTableColumn<AccessAdminItem>(
+            id: 'facility',
+            label: l10n.accessAdminColumnFacility,
+            sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
+                appListTableCompareText(
+                  left.facilityName?.trim().isNotEmpty == true
+                      ? left.facilityName!
+                      : (left.facilityId ?? '—'),
+                  right.facilityName?.trim().isNotEmpty == true
+                      ? right.facilityName!
+                      : (right.facilityId ?? '—'),
+                ),
+            exportValue: (AccessAdminItem item) =>
+                item.facilityName?.trim().isNotEmpty == true
+                ? item.facilityName!
+                : (item.facilityId ?? '—'),
+            cellBuilder: (_, AccessAdminItem item) => Text(
+              item.facilityName?.trim().isNotEmpty == true
                   ? item.facilityName!
                   : (item.facilityId ?? '—'),
-              cellBuilder: (_, AccessAdminItem item) => Text(
-                item.facilityName?.trim().isNotEmpty == true
-                    ? item.facilityName!
-                    : (item.facilityId ?? '—'),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            AppListTableColumn<AccessAdminItem>(
-              id: 'details',
-              label: l10n.accessAdminColumnDetails,
-              sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
-                  appListTableCompareText(
-                    left.subtitle ?? left.email ?? '—',
-                    right.subtitle ?? right.email ?? '—',
-                  ),
-              exportValue: (AccessAdminItem item) =>
-                  item.subtitle ?? item.email ?? '—',
-              cellBuilder: (_, AccessAdminItem item) => Text(
+          ),
+          AppListTableColumn<AccessAdminItem>(
+            id: 'details',
+            label: l10n.accessAdminColumnDetails,
+            sortComparator: (AccessAdminItem left, AccessAdminItem right) =>
+                appListTableCompareText(
+                  left.subtitle ?? left.email ?? '—',
+                  right.subtitle ?? right.email ?? '—',
+                ),
+            exportValue: (AccessAdminItem item) =>
                 item.subtitle ?? item.email ?? '—',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+            cellBuilder: (_, AccessAdminItem item) => Text(
+              item.subtitle ?? item.email ?? '—',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
 
     final Widget createAction = AppButton.primary(
@@ -1367,12 +1360,12 @@ bool _isSameAccessAdminRole(AccessAdminItem left, AccessAdminItem right) {
 /// friendly-id vs resource_uuid mismatches across reloads.
 Set<String> _roleLifecycleKeys(AccessAdminItem role) {
   return <String?>{
-    role.resourceUuid,
-    role.mutationId,
-    role.id,
-    role.displayId,
-    role.effectiveDisplayId,
-  }
+        role.resourceUuid,
+        role.mutationId,
+        role.id,
+        role.displayId,
+        role.effectiveDisplayId,
+      }
       .whereType<String>()
       .map((String value) => value.trim())
       .where((String value) => value.isNotEmpty)
@@ -1795,11 +1788,7 @@ class _ManageRolesPermissionsPanelState
       return;
     }
     final AccessAdminItem? createdOrExisting =
-        await openAccessAdminCreateRoleDialog(
-      context,
-      ref,
-      state,
-    );
+        await openAccessAdminCreateRoleDialog(context, ref, state);
     if (createdOrExisting != null && mounted) {
       mutated = true;
       // Open details immediately so the roles list never flashes between create
@@ -2035,15 +2024,17 @@ class _ManageRolesPermissionsPanelState
       context: context,
       builder: (BuildContext dialogContext) => AppTextInputActionDialog(
         title: l10n.tenantFacilityPermanentDeleteConfirmationTitle,
-        description: l10n.accessAdminPermanentDeleteRoleWarningBody(confirmName),
+        description: l10n.accessAdminPermanentDeleteRoleWarningBody(
+          confirmName,
+        ),
         fieldLabel: l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(
           confirmName,
         ),
         submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
         cancelLabel: l10n.commonCancelActionLabel,
         requiredMessage: l10n.validationRequired,
-        confirmMismatchMessage:
-            l10n.tenantFacilityPermanentDeleteConfirmFieldLabel(confirmName),
+        confirmMismatchMessage: l10n
+            .tenantFacilityPermanentDeleteConfirmFieldLabel(confirmName),
         confirmMatches: (String value) =>
             _rolePermanentDeleteNameMatches(role, value, l10n: l10n),
         destructive: true,
@@ -2070,22 +2061,19 @@ class _ManageRolesPermissionsPanelState
         submitLabel: l10n.tenantFacilityPermanentDeleteConfirmAction,
         destructive: true,
         icon: const Icon(Icons.delete_forever_outlined),
-        onConfirm: () => _runRoleLifecycleMutation(
-          role,
-          () async {
-            final String roleId =
-                (role.resourceUuid ?? role.mutationId).trim().isNotEmpty
-                ? (role.resourceUuid ?? role.mutationId).trim()
-                : role.id;
-            final Result<void> result = await repository.permanentDeleteRole(
-              roleId,
-            );
-            return result.when(
-              success: (_) => const Result<void>.success(null),
-              failure: (AppFailure failure) => Result<void>.failure(failure),
-            );
-          },
-        ),
+        onConfirm: () => _runRoleLifecycleMutation(role, () async {
+          final String roleId =
+              (role.resourceUuid ?? role.mutationId).trim().isNotEmpty
+              ? (role.resourceUuid ?? role.mutationId).trim()
+              : role.id;
+          final Result<void> result = await repository.permanentDeleteRole(
+            roleId,
+          );
+          return result.when(
+            success: (_) => const Result<void>.success(null),
+            failure: (AppFailure failure) => Result<void>.failure(failure),
+          );
+        }),
       ),
     );
 
@@ -2244,285 +2232,297 @@ class _ManageRolesPermissionsPanelState
           ),
           Expanded(
             child: buildTable(
-          l10n: l10n,
-          columnVisibilityStorageKey: isPermissions
-              ? 'access_admin_manage_permissions_v4'
-              : 'access_admin_manage_roles_v3',
-          onRowSelected: isPermissions
-              ? (AccessAdminItem permission) =>
-                    unawaited(_openPermissionDetail(permission))
-              : roleActionsBusy
-              ? null
-              : (AccessAdminItem role) => unawaited(_openRoleDetail(role)),
-          emptyAction: !isPermissions && canWrite && widget.showCreateAction
-              ? AppButton.primary(
-                  label: l10n.accessAdminCreateRoleAction,
-                  leadingIcon: Icons.badge_outlined,
-                  enabled: !loading && !mutating,
-                  onPressed: loading || mutating
-                      ? null
-                      : () => unawaited(_openCreateRoleDialog()),
-                )
-              : null,
-          search: buildTableSearch(
-            l10n: l10n,
-            showAdvancedFilterButton: filterGroups.isNotEmpty,
-            advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
-            filterGroups: filterGroups,
-            filterValue: activeOptions.isEmpty
-                ? AppSearchBarFilterValue.empty
-                : AppSearchBarFilterValue(options: activeOptions),
-            hasActiveFilters: activeOptions.isNotEmpty,
-            onFilterChanged: filterGroups.isEmpty
-                ? null
-                : (AppSearchBarFilterValue value) {
-                    unawaited(_applyRoleListFilters(value));
-                  },
-            trailingActions: !isPermissions &&
-                    canWrite &&
-                    widget.showCreateAction
-                ? <AppSearchBarAction>[
-                    AppSearchBarAction(
-                      icon: Icons.badge_outlined,
+              l10n: l10n,
+              columnVisibilityStorageKey: isPermissions
+                  ? 'access_admin_manage_permissions_v4'
+                  : 'access_admin_manage_roles_v3',
+              onRowSelected: isPermissions
+                  ? (AccessAdminItem permission) =>
+                        unawaited(_openPermissionDetail(permission))
+                  : roleActionsBusy
+                  ? null
+                  : (AccessAdminItem role) => unawaited(_openRoleDetail(role)),
+              emptyAction: !isPermissions && canWrite && widget.showCreateAction
+                  ? AppButton.primary(
                       label: l10n.accessAdminCreateRoleAction,
-                      tooltip: l10n.accessAdminCreateRoleAction,
+                      leadingIcon: Icons.badge_outlined,
+                      enabled: !loading && !mutating,
                       onPressed: loading || mutating
                           ? null
                           : () => unawaited(_openCreateRoleDialog()),
-                    ),
-                  ]
-                : const <AppSearchBarAction>[],
-          ),
-          columns: isPermissions
-              ? permissionDefaults
-              : <AppListTableColumn<AccessAdminItem>>[
-                  AppListTableColumn<AccessAdminItem>(
-                    id: 'id',
-                    label: l10n.accessAdminColumnId,
-                    sortComparator:
-                        (AccessAdminItem left, AccessAdminItem right) =>
-                            appListTableCompareText(
-                              left.effectiveDisplayId,
-                              right.effectiveDisplayId,
-                            ),
-                    exportValue: (AccessAdminItem item) =>
-                        item.effectiveDisplayId,
-                    cellBuilder: (_, AccessAdminItem item) => Text(
-                      item.effectiveDisplayId,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  AppListTableColumn<AccessAdminItem>(
-                    id: 'name',
-                    label: l10n.accessAdminColumnName,
-                    sortComparator:
-                        (AccessAdminItem left, AccessAdminItem right) =>
-                            appListTableCompareText(left.title, right.title),
-                    exportValue: (AccessAdminItem item) => item.title,
-                    cellBuilder: (BuildContext context, AccessAdminItem item) {
-                      final ThemeData theme = Theme.of(context);
-                      return Text(
-                        item.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: item.isDeleted
-                            ? theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                              )
-                            : theme.textTheme.bodyMedium,
-                      );
-                    },
-                  ),
-                  if (showTenantColumn)
-                    AppListTableColumn<AccessAdminItem>(
-                      id: 'tenant',
-                      label: l10n.settingsWorkspaceTenantLabel,
-                      sortComparator:
-                          (AccessAdminItem left, AccessAdminItem right) =>
-                              appListTableCompareText(
-                                left.tenantName,
-                                right.tenantName,
-                              ),
-                      exportValue: (AccessAdminItem item) =>
-                          (item.tenantName ?? '').trim().isNotEmpty
-                          ? item.tenantName!.trim()
-                          : '—',
-                      cellBuilder: (_, AccessAdminItem item) => Text(
-                        (item.tenantName ?? '').trim().isNotEmpty
-                            ? item.tenantName!.trim()
-                            : '—',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  AppListTableColumn<AccessAdminItem>(
-                    id: 'scope',
-                    label: l10n.accessAdminColumnScope,
-                    sortComparator:
-                        (AccessAdminItem left, AccessAdminItem right) =>
-                            appListTableCompareText(
-                              accessAdminRoleScopeLabel(context, left),
-                              accessAdminRoleScopeLabel(context, right),
-                            ),
-                    exportValue: (AccessAdminItem item) {
-                      if (item.isFacilityScopedRole) {
-                        final String? facility = item.facilityName?.trim();
-                        return facility != null && facility.isNotEmpty
-                            ? '${l10n.accessAdminRoleScopeFacilityBadge} · $facility'
-                            : l10n.accessAdminRoleScopeFacilityBadge;
-                      }
-                      if (item.isPlatformScopedRole) {
-                        return l10n.accessAdminRoleScopePlatformLabel;
-                      }
-                      return l10n.accessAdminRoleScopeTenantBadge;
-                    },
-                    cellBuilder:
-                        (BuildContext context, AccessAdminItem item) =>
-                            _RoleScopeBadge(item: item),
-                  ),
-                  if (canWrite)
-                    AppListTableColumn<AccessAdminItem>(
-                      id: 'actions',
-                      label: l10n.accessAdminColumnActions,
-                      alwaysVisible: true,
-                      exportable: false,
-                      cellBuilder: (BuildContext context, AccessAdminItem role) {
-                        final ThemeData theme = Theme.of(context);
-                        final double actionGap = theme.spacing.md;
-                        final bool rowBusy = _isRoleActionBusy(role);
-                        final bool actionsEnabled =
-                            !loading && !mutating && !rowBusy;
-                        if (role.isDeleted) {
-                          return Padding(
-                            padding: EdgeInsetsDirectional.only(
-                              end: theme.spacing.sm,
-                            ),
-                            child: Wrap(
-                              spacing: actionGap,
-                              runSpacing: theme.spacing.xs,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              children: <Widget>[
-                                AppButton.tertiary(
-                                  leadingIcon: Icons.restore_outlined,
-                                  label:
-                                      l10n.tenantFacilityRestoreStructureAction,
-                                  semanticLabel:
-                                      l10n.tenantFacilityRestoreStructureAction,
-                                  tooltip:
-                                      l10n.tenantFacilityRestoreStructureAction,
-                                  enabled: actionsEnabled,
-                                  isLoading: rowBusy,
-                                  onPressed: actionsEnabled
-                                      ? () => unawaited(
-                                            _confirmRestoreRole(role),
-                                          )
-                                      : null,
-                                ),
-                                if (canMutateAccessAdminSystemCatalog(
-                                  accessPolicy,
-                                  isSystemCritical: role.isSystemCritical,
-                                ))
-                                  AppButton.tertiary(
-                                    leadingIcon: Icons.delete_forever_outlined,
-                                    label:
-                                        l10n.tenantFacilityPermanentDeleteAction,
-                                    semanticLabel:
-                                        l10n.tenantFacilityPermanentDeleteAction,
-                                    tooltip:
-                                        l10n.tenantFacilityPermanentDeleteAction,
-                                    color: colorScheme.error,
-                                    enabled: actionsEnabled,
-                                    isLoading: rowBusy,
-                                    onPressed: actionsEnabled
-                                        ? () => unawaited(
-                                              _confirmPermanentDeleteRole(role),
-                                            )
-                                        : null,
-                                  ),
-                              ],
-                            ),
-                          );
-                        }
-                        return Padding(
-                          padding: EdgeInsetsDirectional.only(
-                            end: theme.spacing.sm,
-                          ),
-                          child: Wrap(
-                            spacing: actionGap,
-                            runSpacing: theme.spacing.xs,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: <Widget>[
-                              if (canMutateAccessAdminSystemCatalog(
-                                accessPolicy,
-                                isSystemCritical: role.isSystemCritical,
-                              ))
-                                AppButton.tertiary(
-                                  leadingIcon: Icons.edit_outlined,
-                                  label: l10n.tenantFacilityEditAction,
-                                  semanticLabel: l10n.tenantFacilityEditAction,
-                                  tooltip: l10n.tenantFacilityEditAction,
-                                  enabled: actionsEnabled,
-                                  onPressed: actionsEnabled
-                                      ? () =>
-                                            unawaited(_openEditRoleDialog(role))
-                                      : null,
-                                ),
-                              if (canMutateAccessAdminSystemCatalog(
-                                accessPolicy,
-                                isSystemCritical: role.isSystemCritical,
-                              ))
-                                AppButton.tertiary(
-                                  leadingIcon: Icons.delete_outline,
-                                  label: l10n.tenantFacilityDeleteAction,
-                                  semanticLabel:
-                                      l10n.tenantFacilityDeleteAction,
-                                  tooltip: l10n.tenantFacilityDeleteAction,
-                                  color: colorScheme.error,
-                                  enabled: actionsEnabled,
-                                  isLoading: rowBusy,
-                                  onPressed: actionsEnabled
-                                      ? () =>
-                                            unawaited(_confirmDeleteRole(role))
-                                      : null,
-                                ),
-                            ],
-                          ),
-                        );
+                    )
+                  : null,
+              search: buildTableSearch(
+                l10n: l10n,
+                showAdvancedFilterButton: filterGroups.isNotEmpty,
+                advancedFilterTitle: l10n.commonAdvancedFiltersTitle,
+                filterGroups: filterGroups,
+                filterValue: activeOptions.isEmpty
+                    ? AppSearchBarFilterValue.empty
+                    : AppSearchBarFilterValue(options: activeOptions),
+                hasActiveFilters: activeOptions.isNotEmpty,
+                onFilterChanged: filterGroups.isEmpty
+                    ? null
+                    : (AppSearchBarFilterValue value) {
+                        unawaited(_applyRoleListFilters(value));
                       },
-                    ),
-                ],
-          columnChoices: isPermissions
-              ? permissionChoices
-              : <AppListTableColumn<AccessAdminItem>>[
-                  if (!showTenantColumn)
-                    AppListTableColumn<AccessAdminItem>(
-                      id: 'tenant',
-                      label: l10n.settingsWorkspaceTenantLabel,
-                      sortComparator:
-                          (AccessAdminItem left, AccessAdminItem right) =>
-                              appListTableCompareText(
-                                left.tenantName,
-                                right.tenantName,
-                              ),
-                      exportValue: (AccessAdminItem item) =>
-                          (item.tenantName ?? '').trim().isNotEmpty
-                          ? item.tenantName!.trim()
-                          : '—',
-                      cellBuilder: (_, AccessAdminItem item) => Text(
-                        (item.tenantName ?? '').trim().isNotEmpty
-                            ? item.tenantName!.trim()
-                            : '—',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                trailingActions:
+                    !isPermissions && canWrite && widget.showCreateAction
+                    ? <AppSearchBarAction>[
+                        AppSearchBarAction(
+                          icon: Icons.badge_outlined,
+                          label: l10n.accessAdminCreateRoleAction,
+                          tooltip: l10n.accessAdminCreateRoleAction,
+                          onPressed: loading || mutating
+                              ? null
+                              : () => unawaited(_openCreateRoleDialog()),
+                        ),
+                      ]
+                    : const <AppSearchBarAction>[],
+              ),
+              columns: isPermissions
+                  ? permissionDefaults
+                  : <AppListTableColumn<AccessAdminItem>>[
+                      AppListTableColumn<AccessAdminItem>(
+                        id: 'id',
+                        label: l10n.accessAdminColumnId,
+                        sortComparator:
+                            (AccessAdminItem left, AccessAdminItem right) =>
+                                appListTableCompareText(
+                                  left.effectiveDisplayId,
+                                  right.effectiveDisplayId,
+                                ),
+                        exportValue: (AccessAdminItem item) =>
+                            item.effectiveDisplayId,
+                        cellBuilder: (_, AccessAdminItem item) => Text(
+                          item.effectiveDisplayId,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                  AppListTableColumn<AccessAdminItem>(
-                    id: 'status',
-                    label: l10n.accessAdminColumnStatus,
-                    sortComparator:
-                        (AccessAdminItem left, AccessAdminItem right) =>
-                            appListTableCompareText(
+                      AppListTableColumn<AccessAdminItem>(
+                        id: 'name',
+                        label: l10n.accessAdminColumnName,
+                        sortComparator:
+                            (AccessAdminItem left, AccessAdminItem right) =>
+                                appListTableCompareText(
+                                  left.title,
+                                  right.title,
+                                ),
+                        exportValue: (AccessAdminItem item) => item.title,
+                        cellBuilder:
+                            (BuildContext context, AccessAdminItem item) {
+                              final ThemeData theme = Theme.of(context);
+                              return Text(
+                                item.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: item.isDeleted
+                                    ? theme.textTheme.bodyMedium?.copyWith(
+                                        color:
+                                            theme.colorScheme.onSurfaceVariant,
+                                      )
+                                    : theme.textTheme.bodyMedium,
+                              );
+                            },
+                      ),
+                      if (showTenantColumn)
+                        AppListTableColumn<AccessAdminItem>(
+                          id: 'tenant',
+                          label: l10n.settingsWorkspaceTenantLabel,
+                          sortComparator:
+                              (AccessAdminItem left, AccessAdminItem right) =>
+                                  appListTableCompareText(
+                                    left.tenantName,
+                                    right.tenantName,
+                                  ),
+                          exportValue: (AccessAdminItem item) =>
+                              (item.tenantName ?? '').trim().isNotEmpty
+                              ? item.tenantName!.trim()
+                              : '—',
+                          cellBuilder: (_, AccessAdminItem item) => Text(
+                            (item.tenantName ?? '').trim().isNotEmpty
+                                ? item.tenantName!.trim()
+                                : '—',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      AppListTableColumn<AccessAdminItem>(
+                        id: 'scope',
+                        label: l10n.accessAdminColumnScope,
+                        sortComparator:
+                            (AccessAdminItem left, AccessAdminItem right) =>
+                                appListTableCompareText(
+                                  accessAdminRoleScopeLabel(context, left),
+                                  accessAdminRoleScopeLabel(context, right),
+                                ),
+                        exportValue: (AccessAdminItem item) {
+                          if (item.isFacilityScopedRole) {
+                            final String? facility = item.facilityName?.trim();
+                            return facility != null && facility.isNotEmpty
+                                ? '${l10n.accessAdminRoleScopeFacilityBadge} · $facility'
+                                : l10n.accessAdminRoleScopeFacilityBadge;
+                          }
+                          if (item.isPlatformScopedRole) {
+                            return l10n.accessAdminRoleScopePlatformLabel;
+                          }
+                          return l10n.accessAdminRoleScopeTenantBadge;
+                        },
+                        cellBuilder:
+                            (BuildContext context, AccessAdminItem item) =>
+                                _RoleScopeBadge(item: item),
+                      ),
+                      if (canWrite)
+                        AppListTableColumn<AccessAdminItem>(
+                          id: 'actions',
+                          label: l10n.accessAdminColumnActions,
+                          alwaysVisible: true,
+                          exportable: false,
+                          cellBuilder: (BuildContext context, AccessAdminItem role) {
+                            final ThemeData theme = Theme.of(context);
+                            final double actionGap = theme.spacing.md;
+                            final bool rowBusy = _isRoleActionBusy(role);
+                            final bool actionsEnabled =
+                                !loading && !mutating && !rowBusy;
+                            if (role.isDeleted) {
+                              return Padding(
+                                padding: EdgeInsetsDirectional.only(
+                                  end: theme.spacing.sm,
+                                ),
+                                child: Wrap(
+                                  spacing: actionGap,
+                                  runSpacing: theme.spacing.xs,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  children: <Widget>[
+                                    AppButton.tertiary(
+                                      leadingIcon: Icons.restore_outlined,
+                                      label: l10n
+                                          .tenantFacilityRestoreStructureAction,
+                                      semanticLabel: l10n
+                                          .tenantFacilityRestoreStructureAction,
+                                      tooltip: l10n
+                                          .tenantFacilityRestoreStructureAction,
+                                      enabled: actionsEnabled,
+                                      isLoading: rowBusy,
+                                      onPressed: actionsEnabled
+                                          ? () => unawaited(
+                                              _confirmRestoreRole(role),
+                                            )
+                                          : null,
+                                    ),
+                                    if (canMutateAccessAdminSystemCatalog(
+                                      accessPolicy,
+                                      isSystemCritical: role.isSystemCritical,
+                                    ))
+                                      AppButton.tertiary(
+                                        leadingIcon:
+                                            Icons.delete_forever_outlined,
+                                        label: l10n
+                                            .tenantFacilityPermanentDeleteAction,
+                                        semanticLabel: l10n
+                                            .tenantFacilityPermanentDeleteAction,
+                                        tooltip: l10n
+                                            .tenantFacilityPermanentDeleteAction,
+                                        color: colorScheme.error,
+                                        enabled: actionsEnabled,
+                                        isLoading: rowBusy,
+                                        onPressed: actionsEnabled
+                                            ? () => unawaited(
+                                                _confirmPermanentDeleteRole(
+                                                  role,
+                                                ),
+                                              )
+                                            : null,
+                                      ),
+                                  ],
+                                ),
+                              );
+                            }
+                            return Padding(
+                              padding: EdgeInsetsDirectional.only(
+                                end: theme.spacing.sm,
+                              ),
+                              child: Wrap(
+                                spacing: actionGap,
+                                runSpacing: theme.spacing.xs,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: <Widget>[
+                                  if (canMutateAccessAdminSystemCatalog(
+                                    accessPolicy,
+                                    isSystemCritical: role.isSystemCritical,
+                                  ))
+                                    AppButton.tertiary(
+                                      leadingIcon: Icons.edit_outlined,
+                                      label: l10n.tenantFacilityEditAction,
+                                      semanticLabel:
+                                          l10n.tenantFacilityEditAction,
+                                      tooltip: l10n.tenantFacilityEditAction,
+                                      enabled: actionsEnabled,
+                                      onPressed: actionsEnabled
+                                          ? () => unawaited(
+                                              _openEditRoleDialog(role),
+                                            )
+                                          : null,
+                                    ),
+                                  if (canMutateAccessAdminSystemCatalog(
+                                    accessPolicy,
+                                    isSystemCritical: role.isSystemCritical,
+                                  ))
+                                    AppButton.tertiary(
+                                      leadingIcon: Icons.delete_outline,
+                                      label: l10n.tenantFacilityDeleteAction,
+                                      semanticLabel:
+                                          l10n.tenantFacilityDeleteAction,
+                                      tooltip: l10n.tenantFacilityDeleteAction,
+                                      color: colorScheme.error,
+                                      enabled: actionsEnabled,
+                                      isLoading: rowBusy,
+                                      onPressed: actionsEnabled
+                                          ? () => unawaited(
+                                              _confirmDeleteRole(role),
+                                            )
+                                          : null,
+                                    ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                    ],
+              columnChoices: isPermissions
+                  ? permissionChoices
+                  : <AppListTableColumn<AccessAdminItem>>[
+                      if (!showTenantColumn)
+                        AppListTableColumn<AccessAdminItem>(
+                          id: 'tenant',
+                          label: l10n.settingsWorkspaceTenantLabel,
+                          sortComparator:
+                              (AccessAdminItem left, AccessAdminItem right) =>
+                                  appListTableCompareText(
+                                    left.tenantName,
+                                    right.tenantName,
+                                  ),
+                          exportValue: (AccessAdminItem item) =>
+                              (item.tenantName ?? '').trim().isNotEmpty
+                              ? item.tenantName!.trim()
+                              : '—',
+                          cellBuilder: (_, AccessAdminItem item) => Text(
+                            (item.tenantName ?? '').trim().isNotEmpty
+                                ? item.tenantName!.trim()
+                                : '—',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      AppListTableColumn<AccessAdminItem>(
+                        id: 'status',
+                        label: l10n.accessAdminColumnStatus,
+                        sortComparator:
+                            (
+                              AccessAdminItem left,
+                              AccessAdminItem right,
+                            ) => appListTableCompareText(
                               left.isDeleted
                                   ? l10n.tenantFacilityStructureDeletedStatus
                                   : (left.status ?? '—'),
@@ -2530,34 +2530,35 @@ class _ManageRolesPermissionsPanelState
                                   ? l10n.tenantFacilityStructureDeletedStatus
                                   : (right.status ?? '—'),
                             ),
-                    exportValue: (AccessAdminItem item) => item.isDeleted
-                        ? l10n.tenantFacilityStructureDeletedStatus
-                        : (item.status ?? '—'),
-                    cellBuilder: (_, AccessAdminItem item) => Text(
-                      item.isDeleted
-                          ? l10n.tenantFacilityStructureDeletedStatus
-                          : (item.status ?? '—'),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  AppListTableColumn<AccessAdminItem>(
-                    id: 'details',
-                    label: l10n.accessAdminColumnDetails,
-                    sortComparator:
-                        (AccessAdminItem left, AccessAdminItem right) =>
-                            appListTableCompareText(
-                              left.subtitle,
-                              right.subtitle,
-                            ),
-                    exportValue: (AccessAdminItem item) => item.subtitle ?? '—',
-                    cellBuilder: (_, AccessAdminItem item) => Text(
-                      item.subtitle ?? '—',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
+                        exportValue: (AccessAdminItem item) => item.isDeleted
+                            ? l10n.tenantFacilityStructureDeletedStatus
+                            : (item.status ?? '—'),
+                        cellBuilder: (_, AccessAdminItem item) => Text(
+                          item.isDeleted
+                              ? l10n.tenantFacilityStructureDeletedStatus
+                              : (item.status ?? '—'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      AppListTableColumn<AccessAdminItem>(
+                        id: 'details',
+                        label: l10n.accessAdminColumnDetails,
+                        sortComparator:
+                            (AccessAdminItem left, AccessAdminItem right) =>
+                                appListTableCompareText(
+                                  left.subtitle,
+                                  right.subtitle,
+                                ),
+                        exportValue: (AccessAdminItem item) =>
+                            item.subtitle ?? '—',
+                        cellBuilder: (_, AccessAdminItem item) => Text(
+                          item.subtitle ?? '—',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
             ),
           ),
         ],
@@ -2623,10 +2624,7 @@ class _AccessAdminPermissionDetailDialog extends StatelessWidget {
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          _PermissionDetailSummaryCard(
-            permission: permission,
-            code: code,
-          ),
+          _PermissionDetailSummaryCard(permission: permission, code: code),
           if (description != '—') ...<Widget>[
             SizedBox(height: theme.spacing.md),
             AppCollapsibleSection(
@@ -2740,13 +2738,15 @@ class _PermissionDetailSummaryCard extends StatelessWidget {
               spacing: theme.spacing.md,
               runSpacing: theme.spacing.sm,
               children: <Widget>[
-                _AccessAdminDetailMetaChip(
+                AppPropertyValue(
+                  bordered: true,
                   icon: Icons.tag_outlined,
                   label: l10n.accessAdminPermissionIdColumnLabel,
                   value: permission.effectiveDisplayId,
                 ),
                 if (code != null)
-                  _AccessAdminDetailMetaChip(
+                  AppPropertyValue(
+                    bordered: true,
                     icon: Icons.code_outlined,
                     label: l10n.accessAdminPermissionCodeColumnLabel,
                     value: code!,
@@ -2780,6 +2780,7 @@ class _AccessAdminRoleDetailDialog extends StatefulWidget {
   final AccessAdminRepository repository;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+
   /// Tenant used to load the assignable permission catalog when the role is
   /// platform-scoped (`tenant_id` null) or the create payload lacked tenant.
   final String? catalogTenantId;
@@ -2838,8 +2839,8 @@ class _AccessAdminRoleDetailDialogState
 
   Future<void> _addPermissions() async {
     final AppLocalizations l10n = context.l10n;
-    final String? tenantId =
-        (widget.role.tenantId ?? widget.catalogTenantId)?.trim();
+    final String? tenantId = (widget.role.tenantId ?? widget.catalogTenantId)
+        ?.trim();
     if (tenantId == null || tenantId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.accessAdminTenantContextRequiredBody)),
@@ -2910,10 +2911,9 @@ class _AccessAdminRoleDetailDialogState
               permission.label,
               displayName: permission.displayName,
             ),
-            description:
-                (permission.meta ?? '').trim().isNotEmpty
-                    ? permission.meta
-                    : l10n.permissionCatalogDescriptionForCode(permission.label),
+            description: (permission.meta ?? '').trim().isNotEmpty
+                ? permission.meta
+                : l10n.permissionCatalogDescriptionForCode(permission.label),
           ),
         )
         .toList(growable: false);
@@ -3178,17 +3178,20 @@ class _RoleDetailSummaryCard extends StatelessWidget {
               spacing: theme.spacing.md,
               runSpacing: theme.spacing.sm,
               children: <Widget>[
-                _AccessAdminDetailMetaChip(
+                AppPropertyValue(
+                  bordered: true,
                   icon: Icons.tag_outlined,
                   label: l10n.accessAdminColumnId,
                   value: role.effectiveDisplayId,
                 ),
-                _AccessAdminDetailMetaChip(
+                AppPropertyValue(
+                  bordered: true,
                   icon: Icons.lock_outline,
                   label: l10n.accessAdminRolePermissionsLabel,
                   value: l10n.hrAccessPermissionCountLabel(permissionCount),
                 ),
-                _AccessAdminDetailMetaChip(
+                AppPropertyValue(
+                  bordered: true,
                   icon: Icons.group_outlined,
                   label: l10n.accessAdminRoleDetailUsersLabel,
                   value: '${role.userCount}',
@@ -3372,9 +3375,7 @@ class _RolePermissionsEditorDialogState
           label: l10n.commonCancelActionLabel,
           leadingIcon: Icons.close,
           enabled: !_saving,
-          onPressed: _saving
-              ? null
-              : () => Navigator.of(context).pop(false),
+          onPressed: _saving ? null : () => Navigator.of(context).pop(false),
         ),
         AppButton.primary(
           label: l10n.commonSaveActionLabel,
@@ -3384,61 +3385,6 @@ class _RolePermissionsEditorDialogState
           onPressed: _saving ? null : () => unawaited(_submit()),
         ),
       ],
-    );
-  }
-}
-
-class _AccessAdminDetailMetaChip extends StatelessWidget {
-  const _AccessAdminDetailMetaChip({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.copyable = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final bool copyable;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colors = theme.colorScheme;
-    final AppLocalizations l10n = context.l10n;
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(theme.radius.sm),
-        border: theme.borders.all(),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Icon(icon, size: 16, color: colors.onSurfaceVariant),
-          SizedBox(width: theme.spacing.xs),
-          Text(
-            '$label: ',
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: colors.onSurfaceVariant,
-            ),
-          ),
-          if (copyable)
-            AppCopyableIdentifier(
-              value: value,
-              tooltip: l10n.copyIdentifierAction,
-              copiedMessage: l10n.identifierCopiedMessage,
-              textStyle: theme.textTheme.labelMedium,
-            )
-          else
-            Text(value, style: theme.textTheme.labelMedium),
-        ],
-      ),
     );
   }
 }
@@ -3485,12 +3431,13 @@ class _RoleScopeBadge extends StatelessWidget {
           ? colors.secondaryContainer
           : colors.primaryContainer,
       side: theme.borders.side(
-        color: (isFacility
-                ? colors.tertiary
-                : isPlatform
-                ? colors.secondary
-                : colors.primary)
-            .withValues(alpha: 0.28),
+        color:
+            (isFacility
+                    ? colors.tertiary
+                    : isPlatform
+                    ? colors.secondary
+                    : colors.primary)
+                .withValues(alpha: 0.28),
       ),
       padding: EdgeInsets.symmetric(horizontal: theme.spacing.xs),
     );
@@ -3537,6 +3484,37 @@ class _AccessAdminUserDetailDialogState
   late AccessAdminUserDetail _detail;
   bool _saving = false;
 
+  // Access mutations report inline: a SnackBar raised from inside this modal
+  // renders behind it, so role / permission errors reached nobody.
+  AppFailure? _accessFailure;
+  String? _accessNotice;
+
+  void _clearAccessFeedback() {
+    if (_accessFailure == null && _accessNotice == null) {
+      return;
+    }
+    setState(() {
+      _accessFailure = null;
+      _accessNotice = null;
+    });
+  }
+
+  void _reportAccessFailure(AppFailure failure) {
+    setState(() {
+      _accessFailure = failure;
+      _accessNotice = null;
+      _saving = false;
+    });
+  }
+
+  void _reportAccessNotice(String message) {
+    setState(() {
+      _accessNotice = message;
+      _accessFailure = null;
+      _saving = false;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -3553,10 +3531,7 @@ class _AccessAdminUserDetailDialogState
       Navigator.of(context).pop();
       return;
     }
-    setState(() => _saving = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.failureMessage(failure))),
-    );
+    _reportAccessFailure(failure);
   }
 
   Future<void> _reloadDetail() async {
@@ -3572,15 +3547,12 @@ class _AccessAdminUserDetailDialogState
           _detail = detail;
           _item = detail.item;
           _saving = false;
+          _accessFailure = null;
+          _accessNotice = null;
         });
         widget.onMutated?.call();
       },
-      failure: (AppFailure failure) {
-        setState(() => _saving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.failureMessage(failure))),
-        );
-      },
+      failure: _reportAccessFailure,
     );
   }
 
@@ -3612,12 +3584,11 @@ class _AccessAdminUserDetailDialogState
   }
 
   Future<void> _addRole() async {
+    _clearAccessFeedback();
     final AppLocalizations l10n = context.l10n;
     final String? tenantId = (widget.tenantId ?? _item.tenantId)?.trim();
     if (tenantId == null || tenantId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.accessAdminTenantContextRequiredBody)),
-      );
+      _reportAccessNotice(l10n.accessAdminTenantContextRequiredBody);
       return;
     }
 
@@ -3638,17 +3609,11 @@ class _AccessAdminUserDetailDialogState
     );
     setState(() => _saving = false);
     if (resolved == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            lookupResult.when(
-              success: (_) =>
-                  l10n.accessAdminUserAccessNoAssignableRolesMessage,
-              failure: (AppFailure failure) =>
-                  context.l10n.failureMessage(failure),
-            ),
-          ),
+      lookupResult.when(
+        success: (_) => _reportAccessNotice(
+          l10n.accessAdminUserAccessNoAssignableRolesMessage,
         ),
+        failure: _reportAccessFailure,
       );
       return;
     }
@@ -3668,11 +3633,7 @@ class _AccessAdminUserDetailDialogState
         .toList(growable: false);
 
     if (availableRoles.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.accessAdminUserAccessNoAssignableRolesMessage),
-        ),
-      );
+      _reportAccessNotice(l10n.accessAdminUserAccessNoAssignableRolesMessage);
       return;
     }
 
@@ -3727,10 +3688,7 @@ class _AccessAdminUserDetailDialogState
     }
     if (!mounted) return;
     if (lastFailure != null) {
-      setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.failureMessage(lastFailure))),
-      );
+      _reportAccessFailure(lastFailure);
       return;
     }
     await _reloadDetail();
@@ -3813,12 +3771,11 @@ class _AccessAdminUserDetailDialogState
   }
 
   Future<void> _addDirectPermission() async {
+    _clearAccessFeedback();
     final AppLocalizations l10n = context.l10n;
     final String? tenantId = (widget.tenantId ?? _item.tenantId)?.trim();
     if (tenantId == null || tenantId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.accessAdminTenantContextRequiredBody)),
-      );
+      _reportAccessNotice(l10n.accessAdminTenantContextRequiredBody);
       return;
     }
 
@@ -3837,17 +3794,11 @@ class _AccessAdminUserDetailDialogState
     );
     setState(() => _saving = false);
     if (resolved == null || resolved.permissions.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            lookupResult.when(
-              success: (_) =>
-                  l10n.accessAdminPermissionCatalogUnavailableMessage,
-              failure: (AppFailure failure) =>
-                  context.l10n.failureMessage(failure),
-            ),
-          ),
+      lookupResult.when(
+        success: (_) => _reportAccessNotice(
+          l10n.accessAdminPermissionCatalogUnavailableMessage,
         ),
+        failure: _reportAccessFailure,
       );
       return;
     }
@@ -3865,10 +3816,9 @@ class _AccessAdminUserDetailDialogState
               permission.label,
               displayName: permission.displayName,
             ),
-            description:
-                (permission.meta ?? '').trim().isNotEmpty
-                    ? permission.meta
-                    : l10n.permissionCatalogDescriptionForCode(permission.label),
+            description: (permission.meta ?? '').trim().isNotEmpty
+                ? permission.meta
+                : l10n.permissionCatalogDescriptionForCode(permission.label),
           ),
         )
         .toList(growable: false);
@@ -3940,10 +3890,7 @@ class _AccessAdminUserDetailDialogState
       failure: (AppFailure value) => value,
     );
     if (failure != null) {
-      setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.failureMessage(failure))),
-      );
+      _reportAccessFailure(failure);
       return;
     }
     await _reloadDetail();
@@ -3972,10 +3919,7 @@ class _AccessAdminUserDetailDialogState
       failure: (AppFailure value) => value,
     );
     if (failure != null) {
-      setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.failureMessage(failure))),
-      );
+      _reportAccessFailure(failure);
       return;
     }
     await _reloadDetail();
@@ -3992,9 +3936,10 @@ class _AccessAdminUserDetailDialogState
       context: context,
       builder: (BuildContext dialogContext) => AppConfirmActionDialog(
         title: l10n.accessAdminUserAccessRemoveAllDirectPermissionsConfirmTitle,
-        body: l10n.accessAdminUserAccessRemoveAllDirectPermissionsConfirmMessage(
-          count,
-        ),
+        body: l10n
+            .accessAdminUserAccessRemoveAllDirectPermissionsConfirmMessage(
+              count,
+            ),
         submitLabel: l10n.accessAdminUserAccessRemoveAllDirectPermissionsAction,
         destructive: true,
         icon: const Icon(Icons.delete_sweep_outlined),
@@ -4042,6 +3987,19 @@ class _AccessAdminUserDetailDialogState
             titleIcon: Icons.badge_outlined,
             child: _UserDetailAccountFields(item: item),
           ),
+          if (_accessFailure != null) ...<Widget>[
+            SizedBox(height: theme.spacing.md),
+            AppFormInformationBanner.failure(
+              context: context,
+              failure: _accessFailure!,
+            ),
+          ] else if (_accessNotice != null) ...<Widget>[
+            SizedBox(height: theme.spacing.md),
+            AppFormInformationBanner.message(
+              message: _accessNotice!,
+              variant: AppFormInformationVariant.warning,
+            ),
+          ],
           SizedBox(height: theme.spacing.md),
           AppUserAccessPanel(
             roleGroups: _roleGroups,

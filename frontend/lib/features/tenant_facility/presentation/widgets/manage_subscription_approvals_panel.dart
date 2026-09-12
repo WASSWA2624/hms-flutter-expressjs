@@ -608,17 +608,26 @@ class _SubscriptionApprovalDetailDialog extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                _DetailRow(
+                AppPropertyValue(
                   label: l10n.authAdminNameLabel,
                   value: item.title,
+                  expand: true,
+                  emptyValue: '—',
+                  padding: EdgeInsets.only(bottom: theme.spacing.sm),
                 ),
-                _DetailRow(
+                AppPropertyValue(
                   label: l10n.accessAdminEmailLabel,
                   value: item.email,
+                  expand: true,
+                  emptyValue: '—',
+                  padding: EdgeInsets.only(bottom: theme.spacing.sm),
                 ),
-                _DetailRow(
+                AppPropertyValue(
                   label: l10n.accessAdminPhoneLabel,
                   value: item.phone,
+                  expand: true,
+                  emptyValue: '—',
+                  padding: EdgeInsets.only(bottom: theme.spacing.sm),
                 ),
               ],
             ),
@@ -632,21 +641,33 @@ class _SubscriptionApprovalDetailDialog extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                _DetailRow(
+                AppPropertyValue(
                   label: l10n.tenantFacilitySubscriptionApprovalsFacilityColumn,
                   value: item.facilityName ?? item.subtitle,
+                  expand: true,
+                  emptyValue: '—',
+                  padding: EdgeInsets.only(bottom: theme.spacing.sm),
                 ),
-                _DetailRow(
+                AppPropertyValue(
                   label: l10n.tenantFacilitySetupTabTenant,
                   value: item.tenantName,
+                  expand: true,
+                  emptyValue: '—',
+                  padding: EdgeInsets.only(bottom: theme.spacing.sm),
                 ),
-                _DetailRow(
+                AppPropertyValue(
                   label: l10n.accessAdminColumnId,
                   value: item.effectiveDisplayId,
+                  expand: true,
+                  emptyValue: '—',
+                  padding: EdgeInsets.only(bottom: theme.spacing.sm),
                 ),
-                _DetailRow(
+                AppPropertyValue(
                   label: l10n.accessAdminColumnStatus,
                   value: item.status,
+                  expand: true,
+                  emptyValue: '—',
+                  padding: EdgeInsets.only(bottom: theme.spacing.sm),
                 ),
               ],
             ),
@@ -728,38 +749,3 @@ class _SubscriptionApprovalDetailDialog extends StatelessWidget {
   }
 }
 
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.label, required this.value});
-
-  final String label;
-  final String? value;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final String display = (value ?? '').trim();
-    return Padding(
-      padding: EdgeInsets.only(bottom: theme.spacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          Expanded(
-            child: SelectableText(
-              display.isEmpty ? '—' : display,
-              style: theme.textTheme.bodyMedium,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

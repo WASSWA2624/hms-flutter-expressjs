@@ -11,6 +11,7 @@ import 'package:hosspi_hms/shared/components/app_collapsible_section.dart';
 import 'package:hosspi_hms/shared/components/app_copyable_identifier.dart';
 import 'package:hosspi_hms/shared/components/app_dialog.dart';
 import 'package:hosspi_hms/shared/components/app_list_table_text_policy.dart';
+import 'package:hosspi_hms/shared/components/app_property_value.dart';
 import 'package:hosspi_hms/shared/components/app_state_view.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace_toolbar.dart';
 import 'package:hosspi_hms/shared/layout/responsive_page.dart';
@@ -1414,77 +1415,24 @@ class _PatientContextInlineFact extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final _WorkspaceToneColors colors = _toneColors(theme, field.tone);
-    final Color accentColor = field.tone == AppWorkspaceStatusTone.neutral
-        ? colorScheme.primary
-        : colors.on;
-    final TextStyle? labelStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: colorScheme.onSurfaceVariant,
-      fontWeight: AppFontWeight.emphasis,
-    );
-    final TextStyle? valueStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: field.tone == AppWorkspaceStatusTone.neutral
-          ? colorScheme.onSurface
-          : accentColor,
-      fontWeight: AppFontWeight.regular,
-    );
+    final bool neutral = field.tone == AppWorkspaceStatusTone.neutral;
+    final Color accentColor = neutral
+        ? theme.colorScheme.primary
+        : _toneColors(theme, field.tone).on;
 
-    final Widget value = field.copyable
-        ? AppCopyableIdentifier(
-            value: field.value,
-            tooltip: field.copyTooltip,
-            copiedMessage: field.copiedMessage,
-            semanticLabel: field.copySemanticLabel,
-            showCopyIcon: field.showCopyIcon,
-            placeholderValues: field.copyPlaceholderValues,
-            textStyle: valueStyle,
-          )
-        : Text(
-            field.value,
-            maxLines: expand ? null : 1,
-            softWrap: expand,
-            overflow: expand ? TextOverflow.visible : TextOverflow.ellipsis,
-            style: valueStyle,
-          );
-
-    return Semantics(
-      label: '${field.label}: ${field.value}',
-      child: Row(
-        mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
-        children: <Widget>[
-          if (field.icon != null) ...<Widget>[
-            Icon(
-              field.icon,
-              size: theme.appTokens.listIconSize,
-              color: accentColor,
-            ),
-            SizedBox(width: theme.spacing.sm / 2),
-          ],
-          if (expand)
-            Expanded(
-              child: Text.rich(
-                TextSpan(
-                  children: <InlineSpan>[
-                    TextSpan(text: '${field.label}: ', style: labelStyle),
-                    if (field.copyable)
-                      WidgetSpan(
-                        alignment: PlaceholderAlignment.middle,
-                        child: value,
-                      )
-                    else
-                      TextSpan(text: field.value, style: valueStyle),
-                  ],
-                ),
-                softWrap: true,
-              ),
-            )
-          else ...<Widget>[
-            Text('${field.label}: ', style: labelStyle),
-            value,
-          ],
-        ],
-      ),
+    return AppPropertyValue(
+      label: field.label,
+      value: field.value,
+      icon: field.icon,
+      iconColor: accentColor,
+      valueColor: neutral ? null : accentColor,
+      expand: expand,
+      copyable: field.copyable,
+      copyTooltip: field.copyTooltip,
+      copiedMessage: field.copiedMessage,
+      copySemanticLabel: field.copySemanticLabel,
+      showCopyIcon: field.showCopyIcon,
+      copyPlaceholderValues: field.copyPlaceholderValues,
     );
   }
 }

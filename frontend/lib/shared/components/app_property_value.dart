@@ -85,6 +85,7 @@ class AppPropertyValue extends StatelessWidget {
     this.copyPlaceholderValues = const <String>{},
     this.onTap,
     this.semanticsLabel,
+    this.padding,
     super.key,
   });
 
@@ -134,6 +135,9 @@ class AppPropertyValue extends StatelessWidget {
 
   /// Overrides the default `Property name: value` semantics label.
   final String? semanticsLabel;
+
+  /// Outer padding — mainly for the gap between pairs in a detail stack.
+  final EdgeInsetsGeometry? padding;
 
   @override
   Widget build(BuildContext context) {
@@ -215,9 +219,13 @@ class AppPropertyValue extends StatelessWidget {
       );
     }
 
+    if (padding != null) {
+      content = Padding(padding: padding!, child: content);
+    }
+
     return Semantics(
       label: semanticsLabel ?? '$label: $displayValue',
-      child: ExcludeSemantics(child: content),
+      child: content,
     );
   }
 
@@ -334,7 +342,8 @@ class AppPropertyValueList extends StatelessWidget {
     }
 
     final bool vertical = direction == AppPropertyValueListDirection.vertical;
-    final double gap = spacing ?? (vertical ? theme.spacing.sm : theme.spacing.lg);
+    final double gap =
+        spacing ?? (vertical ? theme.spacing.sm : theme.spacing.lg);
     final double rowGap = runSpacing ?? theme.spacing.sm;
 
     final List<Widget> pairs = <Widget>[

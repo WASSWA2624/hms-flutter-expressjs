@@ -1129,15 +1129,19 @@ Future<void> showHrAccessPermissionDetailDialog(
         content: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            _HrAccessDetailRow(
+            AppPropertyValue(
               label: l10n.hrAccessPermissionDescriptionLabel,
               value: (permission.description ?? '').trim().isNotEmpty
                   ? permission.description!
                   : '—',
+              expand: true,
+              padding: const EdgeInsets.only(bottom: 8),
             ),
-            _HrAccessDetailRow(
+            AppPropertyValue(
               label: l10n.hrAccessPanelRoles,
               value: l10n.hrAccessPermissionRoleCount(permission.roleCount),
+              expand: true,
+              padding: const EdgeInsets.only(bottom: 8),
             ),
           ],
         ),
@@ -1184,29 +1188,39 @@ Future<void> showHrAccessRoleDetailDialog(
                   visualDensity: VisualDensity.compact,
                 ),
               ),
-            _HrAccessDetailRow(
+            AppPropertyValue(
               label: l10n.hrAccessRoleNameLabel,
               value: (role.name ?? '').trim().isNotEmpty ? role.name! : '—',
+              expand: true,
+              padding: const EdgeInsets.only(bottom: 8),
             ),
-            _HrAccessDetailRow(
+            AppPropertyValue(
               label: l10n.hrAccessRoleDisplayNameLabel,
               value: (role.displayName ?? '').trim().isNotEmpty
                   ? role.displayName!
                   : '—',
+              expand: true,
+              padding: const EdgeInsets.only(bottom: 8),
             ),
-            _HrAccessDetailRow(
+            AppPropertyValue(
               label: l10n.hrAccessRoleDescriptionLabel,
               value: (role.description ?? '').trim().isNotEmpty
                   ? role.description!
                   : '—',
+              expand: true,
+              padding: const EdgeInsets.only(bottom: 8),
             ),
-            _HrAccessDetailRow(
+            AppPropertyValue(
               label: l10n.hrAccessPanelPermissions,
               value: l10n.hrAccessPermissionCountLabel(role.permissionCount),
+              expand: true,
+              padding: const EdgeInsets.only(bottom: 8),
             ),
-            _HrAccessDetailRow(
+            AppPropertyValue(
               label: l10n.hrStaffColumnLabel,
               value: l10n.hrAccessStaffAssignmentCountLabel(role.userCount),
+              expand: true,
+              padding: const EdgeInsets.only(bottom: 8),
             ),
           ],
         ),
@@ -1614,30 +1628,6 @@ class _HrAccessUserDetailContent extends StatelessWidget {
           onRemoveDirectPermission: onRemoveDirectPermission,
         ),
       ],
-    );
-  }
-}
-
-class _HrAccessDetailRow extends StatelessWidget {
-  const _HrAccessDetailRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          SizedBox(
-            width: 160,
-            child: Text(label, style: Theme.of(context).textTheme.labelLarge),
-          ),
-          Expanded(child: Text(value)),
-        ],
-      ),
     );
   }
 }

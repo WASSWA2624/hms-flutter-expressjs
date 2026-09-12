@@ -1503,30 +1503,12 @@ class _PreviewKeyValueList extends StatelessWidget {
       );
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
+    return AppPropertyValueList(
+      direction: AppPropertyValueListDirection.vertical,
+      spacing: theme.spacing.sm,
+      items: <AppPropertyValueData>[
         for (final _PreviewRow row in visibleRows)
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                SizedBox(
-                  width: 118,
-                  child: Text(
-                    row.label,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      fontWeight: AppFontWeight.emphasis,
-                    ),
-                  ),
-                ),
-                SizedBox(width: theme.spacing.sm),
-                Expanded(child: Text(row.value!)),
-              ],
-            ),
-          ),
+          AppPropertyValueData(label: row.label, value: row.value),
       ],
     );
   }

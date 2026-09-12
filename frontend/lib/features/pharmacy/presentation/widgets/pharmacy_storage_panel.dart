@@ -935,37 +935,37 @@ class _StorageRoomDetailsDialogState
       };
     }).toList(growable: false);
 
-    final List<_StorageDetailMetaItem> metaItems = <_StorageDetailMetaItem>[
-      _StorageDetailMetaItem(
+    final List<AppPropertyValueData> metaItems = <AppPropertyValueData>[
+      AppPropertyValueData(
         icon: Icons.warehouse_outlined,
         label: l10n.pharmacyStorageRoomNameLabel,
         value: roomName,
       ),
-      _StorageDetailMetaItem(
+      AppPropertyValueData(
         icon: Icons.qr_code_2_outlined,
         label: l10n.pharmacyStorageRoomCodeLabel,
         value: codeValue,
         copyable: (current.code ?? '').trim().isNotEmpty,
       ),
-      _StorageDetailMetaItem(
+      AppPropertyValueData(
         icon: Icons.flag_outlined,
         label: l10n.pharmacyStorageStatusColumnLabel,
         value: statusLabel,
       ),
-      _StorageDetailMetaItem(
+      AppPropertyValueData(
         icon: Icons.inventory_2_outlined,
         label: l10n.pharmacyStorageShelvesCountColumnLabel,
         value: '${allShelves.length}',
       ),
       if (displayId != null)
-        _StorageDetailMetaItem(
+        AppPropertyValueData(
           icon: Icons.badge_outlined,
           label: l10n.accessAdminColumnDetails,
           value: displayId,
           copyable: true,
         ),
       if (current.createdAt != null)
-        _StorageDetailMetaItem(
+        AppPropertyValueData(
           icon: Icons.event_outlined,
           label: l10n.pharmacyStorageCreatedAtColumnLabel,
           value: AppFormatters.dateTime(
@@ -987,7 +987,7 @@ class _StorageRoomDetailsDialogState
             title: l10n.pharmacyStorageRoomLabel,
             titleIcon: Icons.info_outline,
             contentPadding: EdgeInsets.all(theme.spacing.md),
-            child: _StorageDetailMetaWrap(items: metaItems),
+            child: AppPropertyValueList(items: metaItems),
           ),
           SizedBox(height: theme.spacing.md),
           SizedBox(
@@ -1283,86 +1283,6 @@ class _StorageRoomDetailsDialogState
             );
           },
         ),
-      ],
-    );
-  }
-}
-
-final class _StorageDetailMetaItem {
-  const _StorageDetailMetaItem({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.copyable = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final bool copyable;
-}
-
-class _StorageDetailMetaWrap extends StatelessWidget {
-  const _StorageDetailMetaWrap({required this.items});
-
-  final List<_StorageDetailMetaItem> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Wrap(
-      spacing: theme.spacing.lg,
-      runSpacing: theme.spacing.sm,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: <Widget>[
-        for (final _StorageDetailMetaItem item in items)
-          _StorageDetailMetaRow(item: item),
-      ],
-    );
-  }
-}
-
-class _StorageDetailMetaRow extends StatelessWidget {
-  const _StorageDetailMetaRow({required this.item});
-
-  final _StorageDetailMetaItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final TextStyle? labelStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: colorScheme.onSurfaceVariant,
-      fontWeight: AppFontWeight.emphasis,
-    );
-    final TextStyle? valueStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: colorScheme.onSurface,
-      fontWeight: AppFontWeight.emphasis,
-    );
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Icon(
-          item.icon,
-          size: theme.appTokens.listIconSize,
-          color: colorScheme.primary,
-        ),
-        SizedBox(width: theme.spacing.xs),
-        Text('${item.label}: ', style: labelStyle),
-        if (item.copyable)
-          AppCopyableIdentifier(
-            value: item.value,
-            textStyle: valueStyle,
-          )
-        else
-          Text(
-            item.value,
-            style: valueStyle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.start,
-          ),
       ],
     );
   }
@@ -1738,31 +1658,31 @@ class _StorageShelfDetailsDialog extends ConsumerWidget {
         ? null
         : current.displayId!.trim();
 
-    final List<_StorageDetailMetaItem> metaItems = <_StorageDetailMetaItem>[
-      _StorageDetailMetaItem(
+    final List<AppPropertyValueData> metaItems = <AppPropertyValueData>[
+      AppPropertyValueData(
         icon: Icons.qr_code_2_outlined,
         label: l10n.pharmacyStorageShelfCodeLabel,
         value: codeValue,
         copyable: (current.shelfCode ?? '').trim().isNotEmpty,
       ),
-      _StorageDetailMetaItem(
+      AppPropertyValueData(
         icon: Icons.label_outline,
         label: l10n.pharmacyStorageShelfLabelField,
         value: shelfLabel,
         copyable: (current.label ?? '').trim().isNotEmpty,
       ),
-      _StorageDetailMetaItem(
+      AppPropertyValueData(
         icon: Icons.warehouse_outlined,
         label: l10n.pharmacyStorageRoomLabel,
         value: roomName,
       ),
-      _StorageDetailMetaItem(
+      AppPropertyValueData(
         icon: Icons.flag_outlined,
         label: l10n.pharmacyStorageStatusColumnLabel,
         value: statusLabel,
       ),
       if (displayId != null)
-        _StorageDetailMetaItem(
+        AppPropertyValueData(
           icon: Icons.badge_outlined,
           label: l10n.accessAdminColumnDetails,
           value: displayId,
@@ -1782,7 +1702,7 @@ class _StorageShelfDetailsDialog extends ConsumerWidget {
             title: l10n.pharmacyStorageShelfLabel,
             titleIcon: Icons.info_outline,
             contentPadding: EdgeInsets.all(theme.spacing.md),
-            child: _StorageDetailMetaWrap(items: metaItems),
+            child: AppPropertyValueList(items: metaItems),
           ),
         ],
       ),

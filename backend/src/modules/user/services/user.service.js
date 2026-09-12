@@ -69,6 +69,31 @@ const stripSimilarityPayloadFields = (data = {}) => {
   return payload;
 };
 
+/**
+ * Fields the duplicate-identity review compares.
+ */
+const USER_IDENTITY_FIELDS = Object.freeze([
+  'email',
+  'phone',
+  'first_name',
+  'last_name',
+  'position_title',
+  'tenant_id',
+  'facility_id',
+]);
+
+/**
+ * Only an update that touches identity needs the similarity review.
+ *
+ * Side-channel updates (direct permissions, status) carry no identity fields
+ * and must not be rejected because some other account in the tenant looks
+ * similar — they never send confirm_similar, so the review could never clear.
+ */
+const touchesUserIdentity = (data = {}) =>
+  USER_IDENTITY_FIELDS.some((field) =>
+    Object.prototype.hasOwnProperty.call(data, field)
+  );
+
 const resolveUserId = async (identifier, { includeDeleted = false } = {}) => {
   const normalized = String(identifier ?? '').trim();
   if (!normalized) return normalized;
@@ -641,19 +666,22 @@ const updateUser = async (id, data, userId, ipAddress, actor = {}) => {
       true,
       actor
     );
-    await assertUserUniqueness({
-      tenantId: normalizedPayload.tenant_id ?? before.tenant_id,
-      email: normalizedPayload.email ?? before.email,
-      phone: normalizedPayload.phone ?? before.phone,
-      positionTitle: normalizedPayload.position_title ?? before.position_title,
-      firstName:
-        normalizedPayload.profile?.first_name ?? before.profile?.first_name,
-      middleName:
-        normalizedPayload.profile?.middle_name ?? before.profile?.middle_name,
-      lastName: normalizedPayload.profile?.last_name ?? before.profile?.last_name,
-      facilityId: normalizedPayload.facility_id ?? before.facility_id,
-      confirmSimilar,
-      excludeUserId: resolvedUserId});
+    if (touchesUserIdentity(strippedData)) {
+      await assertUserUniqueness({
+        tenantId: normalizedPayload.tenant_id ?? before.tenant_id,
+        email: normalizedPayload.email ?? before.email,
+        phone: normalizedPayload.phone ?? before.phone,
+        positionTitle: normalizedPayload.position_title ?? before.position_title,
+        firstName:
+          normalizedPayload.profile?.first_name ?? before.profile?.first_name,
+        middleName:
+          normalizedPayload.profile?.middle_name ?? before.profile?.middle_name,
+        lastName:
+          normalizedPayload.profile?.last_name ?? before.profile?.last_name,
+        facilityId: normalizedPayload.facility_id ?? before.facility_id,
+        confirmSimilar,
+        excludeUserId: resolvedUserId});
+    }
     const user = await userRepository.update(resolvedUserId, normalizedPayload);
 
     // Create audit log (non-blocking)

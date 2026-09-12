@@ -46,6 +46,7 @@ export 'app_permission_async_action.dart';
 export 'app_permission_assignment_picker.dart';
 export 'app_permission_grouped_view.dart';
 export 'app_phone_field.dart';
+export 'app_property_value.dart';
 export 'app_radio_group.dart';
 export 'app_record_section.dart';
 export 'app_record_vitals_dialog.dart';

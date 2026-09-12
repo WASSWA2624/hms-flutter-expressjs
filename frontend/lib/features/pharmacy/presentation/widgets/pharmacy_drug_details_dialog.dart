@@ -112,85 +112,85 @@ class _PharmacyDrugDetailsDialogState
       current.stockStatus,
     );
 
-    final List<_DrugDetailMetaItem> metaItems = <_DrugDetailMetaItem>[
-      _DrugDetailMetaItem(
+    final List<AppPropertyValueData> metaItems = <AppPropertyValueData>[
+      AppPropertyValueData(
         icon: Icons.sell_outlined,
         label: l10n.pharmacyDrugBrandNameLabel,
         value: brand,
       ),
-      _DrugDetailMetaItem(
+      AppPropertyValueData(
         icon: Icons.medication_outlined,
         label: l10n.pharmacyDrugGenericNameLabel,
         value: generic,
       ),
-      _DrugDetailMetaItem(
+      AppPropertyValueData(
         icon: Icons.qr_code_2_outlined,
         label: l10n.pharmacyDrugCodeLabel,
         value: code,
         copyable: (current.code ?? '').trim().isNotEmpty,
       ),
-      _DrugDetailMetaItem(
+      AppPropertyValueData(
         icon: Icons.science_outlined,
         label: l10n.pharmacyDrugFormLabel,
         value: displayOrEmpty(current.form),
       ),
-      _DrugDetailMetaItem(
+      AppPropertyValueData(
         icon: Icons.straighten_outlined,
         label: l10n.pharmacyDrugStrengthLabel,
         value: displayOrEmpty(current.strength),
       ),
-      _DrugDetailMetaItem(
+      AppPropertyValueData(
         icon: Icons.shopping_cart_outlined,
         label: l10n.pharmacyBuyPriceLabel,
         value: _drugDetailsPriceText(current.buyUnitPrice),
       ),
       if ((current.supplierName ?? '').trim().isNotEmpty)
-        _DrugDetailMetaItem(
+        AppPropertyValueData(
           icon: Icons.local_shipping_outlined,
           label: l10n.pharmacyDrugSupplierLabel,
           value: current.supplierName!.trim(),
         ),
-      _DrugDetailMetaItem(
+      AppPropertyValueData(
         icon: Icons.payments_outlined,
         label: l10n.pharmacyPharmacyPriceLabel,
         value: _drugDetailsPriceText(
           current.pharmacyUnitPrice ?? current.unitPrice,
         ),
       ),
-      _DrugDetailMetaItem(
+      AppPropertyValueData(
         icon: Icons.swap_horiz_outlined,
         label: l10n.pharmacyTransferPriceLabel,
         value: _drugDetailsPriceText(current.transferUnitPrice),
       ),
-      _DrugDetailMetaItem(
+      AppPropertyValueData(
         icon: Icons.account_balance_outlined,
         label: l10n.pharmacyFacilityPriceLabel,
         value: _drugDetailsPriceText(current.facilityUnitPrice),
       ),
-      _DrugDetailMetaItem(
+      AppPropertyValueData(
         icon: Icons.warehouse_outlined,
         label: l10n.pharmacyStorageLocationColumnLabel,
         value: displayOrEmpty(current.storageLocationLabel),
       ),
-      _DrugDetailMetaItem(
+      AppPropertyValueData(
         icon: Icons.low_priority_outlined,
         label: l10n.pharmacyReorderLevelColumnLabel,
         value: reorderLevel.toString(),
       ),
-      _DrugDetailMetaItem(
+      AppPropertyValueData(
         icon: Icons.flag_outlined,
         label: l10n.pharmacyStockStatusColumnLabel,
         value: stockStatus.label,
       ),
       if (displayId != null)
-        _DrugDetailMetaItem(
+        AppPropertyValueData(
           icon: Icons.badge_outlined,
           label: l10n.accessAdminColumnDetails,
           value: displayId,
           copyable: true,
         ),
       if (current.createdAt != null)
-        _DrugDetailMetaItem(
+        AppPropertyValueData(
           icon: Icons.event_outlined,
           label: l10n.pharmacyStorageCreatedAtColumnLabel,
           value: AppFormatters.dateTime(
@@ -212,7 +212,7 @@ class _PharmacyDrugDetailsDialogState
             title: l10n.pharmacyDrugDetailsSectionTitle,
             titleIcon: Icons.info_outline,
             contentPadding: EdgeInsets.all(theme.spacing.md),
-            child: _DrugDetailMetaWrap(items: metaItems),
+            child: AppPropertyValueList(items: metaItems),
           ),
         ],
       ),
@@ -272,83 +272,6 @@ class _PharmacyDrugDetailsDialogState
             );
           },
         ),
-      ],
-    );
-  }
-}
-
-final class _DrugDetailMetaItem {
-  const _DrugDetailMetaItem({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.copyable = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final bool copyable;
-}
-
-class _DrugDetailMetaWrap extends StatelessWidget {
-  const _DrugDetailMetaWrap({required this.items});
-
-  final List<_DrugDetailMetaItem> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Wrap(
-      spacing: theme.spacing.lg,
-      runSpacing: theme.spacing.sm,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: <Widget>[
-        for (final _DrugDetailMetaItem item in items)
-          _DrugDetailMetaRow(item: item),
-      ],
-    );
-  }
-}
-
-class _DrugDetailMetaRow extends StatelessWidget {
-  const _DrugDetailMetaRow({required this.item});
-
-  final _DrugDetailMetaItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final TextStyle? labelStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: colorScheme.onSurfaceVariant,
-      fontWeight: AppFontWeight.emphasis,
-    );
-    final TextStyle? valueStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: colorScheme.onSurface,
-      fontWeight: AppFontWeight.emphasis,
-    );
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Icon(
-          item.icon,
-          size: theme.appTokens.listIconSize,
-          color: colorScheme.primary,
-        ),
-        SizedBox(width: theme.spacing.xs),
-        Text('${item.label}: ', style: labelStyle),
-        if (item.copyable)
-          AppCopyableIdentifier(value: item.value, textStyle: valueStyle)
-        else
-          Text(
-            item.value,
-            style: valueStyle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.start,
-          ),
       ],
     );
   }

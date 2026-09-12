@@ -1377,26 +1377,26 @@ class _OverviewPanel extends StatelessWidget {
     final TherapyWorkItem item = detail.item;
     return AppCollapsibleSection(
       title: l10n.physiotherapyReferralPanelTitle,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          _InfoRow(
+      child: AppPropertyValueList(
+        direction: AppPropertyValueListDirection.vertical,
+        items: <AppPropertyValueData>[
+          AppPropertyValueData(
             label: l10n.physiotherapySourceLabel,
             value: _sourceLabel(l10n, item.source),
           ),
-          _InfoRow(
+          AppPropertyValueData(
             label: l10n.physiotherapyAttendanceLabel,
             value: _attendanceLabel(l10n, item.attendanceStatus),
           ),
-          _InfoRow(
+          AppPropertyValueData(
             label: l10n.physiotherapyPlanLabel,
             value: _value(item.plan, l10n),
           ),
-          _InfoRow(
+          AppPropertyValueData(
             label: l10n.physiotherapyGoalLabel,
             value: _value(item.goals, l10n),
           ),
-          _InfoRow(
+          AppPropertyValueData(
             label: l10n.physiotherapyInstructionsLabel,
             value: _value(item.instructions, l10n),
           ),
@@ -1477,37 +1477,6 @@ class _UnavailableWorkflowsPanel extends StatelessWidget {
                 ],
               ),
             ),
-        ],
-      ),
-    );
-  }
-}
-
-class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.only(bottom: theme.spacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          SizedBox(
-            width: 128,
-            child: Text(
-              label,
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(child: Text(value)),
         ],
       ),
     );

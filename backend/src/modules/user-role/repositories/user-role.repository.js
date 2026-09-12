@@ -9,6 +9,7 @@
 
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
+const { runWithoutTenantGuard } = require('../../../prisma/tenant-guard');
 
 const userRoleRelations = {
   user: {
@@ -165,7 +166,11 @@ const create = async (data) => {
     user_id: data.user_id,
     role_id: data.role_id,
     tenant_id: data.tenant_id,
-    facility_id: data.facility_id ?? null};
+    facility_id: data.facility_id ?? null,
+    // Mentioning deleted_at stops the tenant guard forcing active-only rows.
+    // A revoked assignment must be found and restored: the unique key
+    // (user, role, tenant, facility) rejects a second row for the same pair.
+    OR: [{ deleted_at: null }, { deleted_at: { not: null } }]};
 
   const restoreOrReturnExisting = async () => {
     const existing = await prisma.user_role.findFirst({
@@ -177,11 +182,16 @@ const create = async (data) => {
     if (existing.deleted_at == null) {
       return findById(existing.id);
     }
-    await prisma.user_role.update({
-      where: { id: existing.id },
-      data: {
-        deleted_at: null,
-        version: { increment: 1 }}});
+    // Writes are active-only under the guard, so the restore itself bypasses
+    // it. The lookup above stays guarded, so only rows inside the actor scope
+    // ever reach here.
+    await runWithoutTenantGuard(() =>
+      prisma.user_role.update({
+        where: { id: existing.id },
+        data: {
+          deleted_at: null,
+          version: { increment: 1 }}})
+    );
     return findById(existing.id);
   };
 

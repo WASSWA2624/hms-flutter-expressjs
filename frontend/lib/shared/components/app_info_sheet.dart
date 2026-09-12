@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/shared/components/app_copyable_identifier.dart';
+import 'package:hosspi_hms/shared/components/app_property_value.dart';
 
 /// How [AppInfoSheetRow] presents a field label relative to its value.
 enum AppInfoSheetLayout {
@@ -93,12 +94,19 @@ class AppInfoSheetRow extends StatelessWidget {
           );
 
     final Widget body = layout == AppInfoSheetLayout.inline
-        ? Wrap(
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: <Widget>[
-              Text('$label: ', style: labelStyle),
-              valueWidget,
-            ],
+        ? AppPropertyValue(
+            label: label,
+            value: value,
+            labelStyle: labelStyle,
+            valueStyle: valueStyle,
+            maxLines: maxLines,
+            expand: true,
+            copyable: copyable,
+            copyTooltip: copyTooltip,
+            copiedMessage: copiedMessage,
+            copySemanticLabel: copySemanticLabel,
+            showCopyIcon: showCopyIcon,
+            copyPlaceholderValues: copyPlaceholderValues,
           )
         : Column(
             crossAxisAlignment: CrossAxisAlignment.start,

@@ -174,6 +174,8 @@ describe('User-Role Repository', () => {
 
       expect(prisma.user_role.create).toHaveBeenCalledWith({
         data: created});
+      // The deleted_at mention keeps the tenant guard from hiding a revoked
+      // assignment, which the unique key would then refuse to recreate.
       expect(prisma.user_role.findFirst).toHaveBeenNthCalledWith(
         1,
         expect.objectContaining({
@@ -181,7 +183,8 @@ describe('User-Role Repository', () => {
             user_id: 'user-123',
             role_id: 'role-123',
             tenant_id: 'tenant-123',
-            facility_id: 'facility-123'}})
+            facility_id: 'facility-123',
+            OR: [{ deleted_at: null }, { deleted_at: { not: null } }]}})
       );
       expect(prisma.user_role.findFirst).toHaveBeenNthCalledWith(
         2,

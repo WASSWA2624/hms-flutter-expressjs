@@ -876,32 +876,42 @@ class _DetailContent extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        _DetailRow(
+        AppPropertyValue(
           label: isPermission
               ? l10n.accessAdminPermissionIdColumnLabel
               : l10n.accessAdminColumnId,
           value: item.effectiveDisplayId,
+          expand: true,
+          padding: EdgeInsets.only(bottom: theme.spacing.sm),
         ),
         if (isRole) ...<Widget>[
-          _DetailRow(
+          AppPropertyValue(
             label: l10n.accessAdminColumnScope,
             value: accessAdminRoleScopeLabel(context, item),
+            expand: true,
+            padding: EdgeInsets.only(bottom: theme.spacing.sm),
           ),
-          _DetailRow(
+          AppPropertyValue(
             label: l10n.accessAdminRoleDescriptionLabel,
             value: (item.subtitle ?? '').trim().isEmpty
                 ? '—'
                 : item.subtitle!.trim(),
+            expand: true,
+            padding: EdgeInsets.only(bottom: theme.spacing.sm),
           ),
-          _DetailRow(
+          AppPropertyValue(
             label: l10n.accessAdminRolePermissionsLabel,
             value: l10n.hrAccessPermissionCountLabel(
               rolePermissionOptions.length,
             ),
+            expand: true,
+            padding: EdgeInsets.only(bottom: theme.spacing.sm),
           ),
-          _DetailRow(
+          AppPropertyValue(
             label: l10n.accessAdminRoleDetailUsersLabel,
             value: '${item.userCount}',
+            expand: true,
+            padding: EdgeInsets.only(bottom: theme.spacing.sm),
           ),
           SizedBox(height: theme.spacing.md),
           AppCollapsibleSection(
@@ -913,62 +923,100 @@ class _DetailContent extends ConsumerWidget {
             ),
           ),
         ] else if (isPermission) ...<Widget>[
-          _DetailRow(
+          AppPropertyValue(
             label: l10n.accessAdminPermissionNameColumnLabel,
             value: item.title,
+            expand: true,
+            padding: EdgeInsets.only(bottom: theme.spacing.sm),
           ),
           if (permissionCode != null)
-            _DetailRow(
+            AppPropertyValue(
               label: l10n.accessAdminPermissionCodeColumnLabel,
               value: permissionCode,
+              expand: true,
+              padding: EdgeInsets.only(bottom: theme.spacing.sm),
             ),
           if (permissionDescription != null && permissionDescription != '—')
-            _DetailRow(
+            AppPropertyValue(
               label: l10n.accessAdminPermissionDescriptionColumnLabel,
               value: permissionDescription,
+              expand: true,
+              padding: EdgeInsets.only(bottom: theme.spacing.sm),
             ),
         ] else if (isEntitlement) ...<Widget>[
           if (item.moduleGroup != null)
-            _DetailRow(
+            AppPropertyValue(
               label: l10n.accessAdminColumnDetails,
               value: item.moduleGroup!,
+              expand: true,
+              padding: EdgeInsets.only(bottom: theme.spacing.sm),
             ),
           if (item.planLabel != null)
-            _DetailRow(
+            AppPropertyValue(
               label: l10n.accessAdminEntitlementPlanColumnLabel,
               value: item.planLabel!,
+              expand: true,
+              padding: EdgeInsets.only(bottom: theme.spacing.sm),
             ),
-          _DetailRow(
+          AppPropertyValue(
             label: l10n.accessAdminColumnStatus,
             value: accessAdminEntitlementActiveLabel(context, item.isActive),
+            expand: true,
+            padding: EdgeInsets.only(bottom: theme.spacing.sm),
           ),
           if (item.entitlementDenied)
-            _DetailRow(
+            AppPropertyValue(
               label: l10n.accessAdminEntitlementDenialColumnLabel,
               value: item.entitlementDenialReason ?? '—',
+              expand: true,
+              padding: EdgeInsets.only(bottom: theme.spacing.sm),
             ),
         ] else if (isRegistration) ...<Widget>[
           if (item.email != null)
-            _DetailRow(label: l10n.accessAdminEmailLabel, value: item.email!),
+            AppPropertyValue(
+              label: l10n.accessAdminEmailLabel, value: item.email!,
+              expand: true,
+              padding: EdgeInsets.only(bottom: theme.spacing.sm),
+            ),
           if ((item.subtitle ?? '').trim().isNotEmpty)
-            _DetailRow(
+            AppPropertyValue(
               label: l10n.accessAdminColumnDetails,
               value: item.subtitle!,
+              expand: true,
+              padding: EdgeInsets.only(bottom: theme.spacing.sm),
             ),
           if (item.status != null)
-            _DetailRow(label: l10n.accessAdminStatusLabel, value: item.status!),
+            AppPropertyValue(
+              label: l10n.accessAdminStatusLabel, value: item.status!,
+              expand: true,
+              padding: EdgeInsets.only(bottom: theme.spacing.sm),
+            ),
         ] else if (isUserLike) ...<Widget>[
           if (item.email != null)
-            _DetailRow(label: l10n.accessAdminEmailLabel, value: item.email!),
+            AppPropertyValue(
+              label: l10n.accessAdminEmailLabel, value: item.email!,
+              expand: true,
+              padding: EdgeInsets.only(bottom: theme.spacing.sm),
+            ),
           if (item.phone != null)
-            _DetailRow(label: l10n.accessAdminPhoneLabel, value: item.phone!),
+            AppPropertyValue(
+              label: l10n.accessAdminPhoneLabel, value: item.phone!,
+              expand: true,
+              padding: EdgeInsets.only(bottom: theme.spacing.sm),
+            ),
           if (item.positionTitle != null)
-            _DetailRow(
+            AppPropertyValue(
               label: l10n.accessAdminPositionLabel,
               value: item.positionTitle!,
+              expand: true,
+              padding: EdgeInsets.only(bottom: theme.spacing.sm),
             ),
           if (item.status != null)
-            _DetailRow(label: l10n.accessAdminStatusLabel, value: item.status!),
+            AppPropertyValue(
+              label: l10n.accessAdminStatusLabel, value: item.status!,
+              expand: true,
+              padding: EdgeInsets.only(bottom: theme.spacing.sm),
+            ),
           SizedBox(height: theme.spacing.md),
           AppUserAccessPanel(
             roleGroups:
@@ -1086,26 +1134,3 @@ class _DetailContent extends ConsumerWidget {
   }
 }
 
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: Theme.of(context).spacing.sm),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          SizedBox(
-            width: 160,
-            child: Text(label, style: Theme.of(context).textTheme.labelLarge),
-          ),
-          Expanded(child: Text(value)),
-        ],
-      ),
-    );
-  }
-}

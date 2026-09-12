@@ -107,38 +107,38 @@ class _PharmacySupplierDetailsDialogState
         ? null
         : current.displayId!.trim();
 
-    final List<_SupplierDetailMetaItem> metaItems = <_SupplierDetailMetaItem>[
-      _SupplierDetailMetaItem(
+    final List<AppPropertyValueData> metaItems = <AppPropertyValueData>[
+      AppPropertyValueData(
         icon: Icons.storefront_outlined,
         label: l10n.pharmacySupplierNameLabel,
         value: name,
       ),
-      _SupplierDetailMetaItem(
+      AppPropertyValueData(
         icon: Icons.place_outlined,
         label: l10n.pharmacySupplierLocationLabel,
         value: displayOrEmpty(current.location),
       ),
-      _SupplierDetailMetaItem(
+      AppPropertyValueData(
         icon: Icons.email_outlined,
         label: l10n.pharmacySupplierEmailLabel,
         value: displayOrEmpty(current.contactEmail),
         copyable: (current.contactEmail ?? '').trim().isNotEmpty,
       ),
-      _SupplierDetailMetaItem(
+      AppPropertyValueData(
         icon: Icons.phone_outlined,
         label: l10n.pharmacySupplierPhoneLabel,
         value: displayOrEmpty(current.phone),
         copyable: (current.phone ?? '').trim().isNotEmpty,
       ),
       if (displayId != null)
-        _SupplierDetailMetaItem(
+        AppPropertyValueData(
           icon: Icons.badge_outlined,
           label: l10n.accessAdminColumnDetails,
           value: displayId,
           copyable: true,
         ),
       if (current.createdAt != null)
-        _SupplierDetailMetaItem(
+        AppPropertyValueData(
           icon: Icons.event_outlined,
           label: l10n.pharmacyStorageCreatedAtColumnLabel,
           value: AppFormatters.dateTime(
@@ -160,7 +160,7 @@ class _PharmacySupplierDetailsDialogState
             title: l10n.pharmacySupplierDetailsSectionTitle,
             titleIcon: Icons.info_outline,
             contentPadding: EdgeInsets.all(theme.spacing.md),
-            child: _SupplierDetailMetaWrap(items: metaItems),
+            child: AppPropertyValueList(items: metaItems, maxLines: 2),
           ),
         ],
       ),
@@ -220,79 +220,3 @@ class _PharmacySupplierDetailsDialogState
   }
 }
 
-final class _SupplierDetailMetaItem {
-  const _SupplierDetailMetaItem({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.copyable = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final bool copyable;
-}
-
-class _SupplierDetailMetaWrap extends StatelessWidget {
-  const _SupplierDetailMetaWrap({required this.items});
-
-  final List<_SupplierDetailMetaItem> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Wrap(
-      spacing: theme.spacing.lg,
-      runSpacing: theme.spacing.sm,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: <Widget>[
-        for (final _SupplierDetailMetaItem item in items)
-          _SupplierDetailMetaRow(item: item),
-      ],
-    );
-  }
-}
-
-class _SupplierDetailMetaRow extends StatelessWidget {
-  const _SupplierDetailMetaRow({required this.item});
-
-  final _SupplierDetailMetaItem item;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-    final TextStyle? labelStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: colorScheme.onSurfaceVariant,
-      fontWeight: AppFontWeight.emphasis,
-    );
-    final TextStyle? valueStyle = theme.textTheme.bodyMedium?.copyWith(
-      color: colorScheme.onSurface,
-      fontWeight: AppFontWeight.emphasis,
-    );
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Icon(
-          item.icon,
-          size: theme.appTokens.listIconSize,
-          color: colorScheme.primary,
-        ),
-        SizedBox(width: theme.spacing.xs),
-        Text('${item.label}: ', style: labelStyle),
-        if (item.copyable)
-          AppCopyableIdentifier(value: item.value, textStyle: valueStyle)
-        else
-          Text(
-            item.value,
-            style: valueStyle,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.start,
-          ),
-      ],
-    );
-  }
-}
