@@ -19,6 +19,10 @@ const {
   checkLabTestDuplicates,
   mergeDuplicateChecks
 } = require('@lib/lab/lab-test-similarity');
+const {
+  assertCanMutatePresetDefinition,
+  resolvePresetDefinitionScope,
+} = require('@lib/catalog/preset-ownership');
 const { publishCrudRealtimeEvent } = require('@lib/websocket/crud-realtime');
 const { DIAGNOSTIC_EVENTS } = require('@lib/websocket/events');
 
@@ -376,17 +380,27 @@ const assertLabTestUniqueness = async ({
   }
 };
 
-const createLabTest = async (data, userId, ipAddress) => {
+const createLabTest = async (data, userId, ipAddress, actor = null) => {
   try {
     const confirmSimilar = data?.confirm_similar === true;
     const payload = buildLabTestWritePayload(data, {
       createDefaultUnitOption: true,
       includeDeleteMany: false});
-    payload.tenant_id = await resolveModelIdOrThrow({
-      identifier: payload.tenant_id,
-      model: 'tenant',
-      where: { deleted_at: null },
-      errorKey: 'errors.tenant.not_found'});
+
+    // Platform scope (`tenant_id: null`) makes this a preset every tenant can
+    // adopt, so only a platform actor may ask for it. Everyone else is pinned
+    // to their own tenant whatever the body claims.
+    const scoped = resolvePresetDefinitionScope(
+      { ...payload, scope: data?.scope },
+      actor || { id: userId }
+    );
+    payload.tenant_id = scoped.tenant_id === null
+      ? null
+      : await resolveModelIdOrThrow({
+        identifier: scoped.tenant_id,
+        model: 'tenant',
+        where: { deleted_at: null },
+        errorKey: 'errors.tenant.not_found'});
 
     await assertLabTestUniqueness({
       name: payload.name ?? data.name,
@@ -420,7 +434,7 @@ const createLabTest = async (data, userId, ipAddress) => {
   }
 };
 
-const updateLabTest = async (id, data, userId, ipAddress) => {
+const updateLabTest = async (id, data, userId, ipAddress, actor = null) => {
   try {
     const confirmSimilar = data?.confirm_similar === true;
     const before = await resolveModelRecordOrThrow({
@@ -429,6 +443,11 @@ const updateLabTest = async (id, data, userId, ipAddress) => {
       where: { deleted_at: null },
       include: LAB_TEST_WITH_RELATIONS_INCLUDE,
       errorKey: 'errors.lab_test.not_found'});
+
+    // A platform preset is the shared source definition: a tenant customises it
+    // on its own facility offering, never here. Rejected at the API, not hidden
+    // in the UI.
+    assertCanMutatePresetDefinition(before, actor || { id: userId });
 
     const payload = buildLabTestWritePayload(data, { includeDeleteMany: true });
     delete payload.confirm_similar;
@@ -489,7 +508,7 @@ const updateLabTest = async (id, data, userId, ipAddress) => {
   }
 };
 
-const deleteLabTest = async (id, data = {}, userId, ipAddress) => {
+const deleteLabTest = async (id, data = {}, userId, ipAddress, actor = null) => {
   try {
     const deletionReason = normalizeText(data?.reason);
     if (!deletionReason) {
@@ -503,6 +522,8 @@ const deleteLabTest = async (id, data = {}, userId, ipAddress) => {
       where: { deleted_at: null },
       include: LAB_TEST_WITH_RELATIONS_INCLUDE,
       errorKey: 'errors.lab_test.not_found'});
+
+    assertCanMutatePresetDefinition(before, actor || { id: userId }, { action: 'delete' });
 
     const labTest = await labTestRepository.softDelete(before.id);
 

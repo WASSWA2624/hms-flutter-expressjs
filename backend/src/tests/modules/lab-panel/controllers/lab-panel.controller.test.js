@@ -204,7 +204,8 @@ describe('Lab Panel Controller', () => {
       expect(labPanelService.createLabPanel).toHaveBeenCalledWith(
         newLabPanel,
         mockReq.user.id,
-        mockReq.ip
+        mockReq.ip,
+        mockReq.user
       );
       expect(sendSuccess).toHaveBeenCalledWith(
         mockRes,
@@ -237,7 +238,8 @@ describe('Lab Panel Controller', () => {
         '123e4567-e89b-12d3-a456-426614174000',
         updateData,
         mockReq.user.id,
-        mockReq.ip
+        mockReq.ip,
+        mockReq.user
       );
       expect(sendSuccess).toHaveBeenCalledWith(
         mockRes,
@@ -264,7 +266,8 @@ describe('Lab Panel Controller', () => {
         '123e4567-e89b-12d3-a456-426614174000',
         mockReq.body,
         mockReq.user.id,
-        mockReq.ip
+        mockReq.ip,
+        mockReq.user
       );
       expect(sendSuccess).toHaveBeenCalledWith(
         mockRes,

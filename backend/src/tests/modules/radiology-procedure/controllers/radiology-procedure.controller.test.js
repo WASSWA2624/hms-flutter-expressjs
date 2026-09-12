@@ -200,7 +200,8 @@ describe('Radiology Test Controller', () => {
       expect(radiologyProcedureService.createRadiologyProcedure).toHaveBeenCalledWith(
         createData,
         'requester-id',
-        '127.0.0.1'
+        '127.0.0.1',
+        req.user
       );
       expect(sendSuccess).toHaveBeenCalledWith(
         res,
@@ -220,7 +221,8 @@ describe('Radiology Test Controller', () => {
       expect(radiologyProcedureService.createRadiologyProcedure).toHaveBeenCalledWith(
         createData,
         undefined,
-        '127.0.0.1'
+        '127.0.0.1',
+        undefined
       );
     });
   });
@@ -249,7 +251,8 @@ describe('Radiology Test Controller', () => {
         radiologyTestId,
         updateData,
         'requester-id',
-        '127.0.0.1'
+        '127.0.0.1',
+        req.user
       );
       expect(sendSuccess).toHaveBeenCalledWith(
         res,
@@ -271,7 +274,8 @@ describe('Radiology Test Controller', () => {
         radiologyTestId,
         updateData,
         undefined,
-        '127.0.0.1'
+        '127.0.0.1',
+        req.user
       );
     });
 
@@ -298,7 +302,8 @@ describe('Radiology Test Controller', () => {
       expect(radiologyProcedureService.deleteRadiologyProcedure).toHaveBeenCalledWith(
         radiologyTestId,
         'requester-id',
-        '127.0.0.1'
+        '127.0.0.1',
+        req.user
       );
       expect(sendSuccess).toHaveBeenCalledWith(
         res,
@@ -318,7 +323,8 @@ describe('Radiology Test Controller', () => {
       expect(radiologyProcedureService.deleteRadiologyProcedure).toHaveBeenCalledWith(
         radiologyTestId,
         undefined,
-        '127.0.0.1'
+        '127.0.0.1',
+        req.user
       );
     });
   });

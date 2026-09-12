@@ -206,7 +206,8 @@ describe('Lab Test Controller', () => {
       expect(labTestService.createLabTest).toHaveBeenCalledWith(
         newLabTest,
         mockReq.user.id,
-        mockReq.ip
+        mockReq.ip,
+        mockReq.user
       );
       expect(sendSuccess).toHaveBeenCalledWith(
         mockRes,
@@ -239,7 +240,8 @@ describe('Lab Test Controller', () => {
         '123e4567-e89b-12d3-a456-426614174000',
         updateData,
         mockReq.user.id,
-        mockReq.ip
+        mockReq.ip,
+        mockReq.user
       );
       expect(sendSuccess).toHaveBeenCalledWith(
         mockRes,
@@ -266,7 +268,8 @@ describe('Lab Test Controller', () => {
         '123e4567-e89b-12d3-a456-426614174000',
         mockReq.body,
         mockReq.user.id,
-        mockReq.ip
+        mockReq.ip,
+        mockReq.user
       );
       expect(sendSuccess).toHaveBeenCalledWith(
         mockRes,

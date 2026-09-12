@@ -86,7 +86,7 @@ const createLabPanel = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  const labPanel = await labPanelService.createLabPanel(req.body, userId, ipAddress);
+  const labPanel = await labPanelService.createLabPanel(req.body, userId, ipAddress, req.user);
 
   sendSuccess(res, 201, 'messages.lab_panel.create.success', labPanel);
 });
@@ -103,7 +103,7 @@ const updateLabPanel = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  const labPanel = await labPanelService.updateLabPanel(id, req.body, userId, ipAddress);
+  const labPanel = await labPanelService.updateLabPanel(id, req.body, userId, ipAddress, req.user);
 
   sendSuccess(res, 200, 'messages.lab_panel.update.success', labPanel);
 });
@@ -120,7 +120,7 @@ const deleteLabPanel = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  await labPanelService.deleteLabPanel(id, req.body, userId, ipAddress);
+  await labPanelService.deleteLabPanel(id, req.body, userId, ipAddress, req.user);
 
   sendSuccess(res, 204, null, null);
 });

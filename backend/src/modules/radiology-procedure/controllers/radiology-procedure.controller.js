@@ -94,7 +94,7 @@ const createRadiologyProcedure = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  const radiologyProcedure = await radiologyProcedureService.createRadiologyProcedure(req.body, userId, ipAddress);
+  const radiologyProcedure = await radiologyProcedureService.createRadiologyProcedure(req.body, userId, ipAddress, req.user);
 
   sendSuccess(res, 201, 'messages.radiology_procedure.create.success', radiologyProcedure);
 });
@@ -111,7 +111,7 @@ const updateRadiologyProcedure = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  const radiologyProcedure = await radiologyProcedureService.updateRadiologyProcedure(id, req.body, userId, ipAddress);
+  const radiologyProcedure = await radiologyProcedureService.updateRadiologyProcedure(id, req.body, userId, ipAddress, req.user);
 
   sendSuccess(res, 200, 'messages.radiology_procedure.update.success', radiologyProcedure);
 });
@@ -131,7 +131,8 @@ const deleteRadiologyProcedure = asyncHandler(async (req, res) => {
   const radiologyProcedure = await radiologyProcedureService.deleteRadiologyProcedure(
     id,
     userId,
-    ipAddress
+    ipAddress,
+    req.user
   );
 
   sendSuccess(res, 200, 'messages.radiology_test.update.success', radiologyProcedure);

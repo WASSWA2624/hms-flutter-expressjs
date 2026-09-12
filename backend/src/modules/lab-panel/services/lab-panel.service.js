@@ -16,6 +16,10 @@ const {
   checkLabPanelDuplicates,
   mergePanelDuplicateChecks
 } = require('@lib/lab/lab-panel-similarity');
+const {
+  assertCanMutatePresetDefinition,
+  resolvePresetDefinitionScope,
+} = require('@lib/catalog/preset-ownership');
 const { publishCrudRealtimeEvent } = require('@lib/websocket/crud-realtime');
 const { DIAGNOSTIC_EVENTS } = require('@lib/websocket/events');
 
@@ -507,14 +511,22 @@ const getLabPanelById = async (id, userId, ipAddress) => {
   }
 };
 
-const createLabPanel = async (data, userId, ipAddress) => {
+const createLabPanel = async (data, userId, ipAddress, actor = null) => {
   try {
     const confirmSimilar = data?.confirm_similar === true;
-    const tenantId = await resolveModelIdOrThrow({
-      identifier: data.tenant_id,
-      model: 'tenant',
-      where: { deleted_at: null },
-      errorKey: 'errors.tenant.not_found'});
+    // Platform scope makes this a preset every tenant can adopt, so only a
+    // platform actor may ask for it.
+    const scoped = resolvePresetDefinitionScope(
+      { tenant_id: data.tenant_id, scope: data?.scope },
+      actor || { id: userId }
+    );
+    const tenantId = scoped.tenant_id === null
+      ? null
+      : await resolveModelIdOrThrow({
+        identifier: scoped.tenant_id,
+        model: 'tenant',
+        where: { deleted_at: null },
+        errorKey: 'errors.tenant.not_found'});
     const writeData = { ...data };
     delete writeData.confirm_similar;
     const actorOptions = { userId, ipAddress };
@@ -565,7 +577,7 @@ const createLabPanel = async (data, userId, ipAddress) => {
   }
 };
 
-const updateLabPanel = async (id, data, userId, ipAddress) => {
+const updateLabPanel = async (id, data, userId, ipAddress, actor = null) => {
   try {
     const confirmSimilar = data?.confirm_similar === true;
     const before = await resolveModelRecordOrThrow({
@@ -574,6 +586,10 @@ const updateLabPanel = async (id, data, userId, ipAddress) => {
       where: { deleted_at: null },
       include: LAB_PANEL_WITH_RELATIONS_INCLUDE,
       errorKey: 'errors.lab_panel.not_found'});
+
+    // A platform preset is the shared source definition: a tenant customises it
+    // on its own facility offering, never here.
+    assertCanMutatePresetDefinition(before, actor || { id: userId });
 
     let tenantId = before.tenant_id;
     if (Object.prototype.hasOwnProperty.call(data, 'tenant_id') && data.tenant_id) {
@@ -650,7 +666,7 @@ const updateLabPanel = async (id, data, userId, ipAddress) => {
   }
 };
 
-const deleteLabPanel = async (id, data = {}, userId, ipAddress) => {
+const deleteLabPanel = async (id, data = {}, userId, ipAddress, actor = null) => {
   try {
     const deletionReason = normalizeText(data?.reason);
     if (!deletionReason) {
@@ -664,6 +680,8 @@ const deleteLabPanel = async (id, data = {}, userId, ipAddress) => {
       where: { deleted_at: null },
       include: LAB_PANEL_WITH_RELATIONS_INCLUDE,
       errorKey: 'errors.lab_panel.not_found'});
+
+    assertCanMutatePresetDefinition(before, actor || { id: userId }, { action: 'delete' });
 
     const labPanel = await labPanelRepository.softDelete(before.id);
 

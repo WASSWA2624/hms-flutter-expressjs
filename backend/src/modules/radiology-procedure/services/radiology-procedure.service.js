@@ -20,6 +20,10 @@ const {
   checkRadiologyProcedureDuplicates,
   mergeDuplicateChecks
 } = require('@lib/radiology/radiology-procedure-similarity');
+const {
+  assertCanMutatePresetDefinition,
+  resolvePresetDefinitionScope,
+} = require('@lib/catalog/preset-ownership');
 const { publishCrudRealtimeEvent } = require('@lib/websocket/crud-realtime');
 const { DIAGNOSTIC_EVENTS } = require('@lib/websocket/events');
 
@@ -751,14 +755,22 @@ const assertRadiologyTestUniqueness = async ({
   }
 };
 
-const createRadiologyProcedure = async (data, userId, ipAddress) => {
+const createRadiologyProcedure = async (data, userId, ipAddress, actor = null) => {
   try {
     const confirmSimilar = data?.confirm_similar === true;
-    const tenantId = await resolveIdentifierForPayload({
-      value: data.tenant_id,
-      field: 'tenant_id',
-      model: 'tenant',
-      where: { deleted_at: null }});
+    // Platform scope makes this a preset every tenant can adopt, so only a
+    // platform actor may ask for it.
+    const scoped = resolvePresetDefinitionScope(
+      { tenant_id: data.tenant_id, scope: data?.scope },
+      actor || { id: userId }
+    );
+    const tenantId = scoped.tenant_id === null
+      ? null
+      : await resolveIdentifierForPayload({
+        value: scoped.tenant_id,
+        field: 'tenant_id',
+        model: 'tenant',
+        where: { deleted_at: null }});
 
     await assertRadiologyTestUniqueness({
       name: data.name,
@@ -809,7 +821,7 @@ const createRadiologyProcedure = async (data, userId, ipAddress) => {
  * @param {string} ipAddress - User IP for audit
  * @returns {Promise<Object>} Updated radiology test
  */
-const updateRadiologyProcedure = async (id, data, userId, ipAddress) => {
+const updateRadiologyProcedure = async (id, data, userId, ipAddress, actor = null) => {
   try {
     const resolvedId = await resolveResourceId('radiology_procedure', id);
 
@@ -819,6 +831,10 @@ const updateRadiologyProcedure = async (id, data, userId, ipAddress) => {
     if (!before) {
       throw new HttpError('errors.radiology_test.not_found', 404);
     }
+
+    // A platform preset is the shared source definition: a tenant customises it
+    // on its own facility offering, never here.
+    assertCanMutatePresetDefinition(before, actor || { id: userId });
 
     const confirmSimilar = data?.confirm_similar === true;
     const payload = { ...data };
@@ -885,7 +901,7 @@ const updateRadiologyProcedure = async (id, data, userId, ipAddress) => {
  * @param {string} ipAddress - User IP for audit
  * @returns {Promise<Object>} Soft-deleted radiology procedure
  */
-const deleteRadiologyProcedure = async (id, userId, ipAddress) => {
+const deleteRadiologyProcedure = async (id, userId, ipAddress, actor = null) => {
   try {
     const resolvedId = await resolveResourceId('radiology_procedure', id);
 
@@ -897,6 +913,8 @@ const deleteRadiologyProcedure = async (id, userId, ipAddress) => {
     if (!before) {
       throw new HttpError('errors.radiology_test.not_found', 404);
     }
+
+    assertCanMutatePresetDefinition(before, actor || { id: userId }, { action: 'delete' });
 
     const deleted = await radiologyProcedureRepository.softDelete(resolvedId);
 

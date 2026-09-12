@@ -92,7 +92,7 @@ const createLabTest = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  const labTest = await labTestService.createLabTest(req.body, userId, ipAddress);
+  const labTest = await labTestService.createLabTest(req.body, userId, ipAddress, req.user);
 
   sendSuccess(res, 201, 'messages.lab_test.create.success', labTest);
 });
@@ -109,7 +109,7 @@ const updateLabTest = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  const labTest = await labTestService.updateLabTest(id, req.body, userId, ipAddress);
+  const labTest = await labTestService.updateLabTest(id, req.body, userId, ipAddress, req.user);
 
   sendSuccess(res, 200, 'messages.lab_test.update.success', labTest);
 });
@@ -126,7 +126,7 @@ const deleteLabTest = asyncHandler(async (req, res) => {
   const userId = req.user?.id;
   const ipAddress = req.ip;
 
-  await labTestService.deleteLabTest(id, req.body, userId, ipAddress);
+  await labTestService.deleteLabTest(id, req.body, userId, ipAddress, req.user);
 
   sendSuccess(res, 204, null, null);
 });
