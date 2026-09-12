@@ -642,7 +642,10 @@ describe('Auth Repository', () => {
             select: {
               id: true,
               name: true,
-              slug: true}}},
+              slug: true,
+              // Selected so a soft-deleted tenant is distinguishable during
+              // identifier lookup rather than silently treated as live.
+              deleted_at: true}}},
         orderBy: {
           created_at: 'desc'}});
     });
@@ -676,9 +679,14 @@ describe('Auth Repository', () => {
             select: {
               id: true,
               name: true,
-              slug: true}}},
+              slug: true,
+              // Selected so a soft-deleted tenant is distinguishable during
+              // identifier lookup rather than silently treated as live.
+              deleted_at: true}}},
         orderBy: {
           created_at: 'desc'}});
+      // The legacy fallback drops `slug` (the column the P2022 complained about)
+      // but keeps `deleted_at`, which the caller filters soft-deleted tenants on.
       expect(prisma.user.findMany).toHaveBeenNthCalledWith(2, {
         where: {
           email: 'test@example.com'},
@@ -686,7 +694,8 @@ describe('Auth Repository', () => {
           tenant: {
             select: {
               id: true,
-              name: true}}}});
+              name: true,
+              deleted_at: true}}}});
     });
 
     it('should retry once on transient connection timeout', async () => {
@@ -748,7 +757,8 @@ describe('Auth Repository', () => {
           tenant_id: true,
           name: true,
           facility_type: true,
-          is_active: true}});
+          is_active: true,
+          deleted_at: true}});
     });
 
     it('should return empty array when user has no facility assignments', async () => {

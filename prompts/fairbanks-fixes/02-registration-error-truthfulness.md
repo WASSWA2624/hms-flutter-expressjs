@@ -36,7 +36,7 @@ Registration can report "connection taking too long" or a generic failure while 
 - [ ] **AC4 (R4, R6)** Under a forced client timeout with backend success, the UI shows success and never shows a connection or failure error.
 - [ ] **AC5 (R7)** With the mail transport disabled, the UI shows account-created plus a working resend action.
 - [ ] **AC6 (R5)** The status lookup returns the true state for a known registration attempt and is authorized correctly.
-- [ ] **AC7 (R9)** New backend and frontend tests cover all four outcome codes and pass.
+- [x] **AC7 (R9)** New backend and frontend tests cover all four outcome codes and pass.
 - [ ] **AC8 (R10)** The flow is verified on the development stack and on the production hosts under throttled network conditions.
 
 ## Verification

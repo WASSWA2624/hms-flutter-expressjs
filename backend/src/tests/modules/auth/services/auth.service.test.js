@@ -141,8 +141,10 @@ describe('Auth Service', () => {
       expect(result).toHaveProperty('refresh_token', 'refresh-token');
       expect(result).toHaveProperty('user');
       expect(result.user).not.toHaveProperty('password_hash');
+      // The mock role carries no permission rows: these come from the DOCTOR
+      // entry in the static role catalog, which login expands into the token.
       expect(generateToken).toHaveBeenCalledWith(expect.objectContaining({
-        permissions: []}));
+        permissions: expect.arrayContaining(['clinical:read', 'patient:read'])}));
       expect(authRepository.createSession).toHaveBeenCalled();
       expect(authRepository.createSession).toHaveBeenCalledWith(expect.objectContaining({
         expires_at: expect.any(Date)}));
@@ -181,12 +183,16 @@ describe('Auth Service', () => {
 
       const result = await authService.login(loginData);
 
+      // Direct grants and the role's own rows must all reach the token. The
+      // DOCTOR catalog contributes further permissions on top, so this asserts
+      // inclusion; the catalog itself is covered by the permissions config tests.
+      const expectedGrants = ['patient:read', 'patient:write', 'clinical:read'];
       expect(generateToken).toHaveBeenCalledWith(expect.objectContaining({
-        permissions: ['patient:read', 'patient:write', 'clinical:read']}));
-      expect(result.user.permissions).toEqual(['patient:read', 'patient:write', 'clinical:read']);
-      expect(result.user.permission_names).toEqual(['patient:read', 'patient:write', 'clinical:read']);
+        permissions: expect.arrayContaining(expectedGrants)}));
+      expect(result.user.permissions).toEqual(expect.arrayContaining(expectedGrants));
+      expect(result.user.permission_names).toEqual(expect.arrayContaining(expectedGrants));
       expect(result.user.direct_permissions).toEqual(['patient:read', 'patient:write']);
-      expect(result.user.role_permissions).toEqual(['clinical:read']);
+      expect(result.user.role_permissions).toEqual(expect.arrayContaining(['clinical:read']));
     });
 
     it('should login user with phone number', async () => {
@@ -776,7 +782,7 @@ describe('Auth Service', () => {
       expect(result).toHaveProperty('access_token', 'new-access-token');
       expect(result).toHaveProperty('refresh_token', 'new-refresh-token');
       expect(generateToken).toHaveBeenCalledWith(expect.objectContaining({
-        permissions: ['clinical:read']}));
+        permissions: expect.arrayContaining(['clinical:read'])}));
       expect(authRepository.revokeSession).toHaveBeenCalledWith('session-123');
       expect(authRepository.createSession).toHaveBeenCalled();
     });
@@ -968,7 +974,11 @@ describe('Auth Service', () => {
       expect(result).toHaveProperty('id', 'user-123');
       expect(result).toHaveProperty('email', 'test@example.com');
       expect(result).toHaveProperty('permissions');
-      expect(result.permissions).toEqual(['patient:read']);
+      // The direct grant, plus the `reports:read` baseline that
+      // effective-access adds for every authenticated actor holding any grant.
+      expect(result.permissions).toEqual(
+        expect.arrayContaining(['patient:read', 'reports:read'])
+      );
       expect(result).not.toHaveProperty('password_hash');
     });
 

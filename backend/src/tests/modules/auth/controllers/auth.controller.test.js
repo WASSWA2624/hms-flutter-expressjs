@@ -226,10 +226,16 @@ describe('Auth Controller', () => {
 
       await authController.verifyEmail(req, res);
 
-      expect(authService.verifyEmail).toHaveBeenCalledWith({
-        token: 'some-token',
-        email: 'test@example.com'
-      });
+      // The controller also forwards request metadata so the service can
+      // localise the confirmation email and record where the verification
+      // came from.
+      expect(authService.verifyEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          token: 'some-token',
+          email: 'test@example.com',
+          request_context: expect.any(Object),
+        })
+      );
       expect(res.status).toHaveBeenCalledWith(200);
     });
   });

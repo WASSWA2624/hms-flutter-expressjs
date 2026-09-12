@@ -142,6 +142,7 @@ describe('Auth Schema Validation', () => {
         facility_name: 'Mirembe Clinic',
         admin_name: 'Jane Doe',
         facility_type: 'CLINIC',
+        phone: '256701234567',
         location: 'Kampala, Uganda',
         interests: 'Telemedicine, Billing automation, Inventory tracking'
       };
@@ -155,7 +156,8 @@ describe('Auth Schema Validation', () => {
         password: 'password123!',
         facility_name: 'Mirembe Clinic',
         admin_name: 'Jane Doe',
-        facility_type: 'CLINIC'
+        facility_type: 'CLINIC',
+        phone: '256701234567'
       };
       const result = registerBodySchema.safeParse(invalidData);
       expect(result.success).toBe(false);
@@ -167,7 +169,8 @@ describe('Auth Schema Validation', () => {
         password: 'PASSWORD123!',
         facility_name: 'Mirembe Clinic',
         admin_name: 'Jane Doe',
-        facility_type: 'CLINIC'
+        facility_type: 'CLINIC',
+        phone: '256701234567'
       };
       const result = registerBodySchema.safeParse(invalidData);
       expect(result.success).toBe(false);
@@ -179,7 +182,8 @@ describe('Auth Schema Validation', () => {
         password: 'Password!',
         facility_name: 'Mirembe Clinic',
         admin_name: 'Jane Doe',
-        facility_type: 'CLINIC'
+        facility_type: 'CLINIC',
+        phone: '256701234567'
       };
       const result = registerBodySchema.safeParse(invalidData);
       expect(result.success).toBe(false);
@@ -191,22 +195,25 @@ describe('Auth Schema Validation', () => {
         password: 'Password123',
         facility_name: 'Mirembe Clinic',
         admin_name: 'Jane Doe',
-        facility_type: 'CLINIC'
+        facility_type: 'CLINIC',
+        phone: '256701234567'
       };
       const result = registerBodySchema.safeParse(invalidData);
       expect(result.success).toBe(false);
     });
 
-    it('should accept registration without optional phone', () => {
-      const validData = {
+    it('should reject registration without a phone number', () => {
+      // Phone is required end to end: the register form marks the field
+      // isRequired, so the schema must not accept a submission without one.
+      const invalidData = {
         email: 'newuser@example.com',
         password: 'Password123!',
         facility_name: 'Mirembe Clinic',
         admin_name: 'Jane Doe',
         facility_type: 'CLINIC'
       };
-      const result = registerBodySchema.safeParse(validData);
-      expect(result.success).toBe(true);
+      const result = registerBodySchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
     });
 
     it('should reject registration without facility_name', () => {
@@ -214,7 +221,8 @@ describe('Auth Schema Validation', () => {
         email: 'newuser@example.com',
         password: 'Password123!',
         admin_name: 'Jane Doe',
-        facility_type: 'CLINIC'
+        facility_type: 'CLINIC',
+        phone: '256701234567'
       };
       const result = registerBodySchema.safeParse(invalidData);
       expect(result.success).toBe(false);
@@ -225,7 +233,8 @@ describe('Auth Schema Validation', () => {
         email: 'newuser@example.com',
         password: 'Password123!',
         facility_name: 'Mirembe Clinic',
-        facility_type: 'CLINIC'
+        facility_type: 'CLINIC',
+        phone: '256701234567'
       };
       const result = registerBodySchema.safeParse(invalidData);
       expect(result.success).toBe(false);
@@ -237,7 +246,8 @@ describe('Auth Schema Validation', () => {
         password: 'Password123!',
         facility_name: 'Mirembe Clinic',
         admin_name: 'Jane Doe',
-        facility_type: 'INVALID'
+        facility_type: 'INVALID',
+        phone: '256701234567'
       };
       const result = registerBodySchema.safeParse(invalidData);
       expect(result.success).toBe(false);
