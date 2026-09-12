@@ -617,31 +617,37 @@ class _SubscriptionUpgradeDialogState
                 runSpacing: theme.spacing.xs,
                 children: <Widget>[
                   if (adminContact.email != null)
-                    _CopyableContactChip(
+                    AppPropertyValue(
                       icon: Icons.mail_outline,
                       label: l10n.subscriptionUpgradeAdminContactEmailLabel,
                       value: adminContact.email!,
-                      accent: const Color(0xFF7C3AED),
+                      iconColor: const Color(0xFF7C3AED),
+                      copyable: true,
                       copyTooltip: l10n.subscriptionUpgradeCopyValueAction,
                       onCopied: () => _showCopiedSnack(l10n),
+                      bordered: true,
                     ),
                   if (adminContact.phone != null)
-                    _CopyableContactChip(
+                    AppPropertyValue(
                       icon: Icons.phone_outlined,
                       label: l10n.subscriptionUpgradeAdminContactPhoneLabel,
                       value: adminContact.phone!,
-                      accent: const Color(0xFF7C3AED),
+                      iconColor: const Color(0xFF7C3AED),
+                      copyable: true,
                       copyTooltip: l10n.subscriptionUpgradeCopyValueAction,
                       onCopied: () => _showCopiedSnack(l10n),
+                      bordered: true,
                     ),
                   if (adminContact.whatsapp != null)
-                    _CopyableContactChip(
+                    AppPropertyValue(
                       icon: Icons.chat_outlined,
                       label: l10n.subscriptionUpgradeAdminContactWhatsappLabel,
                       value: adminContact.whatsapp!,
-                      accent: const Color(0xFF7C3AED),
+                      iconColor: const Color(0xFF7C3AED),
+                      copyable: true,
                       copyTooltip: l10n.subscriptionUpgradeCopyValueAction,
                       onCopied: () => _showCopiedSnack(l10n),
+                      bordered: true,
                     ),
                 ],
               ),
@@ -1710,79 +1716,15 @@ class _PayDestinationCard extends StatelessWidget {
             SizedBox(height: theme.spacing.sm),
             for (int index = 0; index < rows.length; index++) ...<Widget>[
               if (index > 0) SizedBox(height: theme.spacing.xs),
-              _CopyableDetailRow(
+              AppPropertyValue(
                 label: rows[index].$1,
                 value: rows[index].$2,
-                accent: accent,
+                copyable: true,
                 copyTooltip: copyTooltip,
                 onCopied: onCopied,
+                expand: true,
               ),
             ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CopyableDetailRow extends StatelessWidget {
-  const _CopyableDetailRow({
-    required this.label,
-    required this.value,
-    required this.accent,
-    required this.copyTooltip,
-    required this.onCopied,
-  });
-
-  final String label;
-  final String value;
-  final Color accent;
-  final String copyTooltip;
-  final VoidCallback onCopied;
-
-  Future<void> _copy() async {
-    await Clipboard.setData(ClipboardData(text: value));
-    onCopied();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Material(
-      color: theme.colorScheme.surface.withValues(alpha: 0.72),
-      borderRadius: BorderRadius.circular(theme.radius.sm),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: theme.spacing.sm,
-          vertical: theme.spacing.xs,
-        ),
-        child: Row(
-          children: <Widget>[
-            SizedBox(
-              width: 92,
-              child: Text(
-                label,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            Expanded(
-              child: SelectableText(
-                value,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: AppFontWeight.emphasis,
-                ),
-              ),
-            ),
-            IconButton(
-              tooltip: copyTooltip,
-              visualDensity: VisualDensity.compact,
-              constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-              padding: EdgeInsets.zero,
-              icon: Icon(Icons.copy_outlined, size: 16, color: accent),
-              onPressed: () => unawaited(_copy()),
-            ),
           ],
         ),
       ),
@@ -1876,99 +1818,20 @@ class _PayNotifyCard extends StatelessWidget {
                 children: <Widget>[
                   for (final (IconData icon, String label, String value)
                       in chips)
-                    _CopyableContactChip(
+                    AppPropertyValue(
                       icon: icon,
                       label: label,
                       value: value,
-                      accent: accent,
+                      iconColor: accent,
+                      copyable: true,
                       copyTooltip: copyTooltip,
                       onCopied: onCopied,
+                      bordered: true,
                     ),
                 ],
               ),
             ],
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CopyableContactChip extends StatelessWidget {
-  const _CopyableContactChip({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.accent,
-    required this.copyTooltip,
-    required this.onCopied,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color accent;
-  final String copyTooltip;
-  final VoidCallback onCopied;
-
-  Future<void> _copy() async {
-    await Clipboard.setData(ClipboardData(text: value));
-    onCopied();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final double maxChipWidth = MediaQuery.sizeOf(context).width * 0.9;
-    return Material(
-      color: theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(theme.radius.sm),
-      child: InkWell(
-        onTap: () => unawaited(_copy()),
-        borderRadius: BorderRadius.circular(theme.radius.sm),
-        child: Container(
-          constraints: BoxConstraints(maxWidth: maxChipWidth),
-          padding: EdgeInsets.symmetric(
-            horizontal: theme.spacing.sm,
-            vertical: theme.spacing.xs,
-          ),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(theme.radius.sm),
-            border: Border.all(color: accent.withValues(alpha: 0.28)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              Icon(icon, size: 16, color: accent),
-              SizedBox(width: theme.spacing.xs),
-              Flexible(
-                child: Text.rich(
-                  TextSpan(
-                    children: <InlineSpan>[
-                      TextSpan(
-                        text: '$label · ',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      TextSpan(
-                        text: value,
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          fontWeight: AppFontWeight.emphasis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              SizedBox(width: theme.spacing.xs),
-              Tooltip(
-                message: copyTooltip,
-                child: Icon(Icons.copy_outlined, size: 14, color: accent),
-              ),
-            ],
-          ),
         ),
       ),
     );

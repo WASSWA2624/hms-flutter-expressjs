@@ -86,6 +86,8 @@ class AppPropertyValue extends StatelessWidget {
     this.onTap,
     this.semanticsLabel,
     this.padding,
+    this.valueWidget,
+    this.onCopied,
     super.key,
   });
 
@@ -138,6 +140,13 @@ class AppPropertyValue extends StatelessWidget {
 
   /// Outer padding — mainly for the gap between pairs in a detail stack.
   final EdgeInsetsGeometry? padding;
+
+  /// Fires after a [copyable] value is copied to the clipboard.
+  final VoidCallback? onCopied;
+
+  /// Renders in place of [value] when the value is not plain text — a status
+  /// badge, a chip, a link. [value] is still used for the semantics label.
+  final Widget? valueWidget;
 
   @override
   Widget build(BuildContext context) {
@@ -239,8 +248,9 @@ class AppPropertyValue extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Text(label, style: labelStyle, maxLines: 1),
-        Text(_separator, style: labelStyle, maxLines: 1),
+        // Label and separator stay one Text node: callers (and tests) match on
+        // the rendered `Label: ` string.
+        Text('$label$_separator', style: labelStyle, maxLines: 1),
         Flexible(child: _valueWidget(value, valueStyle, softWrap: false)),
       ],
     );
@@ -257,7 +267,7 @@ class AppPropertyValue extends StatelessWidget {
       TextSpan(
         children: <InlineSpan>[
           TextSpan(text: '$label$_separator', style: labelStyle),
-          if (copyable)
+          if (copyable || valueWidget != null)
             WidgetSpan(
               alignment: PlaceholderAlignment.middle,
               child: _valueWidget(value, valueStyle, softWrap: true),
@@ -275,6 +285,9 @@ class AppPropertyValue extends StatelessWidget {
     TextStyle? style, {
     required bool softWrap,
   }) {
+    if (valueWidget != null) {
+      return DefaultTextStyle.merge(style: style, child: valueWidget!);
+    }
     if (copyable) {
       return AppCopyableIdentifier(
         value: value,
@@ -285,6 +298,7 @@ class AppPropertyValue extends StatelessWidget {
         maxLines: maxLines,
         placeholderValues: copyPlaceholderValues,
         textStyle: style,
+        onCopied: onCopied,
       );
     }
 

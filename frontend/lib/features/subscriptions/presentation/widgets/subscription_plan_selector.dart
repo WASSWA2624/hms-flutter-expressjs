@@ -11,6 +11,7 @@ import 'package:hosspi_hms/features/subscriptions/domain/entities/subscription_e
 import 'package:hosspi_hms/features/subscriptions/presentation/widgets/subscription_plan_comparison.dart';
 import 'package:hosspi_hms/shared/components/app_button.dart';
 import 'package:hosspi_hms/shared/components/app_content_panel.dart';
+import 'package:hosspi_hms/shared/components/app_property_value.dart';
 import 'package:hosspi_hms/shared/components/app_radio_group.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
 
@@ -478,13 +479,14 @@ class _PlanCard extends StatelessWidget {
                 children: <Widget>[
                   for (final SubscriptionPlanComparisonFeature feature
                       in limitFeatures)
-                    _LimitChip(
+                    AppPropertyValue(
                       label: feature.label,
                       value: SubscriptionPlanComparisonCatalog.limitValue(
                         plan,
                         feature.limitKey!,
                       ),
-                      accent: planTheme.foreground,
+                      valueColor: planTheme.foreground,
+                      bordered: true,
                     ),
                 ],
               ),
@@ -557,53 +559,6 @@ class _PlanCard extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LimitChip extends StatelessWidget {
-  const _LimitChip({
-    required this.label,
-    required this.value,
-    required this.accent,
-  });
-
-  final String label;
-  final String value;
-  final Color accent;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: theme.spacing.sm,
-        vertical: theme.spacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: accent.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(theme.radius.sm),
-        border: Border.all(color: accent.withValues(alpha: 0.28)),
-      ),
-      child: Text.rich(
-        TextSpan(
-          children: <InlineSpan>[
-            TextSpan(
-              text: '$label · ',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            TextSpan(
-              text: value,
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: AppFontWeight.emphasis,
-                color: accent,
-              ),
-            ),
-          ],
         ),
       ),
     );

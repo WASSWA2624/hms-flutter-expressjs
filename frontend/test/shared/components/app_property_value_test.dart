@@ -22,8 +22,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Name'), findsOneWidget);
-    expect(find.text(': '), findsOneWidget);
+    expect(find.text('Name: '), findsOneWidget);
     expect(find.text('Wasswa Wilson'), findsOneWidget);
     expect(find.byIcon(Icons.person_outline), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -37,7 +36,7 @@ void main() {
       const AppPropertyValue(label: 'Name', value: 'Wasswa Wilson'),
     );
 
-    expect(styleOf(tester, 'Name').fontWeight, AppFontWeight.regular);
+    expect(styleOf(tester, 'Name: ').fontWeight, AppFontWeight.regular);
     expect(
       styleOf(tester, 'Wasswa Wilson').fontWeight,
       AppFontWeight.strong,
@@ -108,8 +107,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Name'), findsOneWidget);
-    expect(find.text('Phone'), findsNothing);
+    expect(find.text('Name: '), findsOneWidget);
+    expect(find.textContaining('Phone'), findsNothing);
   });
 
   testWidgets('AppPropertyValueList stacks vertically on request', (

@@ -890,9 +890,14 @@ class _TheaterCaseDetailBody extends StatelessWidget {
                 style: theme.textTheme.bodyMedium,
               ),
               if (theaterCase.procedureName != null)
-                _DetailLine(
+                AppPropertyValue(
                   label: l10n.theaterProcedureColumnLabel,
                   value: theaterCase.procedureName,
+                  expand: true,
+                  emptyValue: context.l10n.profileUnknownValue,
+                  padding: EdgeInsets.symmetric(
+                    vertical: Theme.of(context).spacing.xs,
+                  ),
                 ),
               if (theaterCase.admissionDisplayId != null)
                 AppButton.tertiary(
@@ -920,25 +925,45 @@ class _TheaterCaseDetailBody extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            _DetailLine(
+            AppPropertyValue(
               label: l10n.theaterSurgeonLabel,
               value:
                   theaterCase.surgeonDisplayName ??
                   theaterCase.surgeonUserDisplayId,
+              expand: true,
+              emptyValue: context.l10n.profileUnknownValue,
+              padding: EdgeInsets.symmetric(
+                vertical: Theme.of(context).spacing.xs,
+              ),
             ),
-            _DetailLine(
+            AppPropertyValue(
               label: l10n.theaterAnesthetistLabel,
               value:
                   theaterCase.anesthetistDisplayName ??
                   theaterCase.anesthetistUserDisplayId,
+              expand: true,
+              emptyValue: context.l10n.profileUnknownValue,
+              padding: EdgeInsets.symmetric(
+                vertical: Theme.of(context).spacing.xs,
+              ),
             ),
-            _DetailLine(
+            AppPropertyValue(
               label: l10n.theaterStageLabel,
               value: _stageLabel(l10n, theaterCase.workflowStage),
+              expand: true,
+              emptyValue: context.l10n.profileUnknownValue,
+              padding: EdgeInsets.symmetric(
+                vertical: Theme.of(context).spacing.xs,
+              ),
             ),
-            _DetailLine(
+            AppPropertyValue(
               label: l10n.theaterStageNotesLabel,
               value: theaterCase.stageNotes,
+              expand: true,
+              emptyValue: context.l10n.profileUnknownValue,
+              padding: EdgeInsets.symmetric(
+                vertical: Theme.of(context).spacing.xs,
+              ),
             ),
           ],
         ),
@@ -1156,21 +1181,41 @@ class _RecordsSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          _DetailLine(
+          AppPropertyValue(
             label: l10n.theaterAnesthesiaStatusLabel,
             value: _recordStatusLabel(l10n, theaterCase.anesthesiaStatus),
+            expand: true,
+            emptyValue: context.l10n.profileUnknownValue,
+            padding: EdgeInsets.symmetric(
+              vertical: Theme.of(context).spacing.xs,
+            ),
           ),
-          _DetailLine(
+          AppPropertyValue(
             label: l10n.theaterPostOpStatusLabel,
             value: _recordStatusLabel(l10n, theaterCase.postOpStatus),
+            expand: true,
+            emptyValue: context.l10n.profileUnknownValue,
+            padding: EdgeInsets.symmetric(
+              vertical: Theme.of(context).spacing.xs,
+            ),
           ),
-          _DetailLine(
+          AppPropertyValue(
             label: l10n.theaterAnesthesiaNotesLabel,
             value: theaterCase.latestAnesthesiaRecord?.notes,
+            expand: true,
+            emptyValue: context.l10n.profileUnknownValue,
+            padding: EdgeInsets.symmetric(
+              vertical: Theme.of(context).spacing.xs,
+            ),
           ),
-          _DetailLine(
+          AppPropertyValue(
             label: l10n.theaterPostOpNoteLabel,
             value: theaterCase.latestPostOpNote?.notes,
+            expand: true,
+            emptyValue: context.l10n.profileUnknownValue,
+            padding: EdgeInsets.symmetric(
+              vertical: Theme.of(context).spacing.xs,
+            ),
           ),
           if (theaterCase.anesthesiaObservations.isEmpty)
             AppMutedText(l10n.theaterNoObservationsLabel)
@@ -1263,47 +1308,6 @@ class _TimelineSection extends StatelessWidget {
               occurredAt: item.occurredAt,
               icon: Icons.history_outlined,
             ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DetailLine extends StatelessWidget {
-  const _DetailLine({required this.label, required this.value});
-
-  final String label;
-  final String? value;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colorScheme = theme.colorScheme;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: theme.spacing.xs),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          SizedBox(
-            width: 128,
-            child: Text(
-              label,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                fontWeight: AppFontWeight.emphasis,
-              ),
-            ),
-          ),
-          SizedBox(width: theme.spacing.sm),
-          Expanded(
-            child: Text(
-              value == null || value!.trim().isEmpty
-                  ? context.l10n.profileUnknownValue
-                  : value!,
-              style: theme.textTheme.bodyMedium,
-            ),
-          ),
         ],
       ),
     );

@@ -1514,13 +1514,14 @@ class _PlanDetailContent extends ConsumerWidget {
           minItemWidth: 150,
           children: <Widget>[
             if (isFree)
-              const _PlanMetricChip(
+              const AppPropertyValue(
                 icon: Icons.payments_outlined,
                 label: _SubscriptionsText.pricing,
                 value: _SubscriptionsText.freePlan,
+                bordered: true,
               )
             else ...<Widget>[
-              _PlanMetricChip(
+              AppPropertyValue(
                 icon: Icons.payments_outlined,
                 label: _SubscriptionsText.monthlyPriceUsd,
                 value: _money(
@@ -1528,37 +1529,43 @@ class _PlanDetailContent extends ConsumerWidget {
                   item.resolvedMonthlyPrice,
                   item.currency,
                 ),
+                bordered: true,
               ),
-              _PlanMetricChip(
+              AppPropertyValue(
                 icon: Icons.calendar_month_outlined,
                 label: _SubscriptionsText.annualPriceUsd,
                 value: _money(context, item.resolvedAnnualPrice, item.currency),
+                bordered: true,
               ),
             ],
-            _PlanMetricChip(
+            AppPropertyValue(
               icon: Icons.group_outlined,
               label: _SubscriptionsText.maxUsers,
               value:
                   item.maxUsers?.toString() ?? _SubscriptionsText.notRecorded,
+              bordered: true,
             ),
-            _PlanMetricChip(
+            AppPropertyValue(
               icon: Icons.apartment_outlined,
               label: _SubscriptionsText.maxFacilities,
               value:
                   item.maxFacilities?.toString() ??
                   _SubscriptionsText.notRecorded,
+              bordered: true,
             ),
-            _PlanMetricChip(
+            AppPropertyValue(
               icon: Icons.sd_storage_outlined,
               label: _SubscriptionsText.maxStorage,
               value:
                   item.maxStorageMb?.toString() ??
                   _SubscriptionsText.notRecorded,
+              bordered: true,
             ),
-            _PlanMetricChip(
+            AppPropertyValue(
               icon: Icons.update_outlined,
               label: _SubscriptionsText.updated,
               value: _date(context, item.updatedAt),
+              bordered: true,
             ),
           ],
         ),
@@ -1644,42 +1651,6 @@ class _PlanDetailContent extends ConsumerWidget {
           ]),
         ],
       ],
-    );
-  }
-}
-
-class _PlanMetricChip extends StatelessWidget {
-  const _PlanMetricChip({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return AppContentPanel(
-      density: AppContentPanelDensity.compact,
-      child: Row(
-        children: <Widget>[
-          Icon(icon, size: 18, color: theme.colorScheme.primary),
-          SizedBox(width: theme.spacing.xs),
-          Flexible(
-            child: Text(
-              '$label · $value',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: AppFontWeight.emphasis,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

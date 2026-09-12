@@ -412,9 +412,13 @@ void main() {
     expect(find.byType(AppDialog), findsAtLeastNWidgets(1));
     expect(find.byType(AppQuickActions), findsOneWidget);
     // Overview keeps distinct therapy fields (source/attendance/plan).
-    expect(find.text(l10n.physiotherapySourceLabel), findsWidgets);
-    expect(find.text(l10n.physiotherapyAttendanceLabel), findsWidgets);
-    expect(find.text(l10n.physiotherapyPlanLabel), findsWidgets);
+    // Each renders as one `Label: value` pair (AppPropertyValue).
+    expect(find.textContaining('${l10n.physiotherapySourceLabel}: '), findsWidgets);
+    expect(
+      find.textContaining('${l10n.physiotherapyAttendanceLabel}: '),
+      findsWidgets,
+    );
+    expect(find.textContaining('${l10n.physiotherapyPlanLabel}: '), findsWidgets);
     // Empty backend-gaps panel stays hidden.
     expect(find.text(l10n.physiotherapyBackendGapsPanelTitle), findsNothing);
   });

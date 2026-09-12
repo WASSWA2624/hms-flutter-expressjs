@@ -1994,14 +1994,15 @@ class _RosterDayDetailsBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                _DetailFactRow(
+                AppPropertyValue(
                   label: l10n.hrRosterDayWorkingHoursLabel,
-                  value: Text(
+                  valueWidget: Text(
                     workingWindow,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: AppFontWeight.emphasis,
                     ),
                   ),
+                  expand: true,
                 ),
                 SizedBox(height: theme.spacing.sm),
                 if (!hasShifts)
@@ -2034,9 +2035,9 @@ class _RosterDayDetailsBody extends StatelessWidget {
                     ],
                   )
                 else ...<Widget>[
-                  _DetailFactRow(
+                  AppPropertyValue(
                     label: l10n.hrRosterDayBusyHoursLabel,
-                    value: Wrap(
+                    valueWidget: Wrap(
                       spacing: theme.spacing.sm,
                       runSpacing: theme.spacing.xs,
                       alignment: WrapAlignment.end,
@@ -2049,11 +2050,12 @@ class _RosterDayDetailsBody extends StatelessWidget {
                           ),
                       ],
                     ),
+                    expand: true,
                   ),
                   SizedBox(height: theme.spacing.sm),
-                  _DetailFactRow(
+                  AppPropertyValue(
                     label: l10n.hrRosterDayFreeHoursLabel,
-                    value: day.freeRanges.isEmpty
+                    valueWidget: day.freeRanges.isEmpty
                         ? Text(
                             '—',
                             style: theme.textTheme.bodyMedium?.copyWith(
@@ -2074,6 +2076,7 @@ class _RosterDayDetailsBody extends StatelessWidget {
                                 ),
                             ],
                           ),
+                    expand: true,
                   ),
                 ],
               ],
@@ -2094,35 +2097,6 @@ class _RosterDayDetailsBody extends StatelessWidget {
             ),
           ],
         ],
-      ],
-    );
-  }
-}
-
-class _DetailFactRow extends StatelessWidget {
-  const _DetailFactRow({required this.label, required this.value});
-
-  final String label;
-  final Widget value;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        SizedBox(
-          width: 120,
-          child: Text(
-            label,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        SizedBox(width: theme.spacing.sm),
-        Expanded(child: value),
       ],
     );
   }

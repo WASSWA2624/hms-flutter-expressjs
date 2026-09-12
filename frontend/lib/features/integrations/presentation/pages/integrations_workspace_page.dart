@@ -1991,9 +1991,11 @@ class _RelatedWebhooksPanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 for (final WebhookSubscriptionRecord webhook in webhooks.take(4))
-                  _CompactFactRow(
+                  AppPropertyValue(
                     label: _fallback(context, webhook.event),
                     value: _fallback(context, webhook.targetHost),
+                    expand: true,
+                    maxLines: 2,
                   ),
               ],
             ),
@@ -2019,9 +2021,11 @@ class _RelatedLogsPanel extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 for (final IntegrationLogRecord log in logs.take(4))
-                  _CompactFactRow(
+                  AppPropertyValue(
                     label: _statusLabelForValue(context, log.status),
                     value: _fallback(context, log.message),
+                    expand: true,
+                    maxLines: 2,
                   ),
               ],
             ),
@@ -2120,40 +2124,6 @@ class _PermissionGrantRow extends StatelessWidget {
             onPressed: onRemove,
           ),
         ],
-      ],
-    );
-  }
-}
-
-class _CompactFactRow extends StatelessWidget {
-  const _CompactFactRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Expanded(
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.labelLarge,
-          ),
-        ),
-        SizedBox(width: theme.spacing.sm),
-        Expanded(
-          child: Text(
-            value,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.end,
-          ),
-        ),
       ],
     );
   }
