@@ -187,6 +187,18 @@ const resolveActorAssignablePermissionNames = (user = {}) => {
     return new Set(ROLE_PERMISSIONS[ROLES.PLATFORM_ADMIN] || []);
   }
 
+  // Tenant admins own every role in their tenant and outrank facility managers,
+  // so their ceiling must be at least as wide. Falling through to the JWT
+  // permission set below left them with a plan-gated slice that covered no role
+  // at all, so every role assignment and direct grant was refused as
+  // above_actor_ceiling. Rank and admin-rights checks still block platform roles.
+  if (roleNames.includes(ROLES.TENANT_ADMIN)) {
+    return new Set([
+      ...nonAdminPermissionNames(),
+      ...(ROLE_PERMISSIONS[ROLES.TENANT_ADMIN] || []),
+    ]);
+  }
+
   // Facility HR / facility admin: grant any non-admin permission (plan modules
   // still gate the catalog). Do not fall through to JWT shell packs.
   if (isFacilityScopedAccessActor(user)) {

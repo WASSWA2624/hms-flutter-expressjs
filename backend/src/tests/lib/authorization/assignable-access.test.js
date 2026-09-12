@@ -314,4 +314,57 @@ describe('assignable-access', () => {
       expect(tenant.has(PERMISSIONS.PLATFORM_ADMIN)).toBe(false);
     });
   });
+
+  describe('tenant admin assignment ceiling', () => {
+    const tenantAdmin = {
+      id: 'actor-1',
+      roles: [ROLES.TENANT_ADMIN],
+      tenant_id: 'tenant-1'};
+
+    const roleRecord = (name) => ({
+      id: `role-${name}`,
+      name,
+      tenant_id: 'tenant-1',
+      permissions: (ROLE_PERMISSIONS[name] || []).map((permission) => ({
+        permission: { name: permission }}))});
+
+    it('covers the shipped tenant admin pack', () => {
+      // A plan-gated JWT slice used to define this ceiling, which left the
+      // tenant admin unable to assign any role at all.
+      const assignable = resolveActorAssignablePermissionNames(tenantAdmin);
+      for (const permission of ROLE_PERMISSIONS[ROLES.TENANT_ADMIN] || []) {
+        expect(assignable.has(permission)).toBe(true);
+      }
+    });
+
+    it('assigns the clinical and operational roles of its own tenant', () => {
+      for (const name of [
+        ROLES.DOCTOR,
+        ROLES.NURSE,
+        ROLES.RECEPTIONIST,
+        ROLES.LAB_TECH,
+        ROLES.PHARMACIST,
+        ROLES.HR,
+        ROLES.FACILITY_ADMIN,
+        ROLES.TENANT_ADMIN,
+      ]) {
+        expect(isRoleWithinActorCeiling(roleRecord(name), tenantAdmin)).toBe(true);
+      }
+    });
+
+    it('still refuses platform roles', () => {
+      expect(
+        isRoleWithinActorCeiling(roleRecord(ROLES.PLATFORM_ADMIN), tenantAdmin)
+      ).toBe(false);
+      expect(
+        isRoleWithinActorCeiling(roleRecord(ROLES.PLATFORM_OWNER), tenantAdmin)
+      ).toBe(false);
+    });
+
+    it('never grants platform rights', () => {
+      const assignable = resolveActorAssignablePermissionNames(tenantAdmin);
+      expect(assignable.has(PERMISSIONS.PLATFORM_OWNER)).toBe(false);
+      expect(assignable.has(PERMISSIONS.PLATFORM_ADMIN)).toBe(false);
+    });
+  });
 });
