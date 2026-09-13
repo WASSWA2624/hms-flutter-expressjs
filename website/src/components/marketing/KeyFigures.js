@@ -25,12 +25,44 @@ const StyledList = styled.dl`
   }
 `;
 
+/*
+ * Hairline rules between the figures, so the strip reads as one measured set
+ * rather than four floating numbers. Drawn per item rather than as borders on
+ * the grid, so the first item in each row never carries a leading rule.
+ */
 const StyledFigure = styled.div`
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   gap: ${props => props.theme.spacing.xs};
+
+  &:not(:nth-child(2n + 1))::before {
+    content: '';
+    position: absolute;
+    left: calc(${props => props.theme.spacing.lg} / -2);
+    top: 8%;
+    bottom: 8%;
+    width: 1px;
+    background-color: ${props => props.theme.colors.borderLight};
+  }
+
+  @media (min-width: ${props => props.theme.breakpoints.sm}) {
+    &:not(:nth-child(2n + 1))::before {
+      content: none;
+    }
+
+    &:not(:first-child)::before {
+      content: '';
+      position: absolute;
+      left: calc(${props => props.theme.spacing.lg} / -2);
+      top: 8%;
+      bottom: 8%;
+      width: 1px;
+      background-color: ${props => props.theme.colors.borderLight};
+    }
+  }
 `;
 
 const StyledIconWrap = styled.span`
@@ -51,6 +83,9 @@ const StyledValue = styled.dt`
   font-size: ${props => props.theme.typography.fontSize['3xl']};
   font-weight: ${props => props.theme.typography.fontWeight.bold};
   line-height: ${props => props.theme.typography.lineHeight.tight};
+  /* Tabular figures so 26 and 25 sit on the same rhythm as 5 and 1. */
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 
   @media (min-width: ${props => props.theme.breakpoints.md}) {
     font-size: ${props => props.theme.typography.fontSize['4xl']};
@@ -59,8 +94,11 @@ const StyledValue = styled.dt`
 
 const StyledLabel = styled.dd`
   margin: 0;
+  max-width: 18ch;
   color: ${props => props.theme.colors.textSecondary};
   font-size: ${props => props.theme.typography.fontSize.sm};
+  line-height: ${props => props.theme.typography.lineHeight.normal};
+  text-wrap: balance;
 `;
 
 StyledList.displayName = 'StyledList';

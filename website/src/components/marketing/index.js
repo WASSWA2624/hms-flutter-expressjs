@@ -13,6 +13,7 @@ export { ContactChannels } from './ContactChannels';
 export { ModuleGrid } from './ModuleGrid';
 export { JourneyList } from './JourneyList';
 export { PlanGrid } from './PlanGrid';
+export { PlatformGrid } from './PlatformGrid';
 export { RoleGrid } from './RoleGrid';
 export { RoadmapList } from './RoadmapList';
 export { FaqList } from './FaqList';

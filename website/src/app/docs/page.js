@@ -10,6 +10,7 @@ import { Section } from '@/components/ui';
 import { StructuredData } from '@/components/common';
 import {
   AppLink,
+  PlatformGrid,
   ModuleGrid,
   JourneyList,
   RoleGrid,
@@ -72,7 +73,6 @@ export const metadata = {
 export const revalidate = 3600;
 
 export default function DocsPage() {
-  const platformNames = PLATFORMS.map((platform) => platform.name).join(', ');
 
   const guideSchema = {
     '@context': 'https://schema.org',
@@ -102,8 +102,18 @@ export default function DocsPage() {
         <AppLink
           href={APP_LOGIN_URL}
           label="Open the app"
-          note={`Sign in from any browser, or install the app on ${platformNames}.`}
+          note="Sign in from any browser — nothing to install to get started."
         />
+      </Section>
+
+      <Section
+        id="platforms"
+        tone="alt"
+        eyebrow="Where it runs"
+        title="Works on what your staff already carry"
+        description="One account, the same records, whichever way your team signs in."
+      >
+        <PlatformGrid platforms={PLATFORMS} />
       </Section>
 
       <Section

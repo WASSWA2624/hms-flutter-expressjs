@@ -2,8 +2,12 @@
  * Landing Page - HOSSPI HMS product page
  *
  * Server Component. Introduces the HOSSPI Hospital Management System to
- * hospitals evaluating it: what it covers, who it serves, how packages work,
- * and where to try it.
+ * hospitals evaluating it: what it covers, how care moves through it, who
+ * uses it and where it runs.
+ *
+ * Packages and the roadmap live on the guide. A price ladder interrupts the
+ * story before it has been told, and a list of what the system cannot do yet
+ * is weak material for the page that has to earn the first conversation.
  */
 
 import { Section } from '@/components/ui';
@@ -14,7 +18,7 @@ import {
   FeatureGrid,
   ModuleGrid,
   JourneyList,
-  PlanGrid,
+  PlatformGrid,
   RoleGrid,
   FaqList,
   CallToAction,
@@ -38,8 +42,6 @@ import {
   VALUE_PROPS,
   AVAILABLE_MODULES,
   CARE_JOURNEYS,
-  PLANS,
-  PLANS_NOTE,
   HEADLINE_ROLES,
   HEADLINE_ROLES_NOTE,
   FAQS,
@@ -141,7 +143,6 @@ export default function Home() {
         subtitle={HMS_SUMMARY}
         appUrl={APP_LOGIN_URL}
         primaryLabel="Open the app"
-        platforms={PLATFORMS}
       />
 
       <Section tone="alt">
@@ -190,16 +191,17 @@ export default function Home() {
       </Section>
 
       <Section
-        id="plans"
-        eyebrow="Packages"
-        title="Start small, grow into it"
-        description="Begin with the essentials and move up as your facility takes on more."
+        id="platforms"
+        eyebrow="Where it runs"
+        title="Works on what your staff already carry"
+        description="One account, the same records, whichever way your team signs in. No hardware to buy to run your hospital software."
       >
-        <PlanGrid plans={PLANS} note={PLANS_NOTE} />
+        <PlatformGrid
+          platforms={PLATFORMS}
+          note="Native apps where they help, a browser where they do not — the web version needs nothing installed at all."
+        />
       </Section>
 
-      {/* The roadmap is a list of what the system does not do yet — weak
-          material for a landing page, and the guide carries it in full. */}
       <Section
         id="faq"
         tone="alt"

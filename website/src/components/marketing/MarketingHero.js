@@ -1,10 +1,10 @@
 /**
  * MarketingHero - Landing page hero for HOSSPI HMS
  *
- * Headline, summary, an optional call to action, and the platforms the
- * application ships on. The brand mark is not repeated here - the header
- * already carries it directly above, and the <h1> is the first thing a reader
- * should meet.
+ * Headline, summary and the calls to action, and nothing else. The brand mark
+ * is not repeated here - the header carries it directly above - and the
+ * platforms have a section of their own further down the page, so the hero
+ * opens on the <h1> and closes on the demo request.
  *
  * @component
  * @param {Object} props
@@ -13,8 +13,6 @@
  * @param {string} [props.appUrl] - Link to the live application
  * @param {string} [props.primaryLabel] - App link label; omit to hide the link
  * @param {string} [props.demoLabel] - Label for the demo request button
- * @param {Array<{id: string, name: string, detail: string}>} props.platforms
- * @param {string} [props.platformsLabel] - Label above the platform list
  * @returns {JSX.Element} Rendered hero
  * @file src/components/marketing/MarketingHero.js
  */
@@ -143,67 +141,6 @@ const StyledPrimaryAction = styled.a`
   }
 `;
 
-const StyledPlatforms = styled.div`
-  margin-top: ${props => props.theme.spacing.lg};
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: ${props => props.theme.spacing.sm};
-`;
-
-const StyledPlatformsLabel = styled.p`
-  margin: 0;
-  color: ${props => props.theme.colors.textTertiary};
-  font-size: ${props => props.theme.typography.fontSize.sm};
-  font-weight: ${props => props.theme.typography.fontWeight.semibold};
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-`;
-
-const StyledPlatformList = styled.ul`
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: ${props => props.theme.spacing.sm};
-`;
-
-const StyledPlatform = styled.li`
-  display: flex;
-  align-items: center;
-  gap: ${props => props.theme.spacing.sm};
-  padding: ${props => props.theme.spacing.xs} ${props => props.theme.spacing.md};
-  border: 1px solid ${props => props.theme.colors.border};
-  border-radius: ${props => props.theme.borderRadius.full};
-  background-color: ${props => props.theme.colors.background};
-  color: ${props => props.theme.colors.primary};
-  transition: border-color ${props => props.theme.transitions.fast};
-
-  &:hover {
-    border-color: ${props => props.theme.colors.primaryLight};
-  }
-
-  div {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    line-height: 1.25;
-  }
-
-  strong {
-    color: ${props => props.theme.colors.text};
-    font-size: ${props => props.theme.typography.fontSize.sm};
-    font-weight: ${props => props.theme.typography.fontWeight.semibold};
-  }
-
-  span {
-    color: ${props => props.theme.colors.textTertiary};
-    font-size: ${props => props.theme.typography.fontSize.xs};
-  }
-`;
-
 StyledHero.displayName = 'StyledHero';
 StyledInner.displayName = 'StyledInner';
 StyledEyebrow.displayName = 'StyledEyebrow';
@@ -211,10 +148,6 @@ StyledTitle.displayName = 'StyledTitle';
 StyledSubtitle.displayName = 'StyledSubtitle';
 StyledActions.displayName = 'StyledActions';
 StyledPrimaryAction.displayName = 'StyledPrimaryAction';
-StyledPlatforms.displayName = 'StyledPlatforms';
-StyledPlatformsLabel.displayName = 'StyledPlatformsLabel';
-StyledPlatformList.displayName = 'StyledPlatformList';
-StyledPlatform.displayName = 'StyledPlatform';
 
 export const MarketingHero = React.memo(({
   eyebrow,
@@ -223,8 +156,6 @@ export const MarketingHero = React.memo(({
   appUrl,
   primaryLabel,
   demoLabel = 'Request a demo',
-  platforms = [],
-  platformsLabel = 'Available on',
 }) => {
   return (
     <StyledHero>
@@ -242,23 +173,6 @@ export const MarketingHero = React.memo(({
             </StyledPrimaryAction>
           )}
         </StyledActions>
-
-        {platforms.length > 0 && (
-          <StyledPlatforms>
-            <StyledPlatformsLabel>{platformsLabel}</StyledPlatformsLabel>
-            <StyledPlatformList>
-              {platforms.map((platform) => (
-                <StyledPlatform key={platform.id}>
-                  <Icon name={platform.icon} size={18} />
-                  <div>
-                    <strong>{platform.name}</strong>
-                    <span>{platform.detail}</span>
-                  </div>
-                </StyledPlatform>
-              ))}
-            </StyledPlatformList>
-          </StyledPlatforms>
-        )}
       </StyledInner>
     </StyledHero>
   );
