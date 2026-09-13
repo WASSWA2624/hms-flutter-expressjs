@@ -1,7 +1,7 @@
 # HOSSPI
 
 Product and documentation site for the **HOSSPI Hospital Management System**
-([app.hosspi.com](https://app.hosspi.com)) — a static, multilingual site built with
+([app.hosspi.com](https://app.hosspi.com)), a static, multilingual site built with
 Next.js and Styled Components. It advertises the product to hospitals evaluating it
 and documents how the system works for the people using it.
 
@@ -10,15 +10,15 @@ and documents how the system works for the people using it.
 - **Framework**: Next.js 16 (App Router)
 - **Language**: JavaScript (ES6+)
 - **Styling**: Styled Components
-- **Data**: No database — content lives in `src/lib/constants.js` and `src/locales/`
+- **Data**: No database: content lives in `src/lib/constants.js` and `src/locales/`
 - **Email**: Nodemailer (contact form only)
 
 ## Pages
 
 | Route | Description |
 |-------|-------------|
-| `/` | Product page — hero, key figures, value propositions, coverage, care journeys, roles, packages, roadmap, FAQ |
-| `/docs` | Guide — getting started, coverage, journeys, roles, packages, roadmap, FAQ |
+| `/` | Product page: hero, key figures, value propositions, coverage, care journeys, roles, packages, roadmap, FAQ |
+| `/docs` | Guide: getting started, coverage, journeys, roles, packages, roadmap, FAQ |
 | `/about` | Company story, mission and vision, build principles, enquiry form |
 | `/contact` | Contact channels, common enquiries, contact form |
 
@@ -28,7 +28,7 @@ inline horizontal links from 1024px up and collapses to a hamburger menu below t
 ### Product content
 
 All copy for every page lives in [`src/lib/product.js`](src/lib/product.js) as
-structured data — platforms, value propositions, capability areas, care journeys,
+structured data: platforms, value propositions, capability areas, care journeys,
 roles, packages, roadmap, FAQ, headline figures, the company story, and contact
 channels. Each entry carries an `icon` name. Edit that file to change what the
 pages say; the components in `src/components/marketing/` render whatever it
@@ -37,8 +37,8 @@ contains.
 Two rules govern that file, and both are stated at the top of it:
 
 - **Audience.** It is written for hospital decision-makers and staff. Internal
-  engineering detail — repository file names, module or permission keys, release
-  gating mechanics, seeding rules — must never appear in it.
+  engineering detail (repository file names, module or permission keys, release
+  gating mechanics, seeding rules) must never appear in it.
 - **Accuracy.** Only capabilities users can reach in the current release may be
   described as available. Everything else goes in `ROADMAP` and is described as
   upcoming, never as shipped.
@@ -49,7 +49,7 @@ site chrome (navigation, footer, about, and contact pages), which is translated.
 ### Icons
 
 [`src/components/ui/Icon.js`](src/components/ui/Icon.js) holds an inline SVG set
-drawn with `currentColor` at a 24×24 viewBox — clinical, platform, finance and
+drawn with `currentColor` at a 24x24 viewBox: clinical, platform, finance and
 interface glyphs. It is deliberately hand-rolled rather than pulled from an icon
 package: no runtime dependency, no unused weight, and the set stays limited to
 what the site uses. Add a glyph to the `ICONS` map and reference it by name from
@@ -57,13 +57,13 @@ what the site uses. Add a glyph to the `ICONS` map and reference it by name from
 
 ### Brand assets
 
-`public/logos/` holds the icon at the sizes the site actually requests — `icon-32`
+`public/logos/` holds the icon at the sizes the site actually requests: `icon-32`
 and `icon-192` (favicon and Apple touch icon), `icon-64` (header), `icon-256`
-(hero), `icon-512` (structured data) — plus the social share card
+(hero), `icon-512` (structured data), plus the social share card
 (`og-image.png`). They are derived from `frontend/assets/logos/favicon.png` in
 this repository, which stays the master; the site ships only the exported sizes. The theme in [`src/styles/theme.js`](src/styles/theme.js)
-mirrors the application palette — brand primary `#0079FD`, azure tints, ink
-`#0D2744` — so the site and the product read as one brand.
+mirrors the application palette (brand primary `#0079FD`, azure tints, ink
+`#0D2744`), so the site and the product read as one brand.
 
 ## Getting Started
 
@@ -88,7 +88,7 @@ npm install
 ```env
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
-# Contact form delivery (optional — without it, submissions are logged to the console)
+# Contact form delivery (optional: without it, submissions are logged to the console)
 SMTP_SERVICE="gmail"
 SMTP_USER="your-email@gmail.com"
 SMTP_PASS="your-app-password"
@@ -168,7 +168,7 @@ Nine locales are supported: English, Spanish, French, German, Italian, Portugues
 
 - Locale is detected in `middleware.js` from the `locale` cookie, then `Accept-Language`, then the default (`en`).
 - The resolved locale is passed to Server Components via the `x-locale` request header and persisted in a cookie.
-- Translations live in `src/locales/[locale]/[namespace].json` — namespaces: `common`, `navigation`, `about`, `contact`.
+- Translations live in `src/locales/[locale]/[namespace].json`. Namespaces: `common`, `navigation`, `about`, `contact`.
 - The root layout preloads all namespaces so client components render real strings on the first pass.
 
 Adding a locale: add the code to `SUPPORTED_LOCALES` and `LOCALE_NAMES` in `src/lib/constants.js`, then create `src/locales/[locale]/` with all four namespace files.
@@ -213,4 +213,4 @@ npm run build && npm run start
 
 The site was originally built around a product catalogue, an admin panel and a MySQL
 database. Those features, and the phased plan that described building them, have been
-removed — the site has no database and no authenticated area.
+removed. The site has no database and no authenticated area.

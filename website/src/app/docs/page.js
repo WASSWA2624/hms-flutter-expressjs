@@ -102,7 +102,7 @@ export default function DocsPage() {
         <AppLink
           href={APP_LOGIN_URL}
           label="Open the app"
-          note="Sign in from any browser — nothing to install to get started."
+          note="Sign in from any browser. Nothing to install to get started."
         />
       </Section>
 

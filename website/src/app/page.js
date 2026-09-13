@@ -48,11 +48,11 @@ import {
 } from '@/lib/product';
 
 const PAGE_DESCRIPTION =
-  'HOSSPI is a complete hospital management system covering registration, outpatient and inpatient care, theatre, laboratory, radiology, pharmacy, billing and accounts — on web, Android, iOS, desktop and Linux.';
+  'HOSSPI is a complete hospital management system covering registration, outpatient and inpatient care, theatre, laboratory, radiology, pharmacy, billing and accounts, on web, Android, iOS, desktop and Linux.';
 
 export const metadata = {
   title: {
-    absolute: `${HMS_NAME} — ${HMS_TAGLINE}`,
+    absolute: `${HMS_NAME}: ${HMS_TAGLINE}`,
   },
   description: PAGE_DESCRIPTION,
   keywords: [
@@ -68,7 +68,7 @@ export const metadata = {
     canonical: APP_URL,
   },
   openGraph: {
-    title: `${HMS_NAME} — ${HMS_TAGLINE}`,
+    title: `${HMS_NAME}: ${HMS_TAGLINE}`,
     description: PAGE_DESCRIPTION,
     url: APP_URL,
     siteName: APP_NAME,
@@ -84,7 +84,7 @@ export const metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: `${HMS_NAME} — ${HMS_TAGLINE}`,
+    title: `${HMS_NAME}: ${HMS_TAGLINE}`,
     description: PAGE_DESCRIPTION,
     images: [`${APP_URL}/logos/og-image.png`],
   },
@@ -198,7 +198,7 @@ export default function Home() {
       >
         <PlatformGrid
           platforms={PLATFORMS}
-          note="Native apps where they help, a browser where they do not — the web version needs nothing installed at all."
+          note="Native apps where they help, a browser where they do not. The web version needs nothing installed at all."
         />
       </Section>
 
@@ -214,7 +214,7 @@ export default function Home() {
 
       <CallToAction
         title="See it running in your hospital"
-        body="Leave a phone number and an email and we will walk you through it — or open the app and explore it yourself."
+        body="Leave a phone number and an email and we will walk you through it, or open the app and explore it yourself."
         appUrl={APP_LOGIN_URL}
         primaryLabel="Open the app"
         demoLabel="Request a demo"

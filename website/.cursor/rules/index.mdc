@@ -10,7 +10,7 @@ alwaysApply: false
 - **Framework**: Next.js 16 (App Router, latest version)
 - **Language**: JavaScript (ES6+, no TypeScript)
 - **Styling**: Styled Components (CSS-in-JS)
-- **Data**: No database — content comes from constants and locale JSON files
+- **Data**: No database: content comes from constants and locale JSON files
 - **Theme**: Themed styled components with dark/light mode support
 - **Responsive**: Mobile-first, fully responsive design
 

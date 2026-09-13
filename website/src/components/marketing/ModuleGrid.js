@@ -40,7 +40,7 @@ const StyledCard = styled(Card)`
 
   /*
    * A single card stranded on the last row reads as a mistake. When the count
-   * leaves exactly one over, let it run the full width instead — the widest
+   * leaves exactly one over, let it run the full width instead: the widest
    * group is also the one with the most items, so it uses the room. The
    * nth-child arithmetic re-evaluates itself if the module list changes.
    */

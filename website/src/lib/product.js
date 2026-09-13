@@ -4,8 +4,8 @@
  * Single source of truth for the marketing pages and the public documentation.
  *
  * Audience rule: this content is written for hospital decision-makers and staff.
- * Internal engineering detail — repository file names, module keys, permission
- * keys, release-gating mechanics, seeding rules — must never appear here.
+ * Internal engineering detail (repository file names, module keys, permission
+ * keys, release-gating mechanics, seeding rules) must never appear here.
  *
  * Accuracy rule: only capabilities that are reachable by users in the current
  * release may be described as available. Anything else belongs in ROADMAP and is
@@ -215,7 +215,7 @@ export const PLANS = [
 ];
 
 export const PLANS_NOTE =
-  'Reporting is included with every package. Move between packages as your facility grows — your data stays where it is.';
+  'Reporting is included with every package. Move between packages as your facility grows; your data stays where it is.';
 
 /**
  * Roles available out of the box, described for a non-technical reader.
@@ -232,7 +232,7 @@ export const ROLES = [
   { id: 'hr', icon: 'users', name: 'HR staff', scope: 'Staff administration and managing user accounts, roles and permissions for the facility.' },
   { id: 'operations', icon: 'building', name: 'Operations and housekeeping', scope: 'Facility tasks, cleaning schedules and the day-to-day running of the building.' },
   { id: 'biomed', icon: 'settings', name: 'Biomedical engineers', scope: 'Equipment registers, servicing and maintenance history across the facility.' },
-  { id: 'ward-managers', icon: 'bed', name: 'Ward, ICU and theatre managers', scope: 'Running their own unit — beds, staffing and the cases in front of them.' },
+  { id: 'ward-managers', icon: 'bed', name: 'Ward, ICU and theatre managers', scope: 'Running their own unit: beds, staffing and the cases in front of them.' },
   { id: 'admin', icon: 'shield', name: 'Administrators', scope: 'Facility, organisation and platform level control, each with reporting across their own scope.' },
   { id: 'patient', icon: 'user', name: 'Patients', scope: 'Their own records only.' },
 ];
@@ -259,11 +259,11 @@ export const HEADLINE_ROLES_NOTE =
   'Twenty-five roles ship ready to use, and you can define your own. The guide lists them all.';
 
 /**
- * How care moves through the system — written as journeys, not workflows.
+ * How care moves through the system, written as journeys, not workflows.
  * @type {Array<{id: string, title: string, summary: string}>}
  */
 export const CARE_JOURNEYS = [
-  { id: 'opd', icon: 'userPlus', title: 'Outpatient visit', summary: 'Arrival, registration, queue, triage and consultation — with orders and billing raised as the visit happens.' },
+  { id: 'opd', icon: 'userPlus', title: 'Outpatient visit', summary: 'Arrival, registration, queue, triage and consultation, with orders and billing raised as the visit happens.' },
   { id: 'emergency', icon: 'pulse', title: 'Emergency arrival', summary: 'Urgent presentation triaged and treated straight away, with registration and billing catching up behind the care.' },
   { id: 'ipd', icon: 'bed', title: 'Admission and ward stay', summary: 'Admission, ward allocation, nursing observations and daily clinical review, all on one running record.' },
   { id: 'icu', icon: 'pulse', title: 'Intensive care', summary: 'Critical care admission with close monitoring and the clinical detail that level of care demands.' },
@@ -321,14 +321,14 @@ export const KEY_FIGURES = [
  * ------------------------------------------------------------------ */
 
 export const COMPANY_STORY =
-  'HOSSPI builds hospital software for the way healthcare is actually delivered — in facilities where staff are busy, budgets are tight, and a missing file can hold up a patient for hours. We started with one conviction: a hospital should not need five disconnected systems and a stack of paper to look after one person.';
+  'HOSSPI builds hospital software for the way healthcare is actually delivered: in facilities where staff are busy, budgets are tight, and a missing file can hold up a patient for hours. We started with one conviction: a hospital should not need five disconnected systems and a stack of paper to look after one person.';
 
 export const COMPANY_APPROACH = [
   {
     id: 'mission',
     icon: 'target',
     title: 'Our mission',
-    body: 'To give every hospital, however large or small, one dependable system for running care — so staff spend their time with patients instead of chasing paperwork.',
+    body: 'To give every hospital, however large or small, one dependable system for running care, so staff spend their time with patients instead of chasing paperwork.',
   },
   {
     id: 'vision',
@@ -361,7 +361,7 @@ export const COMPANY_PRINCIPLES = [
     id: 'reachable',
     icon: 'globe',
     title: 'Works on what you already own',
-    body: 'Browser, phone, tablet or desktop — including Linux — so you are not buying hardware to run your hospital software.',
+    body: 'Browser, phone, tablet or desktop, including Linux, so you are not buying hardware to run your hospital software.',
   },
   {
     id: 'partnership',
@@ -400,7 +400,7 @@ export const CONTACT_CHANNELS = [
 ];
 
 export const CONTACT_INTRO =
-  'Tell us about your facility — how many beds, which departments, and what you are using today — and we will show you how HOSSPI would fit. Demonstrations are free and there is no obligation.';
+  'Tell us about your facility: how many beds, which departments, and what you are using today, and we will show you how HOSSPI would fit. Demonstrations are free and there is no obligation.';
 
 export const CONTACT_REASONS = [
   { id: 'demo', icon: 'monitor', label: 'Book a demonstration' },

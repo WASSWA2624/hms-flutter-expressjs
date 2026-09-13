@@ -13,6 +13,7 @@
 import { NextResponse } from 'next/server';
 import { CONTACT_EMAIL, COMPANY_WHATSAPP } from '@/lib/constants';
 import { createTransporter, fromAddress } from '@/lib/mailer';
+import { formatTimestamp } from '@/lib/datetime';
 import { sendWhatsAppText } from '@/lib/whatsapp';
 
 /** Loose on purpose - international numbers vary and a rejected demo lead is worse than a messy one. */
@@ -67,7 +68,7 @@ export async function POST(request) {
     );
   }
 
-  const submittedAt = new Date().toISOString();
+  const submittedAt = formatTimestamp();
   const lines = [
     'New demo request from the HOSSPI website.',
     '',

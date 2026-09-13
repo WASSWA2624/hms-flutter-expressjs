@@ -6,6 +6,7 @@
 import { NextResponse } from 'next/server';
 import { CONTACT_EMAIL, DEFAULT_LOCALE, SUPPORTED_LOCALES } from '@/lib/constants';
 import { createTransporter, fromAddress } from '@/lib/mailer';
+import { formatTimestamp } from '@/lib/datetime';
 import { getLocaleFromRequest, getServerTranslations } from '@/lib/i18n';
 
 /**
@@ -91,7 +92,7 @@ export async function POST(request) {
         name: sanitizedName,
         email: sanitizedEmail,
         message: sanitizedMessage,
-        timestamp: new Date().toISOString(),
+        timestamp: formatTimestamp(),
       });
       
       // Return success even without email sending in development

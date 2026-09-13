@@ -26,7 +26,6 @@ import React, {
 } from 'react';
 import styled from 'styled-components';
 import { Icon } from '@/components/ui';
-import { COMPANY_PHONE, CONTACT_EMAIL } from '@/lib/constants';
 
 const RequestDemoContext = createContext(null);
 
@@ -187,14 +186,6 @@ const StyledSubmit = styled.button`
   }
 `;
 
-const StyledNote = styled.p`
-  margin: 0;
-  color: ${props => props.theme.colors.textTertiary};
-  font-size: ${props => props.theme.typography.fontSize.xs};
-  line-height: ${props => props.theme.typography.lineHeight.relaxed};
-  text-align: center;
-`;
-
 const StyledError = styled.p`
   margin: 0;
   padding: ${props => props.theme.spacing.sm} ${props => props.theme.spacing.md};
@@ -202,6 +193,47 @@ const StyledError = styled.p`
   background-color: ${props => props.theme.colors.errorLight};
   color: ${props => props.theme.colors.error};
   font-size: ${props => props.theme.typography.fontSize.sm};
+`;
+
+const StyledDoneAction = styled.button`
+  align-self: stretch;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  margin-top: ${props => props.theme.spacing.xs};
+  padding: 0 ${props => props.theme.spacing.xl};
+  border: 1px solid ${props => props.theme.colors.border};
+  border-radius: ${props => props.theme.borderRadius.md};
+  background-color: transparent;
+  color: ${props => props.theme.colors.text};
+  font-size: ${props => props.theme.typography.fontSize.md};
+  font-weight: ${props => props.theme.typography.fontWeight.semibold};
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color ${props => props.theme.transitions.fast},
+              color ${props => props.theme.transitions.fast};
+
+  &:hover {
+    border-color: ${props => props.theme.colors.primary};
+    color: ${props => props.theme.colors.primary};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${props => props.theme.colors.primary};
+    outline-offset: 2px;
+  }
+`;
+
+/* The WhatsApp follow-up, shown only when a window actually opened. */
+const StyledFollowUp = styled.p`
+  margin: 0;
+  padding: ${props => props.theme.spacing.sm} ${props => props.theme.spacing.md};
+  border-radius: ${props => props.theme.borderRadius.md};
+  background-color: ${props => props.theme.colors.backgroundSecondary};
+  color: ${props => props.theme.colors.textSecondary};
+  font-size: ${props => props.theme.typography.fontSize.sm};
+  line-height: ${props => props.theme.typography.lineHeight.relaxed};
 `;
 
 const StyledDone = styled.div`
@@ -238,8 +270,9 @@ StyledLead.displayName = 'StyledLead';
 StyledForm.displayName = 'StyledForm';
 StyledField.displayName = 'StyledField';
 StyledSubmit.displayName = 'StyledSubmit';
-StyledNote.displayName = 'StyledNote';
 StyledError.displayName = 'StyledError';
+StyledDoneAction.displayName = 'StyledDoneAction';
+StyledFollowUp.displayName = 'StyledFollowUp';
 StyledDone.displayName = 'StyledDone';
 StyledDoneMark.displayName = 'StyledDoneMark';
 
@@ -249,6 +282,7 @@ export function RequestDemoProvider({ children }) {
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState('idle'); // idle | sending | done
   const [error, setError] = useState('');
+  const [whatsappOpened, setWhatsappOpened] = useState(false);
   const dialogRef = useRef(null);
   const firstFieldRef = useRef(null);
   const titleId = useId();
@@ -256,6 +290,7 @@ export function RequestDemoProvider({ children }) {
   const open = useCallback(() => {
     setError('');
     setStatus('idle');
+    setWhatsappOpened(false);
     setIsOpen(true);
   }, []);
 
@@ -307,7 +342,9 @@ export function RequestDemoProvider({ children }) {
       // from inside the submit handler so it counts as a user gesture and is
       // not treated as a pop-up.
       if (!data?.whatsappSent && data?.whatsappUrl) {
-        window.open(data.whatsappUrl, '_blank', 'noopener,noreferrer');
+        const opened = window.open(data.whatsappUrl, '_blank', 'noopener,noreferrer');
+        // A blocked pop-up returns null; do not promise a tab that is not there.
+        setWhatsappOpened(opened !== null);
       }
 
       setStatus('done');
@@ -353,19 +390,24 @@ export function RequestDemoProvider({ children }) {
                   <Icon name="check" size={26} />
                 </StyledDoneMark>
                 <p>
-                  Thank you — your request is with our team and we will be in
-                  touch within one working day. If a WhatsApp window opened,
-                  press send there too so we can reply straight away.
+                  Your request is with our team. We will be in touch within one
+                  working day.
                 </p>
-                <StyledSubmit as="button" type="button" onClick={close}>
+                {whatsappOpened && (
+                  <StyledFollowUp>
+                    A WhatsApp message is waiting in the tab that just opened.
+                    Press send there and we can reply straight away.
+                  </StyledFollowUp>
+                )}
+                <StyledDoneAction type="button" onClick={close}>
                   Close
-                </StyledSubmit>
+                </StyledDoneAction>
               </StyledDone>
             ) : (
               <>
                 <StyledLead>
-                  Two details and we will get back to you — no form to fill in,
-                  no account needed.
+                  Two details and we will get back to you. No form to fill in, no
+                  account needed.
                 </StyledLead>
 
                 <StyledForm onSubmit={handleSubmit} noValidate>
@@ -405,9 +447,6 @@ export function RequestDemoProvider({ children }) {
                     {status !== 'sending' && <Icon name="arrowRight" size={18} />}
                   </StyledSubmit>
 
-                  <StyledNote>
-                    Goes straight to {CONTACT_EMAIL} and {COMPANY_PHONE}.
-                  </StyledNote>
                 </StyledForm>
               </>
             )}

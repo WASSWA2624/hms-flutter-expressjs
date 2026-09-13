@@ -28,7 +28,7 @@ import {
 } from '@/lib/product';
 import { getServerTranslations, resolveLocale } from '@/lib/i18n';
 
-const PAGE_DESCRIPTION = `${COMPANY_NAME} builds ${HMS_NAME} — one dependable system for running hospital care, from registration through to discharge and settlement.`;
+const PAGE_DESCRIPTION = `${COMPANY_NAME} builds ${HMS_NAME}, one dependable system for running hospital care, from registration through to discharge and settlement.`;
 
 export async function generateMetadata() {
   const headersList = await headers();
