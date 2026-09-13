@@ -28986,17 +28986,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyDrugImportDialogTitle => 'Import drugs';
 
   @override
-  String pharmacyDrugImportFacilityTitle(String facility) {
-    return 'Importing into $facility';
+  String get pharmacyDrugImportStepFile => 'Choose file';
+
+  @override
+  String get pharmacyDrugImportStepReview => 'Review';
+
+  @override
+  String get pharmacyDrugImportStepImport => 'Import';
+
+  @override
+  String pharmacyDrugImportDestination(String facility) {
+    return 'Destination: $facility';
   }
 
   @override
-  String get pharmacyDrugImportFacilityFallbackTitle =>
-      'Importing into your current facility';
+  String get pharmacyDrugImportDestinationFallback =>
+      'Destination: your current facility';
 
   @override
-  String get pharmacyDrugImportFacilityBody =>
-      'Catalog drugs are shared across the organization; stock and batches are added only to this facility. Nothing is saved until you review the file and confirm the import.';
+  String get pharmacyDrugImportDestinationHint =>
+      'The drug catalog is shared across your organization. Stock and batches are added to this facility only.';
+
+  @override
+  String get pharmacyDrugImportSourceSectionTitle => 'Source system';
 
   @override
   String get pharmacyDrugImportSourceLabel => 'Import from';
@@ -29015,34 +29027,79 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pharmacyDrugImportTemplateBody =>
-      'The first row of the sheet must contain these column names. The column order does not matter.';
+      'Row 1 of the sheet must contain these column names. Extra columns are ignored and the order doesn\'t matter.';
 
   @override
-  String get pharmacyDrugImportFileTitle => 'Excel file (.xlsx)';
+  String get pharmacyDrugImportFileSectionTitle => 'Excel file';
 
   @override
-  String get pharmacyDrugImportFileEmpty =>
-      'No file selected. Files up to 5 MB and 5,000 rows are supported.';
+  String get pharmacyDrugImportFileSectionSubtitle =>
+      'The file is checked as soon as you choose it. Nothing is saved until you confirm the import.';
 
   @override
-  String get pharmacyDrugImportChooseFileAction => 'Choose file';
+  String get pharmacyDrugImportDropTitle => 'Choose an Excel file';
 
   @override
-  String get pharmacyDrugImportReplaceFileAction => 'Choose another file';
+  String pharmacyDrugImportDropSubtitle(String source) {
+    return '$source stock export saved as .xlsx';
+  }
+
+  @override
+  String get pharmacyDrugImportBrowseAction => 'Browse files';
+
+  @override
+  String get pharmacyDrugImportReplaceFileAction => 'Replace';
+
+  @override
+  String get pharmacyDrugImportRemoveFileAction => 'Remove file';
+
+  @override
+  String get pharmacyDrugImportOpeningFile => 'Opening file…';
 
   @override
   String get pharmacyDrugImportFileTypeLabel => 'Excel workbook';
 
   @override
-  String get pharmacyDrugImportFileReadFailedTitle =>
-      'The file could not be opened';
+  String get pharmacyDrugImportFileReadFailedBody =>
+      'The file could not be opened. Choose it again, or export it from the source system again.';
 
   @override
-  String get pharmacyDrugImportFileReadFailedBody =>
-      'Choose the file again, or export it from the source system again.';
+  String get pharmacyDrugImportFileUnsupported =>
+      'Choose an Excel workbook saved as .xlsx.';
+
+  @override
+  String pharmacyDrugImportFileDetails(String size, String meta) {
+    return '$size · $meta';
+  }
+
+  @override
+  String pharmacyDrugImportFileMeta(String sheet, String rows) {
+    return '$sheet sheet · $rows rows';
+  }
+
+  @override
+  String pharmacyDrugImportFileSizeBytes(String size) {
+    return '$size B';
+  }
+
+  @override
+  String pharmacyDrugImportFileSizeKb(String size) {
+    return '$size KB';
+  }
+
+  @override
+  String pharmacyDrugImportFileSizeMb(String size) {
+    return '$size MB';
+  }
 
   @override
   String get pharmacyDrugImportAnalyzeAction => 'Review file';
+
+  @override
+  String get pharmacyDrugImportContinueAction => 'Continue to review';
+
+  @override
+  String get pharmacyDrugImportChangeFileAction => 'Change file';
 
   @override
   String get pharmacyDrugImportAnalyzingTitle => 'Checking the file';
@@ -29069,58 +29126,60 @@ class AppLocalizationsEn extends AppLocalizations {
       'No row in this file has a usable product. Fix the source file and try again.';
 
   @override
-  String pharmacyDrugImportReviewTitle(String file) {
-    return 'Review $file';
+  String get pharmacyDrugImportStatProducts => 'Products';
+
+  @override
+  String get pharmacyDrugImportStatNew => 'New drugs';
+
+  @override
+  String get pharmacyDrugImportStatExisting => 'Already in catalog';
+
+  @override
+  String get pharmacyDrugImportStatReview => 'Needs review';
+
+  @override
+  String get pharmacyDrugImportStatIssues => 'With issues';
+
+  @override
+  String pharmacyDrugImportStatUnits(int batches) {
+    final intl.NumberFormat batchesNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String batchesString = batchesNumberFormat.format(batches);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      batches,
+      locale: localeName,
+      other: 'Units in $batchesString batches',
+      one: 'Units in 1 batch',
+    );
+    return '$_temp0';
   }
 
   @override
-  String get pharmacyDrugImportReviewBody =>
-      'Choose what happens to each product. Nothing is saved until you select Import.';
+  String pharmacyDrugImportReviewBannerTitle(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
 
-  @override
-  String pharmacyDrugImportSummaryRows(String count) {
-    return 'Rows: $count';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString products look like drugs already in your catalog',
+      one: '1 product looks like a drug already in your catalog',
+    );
+    return '$_temp0';
   }
 
   @override
-  String pharmacyDrugImportSummaryProducts(String count) {
-    return 'Products: $count';
-  }
+  String get pharmacyDrugImportReviewBannerBody =>
+      'Check the suggested action for each one, then confirm to enable the import.';
 
   @override
-  String pharmacyDrugImportSummaryNew(String count) {
-    return 'New: $count';
-  }
+  String get pharmacyDrugImportReviewConfirm =>
+      'I have reviewed these products';
 
   @override
-  String pharmacyDrugImportSummaryExisting(String count) {
-    return 'In catalog: $count';
-  }
-
-  @override
-  String pharmacyDrugImportSummaryReview(String count) {
-    return 'Needs review: $count';
-  }
-
-  @override
-  String pharmacyDrugImportSummaryDuplicates(String count) {
-    return 'Duplicate rows: $count';
-  }
-
-  @override
-  String pharmacyDrugImportSummaryErrors(String count) {
-    return 'Rows skipped: $count';
-  }
-
-  @override
-  String pharmacyDrugImportSummaryWarnings(String count) {
-    return 'Warnings: $count';
-  }
-
-  @override
-  String pharmacyDrugImportSummaryQuantity(String quantity, String batches) {
-    return 'Units: $quantity in $batches batches';
-  }
+  String get pharmacyDrugImportShowReviewAction => 'Show them';
 
   @override
   String get pharmacyDrugImportPricingTitle => 'Prices will not be imported';
@@ -29128,6 +29187,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pharmacyDrugImportPricingBody =>
       'You do not have permission to set pharmacy prices, so retail prices and costs in the file are ignored.';
+
+  @override
+  String get pharmacyDrugImportSettingsTitle => 'Import settings';
+
+  @override
+  String get pharmacyDrugImportSettingsSubtitle =>
+      'Choose how quantities in the file update stock at this facility.';
 
   @override
   String get pharmacyDrugImportStockModeLabel => 'Stock quantities';
@@ -29167,6 +29233,20 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get pharmacyDrugImportProductsTitle => 'Products';
+
+  @override
+  String pharmacyDrugImportProductsSubtitle(String shown, String total) {
+    return 'Showing $shown of $total';
+  }
+
+  @override
+  String get pharmacyDrugImportSearchLabel => 'Search products';
+
+  @override
+  String get pharmacyDrugImportSearchHint => 'Product or brand name';
+
+  @override
   String get pharmacyDrugImportFilterLabel => 'Show';
 
   @override
@@ -29194,7 +29274,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pharmacyDrugImportNoProductsInFilter =>
-      'No products in this view.';
+      'No products match this view.';
 
   @override
   String get pharmacyDrugImportStatusNew => 'New';
@@ -29204,6 +29284,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pharmacyDrugImportStatusSimilar => 'Needs review';
+
+  @override
+  String pharmacyDrugImportIssueCount(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$countString issues',
+      one: '1 issue',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get pharmacyDrugImportActionLabel => 'Action';
@@ -29259,17 +29354,27 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get pharmacyDrugImportShowDetailsAction => 'Show details';
+
+  @override
+  String get pharmacyDrugImportHideDetailsAction => 'Hide details';
+
+  @override
+  String get pharmacyDrugImportBatchesTitle => 'Batches';
+
+  @override
+  String get pharmacyDrugImportChangesTitle => 'Catalog changes';
+
+  @override
+  String get pharmacyDrugImportIssuesTitle => 'Issues';
+
+  @override
   String pharmacyDrugImportBatchLine(
     String batch,
     String expiry,
     String quantity,
   ) {
     return '$batch (expires $expiry, qty $quantity)';
-  }
-
-  @override
-  String pharmacyDrugImportMoreBatches(String count) {
-    return '+$count more';
   }
 
   @override
@@ -29316,13 +29421,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String pharmacyDrugImportReviewConfirm(String count) {
-    return 'I reviewed the products that look like existing drugs ($count)';
-  }
+  String pharmacyDrugImportSubmitAction(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
 
-  @override
-  String pharmacyDrugImportSubmitAction(String count) {
-    return 'Import $count products';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Import $countString products',
+      one: 'Import 1 product',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -29348,59 +29458,45 @@ class AppLocalizationsEn extends AppLocalizations {
       'The catalog and facility stock are updated.';
 
   @override
-  String pharmacyDrugImportResultCreated(String count) {
-    return 'Drugs created: $count';
-  }
+  String get pharmacyDrugImportResultStatCreated => 'Drugs created';
 
   @override
-  String pharmacyDrugImportResultMerged(String count) {
-    return 'Drugs linked, blanks filled: $count';
-  }
+  String get pharmacyDrugImportResultStatLinked => 'Linked, blanks filled';
 
   @override
-  String pharmacyDrugImportResultUpdated(String count) {
-    return 'Drugs linked and overwritten: $count';
-  }
+  String get pharmacyDrugImportResultStatUpdated => 'Linked and overwritten';
 
   @override
-  String pharmacyDrugImportResultSkipped(String count) {
-    return 'Products skipped: $count';
-  }
+  String get pharmacyDrugImportResultStatSkipped => 'Skipped';
 
   @override
-  String pharmacyDrugImportResultSuppliers(String count) {
-    return 'Suppliers created: $count';
-  }
+  String get pharmacyDrugImportResultStatBatches => 'Batches saved';
 
   @override
-  String pharmacyDrugImportResultBatches(
-    String created,
-    String updated,
-    String cleared,
-  ) {
-    return 'Batches created: $created, updated: $updated, cleared: $cleared';
-  }
+  String get pharmacyDrugImportResultStatUnits => 'Units imported';
 
   @override
-  String pharmacyDrugImportResultStock(
-    String created,
-    String adjusted,
-    String cleared,
-  ) {
-    return 'Stock records created: $created, adjusted: $adjusted, cleared: $cleared';
-  }
+  String get pharmacyDrugImportResultStatStockCleared => 'Items cleared';
 
   @override
-  String pharmacyDrugImportResultQuantity(String count) {
-    return 'Units imported: $count';
-  }
+  String get pharmacyDrugImportResultStatSuppliers => 'Suppliers created';
 
   @override
   String get pharmacyDrugImportDoneAction => 'Done';
 
   @override
-  String pharmacyDrugImportSuccessMessage(String count) {
-    return 'Drug import complete: $count products imported';
+  String pharmacyDrugImportSuccessMessage(int count) {
+    final intl.NumberFormat countNumberFormat =
+        intl.NumberFormat.decimalPattern(localeName);
+    final String countString = countNumberFormat.format(count);
+
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Drug import complete: $countString products imported',
+      one: 'Drug import complete: 1 product imported',
+    );
+    return '$_temp0';
   }
 
   @override

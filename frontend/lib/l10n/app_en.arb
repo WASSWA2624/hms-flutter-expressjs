@@ -37083,8 +37083,20 @@
   "@pharmacyDrugImportDialogTitle": {
     "description": "Drug import dialog title."
   },
-  "pharmacyDrugImportFacilityTitle": "Importing into {facility}",
-  "@pharmacyDrugImportFacilityTitle": {
+  "pharmacyDrugImportStepFile": "Choose file",
+  "@pharmacyDrugImportStepFile": {
+    "description": "Drug import wizard step: pick the source and file."
+  },
+  "pharmacyDrugImportStepReview": "Review",
+  "@pharmacyDrugImportStepReview": {
+    "description": "Drug import wizard step: review the analysis."
+  },
+  "pharmacyDrugImportStepImport": "Import",
+  "@pharmacyDrugImportStepImport": {
+    "description": "Drug import wizard step: import result."
+  },
+  "pharmacyDrugImportDestination": "Destination: {facility}",
+  "@pharmacyDrugImportDestination": {
     "description": "Drug import banner naming the facility that receives stock.",
     "placeholders": {
       "facility": {
@@ -37092,13 +37104,17 @@
       }
     }
   },
-  "pharmacyDrugImportFacilityFallbackTitle": "Importing into your current facility",
-  "@pharmacyDrugImportFacilityFallbackTitle": {
-    "description": "Drug import banner title when the facility name is unknown."
+  "pharmacyDrugImportDestinationFallback": "Destination: your current facility",
+  "@pharmacyDrugImportDestinationFallback": {
+    "description": "Drug import banner when the facility name is unknown."
   },
-  "pharmacyDrugImportFacilityBody": "Catalog drugs are shared across the organization; stock and batches are added only to this facility. Nothing is saved until you review the file and confirm the import.",
-  "@pharmacyDrugImportFacilityBody": {
+  "pharmacyDrugImportDestinationHint": "The drug catalog is shared across your organization. Stock and batches are added to this facility only.",
+  "@pharmacyDrugImportDestinationHint": {
     "description": "Drug import banner explaining import scope."
+  },
+  "pharmacyDrugImportSourceSectionTitle": "Source system",
+  "@pharmacyDrugImportSourceSectionTitle": {
+    "description": "Drug import section title for the source system."
   },
   "pharmacyDrugImportSourceLabel": "Import from",
   "@pharmacyDrugImportSourceLabel": {
@@ -37106,7 +37122,7 @@
   },
   "pharmacyDrugImportSourceHelper": "The system the Excel file was exported from.",
   "@pharmacyDrugImportSourceHelper": {
-    "description": "Drug import source system select helper."
+    "description": "Drug import source section subtitle."
   },
   "pharmacyDrugImportSourceMedicErp": "Medic-ERP",
   "@pharmacyDrugImportSourceMedicErp": {
@@ -37114,48 +37130,128 @@
   },
   "pharmacyDrugImportTemplateTitle": "{source} template columns",
   "@pharmacyDrugImportTemplateTitle": {
-    "description": "Drug import panel listing the columns a source template requires.",
+    "description": "Drug import heading for the columns a source template requires.",
     "placeholders": {
       "source": {
         "type": "String"
       }
     }
   },
-  "pharmacyDrugImportTemplateBody": "The first row of the sheet must contain these column names. The column order does not matter.",
+  "pharmacyDrugImportTemplateBody": "Row 1 of the sheet must contain these column names. Extra columns are ignored and the order doesn't matter.",
   "@pharmacyDrugImportTemplateBody": {
     "description": "Drug import template columns explanation."
   },
-  "pharmacyDrugImportFileTitle": "Excel file (.xlsx)",
-  "@pharmacyDrugImportFileTitle": {
-    "description": "Drug import file picker panel title."
+  "pharmacyDrugImportFileSectionTitle": "Excel file",
+  "@pharmacyDrugImportFileSectionTitle": {
+    "description": "Drug import section title for the file."
   },
-  "pharmacyDrugImportFileEmpty": "No file selected. Files up to 5 MB and 5,000 rows are supported.",
-  "@pharmacyDrugImportFileEmpty": {
-    "description": "Drug import file picker empty state."
+  "pharmacyDrugImportFileSectionSubtitle": "The file is checked as soon as you choose it. Nothing is saved until you confirm the import.",
+  "@pharmacyDrugImportFileSectionSubtitle": {
+    "description": "Drug import file section subtitle."
   },
-  "pharmacyDrugImportChooseFileAction": "Choose file",
-  "@pharmacyDrugImportChooseFileAction": {
-    "description": "Drug import choose file action."
+  "pharmacyDrugImportDropTitle": "Choose an Excel file",
+  "@pharmacyDrugImportDropTitle": {
+    "description": "Drug import file picker headline."
   },
-  "pharmacyDrugImportReplaceFileAction": "Choose another file",
+  "pharmacyDrugImportDropSubtitle": "{source} stock export saved as .xlsx",
+  "@pharmacyDrugImportDropSubtitle": {
+    "description": "Drug import file picker supporting text.",
+    "placeholders": {
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportBrowseAction": "Browse files",
+  "@pharmacyDrugImportBrowseAction": {
+    "description": "Drug import action that opens the file picker."
+  },
+  "pharmacyDrugImportReplaceFileAction": "Replace",
   "@pharmacyDrugImportReplaceFileAction": {
-    "description": "Drug import replace selected file action."
+    "description": "Drug import action that picks a different file."
+  },
+  "pharmacyDrugImportRemoveFileAction": "Remove file",
+  "@pharmacyDrugImportRemoveFileAction": {
+    "description": "Drug import action that clears the selected file."
+  },
+  "pharmacyDrugImportOpeningFile": "Opening file…",
+  "@pharmacyDrugImportOpeningFile": {
+    "description": "Drug import status while the chosen file is read."
   },
   "pharmacyDrugImportFileTypeLabel": "Excel workbook",
   "@pharmacyDrugImportFileTypeLabel": {
     "description": "File type label shown in the drug import file picker."
   },
-  "pharmacyDrugImportFileReadFailedTitle": "The file could not be opened",
-  "@pharmacyDrugImportFileReadFailedTitle": {
-    "description": "Drug import error title when the selected file cannot be read."
-  },
-  "pharmacyDrugImportFileReadFailedBody": "Choose the file again, or export it from the source system again.",
+  "pharmacyDrugImportFileReadFailedBody": "The file could not be opened. Choose it again, or export it from the source system again.",
   "@pharmacyDrugImportFileReadFailedBody": {
-    "description": "Drug import error body when the selected file cannot be read."
+    "description": "Drug import error when the selected file cannot be read."
+  },
+  "pharmacyDrugImportFileUnsupported": "Choose an Excel workbook saved as .xlsx.",
+  "@pharmacyDrugImportFileUnsupported": {
+    "description": "Drug import error when the selected file is not .xlsx."
+  },
+  "pharmacyDrugImportFileDetails": "{size} · {meta}",
+  "@pharmacyDrugImportFileDetails": {
+    "description": "Drug import file summary: size and sheet details.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      },
+      "meta": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportFileMeta": "{sheet} sheet · {rows} rows",
+  "@pharmacyDrugImportFileMeta": {
+    "description": "Drug import sheet name and row count.",
+    "placeholders": {
+      "sheet": {
+        "type": "String"
+      },
+      "rows": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportFileSizeBytes": "{size} B",
+  "@pharmacyDrugImportFileSizeBytes": {
+    "description": "File size in bytes.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportFileSizeKb": "{size} KB",
+  "@pharmacyDrugImportFileSizeKb": {
+    "description": "File size in kilobytes.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportFileSizeMb": "{size} MB",
+  "@pharmacyDrugImportFileSizeMb": {
+    "description": "File size in megabytes.",
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
   },
   "pharmacyDrugImportAnalyzeAction": "Review file",
   "@pharmacyDrugImportAnalyzeAction": {
     "description": "Drug import action that analyzes the selected file."
+  },
+  "pharmacyDrugImportContinueAction": "Continue to review",
+  "@pharmacyDrugImportContinueAction": {
+    "description": "Drug import action that returns to an analyzed file."
+  },
+  "pharmacyDrugImportChangeFileAction": "Change file",
+  "@pharmacyDrugImportChangeFileAction": {
+    "description": "Drug import action that returns to file selection."
   },
   "pharmacyDrugImportAnalyzingTitle": "Checking the file",
   "@pharmacyDrugImportAnalyzingTitle": {
@@ -37191,102 +37287,57 @@
   "@pharmacyDrugImportEmptyPlanBody": {
     "description": "Drug import warning body when no row is usable."
   },
-  "pharmacyDrugImportReviewTitle": "Review {file}",
-  "@pharmacyDrugImportReviewTitle": {
-    "description": "Drug import review step banner title.",
-    "placeholders": {
-      "file": {
-        "type": "String"
-      }
-    }
+  "pharmacyDrugImportStatProducts": "Products",
+  "@pharmacyDrugImportStatProducts": {
+    "description": "Drug import stat tile: products found."
   },
-  "pharmacyDrugImportReviewBody": "Choose what happens to each product. Nothing is saved until you select Import.",
-  "@pharmacyDrugImportReviewBody": {
-    "description": "Drug import review step banner body."
+  "pharmacyDrugImportStatNew": "New drugs",
+  "@pharmacyDrugImportStatNew": {
+    "description": "Drug import stat tile: products not in the catalog."
   },
-  "pharmacyDrugImportSummaryRows": "Rows: {count}",
-  "@pharmacyDrugImportSummaryRows": {
-    "description": "Drug import summary badge for rows read.",
-    "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
+  "pharmacyDrugImportStatExisting": "Already in catalog",
+  "@pharmacyDrugImportStatExisting": {
+    "description": "Drug import stat tile: exact catalog matches."
   },
-  "pharmacyDrugImportSummaryProducts": "Products: {count}",
-  "@pharmacyDrugImportSummaryProducts": {
-    "description": "Drug import summary badge for products found.",
-    "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
+  "pharmacyDrugImportStatReview": "Needs review",
+  "@pharmacyDrugImportStatReview": {
+    "description": "Drug import stat tile: products similar to catalog drugs."
   },
-  "pharmacyDrugImportSummaryNew": "New: {count}",
-  "@pharmacyDrugImportSummaryNew": {
-    "description": "Drug import summary badge for new products.",
-    "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
+  "pharmacyDrugImportStatIssues": "With issues",
+  "@pharmacyDrugImportStatIssues": {
+    "description": "Drug import stat tile: products with warnings or errors."
   },
-  "pharmacyDrugImportSummaryExisting": "In catalog: {count}",
-  "@pharmacyDrugImportSummaryExisting": {
-    "description": "Drug import summary badge for products already in the catalog.",
+  "pharmacyDrugImportStatUnits": "{batches, plural, =1{Units in 1 batch} other{Units in {batches} batches}}",
+  "@pharmacyDrugImportStatUnits": {
+    "description": "Drug import stat tile: total units and batches.",
     "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
-  },
-  "pharmacyDrugImportSummaryReview": "Needs review: {count}",
-  "@pharmacyDrugImportSummaryReview": {
-    "description": "Drug import summary badge for products similar to catalog drugs.",
-    "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
-  },
-  "pharmacyDrugImportSummaryDuplicates": "Duplicate rows: {count}",
-  "@pharmacyDrugImportSummaryDuplicates": {
-    "description": "Drug import summary badge for exact duplicate rows.",
-    "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
-  },
-  "pharmacyDrugImportSummaryErrors": "Rows skipped: {count}",
-  "@pharmacyDrugImportSummaryErrors": {
-    "description": "Drug import summary badge for unusable rows.",
-    "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
-  },
-  "pharmacyDrugImportSummaryWarnings": "Warnings: {count}",
-  "@pharmacyDrugImportSummaryWarnings": {
-    "description": "Drug import summary badge for warnings.",
-    "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
-  },
-  "pharmacyDrugImportSummaryQuantity": "Units: {quantity} in {batches} batches",
-  "@pharmacyDrugImportSummaryQuantity": {
-    "description": "Drug import summary badge for total units and batches.",
-    "placeholders": {
-      "quantity": {
-        "type": "String"
-      },
       "batches": {
-        "type": "String"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
+  },
+  "pharmacyDrugImportReviewBannerTitle": "{count, plural, =1{1 product looks like a drug already in your catalog} other{{count} products look like drugs already in your catalog}}",
+  "@pharmacyDrugImportReviewBannerTitle": {
+    "description": "Drug import banner title for products needing review.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
+  },
+  "pharmacyDrugImportReviewBannerBody": "Check the suggested action for each one, then confirm to enable the import.",
+  "@pharmacyDrugImportReviewBannerBody": {
+    "description": "Drug import banner body for products needing review."
+  },
+  "pharmacyDrugImportReviewConfirm": "I have reviewed these products",
+  "@pharmacyDrugImportReviewConfirm": {
+    "description": "Drug import confirmation checkbox for similar products."
+  },
+  "pharmacyDrugImportShowReviewAction": "Show them",
+  "@pharmacyDrugImportShowReviewAction": {
+    "description": "Drug import action that filters to products needing review."
   },
   "pharmacyDrugImportPricingTitle": "Prices will not be imported",
   "@pharmacyDrugImportPricingTitle": {
@@ -37295,6 +37346,14 @@
   "pharmacyDrugImportPricingBody": "You do not have permission to set pharmacy prices, so retail prices and costs in the file are ignored.",
   "@pharmacyDrugImportPricingBody": {
     "description": "Drug import warning body when the user cannot write pharmacy prices."
+  },
+  "pharmacyDrugImportSettingsTitle": "Import settings",
+  "@pharmacyDrugImportSettingsTitle": {
+    "description": "Drug import settings section title."
+  },
+  "pharmacyDrugImportSettingsSubtitle": "Choose how quantities in the file update stock at this facility.",
+  "@pharmacyDrugImportSettingsSubtitle": {
+    "description": "Drug import settings section subtitle."
   },
   "pharmacyDrugImportStockModeLabel": "Stock quantities",
   "@pharmacyDrugImportStockModeLabel": {
@@ -37350,6 +37409,30 @@
       }
     }
   },
+  "pharmacyDrugImportProductsTitle": "Products",
+  "@pharmacyDrugImportProductsTitle": {
+    "description": "Drug import product list section title."
+  },
+  "pharmacyDrugImportProductsSubtitle": "Showing {shown} of {total}",
+  "@pharmacyDrugImportProductsSubtitle": {
+    "description": "Drug import product list count.",
+    "placeholders": {
+      "shown": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportSearchLabel": "Search products",
+  "@pharmacyDrugImportSearchLabel": {
+    "description": "Drug import product search label."
+  },
+  "pharmacyDrugImportSearchHint": "Product or brand name",
+  "@pharmacyDrugImportSearchHint": {
+    "description": "Drug import product search hint."
+  },
   "pharmacyDrugImportFilterLabel": "Show",
   "@pharmacyDrugImportFilterLabel": {
     "description": "Drug import product filter select label."
@@ -37390,9 +37473,9 @@
   "@pharmacyDrugImportFilterSkipped": {
     "description": "Drug import product filter for skipped products."
   },
-  "pharmacyDrugImportNoProductsInFilter": "No products in this view.",
+  "pharmacyDrugImportNoProductsInFilter": "No products match this view.",
   "@pharmacyDrugImportNoProductsInFilter": {
-    "description": "Drug import empty state for a product filter."
+    "description": "Drug import empty state for a product filter or search."
   },
   "pharmacyDrugImportStatusNew": "New",
   "@pharmacyDrugImportStatusNew": {
@@ -37405,6 +37488,16 @@
   "pharmacyDrugImportStatusSimilar": "Needs review",
   "@pharmacyDrugImportStatusSimilar": {
     "description": "Drug import status badge for a product similar to catalog drugs."
+  },
+  "pharmacyDrugImportIssueCount": "{count, plural, =1{1 issue} other{{count} issues}}",
+  "@pharmacyDrugImportIssueCount": {
+    "description": "Drug import badge counting a product issues.",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "format": "decimalPattern"
+      }
+    }
   },
   "pharmacyDrugImportActionLabel": "Action",
   "@pharmacyDrugImportActionLabel": {
@@ -37496,6 +37589,26 @@
       }
     }
   },
+  "pharmacyDrugImportShowDetailsAction": "Show details",
+  "@pharmacyDrugImportShowDetailsAction": {
+    "description": "Drug import action that expands product details."
+  },
+  "pharmacyDrugImportHideDetailsAction": "Hide details",
+  "@pharmacyDrugImportHideDetailsAction": {
+    "description": "Drug import action that collapses product details."
+  },
+  "pharmacyDrugImportBatchesTitle": "Batches",
+  "@pharmacyDrugImportBatchesTitle": {
+    "description": "Drug import product details heading for batches."
+  },
+  "pharmacyDrugImportChangesTitle": "Catalog changes",
+  "@pharmacyDrugImportChangesTitle": {
+    "description": "Drug import product details heading for catalog changes."
+  },
+  "pharmacyDrugImportIssuesTitle": "Issues",
+  "@pharmacyDrugImportIssuesTitle": {
+    "description": "Drug import product details heading for issues."
+  },
   "pharmacyDrugImportBatchLine": "{batch} (expires {expiry}, qty {quantity})",
   "@pharmacyDrugImportBatchLine": {
     "description": "Drug import batch summary.",
@@ -37507,15 +37620,6 @@
         "type": "String"
       },
       "quantity": {
-        "type": "String"
-      }
-    }
-  },
-  "pharmacyDrugImportMoreBatches": "+{count} more",
-  "@pharmacyDrugImportMoreBatches": {
-    "description": "Drug import suffix for additional batches.",
-    "placeholders": {
-      "count": {
         "type": "String"
       }
     }
@@ -37595,21 +37699,13 @@
       }
     }
   },
-  "pharmacyDrugImportReviewConfirm": "I reviewed the products that look like existing drugs ({count})",
-  "@pharmacyDrugImportReviewConfirm": {
-    "description": "Drug import confirmation checkbox for similar products.",
-    "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
-  },
-  "pharmacyDrugImportSubmitAction": "Import {count} products",
+  "pharmacyDrugImportSubmitAction": "{count, plural, =1{Import 1 product} other{Import {count} products}}",
   "@pharmacyDrugImportSubmitAction": {
     "description": "Drug import submit action.",
     "placeholders": {
       "count": {
-        "type": "String"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },
@@ -37627,11 +37723,11 @@
   },
   "pharmacyDrugImportResultTitle": "Import complete",
   "@pharmacyDrugImportResultTitle": {
-    "description": "Drug import result banner title."
+    "description": "Drug import result title."
   },
   "pharmacyDrugImportResultBody": "The catalog and stock at {facility} are updated.",
   "@pharmacyDrugImportResultBody": {
-    "description": "Drug import result banner body.",
+    "description": "Drug import result body.",
     "placeholders": {
       "facility": {
         "type": "String"
@@ -37640,102 +37736,51 @@
   },
   "pharmacyDrugImportResultBodyFallback": "The catalog and facility stock are updated.",
   "@pharmacyDrugImportResultBodyFallback": {
-    "description": "Drug import result banner body when the facility name is unknown."
+    "description": "Drug import result body when the facility name is unknown."
   },
-  "pharmacyDrugImportResultCreated": "Drugs created: {count}",
-  "@pharmacyDrugImportResultCreated": {
-    "description": "Drug import result count of created drugs.",
-    "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
+  "pharmacyDrugImportResultStatCreated": "Drugs created",
+  "@pharmacyDrugImportResultStatCreated": {
+    "description": "Drug import result tile: created drugs."
   },
-  "pharmacyDrugImportResultMerged": "Drugs linked, blanks filled: {count}",
-  "@pharmacyDrugImportResultMerged": {
-    "description": "Drug import result count of merged drugs.",
-    "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
+  "pharmacyDrugImportResultStatLinked": "Linked, blanks filled",
+  "@pharmacyDrugImportResultStatLinked": {
+    "description": "Drug import result tile: merged drugs."
   },
-  "pharmacyDrugImportResultUpdated": "Drugs linked and overwritten: {count}",
-  "@pharmacyDrugImportResultUpdated": {
-    "description": "Drug import result count of updated drugs.",
-    "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
+  "pharmacyDrugImportResultStatUpdated": "Linked and overwritten",
+  "@pharmacyDrugImportResultStatUpdated": {
+    "description": "Drug import result tile: updated drugs."
   },
-  "pharmacyDrugImportResultSkipped": "Products skipped: {count}",
-  "@pharmacyDrugImportResultSkipped": {
-    "description": "Drug import result count of skipped products.",
-    "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
+  "pharmacyDrugImportResultStatSkipped": "Skipped",
+  "@pharmacyDrugImportResultStatSkipped": {
+    "description": "Drug import result tile: skipped products."
   },
-  "pharmacyDrugImportResultSuppliers": "Suppliers created: {count}",
-  "@pharmacyDrugImportResultSuppliers": {
-    "description": "Drug import result count of created suppliers.",
-    "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
+  "pharmacyDrugImportResultStatBatches": "Batches saved",
+  "@pharmacyDrugImportResultStatBatches": {
+    "description": "Drug import result tile: created or updated batches."
   },
-  "pharmacyDrugImportResultBatches": "Batches created: {created}, updated: {updated}, cleared: {cleared}",
-  "@pharmacyDrugImportResultBatches": {
-    "description": "Drug import result batch counts.",
-    "placeholders": {
-      "created": {
-        "type": "String"
-      },
-      "updated": {
-        "type": "String"
-      },
-      "cleared": {
-        "type": "String"
-      }
-    }
+  "pharmacyDrugImportResultStatUnits": "Units imported",
+  "@pharmacyDrugImportResultStatUnits": {
+    "description": "Drug import result tile: total units."
   },
-  "pharmacyDrugImportResultStock": "Stock records created: {created}, adjusted: {adjusted}, cleared: {cleared}",
-  "@pharmacyDrugImportResultStock": {
-    "description": "Drug import result stock counts.",
-    "placeholders": {
-      "created": {
-        "type": "String"
-      },
-      "adjusted": {
-        "type": "String"
-      },
-      "cleared": {
-        "type": "String"
-      }
-    }
+  "pharmacyDrugImportResultStatStockCleared": "Items cleared",
+  "@pharmacyDrugImportResultStatStockCleared": {
+    "description": "Drug import result tile: drugs whose stock was cleared."
   },
-  "pharmacyDrugImportResultQuantity": "Units imported: {count}",
-  "@pharmacyDrugImportResultQuantity": {
-    "description": "Drug import result total units.",
-    "placeholders": {
-      "count": {
-        "type": "String"
-      }
-    }
+  "pharmacyDrugImportResultStatSuppliers": "Suppliers created",
+  "@pharmacyDrugImportResultStatSuppliers": {
+    "description": "Drug import result tile: created suppliers."
   },
   "pharmacyDrugImportDoneAction": "Done",
   "@pharmacyDrugImportDoneAction": {
     "description": "Drug import action that closes the result step."
   },
-  "pharmacyDrugImportSuccessMessage": "Drug import complete: {count} products imported",
+  "pharmacyDrugImportSuccessMessage": "{count, plural, =1{Drug import complete: 1 product imported} other{Drug import complete: {count} products imported}}",
   "@pharmacyDrugImportSuccessMessage": {
     "description": "Snackbar after a drug import.",
     "placeholders": {
       "count": {
-        "type": "String"
+        "type": "int",
+        "format": "decimalPattern"
       }
     }
   },

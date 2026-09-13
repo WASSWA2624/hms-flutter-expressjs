@@ -4,9 +4,6 @@ jest.mock('@middlewares/auth.middleware', () => ({
     next();
   },
   authorize: () => (_req, _res, next) => next()}));
-jest.mock('@lib/pharmacy/drug-import/drug-import-sources', () => ({
-  ...jest.requireActual('@lib/pharmacy/drug-import/drug-import-sources'),
-  DRUG_IMPORT_LIMITS: { max_rows: 5000, max_file_bytes: 32 }}));
 jest.mock('@controllers/pharmacy-workspace/pharmacy-workspace.controller', () =>
   new Proxy(
     {},
@@ -66,20 +63,30 @@ describe('pharmacy drug import routes', () => {
     expect(response.body.handler).toBe('previewDrugImport');
   });
 
-  it('turns oversized or misnamed uploads into localized 400s', async () => {
-    const oversized = await request(buildApp())
-      .post('/pharmacy/drugs/import/preview')
+  it('accepts large files and decision payloads beyond multer defaults', async () => {
+    const decisions = Array.from({ length: 30000 }, (_, index) => ({
+      key: `imported product ${index}|brand ${index}`,
+      action: 'SKIP'}));
+    const response = await request(buildApp())
+      .post('/pharmacy/drugs/import/commit')
       .field('source', 'MEDIC_ERP')
-      .attach('file', Buffer.alloc(64), 'stock.xlsx');
-    expect(oversized.status).toBe(400);
-    expect(oversized.body.message).toBe('errors.pharmacy_drug_import.file_too_large');
+      .field('plan_hash', 'd'.repeat(64))
+      .field('decisions', JSON.stringify(decisions))
+      .attach('file', Buffer.alloc(6 * 1024 * 1024), 'stock.xlsx');
 
-    const misnamed = await request(buildApp())
+    expect(response.status).toBe(200);
+    expect(response.body.body.decisions).toHaveLength(30000);
+    expect(response.body.file.size).toBe(6 * 1024 * 1024);
+  });
+
+  it('turns misnamed uploads into a localized 400', async () => {
+    const response = await request(buildApp())
       .post('/pharmacy/drugs/import/preview')
       .field('source', 'MEDIC_ERP')
       .attach('upload', Buffer.from('x'), 'stock.xlsx');
-    expect(misnamed.status).toBe(400);
-    expect(misnamed.body.message).toBe('errors.pharmacy_drug_import.invalid_file');
+
+    expect(response.status).toBe(400);
+    expect(response.body.message).toBe('errors.pharmacy_drug_import.invalid_file');
   });
 
   it('rejects commits without a valid plan hash', async () => {

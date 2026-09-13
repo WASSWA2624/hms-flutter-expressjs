@@ -542,12 +542,7 @@ class _DrugCatalogTabState extends ConsumerState<_DrugCatalogTab> {
     }
     showAppSuccessSnackBar(
       context,
-      context.l10n.pharmacyDrugImportSuccessMessage(
-        AppFormatters.decimal(
-          result.importedProducts,
-          Localizations.localeOf(context),
-        ),
-      ),
+      context.l10n.pharmacyDrugImportSuccessMessage(result.importedProducts),
     );
   }
 

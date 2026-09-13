@@ -13,7 +13,7 @@ import 'package:hosspi_hms/shared/components/components.dart';
 
 final PharmacyDrugImportFile _file = PharmacyDrugImportFile(
   name: 'stock.xlsx',
-  bytes: Uint8List(4),
+  bytes: Uint8List(2048),
 );
 
 const PharmacyDrugImportDrug _zaha = PharmacyDrugImportDrug(
@@ -42,6 +42,7 @@ const PharmacyDrugImportProduct _newProduct = PharmacyDrugImportProduct(
 const PharmacyDrugImportPreview _preview = PharmacyDrugImportPreview(
   source: 'MEDIC_ERP',
   fileName: 'stock.xlsx',
+  sheetName: 'Stock',
   facilityName: 'Fairbanks Medical Centre',
   template: PharmacyDrugImportTemplate(columns: <String>['product_name']),
   canWritePricing: true,
@@ -127,6 +128,7 @@ const PharmacyDrugImportPreview _previewWithoutReview =
     PharmacyDrugImportPreview(
       source: 'MEDIC_ERP',
       fileName: 'stock.xlsx',
+      sheetName: 'Stock',
       template: PharmacyDrugImportTemplate(columns: <String>['product_name']),
       canWritePricing: true,
       canCommit: true,
@@ -143,6 +145,7 @@ Future<void> _pumpDialog(
   WidgetTester tester, {
   required PharmacyDrugImportPreviewLoader onPreview,
   required PharmacyDrugImportCommitter onCommit,
+  PharmacyDrugImportFilePicker? pickFile,
   ValueChanged<PharmacyDrugImportResult?>? onClosed,
 }) async {
   tester.view.physicalSize = const Size(1400, 2400);
@@ -167,7 +170,7 @@ Future<void> _pumpDialog(
                           facilityName: 'Fairbanks Medical Centre',
                           onPreview: onPreview,
                           onCommit: onCommit,
-                          pickFile: () async => _file,
+                          pickFile: pickFile ?? () async => _file,
                         ),
                       );
                   onClosed?.call(result);
@@ -197,13 +200,12 @@ Future<void> _tapVisible(WidgetTester tester, Finder finder) async {
   await tester.pumpAndSettle();
 }
 
-Future<void> _chooseAndReview(WidgetTester tester) async {
-  await _tapVisible(tester, find.text('Choose file'));
-  await _tapVisible(tester, find.text('Review file'));
+Future<void> _chooseFile(WidgetTester tester) async {
+  await _tapVisible(tester, find.text('Browse files'));
 }
 
 void main() {
-  testWidgets('reviews a file and imports it with per-product decisions', (
+  testWidgets('choosing a file analyzes it and imports the reviewed plan', (
     WidgetTester tester,
   ) async {
     PharmacyDrugImportSource? previewedSource;
@@ -238,26 +240,32 @@ void main() {
 
     // AppDialog renders titles uppercase.
     expect(find.text('IMPORT DRUGS'), findsOneWidget);
-    expect(find.text('Importing into Fairbanks Medical Centre'), findsOneWidget);
+    expect(
+      find.text('Destination: Fairbanks Medical Centre'),
+      findsOneWidget,
+    );
+    expect(find.text('Medic-ERP template columns'), findsOneWidget);
     expect(_button(tester, 'Review file').enabled, isFalse);
 
-    await _chooseAndReview(tester);
+    await _chooseFile(tester);
 
     expect(previewedSource, PharmacyDrugImportSource.medicErp);
     expect(previewedFile?.name, 'stock.xlsx');
-    expect(find.text('Review stock.xlsx'), findsOneWidget);
-    expect(find.text('Needs review: 1'), findsOneWidget);
+    expect(find.text('stock.xlsx'), findsOneWidget);
+    expect(find.text('2 KB · Stock sheet · 3 rows'), findsOneWidget);
     expect(
-      find.textContaining('Retail price 5,000 is below cost 6,000.'),
-      findsWidgets,
+      find.text('1 product looks like a drug already in your catalog'),
+      findsOneWidget,
     );
-    expect(find.text('Cost: 4,300 (currently empty)'), findsOneWidget);
+    expect(find.text('Units in 3 batches'), findsOneWidget);
+    expect(find.text('Needs review'), findsWidgets);
+    expect(find.text('1 issue'), findsOneWidget);
     expect(_button(tester, 'Import 3 products').enabled, isFalse);
 
-    await _tapVisible(
-      tester,
-      find.text('I reviewed the products that look like existing drugs (1)'),
-    );
+    await _tapVisible(tester, find.text('Show details').last);
+    expect(find.text('Cost: 4,300 (currently empty)'), findsOneWidget);
+
+    await _tapVisible(tester, find.text('I have reviewed these products'));
     expect(_button(tester, 'Import 3 products').enabled, isTrue);
 
     await _tapVisible(
@@ -290,7 +298,7 @@ void main() {
     );
 
     expect(find.text('Import complete'), findsOneWidget);
-    expect(find.text('Drugs created: 2'), findsOneWidget);
+    expect(find.text('Drugs created'), findsOneWidget);
 
     await _tapVisible(tester, find.text('Done'));
     expect(closedWith?.importedProducts, 3);
@@ -316,7 +324,7 @@ void main() {
       onCommit: (_) async => fail('commit must not run'),
     );
 
-    await _chooseAndReview(tester);
+    await _chooseFile(tester);
 
     expect(
       find.text('This file does not match the Medic-ERP template'),
@@ -324,7 +332,61 @@ void main() {
     );
     expect(find.text('Missing columns: cost, expiry_date'), findsOneWidget);
     expect(find.text('Review file'), findsOneWidget);
-    expect(find.textContaining('products'), findsNothing);
+    expect(find.textContaining(RegExp(r'^Import \d')), findsNothing);
+  });
+
+  testWidgets('rejects files that are not .xlsx without uploading them', (
+    WidgetTester tester,
+  ) async {
+    int previews = 0;
+    await _pumpDialog(
+      tester,
+      pickFile: () async =>
+          PharmacyDrugImportFile(name: 'stock.csv', bytes: Uint8List(4)),
+      onPreview:
+          ({
+            required PharmacyDrugImportSource source,
+            required PharmacyDrugImportFile file,
+          }) async {
+            previews += 1;
+            return const Result<PharmacyDrugImportPreview>.success(_preview);
+          },
+      onCommit: (_) async => fail('commit must not run'),
+    );
+
+    await _chooseFile(tester);
+
+    expect(
+      find.text('Choose an Excel workbook saved as .xlsx.'),
+      findsOneWidget,
+    );
+    expect(previews, 0);
+    expect(find.text('Browse files'), findsOneWidget);
+  });
+
+  testWidgets('reports a file the picker could not read', (
+    WidgetTester tester,
+  ) async {
+    await _pumpDialog(
+      tester,
+      pickFile: () async => throw StateError('blob read failed'),
+      onPreview:
+          ({
+            required PharmacyDrugImportSource source,
+            required PharmacyDrugImportFile file,
+          }) async => fail('preview must not run'),
+      onCommit: (_) async => fail('commit must not run'),
+    );
+
+    await _chooseFile(tester);
+
+    expect(
+      find.text(
+        'The file could not be opened. Choose it again, or export it from the source system again.',
+      ),
+      findsOneWidget,
+    );
+    expect(_button(tester, 'Browse files').enabled, isTrue);
   });
 
   testWidgets('offers another review when the reviewed plan is stale', (
@@ -351,13 +413,13 @@ void main() {
       ),
     );
 
-    await _chooseAndReview(tester);
-    await _tapVisible(tester, find.text('Import 1 products'));
+    await _chooseFile(tester);
+    await _tapVisible(tester, find.text('Import 1 product'));
 
     expect(find.text('Review file again'), findsOneWidget);
     await _tapVisible(tester, find.text('Review file again'));
     expect(previews, 2);
-    expect(find.text('Review stock.xlsx'), findsOneWidget);
+    expect(find.text('Import 1 product'), findsOneWidget);
   });
 
   group('pharmacyDrugImportIssueMessage', () {

@@ -14,11 +14,6 @@ const DRUG_IMPORT_SOURCES = Object.freeze({
 
 const DRUG_IMPORT_SOURCE_IDS = Object.freeze(Object.keys(DRUG_IMPORT_SOURCES));
 
-const DRUG_IMPORT_LIMITS = Object.freeze({
-  max_rows: 5000,
-  max_file_bytes: 5 * 1024 * 1024,
-});
-
 /**
  * @param {string} sourceId
  * @returns {Object} Import source definition
@@ -37,6 +32,8 @@ const resolveDrugImportSource = (sourceId) => {
 /**
  * Compare workbook headers with the source template.
  *
+ * Extra columns are allowed; only missing template columns block an import.
+ *
  * @param {Object} source
  * @param {Array<string>} headers - Normalized header names
  * @returns {{ missing_columns: string[], unexpected_columns: string[] }}
@@ -52,7 +49,6 @@ const checkTemplateColumns = (source, headers = []) => {
 module.exports = {
   DRUG_IMPORT_SOURCES,
   DRUG_IMPORT_SOURCE_IDS,
-  DRUG_IMPORT_LIMITS,
   resolveDrugImportSource,
   checkTemplateColumns,
 };

@@ -21,7 +21,6 @@ const { findRealtimeRecipientUserIds } = require('@lib/realtime/recipients');
 const { emitToUsers, PHARMACY_EVENTS, INVENTORY_EVENTS } = require('@lib/websocket');
 const { normalizeText } = require('@lib/tenant/tenant-similarity');
 const {
-  DRUG_IMPORT_LIMITS,
   resolveDrugImportSource,
   checkTemplateColumns,
 } = require('@lib/pharmacy/drug-import/drug-import-sources');
@@ -40,11 +39,11 @@ const pharmacyWorkspaceRepository = require('@repositories/pharmacy-workspace/ph
 const { resolveScopedUserContext } = require('@services/pharmacy-workspace/pharmacy.shared');
 const { toPublicIdentifier } = require('@services/pharmacy-workspace/pharmacy.serializer');
 
-// A full stock migration is thousands of writes; the default 5s interactive
-// transaction timeout would roll every import back.
+// Imports have no row cap, so a full stock migration can be many thousands of
+// writes; the default 5s interactive transaction timeout would roll it back.
 const DRUG_IMPORT_TRANSACTION_OPTIONS = Object.freeze({
-  maxWait: 15 * 1000,
-  timeout: 5 * 60 * 1000,
+  maxWait: 60 * 1000,
+  timeout: 60 * 60 * 1000,
 });
 
 const DRUG_IMPORT_RECIPIENT_ROLES = [
@@ -140,7 +139,6 @@ const buildImportContext = async ({ file, payload = {}, user = {} }) => {
 
   const workbook = await readDrugImportWorkbook(file.buffer, {
     preferredSheetName: source.preferredSheetName,
-    maxRows: DRUG_IMPORT_LIMITS.max_rows,
   });
   const template = checkTemplateColumns(source, workbook.headers);
   const canWritePricing = hasPermission(user, PERMISSIONS.PRICING_PHARMACY_WRITE);
@@ -246,7 +244,6 @@ const previewDrugImport = async ({ file, payload = {}, user = {} } = {}) => {
         unexpected_columns: template.unexpected_columns,
         is_valid: template.missing_columns.length === 0,
       },
-      limits: DRUG_IMPORT_LIMITS,
       can_write_pricing: canWritePricing,
       can_commit: Boolean(plan && plan.products.length),
       plan_hash: plan?.plan_hash || null,

@@ -308,7 +308,7 @@ const drugImportDecisionsSchema = z.preprocess((value) => {
   } catch (_error) {
     return value;
   }
-}, z.array(drugImportDecisionSchema).max(5000));
+}, z.array(drugImportDecisionSchema));
 
 const previewDrugImportSchema = z.object({
   source: drugImportSourceSchema});

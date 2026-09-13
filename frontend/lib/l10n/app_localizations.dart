@@ -53037,23 +53037,47 @@ abstract class AppLocalizations {
   /// **'Import drugs'**
   String get pharmacyDrugImportDialogTitle;
 
+  /// Drug import wizard step: pick the source and file.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose file'**
+  String get pharmacyDrugImportStepFile;
+
+  /// Drug import wizard step: review the analysis.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get pharmacyDrugImportStepReview;
+
+  /// Drug import wizard step: import result.
+  ///
+  /// In en, this message translates to:
+  /// **'Import'**
+  String get pharmacyDrugImportStepImport;
+
   /// Drug import banner naming the facility that receives stock.
   ///
   /// In en, this message translates to:
-  /// **'Importing into {facility}'**
-  String pharmacyDrugImportFacilityTitle(String facility);
+  /// **'Destination: {facility}'**
+  String pharmacyDrugImportDestination(String facility);
 
-  /// Drug import banner title when the facility name is unknown.
+  /// Drug import banner when the facility name is unknown.
   ///
   /// In en, this message translates to:
-  /// **'Importing into your current facility'**
-  String get pharmacyDrugImportFacilityFallbackTitle;
+  /// **'Destination: your current facility'**
+  String get pharmacyDrugImportDestinationFallback;
 
   /// Drug import banner explaining import scope.
   ///
   /// In en, this message translates to:
-  /// **'Catalog drugs are shared across the organization; stock and batches are added only to this facility. Nothing is saved until you review the file and confirm the import.'**
-  String get pharmacyDrugImportFacilityBody;
+  /// **'The drug catalog is shared across your organization. Stock and batches are added to this facility only.'**
+  String get pharmacyDrugImportDestinationHint;
+
+  /// Drug import section title for the source system.
+  ///
+  /// In en, this message translates to:
+  /// **'Source system'**
+  String get pharmacyDrugImportSourceSectionTitle;
 
   /// Drug import source system select label.
   ///
@@ -53061,7 +53085,7 @@ abstract class AppLocalizations {
   /// **'Import from'**
   String get pharmacyDrugImportSourceLabel;
 
-  /// Drug import source system select helper.
+  /// Drug import source section subtitle.
   ///
   /// In en, this message translates to:
   /// **'The system the Excel file was exported from.'**
@@ -53073,7 +53097,7 @@ abstract class AppLocalizations {
   /// **'Medic-ERP'**
   String get pharmacyDrugImportSourceMedicErp;
 
-  /// Drug import panel listing the columns a source template requires.
+  /// Drug import heading for the columns a source template requires.
   ///
   /// In en, this message translates to:
   /// **'{source} template columns'**
@@ -53082,32 +53106,56 @@ abstract class AppLocalizations {
   /// Drug import template columns explanation.
   ///
   /// In en, this message translates to:
-  /// **'The first row of the sheet must contain these column names. The column order does not matter.'**
+  /// **'Row 1 of the sheet must contain these column names. Extra columns are ignored and the order doesn\'t matter.'**
   String get pharmacyDrugImportTemplateBody;
 
-  /// Drug import file picker panel title.
+  /// Drug import section title for the file.
   ///
   /// In en, this message translates to:
-  /// **'Excel file (.xlsx)'**
-  String get pharmacyDrugImportFileTitle;
+  /// **'Excel file'**
+  String get pharmacyDrugImportFileSectionTitle;
 
-  /// Drug import file picker empty state.
+  /// Drug import file section subtitle.
   ///
   /// In en, this message translates to:
-  /// **'No file selected. Files up to 5 MB and 5,000 rows are supported.'**
-  String get pharmacyDrugImportFileEmpty;
+  /// **'The file is checked as soon as you choose it. Nothing is saved until you confirm the import.'**
+  String get pharmacyDrugImportFileSectionSubtitle;
 
-  /// Drug import choose file action.
+  /// Drug import file picker headline.
   ///
   /// In en, this message translates to:
-  /// **'Choose file'**
-  String get pharmacyDrugImportChooseFileAction;
+  /// **'Choose an Excel file'**
+  String get pharmacyDrugImportDropTitle;
 
-  /// Drug import replace selected file action.
+  /// Drug import file picker supporting text.
   ///
   /// In en, this message translates to:
-  /// **'Choose another file'**
+  /// **'{source} stock export saved as .xlsx'**
+  String pharmacyDrugImportDropSubtitle(String source);
+
+  /// Drug import action that opens the file picker.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse files'**
+  String get pharmacyDrugImportBrowseAction;
+
+  /// Drug import action that picks a different file.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
   String get pharmacyDrugImportReplaceFileAction;
+
+  /// Drug import action that clears the selected file.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove file'**
+  String get pharmacyDrugImportRemoveFileAction;
+
+  /// Drug import status while the chosen file is read.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening file…'**
+  String get pharmacyDrugImportOpeningFile;
 
   /// File type label shown in the drug import file picker.
   ///
@@ -53115,23 +53163,65 @@ abstract class AppLocalizations {
   /// **'Excel workbook'**
   String get pharmacyDrugImportFileTypeLabel;
 
-  /// Drug import error title when the selected file cannot be read.
+  /// Drug import error when the selected file cannot be read.
   ///
   /// In en, this message translates to:
-  /// **'The file could not be opened'**
-  String get pharmacyDrugImportFileReadFailedTitle;
-
-  /// Drug import error body when the selected file cannot be read.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose the file again, or export it from the source system again.'**
+  /// **'The file could not be opened. Choose it again, or export it from the source system again.'**
   String get pharmacyDrugImportFileReadFailedBody;
+
+  /// Drug import error when the selected file is not .xlsx.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an Excel workbook saved as .xlsx.'**
+  String get pharmacyDrugImportFileUnsupported;
+
+  /// Drug import file summary: size and sheet details.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} · {meta}'**
+  String pharmacyDrugImportFileDetails(String size, String meta);
+
+  /// Drug import sheet name and row count.
+  ///
+  /// In en, this message translates to:
+  /// **'{sheet} sheet · {rows} rows'**
+  String pharmacyDrugImportFileMeta(String sheet, String rows);
+
+  /// File size in bytes.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} B'**
+  String pharmacyDrugImportFileSizeBytes(String size);
+
+  /// File size in kilobytes.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} KB'**
+  String pharmacyDrugImportFileSizeKb(String size);
+
+  /// File size in megabytes.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} MB'**
+  String pharmacyDrugImportFileSizeMb(String size);
 
   /// Drug import action that analyzes the selected file.
   ///
   /// In en, this message translates to:
   /// **'Review file'**
   String get pharmacyDrugImportAnalyzeAction;
+
+  /// Drug import action that returns to an analyzed file.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue to review'**
+  String get pharmacyDrugImportContinueAction;
+
+  /// Drug import action that returns to file selection.
+  ///
+  /// In en, this message translates to:
+  /// **'Change file'**
+  String get pharmacyDrugImportChangeFileAction;
 
   /// Drug import loading title while the file is analyzed.
   ///
@@ -53169,71 +53259,65 @@ abstract class AppLocalizations {
   /// **'No row in this file has a usable product. Fix the source file and try again.'**
   String get pharmacyDrugImportEmptyPlanBody;
 
-  /// Drug import review step banner title.
+  /// Drug import stat tile: products found.
   ///
   /// In en, this message translates to:
-  /// **'Review {file}'**
-  String pharmacyDrugImportReviewTitle(String file);
+  /// **'Products'**
+  String get pharmacyDrugImportStatProducts;
 
-  /// Drug import review step banner body.
+  /// Drug import stat tile: products not in the catalog.
   ///
   /// In en, this message translates to:
-  /// **'Choose what happens to each product. Nothing is saved until you select Import.'**
-  String get pharmacyDrugImportReviewBody;
+  /// **'New drugs'**
+  String get pharmacyDrugImportStatNew;
 
-  /// Drug import summary badge for rows read.
+  /// Drug import stat tile: exact catalog matches.
   ///
   /// In en, this message translates to:
-  /// **'Rows: {count}'**
-  String pharmacyDrugImportSummaryRows(String count);
+  /// **'Already in catalog'**
+  String get pharmacyDrugImportStatExisting;
 
-  /// Drug import summary badge for products found.
+  /// Drug import stat tile: products similar to catalog drugs.
   ///
   /// In en, this message translates to:
-  /// **'Products: {count}'**
-  String pharmacyDrugImportSummaryProducts(String count);
+  /// **'Needs review'**
+  String get pharmacyDrugImportStatReview;
 
-  /// Drug import summary badge for new products.
+  /// Drug import stat tile: products with warnings or errors.
   ///
   /// In en, this message translates to:
-  /// **'New: {count}'**
-  String pharmacyDrugImportSummaryNew(String count);
+  /// **'With issues'**
+  String get pharmacyDrugImportStatIssues;
 
-  /// Drug import summary badge for products already in the catalog.
+  /// Drug import stat tile: total units and batches.
   ///
   /// In en, this message translates to:
-  /// **'In catalog: {count}'**
-  String pharmacyDrugImportSummaryExisting(String count);
+  /// **'{batches, plural, =1{Units in 1 batch} other{Units in {batches} batches}}'**
+  String pharmacyDrugImportStatUnits(int batches);
 
-  /// Drug import summary badge for products similar to catalog drugs.
+  /// Drug import banner title for products needing review.
   ///
   /// In en, this message translates to:
-  /// **'Needs review: {count}'**
-  String pharmacyDrugImportSummaryReview(String count);
+  /// **'{count, plural, =1{1 product looks like a drug already in your catalog} other{{count} products look like drugs already in your catalog}}'**
+  String pharmacyDrugImportReviewBannerTitle(int count);
 
-  /// Drug import summary badge for exact duplicate rows.
+  /// Drug import banner body for products needing review.
   ///
   /// In en, this message translates to:
-  /// **'Duplicate rows: {count}'**
-  String pharmacyDrugImportSummaryDuplicates(String count);
+  /// **'Check the suggested action for each one, then confirm to enable the import.'**
+  String get pharmacyDrugImportReviewBannerBody;
 
-  /// Drug import summary badge for unusable rows.
+  /// Drug import confirmation checkbox for similar products.
   ///
   /// In en, this message translates to:
-  /// **'Rows skipped: {count}'**
-  String pharmacyDrugImportSummaryErrors(String count);
+  /// **'I have reviewed these products'**
+  String get pharmacyDrugImportReviewConfirm;
 
-  /// Drug import summary badge for warnings.
+  /// Drug import action that filters to products needing review.
   ///
   /// In en, this message translates to:
-  /// **'Warnings: {count}'**
-  String pharmacyDrugImportSummaryWarnings(String count);
-
-  /// Drug import summary badge for total units and batches.
-  ///
-  /// In en, this message translates to:
-  /// **'Units: {quantity} in {batches} batches'**
-  String pharmacyDrugImportSummaryQuantity(String quantity, String batches);
+  /// **'Show them'**
+  String get pharmacyDrugImportShowReviewAction;
 
   /// Drug import warning title when the user cannot write pharmacy prices.
   ///
@@ -53246,6 +53330,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'You do not have permission to set pharmacy prices, so retail prices and costs in the file are ignored.'**
   String get pharmacyDrugImportPricingBody;
+
+  /// Drug import settings section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Import settings'**
+  String get pharmacyDrugImportSettingsTitle;
+
+  /// Drug import settings section subtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how quantities in the file update stock at this facility.'**
+  String get pharmacyDrugImportSettingsSubtitle;
 
   /// Drug import stock mode radio group label.
   ///
@@ -53301,6 +53397,30 @@ abstract class AppLocalizations {
   /// **'{names} and {count} more'**
   String pharmacyDrugImportMoreNames(String names, String count);
 
+  /// Drug import product list section title.
+  ///
+  /// In en, this message translates to:
+  /// **'Products'**
+  String get pharmacyDrugImportProductsTitle;
+
+  /// Drug import product list count.
+  ///
+  /// In en, this message translates to:
+  /// **'Showing {shown} of {total}'**
+  String pharmacyDrugImportProductsSubtitle(String shown, String total);
+
+  /// Drug import product search label.
+  ///
+  /// In en, this message translates to:
+  /// **'Search products'**
+  String get pharmacyDrugImportSearchLabel;
+
+  /// Drug import product search hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Product or brand name'**
+  String get pharmacyDrugImportSearchHint;
+
   /// Drug import product filter select label.
   ///
   /// In en, this message translates to:
@@ -53349,10 +53469,10 @@ abstract class AppLocalizations {
   /// **'Skipped'**
   String get pharmacyDrugImportFilterSkipped;
 
-  /// Drug import empty state for a product filter.
+  /// Drug import empty state for a product filter or search.
   ///
   /// In en, this message translates to:
-  /// **'No products in this view.'**
+  /// **'No products match this view.'**
   String get pharmacyDrugImportNoProductsInFilter;
 
   /// Drug import status badge for a product not in the catalog.
@@ -53372,6 +53492,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Needs review'**
   String get pharmacyDrugImportStatusSimilar;
+
+  /// Drug import badge counting a product issues.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 issue} other{{count} issues}}'**
+  String pharmacyDrugImportIssueCount(int count);
 
   /// Drug import per-product action select label.
   ///
@@ -53451,6 +53577,36 @@ abstract class AppLocalizations {
   /// **'Rows {rows}'**
   String pharmacyDrugImportRowsLabel(String rows);
 
+  /// Drug import action that expands product details.
+  ///
+  /// In en, this message translates to:
+  /// **'Show details'**
+  String get pharmacyDrugImportShowDetailsAction;
+
+  /// Drug import action that collapses product details.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide details'**
+  String get pharmacyDrugImportHideDetailsAction;
+
+  /// Drug import product details heading for batches.
+  ///
+  /// In en, this message translates to:
+  /// **'Batches'**
+  String get pharmacyDrugImportBatchesTitle;
+
+  /// Drug import product details heading for catalog changes.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog changes'**
+  String get pharmacyDrugImportChangesTitle;
+
+  /// Drug import product details heading for issues.
+  ///
+  /// In en, this message translates to:
+  /// **'Issues'**
+  String get pharmacyDrugImportIssuesTitle;
+
   /// Drug import batch summary.
   ///
   /// In en, this message translates to:
@@ -53460,12 +53616,6 @@ abstract class AppLocalizations {
     String expiry,
     String quantity,
   );
-
-  /// Drug import suffix for additional batches.
-  ///
-  /// In en, this message translates to:
-  /// **'+{count} more'**
-  String pharmacyDrugImportMoreBatches(String count);
 
   /// Drug import label for a batch without a number.
   ///
@@ -53525,17 +53675,11 @@ abstract class AppLocalizations {
   /// **'Row {row}'**
   String pharmacyDrugImportRowLabel(String row);
 
-  /// Drug import confirmation checkbox for similar products.
-  ///
-  /// In en, this message translates to:
-  /// **'I reviewed the products that look like existing drugs ({count})'**
-  String pharmacyDrugImportReviewConfirm(String count);
-
   /// Drug import submit action.
   ///
   /// In en, this message translates to:
-  /// **'Import {count} products'**
-  String pharmacyDrugImportSubmitAction(String count);
+  /// **'{count, plural, =1{Import 1 product} other{Import {count} products}}'**
+  String pharmacyDrugImportSubmitAction(int count);
 
   /// Drug import loading title while saving.
   ///
@@ -53555,79 +53699,71 @@ abstract class AppLocalizations {
   /// **'Review file again'**
   String get pharmacyDrugImportReanalyzeAction;
 
-  /// Drug import result banner title.
+  /// Drug import result title.
   ///
   /// In en, this message translates to:
   /// **'Import complete'**
   String get pharmacyDrugImportResultTitle;
 
-  /// Drug import result banner body.
+  /// Drug import result body.
   ///
   /// In en, this message translates to:
   /// **'The catalog and stock at {facility} are updated.'**
   String pharmacyDrugImportResultBody(String facility);
 
-  /// Drug import result banner body when the facility name is unknown.
+  /// Drug import result body when the facility name is unknown.
   ///
   /// In en, this message translates to:
   /// **'The catalog and facility stock are updated.'**
   String get pharmacyDrugImportResultBodyFallback;
 
-  /// Drug import result count of created drugs.
+  /// Drug import result tile: created drugs.
   ///
   /// In en, this message translates to:
-  /// **'Drugs created: {count}'**
-  String pharmacyDrugImportResultCreated(String count);
+  /// **'Drugs created'**
+  String get pharmacyDrugImportResultStatCreated;
 
-  /// Drug import result count of merged drugs.
+  /// Drug import result tile: merged drugs.
   ///
   /// In en, this message translates to:
-  /// **'Drugs linked, blanks filled: {count}'**
-  String pharmacyDrugImportResultMerged(String count);
+  /// **'Linked, blanks filled'**
+  String get pharmacyDrugImportResultStatLinked;
 
-  /// Drug import result count of updated drugs.
+  /// Drug import result tile: updated drugs.
   ///
   /// In en, this message translates to:
-  /// **'Drugs linked and overwritten: {count}'**
-  String pharmacyDrugImportResultUpdated(String count);
+  /// **'Linked and overwritten'**
+  String get pharmacyDrugImportResultStatUpdated;
 
-  /// Drug import result count of skipped products.
+  /// Drug import result tile: skipped products.
   ///
   /// In en, this message translates to:
-  /// **'Products skipped: {count}'**
-  String pharmacyDrugImportResultSkipped(String count);
+  /// **'Skipped'**
+  String get pharmacyDrugImportResultStatSkipped;
 
-  /// Drug import result count of created suppliers.
+  /// Drug import result tile: created or updated batches.
   ///
   /// In en, this message translates to:
-  /// **'Suppliers created: {count}'**
-  String pharmacyDrugImportResultSuppliers(String count);
+  /// **'Batches saved'**
+  String get pharmacyDrugImportResultStatBatches;
 
-  /// Drug import result batch counts.
+  /// Drug import result tile: total units.
   ///
   /// In en, this message translates to:
-  /// **'Batches created: {created}, updated: {updated}, cleared: {cleared}'**
-  String pharmacyDrugImportResultBatches(
-    String created,
-    String updated,
-    String cleared,
-  );
+  /// **'Units imported'**
+  String get pharmacyDrugImportResultStatUnits;
 
-  /// Drug import result stock counts.
+  /// Drug import result tile: drugs whose stock was cleared.
   ///
   /// In en, this message translates to:
-  /// **'Stock records created: {created}, adjusted: {adjusted}, cleared: {cleared}'**
-  String pharmacyDrugImportResultStock(
-    String created,
-    String adjusted,
-    String cleared,
-  );
+  /// **'Items cleared'**
+  String get pharmacyDrugImportResultStatStockCleared;
 
-  /// Drug import result total units.
+  /// Drug import result tile: created suppliers.
   ///
   /// In en, this message translates to:
-  /// **'Units imported: {count}'**
-  String pharmacyDrugImportResultQuantity(String count);
+  /// **'Suppliers created'**
+  String get pharmacyDrugImportResultStatSuppliers;
 
   /// Drug import action that closes the result step.
   ///
@@ -53638,8 +53774,8 @@ abstract class AppLocalizations {
   /// Snackbar after a drug import.
   ///
   /// In en, this message translates to:
-  /// **'Drug import complete: {count} products imported'**
-  String pharmacyDrugImportSuccessMessage(String count);
+  /// **'{count, plural, =1{Drug import complete: 1 product imported} other{Drug import complete: {count} products imported}}'**
+  String pharmacyDrugImportSuccessMessage(int count);
 
   /// Drug import review issue message.
   ///

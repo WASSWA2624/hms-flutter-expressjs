@@ -321,7 +321,6 @@
   "errors.pharmacy_drug_import.empty_file": "The file has no rows to import",
   "errors.pharmacy_drug_import.facility_required": "Select a facility before importing drugs",
   "errors.pharmacy_drug_import.file_required": "Choose an Excel (.xlsx) file to import",
-  "errors.pharmacy_drug_import.file_too_large": "The file is too large. The maximum size is 5 MB",
   "errors.pharmacy_drug_import.invalid_decision": "One or more import decisions do not match this file. Review the file again",
   "errors.pharmacy_drug_import.invalid_file": "The file could not be read. Upload an Excel (.xlsx) file",
   "errors.pharmacy_drug_import.nothing_to_import": "There is nothing to import. Every product is skipped",

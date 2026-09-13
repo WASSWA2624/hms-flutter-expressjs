@@ -51,19 +51,15 @@ const pickWorksheet = (workbook, preferredSheetName) => {
  * Load workbook rows keyed by normalized header name.
  *
  * The header row is the first non-empty row in the first ten rows; fully blank
- * data rows are skipped and do not count toward the row limit.
+ * data rows are skipped. There is no row cap.
  *
  * @param {Buffer} buffer - Uploaded file bytes
  * @param {Object} [options]
  * @param {string|null} [options.preferredSheetName]
- * @param {number} [options.maxRows=5000]
  * @returns {Promise<{ sheet_name: string, headers: string[], rows: Array<{ row_number: number, values: Object }> }>}
- * @throws {HttpError} 400 for unreadable, empty, or oversized files
+ * @throws {HttpError} 400 for unreadable or empty files
  */
-const readDrugImportWorkbook = async (
-  buffer,
-  { preferredSheetName = null, maxRows = 5000 } = {}
-) => {
+const readDrugImportWorkbook = async (buffer, { preferredSheetName = null } = {}) => {
   if (!buffer || !buffer.length) {
     throw invalidFile('errors.pharmacy_drug_import.file_required');
   }
@@ -112,13 +108,9 @@ const readDrugImportWorkbook = async (
       values[header] = value;
       if (!isBlankValue(value)) hasValue = true;
     }
-    if (!hasValue) continue;
-    if (rows.length >= maxRows) {
-      throw new HttpError('errors.pharmacy_drug_import.too_many_rows', 400, [
-        { field: 'file', max_rows: maxRows },
-      ]);
+    if (hasValue) {
+      rows.push({ row_number: rowNumber, values });
     }
-    rows.push({ row_number: rowNumber, values });
   }
 
   if (!rows.length) {

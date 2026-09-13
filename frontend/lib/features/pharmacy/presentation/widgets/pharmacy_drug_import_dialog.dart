@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:hosspi_hms/app/theme/app_theme_extensions.dart';
 import 'package:hosspi_hms/core/errors/app_failure.dart';
 import 'package:hosspi_hms/core/errors/result.dart';
+import 'package:hosspi_hms/core/responsive/app_breakpoints.dart';
 import 'package:hosspi_hms/core/utils/app_formatters.dart';
 import 'package:hosspi_hms/features/pharmacy/domain/entities/pharmacy_drug_import.dart';
 import 'package:hosspi_hms/l10n/app_localizations.dart';
@@ -13,6 +14,7 @@ import 'package:hosspi_hms/l10n/app_localizations_x.dart';
 import 'package:hosspi_hms/shared/components/components.dart';
 import 'package:hosspi_hms/shared/forms/forms.dart';
 import 'package:hosspi_hms/shared/layout/app_workspace.dart';
+import 'package:hosspi_hms/shared/layout/app_workspace_summary_notification.dart';
 
 typedef PharmacyDrugImportFilePicker = Future<PharmacyDrugImportFile?> Function();
 
@@ -27,22 +29,13 @@ typedef PharmacyDrugImportCommitter =
       PharmacyDrugImportCommitInput input,
     );
 
-/// Opens the platform picker restricted to Excel workbooks.
+/// Opens the platform picker for an Excel workbook and reads it into memory.
 Future<PharmacyDrugImportFile?> pickPharmacyDrugImportFile({
   required String typeGroupLabel,
 }) async {
   final XFile? file = await openFile(
     acceptedTypeGroups: <XTypeGroup>[
-      XTypeGroup(
-        label: typeGroupLabel,
-        extensions: const <String>['xlsx'],
-        mimeTypes: const <String>[
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        ],
-        uniformTypeIdentifiers: const <String>[
-          'org.openxmlformats.spreadsheetml.sheet',
-        ],
-      ),
+      XTypeGroup(label: typeGroupLabel, extensions: const <String>['xlsx']),
     ],
   );
   if (file == null) {
@@ -58,17 +51,18 @@ enum _ImportStep { setup, review, result }
 
 enum _ProductFilter { all, newProducts, existing, review, issues, skipped }
 
+enum _FileProblem { unreadable, unsupported }
+
 const int _productPageSize = 25;
 const int _issuePageSize = 50;
 const int _namePreviewCount = 5;
-const int _batchPreviewCount = 3;
 const int _rowPreviewCount = 8;
 
 /// Imports drugs and facility stock from another system's Excel export.
 ///
-/// Setup picks the source and file; review shows the server analysis with a
-/// decision per product; nothing is saved until the user confirms the import.
-/// Pops with the [PharmacyDrugImportResult] when the user closes the result.
+/// Choosing a file uploads and analyzes it straight away; the review step shows
+/// the server analysis with a decision per product, and nothing is saved until
+/// the user confirms. Pops with the [PharmacyDrugImportResult] when done.
 class PharmacyDrugImportDialog extends StatefulWidget {
   const PharmacyDrugImportDialog({
     required this.onPreview,
@@ -99,10 +93,12 @@ class _PharmacyDrugImportDialogState extends State<PharmacyDrugImportDialog> {
   final Map<String, PharmacyDrugImportAction> _actions =
       <String, PharmacyDrugImportAction>{};
   final Map<String, String> _targets = <String, String>{};
+  final TextEditingController _searchController = TextEditingController();
 
   _ImportStep _step = _ImportStep.setup;
   PharmacyDrugImportSource _source = PharmacyDrugImportSource.medicErp;
   PharmacyDrugImportFile? _file;
+  _FileProblem? _fileProblem;
   PharmacyDrugImportPreview? _preview;
   Map<String, PharmacyDrugImportProduct> _productsByKey =
       const <String, PharmacyDrugImportProduct>{};
@@ -110,7 +106,6 @@ class _PharmacyDrugImportDialogState extends State<PharmacyDrugImportDialog> {
       const <String, List<PharmacyDrugImportIssue>>{};
   PharmacyDrugImportResult? _result;
   AppFailure? _failure;
-  bool _fileReadFailed = false;
   bool _isPickingFile = false;
   bool _isAnalyzing = false;
   bool _isImporting = false;
@@ -118,10 +113,42 @@ class _PharmacyDrugImportDialogState extends State<PharmacyDrugImportDialog> {
   bool _clearMissingStock = false;
   bool _reviewConfirmed = false;
   _ProductFilter _filter = _ProductFilter.all;
+  String _search = '';
   int _visibleProductCount = _productPageSize;
   int _visibleIssueCount = _issuePageSize;
 
   bool get _isBusy => _isPickingFile || _isAnalyzing || _isImporting;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController
+      ..removeListener(_onSearchChanged)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    if (_searchController.text == _search) {
+      return;
+    }
+    setState(() {
+      _search = _searchController.text;
+      _visibleProductCount = _productPageSize;
+    });
+  }
+
+  void _setFilter(_ProductFilter filter) {
+    setState(() {
+      _filter = filter;
+      _visibleProductCount = _productPageSize;
+    });
+  }
 
   PharmacyDrugImportAction _actionFor(PharmacyDrugImportProduct product) {
     return _actions[product.key] ?? product.defaultAction;
@@ -135,45 +162,57 @@ class _PharmacyDrugImportDialogState extends State<PharmacyDrugImportDialog> {
     return product.linkOptions.isEmpty ? null : product.linkOptions.first.drug.id;
   }
 
-  void _clearAnalysis({bool clearDecisions = true}) {
+  void _clearAnalysis() {
     _preview = null;
     _failure = null;
     _productsByKey = const <String, PharmacyDrugImportProduct>{};
     _rowIssuesByProduct = const <String, List<PharmacyDrugImportIssue>>{};
-    if (clearDecisions) {
-      _actions.clear();
-      _targets.clear();
-    }
+    _actions.clear();
+    _targets.clear();
   }
 
   Future<void> _chooseFile() async {
+    if (_isBusy) {
+      return;
+    }
     final String typeGroupLabel = context.l10n.pharmacyDrugImportFileTypeLabel;
     final PharmacyDrugImportFilePicker picker =
         widget.pickFile ??
         () => pickPharmacyDrugImportFile(typeGroupLabel: typeGroupLabel);
     setState(() {
       _isPickingFile = true;
-      _fileReadFailed = false;
+      _fileProblem = null;
     });
 
     PharmacyDrugImportFile? picked;
-    bool failed = false;
+    _FileProblem? problem;
     try {
       picked = await picker();
-    } on Exception {
-      failed = true;
+    } on Object catch (error, stackTrace) {
+      debugPrint('Drug import file could not be read: $error\n$stackTrace');
+      problem = _FileProblem.unreadable;
+    }
+    if (picked != null && !picked.name.toLowerCase().endsWith('.xlsx')) {
+      problem = _FileProblem.unsupported;
+      picked = null;
     }
     if (!mounted) {
       return;
     }
+
+    final PharmacyDrugImportFile? chosen = picked;
     setState(() {
       _isPickingFile = false;
-      _fileReadFailed = failed;
-      if (picked != null) {
-        _file = picked;
+      _fileProblem = problem;
+      if (chosen != null) {
+        _file = chosen;
         _clearAnalysis();
       }
     });
+    if (chosen != null) {
+      // Upload and analyze right away so choosing a file moves the import on.
+      unawaited(_analyze());
+    }
   }
 
   Future<void> _analyze() async {
@@ -184,7 +223,7 @@ class _PharmacyDrugImportDialogState extends State<PharmacyDrugImportDialog> {
     setState(() {
       _isAnalyzing = true;
       _failure = null;
-      _fileReadFailed = false;
+      _fileProblem = null;
     });
 
     final Result<PharmacyDrugImportPreview> result = await widget.onPreview(
@@ -258,26 +297,26 @@ class _PharmacyDrugImportDialogState extends State<PharmacyDrugImportDialog> {
     });
 
     final Result<PharmacyDrugImportResult> result = await widget.onCommit(
-          PharmacyDrugImportCommitInput(
-            source: _source,
-            file: file,
-            planHash: planHash,
-            decisions: <PharmacyDrugImportDecision>[
-              for (final PharmacyDrugImportProduct product in preview.products)
-                PharmacyDrugImportDecision(
-                  key: product.key,
-                  action: _actionFor(product),
-                  targetDrugId: _actionFor(product).linksExistingDrug
-                      ? _targetFor(product)
-                      : null,
-                ),
-            ],
-            stockMode: _stockMode,
-            clearMissingStock: _clearsMissingStock(preview),
-            confirmReview: _reviewConfirmed,
-            currency: appDefaultCurrencyCode,
-          ),
-        );
+      PharmacyDrugImportCommitInput(
+        source: _source,
+        file: file,
+        planHash: planHash,
+        decisions: <PharmacyDrugImportDecision>[
+          for (final PharmacyDrugImportProduct product in preview.products)
+            PharmacyDrugImportDecision(
+              key: product.key,
+              action: _actionFor(product),
+              targetDrugId: _actionFor(product).linksExistingDrug
+                  ? _targetFor(product)
+                  : null,
+            ),
+        ],
+        stockMode: _stockMode,
+        clearMissingStock: _clearsMissingStock(preview),
+        confirmReview: _reviewConfirmed,
+        currency: appDefaultCurrencyCode,
+      ),
+    );
     if (!mounted) {
       return;
     }
@@ -360,38 +399,128 @@ class _PharmacyDrugImportDialogState extends State<PharmacyDrugImportDialog> {
         .toList(growable: false);
   }
 
+  List<PharmacyDrugImportProduct> _searchedProducts(
+    PharmacyDrugImportPreview preview,
+  ) {
+    final String query = _search.trim().toLowerCase();
+    return _productsFor(preview, _filter)
+        .where(
+          (PharmacyDrugImportProduct product) =>
+              query.isEmpty ||
+              product.name.toLowerCase().contains(query) ||
+              (product.brandName ?? '').toLowerCase().contains(query),
+        )
+        .toList(growable: false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
-    final (Widget content, List<Widget> actions) = switch ((
+    final ThemeData theme = Theme.of(context);
+    final PharmacyDrugImportPreview? preview = _preview;
+    final PharmacyDrugImportResult? result = _result;
+    final int stepIndex = switch (_step) {
+      _ImportStep.setup => 0,
+      _ImportStep.review => 1,
+      _ImportStep.result => 2,
+    };
+    final bool canOpenReview =
+        preview != null && preview.template.isValid && preview.canCommit;
+
+    final (Widget body, List<Widget> actions) = switch ((
       _step,
-      _preview,
-      _result,
+      preview,
+      result,
     )) {
-      (_ImportStep.review, final PharmacyDrugImportPreview preview?, _) => (
-        _buildReview(context, preview),
-        _reviewActions(context, preview),
+      (_ImportStep.review, final PharmacyDrugImportPreview reviewed?, _) => (
+        _buildReview(context, reviewed),
+        _reviewActions(context, reviewed),
       ),
-      (_ImportStep.result, _, final PharmacyDrugImportResult result?) => (
-        _buildResult(context, result),
+      (_ImportStep.result, _, final PharmacyDrugImportResult done?) => (
+        _buildResult(context, done),
         <Widget>[
           AppButton.primary(
             label: l10n.pharmacyDrugImportDoneAction,
-            leadingIcon: Icons.check,
-            onPressed: () => Navigator.of(context).pop(result),
+            leadingIcon: Icons.check_rounded,
+            onPressed: () => Navigator.of(context).pop(done),
           ),
         ],
       ),
       _ => (_buildSetup(context), _setupActions(context)),
     };
 
+    final Widget? loading = _isAnalyzing
+        ? AppLoadingIndicator(
+            title: l10n.pharmacyDrugImportAnalyzingTitle,
+            body: l10n.pharmacyDrugImportAnalyzingBody,
+            expand: false,
+          )
+        : _isImporting
+        ? AppLoadingIndicator(
+            title: l10n.pharmacyDrugImportImportingTitle,
+            body: l10n.pharmacyDrugImportImportingBody,
+            expand: false,
+          )
+        : null;
+
     return AppDialog(
       title: Text(l10n.pharmacyDrugImportDialogTitle),
       icon: const Icon(Icons.upload_file_outlined),
       scrollable: true,
-      maxWidth: 960,
+      pinActionsToBottom: true,
+      maxWidth: 1120,
       closeEnabled: !_isBusy,
-      content: content,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          AppWizardStepper(
+            steps: <AppWizardStepItem>[
+              AppWizardStepItem(
+                id: _ImportStep.setup,
+                label: l10n.pharmacyDrugImportStepFile,
+                completed: stepIndex > 0,
+              ),
+              AppWizardStepItem(
+                id: _ImportStep.review,
+                label: l10n.pharmacyDrugImportStepReview,
+                completed: stepIndex > 1,
+                enabled: canOpenReview && result == null,
+              ),
+              AppWizardStepItem(
+                id: _ImportStep.result,
+                label: l10n.pharmacyDrugImportStepImport,
+                completed: result != null,
+                enabled: result != null,
+              ),
+            ],
+            currentIndex: stepIndex,
+            showCurrentTitle: false,
+            onStepSelected: _isBusy || result != null
+                ? null
+                : (int index) {
+                    if (index == 0) {
+                      setState(() => _step = _ImportStep.setup);
+                    } else if (index == 1 && canOpenReview) {
+                      setState(() => _step = _ImportStep.review);
+                    }
+                  },
+          ),
+          SizedBox(height: theme.spacing.md),
+          _DestinationBanner(
+            facilityName:
+                result?.facilityName ?? preview?.facilityName ?? widget.facilityName,
+          ),
+          SizedBox(height: theme.spacing.lg),
+          if (loading != null)
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: theme.spacing.xxl),
+              child: loading,
+            )
+          else
+            body,
+        ],
+      ),
       actions: actions,
     );
   }
@@ -400,103 +529,37 @@ class _PharmacyDrugImportDialogState extends State<PharmacyDrugImportDialog> {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final PharmacyDrugImportPreview? preview = _preview;
-    final PharmacyDrugImportFile? file = _file;
     final String sourceLabel = _sourceLabel(l10n, _source);
-    final String? facilityName = preview?.facilityName ?? widget.facilityName;
-    final Set<String> missingColumns =
-        preview?.template.missingColumns.toSet() ?? const <String>{};
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        AppFormInformationBanner(
-          title: facilityName == null
-              ? l10n.pharmacyDrugImportFacilityFallbackTitle
-              : l10n.pharmacyDrugImportFacilityTitle(facilityName),
-          message: l10n.pharmacyDrugImportFacilityBody,
-        ),
-        SizedBox(height: theme.spacing.md),
-        AppSelectField<PharmacyDrugImportSource>(
-          labelText: l10n.pharmacyDrugImportSourceLabel,
-          helperText: l10n.pharmacyDrugImportSourceHelper,
-          isRequired: true,
-          allowClear: false,
-          enabled: !_isBusy,
-          value: _source,
-          options: <AppSelectOption<PharmacyDrugImportSource>>[
-            for (final PharmacyDrugImportSource source
-                in PharmacyDrugImportSource.values)
-              AppSelectOption<PharmacyDrugImportSource>(
-                value: source,
-                label: _sourceLabel(l10n, source),
-              ),
-          ],
-          onChanged: (PharmacyDrugImportSource? value) {
-            if (value == null || value == _source) {
-              return;
+        LayoutBuilder(
+          builder: (BuildContext context, BoxConstraints constraints) {
+            final Widget source = _buildSourcePanel(context);
+            final Widget file = _buildFilePanel(context);
+            if (constraints.maxWidth < AppBreakpoints.lg) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  source,
+                  SizedBox(height: theme.spacing.md),
+                  file,
+                ],
+              );
             }
-            setState(() {
-              _source = value;
-              _clearAnalysis();
-            });
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Expanded(flex: 5, child: source),
+                SizedBox(width: theme.spacing.md),
+                Expanded(flex: 6, child: file),
+              ],
+            );
           },
         ),
-        SizedBox(height: theme.spacing.md),
-        AppSectionPanel(
-          title: l10n.pharmacyDrugImportTemplateTitle(sourceLabel),
-          description: l10n.pharmacyDrugImportTemplateBody,
-          leadingIcon: Icons.table_chart_outlined,
-          density: AppContentPanelDensity.compact,
-          initiallyExpanded: false,
-          children: <Widget>[
-            Wrap(
-              spacing: theme.spacing.xs,
-              runSpacing: theme.spacing.xs,
-              children: <Widget>[
-                for (final String column in _source.templateColumns)
-                  AppStatusBadge(
-                    label: column,
-                    tone: missingColumns.contains(column)
-                        ? AppWorkspaceStatusTone.error
-                        : AppWorkspaceStatusTone.neutral,
-                  ),
-              ],
-            ),
-          ],
-        ),
-        SizedBox(height: theme.spacing.md),
-        AppFileUploadPanel(
-          title: l10n.pharmacyDrugImportFileTitle,
-          emptyDescription: l10n.pharmacyDrugImportFileEmpty,
-          chooseLabel: file == null
-              ? l10n.pharmacyDrugImportChooseFileAction
-              : l10n.pharmacyDrugImportReplaceFileAction,
-          clearLabel: l10n.commonClearActionLabel,
-          fileNames: <String>[?file?.name],
-          enabled: !_isAnalyzing && !_isImporting,
-          isLoading: _isPickingFile,
-          onChoose: () => unawaited(_chooseFile()),
-          onClear: () => setState(() {
-            _file = null;
-            _clearAnalysis();
-          }),
-        ),
-        if (_fileReadFailed) ...<Widget>[
-          SizedBox(height: theme.spacing.md),
-          AppFormInformationBanner(
-            title: l10n.pharmacyDrugImportFileReadFailedTitle,
-            message: l10n.pharmacyDrugImportFileReadFailedBody,
-            variant: AppFormInformationVariant.error,
-          ),
-        ],
-        if (_isAnalyzing) ...<Widget>[
-          SizedBox(height: theme.spacing.md),
-          AppLoadingIndicator.compact(
-            title: l10n.pharmacyDrugImportAnalyzingTitle,
-            body: l10n.pharmacyDrugImportAnalyzingBody,
-          ),
-        ],
         if (preview != null && !preview.template.isValid) ...<Widget>[
           SizedBox(height: theme.spacing.md),
           AppFormInformationBanner(
@@ -519,15 +582,149 @@ class _PharmacyDrugImportDialogState extends State<PharmacyDrugImportDialog> {
           AppFormInformationBanner.failure(
             context: context,
             failure: failure,
-            onRetry: file == null ? null : () => unawaited(_analyze()),
+            onRetry: _file == null ? null : () => unawaited(_analyze()),
           ),
         ],
       ],
     );
   }
 
+  Widget _buildSourcePanel(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final String sourceLabel = _sourceLabel(l10n, _source);
+    final Set<String> missingColumns =
+        _preview?.template.missingColumns.toSet() ?? const <String>{};
+
+    return AppContentPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          _SectionHeading(
+            icon: Icons.hub_outlined,
+            title: l10n.pharmacyDrugImportSourceSectionTitle,
+            subtitle: l10n.pharmacyDrugImportSourceHelper,
+          ),
+          SizedBox(height: theme.spacing.md),
+          AppSelectField<PharmacyDrugImportSource>(
+            labelText: l10n.pharmacyDrugImportSourceLabel,
+            isRequired: true,
+            allowClear: false,
+            enabled: !_isBusy,
+            value: _source,
+            options: <AppSelectOption<PharmacyDrugImportSource>>[
+              for (final PharmacyDrugImportSource source
+                  in PharmacyDrugImportSource.values)
+                AppSelectOption<PharmacyDrugImportSource>(
+                  value: source,
+                  label: _sourceLabel(l10n, source),
+                ),
+            ],
+            onChanged: (PharmacyDrugImportSource? value) {
+              if (value == null || value == _source) {
+                return;
+              }
+              setState(() {
+                _source = value;
+                _clearAnalysis();
+              });
+            },
+          ),
+          SizedBox(height: theme.spacing.lg),
+          Text(
+            l10n.pharmacyDrugImportTemplateTitle(sourceLabel),
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: AppFontWeight.semiBold,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          SizedBox(height: theme.spacing.xs),
+          Text(
+            l10n.pharmacyDrugImportTemplateBody,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          SizedBox(height: theme.spacing.sm),
+          Wrap(
+            spacing: theme.spacing.xs,
+            runSpacing: theme.spacing.xs,
+            children: <Widget>[
+              for (final String column in _source.templateColumns)
+                _TemplateColumnChip(
+                  label: column,
+                  missing: missingColumns.contains(column),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilePanel(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+
+    return AppContentPanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          _SectionHeading(
+            icon: Icons.table_view_outlined,
+            title: l10n.pharmacyDrugImportFileSectionTitle,
+            subtitle: l10n.pharmacyDrugImportFileSectionSubtitle,
+          ),
+          SizedBox(height: theme.spacing.md),
+          _buildFilePicker(context, allowRemove: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilePicker(BuildContext context, {required bool allowRemove}) {
+    final AppLocalizations l10n = context.l10n;
+    final Locale locale = Localizations.localeOf(context);
+    final PharmacyDrugImportFile? file = _file;
+
+    return AppFilePickerCard(
+      title: l10n.pharmacyDrugImportDropTitle,
+      description: l10n.pharmacyDrugImportDropSubtitle(
+        _sourceLabel(l10n, _source),
+      ),
+      browseLabel: l10n.pharmacyDrugImportBrowseAction,
+      onBrowse: () => unawaited(_chooseFile()),
+      fileName: file?.name,
+      fileDetails: file == null
+          ? null
+          : _fileDetails(l10n, locale, file, _preview),
+      replaceLabel: l10n.pharmacyDrugImportReplaceFileAction,
+      removeLabel: allowRemove ? l10n.pharmacyDrugImportRemoveFileAction : null,
+      onRemove: allowRemove
+          ? () => setState(() {
+              _file = null;
+              _fileProblem = null;
+              _clearAnalysis();
+            })
+          : null,
+      isBusy: _isPickingFile,
+      busyLabel: l10n.pharmacyDrugImportOpeningFile,
+      enabled: !_isAnalyzing && !_isImporting,
+      errorText: switch (_fileProblem) {
+        _FileProblem.unreadable => l10n.pharmacyDrugImportFileReadFailedBody,
+        _FileProblem.unsupported => l10n.pharmacyDrugImportFileUnsupported,
+        null => null,
+      },
+    );
+  }
+
   List<Widget> _setupActions(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
+    final PharmacyDrugImportPreview? preview = _preview;
+    final bool canOpenReview =
+        preview != null && preview.template.isValid && preview.canCommit;
     return <Widget>[
       AppButton.close(
         label: l10n.commonCancelActionLabel,
@@ -535,11 +732,17 @@ class _PharmacyDrugImportDialogState extends State<PharmacyDrugImportDialog> {
         onPressed: () => Navigator.of(context).pop(),
       ),
       AppButton.primary(
-        label: l10n.pharmacyDrugImportAnalyzeAction,
-        leadingIcon: Icons.fact_check_outlined,
+        label: canOpenReview
+            ? l10n.pharmacyDrugImportContinueAction
+            : l10n.pharmacyDrugImportAnalyzeAction,
+        leadingIcon: canOpenReview
+            ? Icons.arrow_forward_rounded
+            : Icons.fact_check_outlined,
         isLoading: _isAnalyzing,
         enabled: _file != null && !_isBusy,
-        onPressed: () => unawaited(_analyze()),
+        onPressed: canOpenReview
+            ? () => setState(() => _step = _ImportStep.review)
+            : () => unawaited(_analyze()),
       ),
     ];
   }
@@ -549,10 +752,7 @@ class _PharmacyDrugImportDialogState extends State<PharmacyDrugImportDialog> {
     final ThemeData theme = Theme.of(context);
     final Locale locale = Localizations.localeOf(context);
     final PharmacyDrugImportSummary summary = preview.summary;
-    final List<PharmacyDrugImportProduct> filtered = _productsFor(
-      preview,
-      _filter,
-    );
+    final List<PharmacyDrugImportProduct> filtered = _searchedProducts(preview);
     final List<PharmacyDrugImportProduct> visible = filtered
         .take(_visibleProductCount)
         .toList(growable: false);
@@ -562,78 +762,101 @@ class _PharmacyDrugImportDialogState extends State<PharmacyDrugImportDialog> {
     final bool replacesStock =
         _stockMode == PharmacyDrugImportStockMode.replace;
     final int reviewCount = _reviewCount(preview);
+    final int issueProducts = _productsFor(
+      preview,
+      _ProductFilter.issues,
+    ).length;
     String count(num value) => AppFormatters.decimal(value, locale);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        AppFormInformationBanner(
-          title: l10n.pharmacyDrugImportReviewTitle(
-            preview.fileName ?? _file?.name ?? '',
-          ),
-          message: l10n.pharmacyDrugImportReviewBody,
-        ),
+        _buildFilePicker(context, allowRemove: false),
         SizedBox(height: theme.spacing.md),
-        Wrap(
-          spacing: theme.spacing.xs,
-          runSpacing: theme.spacing.xs,
+        AppResponsiveWrap(
+          maxColumns: 6,
+          minItemWidth: 150,
           children: <Widget>[
-            AppStatusBadge(
-              label: l10n.pharmacyDrugImportSummaryRows(count(summary.totalRows)),
+            _ImportStatTile(
+              icon: Icons.inventory_2_outlined,
+              value: count(summary.products),
+              label: l10n.pharmacyDrugImportStatProducts,
+              selected: _filter == _ProductFilter.all,
+              onTap: () => _setFilter(_ProductFilter.all),
             ),
-            AppStatusBadge(
-              label: l10n.pharmacyDrugImportSummaryProducts(
-                count(summary.products),
-              ),
-            ),
-            AppStatusBadge(
-              label: l10n.pharmacyDrugImportSummaryNew(
-                count(summary.newProducts),
-              ),
+            _ImportStatTile(
+              icon: Icons.add_circle_outline_rounded,
+              value: count(summary.newProducts),
+              label: l10n.pharmacyDrugImportStatNew,
               tone: AppWorkspaceStatusTone.success,
+              selected: _filter == _ProductFilter.newProducts,
+              onTap: () => _setFilter(_ProductFilter.newProducts),
             ),
-            AppStatusBadge(
-              label: l10n.pharmacyDrugImportSummaryExisting(
-                count(summary.existingProducts),
-              ),
+            _ImportStatTile(
+              icon: Icons.link_rounded,
+              value: count(summary.existingProducts),
+              label: l10n.pharmacyDrugImportStatExisting,
               tone: AppWorkspaceStatusTone.info,
+              selected: _filter == _ProductFilter.existing,
+              onTap: () => _setFilter(_ProductFilter.existing),
             ),
-            AppStatusBadge(
-              label: l10n.pharmacyDrugImportSummaryReview(count(reviewCount)),
+            _ImportStatTile(
+              icon: Icons.rule_rounded,
+              value: count(reviewCount),
+              label: l10n.pharmacyDrugImportStatReview,
               tone: reviewCount > 0
                   ? AppWorkspaceStatusTone.warning
                   : AppWorkspaceStatusTone.neutral,
+              selected: _filter == _ProductFilter.review,
+              onTap: () => _setFilter(_ProductFilter.review),
             ),
-            if (summary.duplicateRows > 0)
-              AppStatusBadge(
-                label: l10n.pharmacyDrugImportSummaryDuplicates(
-                  count(summary.duplicateRows),
-                ),
-                tone: AppWorkspaceStatusTone.warning,
-              ),
-            if (summary.errorRows > 0)
-              AppStatusBadge(
-                label: l10n.pharmacyDrugImportSummaryErrors(
-                  count(summary.errorRows),
-                ),
-                tone: AppWorkspaceStatusTone.error,
-              ),
-            if (summary.warnings > 0)
-              AppStatusBadge(
-                label: l10n.pharmacyDrugImportSummaryWarnings(
-                  count(summary.warnings),
-                ),
-                tone: AppWorkspaceStatusTone.warning,
-              ),
-            AppStatusBadge(
-              label: l10n.pharmacyDrugImportSummaryQuantity(
-                count(summary.totalQuantity),
-                count(summary.batches),
-              ),
+            _ImportStatTile(
+              icon: Icons.error_outline_rounded,
+              value: count(issueProducts),
+              label: l10n.pharmacyDrugImportStatIssues,
+              tone: summary.errors > 0
+                  ? AppWorkspaceStatusTone.error
+                  : issueProducts > 0
+                  ? AppWorkspaceStatusTone.warning
+                  : AppWorkspaceStatusTone.neutral,
+              selected: _filter == _ProductFilter.issues,
+              onTap: () => _setFilter(_ProductFilter.issues),
+            ),
+            _ImportStatTile(
+              icon: Icons.medication_outlined,
+              value: count(summary.totalQuantity),
+              label: l10n.pharmacyDrugImportStatUnits(summary.batches),
             ),
           ],
         ),
+        if (reviewCount > 0) ...<Widget>[
+          SizedBox(height: theme.spacing.md),
+          AppFormInformationBanner(
+            title: l10n.pharmacyDrugImportReviewBannerTitle(reviewCount),
+            message: l10n.pharmacyDrugImportReviewBannerBody,
+            variant: _reviewConfirmed
+                ? AppFormInformationVariant.success
+                : AppFormInformationVariant.warning,
+            children: <Widget>[
+              AppCheckboxField(
+                title: l10n.pharmacyDrugImportReviewConfirm,
+                value: _reviewConfirmed,
+                enabled: !_isBusy,
+                onChanged: (bool value) =>
+                    setState(() => _reviewConfirmed = value),
+              ),
+              if (_filter != _ProductFilter.review)
+                AppButton.secondary(
+                  label: l10n.pharmacyDrugImportShowReviewAction,
+                  leadingIcon: Icons.filter_list_rounded,
+                  dense: true,
+                  enabled: !_isBusy,
+                  onPressed: () => _setFilter(_ProductFilter.review),
+                ),
+            ],
+          ),
+        ],
         if (!preview.canWritePricing) ...<Widget>[
           SizedBox(height: theme.spacing.md),
           AppFormInformationBanner(
@@ -642,83 +865,124 @@ class _PharmacyDrugImportDialogState extends State<PharmacyDrugImportDialog> {
             variant: AppFormInformationVariant.warning,
           ),
         ],
-        SizedBox(height: theme.spacing.md),
-        AppRadioGroup<PharmacyDrugImportStockMode>(
-          labelText: l10n.pharmacyDrugImportStockModeLabel,
-          value: _stockMode,
-          enabled: !_isBusy,
-          options: <AppRadioOption<PharmacyDrugImportStockMode>>[
-            AppRadioOption<PharmacyDrugImportStockMode>(
-              value: PharmacyDrugImportStockMode.replace,
-              label: l10n.pharmacyDrugImportStockModeReplace,
-              description: l10n.pharmacyDrugImportStockModeReplaceDescription,
-            ),
-            AppRadioOption<PharmacyDrugImportStockMode>(
-              value: PharmacyDrugImportStockMode.add,
-              label: l10n.pharmacyDrugImportStockModeAdd,
-              description: l10n.pharmacyDrugImportStockModeAddDescription,
-            ),
-          ],
-          onChanged: (PharmacyDrugImportStockMode? value) {
-            if (value != null) {
-              setState(() => _stockMode = value);
-            }
-          },
-        ),
-        if (missingStock.isNotEmpty) ...<Widget>[
-          SizedBox(height: theme.spacing.sm),
-          AppCheckboxField(
-            title: l10n.pharmacyDrugImportClearMissingLabel(
-              count(missingStock.length),
-            ),
-            subtitle: replacesStock
-                ? l10n.pharmacyDrugImportClearMissingSubtitle(
-                    _drugNameList(l10n, missingStock),
-                  )
-                : l10n.pharmacyDrugImportClearMissingReplaceOnly,
-            value: replacesStock && _clearMissingStock,
-            enabled: replacesStock && !_isBusy,
-            onChanged: (bool value) =>
-                setState(() => _clearMissingStock = value),
-          ),
-        ],
-        SizedBox(height: theme.spacing.md),
-        AppSelectField<_ProductFilter>(
-          labelText: l10n.pharmacyDrugImportFilterLabel,
-          value: _filter,
-          allowClear: false,
-          enabled: !_isBusy,
-          options: <AppSelectOption<_ProductFilter>>[
-            for (final _ProductFilter filter in _ProductFilter.values)
-              AppSelectOption<_ProductFilter>(
-                value: filter,
-                label: l10n.pharmacyDrugImportFilterOption(
-                  _filterLabel(l10n, filter),
-                  count(_productsFor(preview, filter).length),
-                ),
+        SizedBox(height: theme.spacing.lg),
+        AppContentPanel(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              _SectionHeading(
+                icon: Icons.tune_rounded,
+                title: l10n.pharmacyDrugImportSettingsTitle,
+                subtitle: l10n.pharmacyDrugImportSettingsSubtitle,
               ),
-          ],
-          onChanged: (_ProductFilter? value) {
-            if (value == null) {
-              return;
-            }
-            setState(() {
-              _filter = value;
-              _visibleProductCount = _productPageSize;
-            });
-          },
+              SizedBox(height: theme.spacing.md),
+              LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  return AppRadioGroup<PharmacyDrugImportStockMode>(
+                    labelText: l10n.pharmacyDrugImportStockModeLabel,
+                    value: _stockMode,
+                    enabled: !_isBusy,
+                    layout: constraints.maxWidth >= AppBreakpoints.lg
+                        ? AppRadioGroupLayout.horizontal
+                        : AppRadioGroupLayout.vertical,
+                    options: <AppRadioOption<PharmacyDrugImportStockMode>>[
+                      AppRadioOption<PharmacyDrugImportStockMode>(
+                        value: PharmacyDrugImportStockMode.replace,
+                        label: l10n.pharmacyDrugImportStockModeReplace,
+                        description:
+                            l10n.pharmacyDrugImportStockModeReplaceDescription,
+                      ),
+                      AppRadioOption<PharmacyDrugImportStockMode>(
+                        value: PharmacyDrugImportStockMode.add,
+                        label: l10n.pharmacyDrugImportStockModeAdd,
+                        description:
+                            l10n.pharmacyDrugImportStockModeAddDescription,
+                      ),
+                    ],
+                    onChanged: (PharmacyDrugImportStockMode? value) {
+                      if (value != null) {
+                        setState(() => _stockMode = value);
+                      }
+                    },
+                  );
+                },
+              ),
+              if (missingStock.isNotEmpty) ...<Widget>[
+                SizedBox(height: theme.spacing.sm),
+                AppCheckboxField(
+                  title: l10n.pharmacyDrugImportClearMissingLabel(
+                    count(missingStock.length),
+                  ),
+                  subtitle: replacesStock
+                      ? l10n.pharmacyDrugImportClearMissingSubtitle(
+                          _drugNameList(l10n, missingStock),
+                        )
+                      : l10n.pharmacyDrugImportClearMissingReplaceOnly,
+                  value: replacesStock && _clearMissingStock,
+                  enabled: replacesStock && !_isBusy,
+                  onChanged: (bool value) =>
+                      setState(() => _clearMissingStock = value),
+                ),
+              ],
+            ],
+          ),
         ),
-        SizedBox(height: theme.spacing.sm),
+        SizedBox(height: theme.spacing.lg),
+        _SectionHeading(
+          icon: Icons.list_alt_rounded,
+          title: l10n.pharmacyDrugImportProductsTitle,
+          subtitle: l10n.pharmacyDrugImportProductsSubtitle(
+            count(filtered.length),
+            count(summary.products),
+          ),
+        ),
+        SizedBox(height: theme.spacing.md),
+        AppResponsiveFieldRow.two(
+          left: AppTextField(
+            controller: _searchController,
+            labelText: l10n.pharmacyDrugImportSearchLabel,
+            hintText: l10n.pharmacyDrugImportSearchHint,
+            prefixIcon: const Icon(Icons.search_rounded),
+            allowClear: true,
+            enabled: !_isBusy,
+          ),
+          right: AppSelectField<_ProductFilter>(
+            labelText: l10n.pharmacyDrugImportFilterLabel,
+            value: _filter,
+            allowClear: false,
+            enabled: !_isBusy,
+            options: <AppSelectOption<_ProductFilter>>[
+              for (final _ProductFilter filter in _ProductFilter.values)
+                AppSelectOption<_ProductFilter>(
+                  value: filter,
+                  label: l10n.pharmacyDrugImportFilterOption(
+                    _filterLabel(l10n, filter),
+                    count(_productsFor(preview, filter).length),
+                  ),
+                ),
+            ],
+            onChanged: (_ProductFilter? value) {
+              if (value != null) {
+                _setFilter(value);
+              }
+            },
+          ),
+        ),
+        SizedBox(height: theme.spacing.md),
         if (visible.isEmpty)
           Padding(
-            padding: EdgeInsets.symmetric(vertical: theme.spacing.md),
+            padding: EdgeInsets.symmetric(vertical: theme.spacing.xl),
             child: Text(
               l10n.pharmacyDrugImportNoProductsInFilter,
-              style: theme.textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         for (final PharmacyDrugImportProduct product in visible) ...<Widget>[
-          _PharmacyDrugImportProductCard(
+          _ImportProductRow(
             key: ValueKey<String>('pharmacy-drug-import-${product.key}'),
             product: product,
             rowIssues:
@@ -736,39 +1000,22 @@ class _PharmacyDrugImportDialogState extends State<PharmacyDrugImportDialog> {
           SizedBox(height: theme.spacing.sm),
         ],
         if (filtered.length > visible.length)
-          Align(
-            alignment: Alignment.centerLeft,
-            child: AppButton.tertiary(
+          Center(
+            child: AppButton.secondary(
               label: l10n.pharmacyDrugImportShowMoreAction(
                 count(
                   math.min(_productPageSize, filtered.length - visible.length),
                 ),
               ),
-              leadingIcon: Icons.expand_more,
+              leadingIcon: Icons.expand_more_rounded,
               enabled: !_isBusy,
               onPressed: () =>
                   setState(() => _visibleProductCount += _productPageSize),
             ),
           ),
         if (preview.issues.isNotEmpty) ...<Widget>[
-          SizedBox(height: theme.spacing.md),
+          SizedBox(height: theme.spacing.lg),
           _buildRowIssues(context, preview),
-        ],
-        if (reviewCount > 0) ...<Widget>[
-          SizedBox(height: theme.spacing.md),
-          AppCheckboxField(
-            title: l10n.pharmacyDrugImportReviewConfirm(count(reviewCount)),
-            value: _reviewConfirmed,
-            enabled: !_isBusy,
-            onChanged: (bool value) => setState(() => _reviewConfirmed = value),
-          ),
-        ],
-        if (_isImporting) ...<Widget>[
-          SizedBox(height: theme.spacing.md),
-          AppLoadingIndicator.compact(
-            title: l10n.pharmacyDrugImportImportingTitle,
-            body: l10n.pharmacyDrugImportImportingBody,
-          ),
         ],
         if (_failure case final AppFailure failure) ...<Widget>[
           SizedBox(height: theme.spacing.md),
@@ -779,7 +1026,7 @@ class _PharmacyDrugImportDialogState extends State<PharmacyDrugImportDialog> {
               if (failure.category == AppFailureCategory.conflict)
                 AppButton.secondary(
                   label: l10n.pharmacyDrugImportReanalyzeAction,
-                  leadingIcon: Icons.refresh,
+                  leadingIcon: Icons.refresh_rounded,
                   enabled: !_isBusy,
                   onPressed: () => unawaited(_analyze()),
                 ),
@@ -795,6 +1042,7 @@ class _PharmacyDrugImportDialogState extends State<PharmacyDrugImportDialog> {
     PharmacyDrugImportPreview preview,
   ) {
     final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
     final Locale locale = Localizations.localeOf(context);
     final List<PharmacyDrugImportIssue> visible = preview.issues
         .take(_visibleIssueCount)
@@ -806,11 +1054,11 @@ class _PharmacyDrugImportDialogState extends State<PharmacyDrugImportDialog> {
         AppFormatters.decimal(preview.issues.length, locale),
       ),
       leadingIcon: Icons.rule_outlined,
-      density: AppContentPanelDensity.compact,
       initiallyExpanded: false,
+      spacing: theme.spacing.xs,
       children: <Widget>[
         for (final PharmacyDrugImportIssue issue in visible)
-          _PharmacyDrugImportIssueLine(
+          _IssueLine(
             issue: issue,
             productName: _productsByKey[issue.productKey]?.displayName,
           ),
@@ -824,7 +1072,7 @@ class _PharmacyDrugImportDialogState extends State<PharmacyDrugImportDialog> {
                   locale,
                 ),
               ),
-              leadingIcon: Icons.expand_more,
+              leadingIcon: Icons.expand_more_rounded,
               onPressed: () =>
                   setState(() => _visibleIssueCount += _issuePageSize),
             ),
@@ -838,11 +1086,10 @@ class _PharmacyDrugImportDialogState extends State<PharmacyDrugImportDialog> {
     PharmacyDrugImportPreview preview,
   ) {
     final AppLocalizations l10n = context.l10n;
-    final Locale locale = Localizations.localeOf(context);
     return <Widget>[
       AppButton.tertiary(
-        label: l10n.commonBackActionLabel,
-        leadingIcon: Icons.arrow_back,
+        label: l10n.pharmacyDrugImportChangeFileAction,
+        leadingIcon: Icons.arrow_back_rounded,
         enabled: !_isBusy,
         onPressed: () => setState(() {
           _step = _ImportStep.setup;
@@ -855,9 +1102,7 @@ class _PharmacyDrugImportDialogState extends State<PharmacyDrugImportDialog> {
         onPressed: () => Navigator.of(context).pop(),
       ),
       AppButton.primary(
-        label: l10n.pharmacyDrugImportSubmitAction(
-          AppFormatters.decimal(_importCount(preview), locale),
-        ),
+        label: l10n.pharmacyDrugImportSubmitAction(_importCount(preview)),
         leadingIcon: Icons.cloud_upload_outlined,
         isLoading: _isImporting,
         enabled: _canImport(preview),
@@ -870,52 +1115,358 @@ class _PharmacyDrugImportDialogState extends State<PharmacyDrugImportDialog> {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
     final Locale locale = Localizations.localeOf(context);
+    final Color success = theme.statusColors.success;
     final String? facilityName = result.facilityName ?? _preview?.facilityName;
     String count(num value) => AppFormatters.decimal(value, locale);
-    final List<String> lines = <String>[
-      l10n.pharmacyDrugImportResultCreated(count(result.created)),
-      l10n.pharmacyDrugImportResultMerged(count(result.merged)),
-      l10n.pharmacyDrugImportResultUpdated(count(result.updated)),
-      l10n.pharmacyDrugImportResultSkipped(count(result.skipped)),
-      if (result.suppliersCreated > 0)
-        l10n.pharmacyDrugImportResultSuppliers(count(result.suppliersCreated)),
-      l10n.pharmacyDrugImportResultBatches(
-        count(result.batchesCreated),
-        count(result.batchesUpdated),
-        count(result.batchesCleared),
-      ),
-      l10n.pharmacyDrugImportResultStock(
-        count(result.stockRowsCreated),
-        count(result.stockRowsAdjusted),
-        count(result.stockCleared),
-      ),
-      l10n.pharmacyDrugImportResultQuantity(count(result.quantityImported)),
-    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        AppFormInformationBanner(
-          title: l10n.pharmacyDrugImportResultTitle,
-          message: facilityName == null
-              ? l10n.pharmacyDrugImportResultBodyFallback
-              : l10n.pharmacyDrugImportResultBody(facilityName),
-          variant: AppFormInformationVariant.success,
+        Center(
+          child: Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: success.withValues(alpha: 0.14),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.check_circle_rounded, size: 44, color: success),
+          ),
         ),
         SizedBox(height: theme.spacing.md),
-        for (final String line in lines)
-          Padding(
-            padding: EdgeInsets.only(bottom: theme.spacing.xs),
-            child: Text(line, style: theme.textTheme.bodyMedium),
+        Text(
+          l10n.pharmacyDrugImportResultTitle,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.headlineSmall?.copyWith(
+            fontWeight: AppFontWeight.semiBold,
+            color: theme.colorScheme.onSurface,
           ),
+        ),
+        SizedBox(height: theme.spacing.xs),
+        Text(
+          facilityName == null
+              ? l10n.pharmacyDrugImportResultBodyFallback
+              : l10n.pharmacyDrugImportResultBody(facilityName),
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        SizedBox(height: theme.spacing.lg),
+        AppResponsiveWrap(
+          maxColumns: 4,
+          children: <Widget>[
+            _ImportStatTile(
+              icon: Icons.add_circle_outline_rounded,
+              value: count(result.created),
+              label: l10n.pharmacyDrugImportResultStatCreated,
+              tone: AppWorkspaceStatusTone.success,
+            ),
+            _ImportStatTile(
+              icon: Icons.link_rounded,
+              value: count(result.merged),
+              label: l10n.pharmacyDrugImportResultStatLinked,
+              tone: AppWorkspaceStatusTone.info,
+            ),
+            _ImportStatTile(
+              icon: Icons.edit_note_rounded,
+              value: count(result.updated),
+              label: l10n.pharmacyDrugImportResultStatUpdated,
+              tone: AppWorkspaceStatusTone.info,
+            ),
+            _ImportStatTile(
+              icon: Icons.skip_next_outlined,
+              value: count(result.skipped),
+              label: l10n.pharmacyDrugImportResultStatSkipped,
+            ),
+            _ImportStatTile(
+              icon: Icons.layers_outlined,
+              value: count(result.batchesCreated + result.batchesUpdated),
+              label: l10n.pharmacyDrugImportResultStatBatches,
+            ),
+            _ImportStatTile(
+              icon: Icons.medication_outlined,
+              value: count(result.quantityImported),
+              label: l10n.pharmacyDrugImportResultStatUnits,
+            ),
+            if (result.stockCleared > 0)
+              _ImportStatTile(
+                icon: Icons.remove_shopping_cart_outlined,
+                value: count(result.stockCleared),
+                label: l10n.pharmacyDrugImportResultStatStockCleared,
+                tone: AppWorkspaceStatusTone.warning,
+              ),
+            if (result.suppliersCreated > 0)
+              _ImportStatTile(
+                icon: Icons.local_shipping_outlined,
+                value: count(result.suppliersCreated),
+                label: l10n.pharmacyDrugImportResultStatSuppliers,
+              ),
+          ],
+        ),
       ],
     );
   }
 }
 
-class _PharmacyDrugImportProductCard extends StatelessWidget {
-  const _PharmacyDrugImportProductCard({
+class _DestinationBanner extends StatelessWidget {
+  const _DestinationBanner({required this.facilityName});
+
+  final String? facilityName;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations l10n = context.l10n;
+    final ThemeData theme = Theme.of(context);
+    final Color accent = theme.statusColors.info;
+    final String? name = facilityName;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(
+          context.responsiveRadius(theme.radius.md),
+        ),
+        border: Border.all(color: accent.withValues(alpha: 0.3)),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.md,
+          vertical: theme.spacing.sm,
+        ),
+        child: Row(
+          children: <Widget>[
+            Icon(Icons.local_hospital_outlined, color: accent),
+            SizedBox(width: theme.spacing.sm),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(
+                    name == null
+                        ? l10n.pharmacyDrugImportDestinationFallback
+                        : l10n.pharmacyDrugImportDestination(name),
+                    style: theme.textTheme.labelLarge?.copyWith(
+                      fontWeight: AppFontWeight.semiBold,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  Text(
+                    l10n.pharmacyDrugImportDestinationHint,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionHeading extends StatelessWidget {
+  const _SectionHeading({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final String? subtitleText = subtitle;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: colorScheme.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(theme.radius.md),
+          ),
+          child: Icon(icon, size: 20, color: colorScheme.primary),
+        ),
+        SizedBox(width: theme.spacing.sm),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                title,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: AppFontWeight.semiBold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              if (subtitleText != null)
+                Text(
+                  subtitleText,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TemplateColumnChip extends StatelessWidget {
+  const _TemplateColumnChip({required this.label, required this.missing});
+
+  final String label;
+  final bool missing;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Color error = theme.statusColors.error;
+    final Color foreground = missing ? error : colorScheme.onSurfaceVariant;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: missing
+            ? error.withValues(alpha: 0.12)
+            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(theme.radius.sm),
+        border: Border.all(
+          color: missing
+              ? error.withValues(alpha: 0.5)
+              : theme.borders.faint,
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: theme.spacing.sm,
+          vertical: theme.spacing.xs / 2,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            if (missing) ...<Widget>[
+              Icon(Icons.close_rounded, size: 14, color: foreground),
+              SizedBox(width: theme.spacing.xs / 2),
+            ],
+            Text(
+              label,
+              style: theme.textTheme.labelMedium?.copyWith(color: foreground),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ImportStatTile extends StatelessWidget {
+  const _ImportStatTile({
+    required this.icon,
+    required this.value,
+    required this.label,
+    this.tone = AppWorkspaceStatusTone.neutral,
+    this.selected = false,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String value;
+  final String label;
+  final AppWorkspaceStatusTone tone;
+  final bool selected;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+    final Color accent = workspaceStatusToneAccentColor(theme, tone);
+
+    return Semantics(
+      button: onTap != null,
+      selected: selected,
+      label: '$value $label',
+      excludeSemantics: true,
+      child: Material(
+        color: selected
+            ? accent.withValues(alpha: 0.14)
+            : colorScheme.surfaceContainerLow,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(
+            context.responsiveRadius(theme.radius.md),
+          ),
+          side: selected
+              ? BorderSide(color: accent, width: theme.borders.medium)
+              : theme.borders.side(),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: EdgeInsets.all(theme.spacing.md),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(theme.radius.md),
+                  ),
+                  child: Icon(icon, size: 22, color: accent),
+                ),
+                SizedBox(width: theme.spacing.sm),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      Text(
+                        value,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: AppFontWeight.semiBold,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      Text(
+                        label,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ImportProductRow extends StatefulWidget {
+  const _ImportProductRow({
     required this.product,
     required this.rowIssues,
     required this.action,
@@ -937,14 +1488,29 @@ class _PharmacyDrugImportProductCard extends StatelessWidget {
   final ValueChanged<String> onTargetChanged;
 
   @override
+  State<_ImportProductRow> createState() => _ImportProductRowState();
+}
+
+class _ImportProductRowState extends State<_ImportProductRow> {
+  // Products that need a decision open with their evidence visible.
+  late bool _expanded = widget.product.requiresReview;
+
+  @override
   Widget build(BuildContext context) {
     final AppLocalizations l10n = context.l10n;
     final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
     final Locale locale = Localizations.localeOf(context);
-    final TextStyle? detailStyle = theme.textTheme.bodySmall;
+    final PharmacyDrugImportProduct product = widget.product;
+    final PharmacyDrugImportAction action = widget.action;
     final AppWorkspaceStatusTone tone = _statusTone(product.status);
+    final Color accent = workspaceStatusToneAccentColor(theme, tone);
+    final List<PharmacyDrugImportIssue> issues = <PharmacyDrugImportIssue>[
+      ...product.issues,
+      ...widget.rowIssues,
+    ];
     final PharmacyDrugImportCandidate? target = action.linksExistingDrug
-        ? product.linkOptionFor(targetDrugId)
+        ? product.linkOptionFor(widget.targetDrugId)
         : null;
     // Merge applies only values that fill empty catalog fields.
     final List<PharmacyDrugImportChange> changes =
@@ -956,87 +1522,255 @@ class _PharmacyDrugImportProductCard extends StatelessWidget {
             )
             .toList(growable: false) ??
         const <PharmacyDrugImportChange>[];
+    final bool hasDetails =
+        product.batches.isNotEmpty || target != null || issues.isNotEmpty;
+    final String brand = (product.brandName ?? '').trim();
+    final TextStyle? muted = theme.textTheme.bodySmall?.copyWith(
+      color: colorScheme.onSurfaceVariant,
+    );
 
-    return AppSectionPanel(
-      title: product.displayName,
-      description: _productDetails(l10n, locale, product, canWritePricing),
-      leadingIcon: Icons.medication_outlined,
-      tone: tone,
-      density: AppContentPanelDensity.compact,
-      collapsible: false,
-      trailing: AppStatusBadge(
-        label: _statusLabel(l10n, product.status),
-        tone: tone,
-      ),
-      children: <Widget>[
-        AppResponsiveFieldRow.two(
-          left: AppSelectField<PharmacyDrugImportAction>(
-            labelText: l10n.pharmacyDrugImportActionLabel,
-            value: action,
-            allowClear: false,
-            isDense: true,
-            enabled: enabled,
-            options: <AppSelectOption<PharmacyDrugImportAction>>[
-              for (final PharmacyDrugImportAction option
-                  in product.allowedActions)
-                AppSelectOption<PharmacyDrugImportAction>(
-                  value: option,
-                  label: _actionLabel(l10n, option),
-                ),
-            ],
-            onChanged: (PharmacyDrugImportAction? value) {
-              if (value != null) {
-                onActionChanged(value);
-              }
-            },
+    return AnimatedOpacity(
+      opacity: action == PharmacyDrugImportAction.skip ? 0.6 : 1,
+      duration: const Duration(milliseconds: 150),
+      child: Material(
+        color: colorScheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(
+            context.responsiveRadius(theme.radius.md),
           ),
-          right: target == null
-              ? const SizedBox.shrink()
-              : AppSelectField<String>(
-                  labelText: l10n.pharmacyDrugImportTargetLabel,
-                  value: target.drug.id,
-                  allowClear: false,
-                  isDense: true,
-                  enabled: enabled && product.linkOptions.length > 1,
-                  options: <AppSelectOption<String>>[
-                    for (final PharmacyDrugImportCandidate option
-                        in product.linkOptions)
-                      AppSelectOption<String>(
-                        value: option.drug.id,
-                        label: _linkOptionLabel(l10n, option),
+          side: theme.borders.side(),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(left: BorderSide(color: accent, width: 4)),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(theme.spacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          Text(
+                            product.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: AppFontWeight.semiBold,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                          if (brand.isNotEmpty)
+                            Text(
+                              brand,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: theme.spacing.sm),
+                    Flexible(
+                      child: Wrap(
+                        alignment: WrapAlignment.end,
+                        spacing: theme.spacing.xs,
+                        runSpacing: theme.spacing.xs,
+                        children: <Widget>[
+                          if (issues.isNotEmpty)
+                            AppStatusBadge(
+                              label: l10n.pharmacyDrugImportIssueCount(
+                                issues.length,
+                              ),
+                              tone: _worstTone(issues),
+                            ),
+                          AppStatusBadge(
+                            label: _statusLabel(l10n, product.status),
+                            tone: tone,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: theme.spacing.xs),
+                Text(
+                  _productDetails(
+                    l10n,
+                    locale,
+                    product,
+                    widget.canWritePricing,
+                  ),
+                  style: muted,
+                ),
+                SizedBox(height: theme.spacing.md),
+                AppResponsiveFieldRow(
+                  children: <Widget>[
+                    AppSelectField<PharmacyDrugImportAction>(
+                      labelText: l10n.pharmacyDrugImportActionLabel,
+                      value: action,
+                      allowClear: false,
+                      isDense: true,
+                      enabled: widget.enabled,
+                      options: <AppSelectOption<PharmacyDrugImportAction>>[
+                        for (final PharmacyDrugImportAction option
+                            in product.allowedActions)
+                          AppSelectOption<PharmacyDrugImportAction>(
+                            value: option,
+                            label: _actionLabel(l10n, option),
+                          ),
+                      ],
+                      onChanged: (PharmacyDrugImportAction? value) {
+                        if (value != null) {
+                          widget.onActionChanged(value);
+                        }
+                      },
+                    ),
+                    if (target != null)
+                      AppSelectField<String>(
+                        labelText: l10n.pharmacyDrugImportTargetLabel,
+                        value: target.drug.id,
+                        allowClear: false,
+                        isDense: true,
+                        enabled:
+                            widget.enabled && product.linkOptions.length > 1,
+                        options: <AppSelectOption<String>>[
+                          for (final PharmacyDrugImportCandidate option
+                              in product.linkOptions)
+                            AppSelectOption<String>(
+                              value: option.drug.id,
+                              label: _linkOptionLabel(l10n, option),
+                            ),
+                        ],
+                        onChanged: (String? value) {
+                          if (value != null) {
+                            widget.onTargetChanged(value);
+                          }
+                        },
                       ),
                   ],
-                  onChanged: (String? value) {
-                    if (value != null) {
-                      onTargetChanged(value);
-                    }
-                  },
                 ),
-        ),
-        Text(_batchesText(l10n, locale, product), style: detailStyle),
-        if (target != null) ...<Widget>[
-          Text(
-            l10n.pharmacyDrugImportCurrentStock(
-              AppFormatters.decimal(target.drug.facilityQuantity, locale),
+                if (hasDetails)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: EdgeInsets.only(top: theme.spacing.xs),
+                      child: AppButton.tertiary(
+                        label: _expanded
+                            ? l10n.pharmacyDrugImportHideDetailsAction
+                            : l10n.pharmacyDrugImportShowDetailsAction,
+                        leadingIcon: _expanded
+                            ? Icons.expand_less_rounded
+                            : Icons.expand_more_rounded,
+                        dense: true,
+                        onPressed: () => setState(() => _expanded = !_expanded),
+                      ),
+                    ),
+                  ),
+                if (_expanded) ...<Widget>[
+                  if (product.batches.isNotEmpty)
+                    _DetailBlock(
+                      title: l10n.pharmacyDrugImportBatchesTitle,
+                      children: <Widget>[
+                        for (final PharmacyDrugImportBatch batch
+                            in product.batches)
+                          Text(_batchLine(l10n, locale, batch), style: muted),
+                      ],
+                    ),
+                  if (target != null)
+                    _DetailBlock(
+                      title: l10n.pharmacyDrugImportChangesTitle,
+                      children: <Widget>[
+                        Text(
+                          l10n.pharmacyDrugImportCurrentStock(
+                            AppFormatters.decimal(
+                              target.drug.facilityQuantity,
+                              locale,
+                            ),
+                          ),
+                          style: muted,
+                        ),
+                        if (changes.isEmpty)
+                          Text(l10n.pharmacyDrugImportNoChanges, style: muted)
+                        else
+                          for (final PharmacyDrugImportChange change in changes)
+                            Text(
+                              _changeText(l10n, locale, change),
+                              style: muted,
+                            ),
+                      ],
+                    ),
+                  if (issues.isNotEmpty)
+                    _DetailBlock(
+                      title: l10n.pharmacyDrugImportIssuesTitle,
+                      children: <Widget>[
+                        for (final PharmacyDrugImportIssue issue in issues)
+                          _IssueLine(issue: issue),
+                      ],
+                    ),
+                ],
+              ],
             ),
-            style: detailStyle,
           ),
-          if (changes.isEmpty)
-            Text(l10n.pharmacyDrugImportNoChanges, style: detailStyle)
-          else
-            for (final PharmacyDrugImportChange change in changes)
-              Text(_changeText(l10n, locale, change), style: detailStyle),
-        ],
-        for (final PharmacyDrugImportIssue issue
-            in <PharmacyDrugImportIssue>[...product.issues, ...rowIssues])
-          _PharmacyDrugImportIssueLine(issue: issue),
-      ],
+        ),
+      ),
     );
   }
 }
 
-class _PharmacyDrugImportIssueLine extends StatelessWidget {
-  const _PharmacyDrugImportIssueLine({required this.issue, this.productName});
+class _DetailBlock extends StatelessWidget {
+  const _DetailBlock({required this.title, required this.children});
+
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colorScheme = theme.colorScheme;
+
+    return Padding(
+      padding: EdgeInsets.only(top: theme.spacing.sm),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+          borderRadius: BorderRadius.circular(theme.radius.sm),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(theme.spacing.sm),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Text(
+                title,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: AppFontWeight.semiBold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              SizedBox(height: theme.spacing.xs),
+              ...children,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _IssueLine extends StatelessWidget {
+  const _IssueLine({required this.issue, this.productName});
 
   final PharmacyDrugImportIssue issue;
   final String? productName;
@@ -1195,6 +1929,19 @@ AppWorkspaceStatusTone _statusTone(PharmacyDrugImportStatus status) {
   };
 }
 
+AppWorkspaceStatusTone _worstTone(List<PharmacyDrugImportIssue> issues) {
+  final Set<PharmacyDrugImportIssueSeverity> severities = issues
+      .map((PharmacyDrugImportIssue issue) => issue.severity)
+      .toSet();
+  if (severities.contains(PharmacyDrugImportIssueSeverity.error)) {
+    return AppWorkspaceStatusTone.error;
+  }
+  if (severities.contains(PharmacyDrugImportIssueSeverity.warning)) {
+    return AppWorkspaceStatusTone.warning;
+  }
+  return AppWorkspaceStatusTone.info;
+}
+
 String _actionLabel(AppLocalizations l10n, PharmacyDrugImportAction action) {
   return switch (action) {
     PharmacyDrugImportAction.create => l10n.pharmacyDrugImportActionCreate,
@@ -1242,6 +1989,40 @@ String _drugNameList(
       : names;
 }
 
+String _formatFileSize(AppLocalizations l10n, Locale locale, int bytes) {
+  String rounded(double value) =>
+      AppFormatters.decimal((value * 10).round() / 10, locale);
+  if (bytes < 1024) {
+    return l10n.pharmacyDrugImportFileSizeBytes(
+      AppFormatters.decimal(bytes, locale),
+    );
+  }
+  if (bytes < 1024 * 1024) {
+    return l10n.pharmacyDrugImportFileSizeKb(rounded(bytes / 1024));
+  }
+  return l10n.pharmacyDrugImportFileSizeMb(rounded(bytes / (1024 * 1024)));
+}
+
+String _fileDetails(
+  AppLocalizations l10n,
+  Locale locale,
+  PharmacyDrugImportFile file,
+  PharmacyDrugImportPreview? preview,
+) {
+  final String size = _formatFileSize(l10n, locale, file.bytes.length);
+  final String? sheetName = preview?.sheetName;
+  if (preview == null || sheetName == null || !preview.template.isValid) {
+    return size;
+  }
+  return l10n.pharmacyDrugImportFileDetails(
+    size,
+    l10n.pharmacyDrugImportFileMeta(
+      sheetName,
+      AppFormatters.decimal(preview.summary.totalRows, locale),
+    ),
+  );
+}
+
 String _productDetails(
   AppLocalizations l10n,
   Locale locale,
@@ -1267,28 +2048,19 @@ String _productDetails(
   ].join(' · ');
 }
 
-String _batchesText(
+String _batchLine(
   AppLocalizations l10n,
   Locale locale,
-  PharmacyDrugImportProduct product,
+  PharmacyDrugImportBatch batch,
 ) {
-  final String batches = product.batches
-      .take(_batchPreviewCount)
-      .map((PharmacyDrugImportBatch batch) {
-        final DateTime? expiryDate = batch.expiryDate;
-        return l10n.pharmacyDrugImportBatchLine(
-          batch.batchNumber ?? l10n.pharmacyDrugImportUnlabeledBatch,
-          expiryDate == null
-              ? l10n.pharmacyDrugImportNoExpiry
-              : AppFormatters.mediumDate(expiryDate, locale),
-          AppFormatters.decimal(batch.quantity, locale),
-        );
-      })
-      .join('; ');
-  final int remaining = product.batches.length - _batchPreviewCount;
-  return remaining > 0
-      ? '$batches ${l10n.pharmacyDrugImportMoreBatches('$remaining')}'
-      : batches;
+  final DateTime? expiryDate = batch.expiryDate;
+  return l10n.pharmacyDrugImportBatchLine(
+    batch.batchNumber ?? l10n.pharmacyDrugImportUnlabeledBatch,
+    expiryDate == null
+        ? l10n.pharmacyDrugImportNoExpiry
+        : AppFormatters.mediumDate(expiryDate, locale),
+    AppFormatters.decimal(batch.quantity, locale),
+  );
 }
 
 String _sourceFieldLabel(AppLocalizations l10n, String? field) {

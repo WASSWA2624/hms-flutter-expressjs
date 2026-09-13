@@ -19,6 +19,7 @@ export 'app_dialog_action.dart';
 export 'app_email_field.dart';
 export 'app_field_error_text.dart';
 export 'app_field_label.dart';
+export 'app_file_picker_card.dart';
 export 'app_file_upload_panel.dart';
 export 'app_form_information_banner.dart';
 export 'app_rich_text_editor.dart';

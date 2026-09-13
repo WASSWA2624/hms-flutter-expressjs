@@ -48,7 +48,7 @@ describe('readDrugImportWorkbook', () => {
     });
   });
 
-  it('rejects unreadable, empty, and oversized files', async () => {
+  it('rejects unreadable and empty files', async () => {
     await expectHttpError(
       readDrugImportWorkbook(Buffer.from('not a spreadsheet')),
       'errors.pharmacy_drug_import.invalid_file'
@@ -57,15 +57,15 @@ describe('readDrugImportWorkbook', () => {
 
     const headerOnly = await buildMedicErpWorkbookBuffer([]);
     await expectHttpError(readDrugImportWorkbook(headerOnly), 'errors.pharmacy_drug_import.empty_file');
+  });
 
-    const threeRows = await buildMedicErpWorkbookBuffer([
-      buildMedicErpRow(),
-      buildMedicErpRow({ product_brand: 'B' }),
-      buildMedicErpRow({ product_brand: 'C' }),
-    ]);
-    await expectHttpError(
-      readDrugImportWorkbook(threeRows, { maxRows: 2 }),
-      'errors.pharmacy_drug_import.too_many_rows'
+  it('reads files of any row count', async () => {
+    const rows = Array.from({ length: 6000 }, (_, index) =>
+      buildMedicErpRow({ product_brand: `BRAND ${index}` })
     );
+    const result = await readDrugImportWorkbook(await buildMedicErpWorkbookBuffer(rows));
+
+    expect(result.rows).toHaveLength(6000);
+    expect(result.rows[5999].values.product_brand).toBe('BRAND 5999');
   });
 });
