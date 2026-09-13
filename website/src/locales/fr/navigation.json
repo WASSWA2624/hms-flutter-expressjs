@@ -1,0 +1,13 @@
+{
+  "nav": {
+    "home": "Accueil",
+    "docs": "Documentation",
+    "about": "À propos",
+    "contact": "Contact",
+    "menu": "Menu",
+    "navigation": "Navigation",
+    "mainNavigation": "Navigation principale",
+    "footerNavigation": "Navigation du pied de page"
+  }
+}
+

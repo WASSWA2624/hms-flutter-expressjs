@@ -1,0 +1,28 @@
+{
+  "title": "Contact",
+  "contactUs": "Contactez-Nous",
+  "subtitle": "Vous avez une question ou souhaitez nous contacter ? Envoyez-nous un message et nous vous répondrons dans les plus brefs délais.",
+  "name": "Nom",
+  "email": "Courriel",
+  "subject": "Sujet",
+  "message": "Message",
+  "send": "Envoyer le Message",
+  "sending": "Envoi en cours...",
+  "success": "Merci pour votre message ! Nous vous répondrons bientôt.",
+  "error": "Échec de l'envoi du message. Veuillez réessayer.",
+  "networkError": "Erreur réseau. Veuillez réessayer plus tard.",
+  "required": "Ce champ est obligatoire",
+  "invalidEmail": "Veuillez entrer une adresse courriel valide",
+  "messageTooShort": "Le message doit contenir au moins 10 caractères",
+  "namePlaceholder": "Votre nom",
+  "emailPlaceholder": "votre.courriel@exemple.com",
+  "messagePlaceholder": "Votre message...",
+  "apiErrors": {
+    "allFieldsRequired": "Tous les champs sont obligatoires",
+    "invalidEmailFormat": "Format de courriel invalide",
+    "messageTooShort": "Le message doit contenir au moins 10 caractères",
+    "nameTooShort": "Le nom doit contenir au moins 2 caractères",
+    "processingError": "Échec du traitement du formulaire de contact. Veuillez réessayer plus tard."
+  }
+}
+

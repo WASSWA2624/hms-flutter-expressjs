@@ -85,3 +85,21 @@ backend/uploads/*
 
 # curl cookie jars from manual API probing - these hold live session tokens
 cookies.txt
+
+# Website (Next.js site in website/, previously its own repo)
+website/.next/
+website/out/
+website/.vercel/
+website/.pnp
+website/.pnp.js
+website/*.tsbuildinfo
+website/next-env.d.js
+website/**/*.pem
+# User uploads and legacy downloads are runtime data; keep only the folder placeholders.
+website/public/uploads/*
+!website/public/uploads/.gitkeep
+!website/public/downloads/
+website/public/downloads/*
+!website/public/downloads/.gitkeep
+# Non-secret production settings; SMTP credentials live in .env.production.local.
+!website/.env.production

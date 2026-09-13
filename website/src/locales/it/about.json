@@ -1,0 +1,48 @@
+{
+  "title": "Chi Siamo",
+  "aboutUs": "Chi Siamo",
+  "ourCompany": "La Nostra Azienda",
+  "ourHistory": "La Nostra Storia",
+  "mission": "Missione",
+  "vision": "Visione",
+  "values": "Valori",
+  "history": "Storia",
+  "contact": "Informazioni di Contatto",
+  "address": "Indirizzo",
+  "phone": "Telefono",
+  "email": "Email",
+  "getInTouch": "Mettiti in Contatto",
+  "companyName": "HOSSPI",
+  "companyDescription": "HOSSPI è un'azienda che fornisce servizi biomedici al pubblico. Siamo un team di esperti nel campo dell'ingegneria biomedica e ci dedichiamo a fornire i migliori servizi possibili ai nostri clienti.",
+  "companyMission": "Fornire soluzioni biomediche innovative che migliorino i risultati sanitari e migliorino la qualità della vita delle persone in tutto il mondo.",
+  "companyVision": "Essere il principale fornitore di competenze e soluzioni biomediche, riconosciuto a livello globale per il nostro impegno verso l'eccellenza, l'innovazione e l'assistenza ai pazienti.",
+  "companyValues": [
+    "Eccellenza in tutto ciò che facciamo",
+    "Innovazione e miglioramento continuo",
+    "Integrità e pratiche etiche",
+    "Assistenza centrata sul paziente",
+    "Collaborazione e lavoro di squadra"
+  ],
+  "companyHistory": [
+    {
+      "year": "2015",
+      "title": "Fondazione dell'Azienda",
+      "description": "HOSSPI è stata fondata con la visione di rivoluzionare l'assistenza sanitaria attraverso soluzioni biomediche innovative."
+    },
+    {
+      "year": "2017",
+      "title": "Primo Lancio di Prodotto Importante",
+      "description": "Lancio del nostro prodotto principale, stabilendo nuovi standard nel settore biomedico."
+    },
+    {
+      "year": "2020",
+      "title": "Espansione Globale",
+      "description": "Espansione delle operazioni per servire clienti in più continenti, stabilendo una presenza globale."
+    },
+    {
+      "year": "2023",
+      "title": "Riconoscimento del Settore",
+      "description": "Ricezione di numerosi premi per l'innovazione e l'eccellenza nell'ingegneria biomedica."
+    }
+  ]
+}

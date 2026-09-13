@@ -1,0 +1,28 @@
+---
+description: Accessibility standards for semantic HTML, ARIA, keyboard navigation, and contrast
+globs: src/components/**/*.js,src/app/**/*.js
+alwaysApply: false
+---
+
+# Accessibility Rules
+
+## Semantic HTML
+- **Proper elements**: Use semantic HTML elements
+- **Headings**: Use proper heading hierarchy (h1-h6)
+- **Landmarks**: Use ARIA landmarks where needed
+
+## ARIA
+- **Labels**: Provide ARIA labels for interactive elements
+- **Roles**: Use ARIA roles when needed
+- **States**: Indicate element states (disabled, expanded, etc.)
+
+## Keyboard Navigation
+- **Focus management**: Manage focus properly
+- **Tab order**: Logical tab order
+- **Keyboard shortcuts**: Provide keyboard shortcuts where appropriate
+
+## Best Practices
+- **Color contrast**: Ensure sufficient color contrast
+- **Alt text**: Provide alt text for images
+- **Form labels**: Always label form inputs
+- **Error messages**: Provide clear error messages

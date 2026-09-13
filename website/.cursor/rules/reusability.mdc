@@ -1,0 +1,143 @@
+---
+description: DRY/reusability standards for components, utilities, APIs, and uniform code templates
+globs: src/components/**/*.js,src/lib/**/*.js,src/hooks/**/*.js,src/app/api/**/*.js
+alwaysApply: false
+---
+
+# Reusability & Uniformity Rules
+
+## Code Reusability Principles
+
+### 1. Component Reusability
+- **DRY Principle**: Never duplicate code - extract to reusable components
+- **Single Source of Truth**: Each component/utility should exist in one place only
+- **Composition over Duplication**: Compose existing components rather than creating new ones
+- **Generic Components**: Create generic, configurable components that can be reused across features
+
+### 2. Utility Function Reusability
+- **Centralized Utilities**: All utility functions in `lib/utils.js` or feature-specific utility files
+- **Pure Functions**: Utilities should be pure functions (no side effects)
+- **Documentation**: All utilities must have JSDoc comments explaining usage
+- **Export Pattern**: Use named exports for all utilities
+
+### 3. Styled Components Reusability
+- **Base Components**: Create base styled components that can be extended
+- **Theme Variables**: Always use theme variables - never duplicate theme values
+- **Composition**: Extend existing styled components using `styled(StyledComponent)`
+- **Variants**: Use props for variants rather than creating separate components
+
+## Uniformity Standards
+
+### 1. Code Structure Uniformity
+Every component must follow this exact structure:
+```javascript
+/**
+ * Component description
+ * @param {Object} props
+ * @param {type} props.propName - Prop description
+ */
+'use client'; // Only if needed
+
+import React from 'react';
+import styled from 'styled-components';
+import { theme } from '@/styles/theme';
+
+const StyledComponentName = styled.element`
+  /* Styles using theme */
+`;
+
+export const ComponentName = ({ prop1, prop2, ...props }) => {
+  return (
+    <StyledComponentName {...props}>
+      {/* Component content */}
+    </StyledComponentName>
+  );
+};
+```
+
+### 2. API Route Uniformity
+Every API route must follow this exact structure:
+```javascript
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { verifyAuth } from '@/lib/auth'; // If protected
+
+export async function GET(request) {
+  try {
+    // Implementation
+    return NextResponse.json({ data: result }, { status: 200 });
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Error message' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+### 3. Database Query Uniformity
+Every Prisma query must follow this pattern:
+```javascript
+import { prisma } from '@/lib/prisma';
+
+export async function getProducts() {
+  try {
+    const products = await prisma.product.findMany({
+      select: {
+        // Only select needed fields
+      },
+      where: {
+        // Filter conditions
+      },
+      include: {
+        // Relations if needed
+      },
+    });
+    return products;
+  } catch (error) {
+    console.error('Database error:', error);
+    throw error;
+  }
+}
+```
+
+### 4. Error Handling Uniformity
+- **Always use try/catch**: All async operations must be wrapped in try/catch
+- **Consistent error messages**: Use consistent error message format
+- **User-friendly errors**: Show user-friendly messages, log technical details
+- **Error boundaries**: Use React error boundaries for component errors
+
+## Reproducibility Standards
+
+### 1. Environment Setup
+- **Exact versions**: Use exact package versions in `package.json` (no `^` or `~`)
+- **Environment variables**: Document all required environment variables in `.env.example`
+- **Setup script**: Include complete setup instructions in README
+
+### 2. Database Setup
+- **Migration order**: Migrations must be run in exact order
+- **Seed data**: Seed script must produce identical data every time
+- **Schema versioning**: Prisma schema must be version controlled
+
+### 3. Code Generation
+- **Consistent patterns**: All similar features must follow identical patterns
+- **Template components**: Use component templates for consistency
+- **Code style**: Enforce consistent code style with ESLint/Prettier
+
+## Enforcement
+
+### 1. Code Review Checklist
+- [ ] Component follows standard structure
+- [ ] Uses theme variables (no hardcoded values)
+- [ ] Has JSDoc documentation
+- [ ] Follows naming conventions
+- [ ] Uses barrel exports
+- [ ] Error handling implemented
+- [ ] Responsive design implemented
+- [ ] Accessibility features included
+
+### 2. Pre-commit Checks
+- ESLint must pass
+- All imports must use barrel exports
+- All styled components must use `Styled` prefix
+- All theme values must come from theme object

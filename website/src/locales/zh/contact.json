@@ -1,0 +1,28 @@
+{
+  "title": "联系",
+  "contactUs": "联系我们",
+  "subtitle": "有问题或想联系我们？请发送消息，我们会尽快回复。",
+  "name": "姓名",
+  "email": "电子邮件",
+  "subject": "主题",
+  "message": "消息",
+  "send": "发送消息",
+  "sending": "发送中...",
+  "success": "感谢您的消息！我们会尽快回复。",
+  "error": "发送消息失败。请重试。",
+  "networkError": "网络错误。请稍后再试。",
+  "required": "此字段为必填项",
+  "invalidEmail": "请输入有效的电子邮件地址",
+  "messageTooShort": "消息必须至少包含10个字符",
+  "namePlaceholder": "您的姓名",
+  "emailPlaceholder": "your.email@example.com",
+  "messagePlaceholder": "您的消息...",
+  "apiErrors": {
+    "allFieldsRequired": "所有字段都是必填项",
+    "invalidEmailFormat": "电子邮件格式无效",
+    "messageTooShort": "消息必须至少包含10个字符",
+    "nameTooShort": "姓名必须至少包含2个字符",
+    "processingError": "处理联系表单失败。请稍后再试。"
+  }
+}
+

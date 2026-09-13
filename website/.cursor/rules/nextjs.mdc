@@ -1,0 +1,151 @@
+---
+description: Next.js App Router: server/client components, routing, metadata, caching, and errors
+globs: src/app/**/*.{js,jsx},middleware.js,src/middleware.js,next.config.js
+alwaysApply: false
+---
+
+# Next.js App Router Rules
+
+## App Router Rules
+
+### 1. Server vs Client Components
+- **Server Components**: Default to Server Components (no `'use client'` directive)
+- **Client Components**: Use `'use client'` only when needed:
+  - Interactivity (onClick, onChange, onSubmit, etc.)
+  - React hooks (useState, useEffect, useCallback, etc.)
+  - Browser APIs (window, document, localStorage, etc.)
+  - Event listeners (addEventListener, etc.)
+  - Context providers (if using React Context)
+  - Third-party libraries that require client-side execution
+- **Marking**: Always mark Client Components with `'use client'` directive at the top of the file
+- **Boundary**: The `'use client'` directive creates a boundary - all imported components become Client Components
+- **Best practice**: Keep Client Components as leaf nodes when possible to minimize client bundle size
+
+### 2. Routing
+- **File-based routing**: Use Next.js file-based routing
+- **Dynamic routes**: Use `[param]` for dynamic segments (e.g., `[id]`, `[slug]`)
+- **Catch-all routes**: Use `[...slug]` for catch-all routes
+- **Optional catch-all**: Use `[[...slug]]` for optional catch-all routes
+- **Route groups**: Use `(group)` for organization without affecting URLs
+- **Nested routes**: Create nested routes with folders
+- **Parallel routes**: Use `@folder` syntax for parallel routes (advanced)
+- **Intercepting routes**: Use `(.)folder` syntax for intercepting routes (advanced)
+
+### 3. Pages and Layouts
+- **Page files**: Use `page.js` for route pages (must be default export)
+- **Layout files**: Use `layout.js` for shared layouts (must be default export)
+- **Nested layouts**: Create nested layouts for route groups
+- **Template files**: Use `template.js` for layouts that re-render on navigation (rare)
+- **Metadata**: Use Metadata API for SEO (export `metadata` object or `generateMetadata` function)
+- **Route segment config**: Export route segment config options (`revalidate`, `dynamic`, `dynamicParams`, etc.)
+
+### 4. Route Segment Config
+- **Revalidation**: Use `export const revalidate = seconds` for ISR (Incremental Static Regeneration)
+  - Homepage: 3600 seconds (1 hour)
+  - Product listing: 300 seconds (5 minutes)
+  - Product detail: 600 seconds (10 minutes)
+- **Dynamic rendering**: Use `export const dynamic = 'force-static'` or `'force-dynamic'` to control rendering
+- **Dynamic params**: Use `export const dynamicParams = true/false` to control dynamic route generation
+- **Runtime**: Use `export const runtime = 'nodejs'` or `'edge'` (default is 'nodejs')
+
+### 5. API Routes (Route Handlers)
+- **Location**: Place API routes in `app/api/` directory
+- **Route handlers**: Use `route.js` for API endpoints
+- **HTTP methods**: Export named functions (GET, POST, PUT, DELETE, PATCH, HEAD, OPTIONS)
+- **Request handling**: Use `Request` object from `next/server`
+- **Response format**: Use `NextResponse.json()` for JSON responses
+- **Error handling**: Always wrap route handlers in try/catch blocks
+- **Status codes**: Return appropriate HTTP status codes (200, 201, 400, 401, 403, 404, 500)
+- **Validation**: Always validate and sanitize input data
+- **Authentication**: Verify authentication before processing protected routes
+- **Caching**: Add cache headers to responses when appropriate
+- **Streaming**: Use streaming for large responses when needed
+
+### 6. Data Fetching
+- **Server Components**: Fetch data directly in Server Components (async/await)
+- **Async components**: Use async/await in Server Components (Next.js 13+)
+- **Caching**: Use Next.js caching strategies:
+  - `fetch()` with `cache` option (default: 'force-cache')
+  - `export const revalidate` for ISR
+  - `cache()` function from React for request memoization
+  - `unstable_cache()` for custom caching
+- **Error handling**: Handle errors in Server Components with try/catch
+- **Loading states**: Use `loading.js` for automatic loading states
+- **Suspense**: Use React Suspense for streaming and progressive rendering
+
+### 7. Server Actions
+- **Location**: Define Server Actions in Server Components or separate files
+- **Marking**: Use `'use server'` directive at the top of the file or function
+- **Usage**: Call Server Actions from Client Components using form actions or direct calls
+- **Validation**: Always validate input in Server Actions
+- **Error handling**: Return error objects or throw errors for error handling
+- **Revalidation**: Use `revalidatePath()` or `revalidateTag()` to invalidate cache
+
+### 8. Metadata and SEO
+- **Metadata API**: Use Metadata API for page metadata (export `metadata` object)
+- **Dynamic metadata**: Use `generateMetadata` function for dynamic routes
+- **Static metadata**: Export `metadata` object for static metadata
+- **Open Graph**: Include Open Graph tags with proper image URLs
+- **Twitter Cards**: Include Twitter Card tags
+- **Structured data**: Add structured data (JSON-LD) for SEO using reusable `StructuredData` component
+- **Sitemap**: Create `sitemap.js` for dynamic sitemap generation
+- **Robots.txt**: Create `robots.js` to control search engine crawling
+- **metadataBase**: Always set `metadataBase` in root layout metadata for proper Open Graph and Twitter Card image resolution
+- **Example**: `metadataBase: new URL(APP_URL)` where `APP_URL` comes from constants
+
+### 9. Middleware
+- **Location**: Place middleware in root `middleware.js` file
+- **Purpose**: Use middleware for authentication, redirects, headers, and request/response modification
+- **Matcher**: Use `config.matcher` to specify which routes middleware runs on
+- **Performance**: Keep middleware lightweight and fast
+- **Edge runtime**: Middleware runs on Edge runtime by default
+- **Response**: Return `NextResponse.next()`, `NextResponse.redirect()`, or `NextResponse.rewrite()`
+
+## Best Practices
+
+### 1. Performance
+- **Dynamic imports**: Use `next/dynamic` for heavy components with `ssr: false` for client-only components
+- **Font optimization**: Use `next/font` for font optimization
+- **Image optimization**: Always use `next/image` component for images
+- **Code splitting**: Next.js handles automatic code splitting - use dynamic imports for manual splitting
+- **Bundle analysis**: Use `@next/bundle-analyzer` to analyze bundle size
+- **Note**: See `performance.mdc` for detailed code splitting and image optimization rules
+
+### 2. Navigation
+- **Link component**: Use `Link` component for client-side navigation (prevents full page reloads)
+- **Prefetching**: Next.js automatically prefetches linked pages on hover (can disable with `prefetch={false}`)
+- **Active state**: Use `usePathname()` from `next/navigation` for active navigation state
+- **Layout persistence**: Layout components persist across navigation - only page content updates
+- **Optimization**: Use `React.memo` on layout components to prevent unnecessary re-renders
+- **Programmatic navigation**: Use `useRouter()` from `next/navigation` for programmatic navigation
+
+### 3. Error Handling
+- **Error boundaries**: Use `error.js` for error boundaries (must be Client Component if using styled-components)
+- **Not found**: Use `not-found.js` for 404 pages (must be Client Component if using styled-components)
+- **Loading states**: Use `loading.js` for loading states (must be Client Component if using styled-components)
+- **Global error**: Use `app/error.js` for global error boundary
+- **Not found function**: Use `notFound()` from `next/navigation` to trigger 404 page
+- **Error props**: Error boundaries receive `error` and `reset` props
+- **Client Components**: `error.js`, `not-found.js`, and `loading.js` files that use styled-components or React hooks must include `'use client'` directive
+
+### 4. Caching Strategy
+- **Static pages**: Use `revalidate` export for ISR (Incremental Static Regeneration)
+- **API routes**: Add `Cache-Control` headers to API responses
+- **Stale-while-revalidate**: Use `stale-while-revalidate` pattern for better performance
+- **Cache tags**: Use `revalidateTag()` for tag-based revalidation (Next.js 13+)
+- **Cache paths**: Use `revalidatePath()` for path-based revalidation
+- **Request memoization**: Use `cache()` from React for request memoization within a single render
+
+### 5. Security
+- **Input validation**: Always validate and sanitize user input
+- **Authentication**: Verify authentication in middleware or route handlers
+- **CSRF protection**: Use CSRF tokens for state-changing operations
+- **Rate limiting**: Implement rate limiting on API routes
+- **Environment variables**: Use environment variables for secrets (never expose in client code)
+- **Headers**: Set appropriate security headers in middleware or `next.config.js`
+
+### 6. Type Safety (JavaScript)
+- **JSDoc comments**: Use JSDoc comments for type hints and documentation
+- **PropTypes**: Consider using PropTypes for runtime type checking (optional)
+- **Validation**: Validate data at runtime with proper error handling
+- **Note**: This project uses JavaScript, not TypeScript - use JSDoc for type documentation

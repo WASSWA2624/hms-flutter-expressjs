@@ -1,0 +1,48 @@
+{
+  "title": "关于",
+  "aboutUs": "关于我们",
+  "ourCompany": "我们的公司",
+  "ourHistory": "我们的历史",
+  "mission": "使命",
+  "vision": "愿景",
+  "values": "价值观",
+  "history": "历史",
+  "contact": "联系信息",
+  "address": "地址",
+  "phone": "电话",
+  "email": "电子邮件",
+  "getInTouch": "联系我们",
+  "companyName": "HOSSPI",
+  "companyDescription": "HOSSPI是一家为公众提供生物医学服务的公司。我们是一支生物医学工程领域的专家团队，致力于为客户提供最佳服务。",
+  "companyMission": "提供创新的生物医学解决方案，改善医疗保健结果，提高全球人民的生活质量。",
+  "companyVision": "成为生物医学专业知识和解决方案的领先提供商，因我们对卓越、创新和患者护理的承诺而获得全球认可。",
+  "companyValues": [
+    "在我们所做的一切中追求卓越",
+    "创新和持续改进",
+    "诚信和道德实践",
+    "以患者为中心的护理",
+    "协作和团队合作"
+  ],
+  "companyHistory": [
+    {
+      "year": "2015",
+      "title": "公司成立",
+      "description": "HOSSPI成立，愿景是通过创新的生物医学解决方案彻底改变医疗保健。"
+    },
+    {
+      "year": "2017",
+      "title": "首个重要产品发布",
+      "description": "发布我们的旗舰产品，为生物医学行业树立新标准。"
+    },
+    {
+      "year": "2020",
+      "title": "全球扩张",
+      "description": "扩大业务范围，为多个大洲的客户提供服务，建立全球影响力。"
+    },
+    {
+      "year": "2023",
+      "title": "行业认可",
+      "description": "因在生物医学工程方面的创新和卓越而获得多项奖项。"
+    }
+  ]
+}

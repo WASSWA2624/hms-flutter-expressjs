@@ -1,0 +1,48 @@
+{
+  "title": "Sobre",
+  "aboutUs": "Sobre Nós",
+  "ourCompany": "Nossa Empresa",
+  "ourHistory": "Nossa História",
+  "mission": "Missão",
+  "vision": "Visão",
+  "values": "Valores",
+  "history": "História",
+  "contact": "Informações de Contato",
+  "address": "Endereço",
+  "phone": "Telefone",
+  "email": "E-mail",
+  "getInTouch": "Entre em Contato",
+  "companyName": "HOSSPI",
+  "companyDescription": "HOSSPI é uma empresa que fornece serviços biomédicos ao público. Somos uma equipe de especialistas no campo da engenharia biomédica e nos dedicamos a fornecer os melhores serviços possíveis aos nossos clientes.",
+  "companyMission": "Fornecer soluções biomédicas inovadoras que melhorem os resultados de saúde e melhorem a qualidade de vida das pessoas em todo o mundo.",
+  "companyVision": "Ser o principal provedor de expertise e soluções biomédicas, reconhecido globalmente por nosso compromisso com a excelência, inovação e cuidados com o paciente.",
+  "companyValues": [
+    "Excelência em tudo que fazemos",
+    "Inovação e melhoria contínua",
+    "Integridade e práticas éticas",
+    "Cuidados centrados no paciente",
+    "Colaboração e trabalho em equipe"
+  ],
+  "companyHistory": [
+    {
+      "year": "2015",
+      "title": "Fundação da Empresa",
+      "description": "HOSSPI foi estabelecida com a visão de revolucionar a saúde através de soluções biomédicas inovadoras."
+    },
+    {
+      "year": "2017",
+      "title": "Primeiro Lançamento de Produto Importante",
+      "description": "Lançamento do nosso produto principal, estabelecendo novos padrões na indústria biomédica."
+    },
+    {
+      "year": "2020",
+      "title": "Expansão Global",
+      "description": "Expansão das operações para atender clientes em vários continentes, estabelecendo uma presença global."
+    },
+    {
+      "year": "2023",
+      "title": "Reconhecimento da Indústria",
+      "description": "Recebimento de vários prêmios por inovação e excelência em engenharia biomédica."
+    }
+  ]
+}

@@ -1,0 +1,211 @@
+---
+description: React component structure, theming, memoization, variants, and accessibility
+globs: src/components/**/*.js
+alwaysApply: false
+---
+
+# Component Rules
+
+## Component Structure
+
+### 1. Basic Rules
+- **One component per file**: Each component in its own file
+- **File naming**: PascalCase for component files (e.g., `ProductCard.js`)
+- **Component naming**: Match file name exactly
+- **Barrel exports**: Use `index.js` files for clean imports
+- **Co-location**: Keep related components in feature folders
+- **Client directive**: Add `'use client'` only when needed (interactivity, hooks, browser APIs)
+
+### 2. Uniform Component Structure
+Every component MUST follow this exact structure for consistency:
+
+```javascript
+/**
+ * Component description
+ * @param {Object} props
+ * @param {type} props.propName - Prop description
+ * @param {string} props.variant - Component variant (optional)
+ * @param {boolean} props.disabled - Disabled state (optional)
+ * @param {Function} props.onClick - Click handler (optional)
+ * @param {React.ReactNode} props.children - Component content
+ */
+'use client'; // Only if needed (interactivity, hooks, browser APIs)
+
+import React from 'react';
+import styled from 'styled-components';
+import { theme } from '@/styles/theme';
+
+const StyledComponentName = styled.element`
+  /* Base styles - mobile-first */
+  padding: ${props => props.theme.spacing.md};
+  color: ${props => props.theme.colors.text.primary};
+  background-color: ${props => props.theme.colors.background.primary};
+  border-radius: ${props => props.theme.borderRadius.md};
+  transition: all ${props => props.theme.transition.duration} ${props => props.theme.transition.timing};
+  
+  /* Responsive - enhance for larger screens */
+  @media (min-width: ${props => props.theme.breakpoints.sm}) {
+    padding: ${props => props.theme.spacing.lg};
+  }
+  
+  @media (min-width: ${props => props.theme.breakpoints.md}) {
+    padding: ${props => props.theme.spacing.xl};
+  }
+  
+  /* Variants */
+  ${props => props.variant === 'primary' && `
+    background-color: ${props.theme.colors.primary};
+    color: ${props.theme.colors.text.onPrimary};
+  `}
+  
+  ${props => props.variant === 'secondary' && `
+    background-color: ${props.theme.colors.secondary};
+    color: ${props.theme.colors.text.onSecondary};
+  `}
+  
+  /* States */
+  &:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+  }
+  
+  &:focus {
+    outline: 2px solid ${props => props.theme.colors.primary};
+    outline-offset: 2px;
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+`;
+
+export const ComponentName = React.memo(({ 
+  variant = 'default', 
+  disabled = false, 
+  onClick, 
+  children, 
+  ...props 
+}) => {
+  return (
+    <StyledComponentName
+      variant={variant}
+      disabled={disabled}
+      onClick={onClick}
+      aria-label={props['aria-label']}
+      {...props}
+    >
+      {children}
+    </StyledComponentName>
+  );
+});
+
+ComponentName.displayName = 'ComponentName';
+```
+
+### 3. Theming Requirements
+- **Always use theme**: Never hardcode colors, spacing, typography, or breakpoints
+- **Theme access**: Access theme via `props.theme` in styled components
+- **Dark/light mode**: Components must work with both themes automatically
+- **Theme variables**: Use theme variables for:
+  - Colors: `props.theme.colors.*`
+  - Spacing: `props.theme.spacing.*`
+  - Typography: `props.theme.typography.*`
+  - Breakpoints: `props.theme.breakpoints.*`
+  - Border radius: `props.theme.borderRadius.*`
+  - Transitions: `props.theme.transition.*`
+  - Shadows: `props.theme.shadows.*`
+
+### 4. Responsive Design Requirements
+- **Mobile-first**: Always write mobile styles first, then enhance for larger screens
+- **Breakpoints**: Use theme breakpoints consistently:
+  ```javascript
+  @media (min-width: ${props => props.theme.breakpoints.sm}) { /* 768px */ }
+  @media (min-width: ${props => props.theme.breakpoints.md}) { /* 1024px */ }
+  @media (min-width: ${props => props.theme.breakpoints.lg}) { /* 1440px */ }
+  ```
+- **Fluid typography**: Use relative units (rem, em) for typography
+- **Flexible layouts**: Use CSS Grid and Flexbox for responsive layouts
+- **Touch targets**: Minimum 44x44px for interactive elements on mobile
+- **Container queries**: Use container queries when appropriate for component-level responsiveness
+
+### 5. Performance & Efficiency
+- **React.memo**: Use `React.memo` for components that don't need frequent re-renders:
+  ```javascript
+  export const ComponentName = React.memo(({ ...props }) => {
+    // Component code
+  });
+  ComponentName.displayName = 'ComponentName';
+  ```
+- **Layout components**: Always wrap Header, Footer, and Navigation with `React.memo`
+- **Code splitting**: Use `next/dynamic` for heavy components:
+  ```javascript
+  const HeavyComponent = dynamic(
+    () => import('@/components/HeavyComponent').then(mod => ({ default: mod.HeavyComponent })),
+    { 
+      loading: () => <div>Loading...</div>,
+      ssr: false 
+    }
+  );
+  ```
+- **Minimal dependencies**: Import only what you need, use tree shaking
+- **Avoid inline styles**: Prefer styled-components over inline styles
+- **Optimize images**: Always use `next/image` for images
+
+### 6. Reusability & Customization
+- **Composition over configuration**: Prefer composition over complex configuration
+- **Props for variants**: Use props for component variants (primary, secondary, etc.)
+- **Default props**: Provide sensible defaults for all props
+- **Extend components**: Extend existing styled components when possible:
+  ```javascript
+  const StyledExtendedButton = styled(StyledButton)`
+    /* Additional styles */
+  `;
+  ```
+- **Generic components**: Create generic, configurable components that can be reused
+- **Single responsibility**: Each component should have one clear purpose
+- **DRY principle**: Never duplicate code - extract to reusable components
+
+### 7. Component Organization
+- **Layout components**: Place in `components/layout/`
+- **UI components**: Place in `components/ui/`
+- **Feature components**: Place in `components/features/[feature-name]/`
+- **Common components**: Place in `components/common/`
+- **Barrel exports**: Use `index.js` files for clean imports
+
+### 8. Accessibility Requirements
+- **Semantic HTML**: Use semantic HTML elements (button, nav, main, etc.)
+- **ARIA labels**: Provide ARIA labels for interactive elements without visible text
+- **ARIA roles**: Use ARIA roles when needed
+- **ARIA states**: Indicate element states (disabled, expanded, etc.)
+- **Keyboard navigation**: Ensure all interactive elements are keyboard accessible
+- **Focus management**: Include visible focus states for keyboard navigation
+- **Color contrast**: Ensure sufficient color contrast (use theme colors)
+- **Alt text**: Provide alt text for images
+
+### 9. Modern Patterns
+- **ES6+ features**: Use modern JavaScript (arrow functions, destructuring, template literals)
+- **Hooks**: Extract reusable logic into custom hooks
+- **Async/await**: Use async/await for async operations
+- **Error boundaries**: Use error boundaries for component error handling
+- **Type safety**: Document props with JSDoc comments for better IDE support
+
+### 10. Component Best Practices Checklist
+Every component must:
+- [ ] Follow the uniform component structure
+- [ ] Use theme variables (no hardcoded values)
+- [ ] Be fully responsive (mobile-first approach)
+- [ ] Include JSDoc documentation for all props
+- [ ] Use `React.memo` when appropriate
+- [ ] Include accessibility features (ARIA, semantic HTML, keyboard navigation)
+- [ ] Have proper error handling
+- [ ] Use barrel exports
+- [ ] Follow naming conventions
+- [ ] Be lightweight and efficient
+- [ ] Support customization through props
+- [ ] Be reusable and composable

@@ -1,0 +1,49 @@
+{
+  "title": "Acerca de",
+  "aboutUs": "Acerca de Nosotros",
+  "ourCompany": "Nuestra Empresa",
+  "ourHistory": "Nuestra Historia",
+  "mission": "Misión",
+  "vision": "Visión",
+  "values": "Valores",
+  "history": "Historia",
+  "contact": "Información de Contacto",
+  "address": "Dirección",
+  "phone": "Teléfono",
+  "email": "Correo Electrónico",
+  "getInTouch": "Póngase en Contacto",
+  "companyName": "HOSSPI",
+  "companyDescription": "HOSSPI es una empresa que proporciona servicios biomédicos al público. Somos un equipo de expertos en el campo de la ingeniería biomédica y nos dedicamos a proporcionar los mejores servicios posibles a nuestros clientes.",
+  "companyMission": "Proporcionar soluciones biomédicas innovadoras que mejoren los resultados de la atención médica y mejoren la calidad de vida de las personas en todo el mundo.",
+  "companyVision": "Ser el proveedor líder de experiencia y soluciones biomédicas, reconocido globalmente por nuestro compromiso con la excelencia, la innovación y la atención al paciente.",
+  "companyValues": [
+    "Excelencia en todo lo que hacemos",
+    "Innovación y mejora continua",
+    "Integridad y prácticas éticas",
+    "Atención centrada en el paciente",
+    "Colaboración y trabajo en equipo"
+  ],
+  "companyHistory": [
+    {
+      "year": "2015",
+      "title": "Fundación de la Empresa",
+      "description": "HOSSPI se estableció con la visión de revolucionar la atención médica a través de soluciones biomédicas innovadoras."
+    },
+    {
+      "year": "2017",
+      "title": "Primer Lanzamiento de Producto Importante",
+      "description": "Lanzamos nuestro producto estrella, estableciendo nuevos estándares en la industria biomédica."
+    },
+    {
+      "year": "2020",
+      "title": "Expansión Global",
+      "description": "Ampliamos nuestras operaciones para servir a clientes en múltiples continentes, estableciendo una presencia global."
+    },
+    {
+      "year": "2023",
+      "title": "Reconocimiento de la Industria",
+      "description": "Recibimos múltiples premios por innovación y excelencia en ingeniería biomédica."
+    }
+  ]
+}
+

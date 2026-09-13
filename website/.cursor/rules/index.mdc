@@ -1,0 +1,40 @@
+---
+description: Project overview: Next.js 16 stack, modular rules map, and reproducibility standards
+globs: .cursor/rules/**/*.mdc,README.md,package.json,jsconfig.json,next.config.js
+alwaysApply: false
+---
+
+# Next.js Project Rules
+
+## Tech Stack
+- **Framework**: Next.js 16 (App Router, latest version)
+- **Language**: JavaScript (ES6+, no TypeScript)
+- **Styling**: Styled Components (CSS-in-JS)
+- **Data**: No database — content comes from constants and locale JSON files
+- **Theme**: Themed styled components with dark/light mode support
+- **Responsive**: Mobile-first, fully responsive design
+
+## Rule Files
+This project uses modular rule files organized by concern:
+- `project-structure.mdc` - Directory organization and file structure
+- `components.mdc` - Component structure and reusable components
+- `styled-components.mdc` - Styled Components rules and patterns
+- `nextjs.mdc` - Next.js App Router specific rules
+- `code-style.mdc` - JavaScript style, naming conventions, imports
+- `constants.mdc` - Constants and configuration rules
+- `performance.mdc` - Performance optimization rules
+- `responsive.mdc` - Responsive design rules
+- `theme.mdc` - Theme and styling rules
+- `api-routes.mdc` - API routes rules
+- `security.mdc` - Security rules
+- `accessibility.mdc` - Accessibility rules
+- `quality.mdc` - Testing and code quality
+- `reusability.mdc` - Reusability and uniformity standards
+
+## Reproducibility Standards
+- **Code Templates**: Use exact templates from `dev-plan/STANDARDIZATION.md`
+- **Naming Conventions**: Follow strict naming conventions (see `reusability.mdc`)
+- **Import Order**: Follow strict import order (see `project-structure.mdc`)
+- **Theme Usage**: Always use theme variables, never hardcode values
+- **Error Handling**: All async operations must use try/catch
+- **Documentation**: All components/functions must have JSDoc comments

@@ -1,0 +1,31 @@
+---
+description: Security practices for auth, validation, uploads, secrets, and protected routes
+globs: src/app/api/**/*.js,src/lib/auth.js,src/lib/**/*.js,middleware.js,src/middleware.js
+alwaysApply: false
+---
+
+# Security Rules
+
+## Authentication
+- **Password hashing**: Use bcrypt for password hashing
+- **Sessions**: Use secure, HTTP-only cookies
+- **CSRF protection**: Implement CSRF protection
+- **Rate limiting**: Implement rate limiting on API routes
+
+## Input Validation
+- **Sanitize input**: Sanitize user inputs
+- **Validate data**: Validate all user inputs
+- **SQL injection**: Prisma prevents SQL injection automatically
+- **XSS prevention**: React escapes content by default
+
+## File Uploads
+- **Validation**: Validate file type and size
+- **Secure storage**: Store files securely
+- **Virus scanning**: Consider virus scanning for uploads
+- **Path traversal**: Prevent path traversal attacks
+
+## Data Protection
+- **Sensitive data**: Never store passwords or tokens in client-side storage
+- **Environment variables**: Use environment variables for secrets
+- **HTTPS**: Use HTTPS in production
+- **CORS**: Configure CORS properly in Next.js API routes

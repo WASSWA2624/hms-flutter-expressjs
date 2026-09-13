@@ -1,0 +1,32 @@
+---
+description: JavaScript code style: ES6+, naming, async/await, and JSDoc conventions
+globs: src/**/*.{js,mjs},*.{js,mjs},scripts/**/*.js,prisma/**/*.{js,mjs}
+alwaysApply: false
+---
+
+# Code Style Rules
+
+## JavaScript Style
+
+### 1. Modern JavaScript
+- **ES6+**: Use modern JavaScript features
+- **No TypeScript**: Pure JavaScript only
+- **Async/await**: Prefer async/await over promises
+- **Error handling**: Always handle errors with try/catch
+- **Constants**: Use const for constants, let for variables
+- **Arrow functions**: Use arrow functions for callbacks
+- **Destructuring**: Use object/array destructuring
+
+### 2. Code Organization
+- **Single responsibility**: Each function/component should have one purpose
+- **DRY principle**: Don't repeat yourself
+- **Clean code**: Write clean, readable, maintainable code
+- **Comments**: Add JSDoc comments for functions and components
+
+### 3. Naming Conventions
+- **Variables**: camelCase (`productName`, `userId`)
+- **Constants**: UPPER_SNAKE_CASE (`API_ENDPOINTS`, `MAX_FILE_SIZE`)
+- **Functions**: camelCase (`getProducts`, `formatDate`)
+- **Components**: PascalCase (`ProductCard`, `UserProfile`)
+- **Files**: Match the naming convention of what they export
+- **Note**: See `project-structure.mdc` for detailed file naming conventions

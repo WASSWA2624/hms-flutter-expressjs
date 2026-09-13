@@ -1,0 +1,498 @@
+---
+description: i18n locale detection, translation files, useTranslation, and localized UI text
+globs: src/locales/**/*.json,src/lib/i18n.js,src/hooks/useTranslation.js,src/hooks/**/*.js,src/middleware.js,middleware.js,src/components/**/*.js,src/app/**/*.js
+alwaysApply: false
+---
+
+# Internationalization (i18n) Rules
+
+## Overview
+The application supports full internationalization with multiple languages. The default locale is determined by device/browser settings, but can be overridden by user preferences stored in cookies or user settings.
+
+## Locale Detection Priority
+
+### 1. User Settings (Highest Priority)
+- User-selected locale stored in cookies (`locale` cookie)
+- User-selected locale stored in user profile (if authenticated)
+- Persists across sessions
+
+### 2. Device/Browser Settings (Default)
+- Detected from `Accept-Language` header
+- Detected from `navigator.language` (client-side)
+- Falls back to default locale if detection fails
+
+### 3. Default Locale
+- Falls back to `en` (English) if no locale can be determined
+
+## Supported Locales
+
+### Configuration
+Define supported locales in `src/lib/constants.js`:
+
+```javascript
+export const SUPPORTED_LOCALES = ['en', 'es', 'fr', 'de', 'it', 'pt', 'zh', 'ja', 'ar'];
+export const DEFAULT_LOCALE = 'en';
+export const LOCALE_NAMES = {
+  en: 'English',
+  es: 'Español',
+  fr: 'Français',
+  de: 'Deutsch',
+  it: 'Italiano',
+  pt: 'Português',
+  zh: '中文',
+  ja: '日本語',
+  ar: 'العربية',
+};
+```
+
+## Translation Files Structure
+
+### Directory Structure
+```
+src/
+├── locales/
+│   ├── en/
+│   │   ├── common.json
+│   │   ├── navigation.json
+│   │   ├── products.json
+│   │   ├── about.json
+│   │   ├── contact.json
+│   │   └── admin.json
+│   ├── es/
+│   │   ├── common.json
+│   │   ├── navigation.json
+│   │   └── ...
+│   └── [locale]/
+│       └── ...
+```
+
+### Translation File Organization
+- **common.json**: Common UI strings (buttons, labels, messages)
+- **navigation.json**: Navigation menu items
+- **products.json**: Product-related translations
+- **about.json**: About page content
+- **contact.json**: Contact page content
+- **admin.json**: Admin panel translations
+
+### Translation File Format
+```json
+{
+  "welcome": "Welcome",
+  "hello": "Hello, {{name}}!",
+  "items": {
+    "one": "{{count}} item",
+    "other": "{{count}} items"
+  }
+}
+```
+
+## Implementation Rules
+
+### 1. Translation Utilities
+
+#### Locale Detection Utility
+Location: `src/lib/i18n.js`
+
+```javascript
+/**
+ * Get locale from request headers (server-side)
+ * @param {Request} request - Next.js request object
+ * @returns {string} Locale code
+ */
+export function getLocaleFromRequest(request) {
+  // 1. Check cookie
+  const cookieLocale = request.cookies.get('locale')?.value;
+  if (cookieLocale && SUPPORTED_LOCALES.includes(cookieLocale)) {
+    return cookieLocale;
+  }
+  
+  // 2. Check Accept-Language header
+  const acceptLanguage = request.headers.get('accept-language');
+  if (acceptLanguage) {
+    const detected = detectLocale(acceptLanguage);
+    if (detected) return detected;
+  }
+  
+  // 3. Default
+  return DEFAULT_LOCALE;
+}
+
+/**
+ * Get locale from browser (client-side)
+ * @returns {string} Locale code
+ */
+export function getLocaleFromBrowser() {
+  if (typeof window === 'undefined') return DEFAULT_LOCALE;
+  
+  // 1. Check cookie
+  const cookieLocale = getCookie('locale');
+  if (cookieLocale && SUPPORTED_LOCALES.includes(cookieLocale)) {
+    return cookieLocale;
+  }
+  
+  // 2. Check navigator.language
+  const browserLocale = navigator.language.split('-')[0];
+  if (SUPPORTED_LOCALES.includes(browserLocale)) {
+    return browserLocale;
+  }
+  
+  // 3. Default
+  return DEFAULT_LOCALE;
+}
+```
+
+#### Translation Function
+Location: `src/lib/i18n.js`
+
+```javascript
+/**
+ * Translate a key with optional parameters
+ * @param {string} locale - Locale code
+ * @param {string} namespace - Translation namespace (e.g., 'common', 'products')
+ * @param {string} key - Translation key (supports dot notation: 'button.submit')
+ * @param {Object} params - Parameters for interpolation
+ * @returns {string} Translated string
+ */
+export async function translate(locale, namespace, key, params = {}) {
+  try {
+    const translations = await getTranslations(locale, namespace);
+    let value = getNestedValue(translations, key);
+    
+    if (!value) {
+      console.warn(`Translation missing: ${locale}/${namespace}/${key}`);
+      return key; // Fallback to key
+    }
+    
+    // Interpolate parameters
+    return interpolate(value, params);
+  } catch (error) {
+    console.error('Translation error:', error);
+    return key;
+  }
+}
+```
+
+### 2. Translation Hook
+
+#### useTranslation Hook
+Location: `src/hooks/useTranslation.js`
+
+```javascript
+'use client';
+
+import { useState, useEffect } from 'react';
+import { getLocaleFromBrowser, setLocaleCookie } from '@/lib/i18n';
+
+/**
+ * Translation hook for client components
+ * @param {string} namespace - Translation namespace
+ * @returns {Object} Translation functions and locale
+ */
+export function useTranslation(namespace = 'common') {
+  const [locale, setLocale] = useState(() => getLocaleFromBrowser());
+  const [translations, setTranslations] = useState({});
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    loadTranslations(locale, namespace).then(setTranslations).finally(() => setLoading(false));
+  }, [locale, namespace]);
+  
+  const t = (key, params = {}) => {
+    return translate(locale, namespace, key, params);
+  };
+  
+  const changeLocale = (newLocale) => {
+    if (SUPPORTED_LOCALES.includes(newLocale)) {
+      setLocale(newLocale);
+      setLocaleCookie(newLocale);
+    }
+  };
+  
+  return { t, locale, changeLocale, loading };
+}
+```
+
+### 3. Server Components Translation
+
+#### Server Translation Function
+Location: `src/lib/i18n.js`
+
+```javascript
+/**
+ * Get translations for server components
+ * @param {string} locale - Locale code
+ * @param {string} namespace - Translation namespace
+ * @returns {Object} Translation object
+ */
+export async function getServerTranslations(locale, namespace) {
+  try {
+    const translations = await import(`@/locales/${locale}/${namespace}.json`);
+    return translations.default || translations;
+  } catch (error) {
+    console.error(`Failed to load translations: ${locale}/${namespace}`, error);
+    // Fallback to default locale
+    if (locale !== DEFAULT_LOCALE) {
+      const fallback = await import(`@/locales/${DEFAULT_LOCALE}/${namespace}.json`);
+      return fallback.default || fallback;
+    }
+    return {};
+  }
+}
+```
+
+### 4. Middleware for Locale Detection
+
+#### Middleware Setup
+Location: `src/middleware.js`
+
+```javascript
+import { NextResponse } from 'next/server';
+import { getLocaleFromRequest, DEFAULT_LOCALE, SUPPORTED_LOCALES } from '@/lib/i18n';
+
+export function middleware(request) {
+  const locale = getLocaleFromRequest(request);
+  
+  // Set locale cookie if not present
+  const response = NextResponse.next();
+  if (!request.cookies.get('locale')) {
+    response.cookies.set('locale', locale, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365, // 1 year
+    });
+  }
+  
+  // Add locale to request headers for server components
+  response.headers.set('x-locale', locale);
+  
+  return response;
+}
+
+export const config = {
+  matcher: [
+    '/((?!api|_next/static|_next/image|favicon.ico|logos|images|icons|fonts|uploads|downloads).*)',
+  ],
+};
+```
+
+## Usage Rules
+
+### 1. Server Components
+
+```javascript
+import { getServerTranslations, getLocaleFromRequest } from '@/lib/i18n';
+import { headers } from 'next/server';
+
+export default async function Page() {
+  const headersList = headers();
+  const locale = headersList.get('x-locale') || DEFAULT_LOCALE;
+  const t = await getServerTranslations(locale, 'common');
+  
+  return <h1>{t.welcome}</h1>;
+}
+```
+
+### 2. Client Components
+
+```javascript
+'use client';
+
+import { useTranslation } from '@/hooks';
+
+export function MyComponent() {
+  const { t, locale, changeLocale } = useTranslation('common');
+  
+  return (
+    <div>
+      <h1>{t('welcome')}</h1>
+      <button onClick={() => changeLocale('es')}>
+        {t('switchLanguage')}
+      </button>
+    </div>
+  );
+}
+```
+
+### 3. API Routes
+
+```javascript
+import { NextResponse } from 'next/server';
+import { getLocaleFromRequest, getServerTranslations } from '@/lib/i18n';
+
+export async function GET(request) {
+  const locale = getLocaleFromRequest(request);
+  const t = await getServerTranslations(locale, 'common');
+  
+  return NextResponse.json({
+    message: t.success,
+  });
+}
+```
+
+### 4. Constants and Configuration
+
+#### Never Hardcode Text
+```javascript
+// ❌ WRONG - Hardcoded text
+export const NAVIGATION_LINKS = [
+  { href: '/', label: 'Home' },
+  { href: '/products', label: 'Products' },
+];
+
+// ✅ CORRECT - Translation keys
+export const NAVIGATION_LINKS = [
+  { href: '/', labelKey: 'nav.home' },
+  { href: '/products', labelKey: 'nav.products' },
+];
+```
+
+#### Use Translation Keys in Constants
+```javascript
+// ✅ CORRECT - Translation keys in constants
+export const NAVIGATION_LINKS_KEYS = {
+  HOME: 'nav.home',
+  PRODUCTS: 'nav.products',
+  ABOUT: 'nav.about',
+  CONTACT: 'nav.contact',
+};
+```
+
+## Best Practices
+
+### 1. Translation Keys
+- **Use namespaces**: Organize translations by feature/page
+- **Use dot notation**: `button.submit`, `form.email.label`
+- **Be descriptive**: `products.card.viewDetails` not `view`
+- **Consistent naming**: Follow consistent patterns across namespaces
+
+### 2. Pluralization
+```json
+{
+  "items": {
+    "zero": "No items",
+    "one": "{{count}} item",
+    "other": "{{count}} items"
+  }
+}
+```
+
+### 3. Interpolation
+```json
+{
+  "greeting": "Hello, {{name}}!",
+  "welcome": "Welcome to {{appName}}"
+}
+```
+
+### 4. Date and Number Formatting
+- Use `Intl` API for locale-aware formatting
+- Format dates: `new Intl.DateTimeFormat(locale, options).format(date)`
+- Format numbers: `new Intl.NumberFormat(locale, options).format(number)`
+- Format currency: `new Intl.NumberFormat(locale, { style: 'currency', currency }).format(amount)`
+
+### 5. RTL Support
+- Detect RTL languages (Arabic, Hebrew, etc.)
+- Apply RTL styles when needed
+- Use CSS logical properties for layout
+
+### 6. SEO and Metadata
+- Generate metadata for each locale
+- Use `hreflang` tags for alternate language versions
+- Localize page titles and descriptions
+
+### 7. Missing Translations
+- Log missing translation keys in development
+- Fallback to default locale (English)
+- Fallback to translation key if no translation exists
+- Never show empty strings
+
+## Component Requirements
+
+### 1. Locale Switcher Component
+Create `src/components/common/LocaleSwitcher.js`:
+
+```javascript
+'use client';
+
+import { useTranslation } from '@/hooks';
+import { SUPPORTED_LOCALES, LOCALE_NAMES } from '@/lib/constants';
+
+export function LocaleSwitcher() {
+  const { locale, changeLocale } = useTranslation();
+  
+  return (
+    <select value={locale} onChange={(e) => changeLocale(e.target.value)}>
+      {SUPPORTED_LOCALES.map((loc) => (
+        <option key={loc} value={loc}>
+          {LOCALE_NAMES[loc]}
+        </option>
+      ))}
+    </select>
+  );
+}
+```
+
+### 2. Locale-Aware Components
+- All user-facing text must use translations
+- Use translation keys, never hardcoded strings
+- Support locale switching without page reload (when possible)
+
+## Testing
+
+### 1. Translation Coverage
+- Ensure all user-facing text has translations
+- Test all supported locales
+- Verify fallback behavior
+
+### 2. Locale Detection
+- Test device/browser locale detection
+- Test user preference override
+- Test cookie persistence
+
+### 3. RTL Support
+- Test RTL languages (Arabic, Hebrew)
+- Verify layout and styling
+- Test text direction
+
+## File Organization
+
+### Translation Files
+```
+src/locales/
+├── en/
+│   ├── common.json
+│   ├── navigation.json
+│   ├── products.json
+│   ├── about.json
+│   ├── contact.json
+│   └── admin.json
+├── es/
+│   └── [same structure]
+└── [locale]/
+    └── [same structure]
+```
+
+### i18n Utilities
+```
+src/lib/
+├── i18n.js          # Core i18n utilities
+└── constants.js     # Locale constants
+```
+
+### Hooks
+```
+src/hooks/
+└── useTranslation.js  # Translation hook
+```
+
+## Checklist
+
+- [ ] All user-facing text uses translations
+- [ ] Locale detection works (device → user preference)
+- [ ] Locale switcher component exists
+- [ ] All supported locales have complete translations
+- [ ] Fallback to default locale works
+- [ ] RTL support for RTL languages
+- [ ] Date/number formatting is locale-aware
+- [ ] SEO metadata is localized
+- [ ] Cookie persistence works
+- [ ] Server and client components support i18n

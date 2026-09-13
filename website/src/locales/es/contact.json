@@ -1,0 +1,28 @@
+{
+  "title": "Contacto",
+  "contactUs": "Contáctenos",
+  "subtitle": "¿Tiene una pregunta o desea ponerse en contacto? Envíenos un mensaje y nos pondremos en contacto con usted lo antes posible.",
+  "name": "Nombre",
+  "email": "Correo Electrónico",
+  "subject": "Asunto",
+  "message": "Mensaje",
+  "send": "Enviar Mensaje",
+  "sending": "Enviando...",
+  "success": "¡Gracias por su mensaje! Nos pondremos en contacto con usted pronto.",
+  "error": "Error al enviar el mensaje. Por favor, inténtelo de nuevo.",
+  "networkError": "Error de red. Por favor, inténtelo más tarde.",
+  "required": "Este campo es obligatorio",
+  "invalidEmail": "Por favor, ingrese una dirección de correo electrónico válida",
+  "messageTooShort": "El mensaje debe tener al menos 10 caracteres",
+  "namePlaceholder": "Su nombre",
+  "emailPlaceholder": "su.correo@ejemplo.com",
+  "messagePlaceholder": "Su mensaje...",
+  "apiErrors": {
+    "allFieldsRequired": "Todos los campos son obligatorios",
+    "invalidEmailFormat": "Formato de correo electrónico inválido",
+    "messageTooShort": "El mensaje debe tener al menos 10 caracteres",
+    "nameTooShort": "El nombre debe tener al menos 2 caracteres",
+    "processingError": "Error al procesar el formulario de contacto. Por favor, inténtelo más tarde."
+  }
+}
+

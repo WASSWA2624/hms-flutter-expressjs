@@ -1,0 +1,48 @@
+{
+  "title": "À Propos",
+  "aboutUs": "À Propos de Nous",
+  "ourCompany": "Notre Entreprise",
+  "ourHistory": "Notre Histoire",
+  "mission": "Mission",
+  "vision": "Vision",
+  "values": "Valeurs",
+  "history": "Histoire",
+  "contact": "Informations de Contact",
+  "address": "Adresse",
+  "phone": "Téléphone",
+  "email": "Courriel",
+  "getInTouch": "Entrer en Contact",
+  "companyName": "HOSSPI",
+  "companyDescription": "HOSSPI est une entreprise qui fournit des services biomédicaux au public. Nous sommes une équipe d'experts dans le domaine de l'ingénierie biomédicale et nous nous consacrons à fournir les meilleurs services possibles à nos clients.",
+  "companyMission": "Fournir des solutions biomédicales innovantes qui améliorent les résultats des soins de santé et améliorent la qualité de vie des personnes dans le monde entier.",
+  "companyVision": "Être le principal fournisseur d'expertise et de solutions biomédicales, reconnu mondialement pour notre engagement envers l'excellence, l'innovation et les soins aux patients.",
+  "companyValues": [
+    "Excellence dans tout ce que nous faisons",
+    "Innovation et amélioration continue",
+    "Intégrité et pratiques éthiques",
+    "Soins centrés sur le patient",
+    "Collaboration et travail d'équipe"
+  ],
+  "companyHistory": [
+    {
+      "year": "2015",
+      "title": "Fondation de l'Entreprise",
+      "description": "HOSSPI a été créé avec la vision de révolutionner les soins de santé grâce à des solutions biomédicales innovantes."
+    },
+    {
+      "year": "2017",
+      "title": "Premier Lancement de Produit Majeur",
+      "description": "Lancement de notre produit phare, établissant de nouvelles normes dans l'industrie biomédicale."
+    },
+    {
+      "year": "2020",
+      "title": "Expansion Mondiale",
+      "description": "Expansion des opérations pour servir des clients sur plusieurs continents, établissant une présence mondiale."
+    },
+    {
+      "year": "2023",
+      "title": "Reconnaissance de l'Industrie",
+      "description": "Réception de plusieurs prix pour l'innovation et l'excellence en ingénierie biomédicale."
+    }
+  ]
+}

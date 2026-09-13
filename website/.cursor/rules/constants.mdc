@@ -1,0 +1,94 @@
+---
+description: App constants and configuration from src/lib/constants.js (no hardcoded app values)
+globs: src/lib/constants.js,src/lib/**/*.js,src/components/**/*.js,src/app/**/*.js
+alwaysApply: false
+---
+
+# Constants & Configuration Rules
+
+## Constants File Structure
+
+### Location
+- **File**: `src/lib/constants.js`
+- **Export**: Named exports (UPPER_SNAKE_CASE)
+- **Usage**: Import from `@/lib/constants`
+
+### Required Constants
+
+#### App Information
+```javascript
+export const APP_NAME = 'App Name';
+export const APP_DESCRIPTION = 'App description';
+export const APP_VERSION = '0.1.0';
+```
+
+#### Company Information
+```javascript
+export const COMPANY_NAME = 'Company Name';
+export const COMPANY_DESCRIPTION = 'Company description';
+```
+
+#### Navigation & Links
+```javascript
+export const NAVIGATION_LINKS = [
+  { href: '/', label: 'Home' },
+  { href: '/products', label: 'Products' },
+  // ...
+];
+
+export const FOOTER_NAV_LINKS = [...];
+export const SOCIAL_LINKS = { facebook: '#', twitter: '#', ... };
+```
+
+#### URLs & Environment
+```javascript
+export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+```
+
+## Usage Rules
+
+### Always Use Constants
+- **Never hardcode**: Never hardcode app name, company name, or navigation links
+- **Import pattern**: `import { APP_NAME, NAVIGATION_LINKS } from '@/lib/constants'`
+- **Single source**: All app-level constants must come from `constants.js`
+
+### Constants in Components
+```javascript
+// ✅ CORRECT
+import { APP_NAME, COMPANY_NAME } from '@/lib/constants';
+
+export const Header = () => {
+  return <header>{APP_NAME}</header>;
+};
+
+// ❌ WRONG - Hardcoded values
+export const Header = () => {
+  return <header>My App</header>;
+};
+```
+
+### Constants in Metadata
+```javascript
+// ✅ CORRECT
+import { APP_NAME, APP_DESCRIPTION } from '@/lib/constants';
+
+export const metadata = {
+  title: APP_NAME,
+  description: APP_DESCRIPTION,
+};
+
+// ❌ WRONG - Hardcoded values
+export const metadata = {
+  title: 'My App',
+  description: 'App description',
+};
+```
+
+## Best Practices
+
+1. **Centralized Configuration**: All app-level values in one file
+2. **Environment Variables**: Use env vars for URLs, API endpoints
+3. **Default Values**: Always provide sensible defaults
+4. **Type Consistency**: Use consistent data structures for arrays/objects
+5. **Documentation**: Add comments for complex constant structures

@@ -1,0 +1,13 @@
+{
+  "nav": {
+    "home": "ホーム",
+    "docs": "ドキュメント",
+    "about": "について",
+    "contact": "お問い合わせ",
+    "menu": "メニュー",
+    "navigation": "ナビゲーション",
+    "mainNavigation": "メインナビゲーション",
+    "footerNavigation": "フッターナビゲーション"
+  }
+}
+

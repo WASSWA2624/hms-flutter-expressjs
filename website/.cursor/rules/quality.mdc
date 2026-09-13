@@ -1,0 +1,35 @@
+---
+description: Code quality checklist: linting, error handling, testing, and best practices
+globs: src/**/*.{js,mjs},**/*.{js,mjs}
+alwaysApply: false
+---
+
+# Code Quality Rules
+
+## Code Quality
+- **ESLint**: Use ESLint for code quality
+- **Prettier**: Use Prettier for code formatting
+- **Comments**: Add JSDoc comments for functions and components
+
+## Error Handling
+- **Try/catch**: Always use try/catch for async operations
+- **Error boundaries**: Use React error boundaries
+- **User-friendly errors**: Show user-friendly error messages
+
+## Testing
+- **Manual testing**: Test features manually
+- **Browser testing**: Test on multiple browsers
+- **Responsive testing**: Test on multiple devices
+- **Accessibility testing**: Test with screen readers
+
+## Best Practices Summary
+1. **Reusability**: Create reusable components and utilities
+2. **Performance**: Optimize images, queries, and bundle size
+3. **Responsive**: Mobile-first, fully responsive design
+4. **Accessibility**: Semantic HTML, ARIA labels, keyboard navigation
+5. **Security**: Validate input, hash passwords, protect routes
+6. **Code quality**: Clean, documented, maintainable code
+7. **Theme consistency**: Use theme variables throughout
+8. **Error handling**: Graceful error handling everywhere
+9. **SEO**: Proper metadata and semantic HTML
+10. **Organization**: Well-structured, maintainable project structure

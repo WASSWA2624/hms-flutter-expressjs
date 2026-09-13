@@ -1,0 +1,13 @@
+{
+  "nav": {
+    "home": "Startseite",
+    "docs": "Dokumentation",
+    "about": "Über uns",
+    "contact": "Kontakt",
+    "menu": "Menü",
+    "navigation": "Navigation",
+    "mainNavigation": "Hauptnavigation",
+    "footerNavigation": "Fußzeilennavigation"
+  }
+}
+

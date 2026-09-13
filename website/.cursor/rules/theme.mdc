@@ -1,0 +1,51 @@
+---
+description: Theme tokens, dark/light mode, ThemeProvider, and themed styling practices
+globs: src/styles/**/*.js,src/components/common/**/*.js,src/hooks/useTheme.js
+alwaysApply: false
+---
+
+# Theme & Styling Rules
+
+## Theme Structure
+```javascript
+// styles/theme.js
+export const theme = {
+  colors: {
+    primary: '#...',
+    secondary: '#...',
+    background: '#...',
+    text: '#...',
+    // ... more colors
+  },
+  spacing: {
+    xs: '0.25rem',
+    sm: '0.5rem',
+    md: '1rem',
+    lg: '1.5rem',
+    xl: '2rem',
+  },
+  breakpoints: {
+    xs: '320px',
+    sm: '768px',
+    md: '1024px',
+    lg: '1440px',
+    xl: '1920px',
+  },
+  typography: {
+    fontFamily: '...',
+    fontSize: { ... },
+  },
+};
+```
+
+## Dark/Light Mode
+- **Theme provider**: Use ThemeProvider from styled-components
+- **Theme toggle**: Implement theme toggle component
+- **Persist preference**: Store theme preference in cookies or localStorage
+- **System preference**: Respect system theme preference
+
+## Theme Best Practices
+- **Theme variables**: Always use theme variables, never hardcode values
+- **Responsive**: Use theme breakpoints for media queries
+- **Variants**: Use props for component variants
+- **Composition**: Compose styled components for reusability

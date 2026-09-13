@@ -1,0 +1,28 @@
+{
+  "title": "Contatto",
+  "contactUs": "Contattaci",
+  "subtitle": "Hai una domanda o vuoi metterti in contatto? Inviaci un messaggio e ti risponderemo il prima possibile.",
+  "name": "Nome",
+  "email": "Email",
+  "subject": "Oggetto",
+  "message": "Messaggio",
+  "send": "Invia Messaggio",
+  "sending": "Invio in corso...",
+  "success": "Grazie per il tuo messaggio! Ti risponderemo presto.",
+  "error": "Invio del messaggio fallito. Riprova.",
+  "networkError": "Errore di rete. Riprova più tardi.",
+  "required": "Questo campo è obbligatorio",
+  "invalidEmail": "Inserisci un indirizzo email valido",
+  "messageTooShort": "Il messaggio deve contenere almeno 10 caratteri",
+  "namePlaceholder": "Il tuo nome",
+  "emailPlaceholder": "tua.email@esempio.com",
+  "messagePlaceholder": "Il tuo messaggio...",
+  "apiErrors": {
+    "allFieldsRequired": "Tutti i campi sono obbligatori",
+    "invalidEmailFormat": "Formato email non valido",
+    "messageTooShort": "Il messaggio deve contenere almeno 10 caratteri",
+    "nameTooShort": "Il nome deve contenere almeno 2 caratteri",
+    "processingError": "Errore nell'elaborazione del modulo di contatto. Riprova più tardi."
+  }
+}
+

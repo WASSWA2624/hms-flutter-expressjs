@@ -1,0 +1,48 @@
+{
+  "title": "Über",
+  "aboutUs": "Über Uns",
+  "ourCompany": "Unser Unternehmen",
+  "ourHistory": "Unsere Geschichte",
+  "mission": "Mission",
+  "vision": "Vision",
+  "values": "Werte",
+  "history": "Geschichte",
+  "contact": "Kontaktinformationen",
+  "address": "Adresse",
+  "phone": "Telefon",
+  "email": "E-Mail",
+  "getInTouch": "Kontakt Aufnehmen",
+  "companyName": "HOSSPI",
+  "companyDescription": "HOSSPI ist ein Unternehmen, das biomedizinische Dienstleistungen für die Öffentlichkeit anbietet. Wir sind ein Team von Experten auf dem Gebiet der biomedizinischen Technik und widmen uns der Bereitstellung der bestmöglichen Dienstleistungen für unsere Kunden.",
+  "companyMission": "Innovative biomedizinische Lösungen bereitzustellen, die die Gesundheitsergebnisse verbessern und die Lebensqualität der Menschen weltweit steigern.",
+  "companyVision": "Der führende Anbieter von biomedizinischer Expertise und Lösungen zu sein, weltweit anerkannt für unser Engagement für Exzellenz, Innovation und Patientenversorgung.",
+  "companyValues": [
+    "Exzellenz in allem, was wir tun",
+    "Innovation und kontinuierliche Verbesserung",
+    "Integrität und ethische Praktiken",
+    "Patientenorientierte Versorgung",
+    "Zusammenarbeit und Teamarbeit"
+  ],
+  "companyHistory": [
+    {
+      "year": "2015",
+      "title": "Unternehmensgründung",
+      "description": "HOSSPI wurde mit der Vision gegründet, das Gesundheitswesen durch innovative biomedizinische Lösungen zu revolutionieren."
+    },
+    {
+      "year": "2017",
+      "title": "Erster Wichtiger Produktstart",
+      "description": "Start unseres Flaggschiff-Produkts, das neue Standards in der biomedizinischen Industrie setzt."
+    },
+    {
+      "year": "2020",
+      "title": "Globale Expansion",
+      "description": "Erweiterung der Geschäftstätigkeit, um Kunden auf mehreren Kontinenten zu bedienen und eine globale Präsenz zu etablieren."
+    },
+    {
+      "year": "2023",
+      "title": "Branchenanerkennung",
+      "description": "Erhalt mehrerer Auszeichnungen für Innovation und Exzellenz in der biomedizinischen Technik."
+    }
+  ]
+}

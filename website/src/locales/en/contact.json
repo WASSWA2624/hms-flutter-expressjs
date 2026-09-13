@@ -1,0 +1,28 @@
+{
+  "title": "Contact",
+  "contactUs": "Contact Us",
+  "subtitle": "Have a question or want to get in touch? Send us a message and we'll get back to you as soon as possible.",
+  "name": "Name",
+  "email": "Email",
+  "subject": "Subject",
+  "message": "Message",
+  "send": "Send Message",
+  "sending": "Sending...",
+  "success": "Thank you for your message! We'll get back to you soon.",
+  "error": "Failed to send message. Please try again.",
+  "networkError": "Network error. Please try again later.",
+  "required": "This field is required",
+  "invalidEmail": "Please enter a valid email address",
+  "messageTooShort": "Message must be at least 10 characters long",
+  "namePlaceholder": "Your name",
+  "emailPlaceholder": "your.email@example.com",
+  "messagePlaceholder": "Your message...",
+  "apiErrors": {
+    "allFieldsRequired": "All fields are required",
+    "invalidEmailFormat": "Invalid email format",
+    "messageTooShort": "Message must be at least 10 characters long",
+    "nameTooShort": "Name must be at least 2 characters long",
+    "processingError": "Failed to process contact form. Please try again later."
+  }
+}
+

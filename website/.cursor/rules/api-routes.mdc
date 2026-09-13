@@ -1,0 +1,31 @@
+---
+description: Next.js API route conventions for REST structure, validation, auth, and responses
+globs: src/app/api/**/*.js
+alwaysApply: false
+---
+
+# API Routes Rules
+
+## Route Structure
+- **RESTful**: Follow REST conventions
+- **Error handling**: Return proper HTTP status codes
+- **Validation**: Validate input data
+- **Authentication**: Protect admin routes
+
+## Response Format
+```javascript
+// Success
+return NextResponse.json({ data: result }, { status: 200 });
+
+// Error
+return NextResponse.json(
+  { error: 'Error message' },
+  { status: 400 }
+);
+```
+
+## Best Practices
+- **HTTP methods**: Use appropriate HTTP methods (GET, POST, PUT, DELETE)
+- **Status codes**: Return appropriate HTTP status codes
+- **Error messages**: Provide clear, user-friendly error messages
+- **Input validation**: Always validate and sanitize input

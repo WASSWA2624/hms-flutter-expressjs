@@ -1,0 +1,198 @@
+---
+description: Styled-components naming, theme usage, SSR registry, variants, and displayName
+globs: src/components/**/*.js,src/styles/**/*.js,src/app/**/*.js,src/lib/registry.js
+alwaysApply: false
+---
+
+# Styled Components Rules
+
+## Basic Rules
+
+### 1. Naming Convention
+- **Prefix**: Prefix styled components with `Styled` (e.g., `StyledButton`, `StyledCard`)
+- **Consistency**: Use consistent naming throughout the project
+- **Descriptive**: Names should describe the component's purpose
+
+### 2. Theme Usage
+- **Always use theme**: Always use theme for colors, spacing, typography, breakpoints, and other design tokens
+- **Never hardcode**: Never hardcode values, always use theme variables
+- **Theme access**: Access theme via `props.theme` in styled components
+- **Theme import**: Import theme from `@/styles/theme` when needed for type checking or constants
+- **Theme structure**: See `theme.mdc` for complete theme structure
+
+### 3. Responsive Design
+- **Breakpoints**: Use theme breakpoints for responsive design
+- **Mobile-first**: Write mobile styles first, then enhance for larger screens
+- **Media queries**: Use theme breakpoints in media queries
+
+### 4. Component Variants
+- **Props for variants**: Use props for variants (primary, secondary, etc.)
+- **Conditional styling**: Use template literals for conditional styles
+- **Composition**: Compose styled components for reusability
+
+### 5. SSR Compatibility
+- **SSR support**: Ensure styled-components works with SSR in Next.js App Router
+- **Styled Components Registry**: Use `styled-components` registry for proper SSR in Next.js App Router
+- **Babel plugin**: Use `babel-plugin-styled-components` for proper SSR (configured in Next.js config)
+- **Server-side rendering**: Test that styles render correctly on the server
+- **ThemeProvider setup**: Wrap app with `ThemeProvider` in root layout (see setup below)
+- **Client Components**: Files using styled-components must include `'use client'` directive:
+  - `loading.js` files
+  - `error.js` files
+  - `not-found.js` files
+  - Any component using styled-components in Next.js App Router
+
+## Styled Components Patterns
+
+### Basic Pattern
+```javascript
+import styled from 'styled-components';
+import { theme } from '@/styles/theme';
+
+// Good: Themed, responsive, reusable (mobile-first)
+const StyledButton = styled.button`
+  /* Base styles - mobile-first */
+  background-color: ${props => props.theme.colors.primary};
+  padding: ${props => props.theme.spacing.md};
+  border-radius: ${props => props.theme.borderRadius.md};
+  transition: all ${props => props.theme.transition.duration} ${props => props.theme.transition.timing};
+  
+  /* Responsive - enhance for larger screens */
+  @media (min-width: ${props => props.theme.breakpoints.sm}) {
+    padding: ${props => props.theme.spacing.lg};
+  }
+  
+  @media (min-width: ${props => props.theme.breakpoints.md}) {
+    padding: ${props => props.theme.spacing.xl};
+  }
+  
+  /* Variants */
+  ${props => props.variant === 'primary' && `
+    background-color: ${props.theme.colors.primary};
+    color: ${props.theme.colors.text.onPrimary};
+  `}
+  
+  ${props => props.variant === 'secondary' && `
+    background-color: ${props.theme.colors.secondary};
+    color: ${props.theme.colors.text.onSecondary};
+  `}
+  
+  /* States */
+  &:hover {
+    opacity: 0.9;
+    transform: translateY(-2px);
+  }
+  
+  &:focus {
+    outline: 2px solid ${props => props.theme.colors.primary};
+    outline-offset: 2px;
+  }
+  
+  &:active {
+    transform: translateY(0);
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+`;
+
+StyledButton.displayName = 'StyledButton';
+```
+
+### Component Extension Pattern
+```javascript
+// Extend existing styled component
+const StyledExtendedButton = styled(StyledButton)`
+  /* Additional styles */
+  border: 2px solid ${props => props.theme.colors.primary};
+`;
+```
+
+## Next.js App Router Setup
+
+### ThemeProvider Setup
+```javascript
+// app/layout.js
+'use client';
+
+import { ThemeProvider } from 'styled-components';
+import { theme } from '@/styles/theme';
+
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <body>
+        <ThemeProvider theme={theme}>
+          {children}
+        </ThemeProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+### Styled Components Registry (for SSR)
+```javascript
+// lib/registry.js
+'use client';
+
+import React, { useState } from 'react';
+import { useServerInsertedHTML } from 'next/navigation';
+import { ServerStyleSheet, StyleSheetManager } from 'styled-components';
+
+export default function StyledComponentsRegistry({ children }) {
+  const [styledComponentsStyleSheet] = useState(() => new ServerStyleSheet());
+
+  useServerInsertedHTML(() => {
+    const styles = styledComponentsStyleSheet.getStyleElement();
+    styledComponentsStyleSheet.instance.clearTag();
+    return <>{styles}</>;
+  });
+
+  if (typeof window !== 'undefined') return <>{children}</>;
+
+  return (
+    <StyleSheetManager sheet={styledComponentsStyleSheet.instance}>
+      {children}
+    </StyleSheetManager>
+  );
+}
+```
+
+## Best Practices
+
+### 1. Global Styles
+- **Define in theme**: Define global styles in `styles/theme.js` or root layout
+- **Reset styles**: Include CSS reset or normalize
+- **Base styles**: Define base typography and spacing
+- **GlobalStyle component**: Use `createGlobalStyle` from styled-components for global styles
+
+### 2. Component Composition
+- **Extend components**: Extend existing styled components when possible
+- **Avoid duplication**: Reuse styled components instead of duplicating styles
+- **Modular**: Keep styled components modular and focused
+
+### 3. Performance
+- **Avoid inline styles**: Prefer styled-components over inline styles
+- **Dynamic props**: Minimize dynamic prop calculations in styled components
+- **Memoization**: Use `React.memo` for components with styled-components (see `components.mdc`)
+- **DisplayName**: Always set `displayName` on styled components for better debugging:
+  ```javascript
+  StyledComponent.displayName = 'StyledComponent';
+  ```
+- **Static styles**: Keep styles as static as possible, avoid complex prop calculations
+
+### 4. Accessibility
+- **Semantic HTML**: Use semantic HTML elements in styled components (button, nav, main, etc.)
+- **Focus states**: Always include visible focus states for keyboard navigation
+- **ARIA attributes**: Pass through ARIA attributes when needed using `{...props}`
+- **Color contrast**: Ensure sufficient color contrast using theme colors
+- **Keyboard navigation**: Ensure all interactive styled components are keyboard accessible
+
+### 5. Naming and Organization
+- **DisplayName**: Always set `displayName` on styled components for React DevTools
+- **File organization**: Keep styled components co-located with their components
+- **Barrel exports**: Export styled components via barrel exports when appropriate

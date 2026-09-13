@@ -1,0 +1,49 @@
+{
+  "title": "About",
+  "aboutUs": "About Us",
+  "ourCompany": "Our Company",
+  "ourHistory": "Our History",
+  "mission": "Mission",
+  "vision": "Vision",
+  "values": "Values",
+  "history": "History",
+  "contact": "Contact Information",
+  "address": "Address",
+  "phone": "Phone",
+  "email": "Email",
+  "getInTouch": "Get in Touch",
+  "companyName": "HOSSPI",
+  "companyDescription": "HOSSPI is a company that provides biomedical services to the public. We are a team of experts in the field of biomedical engineering and we are dedicated to providing the best possible services to our clients.",
+  "companyMission": "To provide innovative biomedical solutions that improve healthcare outcomes and enhance the quality of life for people worldwide.",
+  "companyVision": "To be the leading provider of biomedical expertise and solutions, recognized globally for our commitment to excellence, innovation, and patient care.",
+  "companyValues": [
+    "Excellence in everything we do",
+    "Innovation and continuous improvement",
+    "Integrity and ethical practices",
+    "Patient-centered care",
+    "Collaboration and teamwork"
+  ],
+  "companyHistory": [
+    {
+      "year": "2015",
+      "title": "Company Founded",
+      "description": "HOSSPI was established with a vision to revolutionize healthcare through innovative biomedical solutions."
+    },
+    {
+      "year": "2017",
+      "title": "First Major Product Launch",
+      "description": "Launched our flagship product, setting new standards in the biomedical industry."
+    },
+    {
+      "year": "2020",
+      "title": "Global Expansion",
+      "description": "Expanded operations to serve clients across multiple continents, establishing a global presence."
+    },
+    {
+      "year": "2023",
+      "title": "Industry Recognition",
+      "description": "Received multiple awards for innovation and excellence in biomedical engineering."
+    }
+  ]
+}
+

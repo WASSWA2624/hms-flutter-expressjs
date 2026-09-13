@@ -1,0 +1,31 @@
+---
+description: Mobile-first responsive design using theme breakpoints, fluid layouts, and touch targets
+globs: src/components/**/*.js,src/styles/**/*.js,src/app/**/*.js
+alwaysApply: false
+---
+
+# Responsive Design Rules
+
+## Mobile-First Approach
+- **Start mobile**: Design for mobile first, then enhance for larger screens
+- **Breakpoints**: Use theme breakpoints consistently
+- **Flexible layouts**: Use CSS Grid and Flexbox
+- **Touch targets**: Minimum 44x44px for touch targets
+
+## Breakpoints
+```javascript
+// Define in theme
+const breakpoints = {
+  xs: '320px',
+  sm: '768px',
+  md: '1024px',
+  lg: '1440px',
+  xl: '1920px',
+};
+```
+
+## Responsive Components
+- **Fluid typography**: Use relative units (rem, em)
+- **Flexible images**: Use max-width: 100%
+- **Container queries**: Use container queries when appropriate
+- **Hide/show**: Use display utilities for responsive visibility

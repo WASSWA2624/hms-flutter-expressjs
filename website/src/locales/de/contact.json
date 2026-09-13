@@ -1,0 +1,28 @@
+{
+  "title": "Kontakt",
+  "contactUs": "Kontaktieren Sie Uns",
+  "subtitle": "Haben Sie eine Frage oder möchten Sie Kontakt aufnehmen? Senden Sie uns eine Nachricht und wir werden uns so schnell wie möglich bei Ihnen melden.",
+  "name": "Name",
+  "email": "E-Mail",
+  "subject": "Betreff",
+  "message": "Nachricht",
+  "send": "Nachricht Senden",
+  "sending": "Wird gesendet...",
+  "success": "Vielen Dank für Ihre Nachricht! Wir werden uns bald bei Ihnen melden.",
+  "error": "Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
+  "networkError": "Netzwerkfehler. Bitte versuchen Sie es später erneut.",
+  "required": "Dieses Feld ist erforderlich",
+  "invalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
+  "messageTooShort": "Die Nachricht muss mindestens 10 Zeichen lang sein",
+  "namePlaceholder": "Ihr Name",
+  "emailPlaceholder": "ihre.email@beispiel.com",
+  "messagePlaceholder": "Ihre Nachricht...",
+  "apiErrors": {
+    "allFieldsRequired": "Alle Felder sind erforderlich",
+    "invalidEmailFormat": "Ungültiges E-Mail-Format",
+    "messageTooShort": "Die Nachricht muss mindestens 10 Zeichen lang sein",
+    "nameTooShort": "Der Name muss mindestens 2 Zeichen lang sein",
+    "processingError": "Fehler beim Verarbeiten des Kontaktformulars. Bitte versuchen Sie es später erneut."
+  }
+}
+

@@ -1,0 +1,351 @@
+---
+description: Directory layout, path aliases, barrel exports, and import organization
+globs: src/**/*.{js,mjs,json},jsconfig.json,public/**/*
+alwaysApply: false
+---
+
+# Project Structure Rules
+
+## Directory Organization
+
+### Complete Source Structure
+```
+src/                          # Source code directory (ALL source code here)
+├── app/                      # Next.js App Router
+│   ├── (routes)/            # Route groups (optional organization)
+│   ├── api/                 # API routes (RESTful endpoints)
+│   │   ├── contact/        # Contact form endpoint
+│   │   └── [feature]/      # Feature-specific endpoints
+│   ├── [route]/            # Dynamic routes
+│   ├── layout.js           # Root layout
+│   ├── page.js             # Homepage
+│   ├── error.js            # Error boundary
+│   ├── not-found.js        # 404 page
+│   ├── loading.js          # Loading UI
+│   ├── globals.css         # Global CSS
+│   ├── robots.js           # Robots.txt generator
+│   └── sitemap.js          # Sitemap generator
+├── components/              # React components (organized by purpose)
+│   ├── layout/             # Layout components (persistent across routes)
+│   │   ├── Header.js
+│   │   ├── Footer.js
+│   │   ├── Navigation.js
+│   │   └── index.js       # Barrel export
+│   ├── ui/                 # Reusable UI primitives (highest reusability)
+│   │   ├── Button.js
+│   │   ├── Card.js
+│   │   ├── Input.js
+│   │   ├── Modal.js
+│   │   └── index.js       # Barrel export
+│   ├── common/             # Shared/common components (cross-feature)
+│   │   ├── ContactForm.js
+│   │   ├── StructuredData.js
+│   │   ├── ThemeProvider.js
+│   │   └── index.js       # Barrel export
+│   ├── features/           # Feature-specific components (organized by feature)
+│   │   └── [feature-name]/ # Feature folder
+│   │       ├── ComponentName.js
+│   │       └── index.js   # Barrel export
+│   ├── [feature]/          # Feature-based organization (alternative)
+│   │   ├── ComponentName.js
+│   │   └── index.js       # Barrel export
+│   └── [page]/             # Page-specific components
+│       ├── ComponentName.js
+│       └── index.js       # Barrel export
+├── hooks/                   # Custom React hooks
+│   ├── useTheme.js
+│   ├── useTranslation.js
+│   └── index.js           # Barrel export
+├── locales/                 # Translation JSON files (one folder per locale)
+│   └── [locale]/
+│       ├── common.json
+│       ├── navigation.json
+│       ├── about.json
+│       └── contact.json
+├── lib/                     # Utility functions and configurations
+│   ├── constants.js       # App constants and configuration
+│   ├── i18n.js            # Locale detection and translation loading
+│   ├── utils.js           # General utility functions
+│   ├── [feature]Utils.js  # Feature-specific utilities
+│   └── [utility].js       # Specific utility modules
+└── styles/                  # Global styles and theme
+    ├── theme.js           # Theme configuration
+    └── globals.js         # Global styled components
+
+public/                      # Static assets (root level)
+├── logos/                 # Logo files (main app logo)
+├── images/                # General images
+├── icons/                 # Small icons
+└── fonts/                 # Font files
+```
+
+## Import Aliases
+
+### Configuration
+Configure path aliases in `jsconfig.json`:
+```json
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}
+```
+
+### Alias Mapping
+| Alias | Actual Path | Usage |
+|-------|-------------|-------|
+| `@/components` | `src/components` | Import components |
+| `@/lib` | `src/lib` | Import utilities |
+| `@/styles` | `src/styles` | Import theme/styles |
+| `@/app` | `src/app` | Import app files (rare) |
+| `@/hooks` | `src/hooks` | Import custom hooks |
+
+### Import Rules
+- **Always use aliases**: Never use relative paths like `../../components`
+- **Barrel exports**: Always import from barrel exports: `import { Button } from '@/components/ui'`
+- **No deep imports**: Never import directly from component files: `import Button from '@/components/ui/Button'` ❌
+
+## File Organization Rules
+
+### 1. Component Organization Hierarchy
+
+Components are organized by **reusability level** (most reusable to least):
+
+1. **`components/ui/`** - UI Primitives (highest reusability)
+   - Generic, configurable components
+   - No business logic
+   - Examples: `Button`, `Card`, `Input`, `Modal`
+   - **Rule**: Should work in any context
+
+2. **`components/common/`** - Shared Components (cross-feature)
+   - Used across multiple features
+   - May contain some business logic
+   - Examples: `ContactForm`, `ThemeProvider`, `StructuredData`
+   - **Rule**: Used by 2+ features
+
+3. **`components/layout/`** - Layout Components (persistent)
+   - Header, Footer, Navigation
+   - Wrapped with `React.memo` to prevent re-renders
+   - **Rule**: Persists across route navigation
+
+4. **`components/[feature]/`** - Feature Components (feature-specific)
+   - Components specific to one feature
+   - Co-located with feature logic
+   - Examples: `components/about/CompanyHistory.js`
+   - **Rule**: Only used within one feature
+
+5. **`components/features/[feature-name]/`** - Alternative feature organization
+   - For complex features with many components
+   - **Rule**: Use when feature has 5+ components
+
+### 2. Barrel Exports (Critical for Reusability)
+
+#### Component Barrel Exports
+Every component directory **must** have an `index.js` file:
+
+```javascript
+/**
+ * [Category] Components - Barrel export
+ * @file src/components/[category]/index.js
+ */
+export { ComponentName } from './ComponentName';
+export { AnotherComponent } from './AnotherComponent';
+```
+
+#### Import Pattern
+```javascript
+// ✅ CORRECT - Import from barrel export
+import { Button, Card } from '@/components/ui';
+import { Header, Footer } from '@/components/layout';
+
+// ❌ WRONG - Direct import
+import Button from '@/components/ui/Button';
+```
+
+#### Barrel Export Rules
+- **Required**: Every component directory must have `index.js`
+- **Named exports**: Always use named exports
+- **Re-export pattern**: Re-export all components from index
+- **Location**: All barrel exports in `src/` directory
+- **No default exports**: Use named exports for consistency
+
+### 3. Utility Organization
+
+#### Utility File Structure
+```
+lib/
+├── constants.js         # App constants (single source of truth)
+├── i18n.js              # Locale detection and translation loading
+├── companyConstants.js  # Translated company constant helpers
+├── registry.js          # Styled Components SSR registry
+├── utils.js             # General utilities (formatDate, validateEmail, etc.)
+├── [feature]Utils.js    # Feature-specific utilities
+└── [utility].js         # Specific utility modules
+```
+
+#### Utility Organization Rules
+- **Group by concern**: Group related utilities in same file
+- **Feature utilities**: Create `[feature]Utils.js` for feature-specific utilities
+- **Pure functions**: All utilities should be pure (no side effects)
+- **Documentation**: All utilities must have JSDoc comments
+- **Named exports**: Use named exports for all utilities
+
+#### Utility Import Pattern
+```javascript
+// ✅ CORRECT - Import from specific utility file
+import { formatDate, formatCurrency } from '@/lib/utils';
+import { getServerTranslations } from '@/lib/i18n';
+
+// ❌ WRONG - Import from non-existent barrel
+import { formatDate } from '@/lib'; // No lib/index.js
+```
+
+### 4. Hooks Organization
+
+#### Hooks Structure
+```
+hooks/
+├── useTheme.js
+├── useTranslation.js
+├── use[Feature].js
+└── index.js           # Barrel export
+```
+
+#### Hooks Rules
+- **One hook per file**: Each hook in its own file
+- **Naming**: `use` prefix (camelCase)
+- **Barrel export**: Export all hooks from `hooks/index.js`
+- **Reusability**: Hooks should be reusable across features
+
+#### Hooks Import Pattern
+```javascript
+// ✅ CORRECT - Import from barrel export
+import { useTheme, useTranslation } from '@/hooks';
+
+// ❌ WRONG - Direct import
+import useTheme from '@/hooks/useTheme';
+```
+
+### 5. API Route Organization
+
+#### API Route Structure
+```
+app/api/
+├── contact/
+│   └── route.js          # POST /api/contact
+└── [feature]/
+    └── route.js          # GET, POST /api/[feature]
+```
+
+#### API Route Rules
+- **RESTful structure**: Follow REST conventions
+- **Feature grouping**: Group by feature/resource
+- **Route handlers**: Use `route.js` for endpoints
+- **HTTP methods**: Export named functions (GET, POST, PUT, DELETE)
+
+### 6. File Naming Conventions
+
+| Type | Convention | Example |
+|------|------------|---------|
+| Components | PascalCase | `ProductCard.js` |
+| Utilities | camelCase | `formatDate.js` |
+| Constants | UPPER_SNAKE_CASE | `API_ENDPOINTS.js` (in constants.js) |
+| Hooks | camelCase with `use` prefix | `useAuth.js` |
+| Pages | lowercase | `page.js`, `layout.js` |
+| API routes | lowercase | `route.js` |
+| Styled components | `Styled` prefix | `StyledButton` |
+
+### 7. Import Organization (Strict Order)
+
+```javascript
+// 1. React and Next.js imports
+import React from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { NextResponse } from 'next/server';
+
+// 2. Third-party libraries
+import styled from 'styled-components';
+
+// 3. Internal components (from barrel exports)
+import { Button, Card } from '@/components/ui';
+import { Header, Footer } from '@/components/layout';
+import { CompanyHistory } from '@/components/about';
+
+// 4. Custom hooks
+import { useTheme, useTranslation } from '@/hooks';
+
+// 5. Utilities and helpers
+import { formatDate } from '@/lib/utils';
+import { getServerTranslations } from '@/lib/i18n';
+
+// 6. Constants and configuration
+import { API_ENDPOINTS, APP_NAME } from '@/lib/constants';
+
+// 7. Styles and theme
+import { theme } from '@/styles/theme';
+```
+
+### 8. Reusability Principles
+
+#### Component Reusability
+- **DRY Principle**: Never duplicate code - extract to reusable components
+- **Single Source of Truth**: Each component exists in one place only
+- **Composition over Duplication**: Compose existing components
+- **Generic Components**: Create configurable, reusable components
+- **UI Primitives First**: Use `components/ui/` components when possible
+
+#### Utility Reusability
+- **Centralized**: All utilities in `lib/` directory
+- **Pure Functions**: Utilities should be pure (no side effects)
+- **Documentation**: All utilities must have JSDoc comments
+- **Grouped by Concern**: Group related utilities in same file
+
+#### Code Reuse Checklist
+- [ ] Component exists in `components/ui/` or `components/common/`?
+- [ ] Utility exists in `lib/utils.js` or feature-specific utility?
+- [ ] Hook exists in `hooks/`?
+- [ ] Constant exists in `lib/constants.js`?
+- [ ] No code duplication?
+
+### 9. Separation of Concerns
+
+#### Component Structure
+- **UI Components**: Pure presentation (no business logic)
+- **Feature Components**: May contain feature-specific logic
+- **Layout Components**: Handle layout and navigation
+- **Common Components**: Shared across features
+
+#### Utility Structure
+- **General Utilities**: `lib/utils.js` (formatDate, validateEmail, etc.)
+- **Feature Utilities**: `lib/[feature]Utils.js` (companyConstants, etc.)
+- **i18n**: `lib/i18n.js` (locale detection, translation loading)
+- **Constants**: `lib/constants.js` (all app constants)
+
+### 10. Co-location Rules
+
+#### When to Co-locate
+- **Feature components**: Co-locate related components in feature folder
+- **Related utilities**: Group related utilities in same file
+- **Page components**: Co-locate page-specific components in page folder
+
+#### When NOT to Co-locate
+- **UI primitives**: Always in `components/ui/` (never co-locate)
+- **Common components**: Always in `components/common/` (never co-locate)
+- **Layout components**: Always in `components/layout/` (never co-locate)
+
+## Best Practices Summary
+
+1. **Always use barrel exports** - Import from `index.js` files
+2. **Follow import order** - Strict import organization
+3. **Use aliases** - Always use `@/` aliases, never relative paths
+4. **Organize by reusability** - UI → Common → Layout → Feature
+5. **Group utilities by concern** - Related utilities in same file
+6. **One component per file** - Each component in its own file
+7. **Named exports** - Use named exports for consistency
+8. **Documentation** - JSDoc comments for all components/functions
+9. **No duplication** - Reuse existing components/utilities
+10. **Separation of concerns** - Clear boundaries between UI, logic, and data

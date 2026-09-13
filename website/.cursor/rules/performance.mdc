@@ -1,0 +1,67 @@
+---
+description: Performance patterns: React.memo, dynamic imports, images, caching, and queries
+globs: src/components/**/*.js,src/app/**/*.js,src/lib/**/*.js
+alwaysApply: false
+---
+
+# Performance Rules
+
+## Component Optimization
+- **React.memo**: Use `React.memo` for layout components (Header, Footer, Navigation) to prevent unnecessary re-renders on navigation
+- **Layout persistence**: Layout components should persist across route navigation - only page content updates
+- **Memoization pattern**: Wrap static layout components with `React.memo`:
+  ```javascript
+  export const Header = React.memo(() => {
+    // Component code
+  });
+  Header.displayName = 'Header';
+  ```
+
+## Code Splitting
+- **Route-based**: Next.js handles automatic code splitting
+- **Dynamic imports**: Use `next/dynamic` for heavy components
+- **Lazy loading**: Lazy load non-critical components
+- **Admin components**: Lazy load admin components (e.g., `ProductFormWizard`) using `next/dynamic` with `ssr: false`
+- **Pattern**: 
+  ```javascript
+  const HeavyComponent = dynamic(
+    () => import('@/components/HeavyComponent').then(mod => ({ default: mod.HeavyComponent })),
+    { 
+      loading: () => <div>Loading...</div>,
+      ssr: false 
+    }
+  );
+  ```
+
+## Images
+- **Next.js Image**: Always use `next/image` component
+- **Optimization**: Let Next.js optimize images automatically
+- **Lazy loading**: Images lazy load by default
+- **Sizes**: Provide appropriate sizes prop
+- **Priority**: Use `priority` prop for above-the-fold images (like logo)
+
+## Navigation Performance
+- **Client-side navigation**: Always use Next.js `Link` component for internal navigation
+- **No full page reloads**: Layout components should not re-render on navigation
+- **Prefetching**: Next.js automatically prefetches linked pages on hover
+
+## Database Queries
+- **Efficient queries**: Use Prisma's `select` and `include` wisely
+- **Pagination**: Implement pagination for large datasets
+- **Caching**: Cache frequently accessed data
+- **Indexes**: Add database indexes for frequently queried fields
+
+## Caching Strategy
+- **Page revalidation**: Use `export const revalidate = seconds` for ISR (Incremental Static Regeneration)
+  - Homepage: 3600 seconds (1 hour)
+  - Product listing: 300 seconds (5 minutes)
+  - Product detail: 600 seconds (10 minutes)
+- **API route caching**: Add `Cache-Control` headers to API responses
+  - Products API: `public, s-maxage=60, stale-while-revalidate=300`
+  - Search API: `public, s-maxage=30, stale-while-revalidate=120`
+- **Stale-while-revalidate**: Use stale-while-revalidate pattern for better performance
+
+## Bundle Size
+- **Tree shaking**: Import only what you need
+- **Avoid large dependencies**: Prefer lightweight alternatives
+- **Code splitting**: Split large features into separate bundles
