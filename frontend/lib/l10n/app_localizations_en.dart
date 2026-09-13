@@ -29151,7 +29151,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pharmacyDrugImportPricingBody =>
-      'You do not have permission to set pharmacy prices, so retail prices and costs in the file are ignored.';
+      'You do not have permission to set pharmacy prices, so supplier prices and pharmacy selling prices in the file are ignored.';
 
   @override
   String get pharmacyDrugImportSettingsTitle => 'Import settings';
@@ -29283,13 +29283,13 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String pharmacyDrugImportRetailPriceLabel(String price) {
-    return 'Retail $price';
+  String pharmacyDrugImportSellingPriceFact(String price) {
+    return 'Selling price $price';
   }
 
   @override
-  String pharmacyDrugImportCostLabel(String price) {
-    return 'Cost $price';
+  String pharmacyDrugImportSupplierPriceFact(String price) {
+    return 'Supplier price $price';
   }
 
   @override
@@ -29440,15 +29440,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String pharmacyDrugImportIssuePriceBelowCost(String price, String cost) {
-    return 'Retail price $price is below cost $cost.';
-  }
-
-  @override
-  String pharmacyDrugImportIssueMaxPriceBelowPrice(
-    String maxPrice,
-    String price,
-  ) {
-    return 'Maximum retail price $maxPrice is below retail price $price.';
+    return 'Pharmacy selling price $price is below the supplier price $cost.';
   }
 
   @override
@@ -29479,12 +29471,12 @@ class AppLocalizationsEn extends AppLocalizations {
     String values,
     String chosen,
   ) {
-    return 'Rows have different retail prices ($values); the latest, $chosen, is used.';
+    return 'Rows have different pharmacy selling prices ($values); the latest, $chosen, is used.';
   }
 
   @override
   String pharmacyDrugImportIssueConflictingCost(String values, String chosen) {
-    return 'Rows have different costs ($values); the latest, $chosen, is used.';
+    return 'Rows have different supplier prices ($values); the latest, $chosen, is used.';
   }
 
   @override
@@ -29540,13 +29532,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get pharmacyDrugImportFieldReceivedQuantity => 'Received quantity';
 
   @override
-  String get pharmacyDrugImportFieldRetailPrice => 'Retail price';
+  String get pharmacyDrugImportFieldSellingPrice => 'Pharmacy selling price';
 
   @override
-  String get pharmacyDrugImportFieldMaxRetailPrice => 'Maximum retail price';
-
-  @override
-  String get pharmacyDrugImportFieldCost => 'Cost';
+  String get pharmacyDrugImportFieldSupplierPrice => 'Supplier price';
 
   @override
   String get pharmacyDrugImportFieldBatchNumber => 'Batch number';
@@ -29830,4 +29819,13 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String pharmacyDrugImportFieldFromColumn(String column) {
+    return 'From column $column';
+  }
+
+  @override
+  String get pharmacyDrugImportFieldFromProductName =>
+      'Read from the product name';
 }

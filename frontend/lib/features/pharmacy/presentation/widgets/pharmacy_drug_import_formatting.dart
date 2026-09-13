@@ -89,10 +89,24 @@ String pharmacyDrugImportFieldLabel(
     PharmacyDrugImportField.brandName => l10n.pharmacyDrugImportFieldBrand,
     PharmacyDrugImportField.form => l10n.pharmacyDrugFormLabel,
     PharmacyDrugImportField.strength => l10n.pharmacyDrugStrengthLabel,
-    PharmacyDrugImportField.unitPrice => l10n.pharmacyDrugImportFieldRetailPrice,
-    PharmacyDrugImportField.buyUnitPrice => l10n.pharmacyDrugImportFieldCost,
+    PharmacyDrugImportField.unitPrice =>
+      l10n.pharmacyDrugImportFieldSellingPrice,
+    PharmacyDrugImportField.buyUnitPrice =>
+      l10n.pharmacyDrugImportFieldSupplierPrice,
     PharmacyDrugImportField.supplierName => l10n.pharmacyDrugImportFieldSupplier,
   };
+}
+
+/// Where a catalog field's value comes from in the source file.
+String pharmacyDrugImportFieldSourceLabel(
+  AppLocalizations l10n,
+  PharmacyDrugImportSource source,
+  PharmacyDrugImportField field,
+) {
+  final String? column = source.fieldColumns[field];
+  return column == null
+      ? l10n.pharmacyDrugImportFieldFromProductName
+      : l10n.pharmacyDrugImportFieldFromColumn(column);
 }
 
 String pharmacyDrugImportValueProblemMessage(
@@ -250,10 +264,6 @@ String pharmacyDrugImportIssueMessage(
       number(text('retail_price')),
       number(text('cost')),
     ),
-    'MAX_PRICE_BELOW_PRICE' => l10n.pharmacyDrugImportIssueMaxPriceBelowPrice(
-      number(text('retail_price_max')),
-      number(text('retail_price')),
-    ),
     'MISSING_BATCH_NUMBER' => l10n.pharmacyDrugImportIssueMissingBatchNumber,
     'MISSING_EXPIRY_DATE' => l10n.pharmacyDrugImportIssueMissingExpiryDate,
     'INVALID_DATE' => l10n.pharmacyDrugImportIssueInvalidDate(text('value')),
@@ -306,9 +316,8 @@ String _sourceFieldLabel(AppLocalizations l10n, String? field) {
     'product_brand' => l10n.pharmacyDrugImportFieldBrand,
     'available_quantity' => l10n.pharmacyDrugImportFieldAvailableQuantity,
     'quantity' => l10n.pharmacyDrugImportFieldReceivedQuantity,
-    'retail_price' => l10n.pharmacyDrugImportFieldRetailPrice,
-    'retail_price_max' => l10n.pharmacyDrugImportFieldMaxRetailPrice,
-    'cost' => l10n.pharmacyDrugImportFieldCost,
+    'retail_price' => l10n.pharmacyDrugImportFieldSellingPrice,
+    'cost' => l10n.pharmacyDrugImportFieldSupplierPrice,
     'batch_number' => l10n.pharmacyDrugImportFieldBatchNumber,
     'expiry_date' => l10n.pharmacyDrugImportFieldExpiryDate,
     'supplier' => l10n.pharmacyDrugImportFieldSupplier,

@@ -1048,6 +1048,7 @@ class _PharmacyDrugImportDialogState extends State<PharmacyDrugImportDialog> {
         for (final PharmacyDrugImportProductReview review in visible) ...<Widget>[
           PharmacyDrugImportProductCard(
             key: ValueKey<String>('pharmacy-drug-import-${review.product.key}'),
+            source: _source,
             review: review,
             issues:
                 _issuesByProduct[review.product.key] ??

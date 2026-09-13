@@ -16,14 +16,28 @@ describe('medic-erp source', () => {
   });
 
   it('reports missing and unexpected template columns', () => {
-    const headers = medicErpSource.columns.filter((column) => column !== 'cost').concat('notes');
+    const headers = medicErpSource.columns
+      .filter((column) => column !== 'cost')
+      .concat('retail_price_max', 'notes');
     expect(checkTemplateColumns(medicErpSource, headers)).toEqual({
       missing_columns: ['cost'],
-      unexpected_columns: ['notes'],
+      unexpected_columns: ['retail_price_max', 'notes'],
     });
   });
 
-  it('maps a stock row using the on-hand quantity and inferred attributes', () => {
+  it('does not require or read retail_price_max', () => {
+    expect(medicErpSource.columns).not.toContain('retail_price_max');
+
+    const { record, issues } = medicErpSource.mapRow(
+      buildMedicErpRow({ retail_price: 7000, retail_price_max: 100 }),
+      9,
+      { today }
+    );
+    expect(issues).toEqual([]);
+    expect(record).not.toHaveProperty('unit_price_max');
+  });
+
+  it('maps cost to the supplier price and retail_price to the pharmacy selling price', () => {
     const { record, issues } = medicErpSource.mapRow(buildMedicErpRow(), 10, { today });
 
     expect(issues).toEqual([]);
@@ -71,14 +85,11 @@ describe('medic-erp source', () => {
         quantity: 19,
         retail_price: 5000,
         cost: 6000,
-        retail_price_max: 100,
       }),
       5,
       { today }
     );
-    expect(codesOf(contradictory.issues)).toEqual(
-      expect.arrayContaining(['QUANTITY_EXCEEDS_RECEIVED', 'PRICE_BELOW_COST', 'MAX_PRICE_BELOW_PRICE'])
-    );
+    expect(codesOf(contradictory.issues)).toEqual(['QUANTITY_EXCEEDS_RECEIVED', 'PRICE_BELOW_COST']);
   });
 
   it('flags expired, invalid, and missing batch metadata', () => {

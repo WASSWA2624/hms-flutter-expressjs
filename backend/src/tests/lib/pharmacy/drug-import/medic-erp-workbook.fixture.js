@@ -12,7 +12,6 @@ const buildMedicErpRow = (overrides = {}) => ({
   available_quantity: 4,
   internal_quantity: 0,
   retail_price: 7000,
-  retail_price_max: null,
   wholesale_price: null,
   wholesale_price_max: null,
   batch_number: 'PA09025',

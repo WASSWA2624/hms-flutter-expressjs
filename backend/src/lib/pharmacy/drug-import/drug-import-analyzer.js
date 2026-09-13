@@ -101,7 +101,6 @@ const buildRowSignature = (record) =>
     record.quantity,
     record.received_quantity,
     toMoney(record.unit_price),
-    toMoney(record.unit_price_max),
     toMoney(record.buy_unit_price),
     toIsoDate(record.expiry_date),
     normalizeText(record.supplier_name),

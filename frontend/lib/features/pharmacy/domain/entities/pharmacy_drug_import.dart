@@ -4,32 +4,49 @@ import 'package:flutter/foundation.dart';
 
 /// External systems whose drug stock exports can be imported into the catalog.
 enum PharmacyDrugImportSource {
-  medicErp('MEDIC_ERP', <String>[
-    'product_name',
-    'product_brand',
-    'quantity',
-    'available_quantity',
-    'internal_quantity',
-    'retail_price',
-    'retail_price_max',
-    'wholesale_price',
-    'wholesale_price_max',
-    'batch_number',
-    'expiry_date',
-    'cost',
-    'invoice_number',
-    'employee',
-    'created_on',
-    'updated_on',
-    'supplier',
-  ]);
+  medicErp(
+    'MEDIC_ERP',
+    <String>[
+      'product_name',
+      'product_brand',
+      'quantity',
+      'available_quantity',
+      'internal_quantity',
+      'retail_price',
+      'wholesale_price',
+      'wholesale_price_max',
+      'batch_number',
+      'expiry_date',
+      'cost',
+      'invoice_number',
+      'employee',
+      'created_on',
+      'updated_on',
+      'supplier',
+    ],
+    <PharmacyDrugImportField, String>{
+      PharmacyDrugImportField.name: 'product_name',
+      PharmacyDrugImportField.brandName: 'product_brand',
+      PharmacyDrugImportField.unitPrice: 'retail_price',
+      PharmacyDrugImportField.buyUnitPrice: 'cost',
+      PharmacyDrugImportField.supplierName: 'supplier',
+    },
+  );
 
-  const PharmacyDrugImportSource(this.apiValue, this.templateColumns);
+  const PharmacyDrugImportSource(
+    this.apiValue,
+    this.templateColumns,
+    this.fieldColumns,
+  );
 
   final String apiValue;
 
   /// Header names the first sheet row of the export must contain.
   final List<String> templateColumns;
+
+  /// File column each catalog field is read from. Fields not listed (form and
+  /// strength) are read from the product name.
+  final Map<PharmacyDrugImportField, String> fieldColumns;
 }
 
 /// How an imported product relates to the tenant catalog.

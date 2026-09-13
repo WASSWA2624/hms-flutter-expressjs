@@ -333,6 +333,18 @@ void main() {
     expect(find.text('In your catalog'), findsOneWidget);
     expect(find.text('Catalog drug to use'), findsOneWidget);
     expect(find.text('The catalog name is kept'), findsOneWidget);
+    // cost is the supplier price and retail_price the pharmacy selling price.
+    expect(
+      find.text(
+        'Tablet · 500 mg · Qty 4 · 1 batch · Supplier price 4,300 · Selling price 6,000',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Supplier price'), findsOneWidget);
+    expect(find.text('From column cost'), findsOneWidget);
+    expect(find.text('Pharmacy selling price'), findsOneWidget);
+    expect(find.text('From column retail_price'), findsOneWidget);
+    expect(find.text('Read from the product name'), findsNWidgets(2));
     expect(find.text('Replaces the catalog value'), findsNothing);
 
     await _tapVisible(tester, find.text('Link and overwrite'));
@@ -431,7 +443,9 @@ void main() {
 
     await _tapVisible(tester, find.text('AMOXICILLIN').first);
     expect(
-      find.text('Row 4 · Retail price 5,000 is below cost 6,000.'),
+      find.text(
+        'Row 4 · Pharmacy selling price 5,000 is below the supplier price 6,000.',
+      ),
       findsOneWidget,
     );
     await _enterText(
@@ -595,7 +609,7 @@ void main() {
             params: <String, Object?>{'values': '7000, 7500', 'chosen': 7500},
           ),
         ),
-        'Rows have different retail prices (7,000, 7,500); the latest, 7,500, is used.',
+        'Rows have different pharmacy selling prices (7,000, 7,500); the latest, 7,500, is used.',
       );
     });
 

@@ -37309,7 +37309,7 @@
   "@pharmacyDrugImportPricingTitle": {
     "description": "Drug import warning title when the user cannot write pharmacy prices."
   },
-  "pharmacyDrugImportPricingBody": "You do not have permission to set pharmacy prices, so retail prices and costs in the file are ignored.",
+  "pharmacyDrugImportPricingBody": "You do not have permission to set pharmacy prices, so supplier prices and pharmacy selling prices in the file are ignored.",
   "@pharmacyDrugImportPricingBody": {
     "description": "Drug import warning body when the user cannot write pharmacy prices."
   },
@@ -37490,18 +37490,18 @@
       }
     }
   },
-  "pharmacyDrugImportRetailPriceLabel": "Retail {price}",
-  "@pharmacyDrugImportRetailPriceLabel": {
-    "description": "Drug import product detail for retail price.",
+  "pharmacyDrugImportSellingPriceFact": "Selling price {price}",
+  "@pharmacyDrugImportSellingPriceFact": {
+    "description": "Drug import product header: pharmacy counter selling price (file column retail_price).",
     "placeholders": {
       "price": {
         "type": "String"
       }
     }
   },
-  "pharmacyDrugImportCostLabel": "Cost {price}",
-  "@pharmacyDrugImportCostLabel": {
-    "description": "Drug import product detail for cost.",
+  "pharmacyDrugImportSupplierPriceFact": "Supplier price {price}",
+  "@pharmacyDrugImportSupplierPriceFact": {
+    "description": "Drug import product header: supplier price (file column cost).",
     "placeholders": {
       "price": {
         "type": "String"
@@ -37714,7 +37714,7 @@
       }
     }
   },
-  "pharmacyDrugImportIssuePriceBelowCost": "Retail price {price} is below cost {cost}.",
+  "pharmacyDrugImportIssuePriceBelowCost": "Pharmacy selling price {price} is below the supplier price {cost}.",
   "@pharmacyDrugImportIssuePriceBelowCost": {
     "description": "Drug import review issue message.",
     "placeholders": {
@@ -37722,18 +37722,6 @@
         "type": "String"
       },
       "cost": {
-        "type": "String"
-      }
-    }
-  },
-  "pharmacyDrugImportIssueMaxPriceBelowPrice": "Maximum retail price {maxPrice} is below retail price {price}.",
-  "@pharmacyDrugImportIssueMaxPriceBelowPrice": {
-    "description": "Drug import review issue message.",
-    "placeholders": {
-      "maxPrice": {
-        "type": "String"
-      },
-      "price": {
         "type": "String"
       }
     }
@@ -37773,7 +37761,7 @@
       }
     }
   },
-  "pharmacyDrugImportIssueConflictingRetailPrice": "Rows have different retail prices ({values}); the latest, {chosen}, is used.",
+  "pharmacyDrugImportIssueConflictingRetailPrice": "Rows have different pharmacy selling prices ({values}); the latest, {chosen}, is used.",
   "@pharmacyDrugImportIssueConflictingRetailPrice": {
     "description": "Drug import review issue message.",
     "placeholders": {
@@ -37785,7 +37773,7 @@
       }
     }
   },
-  "pharmacyDrugImportIssueConflictingCost": "Rows have different costs ({values}); the latest, {chosen}, is used.",
+  "pharmacyDrugImportIssueConflictingCost": "Rows have different supplier prices ({values}); the latest, {chosen}, is used.",
   "@pharmacyDrugImportIssueConflictingCost": {
     "description": "Drug import review issue message.",
     "placeholders": {
@@ -37882,17 +37870,13 @@
   "@pharmacyDrugImportFieldReceivedQuantity": {
     "description": "Drug import source column label."
   },
-  "pharmacyDrugImportFieldRetailPrice": "Retail price",
-  "@pharmacyDrugImportFieldRetailPrice": {
-    "description": "Drug import source column label."
+  "pharmacyDrugImportFieldSellingPrice": "Pharmacy selling price",
+  "@pharmacyDrugImportFieldSellingPrice": {
+    "description": "Drug import field: pharmacy counter selling price (file column retail_price)."
   },
-  "pharmacyDrugImportFieldMaxRetailPrice": "Maximum retail price",
-  "@pharmacyDrugImportFieldMaxRetailPrice": {
-    "description": "Drug import source column label."
-  },
-  "pharmacyDrugImportFieldCost": "Cost",
-  "@pharmacyDrugImportFieldCost": {
-    "description": "Drug import source column label."
+  "pharmacyDrugImportFieldSupplierPrice": "Supplier price",
+  "@pharmacyDrugImportFieldSupplierPrice": {
+    "description": "Drug import field: supplier price (file column cost)."
   },
   "pharmacyDrugImportFieldBatchNumber": "Batch number",
   "@pharmacyDrugImportFieldBatchNumber": {
@@ -38208,5 +38192,18 @@
         "format": "decimalPattern"
       }
     }
+  },
+  "pharmacyDrugImportFieldFromColumn": "From column {column}",
+  "@pharmacyDrugImportFieldFromColumn": {
+    "description": "Drug import comparison: the file column a value is read from.",
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
+  "pharmacyDrugImportFieldFromProductName": "Read from the product name",
+  "@pharmacyDrugImportFieldFromProductName": {
+    "description": "Drug import comparison: form and strength are inferred from the product name."
   }
 }

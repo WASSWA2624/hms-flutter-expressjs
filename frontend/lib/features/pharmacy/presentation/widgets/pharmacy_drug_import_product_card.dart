@@ -27,6 +27,7 @@ const int _valueFlex = 6;
 /// catalog, file, and editable values, and the batches that will be stocked.
 class PharmacyDrugImportProductCard extends StatefulWidget {
   const PharmacyDrugImportProductCard({
+    required this.source,
     required this.review,
     required this.issues,
     required this.stockMode,
@@ -37,6 +38,9 @@ class PharmacyDrugImportProductCard extends StatefulWidget {
     this.enabled = true,
     super.key,
   });
+
+  /// System the file came from; names the column each value is read from.
+  final PharmacyDrugImportSource source;
 
   final PharmacyDrugImportProductReview review;
 
@@ -116,6 +120,7 @@ class _PharmacyDrugImportProductCardState
         ),
       ],
       child: _ProductEditor(
+        source: widget.source,
         review: review,
         issues: widget.issues,
         stockMode: widget.stockMode,
@@ -266,6 +271,7 @@ List<Widget> _headerBadges(
 
 class _ProductEditor extends StatefulWidget {
   const _ProductEditor({
+    required this.source,
     required this.review,
     required this.issues,
     required this.stockMode,
@@ -276,6 +282,7 @@ class _ProductEditor extends StatefulWidget {
     required this.onDraftChanged,
   });
 
+  final PharmacyDrugImportSource source;
   final PharmacyDrugImportProductReview review;
   final List<PharmacyDrugImportIssue> issues;
   final PharmacyDrugImportStockMode stockMode;
@@ -549,6 +556,16 @@ class _ProductEditorState extends State<_ProductEditor> {
     );
   }
 
+  Widget _fieldSourceHint(BuildContext context, PharmacyDrugImportField field) {
+    final ThemeData theme = Theme.of(context);
+    return Text(
+      pharmacyDrugImportFieldSourceLabel(context.l10n, widget.source, field),
+      style: theme.textTheme.bodySmall?.copyWith(
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+    );
+  }
+
   Widget _comparisonRow(BuildContext context, PharmacyDrugImportField field) {
     final AppLocalizations l10n = context.l10n;
     final PharmacyDrugImportProductReview review = widget.review;
@@ -557,7 +574,14 @@ class _ProductEditorState extends State<_ProductEditor> {
       cells: <(int, Widget)>[
         (
           _fieldFlex,
-          _CellText(pharmacyDrugImportFieldLabel(l10n, field), strong: true),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              _CellText(pharmacyDrugImportFieldLabel(l10n, field), strong: true),
+              _fieldSourceHint(context, field),
+            ],
+          ),
         ),
         if (review.isLinked)
           (_catalogFlex, _valueText(context, field, review.catalogText(field))),
@@ -585,6 +609,7 @@ class _ProductEditorState extends State<_ProductEditor> {
               color: theme.colorScheme.onSurface,
             ),
           ),
+          _fieldSourceHint(context, field),
           SizedBox(height: theme.spacing.xs / 2),
           Wrap(
             spacing: theme.spacing.md,
@@ -1214,16 +1239,18 @@ String _productFacts(
       : null;
   final String form = text(PharmacyDrugImportField.form);
   final String strength = text(PharmacyDrugImportField.strength);
-  final num? retail = price(PharmacyDrugImportField.unitPrice);
-  final num? cost = price(PharmacyDrugImportField.buyUnitPrice);
+  final num? supplierPrice = price(PharmacyDrugImportField.buyUnitPrice);
+  final num? sellingPrice = price(PharmacyDrugImportField.unitPrice);
 
   return <String>[
     if (form.isNotEmpty) form,
     if (strength.isNotEmpty) strength,
     l10n.pharmacyDrugImportQuantityLabel(count(review.totalQuantity)),
     l10n.pharmacyDrugImportBatchCount(review.product.batches.length),
-    if (retail != null) l10n.pharmacyDrugImportRetailPriceLabel(count(retail)),
-    if (cost != null) l10n.pharmacyDrugImportCostLabel(count(cost)),
+    if (supplierPrice != null)
+      l10n.pharmacyDrugImportSupplierPriceFact(count(supplierPrice)),
+    if (sellingPrice != null)
+      l10n.pharmacyDrugImportSellingPriceFact(count(sellingPrice)),
   ].join(' · ');
 }
 

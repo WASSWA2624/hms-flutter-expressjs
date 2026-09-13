@@ -53286,7 +53286,7 @@ abstract class AppLocalizations {
   /// Drug import warning body when the user cannot write pharmacy prices.
   ///
   /// In en, this message translates to:
-  /// **'You do not have permission to set pharmacy prices, so retail prices and costs in the file are ignored.'**
+  /// **'You do not have permission to set pharmacy prices, so supplier prices and pharmacy selling prices in the file are ignored.'**
   String get pharmacyDrugImportPricingBody;
 
   /// Drug import settings section title.
@@ -53487,17 +53487,17 @@ abstract class AppLocalizations {
   /// **'Qty {quantity}'**
   String pharmacyDrugImportQuantityLabel(String quantity);
 
-  /// Drug import product detail for retail price.
+  /// Drug import product header: pharmacy counter selling price (file column retail_price).
   ///
   /// In en, this message translates to:
-  /// **'Retail {price}'**
-  String pharmacyDrugImportRetailPriceLabel(String price);
+  /// **'Selling price {price}'**
+  String pharmacyDrugImportSellingPriceFact(String price);
 
-  /// Drug import product detail for cost.
+  /// Drug import product header: supplier price (file column cost).
   ///
   /// In en, this message translates to:
-  /// **'Cost {price}'**
-  String pharmacyDrugImportCostLabel(String price);
+  /// **'Supplier price {price}'**
+  String pharmacyDrugImportSupplierPriceFact(String price);
 
   /// Drug import product detail listing source rows.
   ///
@@ -53691,17 +53691,8 @@ abstract class AppLocalizations {
   /// Drug import review issue message.
   ///
   /// In en, this message translates to:
-  /// **'Retail price {price} is below cost {cost}.'**
+  /// **'Pharmacy selling price {price} is below the supplier price {cost}.'**
   String pharmacyDrugImportIssuePriceBelowCost(String price, String cost);
-
-  /// Drug import review issue message.
-  ///
-  /// In en, this message translates to:
-  /// **'Maximum retail price {maxPrice} is below retail price {price}.'**
-  String pharmacyDrugImportIssueMaxPriceBelowPrice(
-    String maxPrice,
-    String price,
-  );
 
   /// Drug import review issue message.
   ///
@@ -53736,7 +53727,7 @@ abstract class AppLocalizations {
   /// Drug import review issue message.
   ///
   /// In en, this message translates to:
-  /// **'Rows have different retail prices ({values}); the latest, {chosen}, is used.'**
+  /// **'Rows have different pharmacy selling prices ({values}); the latest, {chosen}, is used.'**
   String pharmacyDrugImportIssueConflictingRetailPrice(
     String values,
     String chosen,
@@ -53745,7 +53736,7 @@ abstract class AppLocalizations {
   /// Drug import review issue message.
   ///
   /// In en, this message translates to:
-  /// **'Rows have different costs ({values}); the latest, {chosen}, is used.'**
+  /// **'Rows have different supplier prices ({values}); the latest, {chosen}, is used.'**
   String pharmacyDrugImportIssueConflictingCost(String values, String chosen);
 
   /// Drug import review issue message.
@@ -53818,23 +53809,17 @@ abstract class AppLocalizations {
   /// **'Received quantity'**
   String get pharmacyDrugImportFieldReceivedQuantity;
 
-  /// Drug import source column label.
+  /// Drug import field: pharmacy counter selling price (file column retail_price).
   ///
   /// In en, this message translates to:
-  /// **'Retail price'**
-  String get pharmacyDrugImportFieldRetailPrice;
+  /// **'Pharmacy selling price'**
+  String get pharmacyDrugImportFieldSellingPrice;
 
-  /// Drug import source column label.
+  /// Drug import field: supplier price (file column cost).
   ///
   /// In en, this message translates to:
-  /// **'Maximum retail price'**
-  String get pharmacyDrugImportFieldMaxRetailPrice;
-
-  /// Drug import source column label.
-  ///
-  /// In en, this message translates to:
-  /// **'Cost'**
-  String get pharmacyDrugImportFieldCost;
+  /// **'Supplier price'**
+  String get pharmacyDrugImportFieldSupplierPrice;
 
   /// Drug import source column label.
   ///
@@ -54213,6 +54198,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{Keeps stock for 1 item not in the file} other{Keeps stock for {count} items not in the file}}'**
   String pharmacyDrugImportSettingsSummaryKeeps(int count);
+
+  /// Drug import comparison: the file column a value is read from.
+  ///
+  /// In en, this message translates to:
+  /// **'From column {column}'**
+  String pharmacyDrugImportFieldFromColumn(String column);
+
+  /// Drug import comparison: form and strength are inferred from the product name.
+  ///
+  /// In en, this message translates to:
+  /// **'Read from the product name'**
+  String get pharmacyDrugImportFieldFromProductName;
 }
 
 class _AppLocalizationsDelegate

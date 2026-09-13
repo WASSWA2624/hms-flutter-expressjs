@@ -4,6 +4,10 @@
  * Each row is one stock entry — a batch of a product. Rows sharing a product
  * name and brand are grouped into one catalog drug by the import analyzer.
  * `available_quantity` is the on-hand balance; `quantity` is what was received.
+ *
+ * Prices: `cost` is the supplier price (drug `buy_unit_price`) and
+ * `retail_price` is the pharmacy counter selling price (drug `unit_price`).
+ * `retail_price_max` is not used.
  */
 
 const {
@@ -28,7 +32,6 @@ const COLUMNS = Object.freeze([
   'available_quantity',
   'internal_quantity',
   'retail_price',
-  'retail_price_max',
   'wholesale_price',
   'wholesale_price_max',
   'batch_number',
@@ -146,22 +149,14 @@ const mapRow = (values = {}, rowNumber, { today = new Date() } = {}) => {
     );
   }
 
+  // Pharmacy counter selling price and supplier price.
   const unitPrice = readPrice(values, 'retail_price', rowNumber, issues);
-  const unitPriceMax = readPrice(values, 'retail_price_max', rowNumber, issues);
   const buyUnitPrice = readPrice(values, 'cost', rowNumber, issues);
   if (unitPrice != null && buyUnitPrice != null && unitPrice > 0 && buyUnitPrice > unitPrice) {
     issues.push(
       buildIssue(rowNumber, 'warning', 'PRICE_BELOW_COST', 'retail_price', {
         retail_price: unitPrice,
         cost: buyUnitPrice,
-      })
-    );
-  }
-  if (unitPrice != null && unitPriceMax != null && unitPriceMax > 0 && unitPriceMax < unitPrice) {
-    issues.push(
-      buildIssue(rowNumber, 'warning', 'MAX_PRICE_BELOW_PRICE', 'retail_price_max', {
-        retail_price: unitPrice,
-        retail_price_max: unitPriceMax,
       })
     );
   }
@@ -205,7 +200,6 @@ const mapRow = (values = {}, rowNumber, { today = new Date() } = {}) => {
       quantity,
       received_quantity: received.value,
       unit_price: unitPrice,
-      unit_price_max: unitPriceMax,
       buy_unit_price: buyUnitPrice,
       batch_number: batchNumber,
       expiry_date: expiry.value,
