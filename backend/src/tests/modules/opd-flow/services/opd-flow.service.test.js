@@ -34,6 +34,7 @@ jest.mock('@lib/billing/realtime', () => ({
 }));
 jest.mock('@prisma/client', () => ({
   $transaction: jest.fn(),
+  assignFriendlyIdIfMissing: jest.fn(async () => {}),
   tenant: {
     findFirst: jest.fn()
   },

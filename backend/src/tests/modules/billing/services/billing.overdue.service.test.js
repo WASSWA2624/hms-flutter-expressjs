@@ -199,6 +199,7 @@ describe('billing.service Overdue tab mutations post through Billing', () => {
           })),
         },
         payment: {
+          updateMany: jest.fn(async () => ({ count: 0 })),
           update: jest.fn(async () => ({
             id: 'pay-ovd',
             invoice_id: 'inv-overdue',
@@ -312,7 +313,7 @@ describe('billing.service Overdue tab mutations post through Billing', () => {
             billing_adjustments: [],
           })),
         },
-        payment: { update: jest.fn() },
+        payment: { updateMany: jest.fn(async () => ({ count: 0 })), update: jest.fn() },
       };
       return callback(tx);
     });

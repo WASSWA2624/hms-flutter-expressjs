@@ -62,6 +62,11 @@ const buildIdentifierFilter = (identifier) =>
     ? { id: identifier }
     : { human_friendly_id: identifier.toUpperCase() };
 
+// An empty include is sent as undefined, never as {}: Prisma treats the two
+// differently, and internal callers here pass {} to mean "no relations".
+const omitEmptyInclude = (include) =>
+  include && Object.keys(include).length > 0 ? include : undefined;
+
 const findFirstByIdentifier = async (
   identifier,
   include,
@@ -74,7 +79,7 @@ const findFirstByIdentifier = async (
       ...scopeFilters,
       ...buildIdentifierFilter(identifier)
     },
-    include
+    include: omitEmptyInclude(include)
   });
 
 const resolveCanonicalPatientId = async (id, scope = {}, dbClient = prisma) => {

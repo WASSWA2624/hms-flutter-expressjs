@@ -1,4 +1,5 @@
 jest.mock('fs', () => ({
+  ...jest.requireActual('fs'),
   promises: {
     writeFile: jest.fn(async () => {}),
     stat: jest.fn(async () => ({ size: 12 })),

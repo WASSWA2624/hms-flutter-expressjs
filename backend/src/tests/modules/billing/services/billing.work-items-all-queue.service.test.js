@@ -302,6 +302,7 @@ describe('billing.service All-tab mutations post through Billing (no bypass)', (
           })),
         },
         payment: {
+          updateMany: jest.fn(async () => ({ count: 0 })),
           update: jest.fn(async () => ({
             id: 'pay-1',
             invoice_id: 'inv-1',

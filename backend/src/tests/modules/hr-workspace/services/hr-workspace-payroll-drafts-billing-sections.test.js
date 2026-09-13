@@ -66,6 +66,7 @@ describe('hr-workspace Payroll drafts billing-sections scan', () => {
     };
     prisma.payroll_item = {
       findFirst: jest.fn().mockResolvedValue(null),
+      findMany: jest.fn().mockResolvedValue([]),
       updateMany: jest.fn().mockResolvedValue({ count: 0 }),
       update: jest.fn(),
       create: jest.fn().mockResolvedValue({ id: 'item-1' }),

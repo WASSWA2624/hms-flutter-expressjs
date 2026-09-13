@@ -216,6 +216,7 @@ describe('billing.service Awaiting payment mutations post through Billing', () =
           })),
         },
         payment: {
+          updateMany: jest.fn(async () => ({ count: 0 })),
           update: jest.fn(async () => ({
             id: 'pay-1',
             invoice_id: 'inv-1',
