@@ -13,10 +13,22 @@ import React from 'react';
 import styled from 'styled-components';
 import { Card, Icon } from '@/components/ui';
 
+/*
+ * Explicit column counts rather than auto-fit, so the orphan rules below can
+ * do quantity arithmetic against a known number of columns.
+ */
 const StyledGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr));
+  grid-template-columns: 1fr;
   gap: clamp(1rem, 2vw, 1.75rem);
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: ${props => props.theme.breakpoints.md}) {
+    grid-template-columns: repeat(3, 1fr);
+  }
 `;
 
 const StyledCard = styled(Card)`
@@ -25,6 +37,28 @@ const StyledCard = styled(Card)`
   gap: ${props => props.theme.spacing.sm};
   border: 1px solid ${props => props.theme.colors.border};
   height: 100%;
+
+  /*
+   * A single card stranded on the last row reads as a mistake. When the count
+   * leaves exactly one over, let it run the full width instead — the widest
+   * group is also the one with the most items, so it uses the room. The
+   * nth-child arithmetic re-evaluates itself if the module list changes.
+   */
+  @media (min-width: 640px) {
+    &:last-child:nth-child(2n + 1) {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (min-width: ${props => props.theme.breakpoints.md}) {
+    &:last-child:nth-child(2n + 1) {
+      grid-column: auto;
+    }
+
+    &:last-child:nth-child(3n + 1) {
+      grid-column: 1 / -1;
+    }
+  }
 `;
 
 const StyledHeading = styled.div`

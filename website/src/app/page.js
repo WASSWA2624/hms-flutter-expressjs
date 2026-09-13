@@ -135,14 +135,12 @@ export default function Home() {
       <StructuredData data={softwareSchema} />
       <StructuredData data={faqSchema} />
 
+      {/* The header carries the brand mark and the call to action, so the hero
+          opens on the headline itself. */}
       <MarketingHero
         eyebrow="Hospital Management System"
         title={HMS_TAGLINE}
         subtitle={HMS_SUMMARY}
-        appUrl={APP_LOGIN_URL}
-        primaryLabel="Open the app"
-        secondaryLabel="See what's included"
-        secondaryHref="/docs"
         platforms={PLATFORMS}
       />
 
@@ -150,6 +148,9 @@ export default function Home() {
         <KeyFigures figures={KEY_FIGURES} />
       </Section>
 
+      {/* What it is, then what you get, then how it works, then who uses it.
+          Scope before mechanics: a reader evaluating the system wants the
+          department list before the workflow narrative. */}
       <Section
         id="why"
         eyebrow="Why HOSSPI"
@@ -163,8 +164,8 @@ export default function Home() {
         id="modules"
         tone="alt"
         eyebrow="What's included"
-        title="Every department, one system"
-        description="Each area below is available today. They share the same patient record, so work handed from one department to the next arrives complete."
+        title="Twenty-six departments, one system"
+        description="Grouped the way the application itself is, and every area below is available today. They share the same patient record, so work handed from one department to the next arrives complete."
       >
         <ModuleGrid modules={AVAILABLE_MODULES} />
       </Section>

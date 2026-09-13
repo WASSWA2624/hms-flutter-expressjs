@@ -40,7 +40,7 @@ export const VALUE_PROPS = [
     id: 'end-to-end-care',
     icon: 'clipboard',
     title: 'One record, front door to discharge',
-    body: 'Registration, outpatient clinics, triage, consultations, nursing, wards, intensive care and theatre all write to the same patient record. Nothing is re-typed between departments.',
+    body: 'Registration, emergency, outpatient clinics, consultations, nursing, wards, intensive care, theatre and discharge all write to the same patient record. Nothing is re-typed between departments.',
   },
   {
     id: 'diagnostics',
@@ -80,43 +80,46 @@ export const VALUE_PROPS = [
  */
 export const AVAILABLE_MODULES = [
   {
-    id: 'reception',
+    id: 'patient-intake',
     icon: 'userPlus',
-    title: 'Reception and records',
-    description: 'One identity per patient, shared by every department that treats them.',
-    items: ['Patient registry', 'Outpatient desk and queues', 'Triage'],
+    title: 'Patient intake',
+    description: 'Every way a patient reaches you, opening one shared record.',
+    items: ['Reception', 'Patient registry', 'Outpatient (OPD)', 'Emergency'],
   },
   {
-    id: 'clinical',
+    id: 'inpatient-care',
+    icon: 'bed',
+    title: 'Inpatient care',
+    description: 'Admission through to the daily running of the wards.',
+    items: ['Inpatient (IPD)', 'Rooms and beds', 'Intensive care (ICU)', 'Nursing'],
+  },
+  {
+    id: 'clinical-care',
     icon: 'stethoscope',
     title: 'Clinical care',
-    description: 'The consulting room, the ward round, and everything recorded along the way.',
-    items: ['Consultations and clinical notes', 'Nursing care', 'Inpatient wards', 'Intensive care'],
-  },
-  {
-    id: 'surgery',
-    icon: 'scissors',
-    title: 'Theatre and discharge',
-    description: 'Surgical work and a clean, documented exit from the hospital.',
-    items: ['Operating theatre', 'Discharge planning and paperwork'],
+    description: 'The consulting room, the theatre list and the way out.',
+    items: ['Clinical (doctors)', 'Physiotherapy', 'Operating theatre', 'Discharge planning'],
   },
   {
     id: 'diagnostics',
     icon: 'flask',
     title: 'Diagnostics and pharmacy',
     description: 'Investigations and medicines, ordered from the encounter itself.',
-    items: ['Laboratory', 'Radiology and imaging', 'Pharmacy and dispensing'],
+    items: ['Laboratory', 'Radiology', 'Pharmacy'],
   },
   {
-    id: 'finance',
+    id: 'billing-revenue',
     icon: 'wallet',
-    title: 'Billing and accounts',
-    description: 'Two separate desks: one collects the money, one keeps the books.',
-    items: [
-      'Invoicing, cashier and price list',
-      'Journals, ledgers and period close',
-      'Insurance claims',
-    ],
+    title: 'Billing and revenue',
+    description: 'The cashier desk, the books behind it, and what insurers owe you.',
+    items: ['Billing', 'Accounts', 'Insurance claims', 'Subscription plans'],
+  },
+  {
+    id: 'facility-services',
+    icon: 'building',
+    title: 'Facility services',
+    description: 'The work that keeps the building and its equipment running.',
+    items: ['Operations', 'Housekeeping', 'Biomedical engineering', 'Mortuary'],
   },
   {
     id: 'administration',
@@ -124,10 +127,12 @@ export const AVAILABLE_MODULES = [
     title: 'Administration',
     description: 'The controls that keep the organisation and its people in order.',
     items: [
-      'Organisation and facility setup',
-      'Staff, roles and permissions',
       'Human resources',
-      'Reporting and audit trail',
+      'Communications',
+      'Integrations',
+      'Reporting and analytics',
+      'Settings, roles and permissions',
+      'Tenant and facility setup',
     ],
   },
 ];
@@ -137,16 +142,10 @@ export const AVAILABLE_MODULES = [
  * @type {Array<{id: string, title: string}>}
  */
 export const ROADMAP = [
-  { id: 'emergency', title: 'Emergency and ambulance' },
-  { id: 'rooms-beds', title: 'Room and bed management' },
-  { id: 'physiotherapy', title: 'Physiotherapy' },
   { id: 'dental', title: 'Dental' },
-  { id: 'housekeeping', title: 'Housekeeping and operations' },
-  { id: 'biomedical', title: 'Biomedical equipment' },
-  { id: 'mortuary', title: 'Mortuary' },
-  { id: 'messaging', title: 'Patient messaging' },
-  { id: 'integrations', title: 'Third-party integrations' },
+  { id: 'inventory', title: 'Hospital-wide inventory and procurement' },
   { id: 'analytics', title: 'Advanced analytics' },
+  { id: 'compliance', title: 'Compliance and audit pack' },
 ];
 
 /**
@@ -158,7 +157,7 @@ export const PLANS = [
     id: 'free',
     name: 'Free',
     summary: 'Register patients and get started at no cost.',
-    includes: ['Patient registry', 'Staff sign-in', 'Core settings', 'Reporting'],
+    includes: ['Patient registry and consent', 'Staff sign-in, roles and permissions'],
   },
   {
     id: 'basic',
@@ -166,36 +165,41 @@ export const PLANS = [
     summary: 'Everything a busy outpatient clinic needs.',
     includes: [
       'Everything in Free',
-      'Outpatient clinics and triage',
-      'Consultations and notes',
+      'Outpatient clinics and queues',
+      'Consultations and vitals',
+      'Inpatient wards and beds',
       'Pharmacy dispensing',
-      'Invoicing and accounts',
-      'Staff roles and permissions',
+      'Billing, payments and accounts',
+      'Communications',
     ],
   },
   {
     id: 'advanced',
     name: 'Advanced',
-    summary: 'Add wards, diagnostics and insurance.',
+    summary: 'Add diagnostics, insurance and rehabilitation.',
     highlight: true,
     includes: [
       'Everything in Basic',
-      'Full inpatient wards and nursing',
-      'Discharge planning',
-      'Laboratory and radiology',
-      'Clinical pharmacy',
+      'Laboratory workflows',
+      'Radiology workflows',
       'Insurance claims',
+      'Physiotherapy and rehabilitation',
+      'Extra storage',
     ],
   },
   {
     id: 'pro',
     name: 'Pro',
-    summary: 'For hospitals running critical care and surgery.',
+    summary: 'For hospitals running critical care, surgery and their own estate.',
     includes: [
       'Everything in Advanced',
       'Intensive care',
-      'Operating theatre',
-      'Human resources',
+      'Operating theatre and anaesthesia',
+      'Human resources and rosters',
+      'Facilities, housekeeping and maintenance',
+      'Biomedical engineering',
+      'Mortuary',
+      'Integrations and webhooks',
     ],
   },
   {
@@ -226,12 +230,15 @@ export const ROLES = [
   { id: 'imaging', icon: 'scan', name: 'Radiographers and radiologists', scope: 'Performing scans and writing the interpretations that return to the patient chart.' },
   { id: 'accountant', icon: 'receipt', name: 'Finance staff', scope: 'Invoices, collections, journals, ledgers, period close and insurance claims.' },
   { id: 'hr', icon: 'users', name: 'HR staff', scope: 'Staff administration and managing user accounts, roles and permissions for the facility.' },
+  { id: 'operations', icon: 'building', name: 'Operations and housekeeping', scope: 'Facility tasks, cleaning schedules and the day-to-day running of the building.' },
+  { id: 'biomed', icon: 'settings', name: 'Biomedical engineers', scope: 'Equipment registers, servicing and maintenance history across the facility.' },
+  { id: 'ward-managers', icon: 'bed', name: 'Ward, ICU and theatre managers', scope: 'Running their own unit — beds, staffing and the cases in front of them.' },
   { id: 'admin', icon: 'shield', name: 'Administrators', scope: 'Facility, organisation and platform level control, each with reporting across their own scope.' },
   { id: 'patient', icon: 'user', name: 'Patients', scope: 'Their own records only.' },
 ];
 
 export const ROLES_NOTE =
-  'These roles are ready to use on day one, and you can define your own if your facility works differently.';
+  'Twenty-five staff roles are ready to use on day one, and you can define your own if your facility works differently.';
 
 /**
  * How care moves through the system — written as journeys, not workflows.
@@ -239,6 +246,7 @@ export const ROLES_NOTE =
  */
 export const CARE_JOURNEYS = [
   { id: 'opd', icon: 'userPlus', title: 'Outpatient visit', summary: 'Arrival, registration, queue, triage and consultation — with orders and billing raised as the visit happens.' },
+  { id: 'emergency', icon: 'pulse', title: 'Emergency arrival', summary: 'Urgent presentation triaged and treated straight away, with registration and billing catching up behind the care.' },
   { id: 'ipd', icon: 'bed', title: 'Admission and ward stay', summary: 'Admission, ward allocation, nursing observations and daily clinical review, all on one running record.' },
   { id: 'icu', icon: 'pulse', title: 'Intensive care', summary: 'Critical care admission with close monitoring and the clinical detail that level of care demands.' },
   { id: 'theater', icon: 'scissors', title: 'Surgery', summary: 'Scheduling, the procedure record, and recovery notes handed back to the ward team.' },
@@ -284,9 +292,9 @@ export const FAQS = [
 
 /** Headline figures. */
 export const KEY_FIGURES = [
-  { id: 'departments', icon: 'layers', value: '20+', label: 'Departments covered' },
+  { id: 'departments', icon: 'layers', value: '26', label: 'Departments and services' },
+  { id: 'roles', icon: 'users', value: '25', label: 'Staff roles ready to use' },
   { id: 'platforms', icon: 'globe', value: '5', label: 'Platforms supported' },
-  { id: 'roles', icon: 'users', value: '20+', label: 'Staff roles ready to use' },
   { id: 'record', icon: 'clipboard', value: '1', label: 'Shared patient record' },
 ];
 

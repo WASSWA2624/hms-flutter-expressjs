@@ -1,17 +1,17 @@
 /**
  * MarketingHero - Landing page hero for HOSSPI HMS
  *
- * Shows the product wordmark, headline, summary, primary calls to action, and
- * the platforms the application ships on.
+ * Headline, summary, an optional call to action, and the platforms the
+ * application ships on. The brand mark is not repeated here - the header
+ * already carries it directly above, and the <h1> is the first thing a reader
+ * should meet.
  *
  * @component
  * @param {Object} props
  * @param {string} props.title - Headline
  * @param {string} props.subtitle - Supporting paragraph
- * @param {string} props.appUrl - Link to the live application
- * @param {string} props.primaryLabel - Primary CTA label
- * @param {string} props.secondaryLabel - Secondary CTA label
- * @param {string} props.secondaryHref - Secondary CTA destination
+ * @param {string} [props.appUrl] - Link to the live application
+ * @param {string} [props.primaryLabel] - Primary CTA label; omit for no CTA
  * @param {Array<{id: string, name: string, detail: string}>} props.platforms
  * @param {string} [props.platformsLabel] - Label above the platform list
  * @returns {JSX.Element} Rendered hero
@@ -20,8 +20,6 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
 import styled from 'styled-components';
 import { Icon } from '@/components/ui';
 
@@ -45,23 +43,14 @@ const StyledHero = styled.section`
 const StyledInner = styled.div`
   max-width: ${props => props.theme.breakpoints.lg};
   margin: 0 auto;
-  padding: clamp(3rem, 8vw, 7rem) clamp(1rem, 5vw, 4rem);
+  padding: clamp(2.75rem, 6.5vw, 5.5rem) clamp(1rem, 5vw, 4rem);
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: clamp(1rem, 2.2vw, 1.75rem);
-`;
-
-const StyledLogo = styled.div`
-  width: clamp(72px, 12vw, 112px);
-  filter: drop-shadow(0 12px 28px rgba(0, 121, 253, 0.24));
-
-  img {
-    width: 100%;
-    height: auto;
-    display: block;
-  }
+  /* Tight rhythm between eyebrow, headline and summary; the wider gaps below
+     come from the elements that need them, not from a uniform stack gap. */
+  gap: clamp(0.75rem, 1.4vw, 1.15rem);
 `;
 
 const StyledEyebrow = styled.p`
@@ -75,20 +64,20 @@ const StyledEyebrow = styled.p`
 
 const StyledTitle = styled.h1`
   margin: 0;
-  max-width: 20ch;
+  max-width: 18ch;
   color: ${props => props.theme.colors.text};
-  font-size: clamp(2rem, 1.1rem + 4vw, 4rem);
+  font-size: clamp(2.1rem, 1.1rem + 4.2vw, 4.1rem);
   font-weight: ${props => props.theme.typography.fontWeight.bold};
-  line-height: 1.06;
+  line-height: 1.04;
   letter-spacing: -0.03em;
   text-wrap: balance;
 `;
 
 const StyledSubtitle = styled.p`
   margin: 0;
-  max-width: 60ch;
+  max-width: 58ch;
   color: ${props => props.theme.colors.textSecondary};
-  font-size: clamp(1.02rem, 0.95rem + 0.5vw, 1.3rem);
+  font-size: clamp(1.02rem, 0.95rem + 0.5vw, 1.25rem);
   line-height: ${props => props.theme.typography.lineHeight.relaxed};
   text-wrap: pretty;
 `;
@@ -98,7 +87,7 @@ const StyledActions = styled.div`
   flex-wrap: wrap;
   justify-content: center;
   gap: ${props => props.theme.spacing.md};
-  margin-top: ${props => props.theme.spacing.xs};
+  margin-top: ${props => props.theme.spacing.sm};
 `;
 
 const buttonBase = props => `
@@ -145,18 +134,6 @@ const StyledPrimaryAction = styled.a`
   &:hover {
     background-color: ${props => props.theme.colors.primaryHover};
     border-color: ${props => props.theme.colors.primaryHover};
-  }
-`;
-
-const StyledSecondaryAction = styled(Link)`
-  ${props => buttonBase(props)}
-  background-color: ${props => props.theme.colors.background};
-  color: ${props => props.theme.colors.text};
-  border: 1px solid ${props => props.theme.colors.border};
-
-  &:hover {
-    border-color: ${props => props.theme.colors.primary};
-    color: ${props => props.theme.colors.primary};
   }
 `;
 
@@ -223,13 +200,11 @@ const StyledPlatform = styled.li`
 
 StyledHero.displayName = 'StyledHero';
 StyledInner.displayName = 'StyledInner';
-StyledLogo.displayName = 'StyledLogo';
 StyledEyebrow.displayName = 'StyledEyebrow';
 StyledTitle.displayName = 'StyledTitle';
 StyledSubtitle.displayName = 'StyledSubtitle';
 StyledActions.displayName = 'StyledActions';
 StyledPrimaryAction.displayName = 'StyledPrimaryAction';
-StyledSecondaryAction.displayName = 'StyledSecondaryAction';
 StyledPlatforms.displayName = 'StyledPlatforms';
 StyledPlatformsLabel.displayName = 'StyledPlatformsLabel';
 StyledPlatformList.displayName = 'StyledPlatformList';
@@ -241,37 +216,24 @@ export const MarketingHero = React.memo(({
   subtitle,
   appUrl,
   primaryLabel,
-  secondaryLabel,
-  secondaryHref,
   platforms = [],
   platformsLabel = 'Available on',
 }) => {
   return (
     <StyledHero>
       <StyledInner>
-        <StyledLogo>
-          <Image
-            src="/logos/icon-256.png"
-            alt="HOSSPI"
-            width={256}
-            height={256}
-            priority
-          />
-        </StyledLogo>
-
         {eyebrow && <StyledEyebrow>{eyebrow}</StyledEyebrow>}
         <StyledTitle>{title}</StyledTitle>
         <StyledSubtitle>{subtitle}</StyledSubtitle>
 
-        <StyledActions>
-          <StyledPrimaryAction href={appUrl} target="_blank" rel="noopener noreferrer">
-            {primaryLabel}
-            <Icon name="arrowRight" size={18} />
-          </StyledPrimaryAction>
-          <StyledSecondaryAction href={secondaryHref}>
-            {secondaryLabel}
-          </StyledSecondaryAction>
-        </StyledActions>
+        {appUrl && primaryLabel && (
+          <StyledActions>
+            <StyledPrimaryAction href={appUrl} target="_blank" rel="noopener noreferrer">
+              {primaryLabel}
+              <Icon name="arrowRight" size={18} />
+            </StyledPrimaryAction>
+          </StyledActions>
+        )}
 
         {platforms.length > 0 && (
           <StyledPlatforms>

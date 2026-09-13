@@ -15,9 +15,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import styled from 'styled-components';
 import { Navigation } from './Navigation';
+import { OpenAppButton } from './OpenAppButton';
 import { ThemeToggle, LocaleSwitcher } from '@/components/common';
 import { useTranslation } from '@/hooks';
-import { APP_NAME } from '@/lib/constants';
+import { APP_NAME, APP_LOGIN_URL } from '@/lib/constants';
 
 const StyledHeader = styled.header`
   background-color: ${props => props.theme.colors.background};
@@ -252,6 +253,12 @@ const StyledNavigationWrapper = styled.div`
   }
 `;
 
+/*
+ * Reading order across the bar is logo -> nav -> call to action -> utilities.
+ * The call to action sits ahead of the locale and theme controls so it lands
+ * at the end of the scan and stays adjacent to the navigation it follows from,
+ * rather than being pushed to the far corner behind two icon buttons.
+ */
 const StyledHeaderActions = styled.div`
   grid-area: actions;
   display: flex;
@@ -275,11 +282,6 @@ const StyledHeaderActions = styled.div`
     gap: ${props => props.theme.spacing.md};
   }
 
-  /* Desktop (1024px+) */
-  @media (min-width: ${props => props.theme.breakpoints.md}) {
-    gap: ${props => props.theme.spacing.lg};
-  }
-
   /* Very small screens - reduce gap */
   @media (max-width: 360px) {
     gap: 2px;
@@ -299,6 +301,23 @@ const StyledHeaderActions = styled.div`
   }
 `;
 
+/* Locale and theme read as one utility cluster, kept tighter than the gap
+   separating them from the call to action. */
+const StyledUtilityActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+
+  @media (min-width: 360px) {
+    gap: ${props => props.theme.spacing.xs};
+  }
+
+  @media (min-width: ${props => props.theme.breakpoints.sm}) {
+    gap: ${props => props.theme.spacing.sm};
+  }
+`;
+
 StyledHeader.displayName = 'StyledHeader';
 StyledHeaderContainer.displayName = 'StyledHeaderContainer';
 StyledLogo.displayName = 'StyledLogo';
@@ -307,6 +326,7 @@ StyledLogoImageContainer.displayName = 'StyledLogoImageContainer';
 StyledAppName.displayName = 'StyledAppName';
 StyledNavigationWrapper.displayName = 'StyledNavigationWrapper';
 StyledHeaderActions.displayName = 'StyledHeaderActions';
+StyledUtilityActions.displayName = 'StyledUtilityActions';
 
 export const Header = React.memo(() => {
   const { t: tNav } = useTranslation('navigation');
@@ -336,8 +356,11 @@ export const Header = React.memo(() => {
           <Navigation />
         </StyledNavigationWrapper>
         <StyledHeaderActions>
-          <LocaleSwitcher />
-          <ThemeToggle />
+          <OpenAppButton href={APP_LOGIN_URL} label={tNav('nav.openApp') || 'Open the app'} />
+          <StyledUtilityActions>
+            <LocaleSwitcher />
+            <ThemeToggle />
+          </StyledUtilityActions>
         </StyledHeaderActions>
       </StyledHeaderContainer>
     </StyledHeader>
