@@ -60,7 +60,24 @@ export const COMPANY_HISTORY = [
 
 // Contact Information
 export const COMPANY_ADDRESS = 'Kampala, Uganda';
-export const COMPANY_PHONE = '+256783230321'; 
+
+// E.164, which is what `tel:` wants.
+export const COMPANY_PHONE = '+256783230321';
+
+// wa.me takes digits only - no plus, no spaces.
+export const COMPANY_WHATSAPP = COMPANY_PHONE.replace(/\D/g, '');
+
+/**
+ * Build a WhatsApp deep link to the company number, optionally pre-filled.
+ * Works on the web, the desktop app and the phone app alike.
+ *
+ * @param {string} [message] - Text to pre-fill in the composer
+ * @returns {string} wa.me URL
+ */
+export function whatsAppLink(message) {
+  const base = `https://wa.me/${COMPANY_WHATSAPP}`;
+  return message ? `${base}?text=${encodeURIComponent(message)}` : base;
+}
 
 // URLs
 export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -69,12 +86,12 @@ export const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 // Contact Information
 // Defaults match the HMS platform's reply-to address so enquiries from this
 // site land in the same inbox the application already uses.
-export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'admin@hosspi.com';
-export const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'admin@hosspi.com';
+export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'wasswawilson0002@gmail.com';
+export const SUPPORT_EMAIL = process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'wasswawilson0002@gmail.com';
 
 // Social Media Links
 export const SOCIAL_LINKS = {
-  whatsapp: 'https://wa.me/256783230321',
+  whatsapp: `https://wa.me/${COMPANY_WHATSAPP}`,
   telegram: 'https://t.me/CHALLENGER2624',
   github: 'https://github.com/WASSWA2624',
 };

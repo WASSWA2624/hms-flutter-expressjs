@@ -6,7 +6,7 @@
 import './globals.css';
 import { headers } from 'next/headers';
 import StyledComponentsRegistry from '@/lib/registry';
-import { ThemeProviderWrapper, I18nProvider } from '@/components/common';
+import { ThemeProviderWrapper, I18nProvider, RequestDemoProvider } from '@/components/common';
 import { Header, Footer } from '@/components/layout';
 import { APP_NAME, APP_URL, DEFAULT_LOCALE } from '@/lib/constants';
 import { HMS_NAME, HMS_SHORT_NAME, HMS_SUMMARY } from '@/lib/product';
@@ -73,9 +73,11 @@ export default async function RootLayout({ children }) {
               locale={locale}
               initialNamespaces={{ common, navigation, about, contact }}
             >
-              <Header />
-              <main>{children}</main>
-              <Footer />
+              <RequestDemoProvider>
+                <Header />
+                <main>{children}</main>
+                <Footer />
+              </RequestDemoProvider>
             </I18nProvider>
           </ThemeProviderWrapper>
         </StyledComponentsRegistry>

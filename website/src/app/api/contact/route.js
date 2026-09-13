@@ -4,8 +4,8 @@
  * @file src/app/api/contact/route.js
  */
 import { NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
 import { CONTACT_EMAIL, DEFAULT_LOCALE, SUPPORTED_LOCALES } from '@/lib/constants';
+import { createTransporter, fromAddress } from '@/lib/mailer';
 import { getLocaleFromRequest, getServerTranslations } from '@/lib/i18n';
 
 /**
@@ -82,31 +82,10 @@ export async function POST(request) {
       );
     }
 
-    // Create email transporter
-    // Support multiple SMTP configurations
-    let transporter;
-    
-    if (process.env.SMTP_HOST && process.env.SMTP_PORT) {
-      // Custom SMTP server
-      transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT, 10),
-        secure: process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465',
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-      });
-    } else if (process.env.SMTP_USER && process.env.SMTP_PASS) {
-      // Gmail or similar service (default to Gmail SMTP)
-      transporter = nodemailer.createTransport({
-        service: process.env.SMTP_SERVICE || 'gmail',
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-      });
-    } else {
+    // Shared with /api/demo - see src/lib/mailer.js
+    const transporter = createTransporter();
+
+    if (!transporter) {
       // Development mode: log instead of sending
       console.log('Contact form submission (email not configured):', {
         name: sanitizedName,
@@ -129,7 +108,7 @@ export async function POST(request) {
     }
 
     // Send email notification to site owner
-    const fromEmail = process.env.SMTP_FROM || process.env.SMTP_USER || CONTACT_EMAIL;
+    const fromEmail = fromAddress();
     
     try {
       await transporter.sendMail({

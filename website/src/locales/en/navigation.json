@@ -8,6 +8,7 @@
     "navigation": "Navigation",
     "mainNavigation": "Main navigation",
     "footerNavigation": "Footer navigation",
-    "openApp": "Open the app"
+    "openApp": "Open the app",
+    "requestDemo": "Request a demo"
   }
 }

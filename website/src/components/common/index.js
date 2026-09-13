@@ -8,4 +8,6 @@ export { ContactForm } from './ContactForm';
 export { StructuredData } from './StructuredData';
 export { LocaleSwitcher } from './LocaleSwitcher';
 export { I18nProvider, useI18nContext } from './I18nProvider';
+export { RequestDemoProvider, useRequestDemo } from './RequestDemo';
+export { RequestDemoButton } from './RequestDemoButton';
 

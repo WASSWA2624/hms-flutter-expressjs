@@ -16,7 +16,7 @@ import Image from 'next/image';
 import styled from 'styled-components';
 import { Navigation } from './Navigation';
 import { OpenAppButton } from './OpenAppButton';
-import { ThemeToggle, LocaleSwitcher } from '@/components/common';
+import { ThemeToggle, LocaleSwitcher, RequestDemoButton } from '@/components/common';
 import { useTranslation } from '@/hooks';
 import { APP_NAME, APP_LOGIN_URL } from '@/lib/constants';
 
@@ -301,6 +301,20 @@ const StyledHeaderActions = styled.div`
   }
 `;
 
+/*
+ * The demo request is the conversion action, so it leads the actions cluster.
+ * Held back until 768px: below that the bar already carries a logo, a menu
+ * button, the app link and two utility controls, and the hero's copy of this
+ * button is one scroll-free glance away.
+ */
+const StyledDemoAction = styled.div`
+  display: none;
+
+  @media (min-width: ${props => props.theme.breakpoints.sm}) {
+    display: inline-flex;
+  }
+`;
+
 /* Locale and theme read as one utility cluster, kept tighter than the gap
    separating them from the call to action. */
 const StyledUtilityActions = styled.div`
@@ -326,6 +340,7 @@ StyledLogoImageContainer.displayName = 'StyledLogoImageContainer';
 StyledAppName.displayName = 'StyledAppName';
 StyledNavigationWrapper.displayName = 'StyledNavigationWrapper';
 StyledHeaderActions.displayName = 'StyledHeaderActions';
+StyledDemoAction.displayName = 'StyledDemoAction';
 StyledUtilityActions.displayName = 'StyledUtilityActions';
 
 export const Header = React.memo(() => {
@@ -356,6 +371,11 @@ export const Header = React.memo(() => {
           <Navigation />
         </StyledNavigationWrapper>
         <StyledHeaderActions>
+          <StyledDemoAction>
+            <RequestDemoButton size="sm">
+              {tNav('nav.requestDemo') || 'Request a demo'}
+            </RequestDemoButton>
+          </StyledDemoAction>
           <OpenAppButton href={APP_LOGIN_URL} label={tNav('nav.openApp') || 'Open the app'} />
           <StyledUtilityActions>
             <LocaleSwitcher />

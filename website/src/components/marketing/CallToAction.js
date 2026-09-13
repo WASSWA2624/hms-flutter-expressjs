@@ -6,7 +6,8 @@
  * @param {string} props.title - Headline
  * @param {string} props.body - Supporting line
  * @param {string} props.appUrl - Link to the live application
- * @param {string} props.primaryLabel - Primary CTA label
+ * @param {string} props.primaryLabel - App link label
+ * @param {string} [props.demoLabel] - Demo request button label
  * @param {string} props.secondaryLabel - Secondary CTA label
  * @param {string} props.secondaryHref - Secondary CTA destination
  * @returns {JSX.Element} Rendered call to action
@@ -18,6 +19,7 @@ import React from 'react';
 import Link from 'next/link';
 import styled from 'styled-components';
 import { Icon } from '@/components/ui';
+import { useRequestDemo } from '@/components/common';
 
 const StyledBand = styled.section`
   background: linear-gradient(
@@ -94,13 +96,26 @@ const actionBase = props => `
   }
 `;
 
-const StyledPrimary = styled.a`
+const StyledPrimary = styled.button`
   ${props => actionBase(props)}
   background-color: ${props => props.theme.colors.textInverse};
   color: ${props => props.theme.colors.primary};
+  border: none;
+  font-family: inherit;
+  cursor: pointer;
 
   &:hover {
     background-color: ${props => props.theme.colors.backgroundSecondary};
+  }
+`;
+
+const StyledAppLink = styled.a`
+  ${props => actionBase(props)}
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  color: ${props => props.theme.colors.textInverse};
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.14);
   }
 `;
 
@@ -120,6 +135,7 @@ StyledTitle.displayName = 'StyledTitle';
 StyledBody.displayName = 'StyledBody';
 StyledActions.displayName = 'StyledActions';
 StyledPrimary.displayName = 'StyledPrimary';
+StyledAppLink.displayName = 'StyledAppLink';
 StyledSecondary.displayName = 'StyledSecondary';
 
 export const CallToAction = React.memo(({
@@ -129,17 +145,23 @@ export const CallToAction = React.memo(({
   primaryLabel,
   secondaryLabel,
   secondaryHref,
+  demoLabel = 'Request a demo',
 }) => {
+  const { open } = useRequestDemo();
+
   return (
     <StyledBand>
       <StyledInner>
         <StyledTitle>{title}</StyledTitle>
         <StyledBody>{body}</StyledBody>
         <StyledActions>
-          <StyledPrimary href={appUrl} target="_blank" rel="noopener noreferrer">
-            {primaryLabel}
+          <StyledPrimary type="button" onClick={open} aria-haspopup="dialog">
+            {demoLabel}
             <Icon name="arrowRight" size={18} />
           </StyledPrimary>
+          <StyledAppLink href={appUrl} target="_blank" rel="noopener noreferrer">
+            {primaryLabel}
+          </StyledAppLink>
           <StyledSecondary href={secondaryHref}>{secondaryLabel}</StyledSecondary>
         </StyledActions>
       </StyledInner>

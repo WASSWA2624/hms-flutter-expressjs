@@ -11,7 +11,8 @@
  * @param {string} props.title - Headline
  * @param {string} props.subtitle - Supporting paragraph
  * @param {string} [props.appUrl] - Link to the live application
- * @param {string} [props.primaryLabel] - Primary CTA label; omit for no CTA
+ * @param {string} [props.primaryLabel] - App link label; omit to hide the link
+ * @param {string} [props.demoLabel] - Label for the demo request button
  * @param {Array<{id: string, name: string, detail: string}>} props.platforms
  * @param {string} [props.platformsLabel] - Label above the platform list
  * @returns {JSX.Element} Rendered hero
@@ -22,6 +23,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Icon } from '@/components/ui';
+import { RequestDemoButton } from '@/components/common';
 
 const StyledHero = styled.section`
   position: relative;
@@ -131,14 +133,13 @@ const buttonBase = props => `
 
 const StyledPrimaryAction = styled.a`
   ${props => buttonBase(props)}
-  background-color: ${props => props.theme.colors.primary};
-  color: ${props => props.theme.colors.textInverse};
-  border: 1px solid ${props => props.theme.colors.primary};
-  box-shadow: ${props => props.theme.shadows.md};
+  background-color: ${props => props.theme.colors.background};
+  color: ${props => props.theme.colors.text};
+  border: 1px solid ${props => props.theme.colors.border};
 
   &:hover {
-    background-color: ${props => props.theme.colors.primaryHover};
-    border-color: ${props => props.theme.colors.primaryHover};
+    border-color: ${props => props.theme.colors.primary};
+    color: ${props => props.theme.colors.primary};
   }
 `;
 
@@ -221,6 +222,7 @@ export const MarketingHero = React.memo(({
   subtitle,
   appUrl,
   primaryLabel,
+  demoLabel = 'Request a demo',
   platforms = [],
   platformsLabel = 'Available on',
 }) => {
@@ -231,14 +233,15 @@ export const MarketingHero = React.memo(({
         <StyledTitle>{title}</StyledTitle>
         <StyledSubtitle>{subtitle}</StyledSubtitle>
 
-        {appUrl && primaryLabel && (
-          <StyledActions>
+        <StyledActions>
+          <RequestDemoButton size="lg">{demoLabel}</RequestDemoButton>
+          {appUrl && primaryLabel && (
             <StyledPrimaryAction href={appUrl} target="_blank" rel="noopener noreferrer">
               {primaryLabel}
               <Icon name="arrowRight" size={18} />
             </StyledPrimaryAction>
-          </StyledActions>
-        )}
+          )}
+        </StyledActions>
 
         {platforms.length > 0 && (
           <StyledPlatforms>

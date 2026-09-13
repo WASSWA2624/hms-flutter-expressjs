@@ -18,6 +18,7 @@ import {
   COMPANY_PHONE,
   CONTACT_EMAIL,
   SOCIAL_LINKS,
+  whatsAppLink,
   DEFAULT_LOCALE,
 } from '@/lib/constants';
 import { HMS_NAME, CONTACT_CHANNELS, CONTACT_INTRO, CONTACT_REASONS } from '@/lib/product';
@@ -78,8 +79,11 @@ function buildChannels() {
       href: `tel:${COMPANY_PHONE}`,
     },
     whatsapp: {
-      value: 'WhatsApp',
-      href: SOCIAL_LINKS.whatsapp,
+      value: COMPANY_PHONE,
+      // Pre-filled so the visitor only has to press send.
+      href: whatsAppLink(
+        `Hello HOSSPI, I would like to know more about the hospital management system.`
+      ),
       external: true,
       secondary: SOCIAL_LINKS.telegram
         ? { label: 'Telegram', href: SOCIAL_LINKS.telegram }

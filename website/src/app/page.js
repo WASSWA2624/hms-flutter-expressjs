@@ -139,6 +139,8 @@ export default function Home() {
         eyebrow="Hospital Management System"
         title={HMS_TAGLINE}
         subtitle={HMS_SUMMARY}
+        appUrl={APP_LOGIN_URL}
+        primaryLabel="Open the app"
         platforms={PLATFORMS}
       />
 
@@ -210,9 +212,10 @@ export default function Home() {
 
       <CallToAction
         title="See it running in your hospital"
-        body="Open the app to explore it yourself, or talk to us about fitting HOSSPI to how your facility works."
+        body="Leave a phone number and an email and we will walk you through it — or open the app and explore it yourself."
         appUrl={APP_LOGIN_URL}
         primaryLabel="Open the app"
+        demoLabel="Request a demo"
         secondaryLabel="Talk to us"
         secondaryHref="/contact"
       />
