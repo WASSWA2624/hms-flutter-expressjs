@@ -43,7 +43,7 @@ describe('Appointment Reminder Repository', () => {
       expect(result).toEqual(mockReminder);
       expect(prisma.appointment_reminder.findFirst).toHaveBeenCalledWith({
         where: { id: reminderId, deleted_at: null },
-        include: {}
+        include: undefined
       });
     });
 
@@ -117,7 +117,7 @@ describe('Appointment Reminder Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 

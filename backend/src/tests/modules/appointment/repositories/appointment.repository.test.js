@@ -54,7 +54,7 @@ describe('Appointment Repository', () => {
           deleted_at: null,
           AND: [ACTIVE_OR_VISITOR_PATIENT]
         },
-        include: {}
+        include: undefined
       });
     });
 
@@ -139,7 +139,7 @@ describe('Appointment Repository', () => {
         skip: 0,
         take: 20,
         orderBy: { created_at: 'desc' },
-        include: {}
+        include: undefined
       });
     });
 
