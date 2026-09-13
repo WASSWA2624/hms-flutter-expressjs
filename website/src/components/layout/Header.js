@@ -202,16 +202,13 @@ const StyledLogoLink = styled(Link)`
 
 /* Intentionally a span, not a heading: the page's own <h1> must win */
 const StyledAppName = styled.span`
-  display: none;
+  /* The wordmark and its short tagline fit even at 320px, now that the two
+     calls to action only appear from 1024px up */
+  display: flex;
   flex-direction: column;
   line-height: 1.05;
   white-space: nowrap;
   min-width: 0;
-
-  /* The name is short, so show it from small phones up */
-  @media (min-width: 380px) {
-    display: flex;
-  }
 
   strong {
     color: ${props => props.theme.colors.primary};
@@ -231,6 +228,26 @@ const StyledAppName = styled.span`
 
   ${StyledLogoLink}:hover & strong {
     color: ${props => props.theme.colors.primaryHover};
+  }
+`;
+
+/*
+ * Below 1024px the bar already carries the menu button and the utility
+ * controls, so the descriptor collapses to the initialism and gives that
+ * space back to the wordmark. Both spellings inherit the tagline styling
+ * from StyledAppName.
+ */
+const StyledTaglineShort = styled.span`
+  @media (min-width: ${props => props.theme.breakpoints.md}) {
+    display: none;
+  }
+`;
+
+const StyledTaglineFull = styled.span`
+  display: none;
+
+  @media (min-width: ${props => props.theme.breakpoints.md}) {
+    display: inline;
   }
 `;
 
@@ -303,14 +320,24 @@ const StyledHeaderActions = styled.div`
 
 /*
  * The demo request is the conversion action, so it leads the actions cluster.
- * Held back until 768px: below that the bar already carries a logo, a menu
- * button, the app link and two utility controls, and the hero's copy of this
+ * Held back until 1024px: on phones and tablets the bar already carries a
+ * logo, a menu button and two utility controls, and the hero's copy of this
  * button is one scroll-free glance away.
  */
 const StyledDemoAction = styled.div`
   display: none;
 
-  @media (min-width: ${props => props.theme.breakpoints.sm}) {
+  @media (min-width: ${props => props.theme.breakpoints.md}) {
+    display: inline-flex;
+  }
+`;
+
+/* The live-app link shares the demo button's threshold; the hero carries both
+   calls to action on phones and tablets. */
+const StyledAppAction = styled.div`
+  display: none;
+
+  @media (min-width: ${props => props.theme.breakpoints.md}) {
     display: inline-flex;
   }
 `;
@@ -338,9 +365,12 @@ StyledLogo.displayName = 'StyledLogo';
 StyledLogoLink.displayName = 'StyledLogoLink';
 StyledLogoImageContainer.displayName = 'StyledLogoImageContainer';
 StyledAppName.displayName = 'StyledAppName';
+StyledTaglineShort.displayName = 'StyledTaglineShort';
+StyledTaglineFull.displayName = 'StyledTaglineFull';
 StyledNavigationWrapper.displayName = 'StyledNavigationWrapper';
 StyledHeaderActions.displayName = 'StyledHeaderActions';
 StyledDemoAction.displayName = 'StyledDemoAction';
+StyledAppAction.displayName = 'StyledAppAction';
 StyledUtilityActions.displayName = 'StyledUtilityActions';
 
 export const Header = React.memo(() => {
@@ -363,7 +393,8 @@ export const Header = React.memo(() => {
             </StyledLogoImageContainer>
             <StyledAppName>
               <strong>HOSSPI</strong>
-              <span>Hospital Management</span>
+              <StyledTaglineShort>HMS</StyledTaglineShort>
+              <StyledTaglineFull>Hospital Management</StyledTaglineFull>
             </StyledAppName>
           </StyledLogoLink>
         </StyledLogo>
@@ -376,7 +407,9 @@ export const Header = React.memo(() => {
               {tNav('nav.requestDemo') || 'Request a demo'}
             </RequestDemoButton>
           </StyledDemoAction>
-          <OpenAppButton href={APP_LOGIN_URL} label={tNav('nav.openApp') || 'Open the app'} />
+          <StyledAppAction>
+            <OpenAppButton href={APP_LOGIN_URL} label={tNav('nav.openApp') || 'Open the app'} />
+          </StyledAppAction>
           <StyledUtilityActions>
             <LocaleSwitcher />
             <ThemeToggle />
