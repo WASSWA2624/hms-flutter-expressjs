@@ -19,7 +19,7 @@ const { HttpError } = require('@lib/errors');
  * @returns {Promise<Object>} Conversation object
  * @throws {HttpError} If conversation not found
  */
-const getConversationById = async (id, include = {}) => {
+const getConversationById = async (id, include) => {
   const conversation = await conversationRepository.findById(id, include);
   
   if (!conversation) {
@@ -40,7 +40,7 @@ const getConversationById = async (id, include = {}) => {
  * @param {Object} include - Relations to include
  * @returns {Promise<Object>} Paginated conversations
  */
-const listConversations = async (filters = {}, page = 1, limit = 20, sortBy = 'created_at', order = 'desc', include = {}) => {
+const listConversations = async (filters = {}, page = 1, limit = 20, sortBy = 'created_at', order = 'desc', include) => {
   const skip = (page - 1) * limit;
   const orderBy = { [sortBy]: order };
 

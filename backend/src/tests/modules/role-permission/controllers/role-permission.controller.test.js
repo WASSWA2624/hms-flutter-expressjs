@@ -8,6 +8,7 @@
 jest.mock('@services/role-permission/role-permission.service');
 jest.mock('@lib/response');
 jest.mock('@config/constants', () => ({
+  ...jest.requireActual('@config/constants'),
   DEFAULT_PAGE: 1,
   DEFAULT_PAGE_LIMIT: 20
 }));

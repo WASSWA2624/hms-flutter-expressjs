@@ -37,7 +37,7 @@ const toUniqueIdentifiers = (identifiers = []) =>
  * @param {Object} include - Relations to include
  * @returns {Promise<Object|null>} Notification object or null
  */
-const findById = async (id, include = {}) => {
+const findById = async (id, include) => {
   try {
     return await prisma.notification.findFirst({
       where: {
@@ -58,7 +58,7 @@ const findById = async (id, include = {}) => {
  * @param {Object} include - Relations to include
  * @returns {Promise<Object|null>} Notification object or null
  */
-const findByIdentifier = async (identifier, include = {}) => {
+const findByIdentifier = async (identifier, include) => {
   try {
     const normalized = normalizeIdentifier(identifier);
     if (!normalized) return null;
@@ -85,7 +85,7 @@ const findByIdentifier = async (identifier, include = {}) => {
  * @param {Object} include - Relations to include
  * @returns {Promise<Array>} Matching notifications
  */
-const findManyByIdentifiers = async (identifiers = [], where = {}, include = {}) => {
+const findManyByIdentifiers = async (identifiers = [], where = {}, include) => {
   try {
     const normalizedIdentifiers = toUniqueIdentifiers(identifiers);
     if (!normalizedIdentifiers.length) return [];
@@ -231,7 +231,7 @@ const findTemplateByIdentifier = async (identifier, tenantId = null) => {
  * @param {Object} include - Relations to include
  * @returns {Promise<Array>} Array of notifications
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include = {}) => {
+const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include) => {
   try {
     // Build where clause
     const where = {

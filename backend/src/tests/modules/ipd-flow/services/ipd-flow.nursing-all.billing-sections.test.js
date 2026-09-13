@@ -255,7 +255,7 @@ describe('ipd-flow Nursing All billing-sections scan', () => {
             status: 'SENT',
             billing_status: 'ISSUED',
             payments: [],
-            billing_adjustments: []}]})};
+            billing_adjustments: []}])}};
 
     prisma.$transaction.mockImplementation(async (callback) => callback(tx));
     prisma.admission.findFirst.mockResolvedValue({ id: 'adm-all-1' });

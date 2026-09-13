@@ -64,7 +64,7 @@ const buildIdentifierFilter = (identifier) =>
 
 const findFirstByIdentifier = async (
   identifier,
-  include = {},
+  include,
   scopeFilters = {},
   dbClient = prisma
 ) =>
@@ -90,7 +90,7 @@ const resolveCanonicalPatientId = async (id, scope = {}, dbClient = prisma) => {
  * @param {Object} scope - Optional scope filters (tenant_id, facility_id)
  * @returns {Promise<Object|null>} Patient object or null
  */
-const findById = async (id, include = {}, scope = {}, dbClient = prisma) => {
+const findById = async (id, include, scope = {}, dbClient = prisma) => {
   try {
     const identifier = normalizeIdentifier(id);
     if (!identifier) return null;
@@ -122,7 +122,7 @@ const findMany = async (
   skip = 0,
   take = 20,
   orderBy = { created_at: 'desc' },
-  include = {},
+  include,
   dbClient = prisma
 ) => {
   try {

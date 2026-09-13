@@ -27,7 +27,7 @@ const createPublicId = (prefix = 'NDL') => {
  * @param {Object} include - Relations to include
  * @returns {Promise<Object|null>} NotificationDelivery object or null
  */
-const findById = async (id, include = {}) => {
+const findById = async (id, include) => {
   try {
     return await prisma.notification_delivery.findFirst({
       where: {
@@ -48,7 +48,7 @@ const findById = async (id, include = {}) => {
  * @param {Object} include - Relations to include
  * @returns {Promise<Object|null>} Delivery or null
  */
-const findByIdentifier = async (identifier, include = {}) => {
+const findByIdentifier = async (identifier, include) => {
   try {
     const normalized = normalizeIdentifier(identifier);
     if (!normalized) return null;
@@ -101,7 +101,7 @@ const findNotificationByIdentifier = async (identifier) => {
  * @param {Object} include - Relations to include
  * @returns {Promise<Array>} Array of notification-deliveries
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include = {}) => {
+const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include) => {
   try {
     // Build where clause
     const where = {

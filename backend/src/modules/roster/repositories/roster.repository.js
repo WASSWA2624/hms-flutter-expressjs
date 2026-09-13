@@ -20,7 +20,7 @@ const rosterWhereById = (id, { includeDeleted = false } = {}) =>
       }
     : { id, deleted_at: null };
 
-const findById = async (id, include = {}, { includeDeleted = false } = {}) => {
+const findById = async (id, include, { includeDeleted = false } = {}) => {
   try {
     return await prisma.roster.findFirst({
       where: rosterWhereById(id, { includeDeleted }),
@@ -38,7 +38,7 @@ const findMany = async (
   skip = 0,
   take = 20,
   orderBy = { created_at: 'desc' },
-  include = {},
+  include,
   { includeDeleted = false } = {}
 ) => {
   try {

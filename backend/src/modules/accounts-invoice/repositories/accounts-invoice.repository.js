@@ -27,7 +27,7 @@ const withDb = async (operation) => {
   }
 };
 
-const findById = async (id, include = {}) =>
+const findById = async (id, include) =>
   withDb(() =>
     prisma.accounts_invoice.findFirst({
       where: { id, deleted_at: null },
@@ -40,7 +40,7 @@ const findMany = async (
   skip = 0,
   take = 20,
   orderBy = { invoice_date: 'desc' },
-  include = {}
+  include
 ) =>
   withDb(() =>
     prisma.accounts_invoice.findMany({

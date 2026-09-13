@@ -52,7 +52,7 @@ const USER_DETAIL_INCLUDE = Object.freeze({
           name: true,
           description: true}}}}});
 
-const resolveInclude = (include = {}) => ({
+const resolveInclude = (include) => ({
   ...USER_DETAIL_INCLUDE,
   ...include});
 
@@ -295,7 +295,7 @@ const buildWhereClause = (filters = {}, { includeDeleted = false } = {}) => {
  * @param {boolean} [options.includeDeleted]
  * @returns {Promise<Object|null>} User object or null
  */
-const findById = async (id, include = {}, { includeDeleted = false } = {}) => {
+const findById = async (id, include, { includeDeleted = false } = {}) => {
   try {
     return await prisma.user.findFirst({
       where: userWhereById(id, { includeDeleted }),
@@ -323,7 +323,7 @@ const findMany = async (
   skip = 0,
   take = 20,
   orderBy = { created_at: 'desc' },
-  include = {},
+  include,
   { includeDeleted = false } = {}
 ) => {
   try {

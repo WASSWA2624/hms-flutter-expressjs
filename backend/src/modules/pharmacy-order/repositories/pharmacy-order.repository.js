@@ -17,7 +17,7 @@ const { HttpError } = require('@lib/errors');
  * @param {Object} include - Relations to include
  * @returns {Promise<Object|null>} Pharmacy order object or null
  */
-const findById = async (id, include = {}) => {
+const findById = async (id, include) => {
   try {
     return await prisma.pharmacy_order.findFirst({
       where: {
@@ -41,7 +41,7 @@ const findById = async (id, include = {}) => {
  * @param {Object} include - Relations to include
  * @returns {Promise<Array>} Array of pharmacy orders
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { ordered_at: 'desc' }, include = {}) => {
+const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { ordered_at: 'desc' }, include) => {
   try {
     // Build where clause
     const where = {
@@ -87,7 +87,7 @@ const count = async (filters = {}) => {
  * @param {Object} include - Relations to include
  * @returns {Promise<Object>} Created pharmacy order
  */
-const create = async (data, include = {}) => {
+const create = async (data, include) => {
   try {
     return await prisma.pharmacy_order.create({
       data,
@@ -116,7 +116,7 @@ const create = async (data, include = {}) => {
  * @param {Object} include - Relations to include
  * @returns {Promise<Object>} Updated pharmacy order
  */
-const update = async (id, data, include = {}) => {
+const update = async (id, data, include) => {
   try {
     return await prisma.pharmacy_order.update({
       where: { id },

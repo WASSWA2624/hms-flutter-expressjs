@@ -16,7 +16,7 @@ const { HttpError } = require('@lib/errors');
  * @param {string} id - Housekeeping task ID
  * @returns {Promise<Object|null>} Housekeeping task object or null
  */
-const findById = async (id, include = {}) => {
+const findById = async (id, include) => {
   try {
     return await prisma.housekeeping_task.findFirst({
       where: {
@@ -39,7 +39,7 @@ const findById = async (id, include = {}) => {
  * @param {Object} orderBy - Sort order
  * @returns {Promise<Array>} Array of housekeeping tasks
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include = {}) => {
+const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include) => {
   try {
     // Build where clause
     const where = {
@@ -84,7 +84,7 @@ const count = async (filters = {}) => {
  * @param {Object} data - Housekeeping task data
  * @returns {Promise<Object>} Created housekeeping task
  */
-const create = async (data, include = {}) => {
+const create = async (data, include) => {
   try {
     return await prisma.housekeeping_task.create({
       data,
@@ -112,7 +112,7 @@ const create = async (data, include = {}) => {
  * @param {Object} data - Update data
  * @returns {Promise<Object>} Updated housekeeping task
  */
-const update = async (id, data, include = {}) => {
+const update = async (id, data, include) => {
   try {
     return await prisma.housekeeping_task.update({
       where: { id },

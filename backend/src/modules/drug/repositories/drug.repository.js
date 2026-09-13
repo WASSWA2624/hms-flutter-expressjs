@@ -18,7 +18,7 @@ const { isUuidLike } = require('@lib/identifiers/sanitize-friendly-ids');
  * @param {Object} include - Relations to include
  * @returns {Promise<Object|null>} Drug object or null
  */
-const findById = async (id, include = {}) => {
+const findById = async (id, include) => {
   try {
     const normalized = String(id || '').trim();
     if (!normalized) {
@@ -54,7 +54,7 @@ const findById = async (id, include = {}) => {
  * @param {Object} include - Relations to include
  * @returns {Promise<Array>} Array of drugs
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include = {}) => {
+const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include) => {
   try {
     // Build where clause
     const where = {

@@ -8,6 +8,7 @@
 jest.mock('@services/role/role.service');
 jest.mock('@lib/response');
 jest.mock('@config/constants', () => ({
+  ...jest.requireActual('@config/constants'),
   DEFAULT_PAGE: 1,
   DEFAULT_PAGE_LIMIT: 20
 }));
@@ -127,7 +128,8 @@ describe('Role Controller', () => {
       expect(roleService.createRole).toHaveBeenCalledWith(
         { name: 'New Role', tenant_id: 'tenant-123' },
         'user-123',
-        '127.0.0.1'
+        '127.0.0.1',
+        mockReq.user
       );
       expect(sendSuccess).toHaveBeenCalledWith(
         mockRes,
@@ -152,7 +154,8 @@ describe('Role Controller', () => {
         'role-123',
         { name: 'Updated Role' },
         'user-123',
-        '127.0.0.1'
+        '127.0.0.1',
+        mockReq.user
       );
       expect(sendSuccess).toHaveBeenCalledWith(
         mockRes,
@@ -171,7 +174,7 @@ describe('Role Controller', () => {
 
       await deleteRole(mockReq, mockRes);
 
-      expect(roleService.deleteRole).toHaveBeenCalledWith('role-123', 'user-123', '127.0.0.1');
+      expect(roleService.deleteRole).toHaveBeenCalledWith('role-123', 'user-123', '127.0.0.1', mockReq.user);
       expect(sendNoContent).toHaveBeenCalledWith(mockRes);
     });
   });

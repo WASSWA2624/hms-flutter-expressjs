@@ -1,7 +1,7 @@
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
 
-const findById = async (id, include = {}) => {
+const findById = async (id, include) => {
   try {
     return await prisma.equipment_spare_part.findFirst({ where: { id, deleted_at: null }, include });
   } catch (error) {
@@ -9,7 +9,7 @@ const findById = async (id, include = {}) => {
   }
 };
 
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include = {}) => {
+const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include) => {
   try {
     return await prisma.equipment_spare_part.findMany({ where: { deleted_at: null, ...filters }, skip, take, orderBy, include });
   } catch (error) {

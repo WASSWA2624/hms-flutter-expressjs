@@ -18,7 +18,7 @@ const { withActivePatient } = require('@lib/patient-query-filters');
  * @param {Object} include - Relations to include
  * @returns {Promise<Object|null>} Appointment object or null
  */
-const findById = async (id, include = {}) => {
+const findById = async (id, include) => {
   try {
     return await prisma.appointment.findFirst({
       where: withActivePatient({ id }, { allowNullPatient: true }),
@@ -39,7 +39,7 @@ const findById = async (id, include = {}) => {
  * @param {Object} include - Relations to include
  * @returns {Promise<Array>} Array of appointments
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include = {}) => {
+const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include) => {
   try {
     const where = withActivePatient(filters, { allowNullPatient: true });
 

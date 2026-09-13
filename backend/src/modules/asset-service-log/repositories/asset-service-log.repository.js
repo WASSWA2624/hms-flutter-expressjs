@@ -17,7 +17,7 @@ const { HttpError } = require('@lib/errors');
  * @param {Object} include - Relations to include
  * @returns {Promise<Object|null>} Asset service log object or null
  */
-const findById = async (id, include = {}) => {
+const findById = async (id, include) => {
   try {
     return await prisma.asset_service_log.findFirst({
       where: {
@@ -41,7 +41,7 @@ const findById = async (id, include = {}) => {
  * @param {Object} include - Relations to include
  * @returns {Promise<Array>} Array of asset service logs
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include = {}) => {
+const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include) => {
   try {
     // Build where clause
     const where = {
@@ -86,7 +86,7 @@ const count = async (filters = {}) => {
  * @param {Object} data - Asset service log data
  * @returns {Promise<Object>} Created asset service log
  */
-const create = async (data, include = {}) => {
+const create = async (data, include) => {
   try {
     return await prisma.asset_service_log.create({
       data,
@@ -114,7 +114,7 @@ const create = async (data, include = {}) => {
  * @param {Object} data - Update data
  * @returns {Promise<Object>} Updated asset service log
  */
-const update = async (id, data, include = {}) => {
+const update = async (id, data, include) => {
   try {
     return await prisma.asset_service_log.update({
       where: { id },

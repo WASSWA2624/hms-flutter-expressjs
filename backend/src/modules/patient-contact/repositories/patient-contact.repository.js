@@ -17,7 +17,7 @@ const { HttpError } = require('@lib/errors');
  * @param {Object} include - Relations to include
  * @returns {Promise<Object|null>} Patient Contact object or null
  */
-const findById = async (id, include = {}, dbClient = prisma) => {
+const findById = async (id, include, dbClient = prisma) => {
   try {
     return await dbClient.patient_contact.findFirst({
       where: {
@@ -46,7 +46,7 @@ const findMany = async (
   skip = 0,
   take = 20,
   orderBy = { created_at: 'desc' },
-  include = {},
+  include,
   dbClient = prisma
 ) => {
   try {

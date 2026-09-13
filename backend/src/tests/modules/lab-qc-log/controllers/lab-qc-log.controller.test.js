@@ -9,6 +9,7 @@ const { sendSuccess, sendPaginated, sendNoContent } = require('@lib/response');
 jest.mock('@services/lab-qc-log/lab-qc-log.service');
 jest.mock('@lib/response');
 jest.mock('@config/constants', () => ({
+  ...jest.requireActual('@config/constants'),
   DEFAULT_PAGE: 1,
   DEFAULT_PAGE_LIMIT: 20
 }));

@@ -262,7 +262,7 @@ const resolveConversationRecord = async (identifier, tenantId, include = CONVERS
     include,
   });
 
-const resolveMessageRecord = async (identifier, tenantId, include = {}) =>
+const resolveMessageRecord = async (identifier, tenantId, include) =>
   resolveModelRecordByIdentifier({
     model: 'message',
     identifier,
@@ -276,7 +276,7 @@ const resolveMessageRecord = async (identifier, tenantId, include = {}) =>
     include,
   });
 
-const resolveNotificationRecord = async (identifier, tenantId, include = {}) =>
+const resolveNotificationRecord = async (identifier, tenantId, include) =>
   resolveModelRecordByIdentifier({
     model: 'notification',
     identifier,
@@ -287,7 +287,7 @@ const resolveNotificationRecord = async (identifier, tenantId, include = {}) =>
     include,
   });
 
-const resolveTemplateRecord = async (identifier, tenantId, include = {}) =>
+const resolveTemplateRecord = async (identifier, tenantId, include) =>
   resolveModelRecordByIdentifier({
     model: 'template',
     identifier,

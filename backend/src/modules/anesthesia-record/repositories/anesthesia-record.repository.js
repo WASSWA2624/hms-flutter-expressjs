@@ -59,7 +59,7 @@ const BASE_INCLUDE = {
  * @param {Object} include - Relations to include
  * @returns {Promise<Object|null>} Anesthesia record object or null
  */
-const findById = async (id, include = {}) => {
+const findById = async (id, include) => {
   try {
     return await prisma.anesthesia_record.findFirst({
       where: {
@@ -86,7 +86,7 @@ const findById = async (id, include = {}) => {
  * @param {Object} include - Relations to include
  * @returns {Promise<Array>} Array of anesthesia records
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include = {}) => {
+const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include) => {
   try {
     // Build where clause
     const where = {

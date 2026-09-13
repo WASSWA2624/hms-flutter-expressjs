@@ -59,6 +59,31 @@ const { HttpError } = require('@lib/errors');
 const { sendEmail } = require('@lib/notifications');
 const {
   resolveTenantModuleEntitlements} = require('@lib/subscriptions/tenant-entitlements');
+const { PERMISSIONS, ROLE_PERMISSIONS } = require('@config/permissions');
+
+const unique = (names) => Array.from(new Set(names));
+
+// Reports is platform infrastructure: every authenticated actor holding any
+// grant gets it. See resolveEffectiveAccess in
+// src/lib/authorization/effective-access.js.
+const withReports = (names) => unique([...names, PERMISSIONS.REPORTS_READ]);
+
+// A user whose only role is a shipped system role gets that role's catalog
+// pack rather than whatever role_permission rows happen to exist, so stale
+// rows can neither over- nor under-grant (resolveRolePermissionNames). The
+// pack is then filtered by the tenant's enabled modules, which every test here
+// mocks to patient-registry + encounters-vitals, leaving this set. Spelled out
+// rather than recomputed so the test states the access a doctor actually gets
+// instead of restating the implementation.
+const DOCTOR_PERMISSIONS_ON_BASIC_PLAN = Object.freeze([
+  'clinical:read',
+  'clinical:write',
+  'profile:read',
+  'patient:read',
+  'patient:write',
+  'patients:read',
+  'break_glass:request',
+  'reports:read']);
 
 describe('Auth Service', () => {
   beforeEach(() => {
@@ -142,7 +167,7 @@ describe('Auth Service', () => {
       expect(result).toHaveProperty('user');
       expect(result.user).not.toHaveProperty('password_hash');
       expect(generateToken).toHaveBeenCalledWith(expect.objectContaining({
-        permissions: []}));
+        permissions: DOCTOR_PERMISSIONS_ON_BASIC_PLAN}));
       expect(authRepository.createSession).toHaveBeenCalled();
       expect(authRepository.createSession).toHaveBeenCalledWith(expect.objectContaining({
         expires_at: expect.any(Date)}));
@@ -181,12 +206,19 @@ describe('Auth Service', () => {
 
       const result = await authService.login(loginData);
 
+      // The embedded clinical:read row is a subset of the shipped DOCTOR pack,
+      // which wins outright for a pure system-role user.
+      const expected = unique([
+        'patient:read',
+        'patient:write',
+        ...DOCTOR_PERMISSIONS_ON_BASIC_PLAN]);
+
       expect(generateToken).toHaveBeenCalledWith(expect.objectContaining({
-        permissions: ['patient:read', 'patient:write', 'clinical:read']}));
-      expect(result.user.permissions).toEqual(['patient:read', 'patient:write', 'clinical:read']);
-      expect(result.user.permission_names).toEqual(['patient:read', 'patient:write', 'clinical:read']);
+        permissions: expected}));
+      expect(result.user.permissions).toEqual(expected);
+      expect(result.user.permission_names).toEqual(expected);
       expect(result.user.direct_permissions).toEqual(['patient:read', 'patient:write']);
-      expect(result.user.role_permissions).toEqual(['clinical:read']);
+      expect(result.user.role_permissions).toEqual(ROLE_PERMISSIONS.DOCTOR);
     });
 
     it('should login user with phone number', async () => {
@@ -776,7 +808,7 @@ describe('Auth Service', () => {
       expect(result).toHaveProperty('access_token', 'new-access-token');
       expect(result).toHaveProperty('refresh_token', 'new-refresh-token');
       expect(generateToken).toHaveBeenCalledWith(expect.objectContaining({
-        permissions: ['clinical:read']}));
+        permissions: DOCTOR_PERMISSIONS_ON_BASIC_PLAN}));
       expect(authRepository.revokeSession).toHaveBeenCalledWith('session-123');
       expect(authRepository.createSession).toHaveBeenCalled();
     });
@@ -968,7 +1000,7 @@ describe('Auth Service', () => {
       expect(result).toHaveProperty('id', 'user-123');
       expect(result).toHaveProperty('email', 'test@example.com');
       expect(result).toHaveProperty('permissions');
-      expect(result.permissions).toEqual(['patient:read']);
+      expect(result.permissions).toEqual(withReports(['patient:read']));
       expect(result).not.toHaveProperty('password_hash');
     });
 

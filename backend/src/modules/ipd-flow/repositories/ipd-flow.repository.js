@@ -167,7 +167,7 @@ const BASE_INCLUDE = {
           created_at: 'desc'},
         take: 40}}}};
 
-const findById = async (id, include = {}) => {
+const findById = async (id, include) => {
   try {
     return await prisma.admission.findFirst({
       where: withActivePatient({ id }),
@@ -184,7 +184,7 @@ const findMany = async (
   skip = 0,
   take = 20,
   orderBy = { admitted_at: 'desc' },
-  include = {}
+  include
 ) => {
   try {
     return await prisma.admission.findMany({

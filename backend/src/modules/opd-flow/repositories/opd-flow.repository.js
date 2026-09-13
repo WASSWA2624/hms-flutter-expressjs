@@ -73,7 +73,7 @@ const BASE_INCLUDE = {
  * @param {Object} include - Additional relations to include
  * @returns {Promise<Object|null>} Encounter object or null
  */
-const findById = async (id, include = {}) => {
+const findById = async (id, include) => {
   try {
     return await prisma.encounter.findFirst({
       where: withActivePatient({ id }),
@@ -104,7 +104,7 @@ const findMany = async (
   skip = 0,
   take = 20,
   orderBy = { started_at: 'desc' },
-  include = {}
+  include
 ) => {
   try {
     const where = withActivePatient({

@@ -14,6 +14,7 @@ const { DEFAULT_PAGE, DEFAULT_PAGE_LIMIT } = require('@config/constants');
 jest.mock('@services/patient-identifier/patient-identifier.service');
 jest.mock('@lib/response');
 jest.mock('@config/constants', () => ({
+  ...jest.requireActual('@config/constants'),
   DEFAULT_PAGE: 1,
   DEFAULT_PAGE_LIMIT: 20
 }));

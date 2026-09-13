@@ -17,7 +17,7 @@ const { HttpError } = require('@lib/errors');
  * @param {Object} include - Relations to include
  * @returns {Promise<Object|null>} Coverage Plan object or null
  */
-const findById = async (id, include = {}) => {
+const findById = async (id, include) => {
   try {
     return await prisma.coverage_plan.findFirst({
       where: {
@@ -41,7 +41,7 @@ const findById = async (id, include = {}) => {
  * @param {Object} include - Relations to include
  * @returns {Promise<Array>} Array of coverage plans
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include = {}) => {
+const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include) => {
   try {
     // Build where clause
     const where = {

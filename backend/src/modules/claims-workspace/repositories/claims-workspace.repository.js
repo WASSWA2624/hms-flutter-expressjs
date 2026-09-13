@@ -26,7 +26,7 @@ const withDbErrorHandling = async (operation) => {
 const countClaims = async (where = {}) =>
   withDbErrorHandling(() => prisma.insurance_claim.count({ where: { deleted_at: null, ...where } }));
 
-const findManyClaims = async (where = {}, skip = 0, take = 60, orderBy = { submitted_at: 'desc' }, include = {}) =>
+const findManyClaims = async (where = {}, skip = 0, take = 60, orderBy = { submitted_at: 'desc' }, include) =>
   withDbErrorHandling(() =>
     prisma.insurance_claim.findMany({ where: { deleted_at: null, ...where }, skip, take, orderBy, include })
   );
@@ -39,7 +39,7 @@ const findManyPreAuthorizations = async (
   skip = 0,
   take = 60,
   orderBy = { requested_at: 'desc' },
-  include = {}
+  include
 ) =>
   withDbErrorHandling(() =>
     prisma.pre_authorization.findMany({ where: { deleted_at: null, ...where }, skip, take, orderBy, include })
@@ -48,7 +48,7 @@ const findManyPreAuthorizations = async (
 const countCoveragePlans = async (where = {}) =>
   withDbErrorHandling(() => prisma.coverage_plan.count({ where: { deleted_at: null, ...where } }));
 
-const findManyCoveragePlans = async (where = {}, skip = 0, take = 50, orderBy = { name: 'asc' }, include = {}) =>
+const findManyCoveragePlans = async (where = {}, skip = 0, take = 50, orderBy = { name: 'asc' }, include) =>
   withDbErrorHandling(() =>
     prisma.coverage_plan.findMany({ where: { deleted_at: null, ...where }, skip, take, orderBy, include })
   );
@@ -58,13 +58,13 @@ const findManyInsuranceCompanies = async (
   skip = 0,
   take = 50,
   orderBy = { name: 'asc' },
-  include = {}
+  include
 ) =>
   withDbErrorHandling(() =>
     prisma.insurance_company.findMany({ where: { deleted_at: null, ...where }, skip, take, orderBy, include })
   );
 
-const findManyInvoices = async (where = {}, skip = 0, take = 50, orderBy = { issued_at: 'desc' }, include = {}) =>
+const findManyInvoices = async (where = {}, skip = 0, take = 50, orderBy = { issued_at: 'desc' }, include) =>
   withDbErrorHandling(() =>
     prisma.invoice.findMany({ where: { deleted_at: null, ...where }, skip, take, orderBy, include })
   );

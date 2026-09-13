@@ -4,7 +4,7 @@ const { sendSuccess, sendPaginated, sendNoContent } = require('@lib/response');
 
 jest.mock('@services/drug-batch/drug-batch.service');
 jest.mock('@lib/response');
-jest.mock('@config/constants', () => ({ DEFAULT_PAGE: 1, DEFAULT_PAGE_LIMIT: 20 }));
+jest.mock('@config/constants', () => ({ ...jest.requireActual('@config/constants'), DEFAULT_PAGE: 1, DEFAULT_PAGE_LIMIT: 20 }));
 
 describe('Drug Batch Controller', () => {
   let mockReq, mockRes;

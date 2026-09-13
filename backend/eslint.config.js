@@ -18,6 +18,7 @@ module.exports = [
       sourceType: 'commonjs',
       globals: {
         AbortController: 'readonly',
+        AbortSignal: 'readonly',
         Blob: 'readonly',
         __dirname: 'readonly',
         __filename: 'readonly',

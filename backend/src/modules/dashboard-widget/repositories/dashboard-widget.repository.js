@@ -608,7 +608,7 @@ const resolvePatientPortalPatient = async ({ scope = {}, userId = null, user = {
  * @param {Object} include - Relations to include
  * @returns {Promise<Object|null>} Dashboard widget object or null
  */
-const findById = async (id, include = {}) => {
+const findById = async (id, include) => {
   try {
     return await prisma.dashboard_widget.findFirst({
       where: {
@@ -635,7 +635,7 @@ const findById = async (id, include = {}) => {
  * @param {Object} include - Relations to include
  * @returns {Promise<Array>} Array of dashboard widgets
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include = {}) => {
+const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include) => {
   try {
     // Build where clause
     const where = {

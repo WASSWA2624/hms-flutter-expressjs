@@ -17,7 +17,7 @@ const { HttpError } = require('@lib/errors');
  * @param {Object} include - Relations to include
  * @returns {Promise<Object|null>} Price Book Entry object or null
  */
-const findById = async (id, include = {}) => {
+const findById = async (id, include) => {
   try {
     return await prisma.price_book_entry.findFirst({
       where: {
@@ -41,7 +41,7 @@ const findById = async (id, include = {}) => {
  * @param {Object} include - Relations to include
  * @returns {Promise<Array>} Array of price book entries
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include = {}) => {
+const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include) => {
   try {
     const where = {
       deleted_at: null,

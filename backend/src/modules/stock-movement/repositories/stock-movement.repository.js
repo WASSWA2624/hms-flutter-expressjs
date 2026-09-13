@@ -17,7 +17,7 @@ const { HttpError } = require('@lib/errors');
  * @param {Object} include - Relations to include
  * @returns {Promise<Object|null>} Stock movement object or null
  */
-const findById = async (id, include = {}) => {
+const findById = async (id, include) => {
   try {
     return await prisma.stock_movement.findFirst({
       where: {
@@ -41,7 +41,7 @@ const findById = async (id, include = {}) => {
  * @param {Object} include - Relations to include
  * @returns {Promise<Array>} Array of stock movements
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { occurred_at: 'desc' }, include = {}) => {
+const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { occurred_at: 'desc' }, include) => {
   try {
     // Build where clause
     const where = {

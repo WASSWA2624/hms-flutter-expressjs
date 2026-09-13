@@ -24,7 +24,7 @@ const withDbErrorHandling = async (operation) => {
 const withTransaction = async (callback) =>
   withDbErrorHandling(() => prisma.$transaction((tx) => callback(tx)));
 
-const findInvoiceById = async (id, include = {}) =>
+const findInvoiceById = async (id, include) =>
   withDbErrorHandling(() =>
     prisma.invoice.findFirst({
       where: {
@@ -35,7 +35,7 @@ const findInvoiceById = async (id, include = {}) =>
     })
   );
 
-const findPaymentById = async (id, include = {}) =>
+const findPaymentById = async (id, include) =>
   withDbErrorHandling(() =>
     prisma.payment.findFirst({
       where: {
@@ -46,7 +46,7 @@ const findPaymentById = async (id, include = {}) =>
     })
   );
 
-const findApprovalById = async (id, include = {}) =>
+const findApprovalById = async (id, include) =>
   withDbErrorHandling(() =>
     prisma.billing_approval.findFirst({
       where: {
@@ -68,7 +68,7 @@ const findUserById = async (id, select = { id: true, email: true, phone: true })
     })
   );
 
-const findPatientById = async (id, include = {}) =>
+const findPatientById = async (id, include) =>
   withDbErrorHandling(() =>
     prisma.patient.findFirst({
       where: {
@@ -139,7 +139,7 @@ const countRefunds = async (where = {}) =>
     })
   );
 
-const findManyInvoices = async (where = {}, skip = 0, take = 20, orderBy = { issued_at: 'desc' }, include = {}) =>
+const findManyInvoices = async (where = {}, skip = 0, take = 20, orderBy = { issued_at: 'desc' }, include) =>
   withDbErrorHandling(() =>
     prisma.invoice.findMany({
       where: {
@@ -153,7 +153,7 @@ const findManyInvoices = async (where = {}, skip = 0, take = 20, orderBy = { iss
     })
   );
 
-const findManyPayments = async (where = {}, skip = 0, take = 20, orderBy = { paid_at: 'desc' }, include = {}) =>
+const findManyPayments = async (where = {}, skip = 0, take = 20, orderBy = { paid_at: 'desc' }, include) =>
   withDbErrorHandling(() =>
     prisma.payment.findMany({
       where: {
@@ -167,7 +167,7 @@ const findManyPayments = async (where = {}, skip = 0, take = 20, orderBy = { pai
     })
   );
 
-const findManyRefunds = async (where = {}, skip = 0, take = 20, orderBy = { refunded_at: 'desc' }, include = {}) =>
+const findManyRefunds = async (where = {}, skip = 0, take = 20, orderBy = { refunded_at: 'desc' }, include) =>
   withDbErrorHandling(() =>
     prisma.refund.findMany({
       where: {
@@ -181,7 +181,7 @@ const findManyRefunds = async (where = {}, skip = 0, take = 20, orderBy = { refu
     })
   );
 
-const findManyClaims = async (where = {}, skip = 0, take = 20, orderBy = { submitted_at: 'desc' }, include = {}) =>
+const findManyClaims = async (where = {}, skip = 0, take = 20, orderBy = { submitted_at: 'desc' }, include) =>
   withDbErrorHandling(() =>
     prisma.insurance_claim.findMany({
       where: {
@@ -200,7 +200,7 @@ const findManyPreAuthorizations = async (
   skip = 0,
   take = 20,
   orderBy = { requested_at: 'desc' },
-  include = {}
+  include
 ) =>
   withDbErrorHandling(() =>
     prisma.pre_authorization.findMany({
@@ -220,7 +220,7 @@ const findManyAdjustments = async (
   skip = 0,
   take = 20,
   orderBy = { adjusted_at: 'desc' },
-  include = {}
+  include
 ) =>
   withDbErrorHandling(() =>
     prisma.billing_adjustment.findMany({
@@ -235,7 +235,7 @@ const findManyAdjustments = async (
     })
   );
 
-const findManyApprovals = async (where = {}, skip = 0, take = 20, orderBy = { requested_at: 'desc' }, include = {}) =>
+const findManyApprovals = async (where = {}, skip = 0, take = 20, orderBy = { requested_at: 'desc' }, include) =>
   withDbErrorHandling(() =>
     prisma.billing_approval.findMany({
       where: {

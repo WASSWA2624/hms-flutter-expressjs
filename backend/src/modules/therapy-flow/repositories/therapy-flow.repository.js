@@ -78,7 +78,7 @@ const BASE_INCLUDE = {
   therapist: { select: THERAPIST_SELECT },
   sessions: SESSION_INCLUDE};
 
-const findById = async (id, include = {}) => {
+const findById = async (id, include) => {
   try {
     return await prisma.therapy_episode.findFirst({
       where: { id, deleted_at: null },
@@ -94,7 +94,7 @@ const findMany = async (
   skip = 0,
   take = 20,
   orderBy = { updated_at: 'desc' },
-  include = {}
+  include
 ) => {
   try {
     return await prisma.therapy_episode.findMany({

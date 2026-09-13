@@ -136,7 +136,7 @@ const createStaffPosition = async (data, client = prisma) => {
   }
 };
 
-const findDoctorByIdentifier = async (identifier, tenantId = null, include = {}, client = prisma) => {
+const findDoctorByIdentifier = async (identifier, tenantId = null, include, client = prisma) => {
   try {
     const normalized = normalizeUpperIdentifier(identifier);
     if (!normalized) return null;
@@ -157,7 +157,7 @@ const findDoctorByIdentifier = async (identifier, tenantId = null, include = {},
   }
 };
 
-const findDoctorById = async (id, include = {}, client = prisma) => {
+const findDoctorById = async (id, include, client = prisma) => {
   try {
     return await client.user.findFirst({
       where: { id, deleted_at: null },
@@ -168,7 +168,7 @@ const findDoctorById = async (id, include = {}, client = prisma) => {
   }
 };
 
-const findManyDoctors = async (where = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include = {}, client = prisma) => {
+const findManyDoctors = async (where = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include, client = prisma) => {
   try {
     return await client.user.findMany({
       where,

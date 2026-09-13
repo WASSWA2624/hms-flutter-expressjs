@@ -17,6 +17,7 @@ jest.mock('@middlewares/auth.middleware', () => ({
   getUserPermissions: jest.fn(),
 }));
 jest.mock('@config/constants', () => ({
+  ...jest.requireActual('@config/constants'),
   DEFAULT_PAGE: 1,
   DEFAULT_PAGE_LIMIT: 20
 }));

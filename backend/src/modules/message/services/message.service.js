@@ -19,7 +19,7 @@ const { HttpError } = require('@lib/errors');
  * @returns {Promise<Object>} Message object
  * @throws {HttpError} If message not found
  */
-const getMessageById = async (id, include = {}) => {
+const getMessageById = async (id, include) => {
   const message = await messageRepository.findById(id, include);
   
   if (!message) {
@@ -40,7 +40,7 @@ const getMessageById = async (id, include = {}) => {
  * @param {Object} include - Relations to include
  * @returns {Promise<Object>} Paginated messages
  */
-const listMessages = async (filters = {}, page = 1, limit = 20, sortBy = 'created_at', order = 'desc', include = {}) => {
+const listMessages = async (filters = {}, page = 1, limit = 20, sortBy = 'created_at', order = 'desc', include) => {
   const skip = (page - 1) * limit;
   const orderBy = { [sortBy]: order };
 

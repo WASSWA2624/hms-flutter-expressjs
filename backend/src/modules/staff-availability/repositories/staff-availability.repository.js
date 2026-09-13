@@ -4,7 +4,7 @@
 const prisma = require('@prisma/client');
 const { HttpError } = require('@lib/errors');
 
-const findById = async (id, include = {}) => {
+const findById = async (id, include) => {
   try {
     return await prisma.staff_availability.findFirst({
       where: { id, deleted_at: null },
@@ -15,7 +15,7 @@ const findById = async (id, include = {}) => {
   }
 };
 
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { effective_from: 'desc' }, include = {}) => {
+const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { effective_from: 'desc' }, include) => {
   try {
     const where = { deleted_at: null, ...filters };
     return await prisma.staff_availability.findMany({ where, skip, take, orderBy, include });

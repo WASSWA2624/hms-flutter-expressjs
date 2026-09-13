@@ -89,7 +89,7 @@ const BASE_INCLUDE = {
       observed_at: 'desc'},
     take: 120}};
 
-const findById = async (id, include = {}) => {
+const findById = async (id, include) => {
   try {
     return await prisma.theatre_case.findFirst({
       where: {
@@ -109,7 +109,7 @@ const findMany = async (
   skip = 0,
   take = 20,
   orderBy = { scheduled_at: 'desc' },
-  include = {}
+  include
 ) => {
   try {
     return await prisma.theatre_case.findMany({

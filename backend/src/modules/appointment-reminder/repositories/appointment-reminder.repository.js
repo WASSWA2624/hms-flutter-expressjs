@@ -13,7 +13,7 @@ const { HttpError } = require('@lib/errors');
 /**
  * Find appointment reminder by ID
  */
-const findById = async (id, include = {}) => {
+const findById = async (id, include) => {
   try {
     return await prisma.appointment_reminder.findFirst({
       where: {
@@ -30,7 +30,7 @@ const findById = async (id, include = {}) => {
 /**
  * Find many appointment reminders with pagination
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include = {}) => {
+const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include) => {
   try {
     const where = {
       deleted_at: null,

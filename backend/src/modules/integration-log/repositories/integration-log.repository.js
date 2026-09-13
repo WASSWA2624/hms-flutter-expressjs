@@ -18,7 +18,7 @@ const { HttpError } = require('@lib/errors');
  * @param {Object} include - Relations to include
  * @returns {Promise<Object|null>} Integration log object or null
  */
-const findById = async (id, include = {}) => {
+const findById = async (id, include) => {
   try {
     return await prisma.integration_log.findFirst({
       where: {
@@ -42,7 +42,7 @@ const findById = async (id, include = {}) => {
  * @param {Object} include - Relations to include
  * @returns {Promise<Array>} Array of integration logs
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { logged_at: 'desc' }, include = {}) => {
+const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { logged_at: 'desc' }, include) => {
   try {
     // Build where clause
     const where = {

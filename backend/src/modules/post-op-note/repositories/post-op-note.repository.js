@@ -33,7 +33,7 @@ const BASE_INCLUDE = {
  * @param {Object} include - Relations to include
  * @returns {Promise<Object|null>} Post-op note object or null
  */
-const findById = async (id, include = {}) => {
+const findById = async (id, include) => {
   try {
     return await prisma.post_op_note.findFirst({
       where: {
@@ -59,7 +59,7 @@ const findById = async (id, include = {}) => {
  * @param {Object} include - Relations to include
  * @returns {Promise<Array>} Array of Post-op notes
  */
-const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include = {}) => {
+const findMany = async (filters = {}, skip = 0, take = 20, orderBy = { created_at: 'desc' }, include) => {
   try {
     // Build where clause
     const where = {
