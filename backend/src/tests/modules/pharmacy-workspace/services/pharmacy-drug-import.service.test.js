@@ -452,5 +452,85 @@ describe('pharmacy drug import service', () => {
           decisions: [{ key: plan.products[0].key, action: 'SKIP' }]})
       ).rejects.toMatchObject({ message: 'errors.pharmacy_drug_import.nothing_to_import' });
     });
+
+    it('saves reviewer-edited values for new drugs and their batches', async () => {
+      const file = await buildFile([buildMedicErpRow()]);
+      const plan = await preview(file);
+      const [product] = plan.products;
+      expect(product.batches[0].key).toBe('PA09025');
+
+      const result = await commit(file, {
+        plan_hash: plan.plan_hash,
+        decisions: [
+          {
+            key: product.key,
+            action: 'CREATE',
+            values: {
+              name: 'Azithromycin 500 mg Tablet',
+              unit_price: 7500,
+              supplier_name: 'Nile Distributors'},
+            batches: [
+              { key: 'PA09025', batch_number: 'PA-09025', expiry_date: '2029-06-30', quantity: 6 }]}]});
+
+      expect(pharmacyWorkspaceRepository.txCreateDrug).toHaveBeenCalledWith(
+        tx,
+        expect.objectContaining({
+          name: 'Azithromycin 500 mg Tablet',
+          generic_name: 'Azithromycin 500 mg Tablet',
+          brand_name: 'ZAHA',
+          unit_price: 7500,
+          buy_unit_price: 4300,
+          supplier_id: 'supplier-internal-1'})
+      );
+      expect(pharmacyWorkspaceRepository.txCreateDrugBatch).toHaveBeenCalledWith(tx, {
+        drug_id: 'drug-internal-1',
+        batch_number: 'PA-09025',
+        expiry_date: new Date('2029-06-30T00:00:00.000Z'),
+        quantity: 6});
+      expect(result.summary).toMatchObject({ created: 1, quantity_imported: 6 });
+      expect(createAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          diff: { metadata: expect.objectContaining({ edited_product_keys: [product.key] }) }})
+      );
+    });
+
+    it('keeps catalog values the reviewer chose over the file when updating', async () => {
+      pharmacyWorkspaceRepository.findDrugsForImport.mockResolvedValue([existingDrugRecord()]);
+      pharmacyWorkspaceRepository.txFindInventoryMapByDrug.mockResolvedValue({
+        inventory_item_id: 'item-internal-existing'});
+      const file = await buildFile([buildMedicErpRow()]);
+      const plan = await preview(file);
+
+      await commit(file, {
+        plan_hash: plan.plan_hash,
+        decisions: [
+          {
+            key: plan.products[0].key,
+            action: 'UPDATE',
+            values: { unit_price: 6000, strength: '250 mg' }}]});
+
+      expect(pharmacyWorkspaceRepository.txUpdateDrug).toHaveBeenCalledWith(
+        tx,
+        'drug-internal-existing',
+        { strength: '250 mg' }
+      );
+    });
+
+    it('rejects a renamed new product that duplicates a catalog drug', async () => {
+      pharmacyWorkspaceRepository.findDrugsForImport.mockResolvedValue([existingDrugRecord()]);
+      const file = await buildFile([buildMedicErpRow({ product_brand: 'SWAZI' })]);
+      const plan = await preview(file);
+
+      await expect(
+        commit(file, {
+          plan_hash: plan.plan_hash,
+          confirm_review: true,
+          decisions: [
+            { key: plan.products[0].key, action: 'CREATE', values: { brand_name: 'Zaha' } }]})
+      ).rejects.toMatchObject({
+        message: 'errors.pharmacy_drug_import.duplicate_product',
+        statusCode: 400});
+      expect(pharmacyWorkspaceRepository.withTransaction).not.toHaveBeenCalled();
+    });
   });
 });

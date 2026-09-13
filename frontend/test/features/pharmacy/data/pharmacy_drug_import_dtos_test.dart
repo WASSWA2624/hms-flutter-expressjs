@@ -51,6 +51,7 @@ const Map<String, Object?> _previewData = <String, Object?>{
       'total_quantity': 8,
       'batches': <Object?>[
         <String, Object?>{
+          'key': 'BG10425',
           'batch_number': 'BG10425',
           'expiry_date': '2028-04-30',
           'quantity': 8,
@@ -167,6 +168,9 @@ void main() {
       expect(similar.requiresReview, isTrue);
       expect(similar.buyUnitPrice, 2100.5);
       expect(similar.batches.single.expiryDate, DateTime(2028, 4, 30));
+      expect(similar.batches.single.key, 'BG10425');
+      expect(const PharmacyDrugImportBatch(batchNumber: ' ab1 ').key, 'AB1');
+      expect(const PharmacyDrugImportBatch().key, 'UNLABELED');
       expect(similar.linkOptions.single.drug.id, 'DRG0000050');
       expect(similar.linkOptions.single.score, 83);
       expect(similar.issues.single.code, 'SIMILAR_PRODUCT_IN_FILE');
@@ -230,16 +234,32 @@ void main() {
       source: PharmacyDrugImportSource.medicErp,
       file: PharmacyDrugImportFile(name: 'stock.xlsx', bytes: Uint8List(0)),
       planHash: 'abc123',
-      decisions: const <PharmacyDrugImportDecision>[
+      decisions: <PharmacyDrugImportDecision>[
         PharmacyDrugImportDecision(
           key: 'a|b',
           action: PharmacyDrugImportAction.merge,
           targetDrugId: 'DRG0000050',
+          values: const <PharmacyDrugImportField, Object?>{
+            PharmacyDrugImportField.form: 'Tablet',
+            PharmacyDrugImportField.unitPrice: 1500,
+            PharmacyDrugImportField.brandName: null,
+          },
+          batches: <PharmacyDrugImportBatchEdit>[
+            PharmacyDrugImportBatchEdit(
+              key: 'B1',
+              batchNumber: 'B-1',
+              expiryDate: DateTime(2029, 1, 5),
+              quantity: 7,
+            ),
+          ],
         ),
-        PharmacyDrugImportDecision(
+        const PharmacyDrugImportDecision(
           key: 'c|',
           action: PharmacyDrugImportAction.skip,
           targetDrugId: 'DRG0000009',
+          values: <PharmacyDrugImportField, Object?>{
+            PharmacyDrugImportField.form: 'Syrup',
+          },
         ),
       ],
       clearMissingStock: true,
@@ -260,6 +280,19 @@ void main() {
         'key': 'a|b',
         'action': 'MERGE',
         'target_drug_id': 'DRG0000050',
+        'values': <String, Object?>{
+          'form': 'Tablet',
+          'unit_price': 1500,
+          'brand_name': null,
+        },
+        'batches': <Object?>[
+          <String, Object?>{
+            'key': 'B1',
+            'batch_number': 'B-1',
+            'expiry_date': '2029-01-05',
+            'quantity': 7,
+          },
+        ],
       },
       <String, Object?>{'key': 'c|', 'action': 'SKIP'},
     ]);

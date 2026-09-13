@@ -47,4 +47,36 @@ describe('pharmacy drug import schemas', () => {
     expect(commitDrugImportSchema.safeParse({ ...base, confirm_review: 'maybe' }).success).toBe(false);
     expect(commitDrugImportSchema.safeParse({ ...base, stock_mode: 'SET' }).success).toBe(false);
   });
+
+  it('accepts reviewer edits and rejects malformed ones', () => {
+    const base = { source: 'MEDIC_ERP', plan_hash: planHash };
+    const decision = {
+      key: 'amoxicillin|',
+      action: 'CREATE',
+      values: { name: ' Amoxicillin ', brand_name: null, unit_price: 1500 },
+      batches: [{ key: 'AMX1', batch_number: ' AMX-1 ', expiry_date: '2029-01-31', quantity: 12 }]};
+
+    expect(
+      commitDrugImportSchema.parse({ ...base, decisions: JSON.stringify([decision]) }).decisions
+    ).toEqual([
+      {
+        ...decision,
+        values: { name: 'Amoxicillin', brand_name: null, unit_price: 1500 },
+        batches: [{ key: 'AMX1', batch_number: 'AMX-1', expiry_date: '2029-01-31', quantity: 12 }]}]);
+
+    const invalid = [
+      { values: { unit_price: -1 } },
+      { values: { name: '' } },
+      { values: { code: 'X1' } },
+      { batches: [{ key: 'AMX1', batch_number: null, expiry_date: '31/01/2029', quantity: 1 }] },
+      { batches: [{ key: 'AMX1', batch_number: null, expiry_date: null, quantity: 1.5 }] },
+      { batches: [{ key: 'AMX1', expiry_date: null, quantity: 1 }] }];
+    for (const edits of invalid) {
+      expect(
+        commitDrugImportSchema.safeParse({
+          ...base,
+          decisions: [{ key: 'k', action: 'CREATE', ...edits }]}).success
+      ).toBe(false);
+    }
+  });
 });

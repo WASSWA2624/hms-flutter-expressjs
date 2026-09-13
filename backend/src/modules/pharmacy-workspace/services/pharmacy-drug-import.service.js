@@ -32,6 +32,7 @@ const {
   UNLABELED_BATCH_NUMBER,
   buildDrugImportPatch,
   analyzeDrugImport,
+  assertUniqueCreatedProducts,
   resolveDrugImportDecisions,
   resolveMissingStockDrugs,
 } = require('@lib/pharmacy/drug-import/drug-import-analyzer');
@@ -143,18 +144,20 @@ const buildImportContext = async ({ file, payload = {}, user = {} }) => {
   const template = checkTemplateColumns(source, workbook.headers);
   const canWritePricing = hasPermission(user, PERMISSIONS.PRICING_PHARMACY_WRITE);
 
+  let existingDrugs = [];
   let plan = null;
   if (!template.missing_columns.length) {
     const drugs = await pharmacyWorkspaceRepository.findDrugsForImport(tenantId, facility.id);
+    existingDrugs = drugs.map(toAnalyzerDrug);
     plan = analyzeDrugImport({
       source,
       rows: workbook.rows,
-      existingDrugs: drugs.map(toAnalyzerDrug),
+      existingDrugs,
       canWritePricing,
     });
   }
 
-  return { source, tenantId, facility, workbook, template, canWritePricing, plan };
+  return { source, tenantId, facility, workbook, template, canWritePricing, existingDrugs, plan };
 };
 
 const serializeDrug = (drug) =>
@@ -196,6 +199,7 @@ const serializeProduct = (product) => ({
   row_numbers: product.row_numbers,
   total_quantity: product.total_quantity,
   batches: product.batches.map((batch) => ({
+    key: batch.batch_key,
     batch_number: batch.batch_number,
     expiry_date: toIsoDate(batch.expiry_date),
     quantity: batch.quantity,
@@ -441,6 +445,7 @@ const applyProductDecision = async (tx, { entry, ctx }) => {
     canWritePricing,
     currency,
     supplierId,
+    explicitFields: entry.edited_fields,
   });
   let drug = target;
   if (Object.keys(patch).length) {
@@ -541,7 +546,7 @@ const commitDrugImport = async ({
   user = {},
 } = {}) => {
   try {
-    const { source, tenantId, facility, template, canWritePricing, plan } =
+    const { source, tenantId, facility, template, canWritePricing, existingDrugs, plan } =
       await buildImportContext({ file, payload, user });
 
     if (template.missing_columns.length) {
@@ -561,6 +566,7 @@ const commitDrugImport = async ({
         { field: 'confirm_review' },
       ]);
     }
+    assertUniqueCreatedProducts(resolved, existingDrugs);
 
     const stockMode =
       payload.stock_mode === DRUG_IMPORT_STOCK_MODES.ADD
@@ -630,6 +636,9 @@ const commitDrugImport = async ({
             after,
           })),
           cleared_drug_ids: changes.cleared.map(publicId),
+          edited_product_keys: resolved
+            .filter((entry) => entry.edited_fields.length)
+            .map((entry) => entry.product.key),
         },
       },
       ip_address: ipAddress,

@@ -208,16 +208,29 @@ final class PharmacyDrugImportCandidate {
 @immutable
 final class PharmacyDrugImportBatch {
   const PharmacyDrugImportBatch({
+    String? key,
     this.batchNumber,
     this.expiryDate,
     this.quantity = 0,
     this.rowNumbers = const <int>[],
-  });
+  }) : _key = key;
 
+  static const String unlabeledBatchKey = 'UNLABELED';
+
+  final String? _key;
   final String? batchNumber;
   final DateTime? expiryDate;
   final int quantity;
   final List<int> rowNumbers;
+
+  /// Server batch key; batch edits must echo it unchanged.
+  String get key => _key ?? keyFor(batchNumber);
+
+  /// Mirrors the server grouping key for a batch number.
+  static String keyFor(String? batchNumber) {
+    final String trimmed = batchNumber?.trim() ?? '';
+    return (trimmed.isEmpty ? unlabeledBatchKey : trimmed).toUpperCase();
+  }
 }
 
 /// One catalog product built from one or more file rows (same name and brand).
@@ -387,24 +400,97 @@ final class PharmacyDrugImportFile {
   final Uint8List bytes;
 }
 
+/// Catalog fields a reviewer can change before a product is imported.
+enum PharmacyDrugImportField {
+  name('name', maxLength: 255),
+  brandName('brand_name', maxLength: 255),
+  form('form', maxLength: 80),
+  strength('strength', maxLength: 80),
+  unitPrice('unit_price'),
+  buyUnitPrice('buy_unit_price'),
+  supplierName('supplier_name', maxLength: 255);
+
+  const PharmacyDrugImportField(this.apiValue, {this.maxLength});
+
+  final String apiValue;
+
+  /// Longest accepted text; null for prices.
+  final int? maxLength;
+
+  bool get isPrice =>
+      this == PharmacyDrugImportField.unitPrice ||
+      this == PharmacyDrugImportField.buyUnitPrice;
+}
+
+/// Final values for one reviewer-edited batch.
+@immutable
+final class PharmacyDrugImportBatchEdit {
+  const PharmacyDrugImportBatchEdit({
+    required this.key,
+    required this.quantity,
+    this.batchNumber,
+    this.expiryDate,
+  });
+
+  /// [PharmacyDrugImportBatch.key] of the batch in the preview.
+  final String key;
+  final String? batchNumber;
+  final DateTime? expiryDate;
+  final int quantity;
+
+  Map<String, Object?> toJson() {
+    final DateTime? expiry = expiryDate;
+    return <String, Object?>{
+      'key': key,
+      'batch_number': batchNumber,
+      'expiry_date': expiry == null
+          ? null
+          : '${expiry.year.toString().padLeft(4, '0')}-'
+                '${expiry.month.toString().padLeft(2, '0')}-'
+                '${expiry.day.toString().padLeft(2, '0')}',
+      'quantity': quantity,
+    };
+  }
+}
+
 @immutable
 final class PharmacyDrugImportDecision {
   const PharmacyDrugImportDecision({
     required this.key,
     required this.action,
     this.targetDrugId,
+    this.values = const <PharmacyDrugImportField, Object?>{},
+    this.batches = const <PharmacyDrugImportBatchEdit>[],
   });
 
   final String key;
   final PharmacyDrugImportAction action;
   final String? targetDrugId;
 
-  Map<String, Object?> toJson() => <String, Object?>{
-    'key': key,
-    'action': action.apiValue,
-    if (action.linksExistingDrug && targetDrugId != null)
-      'target_drug_id': targetDrugId,
-  };
+  /// Reviewer-edited catalog values: `String?` for text, `num?` for prices.
+  final Map<PharmacyDrugImportField, Object?> values;
+
+  final List<PharmacyDrugImportBatchEdit> batches;
+
+  Map<String, Object?> toJson() {
+    final bool imports = action != PharmacyDrugImportAction.skip;
+    return <String, Object?>{
+      'key': key,
+      'action': action.apiValue,
+      if (action.linksExistingDrug && targetDrugId != null)
+        'target_drug_id': targetDrugId,
+      if (imports && values.isNotEmpty)
+        'values': <String, Object?>{
+          for (final MapEntry<PharmacyDrugImportField, Object?> entry
+              in values.entries)
+            entry.key.apiValue: entry.value,
+        },
+      if (imports && batches.isNotEmpty)
+        'batches': batches
+            .map((PharmacyDrugImportBatchEdit batch) => batch.toJson())
+            .toList(growable: false),
+    };
+  }
 }
 
 @immutable

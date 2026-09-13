@@ -295,10 +295,38 @@ const drugImportSourceSchema = z.preprocess(
   z.enum([...DRUG_IMPORT_SOURCE_IDS])
 );
 
+const drugImportNullableTextSchema = (max) => z.string().trim().max(max).nullable();
+
+const drugImportMoneySchema = z.number().nonnegative().max(9999999999.99).nullable();
+
+// Reviewer edits: a present key is the final catalog value for that field.
+const drugImportDecisionValuesSchema = z
+  .object({
+    name: z.string().trim().min(1).max(255),
+    brand_name: drugImportNullableTextSchema(255),
+    form: drugImportNullableTextSchema(80),
+    strength: drugImportNullableTextSchema(80),
+    supplier_name: drugImportNullableTextSchema(255),
+    unit_price: drugImportMoneySchema,
+    buy_unit_price: drugImportMoneySchema})
+  .partial()
+  .strict();
+
+// Edited batches carry their full final values, matched by the preview batch key.
+const drugImportBatchEditSchema = z
+  .object({
+    key: z.string().trim().min(1).max(80),
+    batch_number: drugImportNullableTextSchema(80),
+    expiry_date: z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+    quantity: z.number().int().nonnegative().max(2147483647)})
+  .strict();
+
 const drugImportDecisionSchema = z.object({
   key: z.string().min(1).max(600),
   action: z.enum(['CREATE', 'MERGE', 'UPDATE', 'SKIP']),
-  target_drug_id: uuidOrFriendlyIdentifierSchema.optional().nullable()});
+  target_drug_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
+  values: drugImportDecisionValuesSchema.optional(),
+  batches: z.array(drugImportBatchEditSchema).optional()});
 
 const drugImportDecisionsSchema = z.preprocess((value) => {
   if (value == null || value === '') return [];

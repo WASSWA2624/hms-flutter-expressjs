@@ -53037,24 +53037,6 @@ abstract class AppLocalizations {
   /// **'Import drugs'**
   String get pharmacyDrugImportDialogTitle;
 
-  /// Drug import wizard step: pick the source and file.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose file'**
-  String get pharmacyDrugImportStepFile;
-
-  /// Drug import wizard step: review the analysis.
-  ///
-  /// In en, this message translates to:
-  /// **'Review'**
-  String get pharmacyDrugImportStepReview;
-
-  /// Drug import wizard step: import result.
-  ///
-  /// In en, this message translates to:
-  /// **'Import'**
-  String get pharmacyDrugImportStepImport;
-
   /// Drug import banner naming the facility that receives stock.
   ///
   /// In en, this message translates to:
@@ -53295,30 +53277,6 @@ abstract class AppLocalizations {
   /// **'{batches, plural, =1{Units in 1 batch} other{Units in {batches} batches}}'**
   String pharmacyDrugImportStatUnits(int batches);
 
-  /// Drug import banner title for products needing review.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 product looks like a drug already in your catalog} other{{count} products look like drugs already in your catalog}}'**
-  String pharmacyDrugImportReviewBannerTitle(int count);
-
-  /// Drug import banner body for products needing review.
-  ///
-  /// In en, this message translates to:
-  /// **'Check the suggested action for each one, then confirm to enable the import.'**
-  String get pharmacyDrugImportReviewBannerBody;
-
-  /// Drug import confirmation checkbox for similar products.
-  ///
-  /// In en, this message translates to:
-  /// **'I have reviewed these products'**
-  String get pharmacyDrugImportReviewConfirm;
-
-  /// Drug import action that filters to products needing review.
-  ///
-  /// In en, this message translates to:
-  /// **'Show them'**
-  String get pharmacyDrugImportShowReviewAction;
-
   /// Drug import warning title when the user cannot write pharmacy prices.
   ///
   /// In en, this message translates to:
@@ -53499,12 +53457,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 issue} other{{count} issues}}'**
   String pharmacyDrugImportIssueCount(int count);
 
-  /// Drug import per-product action select label.
-  ///
-  /// In en, this message translates to:
-  /// **'Action'**
-  String get pharmacyDrugImportActionLabel;
-
   /// Drug import action that creates a catalog drug.
   ///
   /// In en, this message translates to:
@@ -53529,35 +53481,11 @@ abstract class AppLocalizations {
   /// **'Skip'**
   String get pharmacyDrugImportActionSkip;
 
-  /// Drug import select label for the catalog drug to link.
-  ///
-  /// In en, this message translates to:
-  /// **'Catalog drug'**
-  String get pharmacyDrugImportTargetLabel;
-
-  /// Drug import catalog drug option with similarity score.
-  ///
-  /// In en, this message translates to:
-  /// **'{name} · {score}% match'**
-  String pharmacyDrugImportCandidateOption(String name, String score);
-
-  /// Drug import catalog drug option for an exact match.
-  ///
-  /// In en, this message translates to:
-  /// **'{name} · exact match'**
-  String pharmacyDrugImportExactMatchOption(String name);
-
   /// Drug import product detail for total quantity.
   ///
   /// In en, this message translates to:
   /// **'Qty {quantity}'**
   String pharmacyDrugImportQuantityLabel(String quantity);
-
-  /// Drug import product detail for batch count.
-  ///
-  /// In en, this message translates to:
-  /// **'Batches {count}'**
-  String pharmacyDrugImportBatchesLabel(String count);
 
   /// Drug import product detail for retail price.
   ///
@@ -53577,45 +53505,11 @@ abstract class AppLocalizations {
   /// **'Rows {rows}'**
   String pharmacyDrugImportRowsLabel(String rows);
 
-  /// Drug import action that expands product details.
-  ///
-  /// In en, this message translates to:
-  /// **'Show details'**
-  String get pharmacyDrugImportShowDetailsAction;
-
-  /// Drug import action that collapses product details.
-  ///
-  /// In en, this message translates to:
-  /// **'Hide details'**
-  String get pharmacyDrugImportHideDetailsAction;
-
-  /// Drug import product details heading for batches.
-  ///
-  /// In en, this message translates to:
-  /// **'Batches'**
-  String get pharmacyDrugImportBatchesTitle;
-
-  /// Drug import product details heading for catalog changes.
-  ///
-  /// In en, this message translates to:
-  /// **'Catalog changes'**
-  String get pharmacyDrugImportChangesTitle;
-
   /// Drug import product details heading for issues.
   ///
   /// In en, this message translates to:
-  /// **'Issues'**
+  /// **'Found in the file'**
   String get pharmacyDrugImportIssuesTitle;
-
-  /// Drug import batch summary.
-  ///
-  /// In en, this message translates to:
-  /// **'{batch} (expires {expiry}, qty {quantity})'**
-  String pharmacyDrugImportBatchLine(
-    String batch,
-    String expiry,
-    String quantity,
-  );
 
   /// Drug import label for a batch without a number.
   ///
@@ -53623,51 +53517,11 @@ abstract class AppLocalizations {
   /// **'Unlabeled batch'**
   String get pharmacyDrugImportUnlabeledBatch;
 
-  /// Drug import placeholder for a batch without an expiry date.
-  ///
-  /// In en, this message translates to:
-  /// **'no date'**
-  String get pharmacyDrugImportNoExpiry;
-
-  /// Drug import current facility stock of the linked drug.
-  ///
-  /// In en, this message translates to:
-  /// **'Current stock at this facility: {quantity}'**
-  String pharmacyDrugImportCurrentStock(String quantity);
-
-  /// Drug import note when linking changes no catalog fields.
-  ///
-  /// In en, this message translates to:
-  /// **'No catalog fields change.'**
-  String get pharmacyDrugImportNoChanges;
-
-  /// Drug import catalog field change.
-  ///
-  /// In en, this message translates to:
-  /// **'{field}: {current} → {incoming}'**
-  String pharmacyDrugImportChangeValue(
-    String field,
-    String current,
-    String incoming,
-  );
-
-  /// Drug import catalog field that fills an empty value.
-  ///
-  /// In en, this message translates to:
-  /// **'{field}: {incoming} (currently empty)'**
-  String pharmacyDrugImportChangeFillsBlank(String field, String incoming);
-
   /// Drug import action that reveals more list items.
   ///
   /// In en, this message translates to:
   /// **'Show {count} more'**
   String pharmacyDrugImportShowMoreAction(String count);
-
-  /// Drug import panel title for row-level issues.
-  ///
-  /// In en, this message translates to:
-  /// **'Row issues ({count})'**
-  String pharmacyDrugImportRowIssuesTitle(String count);
 
   /// Drug import spreadsheet row reference.
   ///
@@ -53999,6 +53853,366 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Supplier'**
   String get pharmacyDrugImportFieldSupplier;
+
+  /// Drug import product form: what creating a new drug does.
+  ///
+  /// In en, this message translates to:
+  /// **'Add it to the catalog as a new drug.'**
+  String get pharmacyDrugImportActionCreateDescription;
+
+  /// Drug import product form: what linking and filling blanks does.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the catalog details and fill in only the empty ones.'**
+  String get pharmacyDrugImportActionMergeDescription;
+
+  /// Drug import product form: what linking and overwriting does.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace the catalog details with the values below.'**
+  String get pharmacyDrugImportActionUpdateDescription;
+
+  /// Drug import product form: what skipping does.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave this product and its stock out of the import.'**
+  String get pharmacyDrugImportActionSkipDescription;
+
+  /// Drug import product form section title for the action buttons.
+  ///
+  /// In en, this message translates to:
+  /// **'What should happen to this product?'**
+  String get pharmacyDrugImportDecisionTitle;
+
+  /// Drug import product form section title for choosing the linked catalog drug.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog drug to use'**
+  String get pharmacyDrugImportLinkTargetTitle;
+
+  /// Drug import product form section title listing similar catalog drugs.
+  ///
+  /// In en, this message translates to:
+  /// **'Similar drugs already in your catalog'**
+  String get pharmacyDrugImportSimilarDrugsTitle;
+
+  /// Drug import product form hint under similar catalog drugs.
+  ///
+  /// In en, this message translates to:
+  /// **'Select one to link this product to it instead of adding a duplicate.'**
+  String get pharmacyDrugImportSimilarDrugsHint;
+
+  /// Drug import catalog drug detail: same name and brand.
+  ///
+  /// In en, this message translates to:
+  /// **'Exact match'**
+  String get pharmacyDrugImportExactMatch;
+
+  /// Drug import catalog drug detail: similarity score.
+  ///
+  /// In en, this message translates to:
+  /// **'{score}% match'**
+  String pharmacyDrugImportCandidateScore(String score);
+
+  /// Drug import catalog drug detail: on-hand quantity at the importing facility.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock here: {quantity}'**
+  String pharmacyDrugImportStockHere(String quantity);
+
+  /// Drug import product header naming the catalog drug it links to.
+  ///
+  /// In en, this message translates to:
+  /// **'Links to {drug}'**
+  String pharmacyDrugImportLinksTo(String drug);
+
+  /// Drug import product header batch count.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 batch} other{{count} batches}}'**
+  String pharmacyDrugImportBatchCount(int count);
+
+  /// Drug import badge for a product or value changed by the reviewer.
+  ///
+  /// In en, this message translates to:
+  /// **'Edited'**
+  String get pharmacyDrugImportEditedBadge;
+
+  /// Drug import badge for a product with invalid edited values.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs fixing'**
+  String get pharmacyDrugImportFixBadge;
+
+  /// Drug import product form section title for catalog values.
+  ///
+  /// In en, this message translates to:
+  /// **'Product details'**
+  String get pharmacyDrugImportDetailsTitle;
+
+  /// Drug import product form hint when creating a new drug.
+  ///
+  /// In en, this message translates to:
+  /// **'Values come from the file. Change any of them before importing.'**
+  String get pharmacyDrugImportDetailsHintCreate;
+
+  /// Drug import product form hint when linking and filling blanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Catalog values are kept and empty ones are filled from the file. Change a value to save your own.'**
+  String get pharmacyDrugImportDetailsHintMerge;
+
+  /// Drug import product form hint when linking and overwriting.
+  ///
+  /// In en, this message translates to:
+  /// **'File values replace catalog values, and empty file values keep the catalog value. Change a value to save your own.'**
+  String get pharmacyDrugImportDetailsHintUpdate;
+
+  /// Drug import product form hint when skipping.
+  ///
+  /// In en, this message translates to:
+  /// **'This product is skipped, so nothing is saved.'**
+  String get pharmacyDrugImportDetailsHintSkip;
+
+  /// Drug import comparison column: field name.
+  ///
+  /// In en, this message translates to:
+  /// **'Field'**
+  String get pharmacyDrugImportColumnField;
+
+  /// Drug import comparison column: current catalog value.
+  ///
+  /// In en, this message translates to:
+  /// **'In your catalog'**
+  String get pharmacyDrugImportColumnCatalog;
+
+  /// Drug import comparison column: value read from the file.
+  ///
+  /// In en, this message translates to:
+  /// **'In the file'**
+  String get pharmacyDrugImportColumnFile;
+
+  /// Drug import comparison column: editable value that will be saved.
+  ///
+  /// In en, this message translates to:
+  /// **'Value to save'**
+  String get pharmacyDrugImportColumnNewValue;
+
+  /// Drug import batch column: quantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get pharmacyDrugImportColumnQuantity;
+
+  /// Drug import batch column: spreadsheet rows.
+  ///
+  /// In en, this message translates to:
+  /// **'File rows'**
+  String get pharmacyDrugImportColumnRows;
+
+  /// Drug import comparison placeholder for an empty value.
+  ///
+  /// In en, this message translates to:
+  /// **'—'**
+  String get pharmacyDrugImportEmptyValue;
+
+  /// Drug import value effect on the linked catalog drug.
+  ///
+  /// In en, this message translates to:
+  /// **'No change'**
+  String get pharmacyDrugImportOutcomeNoChange;
+
+  /// Drug import value effect on the linked catalog drug.
+  ///
+  /// In en, this message translates to:
+  /// **'Fills an empty catalog value'**
+  String get pharmacyDrugImportOutcomeFillsBlank;
+
+  /// Drug import value effect on the linked catalog drug.
+  ///
+  /// In en, this message translates to:
+  /// **'Replaces the catalog value'**
+  String get pharmacyDrugImportOutcomeReplaces;
+
+  /// Drug import value effect on the linked catalog drug.
+  ///
+  /// In en, this message translates to:
+  /// **'Clears the catalog value'**
+  String get pharmacyDrugImportOutcomeClears;
+
+  /// Drug import note: linking never renames the catalog drug.
+  ///
+  /// In en, this message translates to:
+  /// **'The catalog name is kept'**
+  String get pharmacyDrugImportOutcomeNameKept;
+
+  /// Drug import action: undo an edited value.
+  ///
+  /// In en, this message translates to:
+  /// **'Use suggested value'**
+  String get pharmacyDrugImportResetFieldAction;
+
+  /// Drug import action: undo edits to a batch.
+  ///
+  /// In en, this message translates to:
+  /// **'Undo batch changes'**
+  String get pharmacyDrugImportResetBatchAction;
+
+  /// Drug import action: undo every edit to a product.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset changes'**
+  String get pharmacyDrugImportResetChangesAction;
+
+  /// Drug import action: collapse a product form.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get pharmacyDrugImportDoneEditingAction;
+
+  /// Drug import product form section title for batches.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock and batches'**
+  String get pharmacyDrugImportStockTitle;
+
+  /// Drug import stock summary for a new drug.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock at this facility after import: {quantity}'**
+  String pharmacyDrugImportStockChangeNew(String quantity);
+
+  /// Drug import stock summary for a linked catalog drug.
+  ///
+  /// In en, this message translates to:
+  /// **'Stock at this facility: {current} now, {next} after import'**
+  String pharmacyDrugImportStockChangeLinked(String current, String next);
+
+  /// Drug import validation: product name is empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a name.'**
+  String get pharmacyDrugImportValueRequired;
+
+  /// Drug import validation: text is too long.
+  ///
+  /// In en, this message translates to:
+  /// **'Use {max} characters or fewer.'**
+  String pharmacyDrugImportValueTooLong(String max);
+
+  /// Drug import validation: price is not a number.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a number, like 1500.'**
+  String get pharmacyDrugImportValueInvalidNumber;
+
+  /// Drug import validation: price is negative.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter 0 or more.'**
+  String get pharmacyDrugImportValueNegative;
+
+  /// Drug import validation: price is too large.
+  ///
+  /// In en, this message translates to:
+  /// **'This number is too large.'**
+  String get pharmacyDrugImportValueTooLarge;
+
+  /// Drug import validation: batch quantity is not a whole number.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a whole number of 0 or more.'**
+  String get pharmacyDrugImportValueInvalidQuantity;
+
+  /// Drug import validation: two batches share a batch number.
+  ///
+  /// In en, this message translates to:
+  /// **'Another batch of this product has this number.'**
+  String get pharmacyDrugImportValueDuplicateBatch;
+
+  /// Drug import validation: a renamed new drug duplicates another new drug.
+  ///
+  /// In en, this message translates to:
+  /// **'Another new drug in this import has this name and brand.'**
+  String get pharmacyDrugImportValueDuplicateProduct;
+
+  /// Drug import product filter: products changed by the reviewer.
+  ///
+  /// In en, this message translates to:
+  /// **'Edited'**
+  String get pharmacyDrugImportFilterEdited;
+
+  /// Drug import product filter: products with invalid values.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs fixing'**
+  String get pharmacyDrugImportFilterInvalid;
+
+  /// Drug import banner when edited values are invalid.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 product has values that need fixing} other{{count} products have values that need fixing}}'**
+  String pharmacyDrugImportInvalidBannerTitle(int count);
+
+  /// Drug import banner body when edited values are invalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Fix the highlighted values to enable the import.'**
+  String get pharmacyDrugImportInvalidBannerBody;
+
+  /// Drug import action: filter to products that need fixing.
+  ///
+  /// In en, this message translates to:
+  /// **'Show them'**
+  String get pharmacyDrugImportShowInvalidAction;
+
+  /// Drug import confirmation title when products resemble catalog drugs.
+  ///
+  /// In en, this message translates to:
+  /// **'Import products that need review?'**
+  String get pharmacyDrugImportReviewConfirmTitle;
+
+  /// Drug import confirmation body when products resemble catalog drugs.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 product looks like a drug already in your catalog. Check that the action chosen for it is right before importing.} other{{count} products look like drugs already in your catalog. Check that the action chosen for each one is right before importing.}}'**
+  String pharmacyDrugImportReviewConfirmBody(int count);
+
+  /// Drug import confirmation action: import.
+  ///
+  /// In en, this message translates to:
+  /// **'Import now'**
+  String get pharmacyDrugImportReviewConfirmSubmit;
+
+  /// Drug import confirmation action: go back and show products that need review.
+  ///
+  /// In en, this message translates to:
+  /// **'Review them'**
+  String get pharmacyDrugImportReviewConfirmCancel;
+
+  /// Drug import settings summary: replace stock mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Replaces stock with file quantities'**
+  String get pharmacyDrugImportSettingsSummaryReplace;
+
+  /// Drug import settings summary: add stock mode.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds file quantities to current stock'**
+  String get pharmacyDrugImportSettingsSummaryAdd;
+
+  /// Drug import settings summary: stock for missing items is cleared.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Clears stock for 1 item not in the file} other{Clears stock for {count} items not in the file}}'**
+  String pharmacyDrugImportSettingsSummaryClears(int count);
+
+  /// Drug import settings summary: stock for missing items is kept.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Keeps stock for 1 item not in the file} other{Keeps stock for {count} items not in the file}}'**
+  String pharmacyDrugImportSettingsSummaryKeeps(int count);
 }
 
 class _AppLocalizationsDelegate

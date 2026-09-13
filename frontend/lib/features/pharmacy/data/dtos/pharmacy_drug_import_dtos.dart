@@ -104,6 +104,7 @@ PharmacyDrugImportProduct _product(_Json json) {
     batches: _list(json['batches'])
         .map(
           (_Json batch) => PharmacyDrugImportBatch(
+            key: _rawString(batch['key']),
             batchNumber: _string(batch['batch_number']),
             expiryDate: _date(batch['expiry_date']),
             quantity: _int(batch['quantity']),

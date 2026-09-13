@@ -3,6 +3,7 @@ const { HttpError } = require('@lib/errors');
 const { toIsoDate } = require('@lib/pharmacy/drug-import/drug-import-values');
 const {
   analyzeDrugImport,
+  assertUniqueCreatedProducts,
   buildDrugImportPatch,
   buildProductKey,
   resolveDrugImportDecisions,
@@ -331,6 +332,123 @@ describe('drug-import-analyzer', () => {
       expect(
         buildDrugImportPatch(product, drug, { overwrite: true, canWritePricing: false, currency: 'UGX' })
       ).toEqual({ form: 'Tablet', strength: '500 mg' });
+    });
+
+    it('applies reviewer-edited fields as typed, even when merging or clearing', () => {
+      expect(
+        buildDrugImportPatch({ ...product, brand_name: null, unit_price: null }, drug, {
+          overwrite: false,
+          canWritePricing: true,
+          supplierId: null,
+          explicitFields: ['brand_name', 'strength', 'unit_price', 'supplier_name'],
+        })
+      ).toEqual({
+        brand_name: null,
+        form: 'Tablet',
+        strength: '500 mg',
+        unit_price: null,
+        buy_unit_price: 4300,
+        supplier_id: null,
+      });
+    });
+  });
+
+  describe('reviewer edits', () => {
+    const plan = analyze([
+      { product_name: 'CIPROFLOXACIN 500MG', product_brand: 'CIPRO', batch_number: 'A1' },
+      { product_name: 'CIPROFLOXACIN 500MG', product_brand: 'CIPRO', batch_number: 'B1' },
+      { product_name: 'CIPROFLOXACIN 500MG', product_brand: 'CIPRONEX', batch_number: 'N1' },
+    ]);
+    const ciproKey = buildProductKey('CIPROFLOXACIN 500MG', 'CIPRO');
+    const cipronexKey = buildProductKey('CIPROFLOXACIN 500MG', 'CIPRONEX');
+    const editCiprox = (edits, others = []) =>
+      resolveDrugImportDecisions(plan.products, [
+        { key: cipronexKey, action: 'CREATE', ...edits },
+        ...others,
+      ]);
+
+    it('applies edits to copies of the products', () => {
+      const [cipro, ciprox] = resolveDrugImportDecisions(plan.products, [
+        {
+          key: cipronexKey,
+          action: 'CREATE',
+          values: { name: '  Ciprofloxacin 500 mg ', brand_name: 'Ciproflox', unit_price: 8000 },
+          batches: [{ key: 'n1', batch_number: 'N1-A', expiry_date: '2029-01-31', quantity: 12 }],
+        },
+        { key: ciproKey, action: 'SKIP', values: { form: 'Capsule' } },
+      ]);
+
+      expect(ciprox.product).toMatchObject({
+        name: 'Ciprofloxacin 500 mg',
+        generic_name: 'Ciprofloxacin 500 mg',
+        brand_name: 'Ciproflox',
+        unit_price: 8000,
+        total_quantity: 12,
+      });
+      expect(ciprox.product.batches).toEqual([
+        expect.objectContaining({ batch_key: 'N1-A', batch_number: 'N1-A', quantity: 12 }),
+      ]);
+      expect(toIsoDate(ciprox.product.batches[0].expiry_date)).toBe('2029-01-31');
+      expect(ciprox.edited_fields).toEqual(['name', 'brand_name', 'unit_price', 'batches']);
+      expect(cipro.edited_fields).toEqual([]);
+      expect(findProduct(plan, 'CIPROFLOXACIN 500MG', 'CIPRONEX').brand_name).toBe('CIPRONEX');
+    });
+
+    it('never renames a catalog drug that a product links to', () => {
+      const linkedPlan = analyze([{}], { existingDrugs: [zahaDrug] });
+      const [entry] = resolveDrugImportDecisions(linkedPlan.products, [
+        { key: linkedPlan.products[0].key, action: 'UPDATE', values: { name: 'Renamed', form: 'Capsule' } },
+      ]);
+
+      expect(entry.product).toMatchObject({ name: 'AZITHROMYCIN 500MG TABLET', form: 'Capsule' });
+      expect(entry.edited_fields).toEqual(['form']);
+    });
+
+    it('rejects unknown, repeated, or clashing batch edits and invalid values', () => {
+      const attempts = [
+        { batches: [{ key: 'MISSING', batch_number: 'X', expiry_date: null, quantity: 1 }] },
+        {
+          batches: [
+            { key: 'N1', batch_number: 'X', expiry_date: null, quantity: 1 },
+            { key: 'n1', batch_number: 'Y', expiry_date: null, quantity: 1 },
+          ],
+        },
+        { batches: [{ key: 'N1', batch_number: 'N1', expiry_date: '2029-02-30', quantity: 1 }] },
+        { values: { name: '   ' } },
+      ];
+      for (const edits of attempts) {
+        expect(() => editCiprox(edits)).toThrow(HttpError);
+      }
+      expect(() =>
+        resolveDrugImportDecisions(plan.products, [
+          {
+            key: ciproKey,
+            action: 'CREATE',
+            batches: [{ key: 'B1', batch_number: 'a1', expiry_date: null, quantity: 3 }],
+          },
+        ])
+      ).toThrow(HttpError);
+    });
+
+    it('rejects renamed new products that duplicate the catalog or another new product', () => {
+      const duplicate = 'errors.pharmacy_drug_import.duplicate_product';
+      const catalogCipro = { id: 'drug-cipro', name: 'Ciprofloxacin 500mg', brand_name: 'Ciproflox' };
+
+      expect(() => assertUniqueCreatedProducts(editCiprox({ values: { brand_name: 'cipro' } }), [])).toThrow(
+        duplicate
+      );
+      expect(() =>
+        assertUniqueCreatedProducts(editCiprox({ values: { brand_name: 'Ciproflox' } }), [catalogCipro])
+      ).toThrow(duplicate);
+      expect(() =>
+        assertUniqueCreatedProducts(editCiprox({ values: { brand_name: 'Ciproflox' } }), [])
+      ).not.toThrow();
+      expect(() =>
+        assertUniqueCreatedProducts(
+          editCiprox({ values: { brand_name: 'CIPRO' } }, [{ key: ciproKey, action: 'SKIP' }]),
+          []
+        )
+      ).not.toThrow();
     });
   });
 });

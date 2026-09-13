@@ -18,7 +18,11 @@ const {
   textSimilarityScore,
 } = require('@lib/tenant/tenant-similarity');
 const { checkPharmacyDrugDuplicates } = require('@lib/pharmacy/pharmacy-drug-similarity');
-const { toIsoDate } = require('@lib/pharmacy/drug-import/drug-import-values');
+const {
+  collapseWhitespace,
+  parseDate,
+  toIsoDate,
+} = require('@lib/pharmacy/drug-import/drug-import-values');
 
 const DRUG_IMPORT_ACTIONS = Object.freeze({
   CREATE: 'CREATE',
@@ -308,18 +312,26 @@ const buildDrugChanges = (product, drug, { canWritePricing }) => {
  * @param {boolean} options.canWritePricing
  * @param {string|null} [options.currency]
  * @param {string|null} [options.supplierId]
+ * @param {string[]} [options.explicitFields] - Reviewer-edited fields; these are applied as
+ *   typed (including empty values) whether merging or updating
  * @returns {Object} Prisma update data (empty when nothing changes)
  */
 const buildDrugImportPatch = (
   product,
   drug,
-  { overwrite, canWritePricing, currency = null, supplierId = null }
+  { overwrite, canWritePricing, currency = null, supplierId = null, explicitFields = [] }
 ) => {
+  const explicit = new Set(explicitFields);
   const patch = {};
 
   const setText = (field, normalize = normalizeText) => {
-    const incoming = product[field];
-    if (!incoming || normalize(incoming) === normalize(drug[field])) return;
+    const incoming = product[field] || null;
+    if (normalize(incoming) === normalize(drug[field])) return;
+    if (explicit.has(field)) {
+      patch[field] = incoming;
+      return;
+    }
+    if (!incoming) return;
     if (overwrite || !normalize(drug[field])) patch[field] = incoming;
   };
   setText('brand_name');
@@ -328,9 +340,14 @@ const buildDrugImportPatch = (
 
   if (canWritePricing) {
     for (const field of ['unit_price', 'buy_unit_price']) {
-      const incoming = product[field];
-      if (incoming == null || moneyEquals(incoming, drug[field])) continue;
-      if (overwrite || toMoney(drug[field]) == null) patch[field] = toMoney(incoming);
+      const incoming = toMoney(product[field]);
+      if (moneyEquals(incoming, drug[field])) continue;
+      if (explicit.has(field)) {
+        patch[field] = incoming;
+        continue;
+      }
+      if (incoming == null) continue;
+      if (overwrite || toMoney(drug[field]) == null) patch[field] = incoming;
     }
     const setsPrice = patch.unit_price != null || patch.buy_unit_price != null;
     if (currency && setsPrice && currency !== drug.currency && (overwrite || !drug.currency)) {
@@ -338,8 +355,11 @@ const buildDrugImportPatch = (
     }
   }
 
-  if (supplierId && supplierId !== drug.supplier_id && (overwrite || !drug.supplier_id)) {
-    patch.supplier_id = supplierId;
+  const setsSupplier = explicit.has('supplier_name')
+    ? (supplierId || null) !== (drug.supplier_id || null)
+    : Boolean(supplierId) && supplierId !== drug.supplier_id && (overwrite || !drug.supplier_id);
+  if (setsSupplier) {
+    patch.supplier_id = supplierId || null;
   }
 
   return patch;
@@ -636,16 +656,98 @@ const invalidDecision = (key) =>
     { field: 'decisions', key },
   ]);
 
+const EDITABLE_TEXT_FIELDS = Object.freeze(['brand_name', 'form', 'strength', 'supplier_name']);
+const EDITABLE_PRICE_FIELDS = Object.freeze(['unit_price', 'buy_unit_price']);
+
+const hasOwn = (object, field) => Object.prototype.hasOwnProperty.call(object, field);
+
+/**
+ * Apply reviewer edits from a decision to a copy of the analyzed product.
+ *
+ * A present value is the final value for that field, including an empty one.
+ * The name only changes for new drugs, so linking never renames a catalog drug.
+ * Edited batches carry their full final values and are matched by batch key.
+ *
+ * @param {Object} product - Analyzed product
+ * @param {Object|undefined} decision - Client decision with optional `values` and `batches`
+ * @param {string} action - Resolved action
+ * @returns {{ product: Object, editedFields: string[] }}
+ * @throws {HttpError} 400 for unknown or repeated batch keys, invalid dates, or clashing batches
+ */
+const applyDrugImportEdits = (product, decision, action) => {
+  const values = decision?.values || {};
+  const batchEdits = decision?.batches || [];
+  const editedFields = [];
+  if (
+    action === DRUG_IMPORT_ACTIONS.SKIP ||
+    (!Object.keys(values).length && !batchEdits.length)
+  ) {
+    return { product, editedFields };
+  }
+
+  const edited = { ...product };
+  if (action === DRUG_IMPORT_ACTIONS.CREATE && hasOwn(values, 'name')) {
+    const name = collapseWhitespace(values.name);
+    if (!name) throw invalidDecision(product.key);
+    edited.name = name;
+    edited.generic_name = name;
+    editedFields.push('name');
+  }
+  for (const field of EDITABLE_TEXT_FIELDS) {
+    if (!hasOwn(values, field)) continue;
+    edited[field] = collapseWhitespace(values[field]);
+    editedFields.push(field);
+  }
+  for (const field of EDITABLE_PRICE_FIELDS) {
+    if (!hasOwn(values, field)) continue;
+    edited[field] = toMoney(values[field]);
+    editedFields.push(field);
+  }
+
+  if (batchEdits.length) {
+    const batchKeys = new Set(product.batches.map((batch) => batch.batch_key));
+    const editsByKey = new Map();
+    for (const edit of batchEdits) {
+      const key = normalizeBatchKey(edit.key);
+      if (!batchKeys.has(key) || editsByKey.has(key)) throw invalidDecision(product.key);
+      editsByKey.set(key, edit);
+    }
+
+    edited.batches = product.batches.map((batch) => {
+      const edit = editsByKey.get(batch.batch_key);
+      if (!edit) return batch;
+      const expiry = parseDate(edit.expiry_date);
+      if (expiry.invalid) throw invalidDecision(product.key);
+      const batchNumber = collapseWhitespace(edit.batch_number);
+      return {
+        ...batch,
+        batch_key: normalizeBatchKey(batchNumber),
+        batch_number: batchNumber,
+        expiry_date: expiry.value,
+        quantity: edit.quantity,
+      };
+    });
+    const finalKeys = new Set(edited.batches.map((batch) => batch.batch_key));
+    if (finalKeys.size !== edited.batches.length) throw invalidDecision(product.key);
+    edited.total_quantity = edited.batches.reduce((total, batch) => total + batch.quantity, 0);
+    editedFields.push('batches');
+  }
+
+  return { product: edited, editedFields };
+};
+
 /**
  * Apply client decisions to an analyzed plan, falling back to defaults.
  *
  * Merge/update targets must be the exact match or one of the reviewed
  * candidates, so a decision can never link to an arbitrary catalog drug.
+ * Reviewer edits are applied to copies of the products (see applyDrugImportEdits).
  *
  * @param {Array<Object>} products - Analyzed products
- * @param {Array<{ key: string, action: string, target_drug_id?: string|null }>} decisions
- * @returns {Array<{ product: Object, action: string, target: Object|null }>}
- * @throws {HttpError} 400 for unknown keys, duplicate keys, or disallowed actions/targets
+ * @param {Array<{ key: string, action: string, target_drug_id?: string|null,
+ *   values?: Object, batches?: Array<Object> }>} decisions
+ * @returns {Array<{ product: Object, action: string, target: Object|null, edited_fields: string[] }>}
+ * @throws {HttpError} 400 for unknown keys, duplicate keys, disallowed actions/targets, or bad edits
  */
 const resolveDrugImportDecisions = (products, decisions = []) => {
   const byKey = new Map();
@@ -662,9 +764,10 @@ const resolveDrugImportDecisions = (products, decisions = []) => {
     const decision = byKey.get(product.key);
     const action = decision?.action || product.default_action;
     if (!product.allowed_actions.includes(action)) throw invalidDecision(product.key);
+    const { product: edited, editedFields } = applyDrugImportEdits(product, decision, action);
 
     if (action !== DRUG_IMPORT_ACTIONS.MERGE && action !== DRUG_IMPORT_ACTIONS.UPDATE) {
-      return { product, action, target: null };
+      return { product: edited, action, target: null, edited_fields: editedFields };
     }
 
     const options = product.match
@@ -674,8 +777,45 @@ const resolveDrugImportDecisions = (products, decisions = []) => {
       ? options.find((drug) => matchesDrugIdentifier(drug, decision.target_drug_id))
       : product.default_target || options[0] || null;
     if (!target) throw invalidDecision(product.key);
-    return { product, action, target };
+    return { product: edited, action, target, edited_fields: editedFields };
   });
+};
+
+/**
+ * Reject reviewer renames that would create a drug the catalog or this import already has.
+ *
+ * Unedited new products cannot clash: the analyzer groups rows by name and
+ * brand and matches each group against the catalog first.
+ *
+ * @param {Array<{ product: Object, action: string, edited_fields?: string[] }>} resolvedDecisions
+ * @param {Array<Object>} existingDrugs - Tenant drugs (analyzer shape)
+ * @throws {HttpError} 400 when an edited new product duplicates another drug
+ */
+const assertUniqueCreatedProducts = (resolvedDecisions, existingDrugs = []) => {
+  const creates = resolvedDecisions.filter((entry) => entry.action === DRUG_IMPORT_ACTIONS.CREATE);
+  const renamed = creates.filter((entry) =>
+    (entry.edited_fields || []).some((field) => field === 'name' || field === 'brand_name')
+  );
+  if (!renamed.length) return;
+
+  const { exact } = buildCatalogIndex(existingDrugs);
+  const createsByKey = new Map();
+  for (const entry of creates) {
+    addToList(createsByKey, buildProductKey(entry.product.name, entry.product.brand_name), entry);
+  }
+  for (const entry of renamed) {
+    const key = buildProductKey(entry.product.name, entry.product.brand_name);
+    if (exact.has(key) || createsByKey.get(key).length > 1) {
+      throw new HttpError('errors.pharmacy_drug_import.duplicate_product', 400, [
+        {
+          field: 'decisions',
+          key: entry.product.key,
+          name: entry.product.name,
+          brand_name: entry.product.brand_name,
+        },
+      ]);
+    }
+  }
 };
 
 /**
@@ -700,6 +840,7 @@ module.exports = {
   buildProductKey,
   buildDrugImportPatch,
   analyzeDrugImport,
+  assertUniqueCreatedProducts,
   resolveDrugImportDecisions,
   resolveMissingStockDrugs,
 };
