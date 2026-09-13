@@ -248,21 +248,3 @@ export function getLocaleDirection(locale) {
   return isRTL(locale) ? 'rtl' : 'ltr';
 }
 
-/**
- * Get translated company constants
- * @param {string} locale - Locale code
- * @returns {Promise<Object>} Translated company constants
- */
-export async function getTranslatedCompanyConstants(locale) {
-  const t = await getServerTranslations(locale, 'about');
-  
-  return {
-    name: t.companyName || 'HOSSPI',
-    description: t.companyDescription || '',
-    mission: t.companyMission || '',
-    vision: t.companyVision || '',
-    values: t.companyValues || [],
-    history: t.companyHistory || [],
-  };
-}
-

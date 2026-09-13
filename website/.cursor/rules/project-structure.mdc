@@ -179,7 +179,6 @@ import Button from '@/components/ui/Button';
 lib/
 ├── constants.js         # App constants (single source of truth)
 ├── i18n.js              # Locale detection and translation loading
-├── companyConstants.js  # Translated company constant helpers
 ├── registry.js          # Styled Components SSR registry
 ├── utils.js             # General utilities (formatDate, validateEmail, etc.)
 ├── [feature]Utils.js    # Feature-specific utilities
@@ -321,7 +320,7 @@ import { theme } from '@/styles/theme';
 
 #### Utility Structure
 - **General Utilities**: `lib/utils.js` (formatDate, validateEmail, etc.)
-- **Feature Utilities**: `lib/[feature]Utils.js` (companyConstants, etc.)
+- **Feature Utilities**: `lib/[feature]Utils.js`
 - **i18n**: `lib/i18n.js` (locale detection, translation loading)
 - **Constants**: `lib/constants.js` (all app constants)
 

@@ -6,22 +6,18 @@
  */
 
 // App Information
-// Note: For translated versions, use getTranslatedCompanyConstants() from '@/lib/i18n'
-// or getCompanyName(), getCompanyDescription() from '@/lib/companyConstants'
 export const APP_NAME = 'HOSSPI';
 export const APP_DESCRIPTION = 'HOSSPI is a company that provides biomedical and software services to the public, tailored with advanced AI capabilities. Our team of experts is dedicated to delivering cutting-edge solutions in biomedical engineering and software, ensuring the best possible outcomes for our clients.';
 export const APP_VERSION = '1.0.0';
 
 // Company Information
-// Note: For translated versions, use getTranslatedCompanyConstants() from '@/lib/i18n'
-// These constants are kept for backward compatibility and non-translatable contexts
+// Translated copy lives in src/locales/<locale>/about.json; the pages read it
+// directly. These are the untranslated fallbacks.
 export const COMPANY_NAME = 'HOSSPI';
 export const COMPANY_DESCRIPTION = 'HOSSPI delivers advanced biomedical and software solutions, leveraging AI and expertise to serve clients in the biomedical engineering sector. Our commitment is to innovation, quality service, and exceptional outcomes for every client.';
 
 // Company Mission, Vision, and Values
-// Note: These are now translatable. Use getTranslatedCompanyConstants() from '@/lib/i18n'
-// or getCompanyMission(), getCompanyVision(), getCompanyValues() from '@/lib/companyConstants'
-// These constants are kept for backward compatibility and fallback
+// Translated copy lives in the `about` namespace; these are the fallbacks.
 export const COMPANY_MISSION = 'Delivering innovative biomedical and software solutions to advance healthcare and improve quality of life worldwide.';
 export const COMPANY_VISION = 'To be the leading provider of biomedical expertise and solutions, recognized globally for our commitment to excellence, innovation, and patient care.';
 export const COMPANY_VALUES = [
@@ -33,9 +29,7 @@ export const COMPANY_VALUES = [
 ];
 
 // Company History
-// Note: This is now translatable. Use getTranslatedCompanyConstants() from '@/lib/i18n'
-// or getCompanyHistory() from '@/lib/companyConstants'
-// This constant is kept for backward compatibility and fallback
+// Translated copy lives in the `about` namespace; this is the fallback.
 export const COMPANY_HISTORY = [
   {
     year: '2022',

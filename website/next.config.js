@@ -16,9 +16,6 @@ const nextConfig = {
       {
         pathname: '/logos/**',
       },
-      {
-        pathname: '/images/**',
-      },
     ],
   },
 };

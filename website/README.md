@@ -57,10 +57,11 @@ what the site uses. Add a glyph to the `ICONS` map and reference it by name from
 
 ### Brand assets
 
-`public/logos/` holds the icon (`hosspi-icon.png`) and the sizes derived from it
-(`icon-32`, `icon-192`, `icon-512`) plus the social share card (`og-image.png`).
-They come from the HOSSPI HMS application repository at
-`frontend/assets/logos/`. The theme in [`src/styles/theme.js`](src/styles/theme.js)
+`public/logos/` holds the icon at the sizes the site actually requests — `icon-32`
+and `icon-192` (favicon and Apple touch icon), `icon-64` (header), `icon-256`
+(hero), `icon-512` (structured data) — plus the social share card
+(`og-image.png`). They are derived from `frontend/assets/logos/favicon.png` in
+this repository, which stays the master; the site ships only the exported sizes. The theme in [`src/styles/theme.js`](src/styles/theme.js)
 mirrors the application palette — brand primary `#0079FD`, azure tints, ink
 `#0D2744` — so the site and the product read as one brand.
 
@@ -118,21 +119,18 @@ website/
 │   │   └── robots.js     # Robots.txt generator
 │   ├── components/        # React components
 │   │   ├── layout/       # Header, Footer, Navigation
-│   │   ├── ui/           # Reusable UI primitives (Button, Card, Section, ...)
+│   │   ├── ui/           # Reusable UI primitives (Button, Card, Input, Section, Icon)
 │   │   ├── marketing/    # All page sections (hero, modules, plans, FAQ, contact)
-│   │   ├── contact/      # Contact page sections
 │   │   └── common/       # Shared components (theme, i18n, forms)
 │   ├── hooks/            # useTheme, useTranslation
 │   ├── locales/          # Translations: 9 locales × 4 namespaces
-│   ├── lib/              # Utilities
+│   ├── lib/              # Content and helpers
 │   │   ├── product.js   # All HMS product and guide content (English only)
 │   │   ├── i18n.js      # Locale detection and translation loading
 │   │   ├── constants.js # App constants
-│   │   ├── registry.js  # Styled Components SSR registry
-│   │   └── utils.js     # General utilities
+│   │   └── registry.js  # Styled Components SSR registry
 │   └── styles/           # Theme and global styles
-├── public/               # Static assets (logos, images, icons, fonts)
-├── dev-plan/             # Historical development plan
+├── public/logos/         # Brand assets - the only static files the site serves
 ├── .cursor/              # Cursor IDE rules
 ├── middleware.js         # Locale detection middleware
 ├── next.config.js        # Next.js configuration
@@ -177,17 +175,22 @@ Adding a locale: add the code to `SUPPORTED_LOCALES` and `LOCALE_NAMES` in `src/
 
 ## Deployment
 
-1. Build the application:
-   ```bash
-   npm run build
-   ```
+The site is deployed to [www.hosspi.com](https://www.hosspi.com) as a Next.js
+standalone server running under cPanel Passenger. Both halves are scripted:
 
-2. Test the production build locally:
-   ```bash
-   npm run start
-   ```
+```bash
+python deploy/update-deploys/website.py && python deploy/upload-deploys/website.py
+```
 
-3. Set production environment variables, configure the domain and SSL.
+The first builds, smoke-tests and packages `deploy/website/website.zip`; the second
+uploads it and brings it live. `deploy/README.md` section 7 covers the target, and
+`deploy/website/DEPLOY.md` is the same sequence as a manual SSH runbook.
+
+To check a production build locally without deploying:
+
+```bash
+npm run build && npm run start
+```
 
 ## Features
 
@@ -203,9 +206,11 @@ Adding a locale: add the code to `SUPPORTED_LOCALES` and `LOCALE_NAMES` in `src/
 
 ## Documentation
 
-- **Coding Standards**: See `dev-plan/P00-dev-guide.md` for templates and checklists
+- **Coding Standards**: See `.cursor/rules/code-style.mdc`, `components.mdc` and
+  `styled-components.mdc`
 - **Project Structure**: See `.cursor/rules/project-structure.mdc` for detailed structure
 - **Rules**: See `.cursor/rules/` for project rules and conventions
 
-Note: the `dev-plan/` directory documents the original build, which included a product
-catalogue, admin panel, and MySQL database. Those features have been removed.
+The site was originally built around a product catalogue, an admin panel and a MySQL
+database. Those features, and the phased plan that described building them, have been
+removed — the site has no database and no authenticated area.

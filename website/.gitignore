@@ -35,9 +35,3 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.js
 
-# orphaned assets from the removed products/downloads feature
-/public/uploads/*
-!/public/uploads/.gitkeep
-/public/downloads/*
-!/public/downloads/.gitkeep
-

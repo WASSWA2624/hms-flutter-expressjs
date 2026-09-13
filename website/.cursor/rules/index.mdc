@@ -32,7 +32,7 @@ This project uses modular rule files organized by concern:
 - `reusability.mdc` - Reusability and uniformity standards
 
 ## Reproducibility Standards
-- **Code Templates**: Use exact templates from `dev-plan/STANDARDIZATION.md`
+- **Code Templates**: Use the templates in `components.mdc` and `styled-components.mdc`
 - **Naming Conventions**: Follow strict naming conventions (see `reusability.mdc`)
 - **Import Order**: Follow strict import order (see `project-structure.mdc`)
 - **Theme Usage**: Always use theme variables, never hardcode values
