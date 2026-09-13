@@ -8,20 +8,36 @@ Shareable HOSSPI artwork. Generated, not hand-drawn: edit the script, rebuild.
 | `hosspi-whatsapp-status.png` | 1080x1920 | WhatsApp Status, Instagram/Facebook stories |
 
 ```bash
-node adverts/build-advert.mjs
+python adverts/build-advert.py
 ```
 
-Needs `website/node_modules` installed; the script borrows sharp from there
-rather than keeping a second copy of libvips.
+Needs Pillow and PyMuPDF (`python -m pip install pillow pymupdf`) and the Segoe
+UI fonts that ship with Windows. Anywhere else, point `HOSSPI_FONT_DIR` at a
+folder holding `segoeui.ttf`, `seguisb.ttf` and `segoeuib.ttf`.
+
+## What it says
+
+Both canvases carry the logo and name side by side, the headline, and eight
+feature cards: AI assistance, speech to text, every platform, fitting the
+hospital's own roles and prices, clinical care, diagnostics and pharmacy,
+billing to accounts, and multi-facility groups. The portrait adds a platform
+row and a list of departments. Both end on the demo call to action, the
+WhatsApp number and the website.
+
+Only capabilities users can reach in the current release belong here - the
+same rule as `website/src/lib/product.js`. Check a claim against the app before
+adding it.
 
 ## Editing
 
-Copy, phone number and the department list are constants at the top of
-`build-advert.mjs`. The palette is the website's own tokens, the icons are read
-out of `website/src/components/ui/Icon.js` at build time, and the logo is
-`website/public/logos/icon-512.png`, so the advert cannot drift from the
-product. Layout flows from a single top-down cursor with the leftover height
-shared between blocks, so both canvases come from one set of numbers.
+Copy, features, platforms, departments and contact details are constants at
+the top of `build-advert.py`, and each canvas has its own `Spec` of sizes. The
+palette is the website's tokens, the icons are read out of
+`website/src/components/ui/Icon.js` at build time (plus a microphone the site's
+set does not have yet), and the logo is `website/public/logos/icon-512.png`, so
+the advert cannot drift from the product.
 
-Keep the headline to two lines. A third pushes the icon grid into the call to
-action bar.
+Layout is measured: every block takes its height from the real font metrics,
+fixed gaps separate the blocks, and leftover height is shared between the gaps.
+If copy grows past the canvas, the build stops and prints each block's height
+rather than drawing over the call-to-action bar.
