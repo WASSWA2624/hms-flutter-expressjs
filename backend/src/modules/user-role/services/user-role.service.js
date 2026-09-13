@@ -14,6 +14,11 @@ const { resolveIdentifierForPayload } = require('@lib/billing/identifiers');
 const { assertRoleIdAssignable } = require('@lib/authorization/assignable-access');
 const { assertUserIdNotDemoProtected } = require('@lib/authorization/demo-user-guard');
 
+const text = (value) => String(value ?? '').trim();
+
+const fieldError = (messageKey, statusCode, field) =>
+  new HttpError(messageKey, statusCode, [{ field, message: messageKey }]);
+
 const resolveUserRoleId = async (identifier) =>
   resolveIdentifierForPayload({
     value: identifier,
@@ -49,6 +54,57 @@ const normalizeUserRolePayload = async (data = {}) => {
   }
 
   return payload;
+};
+
+/**
+ * Bind an assignment to the account's own tenant and a facility inside it.
+ *
+ * A role recorded under another tenant never applies to the user, and one bound
+ * to a foreign facility would grant access outside the user's scope.
+ */
+const resolveAssignmentScope = async (payload) => {
+  const target = await userRoleRepository.findUserScope(payload.user_id);
+  if (!target) {
+    throw fieldError('errors.user.not_found', 404, 'user_id');
+  }
+
+  if (text(payload.tenant_id) && text(payload.tenant_id) !== text(target.tenant_id)) {
+    throw fieldError('errors.user_role.tenant_mismatch', 400, 'tenant_id');
+  }
+
+  const facilityId =
+    payload.facility_id === undefined
+      ? target.facility_id || null
+      : payload.facility_id || null;
+  if (facilityId) {
+    const facility = await userRoleRepository.findFacilityScope(facilityId);
+    if (!facility || text(facility.tenant_id) !== text(target.tenant_id)) {
+      throw fieldError('errors.user_role.facility_tenant_mismatch', 400, 'facility_id');
+    }
+  }
+
+  return { ...payload, tenant_id: target.tenant_id, facility_id: facilityId };
+};
+
+/**
+ * Confirm the role is within the actor's assignment ceiling (when an actor is
+ * present) and can apply inside the assignment's tenant and facility, so an
+ * assignment never grants access the user's scope does not imply.
+ */
+const assertRoleFitsAssignment = async (assignment, actor) => {
+  const role = actor
+    ? await assertRoleIdAssignable(assignment.role_id, actor)
+    : await userRoleRepository.findRoleScope(assignment.role_id);
+  if (!role) {
+    throw fieldError('errors.role.not_found', 404, 'role_id');
+  }
+  if (role.tenant_id && text(role.tenant_id) !== text(assignment.tenant_id)) {
+    throw fieldError('errors.user_role.role_tenant_mismatch', 400, 'role_id');
+  }
+  if (role.facility_id && text(role.facility_id) !== text(assignment.facility_id)) {
+    throw fieldError('errors.user_role.role_facility_mismatch', 400, 'role_id');
+  }
+  return role;
 };
 
 /**
@@ -153,11 +209,10 @@ const getUserRoleById = async (id, userId, ipAddress) => {
  */
 const createUserRole = async (data, userId, ipAddress, actor = null) => {
   try {
-    const payload = await normalizeUserRolePayload(data);
-    await assertUserIdNotDemoProtected(payload.user_id, 'assign_role');
-    if (actor) {
-      await assertRoleIdAssignable(payload.role_id, actor);
-    }
+    const normalized = await normalizeUserRolePayload(data);
+    await assertUserIdNotDemoProtected(normalized.user_id, 'assign_role');
+    const payload = await resolveAssignmentScope(normalized);
+    await assertRoleFitsAssignment(payload, actor);
     const userRole = await userRoleRepository.create(payload);
 
     // Create audit log (non-blocking)
@@ -198,13 +253,21 @@ const updateUserRole = async (id, data, userId, ipAddress, actor = null) => {
     }
 
     await assertUserIdNotDemoProtected(before.user_id, 'update_role');
-    const payload = await normalizeUserRolePayload(data);
-    if (payload.user_id) {
-      await assertUserIdNotDemoProtected(payload.user_id, 'update_role');
+    const normalized = await normalizeUserRolePayload(data);
+    if (normalized.user_id) {
+      await assertUserIdNotDemoProtected(normalized.user_id, 'update_role');
     }
-    if (actor && payload.role_id) {
-      await assertRoleIdAssignable(payload.role_id, actor);
-    }
+    // Validate the assignment as it will exist after the update, not just the
+    // fields that changed.
+    const payload = await resolveAssignmentScope({
+      user_id: normalized.user_id ?? before.user_id,
+      role_id: normalized.role_id ?? before.role_id,
+      tenant_id: normalized.tenant_id ?? before.tenant_id,
+      facility_id:
+        normalized.facility_id !== undefined
+          ? normalized.facility_id
+          : before.facility_id ?? null});
+    await assertRoleFitsAssignment(payload, actor);
     const userRole = await userRoleRepository.update(resolvedId, payload);
 
     // Create audit log (non-blocking)

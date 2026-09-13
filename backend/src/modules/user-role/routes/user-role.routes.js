@@ -12,6 +12,7 @@ const router = express.Router();
 const userRoleController = require('@controllers/user-role/user-role.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
 const { authenticate, requireAuth } = require('@middlewares/auth.middleware');
+const { restoreRequestedScope } = require('@middlewares/tenant-scope.middleware');
 const {
   createUserRoleSchema,
   updateUserRoleSchema,
@@ -20,6 +21,10 @@ const {
 } = require('@validations/user-role/user-role.schema');
 
 const ADMIN_ROLE_SET = ['TENANT_ADMIN', 'FACILITY_ADMIN', 'PLATFORM_ADMIN', 'OPERATIONS', 'HR'];
+
+// The service binds assignments to the user's own tenant and validates the
+// requested facility, so keep the caller's value instead of the actor's facility.
+const preserveRequestedFacility = restoreRequestedScope(['facility_id']);
 
 /**
  * @description List user-roles with pagination and filters
@@ -86,6 +91,7 @@ router.get(
  */
 router.post(
   '/',
+  preserveRequestedFacility,
   validateRequest({ body: createUserRoleSchema }),
   requireAuth(ADMIN_ROLE_SET),
   userRoleController.createUserRole
@@ -111,6 +117,7 @@ router.post(
  */
 router.put(
   '/:id',
+  preserveRequestedFacility,
   validateRequest({ params: userRoleIdParamsSchema, body: updateUserRoleSchema }),
   requireAuth(ADMIN_ROLE_SET),
   userRoleController.updateUserRole

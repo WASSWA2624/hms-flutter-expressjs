@@ -271,11 +271,62 @@ const softDelete = async (id) => {
   }
 };
 
+/**
+ * Resolve the tenant and facility an account belongs to.
+ *
+ * @param {string} userId - User ID
+ * @returns {Promise<{id: string, tenant_id: string, facility_id: (string|null)}|null>}
+ */
+const findUserScope = async (userId) => {
+  try {
+    return await prisma.user.findFirst({
+      where: { id: userId, deleted_at: null },
+      select: { id: true, tenant_id: true, facility_id: true }});
+  } catch (error) {
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
+ * Resolve the tenant and facility a role is limited to.
+ *
+ * @param {string} roleId - Role ID
+ * @returns {Promise<{id: string, tenant_id: (string|null), facility_id: (string|null)}|null>}
+ */
+const findRoleScope = async (roleId) => {
+  try {
+    return await prisma.role.findFirst({
+      where: { id: roleId, deleted_at: null },
+      select: { id: true, tenant_id: true, facility_id: true }});
+  } catch (error) {
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
+ * Resolve the tenant that owns a facility.
+ *
+ * @param {string} facilityId - Facility ID
+ * @returns {Promise<{id: string, tenant_id: string}|null>}
+ */
+const findFacilityScope = async (facilityId) => {
+  try {
+    return await prisma.facility.findFirst({
+      where: { id: facilityId, deleted_at: null },
+      select: { id: true, tenant_id: true }});
+  } catch (error) {
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 module.exports = {
   findById,
   findMany,
   count,
   create,
   update,
-  softDelete
+  softDelete,
+  findUserScope,
+  findRoleScope,
+  findFacilityScope
 };

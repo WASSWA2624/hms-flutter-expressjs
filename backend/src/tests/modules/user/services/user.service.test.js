@@ -16,11 +16,38 @@ const { HttpError } = require('@lib/errors');
 jest.mock('@repositories/user/user.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/crypto');
+jest.mock('@prisma/client', () => ({
+  user_role: { findMany: jest.fn().mockResolvedValue([]) },
+  permission: { findMany: jest.fn().mockResolvedValue([]) }}));
+jest.mock('@lib/authorization/assignable-access', () => ({
+  PLATFORM_ADMIN_MANAGED_ROLES: new Set(['PLATFORM_ADMIN', 'PLATFORM_OWNER']),
+  assertPermissionIdsAssignable: jest.fn(async (ids) => ids),
+  assertRoleIdAssignable: jest.fn(),
+  canActorCreatePlatformRole: jest.fn(() => false),
+  canActorCreateTenantWideRole: jest.fn(() => true),
+  canActorManagePlatformAdmins: jest.fn(() => false)}));
+jest.mock('@lib/websocket/crud-realtime', () => ({
+  publishCrudRealtimeEvent: jest.fn().mockResolvedValue(undefined)}));
+jest.mock('@lib/realtime/platform-realtime', () => ({
+  publishPlatformRealtimeEvent: jest.fn().mockResolvedValue(undefined)}));
+
+const prisma = require('@prisma/client');
+const assignableAccess = require('@lib/authorization/assignable-access');
+const { publishCrudRealtimeEvent } = require('@lib/websocket/crud-realtime');
+const { publishPlatformRealtimeEvent } = require('@lib/realtime/platform-realtime');
 
 describe('User Service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     hashPassword.mockResolvedValue('$2b$10$hashedpasswordplaceholder');
+    prisma.user_role.findMany.mockResolvedValue([]);
+    prisma.permission.findMany.mockResolvedValue([]);
+    assignableAccess.assertPermissionIdsAssignable.mockImplementation(async (ids) => ids);
+    assignableAccess.canActorCreatePlatformRole.mockReturnValue(false);
+    assignableAccess.canActorCreateTenantWideRole.mockReturnValue(true);
+    assignableAccess.canActorManagePlatformAdmins.mockReturnValue(false);
+    publishCrudRealtimeEvent.mockResolvedValue(undefined);
+    publishPlatformRealtimeEvent.mockResolvedValue(undefined);
   });
 
   describe('listUsers', () => {
@@ -245,9 +272,11 @@ describe('User Service', () => {
       status: 'ACTIVE'
     };
 
+    // The repository row never reaches callers with its hash; see user.lifecycle tests.
+    const { password_hash: _passwordHash, ...publicUserData } = userData;
     const createdUser = {
       id: '550e8400-e29b-41d4-a716-446655440001',
-      ...userData,
+      ...publicUserData,
       created_at: new Date(),
       updated_at: new Date()
     };
@@ -571,7 +600,10 @@ describe('User Service', () => {
       expect(result).toEqual(afterUser);
       expect(userRepository.findById.mock.calls[0][1].facility.select.code).toBeUndefined();
       expect(userRepository.findById.mock.calls[0][1].facility.select.slug).toBeUndefined();
-      expect(userRepository.update).toHaveBeenCalledWith(userId, updateData);
+      // Deactivation ends every session in the same write.
+      expect(userRepository.update).toHaveBeenCalledWith(userId, updateData, {
+        revokeSessions: true
+      });
     });
 
     it('should trim position_title on update', async () => {
@@ -589,9 +621,11 @@ describe('User Service', () => {
         '127.0.0.1'
       );
 
-      expect(userRepository.update).toHaveBeenCalledWith(userId, {
-        position_title: 'Head Nurse'
-      });
+      expect(userRepository.update).toHaveBeenCalledWith(
+        userId,
+        { position_title: 'Head Nurse' },
+        { revokeSessions: false }
+      );
     });
 
     it('should normalize permission_ids on update', async () => {
@@ -610,10 +644,14 @@ describe('User Service', () => {
         '127.0.0.1'
       );
 
-      expect(userRepository.update).toHaveBeenCalledWith(userId, {
-        permission_ids: [
-          '550e8400-e29b-41d4-a716-446655440010',
-          '550e8400-e29b-41d4-a716-446655440011']});
+      expect(userRepository.update).toHaveBeenCalledWith(
+        userId,
+        {
+          permission_ids: [
+            '550e8400-e29b-41d4-a716-446655440010',
+            '550e8400-e29b-41d4-a716-446655440011']},
+        { revokeSessions: false }
+      );
     });
 
     it('should throw HttpError if user not found', async () => {
@@ -646,7 +684,8 @@ describe('User Service', () => {
         entity: 'user',
         entity_id: userId,
         diff: { before: beforeUser, after: afterUser },
-        ip_address: '127.0.0.1'
+        ip_address: '127.0.0.1',
+        details: { sessions_revoked: true }
       });
     });
 

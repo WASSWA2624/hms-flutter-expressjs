@@ -205,7 +205,8 @@ describe('User Controller', () => {
       expect(userService.createUser).toHaveBeenCalledWith(
         userData,
         'requester-id',
-        '127.0.0.1'
+        '127.0.0.1',
+        { id: 'requester-id' }
       );
       expect(sendSuccess).toHaveBeenCalledWith(
         res,
@@ -225,7 +226,8 @@ describe('User Controller', () => {
       expect(userService.createUser).toHaveBeenCalledWith(
         userData,
         undefined,
-        '127.0.0.1'
+        '127.0.0.1',
+        undefined
       );
     });
 
@@ -259,7 +261,8 @@ describe('User Controller', () => {
         userId,
         updateData,
         'requester-id',
-        '127.0.0.1'
+        '127.0.0.1',
+        { id: 'requester-id' }
       );
       expect(sendSuccess).toHaveBeenCalledWith(
         res,
@@ -281,7 +284,8 @@ describe('User Controller', () => {
         userId,
         updateData,
         undefined,
-        '127.0.0.1'
+        '127.0.0.1',
+        undefined
       );
     });
 
@@ -307,7 +311,8 @@ describe('User Controller', () => {
       expect(userService.deleteUser).toHaveBeenCalledWith(
         userId,
         'requester-id',
-        '127.0.0.1'
+        '127.0.0.1',
+        { id: 'requester-id' }
       );
       expect(sendNoContent).toHaveBeenCalledWith(res);
     });
@@ -322,7 +327,8 @@ describe('User Controller', () => {
       expect(userService.deleteUser).toHaveBeenCalledWith(
         userId,
         undefined,
-        '127.0.0.1'
+        '127.0.0.1',
+        undefined
       );
     });
 
@@ -332,6 +338,52 @@ describe('User Controller', () => {
       userService.deleteUser.mockRejectedValue(error);
 
       await expect(userController.deleteUser(req, res)).rejects.toThrow(error);
+    });
+  });
+
+  describe('resetUserCredentials', () => {
+    const userId = '550e8400-e29b-41d4-a716-446655440000';
+    const issued = {
+      user_id: 'USR-0001',
+      masked_email: 'ja***@e***.com',
+      delivery_status: 'SENT',
+      expires_at: '2026-09-13T12:00:00.000Z'
+    };
+
+    it('passes the actor and request context and returns only the issued summary', async () => {
+      const headers = {
+        origin: 'https://app.example.com',
+        'x-timezone': 'Africa/Kampala',
+        'accept-language': 'en'
+      };
+      req.params = { id: userId };
+      req.get = jest.fn((name) => headers[name]);
+      userService.resetUserCredentials.mockResolvedValue(issued);
+
+      await userController.resetUserCredentials(req, res);
+
+      expect(userService.resetUserCredentials).toHaveBeenCalledWith(userId, req.user, {
+        ipAddress: '127.0.0.1',
+        requestContext: {
+          locale: 'en',
+          timezone: 'Africa/Kampala',
+          origin: 'https://app.example.com'
+        }
+      });
+      expect(sendSuccess).toHaveBeenCalledWith(
+        res,
+        200,
+        'messages.user.reset_credentials.success',
+        issued
+      );
+    });
+
+    it('should handle service errors', async () => {
+      req.params = { id: userId };
+      const error = new Error('Service error');
+      userService.resetUserCredentials.mockRejectedValue(error);
+
+      await expect(userController.resetUserCredentials(req, res)).rejects.toThrow(error);
     });
   });
 });

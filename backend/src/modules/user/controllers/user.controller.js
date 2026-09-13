@@ -146,10 +146,34 @@ const restoreUser = asyncHandler(async (req, res) => {
   sendSuccess(res, 200, 'messages.user.restore.success', user);
 });
 
+const readHeader = (req, name) =>
+  typeof req.get === 'function' ? req.get(name) || null : null;
+
+/**
+ * Issue a single-use credential reset for a user
+ * POST /api/v1/users/:id/reset-credentials
+ *
+ * @param {Object} req - Express request
+ * @param {Object} res - Express response
+ */
+const resetUserCredentials = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const result = await userService.resetUserCredentials(id, req.user, {
+    ipAddress: req.ip,
+    requestContext: {
+      locale: req.locale || readHeader(req, 'x-locale') || readHeader(req, 'accept-language'),
+      timezone: readHeader(req, 'x-timezone'),
+      origin: readHeader(req, 'origin')}});
+
+  sendSuccess(res, 200, 'messages.user.reset_credentials.success', result);
+});
+
 module.exports = {
   listUsers,
   getUserById,
   createUser,
   updateUser,
   deleteUser,
-  restoreUser};
+  restoreUser,
+  resetUserCredentials};

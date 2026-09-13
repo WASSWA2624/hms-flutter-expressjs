@@ -38205,5 +38205,131 @@
   "pharmacyDrugImportFieldFromProductName": "Read from the product name",
   "@pharmacyDrugImportFieldFromProductName": {
     "description": "Drug import comparison: form and strength are inferred from the product name."
+  },
+  "accessAdminPasswordPolicyHint": "Use at least 8 characters with an uppercase letter, a lowercase letter, a number, and a symbol.",
+  "@accessAdminPasswordPolicyHint": {
+    "description": "Helper text under the initial password when creating a staff account; mirrors the API password policy."
+  },
+  "validationPasswordMinLengthMessage": "Use at least {min} characters.",
+  "@validationPasswordMinLengthMessage": {
+    "description": "Password policy error when the password is too short.",
+    "placeholders": {
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "validationPasswordUppercaseMessage": "Add an uppercase letter.",
+  "@validationPasswordUppercaseMessage": {
+    "description": "Password policy error when the password has no uppercase letter."
+  },
+  "validationPasswordLowercaseMessage": "Add a lowercase letter.",
+  "@validationPasswordLowercaseMessage": {
+    "description": "Password policy error when the password has no lowercase letter."
+  },
+  "validationPasswordNumberMessage": "Add a number.",
+  "@validationPasswordNumberMessage": {
+    "description": "Password policy error when the password has no digit."
+  },
+  "validationPasswordSymbolMessage": "Add a symbol.",
+  "@validationPasswordSymbolMessage": {
+    "description": "Password policy error when the password has no symbol."
+  },
+  "validationMaxLengthMessage": "Use at most {max} characters.",
+  "@validationMaxLengthMessage": {
+    "description": "Generic error when a text field is longer than the API accepts.",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "validationMaxItemsMessage": "Choose at most {max}.",
+  "@validationMaxItemsMessage": {
+    "description": "Generic error when more items are selected than the API accepts.",
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "accessAdminFacilityOptionalHint": "Leave blank to give access across every facility in the organization.",
+  "@accessAdminFacilityOptionalHint": {
+    "description": "Helper text on the optional facility picker for admins who can create organization-wide accounts."
+  },
+  "accessAdminCreateUserRolesSectionTitle": "Roles",
+  "@accessAdminCreateUserRolesSectionTitle": {
+    "description": "Section title for the roles assigned while creating a staff account."
+  },
+  "accessAdminCreateUserRolesSelectScopeFirst": "Choose the organization and facility to see the roles you can assign.",
+  "@accessAdminCreateUserRolesSelectScopeFirst": {
+    "description": "Shown in the roles section of create staff until the scope is chosen."
+  },
+  "accessAdminCreateUserLoadingRoles": "Loading roles...",
+  "@accessAdminCreateUserLoadingRoles": {
+    "description": "Loading label while assignable roles load in create staff."
+  },
+  "accessAdminCreateUserRolesLoadErrorTitle": "Roles could not be loaded",
+  "@accessAdminCreateUserRolesLoadErrorTitle": {
+    "description": "Banner title when assignable roles fail to load in create staff."
+  },
+  "accessAdminUserStatusActiveLabel": "Active",
+  "@accessAdminUserStatusActiveLabel": {
+    "description": "Account status option: the user can sign in."
+  },
+  "accessAdminUserStatusInactiveLabel": "Inactive",
+  "@accessAdminUserStatusInactiveLabel": {
+    "description": "Account status option: the user cannot sign in."
+  },
+  "accessAdminUserStatusSuspendedLabel": "Suspended",
+  "@accessAdminUserStatusSuspendedLabel": {
+    "description": "Account status option: access is suspended."
+  },
+  "accessAdminUserStatusPendingLabel": "Pending",
+  "@accessAdminUserStatusPendingLabel": {
+    "description": "Account status option: awaiting activation."
+  },
+  "accessAdminResetCredentialsAction": "Reset credentials",
+  "@accessAdminResetCredentialsAction": {
+    "description": "Action that emails a user a single-use link to choose a new password."
+  },
+  "accessAdminResetCredentialsConfirmTitle": "Reset credentials",
+  "@accessAdminResetCredentialsConfirmTitle": {
+    "description": "Title of the confirmation dialog before issuing a credential reset."
+  },
+  "accessAdminResetCredentialsConfirmBody": "Email {name} a single-use link to choose a new password? Their current password keeps working until the link is used, and every signed-in session ends when it is.",
+  "@accessAdminResetCredentialsConfirmBody": {
+    "description": "Confirmation body before issuing a credential reset.",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "accessAdminResetCredentialsSentMessage": "Reset link sent to {email}.",
+  "@accessAdminResetCredentialsSentMessage": {
+    "description": "Snackbar after the reset email was accepted by the mail transport; email is masked.",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "accessAdminResetCredentialsPendingMessage": "Reset link is on its way to {email}.",
+  "@accessAdminResetCredentialsPendingMessage": {
+    "description": "Snackbar when the reset email is still being delivered; email is masked.",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "accessAdminResetCredentialsFailedMessage": "The reset link was created, but the email could not be delivered. Check the mail settings and try again.",
+  "@accessAdminResetCredentialsFailedMessage": {
+    "description": "Snackbar when the reset email could not be delivered."
+  },
+  "accessAdminResetCredentialsUnknownDestination": "the user's email address",
+  "@accessAdminResetCredentialsUnknownDestination": {
+    "description": "Fallback destination in reset messages when the API returns no masked email."
   }
 }

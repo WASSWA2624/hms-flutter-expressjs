@@ -15,13 +15,18 @@ const { HttpError } = require('@lib/errors');
 const { publishCrudRealtimeEvent } = require('@lib/websocket/crud-realtime');
 const { PLATFORM_ADMIN_EVENTS } = require('@lib/websocket/events');
 const { ROLES } = require('@config/roles');
+const { PERMISSIONS } = require('@config/permissions');
 const { publishPlatformRealtimeEvent } = require('@lib/realtime/platform-realtime');
 const {
   buildRealtimeEntityEnvelope,
   REALTIME_SYNC_ACTIONS
 } = require('@lib/realtime/entity-envelope');
 const { serializeAccessAdminUserEntity } = require('@lib/realtime/access-admin-realtime');
-const { resolveEntityId, resolveIdentifierForPayload } = require('@lib/billing/identifiers');
+const {
+  resolveEntityId,
+  resolveIdentifierForPayload,
+  resolvePublicIdentifier
+} = require('@lib/billing/identifiers');
 const { resolveModelIdByIdentifier } = require('@lib/identifiers/resolve-entity-id');
 const { checkUserDuplicates } = require('@lib/user/user-similarity');
 const {
@@ -30,13 +35,50 @@ const {
 const {
   PLATFORM_ADMIN_MANAGED_ROLES,
   assertPermissionIdsAssignable,
+  assertRoleIdAssignable,
+  canActorCreatePlatformRole,
+  canActorCreateTenantWideRole,
   canActorManagePlatformAdmins,
 } = require('@lib/authorization/assignable-access');
+const { resolveRequestPermissionNames } = require('@lib/authorization/effective-access');
 const { assertDemoUserNotMutable, assertUserIdNotDemoProtected } = require('@lib/authorization/demo-user-guard');
+const { generateStaffNumber } = require('@lib/hr/staff-number');
 const { normalizeRoleName } = require('@config/roles');
 const prisma = require('@prisma/client');
 
 const USER_SIMILARITY_LOOKUP_LIMIT = 500;
+const ACTIVE_STATUS = 'ACTIVE';
+const MAX_STAFF_NUMBER_ATTEMPTS = 3;
+
+const text = (value) => String(value ?? '').trim();
+
+/**
+ * Strip credential material before a user record leaves the service, whether
+ * in a response, an audit diff, or a realtime payload.
+ */
+const toPublicUser = (record) => {
+  if (!record || typeof record !== 'object') {
+    return record;
+  }
+  const { password_hash: _passwordHash, ...safe } = record;
+  return safe;
+};
+
+const actorUserId = (actor) => actor?.id || actor?.user_id || actor?.userId || null;
+const actorTenantId = (actor) => actor?.tenant_id || actor?.tenantId || null;
+const actorFacilityId = (actor) => actor?.facility_id || actor?.facilityId || null;
+
+/**
+ * Only an authenticated request carries roles or permissions. Internal callers
+ * (seeders, scripts) pass no actor and are not scope-checked here.
+ */
+const hasActorContext = (actor) =>
+  Boolean(actor) &&
+  typeof actor === 'object' &&
+  (Array.isArray(actor.roles) || Array.isArray(actor.permissions));
+
+const fieldError = (messageKey, statusCode, field, extra = {}) =>
+  new HttpError(messageKey, statusCode, [{ field, message: messageKey, ...extra }]);
 
 const loadTargetRoleNames = async (userId) => {
   const rows = await prisma.user_role.findMany({
@@ -62,6 +104,171 @@ const assertActorCanMutateTargetAccount = async (targetUserId, actor = {}) => {
       { field: 'user_id', reason: 'platform_admin_account_forbidden' },
     ]);
   }
+};
+
+/**
+ * Non cross-tenant actors only manage accounts inside their own tenant.
+ */
+const assertActorWithinTenant = (tenantId, actor) => {
+  if (!hasActorContext(actor) || canActorCreatePlatformRole(actor)) {
+    return;
+  }
+  const ownTenantId = actorTenantId(actor);
+  if (!ownTenantId || text(ownTenantId) !== text(tenantId)) {
+    throw fieldError('errors.auth.scope_mismatch', 403, 'tenant_id', {
+      reason: 'outside_actor_tenant',
+    });
+  }
+};
+
+const canActorPlaceTenantWideUser = (actor) =>
+  canActorCreateTenantWideRole(actor) ||
+  resolveRequestPermissionNames(actor).includes(PERMISSIONS.TENANT_ADMIN);
+
+/**
+ * Enforce where the actor may place an account.
+ *
+ * Mirrors the Flutter create form: cross-tenant admins choose any tenant;
+ * tenant-wide admins stay in their tenant and may leave the facility blank for
+ * an organization-wide account; facility-scoped admins (facility admin, HR)
+ * must use their own facility.
+ */
+const assertActorCanPlaceUser = ({ tenantId, facilityId }, actor) => {
+  if (!hasActorContext(actor) || canActorCreatePlatformRole(actor)) {
+    return;
+  }
+
+  assertActorWithinTenant(tenantId, actor);
+
+  if (canActorPlaceTenantWideUser(actor)) {
+    return;
+  }
+
+  if (!text(facilityId)) {
+    throw fieldError('errors.user.facility_required_for_scope', 400, 'facility_id');
+  }
+  const ownFacilityId = actorFacilityId(actor);
+  if (!ownFacilityId || text(ownFacilityId) !== text(facilityId)) {
+    throw fieldError('errors.user.facility_required_for_scope', 403, 'facility_id', {
+      reason: 'outside_actor_facility',
+    });
+  }
+};
+
+const assertFacilityBelongsToTenant = async (facilityId, tenantId) => {
+  if (!text(facilityId)) {
+    return;
+  }
+  const facility = await userRepository.findFacilityScope(facilityId);
+  if (!facility) {
+    throw fieldError('errors.user.facility_not_found', 400, 'facility_id');
+  }
+  if (text(facility.tenant_id) !== text(tenantId)) {
+    throw fieldError('errors.user.facility_tenant_mismatch', 400, 'facility_id');
+  }
+};
+
+/**
+ * A soft-deleted user still owns its email under the (tenant_id, email) index.
+ * Report that against the email field instead of letting the insert fail.
+ */
+const assertEmailNotHeldByDeletedUser = async ({ tenantId, email, excludeUserId = null }) => {
+  if (!text(tenantId) || !text(email)) {
+    return;
+  }
+  const holder = await userRepository.findDeletedByTenantEmail(tenantId, email, excludeUserId);
+  if (holder) {
+    throw fieldError('errors.user.email_exists_deleted_in_tenant', 409, 'email', {
+      restorable: true,
+    });
+  }
+};
+
+const toRoleFieldError = (error, roleId) => {
+  if (!(error instanceof HttpError)) {
+    return error;
+  }
+  const messageKey = error.messageKey || error.message;
+  return new HttpError(messageKey, error.statusCode, [
+    { field: 'role_ids', message: messageKey, role_id: roleId },
+  ]);
+};
+
+/**
+ * Validate requested roles before anything is written.
+ *
+ * Each role must be within the actor's assignment ceiling and belong to the new
+ * account's tenant (or be a platform catalog role) and facility, so a created
+ * user can never receive access from another tenant or facility.
+ */
+const resolveRoleAssignments = async (roleIds, { tenantId, facilityId }, actor) => {
+  const requested = [
+    ...new Set((Array.isArray(roleIds) ? roleIds : []).map(text).filter(Boolean))
+  ];
+  const assignments = new Map();
+
+  for (const roleId of requested) {
+    let role;
+    try {
+      role = await assertRoleIdAssignable(roleId, actor || {});
+    } catch (error) {
+      throw toRoleFieldError(error, roleId);
+    }
+
+    if (role.tenant_id && text(role.tenant_id) !== text(tenantId)) {
+      throw fieldError('errors.user_role.role_tenant_mismatch', 400, 'role_ids', {
+        role_id: roleId,
+      });
+    }
+    if (role.facility_id && text(role.facility_id) !== text(facilityId)) {
+      throw fieldError('errors.user_role.role_facility_mismatch', 400, 'role_ids', {
+        role_id: roleId,
+      });
+    }
+
+    assignments.set(role.id, { role_id: role.id, facility_id: facilityId || null });
+  }
+
+  return [...assignments.values()];
+};
+
+const buildStaffProfileSeed = async (input, { tenantId, positionTitle }) => {
+  if (!input) {
+    return null;
+  }
+  const { staff_number: staffNumber } = await generateStaffNumber({ tenantId });
+  return {
+    position: text(input.position) || positionTitle || null,
+    staff_number: staffNumber
+  };
+};
+
+/**
+ * Create the account, retrying only when another staff record claimed the
+ * generated staff number between generation and commit. Each attempt is a
+ * complete transaction, so a failed attempt leaves nothing behind.
+ */
+const persistNewUser = async (payload, tenantId) => {
+  let nextPayload = payload;
+  for (let attempt = 1; attempt <= MAX_STAFF_NUMBER_ATTEMPTS; attempt += 1) {
+    try {
+      return await userRepository.create(nextPayload);
+    } catch (error) {
+      const staffNumberTaken =
+        Boolean(nextPayload.staff_profile) &&
+        error instanceof HttpError &&
+        error.messageKey === 'errors.user.staff_number_conflict';
+      if (!staffNumberTaken || attempt === MAX_STAFF_NUMBER_ATTEMPTS) {
+        throw error;
+      }
+      const { staff_number: staffNumber } = await generateStaffNumber({ tenantId });
+      nextPayload = {
+        ...nextPayload,
+        staff_profile: { ...nextPayload.staff_profile, staff_number: staffNumber }
+      };
+    }
+  }
+  return null;
 };
 
 const stripSimilarityPayloadFields = (data = {}) => {
@@ -96,7 +303,7 @@ const resolveUserRealtimeAction = (event) => {
   return REALTIME_SYNC_ACTIONS.UPSERT;
 };
 
-const publishUserRealtimeEvent = async (event, user, actorUserId) => {
+const publishUserRealtimeEvent = async (event, user, actorUserIdValue) => {
   const action = resolveUserRealtimeAction(event);
   const entity =
     action === REALTIME_SYNC_ACTIONS.REMOVE
@@ -111,9 +318,9 @@ const publishUserRealtimeEvent = async (event, user, actorUserId) => {
   await Promise.all([
     publishCrudRealtimeEvent({
       event,
-      resource: user,
+      resource: toPublicUser(user),
       resource_type: 'user',
-      actor_user_id: actorUserId,
+      actor_user_id: actorUserIdValue,
       recipient_roles: USER_REALTIME_RECIPIENT_ROLES,
       payload: envelope
     }),
@@ -121,7 +328,7 @@ const publishUserRealtimeEvent = async (event, user, actorUserId) => {
       event,
       resource_type: 'user',
       resource_id: user?.id || null,
-      actor_user_id: actorUserId,
+      actor_user_id: actorUserIdValue,
       tenant_id: user?.tenant_id || null,
       facility_id: user?.facility_id || null,
       payload: {
@@ -183,6 +390,54 @@ const normalizeEmail = (value) => String(value || '').trim().toLowerCase();
 const normalizePhoneDigits = (value) => {
   const digits = String(value || '').replace(/[^\d]/g, '');
   return digits || null;
+};
+
+/**
+ * True when an update touches a detail that identifies the person, so
+ * uniqueness and similarity review must run again. Status changes and
+ * permission syncs never re-run it.
+ */
+const hasIdentityChange = (normalizedPayload, before = {}) => {
+  if (
+    normalizedPayload.email !== undefined &&
+    normalizeEmail(normalizedPayload.email) !== normalizeEmail(before.email)
+  ) {
+    return true;
+  }
+  if (
+    normalizedPayload.phone !== undefined &&
+    normalizePhoneDigits(normalizedPayload.phone) !== normalizePhoneDigits(before.phone)
+  ) {
+    return true;
+  }
+  if (
+    normalizedPayload.position_title !== undefined &&
+    text(normalizedPayload.position_title) !== text(before.position_title)
+  ) {
+    return true;
+  }
+  if (
+    normalizedPayload.facility_id !== undefined &&
+    text(normalizedPayload.facility_id) !== text(before.facility_id)
+  ) {
+    return true;
+  }
+  const profile = normalizedPayload.profile;
+  if (profile) {
+    if (
+      profile.first_name !== undefined &&
+      text(profile.first_name) !== text(before.profile?.first_name)
+    ) {
+      return true;
+    }
+    if (
+      profile.last_name !== undefined &&
+      text(profile.last_name) !== text(before.profile?.last_name)
+    ) {
+      return true;
+    }
+  }
+  return false;
 };
 
 /**
@@ -475,7 +730,7 @@ const listUsers = async (filters, page, limit, sortBy, order, userId, ipAddress)
 
     // Build filter object
     const whereClause = {};
-    
+
     if (filters.tenant_id) {
       whereClause.tenant_id = await resolveIdentifierForPayload({
         value: filters.tenant_id,
@@ -491,7 +746,7 @@ const listUsers = async (filters, page, limit, sortBy, order, userId, ipAddress)
     if (filters.position_title) whereClause.position_title = { contains: filters.position_title };
     if (filters.status) whereClause.status = filters.status;
     if (filters.email) whereClause.email = { contains: filters.email };
-    
+
     // Search filter supports provider lookup by public ID, name, email, phone, and role/title.
     if (filters.search) {
       const searchTerm = String(filters.search).trim();
@@ -518,7 +773,7 @@ const listUsers = async (filters, page, limit, sortBy, order, userId, ipAddress)
     ]);
 
     return {
-      users,
+      users: (Array.isArray(users) ? users : []).map(toPublicUser),
       pagination: {
         page,
         limit,
@@ -551,7 +806,7 @@ const getUserById = async (id, userId, ipAddress) => {
       throw new HttpError('errors.user.not_found', 404);
     }
 
-    return user;
+    return toPublicUser(user);
   } catch (error) {
     if (error instanceof HttpError) throw error;
     throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
@@ -562,31 +817,64 @@ const getUserById = async (id, userId, ipAddress) => {
  * Create new user
  * Per prisma.mdc: Mutations must create audit logs
  *
+ * Every check runs before the first write, and the user, profile, staff
+ * profile, role assignments and direct permissions are persisted in one
+ * transaction, so a rejected or failed create never leaves a partial account.
+ *
  * @param {Object} data - User data
  * @param {string} userId - User ID for audit
  * @param {string} ipAddress - User IP for audit
+ * @param {Object} [actor] - Authenticated actor (req.user)
  * @returns {Promise<Object>} Created user
  */
 const createUser = async (data, userId, ipAddress, actor = null) => {
   try {
     const confirmSimilar = data?.confirm_similar === true;
-    const strippedData = stripSimilarityPayloadFields(data || {});
+    const {
+      role_ids: roleIds,
+      staff_profile: staffProfileInput,
+      ...userInput
+    } = stripSimilarityPayloadFields(data || {});
     const normalizedPayload = await normalizeUserPayload(
-      strippedData,
+      userInput,
       false,
       actor || { id: userId }
     );
+    const tenantId = normalizedPayload.tenant_id;
+    const facilityId = normalizedPayload.facility_id ?? null;
+
+    assertActorCanPlaceUser({ tenantId, facilityId }, actor);
+    await assertFacilityBelongsToTenant(facilityId, tenantId);
+    await assertEmailNotHeldByDeletedUser({ tenantId, email: normalizedPayload.email });
     await assertUserUniqueness({
-      tenantId: normalizedPayload.tenant_id,
+      tenantId,
       email: normalizedPayload.email,
       phone: normalizedPayload.phone,
       positionTitle: normalizedPayload.position_title,
       firstName: normalizedPayload.profile?.first_name,
       middleName: normalizedPayload.profile?.middle_name,
       lastName: normalizedPayload.profile?.last_name,
-      facilityId: normalizedPayload.facility_id,
+      facilityId,
       confirmSimilar});
-    const user = await userRepository.create(normalizedPayload);
+    const roleAssignments = await resolveRoleAssignments(
+      roleIds,
+      { tenantId, facilityId },
+      actor
+    );
+    const staffProfile = await buildStaffProfileSeed(staffProfileInput, {
+      tenantId,
+      positionTitle: normalizedPayload.position_title
+    });
+
+    const created = await persistNewUser(
+      {
+        ...normalizedPayload,
+        ...(roleAssignments.length > 0 ? { role_assignments: roleAssignments } : {}),
+        ...(staffProfile ? { staff_profile: staffProfile } : {})
+      },
+      tenantId
+    );
+    const user = toPublicUser(created);
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -619,6 +907,7 @@ const createUser = async (data, userId, ipAddress, actor = null) => {
  * @param {Object} data - Update data
  * @param {string} userId - User ID for audit
  * @param {string} ipAddress - User IP for audit
+ * @param {Object} [actor] - Authenticated actor (req.user)
  * @returns {Promise<Object>} Updated user
  */
 const updateUser = async (id, data, userId, ipAddress, actor = {}) => {
@@ -633,6 +922,7 @@ const updateUser = async (id, data, userId, ipAddress, actor = {}) => {
 
     assertDemoUserNotMutable(before, 'update');
     await assertActorCanMutateTargetAccount(resolvedUserId, actor);
+    assertActorWithinTenant(before.tenant_id, actor);
 
     const confirmSimilar = data?.confirm_similar === true;
     const strippedData = stripSimilarityPayloadFields(data || {});
@@ -641,20 +931,60 @@ const updateUser = async (id, data, userId, ipAddress, actor = {}) => {
       true,
       actor
     );
-    await assertUserUniqueness({
-      tenantId: normalizedPayload.tenant_id ?? before.tenant_id,
-      email: normalizedPayload.email ?? before.email,
-      phone: normalizedPayload.phone ?? before.phone,
-      positionTitle: normalizedPayload.position_title ?? before.position_title,
-      firstName:
-        normalizedPayload.profile?.first_name ?? before.profile?.first_name,
-      middleName:
-        normalizedPayload.profile?.middle_name ?? before.profile?.middle_name,
-      lastName: normalizedPayload.profile?.last_name ?? before.profile?.last_name,
-      facilityId: normalizedPayload.facility_id ?? before.facility_id,
-      confirmSimilar,
-      excludeUserId: resolvedUserId});
-    const user = await userRepository.update(resolvedUserId, normalizedPayload);
+
+    if (normalizedPayload.facility_id !== undefined) {
+      if (text(normalizedPayload.facility_id) === text(before.facility_id)) {
+        delete normalizedPayload.facility_id;
+      } else {
+        assertActorCanPlaceUser(
+          { tenantId: before.tenant_id, facilityId: normalizedPayload.facility_id },
+          actor
+        );
+        await assertFacilityBelongsToTenant(normalizedPayload.facility_id, before.tenant_id);
+      }
+    }
+
+    const leavesActive =
+      normalizedPayload.status !== undefined && normalizedPayload.status !== ACTIVE_STATUS;
+    if (leavesActive && text(actorUserId(actor)) === text(resolvedUserId)) {
+      throw fieldError('errors.user.cannot_deactivate_self', 400, 'status');
+    }
+
+    if (
+      normalizedPayload.email !== undefined &&
+      normalizeEmail(normalizedPayload.email) !== normalizeEmail(before.email)
+    ) {
+      await assertEmailNotHeldByDeletedUser({
+        tenantId: before.tenant_id,
+        email: normalizedPayload.email,
+        excludeUserId: resolvedUserId
+      });
+    }
+
+    // Status toggles and permission syncs must not be blocked by near-duplicate
+    // review; only a change to identifying details re-runs uniqueness.
+    if (hasIdentityChange(normalizedPayload, before)) {
+      await assertUserUniqueness({
+        tenantId: before.tenant_id,
+        email: normalizedPayload.email ?? before.email,
+        phone: normalizedPayload.phone ?? before.phone,
+        positionTitle: normalizedPayload.position_title ?? before.position_title,
+        firstName:
+          normalizedPayload.profile?.first_name ?? before.profile?.first_name,
+        middleName:
+          normalizedPayload.profile?.middle_name ?? before.profile?.middle_name,
+        lastName: normalizedPayload.profile?.last_name ?? before.profile?.last_name,
+        facilityId: normalizedPayload.facility_id ?? before.facility_id,
+        confirmSimilar,
+        excludeUserId: resolvedUserId});
+    }
+
+    // An account that stops being ACTIVE loses every session in the same
+    // transaction as the status change.
+    const updated = await userRepository.update(resolvedUserId, normalizedPayload, {
+      revokeSessions: leavesActive
+    });
+    const user = toPublicUser(updated);
 
     // Create audit log (non-blocking)
     createAuditLog({
@@ -662,8 +992,9 @@ const updateUser = async (id, data, userId, ipAddress, actor = {}) => {
       action: 'UPDATE',
       entity: 'user',
       entity_id: user.id,
-      diff: { before, after: user },
-      ip_address: ipAddress
+      diff: { before: toPublicUser(before), after: user },
+      ip_address: ipAddress,
+      ...(leavesActive ? { details: { sessions_revoked: true } } : {})
     }).catch(() => {});
 
     await publishUserRealtimeEvent(
@@ -700,6 +1031,7 @@ const deleteUser = async (id, userId, ipAddress, actor = {}) => {
 
     assertDemoUserNotMutable(before, 'delete');
     await assertActorCanMutateTargetAccount(resolvedUserId, actor);
+    assertActorWithinTenant(before.tenant_id, actor);
 
     await userRepository.softDelete(resolvedUserId);
 
@@ -709,7 +1041,7 @@ const deleteUser = async (id, userId, ipAddress, actor = {}) => {
       action: 'DELETE',
       entity: 'user',
       entity_id: resolvedUserId,
-      diff: { before },
+      diff: { before: toPublicUser(before) },
       ip_address: ipAddress
     }).catch(() => {});
 
@@ -739,7 +1071,7 @@ const restoreUser = async (id, userId, ipAddress, actor = {}) => {
       await assertUserIdNotDemoProtected(resolvedUserId, 'restore');
     }
     await assertActorCanMutateTargetAccount(resolvedUserId, actor);
-    const user = await userRepository.restore(resolvedUserId);
+    const user = toPublicUser(await userRepository.restore(resolvedUserId));
 
     createAuditLog({
       user_id: userId,
@@ -762,10 +1094,78 @@ const restoreUser = async (id, userId, ipAddress, actor = {}) => {
   }
 };
 
+/**
+ * Issue a single-use credential reset for another account.
+ *
+ * The reset link and code reach the user only by email: nothing secret is
+ * returned, logged, or written to the audit trail. The current password keeps
+ * working until the link is used, and completing the reset revokes every
+ * session for the account.
+ *
+ * @param {string} id - Target user identifier
+ * @param {Object} actor - Authenticated actor (req.user)
+ * @param {Object} [options]
+ * @param {string} [options.ipAddress] - Actor IP for audit
+ * @param {Object} [options.requestContext] - Origin, locale, timezone for the email
+ * @returns {Promise<Object>} Masked destination, delivery status and expiry
+ */
+const resetUserCredentials = async (id, actor = {}, { ipAddress = null, requestContext = {} } = {}) => {
+  try {
+    const resolvedUserId = await resolveUserId(id);
+    const target = await userRepository.findById(resolvedUserId, USER_LIST_INCLUDE);
+
+    if (!target) {
+      throw new HttpError('errors.user.not_found', 404);
+    }
+
+    assertDemoUserNotMutable(target, 'reset_credentials');
+    await assertActorCanMutateTargetAccount(resolvedUserId, actor);
+    assertActorWithinTenant(target.tenant_id, actor);
+
+    if (!text(target.email)) {
+      throw fieldError('errors.user.reset_requires_email', 400, 'email');
+    }
+
+    // Required lazily: the auth service owns the reset tokens and mail
+    // templates, and loading it eagerly would couple every user import to them.
+    const { issuePasswordReset } = require('@services/auth/auth.service');
+    const issued = await issuePasswordReset({
+      user: target,
+      request_context: requestContext,
+      context: 'admin_credentials_reset'
+    });
+
+    createAuditLog({
+      user_id: actorUserId(actor),
+      tenant_id: target.tenant_id,
+      facility_id: target.facility_id || null,
+      action: 'USER_CREDENTIALS_RESET_ISSUED',
+      entity: 'user',
+      entity_id: target.id,
+      ip_address: ipAddress,
+      details: {
+        delivery_status: issued.delivery_status,
+        expires_at: issued.expires_at
+      }
+    }).catch(() => {});
+
+    return {
+      user_id: resolvePublicIdentifier(target.human_friendly_id, target.id) || target.id,
+      masked_email: issued.masked_email,
+      delivery_status: issued.delivery_status,
+      expires_at: issued.expires_at
+    };
+  } catch (error) {
+    if (error instanceof HttpError) throw error;
+    throw new HttpError('errors.server.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
 module.exports = {
   listUsers,
   getUserById,
   createUser,
   updateUser,
   deleteUser,
-  restoreUser};
+  restoreUser,
+  resetUserCredentials};

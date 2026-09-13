@@ -51,12 +51,40 @@ const setOnObjectIfMissing = (obj, field, value) => {
   setOnObject(obj, field, value);
 };
 
-const normalizeFieldToScope = (req, sourceObject, field) => {
+const hasOwn = (obj, key) => Object.prototype.hasOwnProperty.call(obj, key);
+
+/**
+ * Remember what the caller sent for a scope field before it is rewritten, so a
+ * route that validates scope itself can act on the caller's real intent.
+ */
+const recordScopeAdjustment = (req, location, field, sourceObject) => {
+  if (!req.scopeAdjustments) {
+    req.scopeAdjustments = { query: {}, body: {} };
+  }
+  const bucket = req.scopeAdjustments[location];
+  if (!bucket || hasOwn(bucket, field)) return;
+
+  const camelField = toCamelCase(field);
+  if (hasOwn(sourceObject, field)) {
+    bucket[field] = { provided: true, value: sourceObject[field] };
+  } else if (hasOwn(sourceObject, camelField)) {
+    bucket[field] = { provided: true, value: sourceObject[camelField] };
+  } else {
+    bucket[field] = { provided: false, value: undefined };
+  }
+};
+
+const normalizeFieldToScope = (req, sourceObject, field, location) => {
   const expected = getFromObject(req.user, field);
   if (!expected) return;
+  if (!sourceObject || typeof sourceObject !== 'object') return;
 
   const provided = getFromObject(sourceObject, field);
-  if (provided && provided !== expected) {
+  if (provided === expected) return;
+
+  recordScopeAdjustment(req, location, field, sourceObject);
+
+  if (provided) {
     setOnObject(sourceObject, field, expected);
     return;
   }
@@ -94,8 +122,8 @@ const enforceTenantScope = () => (req, res, next) => {
     if (hasElevatedRole(req.user.roles)) return next();
 
     for (const field of SCOPE_FIELDS) {
-      normalizeFieldToScope(req, req.query, field);
-      normalizeFieldToScope(req, req.body, field);
+      normalizeFieldToScope(req, req.query, field, 'query');
+      normalizeFieldToScope(req, req.body, field, 'body');
     }
 
     return next();
@@ -104,7 +132,45 @@ const enforceTenantScope = () => (req, res, next) => {
   }
 };
 
+/**
+ * Undo the scope rewrite for the listed fields so the route sees what the
+ * caller actually requested.
+ *
+ * Only for routes whose service enforces tenant/facility scope itself (user and
+ * user-role mutations). Without it, a tenant admin working in facility A who
+ * edits a user in facility B silently moves that user into facility A, because
+ * the rewrite injects the actor's facility into every body. Tenant scope is
+ * never restored here.
+ *
+ * @param {string[]} fields - Scope fields to restore (e.g. ['facility_id'])
+ * @param {'body'|'query'} [location='body']
+ * @returns {Function} Express middleware
+ */
+const restoreRequestedScope = (fields = [], location = 'body') => (req, res, next) => {
+  const bucket = req.scopeAdjustments?.[location];
+  const target = req[location];
+  if (bucket && target && typeof target === 'object') {
+    for (const field of fields) {
+      if (field === 'tenant_id' || !hasOwn(bucket, field)) continue;
+
+      const { provided, value } = bucket[field];
+      const camelField = toCamelCase(field);
+      if (provided) {
+        target[field] = value;
+        if (hasOwn(target, camelField)) {
+          target[camelField] = value;
+        }
+      } else {
+        delete target[field];
+        delete target[camelField];
+      }
+    }
+  }
+  return next();
+};
+
 module.exports = {
   hydrateRequestScope,
-  enforceTenantScope
+  enforceTenantScope,
+  restoreRequestedScope
 };

@@ -7,6 +7,7 @@
  */
 
 const {
+  USER_FIELD_LIMITS,
   createUserSchema,
   updateUserSchema,
   userIdParamsSchema,
@@ -193,10 +194,29 @@ describe('User Schemas', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should enforce password_hash max length', () => {
-      const data = { ...validData, password_hash: 'a'.repeat(256) };
-      const result = createUserSchema.safeParse(data);
+    it('should drop a client-supplied password_hash so the policy cannot be bypassed', () => {
+      const result = createUserSchema.safeParse({
+        ...validData,
+        password_hash: '$2b$10$abcdefghijklmnopqrstuvwxyz'
+      });
+      expect(result.success).toBe(true);
+      expect(result.data.password_hash).toBeUndefined();
+    });
+
+    it.each([
+      ['StrongPass!', 'errors.validation.password.number'],
+      ['strongpass123!', 'errors.validation.password.uppercase'],
+      ['STRONGPASS123!', 'errors.validation.password.lowercase'],
+      ['StrongPass123', 'errors.validation.password.special'],
+      ['  Ab1!  ', 'errors.validation.password.min_length']
+    ])('should enforce the password policy for %p', (password, messageKey) => {
+      const result = createUserSchema.safeParse({ ...validData, password });
       expect(result.success).toBe(false);
+      expect(result.error.issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ path: ['password'], message: messageKey })
+        ])
+      );
     });
 
     it('should enforce password min length', () => {
@@ -233,6 +253,63 @@ describe('User Schemas', () => {
         permission_ids: ['not-a-uuid']};
       const result = createUserSchema.safeParse(data);
       expect(result.success).toBe(false);
+    });
+
+    it('should accept role_ids and a staff_profile for atomic creation', () => {
+      const result = createUserSchema.safeParse({
+        ...validData,
+        role_ids: ['550e8400-e29b-41d4-a716-446655440020'],
+        staff_profile: { position: 'Charge Nurse' }
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject more role_ids than the limit', () => {
+      const result = createUserSchema.safeParse({
+        ...validData,
+        role_ids: Array.from(
+          { length: USER_FIELD_LIMITS.roleIds + 1 },
+          (_, index) => `550e8400-e29b-41d4-a716-${String(446655440100 + index)}`
+        )
+      });
+      expect(result.success).toBe(false);
+      expect(result.error.issues[0]).toEqual(
+        expect.objectContaining({ path: ['role_ids'], message: 'errors.validation.max_items' })
+      );
+    });
+
+    it('should report an invalid phone number against the phone field', () => {
+      const result = createUserSchema.safeParse({ ...validData, phone: '12345' });
+      expect(result.success).toBe(false);
+      expect(result.error.issues[0]).toEqual(
+        expect.objectContaining({ path: ['phone'], message: 'errors.user.phone_invalid' })
+      );
+    });
+
+    it('should accept a blank last_name and phone', () => {
+      const result = createUserSchema.safeParse({ ...validData, last_name: '', phone: '' });
+      expect(result.success).toBe(true);
+    });
+
+    it.each([
+      ['a@b.c', false],
+      ['user@localhost', false],
+      ['first.last@example.co.ug', true],
+      ["o'neil+ops@example.com", true]
+    ])('should apply the shared email pattern to %p', (email, valid) => {
+      const result = createUserSchema.safeParse({ ...validData, email });
+      expect(result.success).toBe(valid);
+    });
+
+    it('should report a name that is too long with the max length key', () => {
+      const result = createUserSchema.safeParse({
+        ...validData,
+        first_name: 'a'.repeat(USER_FIELD_LIMITS.name + 1)
+      });
+      expect(result.success).toBe(false);
+      expect(result.error.issues[0]).toEqual(
+        expect.objectContaining({ path: ['first_name'], message: 'errors.validation.max_length' })
+      );
     });
   });
 
@@ -315,6 +392,20 @@ describe('User Schemas', () => {
         permission_ids: ['invalid']});
       expect(result.success).toBe(false);
     });
+
+    it.each(['password', 'password_hash'])(
+      'should reject %p so credentials only change through a reset',
+      (field) => {
+        const result = updateUserSchema.safeParse({ [field]: 'StrongPass123!' });
+        expect(result.success).toBe(false);
+        expect(result.error.issues[0]).toEqual(
+          expect.objectContaining({
+            path: [field],
+            message: 'errors.user.password_change_requires_reset'
+          })
+        );
+      }
+    );
   });
 
   describe('userIdParamsSchema', () => {

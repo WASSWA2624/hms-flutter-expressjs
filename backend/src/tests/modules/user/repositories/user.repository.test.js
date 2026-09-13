@@ -30,11 +30,16 @@ jest.mock('@prisma/client', () => {
       create: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn()},
+    user_role: {
+      create: jest.fn()},
+    user_session: {
+      updateMany: jest.fn()},
     tenant: {
       findFirst: jest.fn()},
     facility: {
       findFirst: jest.fn()},
     staff_profile: {
+      create: jest.fn(),
       updateMany: jest.fn()}};
 
   return prismaMock;
@@ -331,15 +336,48 @@ describe('User Repository', () => {
       });
     });
 
-    it('should handle P2002 error without meta.target', async () => {
+    it('should fall back to a generic unique conflict when the constraint is unknown', async () => {
       const error = { code: 'P2002', meta: {} };
       prisma.user.create.mockRejectedValue(error);
 
       await expect(userRepository.create(userData)).rejects.toThrow(HttpError);
       await expect(userRepository.create(userData)).rejects.toMatchObject({
+        messageKey: 'errors.database.unique_field',
+        statusCode: 409,
+        errors: [expect.objectContaining({ field: 'field' })]});
+    });
+
+    it('should read the violated constraint from the MariaDB driver adapter error', async () => {
+      const error = {
+        code: 'P2002',
+        meta: {
+          modelName: 'user',
+          driverAdapterError: {
+            cause: {
+              kind: 'UniqueConstraintViolation',
+              constraint: { index: 'user_tenant_id_email_key' }}}}};
+      prisma.user.create.mockRejectedValue(error);
+
+      await expect(userRepository.create(userData)).rejects.toMatchObject({
         messageKey: 'errors.user.email_exists_in_tenant',
         statusCode: 409,
         errors: [expect.objectContaining({ field: 'email' })]});
+    });
+
+    it('should map a staff number collision to a retryable conflict', async () => {
+      const error = {
+        code: 'P2002',
+        meta: { target: 'staff_profile_tenant_id_staff_number_key' }};
+      prisma.user.create.mockResolvedValue(createdUser);
+      prisma.staff_profile.create.mockRejectedValue(error);
+
+      await expect(
+        userRepository.create({
+          ...userData,
+          staff_profile: { position: 'Nurse', staff_number: 'FMC-0001' }})
+      ).rejects.toMatchObject({
+        messageKey: 'errors.user.staff_number_conflict',
+        statusCode: 409});
     });
 
     it('should handle P2003 error without meta.field_name', async () => {
@@ -351,6 +389,69 @@ describe('User Repository', () => {
         messageKey: 'errors.database.foreign_key_field',
         statusCode: 400
       });
+    });
+
+    it('should create the user, staff profile and role assignments in one transaction', async () => {
+      prisma.user.create.mockResolvedValue(createdUser);
+      prisma.staff_profile.create.mockResolvedValue({ id: 'staff-1' });
+      prisma.user_role.create.mockResolvedValue({ id: 'user-role-1' });
+      prisma.user.findFirst.mockResolvedValue(createdUser);
+
+      await userRepository.create({
+        ...userData,
+        facility_id: 'facility-1',
+        staff_profile: { position: 'Charge Nurse', staff_number: 'FMC-0001' },
+        role_assignments: [
+          { role_id: 'role-1', facility_id: 'facility-1' },
+          { role_id: 'role-2', facility_id: null }]});
+
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(prisma.user.create).toHaveBeenCalledWith({
+        data: { ...userData, facility_id: 'facility-1' }});
+      expect(prisma.staff_profile.create).toHaveBeenCalledWith({
+        data: {
+          tenant_id: userData.tenant_id,
+          user_id: createdUser.id,
+          position: 'Charge Nurse',
+          staff_number: 'FMC-0001'}});
+      expect(prisma.user_role.create).toHaveBeenNthCalledWith(1, {
+        data: {
+          user_id: createdUser.id,
+          role_id: 'role-1',
+          tenant_id: userData.tenant_id,
+          facility_id: 'facility-1'}});
+      expect(prisma.user_role.create).toHaveBeenNthCalledWith(2, {
+        data: {
+          user_id: createdUser.id,
+          role_id: 'role-2',
+          tenant_id: userData.tenant_id,
+          facility_id: null}});
+      expect(prisma.user.findFirst.mock.calls[0][0].include).toEqual(
+        expect.objectContaining({
+          roles: expect.any(Object),
+          staff_profile: expect.any(Object)})
+      );
+    });
+
+    it('should roll the whole create back when a role assignment fails', async () => {
+      prisma.user.create.mockResolvedValue(createdUser);
+      prisma.staff_profile.create.mockResolvedValue({ id: 'staff-1' });
+      prisma.user_role.create.mockRejectedValue({ code: 'P2003', meta: { field_name: 'role_id' } });
+
+      await expect(
+        userRepository.create({
+          ...userData,
+          staff_profile: { position: 'Nurse', staff_number: 'FMC-0002' },
+          role_assignments: [{ role_id: 'missing-role', facility_id: null }]})
+      ).rejects.toMatchObject({
+        messageKey: 'errors.database.foreign_key_field',
+        statusCode: 400});
+
+      // Every write ran inside the one rejected transaction callback, so Prisma
+      // discards them together and no created user is ever read back.
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(prisma.user.create).toHaveBeenCalledTimes(1);
+      expect(prisma.user.findFirst).not.toHaveBeenCalled();
     });
   });
 
@@ -444,6 +545,56 @@ describe('User Repository', () => {
       prisma.user.update.mockRejectedValue(new Error('DB Error'));
 
       await expect(userRepository.update(userId, updateData)).rejects.toThrow(HttpError);
+    });
+
+    it('should revoke active sessions in the same transaction when asked', async () => {
+      prisma.user.update.mockResolvedValue(updatedUser);
+      prisma.user_session.updateMany.mockResolvedValue({ count: 2 });
+      prisma.user.findFirst.mockResolvedValue(updatedUser);
+
+      await userRepository.update(userId, { status: 'INACTIVE' }, { revokeSessions: true });
+
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(prisma.user_session.updateMany).toHaveBeenCalledWith({
+        where: { user_id: userId, revoked_at: null, deleted_at: null },
+        data: { revoked_at: expect.any(Date) }});
+    });
+
+    it('should leave sessions alone by default', async () => {
+      prisma.user.update.mockResolvedValue(updatedUser);
+      prisma.user.findFirst.mockResolvedValue(updatedUser);
+
+      await userRepository.update(userId, { position_title: 'Head Nurse' });
+
+      expect(prisma.user_session.updateMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('findDeletedByTenantEmail', () => {
+    it('only matches soft-deleted users in the tenant, excluding the edited user', async () => {
+      prisma.user.findFirst.mockResolvedValue({ id: 'deleted-user' });
+
+      const result = await userRepository.findDeletedByTenantEmail(
+        'tenant-1',
+        'jane@example.com',
+        'self-id'
+      );
+
+      expect(result).toEqual({ id: 'deleted-user' });
+      expect(prisma.user.findFirst).toHaveBeenCalledWith({
+        where: {
+          tenant_id: 'tenant-1',
+          email: 'jane@example.com',
+          deleted_at: { not: null },
+          NOT: { id: 'self-id' }},
+        select: { id: true, human_friendly_id: true }});
+    });
+
+    it('skips the lookup without a tenant or email', async () => {
+      await expect(
+        userRepository.findDeletedByTenantEmail(null, 'jane@example.com')
+      ).resolves.toBeNull();
+      expect(prisma.user.findFirst).not.toHaveBeenCalled();
     });
   });
 

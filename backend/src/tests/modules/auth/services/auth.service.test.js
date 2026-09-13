@@ -1386,6 +1386,7 @@ describe('Auth Service', () => {
       };
 
       authRepository.findVerificationToken.mockResolvedValue(mockToken);
+      authRepository.consumeVerificationToken.mockResolvedValue(true);
       hashPassword.mockResolvedValue('newhashedpassword');
       authRepository.updateUserPassword.mockResolvedValue({});
       authRepository.deleteExpiredTokens.mockResolvedValue({});
@@ -1395,6 +1396,7 @@ describe('Auth Service', () => {
       const result = await authService.resetPassword(resetData);
 
       expect(result).toHaveProperty('message');
+      expect(authRepository.consumeVerificationToken).toHaveBeenCalledWith('token-123');
       expect(authRepository.updateUserPassword).toHaveBeenCalledWith('user-123', 'newhashedpassword');
       expect(authRepository.deleteExpiredTokens).toHaveBeenCalledWith('user-123', expect.any(String));
       expect(authRepository.revokeAllUserSessions).toHaveBeenCalledWith('user-123');
@@ -1409,6 +1411,96 @@ describe('Auth Service', () => {
       await expect(authService.resetPassword({ token: 'invalid-token', new_password: 'NewPass123!' }))
         .rejects
         .toThrow(HttpError);
+    });
+
+    it('should reject a token another submission already consumed', async () => {
+      authRepository.findVerificationToken.mockResolvedValue({
+        id: 'token-123',
+        user_id: 'user-123',
+        user: { id: 'user-123', email: 'test@example.com', tenant_id: 'tenant-123' }
+      });
+      authRepository.consumeVerificationToken.mockResolvedValue(false);
+
+      await expect(
+        authService.resetPassword({ token: 'valid-token', new_password: 'NewPassword123!' })
+      ).rejects.toMatchObject({ messageKey: 'errors.auth.token_invalid', statusCode: 400 });
+      expect(authRepository.updateUserPassword).not.toHaveBeenCalled();
+      expect(authRepository.revokeAllUserSessions).not.toHaveBeenCalled();
+    });
+
+    it('should reject a reset for a deleted account without consuming the token', async () => {
+      authRepository.findVerificationToken.mockResolvedValue({
+        id: 'token-123',
+        user_id: 'user-123',
+        user: {
+          id: 'user-123',
+          email: 'test@example.com',
+          tenant_id: 'tenant-123',
+          deleted_at: new Date('2026-09-01T00:00:00Z')
+        }
+      });
+
+      await expect(
+        authService.resetPassword({ token: 'valid-token', new_password: 'NewPassword123!' })
+      ).rejects.toMatchObject({ messageKey: 'errors.auth.token_invalid' });
+      expect(authRepository.consumeVerificationToken).not.toHaveBeenCalled();
+      expect(authRepository.updateUserPassword).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('issuePasswordReset', () => {
+    const user = { id: 'user-123', email: 'jane.doe@example.com', tenant_id: 'tenant-123' };
+
+    beforeEach(() => {
+      authRepository.deleteExpiredTokens.mockResolvedValue({});
+      authRepository.createVerificationToken.mockResolvedValue({});
+    });
+
+    it('stores only hashes, emails the link and code, and returns no secret', async () => {
+      const issuedAt = Date.now();
+
+      const result = await authService.issuePasswordReset({
+        user,
+        request_context: { origin: 'http://127.0.0.1:5201' }
+      });
+
+      expect(result).toEqual({
+        delivery_status: 'SENT',
+        expires_at: expect.any(String),
+        masked_email: 'ja***@e***.com'
+      });
+      const lifetimeMs = Date.parse(result.expires_at) - issuedAt;
+      expect(lifetimeMs).toBeGreaterThanOrEqual(59 * 60 * 1000);
+      expect(lifetimeMs).toBeLessThanOrEqual(61 * 60 * 1000);
+
+      expect(authRepository.deleteExpiredTokens).toHaveBeenCalledWith('user-123', 'PASSWORD_RESET');
+      const email = sendEmail.mock.calls[0][0];
+      expect(email.to).toBe('jane.doe@example.com');
+      const linkToken = email.text.match(/token=([a-f0-9]{64})/)[1];
+      const code = email.text.match(/^\d{6}$/m)[0];
+      const storedHashes = authRepository.createVerificationToken.mock.calls.map(
+        ([row]) => row.token_hash
+      );
+      expect(storedHashes).toHaveLength(2);
+      expect(storedHashes).not.toContain(linkToken);
+      expect(storedHashes).not.toContain(code);
+      expect(JSON.stringify(result)).not.toContain(linkToken);
+      expect(JSON.stringify(result)).not.toContain(code);
+    });
+
+    it('reports FAILED when the mail transport does not deliver', async () => {
+      sendEmail.mockResolvedValue({ sent: false, provider: 'none' });
+
+      const result = await authService.issuePasswordReset({ user });
+
+      expect(result.delivery_status).toBe('FAILED');
+    });
+
+    it('refuses an account without an email address', async () => {
+      await expect(
+        authService.issuePasswordReset({ user: { id: 'user-123' } })
+      ).rejects.toMatchObject({ messageKey: 'errors.user.reset_requires_email' });
+      expect(authRepository.createVerificationToken).not.toHaveBeenCalled();
     });
   });
 });

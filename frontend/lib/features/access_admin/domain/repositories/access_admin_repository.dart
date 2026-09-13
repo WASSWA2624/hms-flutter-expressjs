@@ -42,6 +42,11 @@ abstract interface class AccessAdminRepository {
 
   Future<Result<void>> setUserStatus(String userId, String status);
 
+  /// Emails the user a single-use link to choose a new password.
+  Future<Result<AccessAdminCredentialResetResult>> resetUserCredentials(
+    String userId,
+  );
+
   Future<Result<List<AccessAdminUserRoleAssignment>>> listUserRoles({
     required String userId,
     String? tenantId,

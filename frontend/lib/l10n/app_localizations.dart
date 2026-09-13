@@ -54210,6 +54210,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Read from the product name'**
   String get pharmacyDrugImportFieldFromProductName;
+
+  /// Helper text under the initial password when creating a staff account; mirrors the API password policy.
+  ///
+  /// In en, this message translates to:
+  /// **'Use at least 8 characters with an uppercase letter, a lowercase letter, a number, and a symbol.'**
+  String get accessAdminPasswordPolicyHint;
+
+  /// Password policy error when the password is too short.
+  ///
+  /// In en, this message translates to:
+  /// **'Use at least {min} characters.'**
+  String validationPasswordMinLengthMessage(int min);
+
+  /// Password policy error when the password has no uppercase letter.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an uppercase letter.'**
+  String get validationPasswordUppercaseMessage;
+
+  /// Password policy error when the password has no lowercase letter.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a lowercase letter.'**
+  String get validationPasswordLowercaseMessage;
+
+  /// Password policy error when the password has no digit.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a number.'**
+  String get validationPasswordNumberMessage;
+
+  /// Password policy error when the password has no symbol.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a symbol.'**
+  String get validationPasswordSymbolMessage;
+
+  /// Generic error when a text field is longer than the API accepts.
+  ///
+  /// In en, this message translates to:
+  /// **'Use at most {max} characters.'**
+  String validationMaxLengthMessage(int max);
+
+  /// Generic error when more items are selected than the API accepts.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at most {max}.'**
+  String validationMaxItemsMessage(int max);
+
+  /// Helper text on the optional facility picker for admins who can create organization-wide accounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave blank to give access across every facility in the organization.'**
+  String get accessAdminFacilityOptionalHint;
+
+  /// Section title for the roles assigned while creating a staff account.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles'**
+  String get accessAdminCreateUserRolesSectionTitle;
+
+  /// Shown in the roles section of create staff until the scope is chosen.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the organization and facility to see the roles you can assign.'**
+  String get accessAdminCreateUserRolesSelectScopeFirst;
+
+  /// Loading label while assignable roles load in create staff.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading roles...'**
+  String get accessAdminCreateUserLoadingRoles;
+
+  /// Banner title when assignable roles fail to load in create staff.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles could not be loaded'**
+  String get accessAdminCreateUserRolesLoadErrorTitle;
+
+  /// Account status option: the user can sign in.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get accessAdminUserStatusActiveLabel;
+
+  /// Account status option: the user cannot sign in.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get accessAdminUserStatusInactiveLabel;
+
+  /// Account status option: access is suspended.
+  ///
+  /// In en, this message translates to:
+  /// **'Suspended'**
+  String get accessAdminUserStatusSuspendedLabel;
+
+  /// Account status option: awaiting activation.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get accessAdminUserStatusPendingLabel;
+
+  /// Action that emails a user a single-use link to choose a new password.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset credentials'**
+  String get accessAdminResetCredentialsAction;
+
+  /// Title of the confirmation dialog before issuing a credential reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset credentials'**
+  String get accessAdminResetCredentialsConfirmTitle;
+
+  /// Confirmation body before issuing a credential reset.
+  ///
+  /// In en, this message translates to:
+  /// **'Email {name} a single-use link to choose a new password? Their current password keeps working until the link is used, and every signed-in session ends when it is.'**
+  String accessAdminResetCredentialsConfirmBody(String name);
+
+  /// Snackbar after the reset email was accepted by the mail transport; email is masked.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset link sent to {email}.'**
+  String accessAdminResetCredentialsSentMessage(String email);
+
+  /// Snackbar when the reset email is still being delivered; email is masked.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset link is on its way to {email}.'**
+  String accessAdminResetCredentialsPendingMessage(String email);
+
+  /// Snackbar when the reset email could not be delivered.
+  ///
+  /// In en, this message translates to:
+  /// **'The reset link was created, but the email could not be delivered. Check the mail settings and try again.'**
+  String get accessAdminResetCredentialsFailedMessage;
+
+  /// Fallback destination in reset messages when the API returns no masked email.
+  ///
+  /// In en, this message translates to:
+  /// **'the user\'s email address'**
+  String get accessAdminResetCredentialsUnknownDestination;
 }
 
 class _AppLocalizationsDelegate

@@ -994,6 +994,36 @@ const markTokenAsUsed = async (tokenId) => {
 };
 
 /**
+ * Atomically claim an unused, unexpired verification token.
+ *
+ * The conditional update succeeds for exactly one caller, so two concurrent
+ * submissions of the same reset link or code cannot both change the password.
+ *
+ * @param {string} tokenId - Token ID
+ * @returns {Promise<boolean>} True when this call claimed the token
+ */
+const consumeVerificationToken = async (tokenId) => {
+  try {
+    const now = new Date();
+    const result = await prisma.verification_token.updateMany({
+      where: {
+        id: tokenId,
+        used_at: null,
+        deleted_at: null,
+        expires_at: { gt: now }
+      },
+      data: {
+        used_at: now,
+        updated_at: now
+      }
+    });
+    return result?.count === 1;
+  } catch (error) {
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
  * Delete expired verification tokens for user
  *
  * @param {string} userId - User ID
@@ -1478,6 +1508,7 @@ module.exports = {
   createVerificationToken,
   findVerificationToken,
   markTokenAsUsed,
+  consumeVerificationToken,
   deleteExpiredTokens,
   upsertRegistrationFollowUp,
   updateRegistrationFollowUpStatus,

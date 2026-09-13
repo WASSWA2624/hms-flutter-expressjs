@@ -29828,4 +29828,94 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get pharmacyDrugImportFieldFromProductName =>
       'Read from the product name';
+
+  @override
+  String get accessAdminPasswordPolicyHint =>
+      'Use at least 8 characters with an uppercase letter, a lowercase letter, a number, and a symbol.';
+
+  @override
+  String validationPasswordMinLengthMessage(int min) {
+    return 'Use at least $min characters.';
+  }
+
+  @override
+  String get validationPasswordUppercaseMessage => 'Add an uppercase letter.';
+
+  @override
+  String get validationPasswordLowercaseMessage => 'Add a lowercase letter.';
+
+  @override
+  String get validationPasswordNumberMessage => 'Add a number.';
+
+  @override
+  String get validationPasswordSymbolMessage => 'Add a symbol.';
+
+  @override
+  String validationMaxLengthMessage(int max) {
+    return 'Use at most $max characters.';
+  }
+
+  @override
+  String validationMaxItemsMessage(int max) {
+    return 'Choose at most $max.';
+  }
+
+  @override
+  String get accessAdminFacilityOptionalHint =>
+      'Leave blank to give access across every facility in the organization.';
+
+  @override
+  String get accessAdminCreateUserRolesSectionTitle => 'Roles';
+
+  @override
+  String get accessAdminCreateUserRolesSelectScopeFirst =>
+      'Choose the organization and facility to see the roles you can assign.';
+
+  @override
+  String get accessAdminCreateUserLoadingRoles => 'Loading roles...';
+
+  @override
+  String get accessAdminCreateUserRolesLoadErrorTitle =>
+      'Roles could not be loaded';
+
+  @override
+  String get accessAdminUserStatusActiveLabel => 'Active';
+
+  @override
+  String get accessAdminUserStatusInactiveLabel => 'Inactive';
+
+  @override
+  String get accessAdminUserStatusSuspendedLabel => 'Suspended';
+
+  @override
+  String get accessAdminUserStatusPendingLabel => 'Pending';
+
+  @override
+  String get accessAdminResetCredentialsAction => 'Reset credentials';
+
+  @override
+  String get accessAdminResetCredentialsConfirmTitle => 'Reset credentials';
+
+  @override
+  String accessAdminResetCredentialsConfirmBody(String name) {
+    return 'Email $name a single-use link to choose a new password? Their current password keeps working until the link is used, and every signed-in session ends when it is.';
+  }
+
+  @override
+  String accessAdminResetCredentialsSentMessage(String email) {
+    return 'Reset link sent to $email.';
+  }
+
+  @override
+  String accessAdminResetCredentialsPendingMessage(String email) {
+    return 'Reset link is on its way to $email.';
+  }
+
+  @override
+  String get accessAdminResetCredentialsFailedMessage =>
+      'The reset link was created, but the email could not be delivered. Check the mail settings and try again.';
+
+  @override
+  String get accessAdminResetCredentialsUnknownDestination =>
+      'the user\'s email address';
 }

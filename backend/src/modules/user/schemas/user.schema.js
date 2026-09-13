@@ -8,10 +8,11 @@
  */
 
 const { z } = require('zod');
-const { 
+const {
   uuidOrFriendlyIdentifierSchema,
   listQuerySchema
 } = require('@lib/validation/zod');
+const { applyPasswordPolicy } = require('@lib/validation/password-policy');
 
 const optionalBooleanSchema = z.preprocess((value) => {
   if (typeof value === 'boolean') return value;
@@ -29,6 +30,97 @@ const permissionIdsSchema = z
   .max(100)
   .optional();
 
+/**
+ * Field limits shared with the database columns and the Flutter access-admin
+ * form (`frontend/lib/features/access_admin/domain/entities/user_account_rules.dart`).
+ * Change all three together so the client never accepts what the API rejects.
+ */
+const USER_FIELD_LIMITS = Object.freeze({
+  name: 120,
+  positionTitle: 120,
+  email: 255,
+  phone: 40,
+  phoneMinDigits: 7,
+  phoneMaxDigits: 15,
+  roleIds: 50,
+});
+
+/** Account email pattern, mirrored verbatim by the Flutter form. */
+const USER_EMAIL_PATTERN =
+  /^[A-Za-z0-9._%+'-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$/;
+
+const USER_PHONE_CHARACTERS = /^\+?[\d\s\-().]+$/;
+
+const isBlankOrValidPhone = (value) => {
+  const trimmed = String(value ?? '').trim();
+  if (!trimmed) {
+    return true;
+  }
+  if (!USER_PHONE_CHARACTERS.test(trimmed)) {
+    return false;
+  }
+  const digits = trimmed.replace(/\D/g, '');
+  return (
+    digits.length >= USER_FIELD_LIMITS.phoneMinDigits &&
+    digits.length <= USER_FIELD_LIMITS.phoneMaxDigits
+  );
+};
+
+const nameSchema = z
+  .string()
+  .trim()
+  .min(1, 'errors.validation.required')
+  .max(USER_FIELD_LIMITS.name, 'errors.validation.max_length');
+
+const optionalNameSchema = z
+  .string()
+  .trim()
+  .max(USER_FIELD_LIMITS.name, 'errors.validation.max_length')
+  .optional()
+  .nullable();
+
+const positionTitleSchema = z
+  .string()
+  .trim()
+  .min(1, 'errors.validation.required')
+  .max(USER_FIELD_LIMITS.positionTitle, 'errors.validation.max_length');
+
+const emailSchema = z
+  .string()
+  .trim()
+  .min(1, 'errors.validation.email.required')
+  .max(USER_FIELD_LIMITS.email, 'errors.validation.max_length')
+  .regex(USER_EMAIL_PATTERN, 'errors.validation.email.format');
+
+const phoneSchema = z
+  .string()
+  .trim()
+  .max(USER_FIELD_LIMITS.phone, 'errors.validation.max_length')
+  .refine(isBlankOrValidPhone, { message: 'errors.user.phone_invalid' })
+  .optional()
+  .nullable();
+
+const roleIdsSchema = z
+  .array(uuidOrFriendlyIdentifierSchema)
+  .max(USER_FIELD_LIMITS.roleIds, 'errors.validation.max_items')
+  .optional();
+
+const staffProfileSchema = z
+  .object({
+    position: z
+      .string()
+      .trim()
+      .max(USER_FIELD_LIMITS.positionTitle, 'errors.validation.max_length')
+      .optional()
+      .nullable()})
+  .optional();
+
+// Credentials never change through a profile edit: the single-use reset flow
+// is the only path, so the password policy and session revocation always apply.
+const credentialsFieldSchema = z
+  .never({ message: 'errors.user.password_change_requires_reset' })
+  .optional();
+
 // ==================== Body Schemas ====================
 
 /**
@@ -38,15 +130,16 @@ const permissionIdsSchema = z
 const createUserSchema = z.object({
   tenant_id: uuidOrFriendlyIdentifierSchema,
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-  first_name: z.string().trim().min(1).max(120),
-  last_name: z.string().trim().min(1).max(120).optional().nullable(),
-  position_title: z.string().trim().min(1).max(120),
-  email: z.string().trim().email().max(255),
-  phone: z.string().trim().min(1).max(40).optional().nullable(),
-  password: z.string().trim().min(8).max(255),
-  password_hash: z.string().trim().min(1).max(255).optional(),
+  first_name: nameSchema,
+  last_name: optionalNameSchema,
+  position_title: positionTitleSchema,
+  email: emailSchema,
+  phone: phoneSchema,
+  password: applyPasswordPolicy(z.string().trim()),
   status: userStatusSchema,
   permission_ids: permissionIdsSchema,
+  role_ids: roleIdsSchema,
+  staff_profile: staffProfileSchema,
   confirm_similar: optionalBooleanSchema});
 
 /**
@@ -56,15 +149,15 @@ const createUserSchema = z.object({
  */
 const updateUserSchema = z.object({
   facility_id: uuidOrFriendlyIdentifierSchema.optional().nullable(),
-  first_name: z.string().trim().min(1).max(120).optional(),
-  last_name: z.string().trim().min(1).max(120).optional().nullable(),
-  position_title: z.string().trim().min(1).max(120).optional(),
-  email: z.string().trim().email().max(255).optional(),
-  phone: z.string().trim().min(1).max(40).optional().nullable(),
-  password: z.string().trim().min(8).max(255).optional(),
-  password_hash: z.string().trim().min(1).max(255).optional(),
+  first_name: nameSchema.optional(),
+  last_name: optionalNameSchema,
+  position_title: positionTitleSchema.optional(),
+  email: emailSchema.optional(),
+  phone: phoneSchema,
   status: userStatusSchema.optional(),
   permission_ids: permissionIdsSchema,
+  password: credentialsFieldSchema,
+  password_hash: credentialsFieldSchema,
   confirm_similar: optionalBooleanSchema});
 
 // ==================== URL Params ====================
@@ -95,6 +188,8 @@ const listUsersQuerySchema = listQuerySchema.extend({
 });
 
 module.exports = {
+  USER_EMAIL_PATTERN,
+  USER_FIELD_LIMITS,
   createUserSchema,
   updateUserSchema,
   userIdParamsSchema,

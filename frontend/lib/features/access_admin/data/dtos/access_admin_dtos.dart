@@ -650,6 +650,40 @@ final class AccessAdminDemoResetResultDto {
   }
 }
 
+final class AccessAdminCredentialResetResultDto {
+  const AccessAdminCredentialResetResultDto({
+    required this.deliveryStatus,
+    this.maskedEmail,
+    this.expiresAt,
+  });
+
+  factory AccessAdminCredentialResetResultDto.fromResponse(Object? data) {
+    final Map<String, dynamic> json = _payloadMap(data);
+    return AccessAdminCredentialResetResultDto(
+      deliveryStatus: _string(json['delivery_status']).toUpperCase(),
+      maskedEmail: _nullableString(json['masked_email']),
+      expiresAt: _dateTime(json['expires_at']),
+    );
+  }
+
+  final String deliveryStatus;
+  final String? maskedEmail;
+  final DateTime? expiresAt;
+
+  AccessAdminCredentialResetResult toEntity() {
+    return AccessAdminCredentialResetResult(
+      // Anything but an explicit SENT/PENDING is reported as not delivered.
+      delivery: switch (deliveryStatus) {
+        'SENT' => AccessAdminCredentialDelivery.sent,
+        'PENDING' => AccessAdminCredentialDelivery.pending,
+        _ => AccessAdminCredentialDelivery.failed,
+      },
+      maskedEmail: maskedEmail,
+      expiresAt: expiresAt,
+    );
+  }
+}
+
 Map<String, dynamic> _map(Object? value) {
   if (value is Map<String, dynamic>) return value;
   if (value is Map) return Map<String, dynamic>.from(value);

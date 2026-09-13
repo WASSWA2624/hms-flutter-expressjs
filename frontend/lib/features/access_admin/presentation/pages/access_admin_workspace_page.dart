@@ -17,6 +17,7 @@ import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_en
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/access_admin_access.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/controllers/access_admin_workspace_controller.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_credential_reset.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_management_dialogs.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_workspace_table.dart';
@@ -849,6 +850,14 @@ class _DetailContent extends ConsumerWidget {
     final bool isUserLike =
         item.resource == AccessAdminResource.users ||
         item.resource == AccessAdminResource.demoUsers;
+    final bool canResetCredentials =
+        canWrite &&
+        isUserLike &&
+        !item.isDeleted &&
+        canMutateAccessAdminDemoAccount(item) &&
+        (!item.isSystemCritical ||
+            ref.read(appAccessPolicyProvider).canManagePlatformAdmins()) &&
+        (item.email ?? '').trim().isNotEmpty;
     final String? permissionCode =
         isPermission ? accessAdminPermissionMachineCode(item) : null;
     final String? permissionDescription = isPermission
@@ -1030,12 +1039,17 @@ class _DetailContent extends ConsumerWidget {
             ),
           ),
         if ((canWrite && isRegistration) ||
-            (canResetDemoPassword && item.isDemo)) ...<Widget>[
+            (canResetDemoPassword && item.isDemo) ||
+            canResetCredentials) ...<Widget>[
           SizedBox(height: theme.spacing.lg),
           Wrap(
             spacing: theme.spacing.sm,
             runSpacing: theme.spacing.sm,
-            children: _actions(context, controller),
+            children: _actions(
+              context,
+              controller,
+              canResetCredentials: canResetCredentials,
+            ),
           ),
         ],
       ],
@@ -1044,9 +1058,26 @@ class _DetailContent extends ConsumerWidget {
 
   List<Widget> _actions(
     BuildContext context,
-    AccessAdminWorkspaceController controller,
-  ) {
+    AccessAdminWorkspaceController controller, {
+    required bool canResetCredentials,
+  }) {
     final List<Widget> actions = <Widget>[];
+
+    if (canResetCredentials) {
+      actions.add(
+        AppButton.secondary(
+          label: context.l10n.accessAdminResetCredentialsAction,
+          leadingIcon: Icons.lock_reset_outlined,
+          onPressed: () => unawaited(
+            confirmAccessAdminCredentialReset(
+              context,
+              user: item,
+              issue: () => controller.resetUserCredentials(item),
+            ),
+          ),
+        ),
+      );
+    }
 
     if (canWrite &&
         item.resource == AccessAdminResource.registrationFollowUps) {

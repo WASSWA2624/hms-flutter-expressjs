@@ -12,6 +12,7 @@ const router = express.Router();
 const userController = require('@controllers/user/user.controller');
 const { validateRequest } = require('@middlewares/validate.middleware');
 const { authenticate, authorize } = require('@middlewares/auth.middleware');
+const { restoreRequestedScope } = require('@middlewares/tenant-scope.middleware');
 const { PERMISSIONS } = require('@config/permissions');
 const {
   createUserSchema,
@@ -34,6 +35,11 @@ const USER_WRITE_SCOPES = [
   PERMISSIONS.PLATFORM_ADMIN,
   PERMISSIONS.PLATFORM_OWNER,
 ];
+
+// The user service validates the requested facility against the actor's scope,
+// so undo the global rewrite that would otherwise move the account into the
+// actor's own facility.
+const preserveRequestedFacility = restoreRequestedScope(['facility_id']);
 
 /**
  * @description List users with pagination and filters
@@ -70,6 +76,29 @@ router.post(
   userController.restoreUser
 );
 
+/**
+ * @description Issue a single-use password reset link to a user
+ * @method POST
+ * @route /api/v1/users/:id/reset-credentials
+ * @authentication Required (JWT)
+ * @permissions hr:write, tenant:admin, facility:admin, platform:admin, platform:owner
+ * @urlParams {string} id - User ID (UUID or friendly ID)
+ * @queryParams None
+ * @bodyParams None
+ * @returns {Object} Masked email, delivery status (SENT, PENDING, FAILED) and link expiry; never a password, token, or code
+ * @throws 400 User has no email address
+ * @throws 401 Unauthorized
+ * @throws 403 Demo, out-of-scope, or protected platform account
+ * @throws 404 User not found
+ */
+router.post(
+  '/:id/reset-credentials',
+  validateRequest({ params: userIdParamsSchema }),
+  authenticate(),
+  authorize(USER_WRITE_SCOPES, 'permission'),
+  userController.resetUserCredentials
+);
+
 
 /**
  * @description Get user by ID
@@ -104,18 +133,20 @@ router.get(
  * @bodyParams {string} [facility_id] - Facility ID (UUID)
  * @bodyParams {string} email - User email (required, valid email format, max 255 chars)
  * @bodyParams {string} [phone] - User phone (max 40 chars)
- * @bodyParams {string} password - User password (required when password_hash not provided)
- * @bodyParams {string} [password_hash] - Password hash or plain password
+ * @bodyParams {string} password - Initial password (required; min 8 with upper, lower, number, symbol)
  * @bodyParams {string} status - User status (required, ACTIVE/INACTIVE/SUSPENDED/PENDING)
  * @bodyParams {string[]} [permission_ids] - Direct permission IDs to assign to the user
- * @returns {Object} Created user
+ * @bodyParams {string[]} [role_ids] - Roles assigned in the same transaction as the user
+ * @bodyParams {Object} [staff_profile] - Create a linked staff profile in the same transaction
+ * @returns {Object} Created user (never includes password_hash)
  * @throws 401 Unauthorized
- * @throws 400 Validation error
- * @throws 400 Foreign key constraint violation
- * @throws 409 Unique constraint violation (duplicate email in tenant)
+ * @throws 400 Validation error (field-level)
+ * @throws 403 Tenant or facility outside the actor's scope, or role above the actor's ceiling
+ * @throws 409 Duplicate email/phone in tenant, email held by a deleted user, or similar user awaiting confirmation
  */
 router.post(
   '/',
+  preserveRequestedFacility,
   validateRequest({ body: createUserSchema }),
   authenticate(),
   authorize(USER_WRITE_SCOPES, 'permission'),
@@ -133,18 +164,17 @@ router.post(
  * @bodyParams {string} [facility_id] - Facility ID (UUID)
  * @bodyParams {string} [email] - User email (valid email format, max 255 chars)
  * @bodyParams {string} [phone] - User phone (max 40 chars)
- * @bodyParams {string} [password_hash] - Password hash (max 255 chars)
- * @bodyParams {string} [status] - User status (ACTIVE/INACTIVE/SUSPENDED/PENDING)
+ * @bodyParams {string} [status] - User status (ACTIVE/INACTIVE/SUSPENDED/PENDING); leaving ACTIVE revokes sessions
  * @bodyParams {string[]} [permission_ids] - Direct permission IDs to assign to the user
- * @returns {Object} Updated user
+ * @returns {Object} Updated user (never includes password_hash)
  * @throws 401 Unauthorized
- * @throws 400 Validation error
+ * @throws 400 Validation error, password supplied (use reset-credentials), or self-deactivation
  * @throws 404 User not found
- * @throws 400 Foreign key constraint violation
  * @throws 409 Unique constraint violation
  */
 router.put(
   '/:id',
+  preserveRequestedFacility,
   validateRequest({ params: userIdParamsSchema, body: updateUserSchema }),
   authenticate(),
   authorize(USER_WRITE_SCOPES, 'permission'),

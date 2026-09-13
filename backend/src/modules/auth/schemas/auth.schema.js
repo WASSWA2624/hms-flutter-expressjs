@@ -6,6 +6,7 @@
  */
 
 const { z } = require('zod');
+const { passwordPolicySchema } = require('@lib/validation/password-policy');
 
 const phoneSchema = z
   .string()
@@ -34,12 +35,7 @@ const loginBodySchema = z.object({
 // ==================== Register ====================
 const registerBodySchema = z.object({
   email: z.string().email('errors.validation.email.format').toLowerCase(),
-  password: z.string()
-    .min(8, 'errors.validation.password.min_length')
-    .regex(/[A-Z]/, 'errors.validation.password.uppercase')
-    .regex(/[a-z]/, 'errors.validation.password.lowercase')
-    .regex(/[0-9]/, 'errors.validation.password.number')
-    .regex(/[^A-Za-z0-9]/, 'errors.validation.password.special'),
+  password: passwordPolicySchema,
   facility_name: z.string().trim().min(1, 'errors.validation.field.required').max(255),
   tenant_name: z.string().trim().min(1, 'errors.validation.field.required').max(255).optional(),
   admin_name: z.string().trim().min(1, 'errors.validation.field.required').max(255),
@@ -91,12 +87,7 @@ const resetPasswordBodySchema = z.object({
   token: z.string().min(1, 'errors.validation.token.required').optional(),
   code: z.string().regex(/^\d{6}$/, 'errors.validation.token.invalid').optional(),
   email: z.string().email('errors.validation.email.format').toLowerCase().optional(),
-  new_password: z.string()
-    .min(8, 'errors.validation.password.min_length')
-    .regex(/[A-Z]/, 'errors.validation.password.uppercase')
-    .regex(/[a-z]/, 'errors.validation.password.lowercase')
-    .regex(/[0-9]/, 'errors.validation.password.number')
-    .regex(/[^A-Za-z0-9]/, 'errors.validation.password.special'),
+  new_password: passwordPolicySchema,
   confirm_password: z.string().min(1, 'errors.validation.field.required')
 }).superRefine((data, ctx) => {
   const token = data.token?.trim();
@@ -123,12 +114,7 @@ const resetPasswordBodySchema = z.object({
 // ==================== Change Password ====================
 const changePasswordBodySchema = z.object({
   old_password: z.string().min(1, 'errors.validation.field.required'),
-  new_password: z.string()
-    .min(8, 'errors.validation.password.min_length')
-    .regex(/[A-Z]/, 'errors.validation.password.uppercase')
-    .regex(/[a-z]/, 'errors.validation.password.lowercase')
-    .regex(/[0-9]/, 'errors.validation.password.number')
-    .regex(/[^A-Za-z0-9]/, 'errors.validation.password.special'),
+  new_password: passwordPolicySchema,
   confirm_password: z.string().min(1, 'errors.validation.field.required')
 }).refine((data) => data.new_password === data.confirm_password, {
   message: 'errors.validation.password.mismatch',

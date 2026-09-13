@@ -37,7 +37,9 @@ const EMAIL_VERIFICATION_TOKEN_TYPE = 'EMAIL_VERIFICATION';
 const PHONE_VERIFICATION_TOKEN_TYPE = 'PHONE_VERIFICATION';
 const PASSWORD_RESET_TOKEN_TYPE = 'PASSWORD_RESET';
 const EMAIL_VERIFICATION_EXPIRY_MINUTES = 15;
-const PASSWORD_RESET_EXPIRY_HOURS = 1;
+const DEFAULT_PASSWORD_RESET_TTL_MINUTES = 60;
+const resolvePasswordResetTtlMs = () =>
+  (Number(env.PASSWORD_RESET_TTL_MINUTES) || DEFAULT_PASSWORD_RESET_TTL_MINUTES) * 60 * 1000;
 // Machine-readable registration outcomes. The client renders messaging from
 // these, never from the transport result, so a timed-out request can never be
 // reported as a failed registration.
@@ -388,8 +390,7 @@ const createPasswordResetTokens = async (userId) => {
 
   const linkToken = crypto.randomBytes(32).toString('hex');
   const code = crypto.randomInt(0, 1000000).toString().padStart(6, '0');
-  const expiresAt = new Date();
-  expiresAt.setHours(expiresAt.getHours() + PASSWORD_RESET_EXPIRY_HOURS);
+  const expiresAt = new Date(Date.now() + resolvePasswordResetTtlMs());
 
   await authRepository.createVerificationToken({
     user_id: userId,
@@ -618,7 +619,7 @@ const sendPasswordResetEmail = async ({
   const link = buildResetPasswordLink(resetToken, email, request_context);
   const expiryDate =
     resolveExpiryDate(expiresAt) ||
-    new Date(Date.now() + PASSWORD_RESET_EXPIRY_HOURS * 60 * 60 * 1000);
+    new Date(Date.now() + resolvePasswordResetTtlMs());
   const expiresAtLabel = formatExpiryDateTime(
     expiryDate,
     resolvedLocale,
@@ -2820,6 +2821,98 @@ const resendVerification = async (data) => {
 };
 
 /**
+ * Wait briefly for a credential email to leave the mail transport.
+ *
+ * The reset token is already stored, so the wait only decides what the caller
+ * is told: SENT or FAILED when delivery settles in time, otherwise PENDING while
+ * delivery continues in the background. Never logs the link or the code.
+ *
+ * @param {Promise} sendPromise - In-flight delivery
+ * @param {string} context - Log context label
+ * @returns {Promise<string>} SENT, FAILED or PENDING
+ */
+const settleCredentialEmailDelivery = async (sendPromise, context) => {
+  const settled = Promise.resolve(sendPromise).then(
+    (deliveryResult) => {
+      if (deliveryResult?.sent) {
+        return REGISTRATION_EMAIL_STATUS.SENT;
+      }
+      logger.warn('Credential email was not delivered.', {
+        context,
+        provider: deliveryResult?.provider || 'unknown',
+      });
+      return REGISTRATION_EMAIL_STATUS.FAILED;
+    },
+    (error) => {
+      logger.warn('Credential email delivery failed.', {
+        context,
+        error: error?.message || 'unknown_error',
+      });
+      return REGISTRATION_EMAIL_STATUS.FAILED;
+    }
+  );
+
+  const waitMs = Number(env.REGISTRATION_EMAIL_WAIT_MS ?? 3000);
+  if (waitMs <= 0) {
+    return REGISTRATION_EMAIL_STATUS.PENDING;
+  }
+
+  let timer = null;
+  const deadline = new Promise((resolve) => {
+    timer = setTimeout(() => resolve(REGISTRATION_EMAIL_STATUS.PENDING), waitMs);
+    // Never hold the process open for a send nobody is waiting on.
+    timer?.unref?.();
+  });
+
+  try {
+    return await Promise.race([settled, deadline]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+};
+
+/**
+ * Issue a single-use password reset for an account and email it.
+ *
+ * Used when an administrator resets another user's credentials. The link token
+ * and six-digit code exist only in the email: they are stored hashed, never
+ * returned, and never logged. Earlier reset tokens are revoked first, the new
+ * ones expire after PASSWORD_RESET_TTL_MINUTES, the first successful use
+ * consumes them, and completing the reset revokes every session.
+ *
+ * @param {Object} params
+ * @param {Object} params.user - Account to reset (id, email)
+ * @param {Object} [params.request_context] - Origin, locale and timezone for the email
+ * @param {string} [params.context] - Log context label
+ * @returns {Promise<{delivery_status: string, expires_at: string, masked_email: (string|null)}>}
+ */
+const issuePasswordReset = async ({ user, request_context = {}, context = 'password_reset' }) => {
+  if (!user?.id || !user?.email) {
+    throw new HttpError('errors.user.reset_requires_email', 400, [{ field: 'email' }]);
+  }
+
+  const { linkToken, code, expiresAt } = await createPasswordResetTokens(user.id);
+  const delivery_status = await settleCredentialEmailDelivery(
+    sendPasswordResetEmail({
+      email: user.email,
+      resetToken: linkToken,
+      resetCode: code,
+      expiresAt,
+      locale: request_context?.locale,
+      timeZone: request_context?.timezone,
+      request_context,
+    }),
+    context
+  );
+
+  return {
+    delivery_status,
+    expires_at: expiresAt.toISOString(),
+    masked_email: maskEmailAddress(user.email),
+  };
+};
+
+/**
  * Send forgot password email
  *
  * @param {Object} data - Forgot password data
@@ -2924,6 +3017,17 @@ const resetPassword = async (data) => {
     }
   }
 
+  if (!resetToken.user || resetToken.user.deleted_at) {
+    throw new HttpError('errors.auth.token_invalid', 400);
+  }
+
+  // Claim the token before changing anything, so two submissions of the same
+  // link or code cannot both set a password.
+  const claimed = await authRepository.consumeVerificationToken(resetToken.id);
+  if (!claimed) {
+    throw new HttpError('errors.auth.token_invalid', 400);
+  }
+
   // Hash new password
   const new_password_hash = await hashPassword(new_password);
 
@@ -2960,6 +3064,7 @@ module.exports = {
   verifyPhone,
   resendVerification,
   forgotPassword,
+  issuePasswordReset,
   resetPassword,
   changePassword,
   refresh,

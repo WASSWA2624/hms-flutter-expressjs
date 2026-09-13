@@ -1,6 +1,7 @@
 const {
   hydrateRequestScope,
-  enforceTenantScope
+  enforceTenantScope,
+  restoreRequestedScope
 } = require('@middlewares/tenant-scope.middleware');
 
 const invokeMiddleware = (middleware, req, res = {}) =>
@@ -91,5 +92,82 @@ describe('tenant scope middleware', () => {
     const error = await invokeMiddleware(enforceTenantScope(), req);
 
     expect(error).toBeUndefined();
+  });
+
+  test('enforceTenantScope records what the caller sent before rewriting it', async () => {
+    const req = {
+      user: {
+        id: 'user-5',
+        tenant_id: 'tenant-5',
+        facility_id: 'facility-5',
+        roles: ['TENANT_ADMIN']
+      },
+      query: {},
+      body: { tenant_id: 'tenant-5', facility_id: 'facility-other' }
+    };
+
+    await invokeMiddleware(enforceTenantScope(), req);
+
+    expect(req.body.facility_id).toBe('facility-5');
+    expect(req.scopeAdjustments.body.facility_id).toEqual({
+      provided: true,
+      value: 'facility-other'
+    });
+    expect(req.scopeAdjustments.body.tenant_id).toBeUndefined();
+  });
+
+  test('restoreRequestedScope returns the requested facility and keeps the tenant rewrite', async () => {
+    const req = {
+      user: {
+        id: 'user-6',
+        tenant_id: 'tenant-6',
+        facility_id: 'facility-a',
+        roles: ['TENANT_ADMIN']
+      },
+      query: {},
+      body: { tenant_id: 'tenant-other', facility_id: 'facility-b', status: 'INACTIVE' }
+    };
+
+    await invokeMiddleware(enforceTenantScope(), req);
+    const error = await invokeMiddleware(
+      restoreRequestedScope(['facility_id', 'tenant_id']),
+      req
+    );
+
+    expect(error).toBeUndefined();
+    expect(req.body).toEqual({
+      tenant_id: 'tenant-6',
+      facility_id: 'facility-b',
+      status: 'INACTIVE'
+    });
+  });
+
+  test('restoreRequestedScope removes a facility the rewrite injected', async () => {
+    const req = {
+      user: {
+        id: 'user-7',
+        tenant_id: 'tenant-7',
+        facility_id: 'facility-a',
+        roles: ['TENANT_ADMIN']
+      },
+      query: {},
+      body: { status: 'INACTIVE' }
+    };
+
+    await invokeMiddleware(enforceTenantScope(), req);
+    expect(req.body.facility_id).toBe('facility-a');
+
+    await invokeMiddleware(restoreRequestedScope(['facility_id']), req);
+
+    expect(req.body).toEqual({ status: 'INACTIVE', tenant_id: 'tenant-7' });
+  });
+
+  test('restoreRequestedScope leaves untouched requests alone', async () => {
+    const req = { body: { facility_id: 'facility-b' } };
+
+    const error = await invokeMiddleware(restoreRequestedScope(['facility_id']), req);
+
+    expect(error).toBeUndefined();
+    expect(req.body).toEqual({ facility_id: 'facility-b' });
   });
 });

@@ -56,6 +56,24 @@ const resolveInclude = (include = {}) => ({
   ...USER_DETAIL_INCLUDE,
   ...include});
 
+// Create returns the assignments made in the same transaction so the caller can
+// publish and audit the complete account without a second read.
+const USER_CREATE_RESULT_INCLUDE = Object.freeze({
+  roles: {
+    where: { deleted_at: null },
+    include: {
+      role: {
+        select: {
+          id: true,
+          human_friendly_id: true,
+          name: true}}}},
+  staff_profile: {
+    select: {
+      id: true,
+      human_friendly_id: true,
+      staff_number: true,
+      position: true}}});
+
 const normalizePermissionIds = (value) => (
   Array.isArray(value)
     ? [...new Set(value.map((entry) => String(entry ?? '').trim()).filter(Boolean))]
@@ -72,7 +90,44 @@ const mapUniqueConstraintField = (target) => {
   if (fields.some((entry) => entry.includes('phone'))) {
     return 'phone';
   }
+  if (fields.some((entry) => entry.includes('staff_number'))) {
+    return 'staff_number';
+  }
   return fields.find((entry) => entry && entry !== 'tenant_id') || 'field';
+};
+
+/**
+ * Collect every place a unique-violation names its constraint.
+ *
+ * Prisma only fills `meta.target` for some drivers; with the MariaDB adapter the
+ * constraint arrives under `meta.driverAdapterError.cause`. Reading both keeps a
+ * duplicate email reported against the email field instead of as a generic
+ * database error.
+ */
+const resolveUniqueConstraintTarget = (error) => {
+  const meta = error?.meta || {};
+  const cause = meta.driverAdapterError?.cause || {};
+  const candidates = [
+    meta.target,
+    cause.constraint?.fields,
+    cause.constraint?.index,
+    cause.originalMessage,
+    error?.message]
+    .flat()
+    .filter(Boolean)
+    .map((entry) => String(entry));
+  return candidates.length > 0 ? candidates : meta.target;
+};
+
+const UNIQUE_FIELD_MESSAGE_KEYS = Object.freeze({
+  email: 'errors.user.email_exists_in_tenant',
+  phone: 'errors.user.phone_exists_in_tenant',
+  staff_number: 'errors.user.staff_number_conflict'});
+
+const toUniqueConflictError = (error) => {
+  const field = mapUniqueConstraintField(resolveUniqueConstraintTarget(error));
+  const messageKey = UNIQUE_FIELD_MESSAGE_KEYS[field] || 'errors.database.unique_field';
+  return new HttpError(messageKey, 409, [{ field, message: messageKey }]);
 };
 
 const findActiveByTenantEmail = async (tenantId, email, excludeUserId = null) => {
@@ -126,6 +181,51 @@ const findActiveByTenantPhone = async (tenantId, phone, excludeUserId = null) =>
         String(entry.phone).replace(/[^\d]/g, '') === normalizedDigits
     ) || null
   );
+};
+
+/**
+ * Find a soft-deleted user that still holds an email within a tenant.
+ *
+ * The (tenant_id, email) unique index covers deleted rows too, so without this
+ * check a create or email change fails at the database with nothing the form
+ * can show against the email field.
+ */
+const findDeletedByTenantEmail = async (tenantId, email, excludeUserId = null) => {
+  if (!tenantId || !email) {
+    return null;
+  }
+
+  try {
+    return await prisma.user.findFirst({
+      where: {
+        tenant_id: tenantId,
+        email,
+        deleted_at: { not: null },
+        ...(excludeUserId ? { NOT: { id: excludeUserId } } : {})},
+      select: { id: true, human_friendly_id: true }});
+  } catch (error) {
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
+};
+
+/**
+ * Resolve the tenant that owns a facility.
+ *
+ * @param {string} facilityId - Facility ID
+ * @returns {Promise<{id: string, tenant_id: string}|null>}
+ */
+const findFacilityScope = async (facilityId) => {
+  if (!facilityId) {
+    return null;
+  }
+
+  try {
+    return await prisma.facility.findFirst({
+      where: { id: facilityId, deleted_at: null },
+      select: { id: true, tenant_id: true }});
+  } catch (error) {
+    throw new HttpError('errors.database.unexpected', 500, [{ originalError: error.message }]);
+  }
 };
 
 const syncUserPermissions = async (tx, userId, permissionIds = []) => {
@@ -264,8 +364,19 @@ const count = async (filters = {}, { includeDeleted = false } = {}) => {
  */
 const create = async (data) => {
   try {
-    const { permission_ids, profile, ...userData } = data || {};
+    const {
+      permission_ids,
+      profile,
+      role_assignments,
+      staff_profile,
+      ...userData
+    } = data || {};
     const permissionIds = normalizePermissionIds(permission_ids);
+    const roleAssignments = Array.isArray(role_assignments) ? role_assignments : [];
+
+    // The user, profile, staff profile, role assignments and direct permissions
+    // commit together: any failure rolls every row back, so no partial account
+    // is ever left behind.
     return await prisma.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
         data: {
@@ -284,6 +395,24 @@ const create = async (data) => {
         }
       });
 
+      if (staff_profile) {
+        await tx.staff_profile.create({
+          data: {
+            tenant_id: createdUser.tenant_id,
+            user_id: createdUser.id,
+            position: staff_profile.position ?? null,
+            staff_number: staff_profile.staff_number ?? null}});
+      }
+
+      for (const assignment of roleAssignments) {
+        await tx.user_role.create({
+          data: {
+            user_id: createdUser.id,
+            role_id: assignment.role_id,
+            tenant_id: createdUser.tenant_id,
+            facility_id: assignment.facility_id ?? null}});
+      }
+
       if (permissionIds.length > 0) {
         await syncUserPermissions(tx, createdUser.id, permissionIds);
       }
@@ -292,20 +421,11 @@ const create = async (data) => {
         where: {
           id: createdUser.id,
           deleted_at: null},
-        include: resolveInclude()});
+        include: resolveInclude(USER_CREATE_RESULT_INCLUDE)});
     });
   } catch (error) {
     if (error.code === 'P2002') {
-      // Unique constraint violation
-      const target = error.meta?.target;
-      const field = mapUniqueConstraintField(target);
-      const messageKey =
-        field === 'email'
-          ? 'errors.user.email_exists_in_tenant'
-          : field === 'phone'
-            ? 'errors.user.phone_exists_in_tenant'
-            : 'errors.database.unique_field';
-      throw new HttpError(messageKey, 409, [{ field, message: messageKey }]);
+      throw toUniqueConflictError(error);
     }
     if (error.code === 'P2003') {
       // Foreign key constraint violation
@@ -321,9 +441,12 @@ const create = async (data) => {
  *
  * @param {string} id - User ID
  * @param {Object} data - Update data
+ * @param {Object} [options]
+ * @param {boolean} [options.revokeSessions] - End every active session in the
+ *   same transaction (used when an account stops being ACTIVE)
  * @returns {Promise<Object>} Updated user
  */
-const update = async (id, data) => {
+const update = async (id, data, { revokeSessions = false } = {}) => {
   try {
     const { permission_ids, profile, ...userData } = data || {};
     const shouldSyncPermissions = permission_ids !== undefined;
@@ -384,6 +507,15 @@ const update = async (id, data) => {
         await syncUserPermissions(tx, id, permission_ids);
       }
 
+      if (revokeSessions) {
+        await tx.user_session.updateMany({
+          where: {
+            user_id: id,
+            revoked_at: null,
+            deleted_at: null},
+          data: { revoked_at: new Date() }});
+      }
+
       return await tx.user.findFirst({
         where: {
           id,
@@ -395,16 +527,7 @@ const update = async (id, data) => {
       throw new HttpError('errors.user.not_found', 404);
     }
     if (error.code === 'P2002') {
-      // Unique constraint violation
-      const target = error.meta?.target;
-      const field = mapUniqueConstraintField(target);
-      const messageKey =
-        field === 'email'
-          ? 'errors.user.email_exists_in_tenant'
-          : field === 'phone'
-            ? 'errors.user.phone_exists_in_tenant'
-            : 'errors.database.unique_field';
-      throw new HttpError(messageKey, 409, [{ field, message: messageKey }]);
+      throw toUniqueConflictError(error);
     }
     if (error.code === 'P2003') {
       // Foreign key constraint violation
@@ -541,4 +664,6 @@ module.exports = {
   softDelete,
   restore,
   findActiveByTenantEmail,
-  findActiveByTenantPhone};
+  findActiveByTenantPhone,
+  findDeletedByTenantEmail,
+  findFacilityScope};

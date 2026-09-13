@@ -234,6 +234,38 @@ final class AccessAdminWorkspaceController
     );
   }
 
+  /// Issues a single-use credential reset, then refreshes the list so it
+  /// reflects the account as the API now reports it.
+  Future<Result<AccessAdminCredentialResetResult>> resetUserCredentials(
+    AccessAdminItem item,
+  ) async {
+    if (!canMutateAccessAdminDemoAccount(item)) {
+      return Result<AccessAdminCredentialResetResult>.failure(
+        AppFailure.validation(),
+      );
+    }
+    final AccessAdminWorkspaceState? current = _currentState;
+    if (current != null) {
+      _emit(current.copyWith(isSaving: true, clearLastFailure: true));
+    }
+
+    final Result<AccessAdminCredentialResetResult> result = await _repository
+        .resetUserCredentials(item.mutationId);
+    final bool succeeded = result.when(
+      success: (_) => true,
+      failure: (_) => false,
+    );
+    if (succeeded) {
+      await _refreshWorkspace(preferredSelectedId: current?.selectedItem?.id);
+    }
+    // The confirm dialog shows a failure inline; keep the page banner clear.
+    final AccessAdminWorkspaceState? latest = _currentState;
+    if (latest != null) {
+      _emit(latest.copyWith(isSaving: false, isRefreshing: false));
+    }
+    return result;
+  }
+
   Future<AppFailure?> deleteUser(AccessAdminItem item) {
     if (!canMutateAccessAdminDemoAccount(item)) {
       return Future<AppFailure?>.value(AppFailure.validation());

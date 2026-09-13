@@ -702,6 +702,7 @@ final class AccessAdminUserDraft {
     this.password,
     this.status = 'ACTIVE',
     this.permissionIds = const <String>[],
+    this.roleIds = const <String>[],
     this.confirmSimilar = false,
   });
 
@@ -720,6 +721,9 @@ final class AccessAdminUserDraft {
   final String status;
   final List<String> permissionIds;
 
+  /// Roles written in the same transaction that creates the account.
+  final List<String> roleIds;
+
   /// When true, the create payload sends `confirm_similar` so the backend
   /// bypasses soft similarity review (exact contact conflicts still block).
   final bool confirmSimilar;
@@ -737,6 +741,7 @@ final class AccessAdminUserDraft {
     String? password,
     String? status,
     List<String>? permissionIds,
+    List<String>? roleIds,
     bool? confirmSimilar,
     bool clearFacilityId = false,
     bool clearTenantName = false,
@@ -760,6 +765,7 @@ final class AccessAdminUserDraft {
       password: clearPassword ? null : (password ?? this.password),
       status: status ?? this.status,
       permissionIds: permissionIds ?? this.permissionIds,
+      roleIds: roleIds ?? this.roleIds,
       confirmSimilar: confirmSimilar ?? this.confirmSimilar,
     );
   }
@@ -883,6 +889,25 @@ final class AccessAdminDemoResetResult {
   final String email;
   final DateTime? resetAt;
   final String? environment;
+}
+
+/// How the reset email had left the mail transport when the API responded.
+enum AccessAdminCredentialDelivery { sent, pending, failed }
+
+@immutable
+final class AccessAdminCredentialResetResult {
+  const AccessAdminCredentialResetResult({
+    required this.delivery,
+    this.maskedEmail,
+    this.expiresAt,
+  });
+
+  final AccessAdminCredentialDelivery delivery;
+
+  /// Destination with most characters hidden. The link, the code, and any
+  /// password never reach the client.
+  final String? maskedEmail;
+  final DateTime? expiresAt;
 }
 
 @immutable

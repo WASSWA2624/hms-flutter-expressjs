@@ -186,29 +186,39 @@ void main() {
     );
   });
 
-  test('create and edit forms omit roles and permissions sections', () {
+  test('create assigns roles with the account; edit omits roles and credentials', () {
+    expect(
+      mutationDialogSource.contains('AppRoleAssignmentPicker('),
+      isTrue,
+      reason: 'Roles are chosen on create so the API writes them atomically',
+    );
+    expect(mutationDialogSource.contains('if (isCreate) ...<Widget>['), isTrue);
     expect(
       mutationDialogSource.contains('if (mode == UserMutationMode.edit) ...<Widget>['),
       isFalse,
-      reason: 'Assigned roles / Direct permissions are deferred to User Details',
+      reason: 'Edit manages roles and direct permissions in User Details',
     );
+    expect(mutationDialogSource.contains('roleIds: roleIds'), isTrue);
     expect(
       mutationDialogSource.contains(
-        'never loads the roles/permissions catalog in this dialog.',
+        'password: isCreate ? passwordController.text.trim() : null',
       ),
       isTrue,
-      reason: 'Reference catalog must not load in create/edit mutation dialog',
+      reason: 'Edit never sends a password; resets go through the reset flow',
     );
     expect(
-      mutationDialogSource.contains('permissionIds: const <String>[]'),
-      isTrue,
-      reason: 'Create/edit submit empty permissionIds',
+      mutationDialogSource.contains('permissionIds:'),
+      isFalse,
+      reason: 'Direct permissions stay in User Details',
     );
-    expect(
-      mutationDialogSource.contains('const <String>[],'),
-      isTrue,
-      reason: 'Create/edit submit empty roleIds',
+    final String repositorySource = File(
+      'lib/features/access_admin/data/repositories/access_admin_repository_impl.dart',
+    ).readAsStringSync();
+    final String updateSource = repositorySource.substring(
+      repositorySource.indexOf('Future<Result<void>> updateUser('),
+      repositorySource.indexOf('Future<Result<void>> syncUserDirectPermissions('),
     );
+    expect(updateSource.contains("'password'"), isFalse);
   });
 
   test('edit user mirrors create similarity flow excluding self', () {

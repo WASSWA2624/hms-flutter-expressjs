@@ -203,6 +203,10 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
           'password': draft.password,
           'status': draft.status,
           'permission_ids': draft.permissionIds,
+          'role_ids': draft.roleIds,
+          // Access admin creates staff accounts: the staff profile is written in
+          // the same transaction as the user and its roles.
+          'staff_profile': <String, Object?>{'position': draft.positionTitle},
           if (draft.confirmSimilar) 'confirm_similar': true,
         }),
         decoder: (Object? responseData) => _extractRecordId(
@@ -229,18 +233,22 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
     return _afterAccessMutation(
       () => _apiClient.put<void>(
         ApiEndpoints.byId(HmsApiResource.users, userId),
-        data: _withoutEmpty(<String, Object?>{
+        data: <String, Object?>{
+          ..._withoutEmpty(<String, Object?>{
+            'first_name': draft.firstName,
+            'last_name': draft.lastName,
+            'email': draft.email,
+            'phone': draft.phone,
+            'position_title': draft.positionTitle,
+            'status': draft.status,
+            'permission_ids': draft.permissionIds,
+            if (draft.confirmSimilar) 'confirm_similar': true,
+          }),
+          // Sent even when null so choosing every facility clears it; the API
+          // ignores an unchanged facility. Credentials are never part of an
+          // edit and change only through resetUserCredentials.
           'facility_id': draft.facilityId,
-          'first_name': draft.firstName,
-          'last_name': draft.lastName,
-          'email': draft.email,
-          'phone': draft.phone,
-          'position_title': draft.positionTitle,
-          'password': draft.password,
-          'status': draft.status,
-          'permission_ids': draft.permissionIds,
-          if (draft.confirmSimilar) 'confirm_similar': true,
-        }),
+        },
         decoder: (_) {},
       ),
     );
@@ -290,6 +298,22 @@ final class AccessAdminRepositoryImpl implements AccessAdminRepository {
         data: <String, Object?>{'status': status},
         decoder: (_) {},
       ),
+    );
+  }
+
+  @override
+  Future<Result<AccessAdminCredentialResetResult>> resetUserCredentials(
+    String userId,
+  ) {
+    return _apiClient.post<AccessAdminCredentialResetResult>(
+      ApiEndpoints.nested(HmsApiResource.users, userId, const <String>[
+        'reset-credentials',
+      ]),
+      decoder: (Object? data) {
+        return AccessAdminCredentialResetResultDto.fromResponse(
+          data,
+        ).toEntity();
+      },
     );
   }
 

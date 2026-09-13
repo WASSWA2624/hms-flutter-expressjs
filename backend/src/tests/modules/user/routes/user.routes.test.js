@@ -7,4 +7,11 @@ describe('user.routes contract', () => {
     expect(Array.isArray(subject.stack)).toBe(true);
     expect(subject.stack.length).toBeGreaterThan(0);
   });
+
+  it('registers the credential reset route', () => {
+    const layer = subject.stack.find(
+      (entry) => entry.route?.path === '/:id/reset-credentials'
+    );
+    expect(layer?.route?.methods?.post).toBe(true);
+  });
 });

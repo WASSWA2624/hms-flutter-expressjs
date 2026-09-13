@@ -255,6 +255,13 @@ Future<AccessAdminItem?> openAccessAdminCreateUserDialog(
           return const AppFailure.cancelled();
         }
 
+        // Conflicts that are not about similar people (an email still held by
+        // a deleted user, a staff number race) carry field messages the form
+        // shows directly; only similarity conflicts reopen the review.
+        if (!_isUserSimilarityConflict(failure)) {
+          return failure;
+        }
+
         final bool isExactContactConflict =
             _isUserDuplicateContactConflict(failure);
         final bool alreadyConfirmed = pending.confirmSimilar;
@@ -269,6 +276,7 @@ Future<AccessAdminItem?> openAccessAdminCreateUserDialog(
           context,
           ref,
           pending: pending.copyWith(confirmSimilar: false),
+          backendFailure: failure,
           forceReviewMatches: true,
           conflictEntries: failure is ConflictFailure
               ? failure.conflictEntries
@@ -335,6 +343,7 @@ Future<AppFailure?> _reviewUserSimilarity(
   bool isEdit = false,
   bool forceReviewMatches = false,
   List<Map<String, Object?>> conflictEntries = const <Map<String, Object?>>[],
+  AppFailure? backendFailure,
 }) async {
   final _UserSimilarityPeers peerLookup = await _loadUserSimilarityPeers(
     ref,
@@ -420,7 +429,8 @@ Future<AppFailure?> _reviewUserSimilarity(
   // Force-review after backend conflict must not reopen a false empty
   // "no similar" confirmation — that loops Continue create without creating.
   if (forceReviewMatches && reviewMatches.isEmpty) {
-    return AppFailure.conflict(code: 'EMAIL_EXISTS_IN_TENANT');
+    // Keep the API's field messages so the form can point at the field.
+    return backendFailure ?? AppFailure.conflict(code: 'EMAIL_EXISTS_IN_TENANT');
   }
 
   final UserSimilarityDialogResult review = await showUserSimilarityDialog(
@@ -476,6 +486,15 @@ bool _isUserDuplicateContactConflict(AppFailure failure) {
     );
   }
   return false;
+}
+
+/// Similarity and exact-contact conflicts open the review; every other 409 is
+/// a field-level error for the form.
+bool _isUserSimilarityConflict(AppFailure failure) {
+  final String code = failure.code.trim().toUpperCase();
+  return code == 'SIMILAR_EXISTS' ||
+      _isUserDuplicateContactConflict(failure) ||
+      (failure is ConflictFailure && failure.conflictEntries.isNotEmpty);
 }
 
 /// Matches backend `USER_SIMILARITY_LOOKUP_LIMIT`.
@@ -709,6 +728,10 @@ Future<AccessAdminItem?> openAccessAdminEditUserDialog(
           return const AppFailure.cancelled();
         }
 
+        if (!_isUserSimilarityConflict(failure)) {
+          return failure;
+        }
+
         final bool isExactContactConflict =
             _isUserDuplicateContactConflict(failure);
         final bool alreadyConfirmed = pending.confirmSimilar;
@@ -721,6 +744,7 @@ Future<AccessAdminItem?> openAccessAdminEditUserDialog(
           context,
           ref,
           pending: pending.copyWith(confirmSimilar: false),
+          backendFailure: failure,
           excludeUserId: excludeUserId,
           isEdit: true,
           forceReviewMatches: true,

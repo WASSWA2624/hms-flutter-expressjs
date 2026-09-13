@@ -9,6 +9,22 @@
 jest.mock('@repositories/user/user.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/crypto');
+jest.mock('@prisma/client', () => ({
+  user_role: { findMany: jest.fn().mockResolvedValue([]) }}));
+jest.mock('@lib/authorization/assignable-access', () => ({
+  PLATFORM_ADMIN_MANAGED_ROLES: new Set(['PLATFORM_ADMIN', 'PLATFORM_OWNER']),
+  assertPermissionIdsAssignable: jest.fn(async (ids) => ids),
+  assertRoleIdAssignable: jest.fn(),
+  canActorCreatePlatformRole: jest.fn(() => false),
+  canActorCreateTenantWideRole: jest.fn(() => true),
+  canActorManagePlatformAdmins: jest.fn(() => false),
+}));
+jest.mock('@lib/websocket/crud-realtime', () => ({
+  publishCrudRealtimeEvent: jest.fn().mockResolvedValue(undefined),
+}));
+jest.mock('@lib/realtime/platform-realtime', () => ({
+  publishPlatformRealtimeEvent: jest.fn().mockResolvedValue(undefined),
+}));
 jest.mock('@lib/billing/clinical-request-billing', () => ({
   upsertClinicalRequestBilling: jest.fn(),
   receiveClinicalRequestPayment: jest.fn(),
@@ -64,6 +80,12 @@ describe('User service billing bypass (Directory tab mutations)', () => {
     hashPassword.mockResolvedValue('$2b$10$hashedpasswordplaceholder');
     userRepository.findMany.mockResolvedValue([]);
     createAuditLog.mockResolvedValue(true);
+    require('@prisma/client').user_role.findMany.mockResolvedValue([]);
+    const assignableAccess = require('@lib/authorization/assignable-access');
+    assignableAccess.assertPermissionIdsAssignable.mockImplementation(async (ids) => ids);
+    assignableAccess.canActorManagePlatformAdmins.mockReturnValue(false);
+    require('@lib/websocket/crud-realtime').publishCrudRealtimeEvent.mockResolvedValue(undefined);
+    require('@lib/realtime/platform-realtime').publishPlatformRealtimeEvent.mockResolvedValue(undefined);
   });
 
   it('createUser does not post to patient Billing ledger', async () => {
@@ -75,7 +97,8 @@ describe('User service billing bypass (Directory tab mutations)', () => {
       '127.0.0.1'
     );
 
-    expect(result).toEqual(createdUser);
+    const { password_hash: _passwordHash, ...publicCreatedUser } = createdUser;
+    expect(result).toEqual(publicCreatedUser);
     expect(clinicalRequestBilling.upsertClinicalRequestBilling).not.toHaveBeenCalled();
     expect(clinicalRequestBilling.receiveClinicalRequestPayment).not.toHaveBeenCalled();
     expect(clinicalRequestBilling.adjustClinicalRequestBilling).not.toHaveBeenCalled();

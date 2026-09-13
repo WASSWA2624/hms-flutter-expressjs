@@ -16,6 +16,7 @@ import 'package:hosspi_hms/features/access_admin/data/repositories/access_admin_
 import 'package:hosspi_hms/features/access_admin/domain/entities/access_admin_entities.dart';
 import 'package:hosspi_hms/features/access_admin/domain/repositories/access_admin_repository.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/access_admin_access.dart';
+import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_credential_reset.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_dialogs.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_workspace_print_helpers.dart';
 import 'package:hosspi_hms/features/access_admin/presentation/widgets/access_admin_workspace_table.dart';
@@ -3414,6 +3415,8 @@ class _AccessAdminUserDetailDialogState
     final AppFailure? failure = await widget.onStatusChanged(nextStatus);
     if (!mounted) return;
     if (failure == null) {
+      // Tell the directory to reload so the list shows the new status.
+      widget.onMutated?.call();
       Navigator.of(context).pop();
       return;
     }
@@ -3421,6 +3424,17 @@ class _AccessAdminUserDetailDialogState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(context.l10n.failureMessage(failure))),
     );
+  }
+
+  Future<void> _resetCredentials() async {
+    final bool issued = await confirmAccessAdminCredentialReset(
+      context,
+      user: _item,
+      issue: () => widget.repository.resetUserCredentials(_item.mutationId),
+    );
+    if (issued && mounted) {
+      widget.onMutated?.call();
+    }
   }
 
   Future<void> _reloadDetail() async {
@@ -3891,6 +3905,10 @@ class _AccessAdminUserDetailDialogState
         widget.canWrite &&
         !item.isDeleted &&
         canMutateAccessAdminDemoAccount(item);
+    final bool canResetCredentials =
+        canMutate &&
+        (widget.canDeleteProtected || !item.isSystemCritical) &&
+        (item.email ?? '').trim().isNotEmpty;
 
     return AppDialog(
       title: Text(l10n.accessAdminCreateUserDetailsSectionTitle),
@@ -3960,6 +3978,12 @@ class _AccessAdminUserDetailDialogState
             isLoading: _saving,
             onPressed: _saving ? null : _toggleStatus,
           ),
+          if (canResetCredentials)
+            AppButton.secondary(
+              leadingIcon: Icons.lock_reset_outlined,
+              label: l10n.accessAdminResetCredentialsAction,
+              onPressed: _saving ? null : _resetCredentials,
+            ),
           if (widget.canDeleteProtected || !item.isSystemCritical)
             AppButton.secondary(
               leadingIcon: Icons.delete_outline,
