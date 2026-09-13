@@ -8,6 +8,7 @@
 jest.mock('../../../../modules/maintenance-request/repositories/maintenance-request.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolvePublicIdentifier: jest.fn((...values) => values.find(Boolean) || null),
   resolveIdentifierForFilter: jest.fn(),
   resolveIdentifierForPayload: jest.fn()}));

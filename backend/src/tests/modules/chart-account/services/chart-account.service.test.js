@@ -5,6 +5,7 @@ const { createAuditLog } = require('@lib/audit');
 jest.mock('@repositories/chart-account/chart-account.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   sanitizeIdentifier: (value) => value,
   resolvePublicIdentifier: (...values) => values.find((v) => v) || null,
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value),

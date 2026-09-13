@@ -32,6 +32,7 @@ jest.mock('@services/billing/billing.service', () => ({
   createInvoice: jest.fn(),
 }));
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   sanitizeIdentifier: jest.fn((value) =>
     value == null ? '' : String(value).trim()
   ),

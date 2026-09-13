@@ -8,6 +8,7 @@ jest.mock('@lib/billing/financials', () => ({
   recalculateInvoiceBalances: jest.fn(),
 }));
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value || undefined),
   resolveIdentifierForPayload: jest.fn(async ({ value }) => value || null),
   resolveEntityId: jest.fn(async ({ identifier }) => identifier),

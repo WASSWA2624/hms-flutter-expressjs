@@ -31,6 +31,7 @@ jest.mock('@prisma/client', () => ({
   insurer_integration: {
     findFirst: jest.fn()}}));
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolvePublicIdentifier: (...values) => {
     for (const value of values) {
       const normalized =

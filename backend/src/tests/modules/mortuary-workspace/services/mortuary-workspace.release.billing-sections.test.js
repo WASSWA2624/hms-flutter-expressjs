@@ -9,6 +9,7 @@
 jest.mock('@repositories/mortuary-workspace/mortuary-workspace.repository');
 jest.mock('@prisma/client', () => ({}));
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolvePublicIdentifier: (...values) => {
     for (const value of values) {
       if (

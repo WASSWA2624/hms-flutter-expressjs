@@ -2,6 +2,7 @@ const prisma = require('@prisma/client');
 const subject = require('../../../../modules/hr-workspace/services/hr-workspace.service');
 
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolvePublicIdentifier: jest.fn((...values) => values.find((value) => value) || null),
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value || undefined),
   resolveIdentifierForPayload: jest.fn(async ({ value }) => value || null)}));

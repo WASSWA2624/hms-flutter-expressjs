@@ -12,6 +12,7 @@ jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn()
 }));
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolveIdentifierForPayload: jest.fn()
 }));
 jest.mock('@lib/authorization/assignable-access', () => ({

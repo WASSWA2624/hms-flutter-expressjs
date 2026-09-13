@@ -4,6 +4,7 @@ jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn(() => Promise.resolve({})),
   createRequiredAuditLog: jest.fn(() => Promise.resolve({}))}));
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolveEntityId: jest.fn(async ({ identifier }) => identifier),
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value),
   resolvePublicIdentifier: jest.fn((...values) => values.find(Boolean) || null)}));

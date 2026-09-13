@@ -6,6 +6,7 @@ const { PERMISSIONS } = require('@config/permissions');
 jest.mock('@repositories/price-book-entry/price-book-entry.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   sanitizeIdentifier: (value) => value,
   resolvePublicIdentifier: (value) => value,
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value),

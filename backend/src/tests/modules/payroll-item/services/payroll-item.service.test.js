@@ -19,6 +19,7 @@ const {
 jest.mock('@repositories/payroll-item/payroll-item.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolveIdentifierForFilter: jest.fn(),
   resolveIdentifierForPayload: jest.fn(),
   resolveEntityId: jest.fn()}));

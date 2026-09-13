@@ -1,5 +1,6 @@
 jest.mock('@repositories/subscriptions-workspace/subscriptions-workspace.repository');
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolveIdentifierForFilter: jest.fn(),
   resolvePublicIdentifier: jest.fn((...values) => values.find(Boolean) || null)}));
 

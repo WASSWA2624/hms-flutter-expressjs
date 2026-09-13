@@ -10,6 +10,7 @@
 jest.mock('@repositories/housekeeping-task/housekeeping-task.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolveEntityId: jest.fn(async ({ identifier }) => identifier),
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value),
   resolveIdentifierForPayload: jest.fn(async ({ value }) => value),

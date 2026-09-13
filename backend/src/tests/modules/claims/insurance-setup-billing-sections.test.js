@@ -24,6 +24,7 @@ jest.mock('@lib/billing/coverage-split', () => ({
     patient_share_total: '20.00',
     insurer_share_total: '80.00'}))}));
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   sanitizeIdentifier: (value) => (typeof value === 'string' ? value.trim() : ''),
   resolvePublicIdentifier: (...values) => {
     for (const value of values) {

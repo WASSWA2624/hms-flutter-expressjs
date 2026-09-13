@@ -10,6 +10,7 @@ const { HttpError } = require('@lib/errors');
 jest.mock('@repositories/module/module.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolveEntityId: jest.fn(),
   resolvePublicIdentifier: jest.fn((...values) => values.find(Boolean) || null)}));
 

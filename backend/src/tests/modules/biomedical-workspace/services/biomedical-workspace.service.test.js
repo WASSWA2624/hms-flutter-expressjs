@@ -28,6 +28,7 @@ jest.mock('@lib/websocket', () => ({
   NOTIFICATION_EVENTS: {
     NOTIFICATION_CREATED: 'notification.created'}}));
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolvePublicIdentifier: (...values) =>
     values.find((entry) => typeof entry === 'string' && entry.trim()) || null,
   resolveIdentifierForFilter: jest.fn()}));

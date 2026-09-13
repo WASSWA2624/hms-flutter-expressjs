@@ -2,6 +2,7 @@ jest.mock('@repositories/breach-notification/breach-notification.repository');
 jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn()}));
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolvePublicIdentifier: jest.fn((...values) => {
     for (const value of values) {
       if (typeof value !== 'string') continue;

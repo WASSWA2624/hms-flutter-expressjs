@@ -15,6 +15,7 @@ jest.mock('@lib/websocket', () => ({
   FACILITY_LAYOUT_EVENTS: { FACILITY_LAYOUT_UPDATED: 'facility.layout.updated' },
 }));
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolveEntityId: jest.fn(async ({ identifier }) => identifier),
   resolvePublicIdentifier: jest.fn((value) => value || null),
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value || undefined),

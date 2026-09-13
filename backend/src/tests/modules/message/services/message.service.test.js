@@ -45,7 +45,7 @@ describe('Message Service', () => {
       const result = await messageService.getMessageById(mockMessage.id);
       
       expect(result).toEqual(mockMessage);
-      expect(messageRepository.findById).toHaveBeenCalledWith(mockMessage.id, {});
+      expect(messageRepository.findById).toHaveBeenCalledWith(mockMessage.id, undefined);
     });
 
     it('should throw error if message not found', async () => {
@@ -88,7 +88,7 @@ describe('Message Service', () => {
         expect.any(Number),
         expect.any(Number),
         expect.any(Object),
-        expect.any(Object)
+        undefined
       );
     });
   });

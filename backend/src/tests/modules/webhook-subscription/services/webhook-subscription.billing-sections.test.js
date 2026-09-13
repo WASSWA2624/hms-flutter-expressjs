@@ -20,6 +20,7 @@ jest.mock('@lib/resilience/retry', () => ({
   isTransientError: jest.fn(() => false),
 }));
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   sanitizeIdentifier: jest.fn((value) => (typeof value === 'string' ? value.trim() : '')),
   resolvePublicIdentifier: jest.fn((...values) => {
     for (const value of values) {

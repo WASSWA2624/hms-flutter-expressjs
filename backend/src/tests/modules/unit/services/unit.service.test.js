@@ -11,6 +11,7 @@ const { HttpError } = require('@lib/errors');
 jest.mock('@repositories/unit/unit.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value),
   resolveIdentifierForPayload: jest.fn(async ({ value, nullable }) => {
     if (value === undefined) return undefined;

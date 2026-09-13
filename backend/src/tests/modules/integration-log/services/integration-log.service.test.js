@@ -9,6 +9,7 @@ jest.mock('@repositories/integration-log/integration-log.repository');
 jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn()}));
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   sanitizeIdentifier: jest.fn((value) => (typeof value === 'string' ? value.trim() : '')),
   resolvePublicIdentifier: jest.fn((...values) => {
     for (const value of values) {

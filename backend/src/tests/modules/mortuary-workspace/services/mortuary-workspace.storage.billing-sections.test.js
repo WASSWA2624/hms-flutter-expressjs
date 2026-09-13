@@ -8,6 +8,7 @@
 
 jest.mock('@repositories/mortuary-workspace/mortuary-workspace.repository');
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolvePublicIdentifier: (...values) => {
     for (const value of values) {
       if (typeof value === 'string' && value.trim() && !/^[0-9a-f-]{36}$/i.test(value.trim())) {

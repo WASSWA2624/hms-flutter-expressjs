@@ -6,6 +6,7 @@ jest.mock('@lib/storage', () => ({
   sanitizeFilename: jest.fn((value) => value)}));
 
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value),
   resolveIdentifierForPayload: jest.fn(async ({ value }) => value),
   resolvePublicIdentifier: jest.fn((...values) =>

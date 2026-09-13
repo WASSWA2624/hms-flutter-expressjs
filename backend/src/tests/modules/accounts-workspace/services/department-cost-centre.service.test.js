@@ -13,6 +13,7 @@ jest.mock('@lib/identifiers/resolve-entity-id', () => ({
   })),
 }));
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolvePublicIdentifier: (...values) => values.find((value) => value) || null,
 }));
 

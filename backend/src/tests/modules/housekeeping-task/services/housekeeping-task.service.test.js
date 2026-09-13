@@ -14,6 +14,7 @@ jest.mock('@lib/billing/housekeeping-billing', () => ({
   maybeBillCompletedHousekeepingTask: jest.fn().mockResolvedValue(null),
 }));
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolveEntityId: jest.fn(async ({ identifier }) => identifier),
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value),
   resolveIdentifierForPayload: jest.fn(async ({ value }) => value),

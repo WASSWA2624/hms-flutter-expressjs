@@ -5,6 +5,7 @@ jest.mock('@lib/billing/clinical-request-billing', () => ({
   adjustClinicalRequestBilling: jest.fn(),
 }));
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolvePublicIdentifier: jest.fn((...values) => {
     const match = values.find((value) => value != null && String(value).trim() !== '');
     return match == null ? null : String(match);

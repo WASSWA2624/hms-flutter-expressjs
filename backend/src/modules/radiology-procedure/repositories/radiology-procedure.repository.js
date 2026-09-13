@@ -27,6 +27,12 @@ const buildWhereClause = (filters = {}, { includeDeleted = false } = {}) => {
   return where;
 };
 
+// An empty include is sent as undefined, never as {}: Prisma treats the two
+// differently and every repository here omits the argument rather than passing
+// an empty object.
+const omitEmptyInclude = (include) =>
+  include && Object.keys(include).length > 0 ? include : undefined;
+
 const resolveIncludeOptions = (includeOrOptions = {}, defaultInclude = TENANT_NAME_INCLUDE) => {
   if (
     includeOrOptions
@@ -35,17 +41,21 @@ const resolveIncludeOptions = (includeOrOptions = {}, defaultInclude = TENANT_NA
   ) {
     return {
       includeDeleted: Boolean(includeOrOptions.includeDeleted),
-      include: includeOrOptions.include === undefined
-        ? defaultInclude
-        : includeOrOptions.include
+      include: omitEmptyInclude(
+        includeOrOptions.include === undefined
+          ? defaultInclude
+          : includeOrOptions.include
+      )
     };
   }
 
   return {
     includeDeleted: false,
-    include: includeOrOptions && Object.keys(includeOrOptions).length > 0
-      ? includeOrOptions
-      : defaultInclude
+    include: omitEmptyInclude(
+      includeOrOptions && Object.keys(includeOrOptions).length > 0
+        ? includeOrOptions
+        : defaultInclude
+    )
   };
 };
 

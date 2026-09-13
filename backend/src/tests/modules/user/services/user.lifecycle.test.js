@@ -26,6 +26,7 @@ jest.mock('@lib/authorization/demo-user-guard', () => ({
   assertDemoUserNotMutable: jest.fn(),
   assertUserIdNotDemoProtected: jest.fn()}));
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolveEntityId: jest.fn(),
   resolveIdentifierForPayload: jest.fn(),
   resolvePublicIdentifier: jest.fn()}));

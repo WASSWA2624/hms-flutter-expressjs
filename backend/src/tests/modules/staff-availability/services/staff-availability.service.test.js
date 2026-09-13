@@ -9,6 +9,7 @@ const { HttpError } = require('@lib/errors');
 jest.mock('@repositories/staff-availability/staff-availability.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value || null),
   resolveIdentifierForPayload: jest.fn(async ({ value }) => value),
   resolveEntityId: jest.fn(async ({ identifier }) => identifier)}));

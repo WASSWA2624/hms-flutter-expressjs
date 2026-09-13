@@ -21,6 +21,7 @@ jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn().mockResolvedValue({}),
 }));
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolveEntityId: jest.fn(async ({ identifier }) => identifier),
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value || undefined),
   resolveIdentifierForPayload: jest.fn(async ({ value }) => value || undefined),

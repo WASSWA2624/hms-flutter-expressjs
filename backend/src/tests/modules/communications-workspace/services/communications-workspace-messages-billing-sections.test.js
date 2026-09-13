@@ -26,6 +26,7 @@ jest.mock('@lib/storage', () => ({
   })),
 }));
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolvePublicIdentifier: (...values) =>
     values.find((entry) => typeof entry === 'string' && entry.trim()) || null,
   sanitizeIdentifier: (value) => value,

@@ -1,5 +1,6 @@
 jest.mock('@modules/audit-log/repositories/audit-log.repository');
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolvePublicIdentifier: jest.fn((...values) => {
     for (const value of values) {
       if (typeof value !== 'string') continue;

@@ -28,6 +28,7 @@ jest.mock('@lib/audit', () => ({
 jest.mock('@lib/identifiers/resolve-entity-id', () => ({
   resolveModelIdByIdentifier: jest.fn(async ({ identifier }) => identifier)}));
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value),
   resolveIdentifierForPayload: jest.fn(async ({ value }) => value)}));
 jest.mock('@lib/last-office/events', () => ({

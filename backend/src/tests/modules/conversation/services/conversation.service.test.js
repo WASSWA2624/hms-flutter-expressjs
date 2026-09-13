@@ -44,7 +44,7 @@ describe('Conversation Service', () => {
       const result = await conversationService.getConversationById(mockConversation.id);
       
       expect(result).toEqual(mockConversation);
-      expect(conversationRepository.findById).toHaveBeenCalledWith(mockConversation.id, {});
+      expect(conversationRepository.findById).toHaveBeenCalledWith(mockConversation.id, undefined);
     });
 
     it('should throw error if conversation not found', async () => {
@@ -87,7 +87,7 @@ describe('Conversation Service', () => {
         expect.any(Number),
         expect.any(Number),
         expect.any(Object),
-        expect.any(Object)
+        undefined
       );
     });
   });

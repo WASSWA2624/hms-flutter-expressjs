@@ -25,6 +25,7 @@ jest.mock('@lib/websocket', () => ({
   },
 }));
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolvePublicIdentifier: (...values) =>
     values.find((entry) => typeof entry === 'string' && entry.trim()) || null,
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value || undefined),

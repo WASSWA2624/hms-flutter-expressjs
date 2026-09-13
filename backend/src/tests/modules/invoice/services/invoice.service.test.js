@@ -15,6 +15,7 @@ const { HttpError } = require('@lib/errors');
 jest.mock('@repositories/invoice/invoice.repository');
 jest.mock('@lib/audit');
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   sanitizeIdentifier: (value) => (typeof value === 'string' ? value.trim() : ''),
   resolvePublicIdentifier: (...values) => {
     for (const value of values) {

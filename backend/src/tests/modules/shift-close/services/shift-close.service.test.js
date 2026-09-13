@@ -3,6 +3,7 @@ jest.mock('@repositories/office-context/office-context.repository');
 jest.mock('@lib/audit', () => ({
   createAuditLog: jest.fn(async () => ({}))}));
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolvePublicIdentifier: jest.fn((...values) => values.find(Boolean) || null),
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value),
   resolveIdentifierForPayload: jest.fn(async ({ value }) => value)}));

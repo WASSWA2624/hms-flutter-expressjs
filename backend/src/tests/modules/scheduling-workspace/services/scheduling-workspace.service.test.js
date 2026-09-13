@@ -22,6 +22,7 @@ jest.mock('@repositories/scheduling-workspace/scheduling-workspace.repository', 
   resolveLegacyRecord: jest.fn()}));
 
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolvePublicIdentifier: (...values) => values.find((value) => value && !String(value).includes('-uuid')) || null,
   resolveIdentifierForFilter: jest.fn(async ({ value }) => value || null)}));
 

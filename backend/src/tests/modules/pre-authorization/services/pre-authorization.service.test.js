@@ -19,6 +19,7 @@ jest.mock('@lib/billing/realtime', () => ({
   publishBillingRealtimeUpdate: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock('@lib/billing/identifiers', () => ({
+  ...jest.requireActual('@lib/billing/identifiers'),
   resolvePublicIdentifier: (...values) => {
     for (const value of values) {
       const normalized =
