@@ -4,8 +4,9 @@ Build the HOSSPI WhatsApp adverts.
 
     python adverts/build-advert.py
 
-Renders two PNGs from one design: a 1080x1080 square for chats, groups and
-broadcast lists, and a 1080x1920 portrait for WhatsApp Status and stories.
+Renders one design at two sizes - a 1080x1080 square for chats, groups and
+broadcast lists, and a 1080x1920 portrait for WhatsApp Status and stories -
+once for every contact number in PHONES.
 
 The advert reads the product rather than restating it. The palette is the
 website's theme, the logo is website/public/logos/icon-512.png, and the icons
@@ -18,10 +19,11 @@ Type is set in Segoe UI with Pillow; the SVG icons are rasterised by PyMuPDF.
 The canvas is drawn at SUPERSAMPLE times the final size and scaled down, which
 anti-aliases the shapes as well as the type.
 
-Layout is measured, never guessed. Every block reports its height from the real
-font metrics, fixed gaps separate the blocks, and whatever height is left over
-is shared between those gaps. No text is placed at a hand-tuned baseline offset,
-which is how labels used to end up sitting on the edges of their tiles.
+Layout is measured, never guessed, and evenly spaced. Every block reports its
+height from the real font metrics, and the height left over becomes a single
+gap: above the header, between every section and above the call-to-action bar.
+No text is placed at a hand-tuned offset, which is how labels used to end up
+sitting on the edges of their tiles.
 
 Needs Pillow and PyMuPDF:  python -m pip install pillow pymupdf
 """
@@ -77,17 +79,18 @@ HEADLINE = (
     (("Run the whole hospital", False),),
     (("from ", False), ("one system.", True)),
 )
-SUBLINE = "26 departments · 25 staff roles · one patient record"
 
+# Short titles and one-line details: at phone-readable sizes the square has
+# room for about 34 characters of detail per card.
 FEATURES = (
-    ("sparkle", "AI assistance", "Polishes clinical notes and reads drug packs from photos"),
-    ("mic", "Speech to text", "Dictate notes, dates, amounts and phone numbers"),
-    ("monitor", "Every platform", "Web, Android, iOS, Windows, macOS and Linux"),
-    ("settings", "Made to fit", "Your roles, permissions, prices and defaults"),
-    ("stethoscope", "Complete clinical care", "Outpatient, emergency, wards, ICU and theatre"),
-    ("flask", "Lab, imaging and pharmacy", "Ordered and resulted on one record"),
-    ("receipt", "Billing to accounts", "Invoices, insurance claims and ledgers"),
-    ("building", "Built for groups", "Many facilities under one organisation"),
+    ("sparkle", "AI assistance", "Polishes notes, reads drug packs"),
+    ("mic", "Speech to text", "Dictate notes, dates and amounts"),
+    ("monitor", "Every platform", "Web, Android, iOS, desktop, Linux"),
+    ("settings", "Made to fit", "Your roles, prices and defaults"),
+    ("stethoscope", "Clinical care", "Outpatient, wards, ICU, theatre"),
+    ("flask", "Diagnostics", "Lab, imaging and pharmacy"),
+    ("receipt", "Finance", "Billing, claims and ledgers"),
+    ("building", "Built for groups", "Many facilities, one organisation"),
 )
 HIGHLIGHTED = {"sparkle", "mic"}
 
@@ -103,13 +106,14 @@ PLATFORMS = (
 DEPARTMENTS_HEADING = "26 DEPARTMENTS, INCLUDING"
 DEPARTMENTS = (
     "Reception", "Emergency", "Outpatient", "Wards", "ICU", "Theatre",
-    "Nursing", "Laboratory", "Radiology", "Pharmacy", "Physiotherapy",
-    "Billing", "Insurance", "Accounts", "Human resources", "Mortuary",
+    "Laboratory", "Radiology", "Pharmacy", "Billing", "Insurance", "Mortuary",
 )
 
 CTA = "Book a demo"
 SITE = "www.hosspi.com"
-PHONE = "+256 783 230 321"
+# One square and one portrait per number. The first keeps the plain file names;
+# the rest add the number in local form, e.g. hosspi-whatsapp-advert-0709932926.png.
+PHONES = ("+256 783 230 321", "+256 709 932 926")
 PHONE_NOTE = "WHATSAPP OR CALL"
 
 # Glyphs the website's set does not have yet, drawn on the same 24px grid with
@@ -134,7 +138,8 @@ class Spec:
     width: int
     height: int
     margin: float
-    top: float
+    # the build fails rather than set sections closer together than this
+    min_gap: float
     # brand lockup
     logo: float
     name: float
@@ -143,7 +148,6 @@ class Spec:
     # headline
     headline: float
     leading: float
-    subline: float
     # feature cards
     card_title: float
     card_detail: float
@@ -158,8 +162,6 @@ class Spec:
     site: float
     phone: float
     phone_note: float
-    # minimum space after each block, in drawing order
-    gaps: "tuple[float, ...]"
     # portrait-only sections
     platforms: bool = False
     departments: bool = False
@@ -175,28 +177,26 @@ class Spec:
 
 SQUARE = Spec(
     file="hosspi-whatsapp-advert.png", width=1080, height=1080,
-    margin=64, top=56,
-    logo=84, name=44, eyebrow=14.5, badge=17,
-    headline=58, leading=1.13, subline=23,
-    card_title=21, card_detail=16.5, card_pad=18, card_badge=50, card_icon=26,
-    card_gap=14, radius=18,
-    bar=150, cta=34, site=21, phone=34, phone_note=13.5,
-    gaps=(40, 18, 32, 32),
+    margin=60, min_gap=30,
+    logo=92, name=50, eyebrow=16, badge=20,
+    headline=70, leading=1.12,
+    card_title=27, card_detail=22, card_pad=20, card_badge=60, card_icon=30,
+    card_gap=14, radius=20,
+    bar=160, cta=40, site=24, phone=40, phone_note=16,
 )
 
 PORTRAIT = Spec(
     file="hosspi-whatsapp-status.png", width=1080, height=1920,
-    margin=76, top=92,
-    logo=104, name=54, eyebrow=17, badge=20,
-    headline=74, leading=1.12, subline=29,
-    card_title=25, card_detail=19.5, card_pad=24, card_badge=62, card_icon=32,
-    card_gap=18, radius=22,
-    bar=210, cta=44, site=26, phone=42, phone_note=16,
-    gaps=(68, 26, 54, 54, 50, 56),
+    margin=64, min_gap=36,
+    logo=116, name=62, eyebrow=19, badge=23,
+    headline=82, leading=1.1,
+    card_title=31, card_detail=25, card_pad=26, card_badge=72, card_icon=36,
+    card_gap=18, radius=24,
+    bar=240, cta=50, site=30, phone=48, phone_note=19,
     platforms=True, departments=True,
-    section=17, section_gap=18,
-    platform_icon=42, platform_name=22, platform_detail=17, platform_pad=26,
-    chip=19, chip_gap=12,
+    section=20, section_gap=22,
+    platform_icon=50, platform_name=26, platform_detail=20, platform_pad=30,
+    chip=23, chip_gap=14,
 )
 
 
@@ -382,8 +382,8 @@ class Canvas:
         top = self.px(y0)
         size = (self.image.width, self.px(y1) - top)
         ramp = Image.linear_gradient("L").transpose(Image.Transpose.ROTATE_90).resize(size, Image.BILINEAR)
-        strip = Image.composite(Image.new("RGBA", size, rgba(right)),
-                                Image.new("RGBA", size, rgba(left)), ramp)
+        strip = Image.composite(Image.new("RGB", size, rgba(right)[:3]),
+                                Image.new("RGB", size, rgba(left)[:3]), ramp)
         self.image.paste(strip, (0, top))
 
     def rounded(self, x0: float, y0: float, x1: float, y1: float, radius: float,
@@ -476,20 +476,6 @@ def headline_block(c: Canvas, spec: Spec, x0: float, x1: float):
                 x += measure(text, "bold", size)
 
     return "headline", height, draw
-
-
-def subline_block(c: Canvas, spec: Spec, x0: float, x1: float):
-    size = spec.subline
-    lines = wrap(SUBLINE, "regular", size, x1 - x0)
-    cap, desc = ascent("regular", size), descent("regular", size)
-    step = size * 1.35
-    height = cap + step * (len(lines) - 1) + desc
-
-    def draw(y: float) -> None:
-        for index, line in enumerate(lines):
-            c.text(x0, y + cap + index * step, line, "regular", size, rgba(AZURE_SOFT))
-
-    return "subline", height, draw
 
 
 def features_block(c: Canvas, spec: Spec, x0: float, x1: float):
@@ -643,7 +629,7 @@ def paint_background(c: Canvas, spec: Spec) -> None:
     c.glow(spec.width * 1.02, spec.height * 0.62, spec.width * 0.62, PRIMARY_LIGHT, 0.10)
 
 
-def paint_bar(c: Canvas, spec: Spec) -> None:
+def paint_bar(c: Canvas, spec: Spec, phone: str) -> None:
     """Call to action across the foot: the ask on the left, the number on the right."""
     top = spec.height - spec.bar
     x0, x1 = spec.margin, spec.width - spec.margin
@@ -669,7 +655,7 @@ def paint_bar(c: Canvas, spec: Spec) -> None:
     phone_gap = spec.phone * 0.42
     right_stack = note_cap + phone_gap + phone_cap
     right_top = top + (spec.bar - right_stack) / 2
-    text_w = max(measure(PHONE, "bold", spec.phone),
+    text_w = max(measure(phone, "bold", spec.phone),
                  measure(PHONE_NOTE, "semibold", spec.phone_note, note_tracking))
     text_x = x1 - text_w
     circle = right_stack * 1.08
@@ -684,13 +670,13 @@ def paint_bar(c: Canvas, spec: Spec) -> None:
            glyph, PRIMARY, 2.1)
     c.text(text_x, right_top + note_cap, PHONE_NOTE, "semibold", spec.phone_note,
            rgba(BAR_TEXT), tracking=note_tracking)
-    c.text(text_x, right_top + note_cap + phone_gap + phone_cap, PHONE, "bold",
+    c.text(text_x, right_top + note_cap + phone_gap + phone_cap, phone, "bold",
            spec.phone, rgba(WHITE))
 
 
 # --- compose -----------------------------------------------------------------
 
-def compose(spec: Spec, logo: Image.Image) -> Image.Image:
+def compose(spec: Spec, logo: Image.Image, phone: str) -> Image.Image:
     c = Canvas(spec.width, spec.height)
     paint_background(c, spec)
 
@@ -698,34 +684,41 @@ def compose(spec: Spec, logo: Image.Image) -> Image.Image:
     blocks = [
         header_block(c, spec, x0, x1, logo),
         headline_block(c, spec, x0, x1),
-        subline_block(c, spec, x0, x1),
         features_block(c, spec, x0, x1),
     ]
     if spec.platforms:
         blocks.append(platforms_block(c, spec, x0, x1))
     if spec.departments:
         blocks.append(departments_block(c, spec, x0, x1))
-    if len(spec.gaps) != len(blocks):
-        raise SystemExit(f"{spec.file}: {len(blocks)} blocks but {len(spec.gaps)} gaps")
 
+    # One gap for the whole canvas - above the header, between sections and
+    # above the bar - so the spacing reads as a single rhythm.
     floor = spec.height - spec.bar
-    used = spec.top + sum(height for _, height, _ in blocks) + sum(spec.gaps)
-    slack = floor - used
-    if slack < 0:
+    content = sum(height for _, height, _ in blocks)
+    gap = (floor - content) / (len(blocks) + 1)
+    if gap < spec.min_gap:
         sizes = ", ".join(f"{name} {height:.0f}" for name, height, _ in blocks)
-        raise SystemExit(f"{spec.file}: content overflows the call to action bar by "
-                         f"{-slack:.0f}px ({sizes}) - shorten the copy or shrink the spec")
+        raise SystemExit(f"{spec.file}: sections would sit {gap:.0f}px apart, under the "
+                         f"{spec.min_gap:.0f}px minimum ({sizes}) - shorten the copy or "
+                         "shrink the spec")
 
-    # Leftover height goes to the gaps (half a share above the header), so a
-    # tall canvas breathes instead of leaving a dead band above the bar.
-    share = slack / (len(blocks) + 0.5)
-    y = spec.top + share / 2
-    for (_, height, draw), gap in zip(blocks, spec.gaps):
+    y = gap
+    for _, height, draw in blocks:
         draw(y)
-        y += height + gap + share
+        y += height + gap
 
-    paint_bar(c, spec)
-    return c.image.resize((spec.width, spec.height), Image.LANCZOS).convert("RGB")
+    paint_bar(c, spec, phone)
+    return c.image.resize((spec.width, spec.height), Image.LANCZOS)
+
+
+def output_name(file: str, phone: str, index: int) -> str:
+    """The first number keeps the plain name; the others add it in local form."""
+    if index == 0:
+        return file
+    digits = re.sub(r"\D", "", phone)
+    local = "0" + digits[3:] if digits.startswith("256") else digits
+    stem, _, extension = file.rpartition(".")
+    return f"{stem}-{local}.{extension}"
 
 
 def main() -> None:
@@ -733,10 +726,11 @@ def main() -> None:
     load_icons(sorted(names | {"sparkle", "globe", "message"}))
     logo = Image.open(LOGO).convert("RGBA")
 
-    for spec in (SQUARE, PORTRAIT):
-        out = HERE / spec.file
-        compose(spec, logo).save(out, optimize=True)
-        print(f"{spec.file}  {spec.width}x{spec.height}  {out.stat().st_size / 1024:.0f} KB")
+    for index, phone in enumerate(PHONES):
+        for spec in (SQUARE, PORTRAIT):
+            out = HERE / output_name(spec.file, phone, index)
+            compose(spec, logo, phone).save(out, optimize=True)
+            print(f"{out.name}  {spec.width}x{spec.height}  {out.stat().st_size / 1024:.0f} KB")
 
 
 if __name__ == "__main__":
