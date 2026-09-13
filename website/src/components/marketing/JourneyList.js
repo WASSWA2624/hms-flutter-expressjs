@@ -26,6 +26,10 @@ const StyledList = styled.ol`
     grid-template-columns: repeat(2, 1fr);
     gap: ${props => props.theme.spacing.lg};
   }
+
+  @media (min-width: ${props => props.theme.breakpoints.md}) {
+    grid-template-columns: repeat(3, 1fr);
+  }
 `;
 
 const StyledItem = styled.li`

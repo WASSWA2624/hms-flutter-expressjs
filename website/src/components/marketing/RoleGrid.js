@@ -24,6 +24,10 @@ const StyledGrid = styled.dl`
   @media (min-width: ${props => props.theme.breakpoints.sm}) {
     grid-template-columns: repeat(2, 1fr);
   }
+
+  @media (min-width: ${props => props.theme.breakpoints.md}) {
+    grid-template-columns: repeat(3, 1fr);
+  }
 `;
 
 const StyledRole = styled.div`

@@ -241,6 +241,24 @@ export const ROLES_NOTE =
   'Twenty-five staff roles are ready to use on day one, and you can define your own if your facility works differently.';
 
 /**
+ * The roles a visitor recognises immediately, for the landing page. The full
+ * list is on the guide; nine fills a three-column grid exactly.
+ * @type {Array<{id: string, name: string, scope: string}>}
+ */
+export const HEADLINE_ROLE_IDS = [
+  'doctor', 'nurse', 'receptionist',
+  'pharmacist', 'lab', 'imaging',
+  'accountant', 'hr', 'admin',
+];
+
+export const HEADLINE_ROLES = HEADLINE_ROLE_IDS
+  .map((id) => ROLES.find((role) => role.id === id))
+  .filter(Boolean);
+
+export const HEADLINE_ROLES_NOTE =
+  'Twenty-five roles ship ready to use, and you can define your own. The guide lists them all.';
+
+/**
  * How care moves through the system — written as journeys, not workflows.
  * @type {Array<{id: string, title: string, summary: string}>}
  */

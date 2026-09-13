@@ -16,7 +16,6 @@ import {
   JourneyList,
   PlanGrid,
   RoleGrid,
-  RoadmapList,
   FaqList,
   CallToAction,
 } from '@/components/marketing';
@@ -39,11 +38,10 @@ import {
   VALUE_PROPS,
   AVAILABLE_MODULES,
   CARE_JOURNEYS,
-  ROADMAP,
   PLANS,
   PLANS_NOTE,
-  ROLES,
-  ROLES_NOTE,
+  HEADLINE_ROLES,
+  HEADLINE_ROLES_NOTE,
   FAQS,
 } from '@/lib/product';
 
@@ -186,7 +184,7 @@ export default function Home() {
         title="A workspace for every member of staff"
         description="People see what their job needs and nothing more."
       >
-        <RoleGrid roles={ROLES} note={ROLES_NOTE} />
+        <RoleGrid roles={HEADLINE_ROLES} note={HEADLINE_ROLES_NOTE} />
       </Section>
 
       <Section
@@ -198,20 +196,14 @@ export default function Home() {
         <PlanGrid plans={PLANS} note={PLANS_NOTE} />
       </Section>
 
-      <Section
-        id="roadmap"
-        tone="alt"
-        eyebrow="Coming next"
-        title="Where HOSSPI is heading"
-        description="Areas we are building for future releases. They are not part of the system today."
-      >
-        <RoadmapList items={ROADMAP} />
-      </Section>
-
+      {/* The roadmap is a list of what the system does not do yet — weak
+          material for a landing page, and the guide carries it in full. */}
       <Section
         id="faq"
+        tone="alt"
         eyebrow="Questions"
         title="Common questions"
+        description="What evaluating facilities ask first. The guide goes further, including what we are building next."
       >
         <FaqList faqs={FAQS} />
       </Section>

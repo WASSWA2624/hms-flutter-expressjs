@@ -15,11 +15,24 @@
 import React from 'react';
 import styled from 'styled-components';
 
+/*
+ * Full width, and two columns from 1024px. A single 80ch column left most of
+ * a wide canvas empty and pushed the last question below the fold; in two
+ * columns the whole set is visible at a glance. Items carry `name="faq"` so
+ * only one is open at a time - with a column each, an opening answer only
+ * reflows its own side.
+ */
 const StyledList = styled.div`
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
+  align-content: start;
   gap: ${props => props.theme.spacing.sm};
-  max-width: 80ch;
+
+  @media (min-width: ${props => props.theme.breakpoints.md}) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: clamp(1rem, 2vw, 1.75rem);
+    align-items: start;
+  }
 `;
 
 const StyledItem = styled.details`
@@ -79,7 +92,6 @@ const StyledAnswer = styled.p`
   padding: 0 ${props => props.theme.spacing.lg} ${props => props.theme.spacing.lg};
   color: ${props => props.theme.colors.textSecondary};
   line-height: ${props => props.theme.typography.lineHeight.relaxed};
-  max-width: 70ch;
 `;
 
 StyledList.displayName = 'StyledList';

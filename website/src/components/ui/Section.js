@@ -41,19 +41,41 @@ const StyledInner = styled.div`
   padding: clamp(2.5rem, 6vw, 5.5rem) clamp(1rem, 5vw, 4rem);
 `;
 
+/*
+ * Stacked on narrow screens. From 1024px a header that has both a title and a
+ * description splits into two columns - heading left, intro right - so the
+ * full measure is used instead of leaving the right half of a 1440px canvas
+ * empty under a 24ch heading. Each column keeps its own comfortable reading
+ * measure; the space is filled by the layout, not by longer lines.
+ */
 const StyledHeader = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== '$align',
+  shouldForwardProp: (prop) => prop !== '$align' && prop !== '$split',
 })`
   margin-bottom: clamp(1.75rem, 3.5vw, 3rem);
   text-align: ${props => props.$align === 'center' ? 'center' : 'left'};
   ${props => props.$align === 'center' && `
     margin-left: auto;
     margin-right: auto;
-    max-width: 68ch;
+    max-width: 72ch;
+  `}
+
+  ${props => props.$split && `
+    @media (min-width: ${props.theme.breakpoints.md}) {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+      grid-template-areas:
+        'eyebrow eyebrow'
+        'title   description';
+      column-gap: clamp(2rem, 5vw, 5rem);
+      /* First baselines meet, so the two columns read as one line of type
+         rather than a heading floating against a taller block of intro. */
+      align-items: baseline;
+    }
   `}
 `;
 
 const StyledEyebrow = styled.p`
+  grid-area: eyebrow;
   margin: 0 0 ${props => props.theme.spacing.sm} 0;
   color: ${props => props.theme.colors.primary};
   font-size: ${props => props.theme.typography.fontSize.sm};
@@ -62,26 +84,43 @@ const StyledEyebrow = styled.p`
   text-transform: uppercase;
 `;
 
-const StyledTitle = styled.h2`
+const StyledTitle = styled.h2.withConfig({
+  shouldForwardProp: (prop) => prop !== '$split',
+})`
+  grid-area: title;
   margin: 0 0 ${props => props.theme.spacing.md} 0;
   color: ${props => props.theme.colors.text};
-  font-size: clamp(1.5rem, 1rem + 2.2vw, 2.5rem);
+  font-size: clamp(1.5rem, 1rem + 2.2vw, 2.75rem);
   font-weight: ${props => props.theme.typography.fontWeight.bold};
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
   text-wrap: balance;
   max-width: 24ch;
 
-  ${props => props.$centered && 'max-width: none;'}
+  ${props => props.$split && `
+    @media (min-width: ${props.theme.breakpoints.md}) {
+      margin-bottom: 0;
+      max-width: none;
+    }
+  `}
 `;
 
-const StyledDescription = styled.p`
+const StyledDescription = styled.p.withConfig({
+  shouldForwardProp: (prop) => prop !== '$split',
+})`
+  grid-area: description;
   margin: 0;
   color: ${props => props.theme.colors.textSecondary};
-  font-size: clamp(1rem, 0.94rem + 0.3vw, 1.2rem);
+  font-size: clamp(1rem, 0.94rem + 0.3vw, 1.15rem);
   line-height: ${props => props.theme.typography.lineHeight.relaxed};
   max-width: 68ch;
   text-wrap: pretty;
+
+  ${props => props.$split && `
+    @media (min-width: ${props.theme.breakpoints.md}) {
+      max-width: none;
+    }
+  `}
 `;
 
 StyledSection.displayName = 'StyledSection';
@@ -102,15 +141,23 @@ export const Section = React.memo(({
   children,
 }) => {
   const headingId = id ? `${id}-heading` : undefined;
+  // Only a left-aligned header carrying both halves has anything to split.
+  const split = Boolean(title && description) && align !== 'center';
 
   return (
     <StyledSection id={id} $tone={tone} aria-labelledby={headingId}>
       <StyledInner>
         {(eyebrow || title || description) && (
-          <StyledHeader $align={align}>
+          <StyledHeader $align={align} $split={split}>
             {eyebrow && <StyledEyebrow>{eyebrow}</StyledEyebrow>}
-            {title && <StyledTitle as={headingLevel} id={headingId}>{title}</StyledTitle>}
-            {description && <StyledDescription>{description}</StyledDescription>}
+            {title && (
+              <StyledTitle as={headingLevel} id={headingId} $split={split}>
+                {title}
+              </StyledTitle>
+            )}
+            {description && (
+              <StyledDescription $split={split}>{description}</StyledDescription>
+            )}
           </StyledHeader>
         )}
         {children}

@@ -62,22 +62,27 @@ const StyledEyebrow = styled.p`
   text-transform: uppercase;
 `;
 
+/*
+ * 24ch rather than 18ch: on a 1440px canvas the shorter measure broke the
+ * headline into three cramped lines stacked in the middle of an empty band.
+ * At 24ch it sets in two full lines that carry the width of the page.
+ */
 const StyledTitle = styled.h1`
   margin: 0;
-  max-width: 18ch;
+  max-width: 24ch;
   color: ${props => props.theme.colors.text};
-  font-size: clamp(2.1rem, 1.1rem + 4.2vw, 4.1rem);
+  font-size: clamp(2.1rem, 1rem + 4.6vw, 4.5rem);
   font-weight: ${props => props.theme.typography.fontWeight.bold};
-  line-height: 1.04;
-  letter-spacing: -0.03em;
+  line-height: 1.03;
+  letter-spacing: -0.035em;
   text-wrap: balance;
 `;
 
 const StyledSubtitle = styled.p`
   margin: 0;
-  max-width: 58ch;
+  max-width: 66ch;
   color: ${props => props.theme.colors.textSecondary};
-  font-size: clamp(1.02rem, 0.95rem + 0.5vw, 1.25rem);
+  font-size: clamp(1.05rem, 0.95rem + 0.55vw, 1.35rem);
   line-height: ${props => props.theme.typography.lineHeight.relaxed};
   text-wrap: pretty;
 `;
